@@ -1,0 +1,24 @@
+{
+  "name": "ducc-website",
+  "version": "1.0.0",
+  "description": "DUCC Website (uni assignment)",
+  "homepage": "https://github.com/Luphaestus/DUCC-Website#readme",
+  "bugs": {
+    "url": "https://github.com/Luphaestus/DUCC-Website/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Luphaestus/DUCC-Website.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Luphaestus",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
