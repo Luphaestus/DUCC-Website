@@ -1,16 +1,23 @@
 @use "pico" with (
-  $theme-color: "jade"
+    $theme-color: "purple"
 );
 
+.small-container {
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
 main.container {
-  display: block;
-  margin: 0;
-  padding: 0;
-  padding-inline: 0;
-  padding-block: 0;
-  width: 100%;
-  max-width: none;
-  min-height: 0;  
+    display: block;
+    margin: 0;
+    padding: 0;
+    padding-inline: 0;
+    padding-block: 0;
+    width: 100%;
+    max-width: none;
+    min-height: 1000vh;  
 }
 
 .hero {
@@ -19,59 +26,52 @@ main.container {
     background-position: center;
     background-repeat: no-repeat;
 
-    height: 100vh;
+    height: 90vh;
     width: 100vw;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
+    z-index: -1;
+
     .slide {
-      position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
 
-      opacity: 0;
-      transition: opacity 900ms ease;
-      will-change: opacity;
-      pointer-events: none;
-      z-index: 0;
+        opacity: 0;
+        transition: opacity 900ms ease;
+        will-change: opacity;
+        pointer-events: none;
+        z-index: 0;
+        filter: brightness(0.3);
 
-      // visible layer
-      &.show {
-        opacity: 1;
-        z-index: 1;
-      }
-    }
+        &.show {
+            opacity: 1;
+            z-index: 1;
+        }
+    }      
 
-    // ensure any content inside hero sits above slides
     > *:not(.slide) {
-      position: relative;
-      z-index: 2;
+        position: relative;
+        z-index: 2;
     }
- 
-    // > div:first-child {
-    //     position: absolute;
-    //     inset: 0;
-    //     background: rgba(0, 0, 0, 0.35);
-    // }
 
-    // > div:last-child {
-    //     position: relative;
-    //     z-index: 1;
-    //     text-align: center;
-    //     padding: 2rem;
-    // }
-
-    // h1 {
-    //     margin: 0;
-    //     font-size: clamp(1.5rem, 4vw, 3rem);
-    // }
-
-    // p {
-    //     margin-top: 0.5rem;
-    //     font-size: clamp(1rem, 2.5vw, 1.25rem);
-    // }
+    > :first-child {
+        max-width: 35%;
+    }
 }
+
+main.container > nav.small-container {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: color-mix(in srgb, var(--pico-background-color) 85%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+    border-bottom: .5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
+}
+

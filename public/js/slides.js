@@ -41,22 +41,23 @@ document.addEventListener('DOMContentLoaded', () => {
       return res.json();
     })
     .then(data => {
-      const imgs = Array.isArray(data) ? data : (Array.isArray(data.images) ? data.images : []);
-      if (!imgs.length) return;
+        const imgs = Array.isArray(data) ? data : (Array.isArray(data.images) ? data.images : []);
+        if (!imgs.length) return;
 
-      preload(imgs);
+        preload(imgs);
 
-      const initial = imgs[0];
-      setLayerBg(layers[active], initial);
-      layers[active].classList.add('show');
+        let idx = Math.floor(Math.random() * imgs.length);
 
-      let idx = 0;
-      setInterval(() => {
+        const initial = imgs[idx];
+        setLayerBg(layers[active], initial);
+        layers[active].classList.add('show');
+
+        setInterval(() => {
         idx = (idx + 1) % imgs.length;
         crossfadeTo(imgs[idx]);
-      }, 5000);
+        }, 5000);
     })
     .catch(err => {
-      console.warn('Slides fetch failed:', err.message);
+        console.warn('Slides fetch failed:', err.message);
     });
 });
