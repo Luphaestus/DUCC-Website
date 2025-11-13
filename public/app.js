@@ -62,8 +62,3 @@ function ajaxPost(url, data, successCallback, errorCallback) {
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(JSON.stringify(data));
 }
-
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-});
