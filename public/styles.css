@@ -2824,6 +2824,23 @@ main.container {
   min-height: 1000vh;
 }
 
+.hidden {
+  display: none;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  will-change: opacity;
+}
+
+main.container > nav.small-container {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  background-color: color-mix(in srgb, var(--pico-background-color) 85%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  border-bottom: 0.5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
+}
+
 .hero {
   position: relative;
   background-size: cover;
@@ -2835,6 +2852,7 @@ main.container {
   align-items: center;
   justify-content: center;
   z-index: -1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 .hero .slide {
   position: absolute;
@@ -2859,16 +2877,6 @@ main.container {
 }
 .hero > :first-child {
   max-width: 35%;
-}
-
-main.container > nav.small-container {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  background-color: color-mix(in srgb, var(--pico-background-color) 85%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  border-bottom: 0.5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
 }
 
 /*# sourceMappingURL=styles.css.map */

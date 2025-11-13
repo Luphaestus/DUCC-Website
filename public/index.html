@@ -5,30 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <link rel="stylesheet" href="/styles.css">
-    <title>DUCC</title>
+    <title>DUCC - Home</title>
+
+    <script type="module" src="/js/misc/view.js" defer></script>
+
   </head>
   <body>
 
     <main class="container">
 
-        <script src="/js/navbar.js" defer></script>
+        <script type="module" src="/js/navbar.js" defer></script>
          <nav class="small-container">
-            <ul><li><strong>DUCC</strong></li></ul>
+            <ul><li><a class="contrast" href="/"><strong>DUCC</strong></a></li></ul>
             
             <ul class="navbar-items"></ul>
         </nav>
 
-        <script src="/js/slides.js" defer></script>
-        <div class="hero">
-            <div>
-                <img src="images/misc/ducc.png" alt="DUCC Logo">
-                <p>One of Durham University's oldest and friendliest clubs.</p>
-            </div>
-            
-        </div> 
+        <div id="home-view" class="view">
 
-        <div class="small-container">
-           
+            <script type="module" src="/js/slides.js" defer></script>
+            <div class="hero">
+                <div>
+                    <img src="images/misc/ducc.png" alt="DUCC Logo">
+                    <p>One of Durham University's oldest and friendliest clubs.</p>
+                </div>
+                
+            </div> 
+
+            <div class="small-container">
+            
+            </div>
+
+        </div>
+
+        <script type="module" src="/js/events.js" defer></script>
+        <div id="events-view" class="view hidden" >
+            <div class="small-container">
+                <h1>Upcoming Events</h1>
+                <div id="events-list">
+                    <p aria-busy="true">Loading events...</p>
+                </div>
+                <div id="event-navigation"></div>
+                
+            </div>
         </div>
 
     </main>

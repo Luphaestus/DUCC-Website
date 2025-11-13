@@ -13,16 +13,23 @@
   "license": "Apache-2.0",
   "author": "Luphaestus",
   "type": "commonjs",
-  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "db:init": "node server/db/init.js $NODE_ENV",
+    "start": "NODE_ENV=prod npm run db:init && node server/server.js",
+    "dev": "NODE_ENV=dev npm run db:init && nodemon server/server.js",
     "sass": "sass --watch src:public --load-path=node_modules/@picocss/pico/scss/",
     "build:sass": "sass src:public --no-source-map --load-path=node_modules/@picocss/pico/scss/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@picocss/pico": "^2.1.1",
+    "body-parser": "^2.2.0",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "sass": "^1.94.0"
+    "express-session": "^1.18.2",
+    "nodemon": "^3.1.11",
+    "sass": "^1.94.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   }
 }

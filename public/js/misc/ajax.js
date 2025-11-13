@@ -16,9 +16,11 @@ function ajaxGet(url, successCallback, errorCallback) {
                     const response = JSON.parse(xhr.responseText);
                     successCallback(response);
                 } catch (e) {
+                    console.log('Failed to parse response:', e);
                     errorCallback('Failed to parse response: ' + e.message);
                 }
             } else {
+                console.log('Request failed with status:', xhr.status);
                 errorCallback('Request failed with status: ' + xhr.status);
             }
         }
@@ -62,3 +64,5 @@ function ajaxPost(url, data, successCallback, errorCallback) {
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(JSON.stringify(data));
 }
+
+export { ajaxGet, ajaxPost };

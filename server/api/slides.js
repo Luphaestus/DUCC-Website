@@ -17,7 +17,7 @@ class Slides {
   constructor(app) {
     this.app = app;
     this.dirParts = ['images', 'slides'];
-    this.fullDir = path.join(__dirname, '..', 'public', ...this.dirParts);
+    this.fullDir = path.join(__dirname, '..', '..', 'public', ...this.dirParts);
     this.allowedExt = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
     this.files = []; 
     this.paths = []; 
@@ -96,28 +96,25 @@ class Slides {
     return this.paths[Math.floor(Math.random() * this.paths.length)];
   }
 
-  registerRoutes(app) {
-    // GET /api/slides/count
-    app.get('/api/slides/count', (req, res) => {
+  registerRoutes() {
+
+    this.app.get('/api/slides/count', (req, res) => {
       res.json({ count: this.getFileCount() });
     });
-
-    // GET /api/slides/images
-    app.get('/api/slides/images', (req, res) => {
+    
+    this.app.get('/api/slides/images', (req, res) => {
       const paths = this.getFiles();
       if (paths.length === 0) return res.status(404).json({ error: 'No slide images found' });
       res.json({ images: paths });
     });
 
-    // GET /api/slides/random
-    app.get('/api/slides/random', (req, res) => {
+    this.app.get('/api/slides/random', (req, res) => {
       const image = this.getRandomFile();
       if (!image) return res.status(404).json({ error: 'No slide images found' });
       res.json({ image });
     });
 
-    // GET /api/slides/:index
-    app.get('/api/slides/:index', (req, res) => {
+    this.app.get('/api/slides/:index', (req, res) => {
       const index = parseInt(req.params.index, 10);
       if (Number.isNaN(index) || index < 0) {
         return res.status(400).json({ error: 'Index must be a non-negative integer' });
