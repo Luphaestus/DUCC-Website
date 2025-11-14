@@ -1,10 +1,35 @@
+const { use } = require('passport');
 const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
+const readline = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+const bcrypt = require('bcrypt');
+
 
 require('dotenv').config();
 
 const env = process.env.NODE_ENV || 'development';
 console.log(`Running in ${env} mode`);
+
+async function createAdminUser(db) {
+    return new Promise((resolve) => {
+        readline.question('Enter admin email: ', (email) => {
+            readline.question('Enter admin password: ', async (password) => {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                await db.run(
+                    `INSERT INTO users (email, hashed_password, first_name, last_name)
+                    VALUES (?, ?, ?, ?)`,
+                    [email, hashedPassword, 'Admin', 'User']
+                );
+                console.log('Admin user created successfully.');
+                readline.close();
+                resolve();
+            });
+        });
+    });
+}
 
 (async () => {
   try {
@@ -14,6 +39,27 @@ console.log(`Running in ${env} mode`);
       filename: 'database.db', 
       driver: sqlite3.Database
     });
+
+    user_table_exists = await db.get(`
+      SELECT name FROM sqlite_master WHERE type='table' AND name='users';
+    `);
+
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        hashed_password TEXT NOT NULL,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        difficulty_level INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    if (!user_table_exists) {
+        console.log('Inserting admin user...');
+        await createAdminUser(db); 
+    }
 
     event_table_exists = await db.get(`
       SELECT name FROM sqlite_master WHERE type='table' AND name='events';
@@ -33,7 +79,9 @@ console.log(`Running in ${env} mode`);
     `);
 
     if (env === 'dev' && !event_table_exists) {
-        console.log('Inserting sample data for development environment...');
+        readline.on('close', () => {
+            console.log('Inserting sample data for development environment...');
+        });
 
         date = new Date();
 
@@ -78,7 +126,9 @@ console.log(`Running in ${env} mode`);
 
 
 
-    console.log('Database initialized successfully.');
+    readline.on('close', () => {
+        console.log('Database initialized successfully.');
+    });
     
 
     await db.close();

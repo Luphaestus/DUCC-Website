@@ -3,7 +3,7 @@ import { switchView } from './misc/view.js';
 const navEntries = [
     { name: 'Home',     type: 'text',   contrast: true,  action: { run: () => switchView('home-view') } },
     { name: 'Events',   type: 'text',   contrast: true,  action: { run: () => switchView('events-view') } },
-    { name: 'Sign In',  type: 'button', contrast: false, action: {} }
+    { name: 'Login',  type: 'button', contrast: false, action: { run: () => switchView('login-view') } }
 ]
 
 function create_item(entry) {

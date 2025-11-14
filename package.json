@@ -23,13 +23,22 @@
   },
   "dependencies": {
     "@picocss/pico": "^2.1.1",
+    "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
-    "nodemon": "^3.1.11",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
     "sass": "^1.94.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/express-session": "^1.18.2",
+    "@types/passport": "^1.0.17",
+    "@types/passport-local": "^1.0.38",
+    "nodemon": "^3.1.11"
   }
 }

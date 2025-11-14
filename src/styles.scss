@@ -1,6 +1,10 @@
-@use "pico" with (
-    $theme-color: "purple"
+@use "pico" with ($theme-color: "purple"
 );
+
+body {
+    color: reverse-color(var(--pico-color));
+    background-color: reverse-color(var(--pico-background-color));
+}
 
 .small-container {
     margin-left: auto;
@@ -17,7 +21,6 @@ main.container {
     padding-block: 0;
     width: 100%;
     max-width: none;
-    min-height: 1000vh;  
 }
 
 .hidden {
@@ -27,7 +30,7 @@ main.container {
     will-change: opacity;
 }
 
-main.container > nav.small-container {
+main.container>nav.small-container {
     position: sticky;
     top: 0;
     width: 100%;
@@ -35,6 +38,21 @@ main.container > nav.small-container {
     backdrop-filter: blur(10px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
     border-bottom: .5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
+
+    .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        img {
+            height: 2rem;
+            width: auto;
+        }
+
+        strong {
+            font-size: 1rem;
+        }
+    }
 }
 
 
@@ -43,16 +61,18 @@ main.container > nav.small-container {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    margin-bottom: 4vh;
 
-    height: 90vh;
+    flex-direction: column;
+
+    min-height: 60vh;
     width: 100vw;
 
+    padding: 6vh;
+
     display: flex;
-    align-items: center;
-    justify-content: center;
 
     z-index: -1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
 
     .slide {
         position: absolute;
@@ -66,20 +86,130 @@ main.container > nav.small-container {
         will-change: opacity;
         pointer-events: none;
         z-index: 0;
-        filter: brightness(0.3);
+
 
         &.show {
             opacity: 1;
             z-index: 1;
         }
-    }      
+    }
 
-    > *:not(.slide) {
+    >*:not(.slide) {
         position: relative;
         z-index: 2;
     }
 
-    > :first-child {
-        max-width: 35%;
+    .hero-title {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+
+        h1 {
+            padding: 0;
+            margin-bottom: 0;
+            font-size: 4vh;
+            line-height: 1.2;
+        }
+
+        p {
+            font-size: 1.5vh;
+            line-height: 1.5;
+        }
+    }
+
+    .hero-offer {
+        margin-top: auto;
+
+        h3 {
+            font-size: 2vh;
+        }
+
+        .hero-offer-boxes {
+            display: flex;
+            flex-direction: row;
+
+            .hero-offer-box {
+                background-color: color-mix(in srgb, color-mix(in srgb, var(--pico-background-color) 95%, var(--pico-color) 5%) 85%, transparent);
+                border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--pico-background-color) 95%, var(--pico-color) 10%) 85%, transparent);
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+                backdrop-filter: blur(10px);
+                border-radius: 1vw;
+                padding: 2vh;
+                margin-right: 2vh;
+                flex: 1;
+                width: calc(33.333% - 2vh);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                text-align: center;
+
+                i {
+                    font-size: 6vh;
+                    margin-bottom: 1vh;
+                }
+
+                h3 {
+                    font-size: 2.5vh;
+                    margin-bottom: .5vh;
+                }
+
+                P {
+                    font-size: 1.5vh;
+                    line-height: 1.5;
+                    margin-bottom: 0;
+                }
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero-offer-boxes {
+                flex-direction: column;
+
+                .hero-offer-box {
+                    width: 100%;
+                    margin-right: 0;
+                    margin-bottom: 1vh;
+                }
+            }
+        }
+
+        position: relative;
+        bottom: -8vh;
+    }
+}
+
+.about-us-para {
+    columns: 2;
+    gap: 5vw;
+
+    @media (max-width: 600px) {
+        columns: 1;
+        flex-direction: column;
+    }
+}
+
+.find-us-para {
+    margin-top: 4vh;
+
+    iframe {
+        width: 100%;
+        border-radius: 10px;
+        margin-bottom: 1vh;
+    }
+}
+
+.find-us-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+
+    img {
+        width: 100%;
+        aspect-ratio: 18 / 9;
+        border-radius: var(--pico-border-radius);
+        object-fit: cover;
     }
 }

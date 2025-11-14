@@ -15,8 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let active = 0;
 
   const setLayerBg = (layer, url) => {
-    layer.style.backgroundImage = url ? `url("${url}")` : 'none';
-  };
+
+        let urlString = url ? `, url("${url}")` : '';
+    
+        layer.style.backgroundImage = "linear-gradient(to left, rgba(245, 246, 252, 0), rgb(77, 26, 87))" + urlString;
+    };
 
   const preload = (urls) => {
     urls.forEach(u => {
