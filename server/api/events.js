@@ -34,14 +34,14 @@ class Events {
             [max_difficulty]
         );
     }
-    
+
     get_events_for_week(max_difficulty, date = new Date()) {
         const startOfWeek = date;
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1); 
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
         startOfWeek.setHours(0, 0, 0, 0);
 
         const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6); 
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
         return this.db.all(
@@ -92,7 +92,7 @@ class Events {
             }
 
             try {
-                const events = await this.get_all_events(max_dificulty);
+                const events = await this.get_all_events(max_difficulty);
                 res.json({ events });
             } catch (error) {
                 console.error('Failed to fetch events:', error);

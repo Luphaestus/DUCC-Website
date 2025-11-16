@@ -16,9 +16,9 @@
   "scripts": {
     "db:init": "node server/db/init.js $NODE_ENV",
     "start": "NODE_ENV=prod npm run db:init && node server/server.js",
-    "dev": "NODE_ENV=dev npm run db:init && nodemon server/server.js",
     "sass": "sass --watch src:public --load-path=node_modules/@picocss/pico/scss/",
     "build:sass": "sass src:public --no-source-map --load-path=node_modules/@picocss/pico/scss/",
+    "dev": "NODE_ENV=dev npm run db:init && npm run sass & nodemon server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -31,6 +31,7 @@
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "sass": "^1.94.0",
+    "seedrandom": "^3.0.5",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   },

@@ -1,5 +1,6 @@
 const PORT = process.env.PORT || 3000;
 
+const path = require('path');
 const express = require('express');
 const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
@@ -12,7 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.use(session({
-  secret: 'supersecretkey', 
+  secret: 'supersecretkey',
   resave: false,
   saveUninitialized: false
 }));
@@ -39,9 +40,14 @@ let db;
 
     const slides = require('./api/slides.js');
     new slides(app).registerRoutes();
-    
+
     const events = require('./api/events.js');
     new events(app, db, auth).registerRoutes();
+
+    app.get(/.*/, (req, res) => {
+      console.log(`Non-API path '${req.originalUrl}' requested. Serving index.html.`);
+      res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    });
 
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
@@ -52,4 +58,3 @@ let db;
     console.error(err.message);
   }
 })();
-

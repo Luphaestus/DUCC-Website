@@ -1,9 +1,9 @@
 import { switchView } from './misc/view.js';
 
 const navEntries = [
-    { name: 'Home',     type: 'text',   contrast: true,  action: { run: () => switchView('home-view') } },
-    { name: 'Events',   type: 'text',   contrast: true,  action: { run: () => switchView('events-view') } },
-    { name: 'Login',  type: 'button', contrast: false, action: { run: () => switchView('login-view') } }
+    { name: 'Home', type: 'text', contrast: true, action: { run: () => switchView('home') } },
+    { name: 'Events', type: 'text', contrast: true, action: { run: () => switchView('events') } },
+    { name: 'Login', type: 'button', contrast: false, action: { run: () => switchView('login') } }
 ]
 
 function create_item(entry) {
@@ -22,7 +22,7 @@ function create_item(entry) {
 
     if (entry.contrast) clicky.className = 'contrast';
     clicky.textContent = entry.name;
-    
+
     switch (typeof entry.action) {
         case 'string':
             clicky.href = entry.action;

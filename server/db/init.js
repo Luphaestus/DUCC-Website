@@ -1,11 +1,8 @@
 const { use } = require('passport');
 const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
-const readline = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
 const bcrypt = require('bcrypt');
+
 
 
 require('dotenv').config();
@@ -14,21 +11,15 @@ const env = process.env.NODE_ENV || 'development';
 console.log(`Running in ${env} mode`);
 
 async function createAdminUser(db) {
-    return new Promise((resolve) => {
-        readline.question('Enter admin email: ', (email) => {
-            readline.question('Enter admin password: ', async (password) => {
-                const hashedPassword = await bcrypt.hash(password, 10);
-                await db.run(
-                    `INSERT INTO users (email, hashed_password, first_name, last_name)
-                    VALUES (?, ?, ?, ?)`,
-                    [email, hashedPassword, 'Admin', 'User']
-                );
-                console.log('Admin user created successfully.');
-                readline.close();
-                resolve();
-            });
-        });
-    });
+  const email = 'a@a';
+  const password = 'a';
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await db.run(
+    `INSERT INTO users (email, hashed_password, first_name, last_name)
+              VALUES (?, ?, ?, ?)`,
+    [email, hashedPassword, 'Admin', 'User']
+  );
+  console.log('Admin user created successfully with pre-filled credentials.');
 }
 
 (async () => {
@@ -36,7 +27,7 @@ async function createAdminUser(db) {
     console.log('Opening database connection...');
 
     const db = await open({
-      filename: 'database.db', 
+      filename: 'database.db',
       driver: sqlite3.Database
     });
 
@@ -57,8 +48,8 @@ async function createAdminUser(db) {
     `);
 
     if (!user_table_exists) {
-        console.log('Inserting admin user...');
-        await createAdminUser(db); 
+      console.log('Inserting admin user...');
+      await createAdminUser(db);
     }
 
     event_table_exists = await db.get(`
@@ -79,57 +70,52 @@ async function createAdminUser(db) {
     `);
 
     if (env === 'dev' && !event_table_exists) {
-        readline.on('close', () => {
-            console.log('Inserting sample data for development environment...');
-        });
+      console.log('Inserting sample data for development environment...');
 
-        date = new Date();
+      date = new Date();
 
-        const generateSampleEvents = (count) => {
-            const sampleEvents = [];
-            const now = new Date();
+      const generateSampleEvents = (count) => {
+        const sampleEvents = [];
+        const now = new Date();
 
-            for (let i = 0; i < count; i++) {
-            const eventDate = new Date(now);
-            const offsetDays = Math.floor(Math.random() * 14) - 7; 
-            eventDate.setDate(eventDate.getDate() + offsetDays);
+        for (let i = 0; i < count; i++) {
+          const eventDate = new Date(now);
+          const offsetDays = Math.floor(Math.random() * 14) - 7;
+          eventDate.setDate(eventDate.getDate() + offsetDays);
 
-            const startHour = Math.floor(Math.random() * 12) + 8; 
-            eventDate.setHours(startHour, 0, 0, 0);
+          const startHour = Math.floor(Math.random() * 12) + 8;
+          eventDate.setHours(startHour, 0, 0, 0);
 
-            const endDate = new Date(eventDate);
-            endDate.setHours(endDate.getHours() + 2); 
+          const endDate = new Date(eventDate);
+          endDate.setHours(endDate.getHours() + 2);
 
-            sampleEvents.push({
-                title: `Sample Event ${i + 1}`,
-                description: `This is sample event ${i + 1} for testing.`,
-                location: i % 2 === 0 ? 'Online' : 'Community Center',
-                start: eventDate.toISOString().slice(0, 19).replace('T', ' '),
-                end: endDate.toISOString().slice(0, 19).replace('T', ' '),
-                difficulty_level: Math.floor(Math.random() * 5) + 1 
-            });
-            }
-
-            return sampleEvents;
-        };
-
-        const sampleEvents = generateSampleEvents(10); 
-
-        for (const event of sampleEvents) {
-            await db.run(
-                `INSERT INTO events (title, description, location, start, end, difficulty_level)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [event.title, event.description, event.location, event.start, event.end, event.difficulty_level]
-            );
+          sampleEvents.push({
+            title: `Sample Event ${i + 1}`,
+            description: `This is sample event ${i + 1} for testing.`,
+            location: i % 2 === 0 ? 'Online' : 'Community Center',
+            start: eventDate.toISOString().slice(0, 19).replace('T', ' '),
+            end: endDate.toISOString().slice(0, 19).replace('T', ' '),
+            difficulty_level: Math.floor(Math.random() * 5) + 1
+          });
         }
+
+        return sampleEvents;
+      };
+
+      const sampleEvents = generateSampleEvents(100);
+
+      for (const event of sampleEvents) {
+        await db.run(
+          `INSERT INTO events (title, description, location, start, end, difficulty_level)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+          [event.title, event.description, event.location, event.start, event.end, event.difficulty_level]
+        );
+      }
     }
 
 
 
-    readline.on('close', () => {
-        console.log('Database initialized successfully.');
-    });
-    
+    console.log('Database initialized successfully.');
 
     await db.close();
   } catch (error) {

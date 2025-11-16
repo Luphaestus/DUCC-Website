@@ -1,5 +1,4 @@
-@use "pico" with ($theme-color: "purple"
-);
+@use "pico" with ($theme-color: "purple");
 
 body {
     color: reverse-color(var(--pico-color));
@@ -24,13 +23,10 @@ main.container {
 }
 
 .hidden {
-    display: none;
-    opacity: 0;
-    transition: opacity 300ms ease;
-    will-change: opacity;
+    display: none !important;
 }
 
-main.container>nav.small-container {
+nav.small-container {
     position: sticky;
     top: 0;
     width: 100%;
@@ -38,6 +34,11 @@ main.container>nav.small-container {
     backdrop-filter: blur(10px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
     border-bottom: .5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
+    z-index: 10;
+
+    @media (prefers-color-scheme: dark) {
+        box-shadow: 0 2px 8px rgba(100, 100, 100, .5);
+    }
 
     .nav-logo {
         display: flex;
@@ -86,6 +87,12 @@ main.container>nav.small-container {
         will-change: opacity;
         pointer-events: none;
         z-index: 0;
+
+        background-image: var(--slide-img-light);
+
+        @media (prefers-color-scheme: dark) {
+            background-image: var(--slide-img-dark);
+        }
 
 
         &.show {
@@ -145,8 +152,12 @@ main.container>nav.small-container {
                 flex-direction: column;
                 text-align: center;
 
-                i {
-                    font-size: 6vh;
+                @media (prefers-color-scheme: dark) {
+                    box-shadow: 0 4px 30px rgba(100, 100, 100, 0.3);
+                }
+
+                img {
+                    height: 6vh;
                     margin-bottom: 1vh;
                 }
 
@@ -163,7 +174,7 @@ main.container>nav.small-container {
             }
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
             .hero-offer-boxes {
                 flex-direction: column;
 
@@ -212,4 +223,97 @@ main.container>nav.small-container {
         border-radius: var(--pico-border-radius);
         object-fit: cover;
     }
+}
+
+#events-view {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 2vh;
+}
+
+.events-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+
+    h1 {
+        margin-bottom: 0;
+    }
+
+    img {
+        width: 2rem;
+        height: 2rem;
+        cursor: pointer;
+        opacity: 0.4;
+        transition: opacity 150ms ease-in-out, filter 150ms ease-in-out;
+
+        &:hover {
+            opacity: 1;
+            filter: brightness(0) saturate(100%) invert(20%) sepia(17%) saturate(6230%) hue-rotate(266deg) brightness(97%) contrast(95%);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            filter: invert(1);
+        }
+    }
+
+}
+
+.day-events-container {
+
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+
+    .event-item {
+        background-color: var(--event-bg-light);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        cursor: pointer;
+        transition: transform 150ms ease-in-out, box-shadow 150ms ease-in-out;
+
+        @media (prefers-color-scheme: dark) {
+            background-color: var(--event-bg-dark);
+            box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1);
+        }
+
+        &:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+
+            @media (prefers-color-scheme: dark) {
+                box-shadow: 0 6px 12px rgba(255, 255, 255, 0.15);
+            }
+        }
+
+        .event-middle>h3 {
+            margin-top: 0.0;
+            margin-bottom: 0.0;
+            color: var(--event-text-color)
+        }
+
+        .event-bottom {
+            display: flex;
+            flex-direction: row;
+
+            span {
+                opacity: 70%;
+            }
+        }
+    }
+}
+
+#events-list {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 2rem;
 }

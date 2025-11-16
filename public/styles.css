@@ -2829,13 +2829,10 @@ main.container {
 }
 
 .hidden {
-  display: none;
-  opacity: 0;
-  transition: opacity 300ms ease;
-  will-change: opacity;
+  display: none !important;
 }
 
-main.container > nav.small-container {
+nav.small-container {
   position: sticky;
   top: 0;
   width: 100%;
@@ -2843,17 +2840,23 @@ main.container > nav.small-container {
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   border-bottom: 0.5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
+  z-index: 10;
 }
-main.container > nav.small-container .nav-logo {
+@media (prefers-color-scheme: dark) {
+  nav.small-container {
+    box-shadow: 0 2px 8px rgba(100, 100, 100, 0.5);
+  }
+}
+nav.small-container .nav-logo {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-main.container > nav.small-container .nav-logo img {
+nav.small-container .nav-logo img {
   height: 2rem;
   width: auto;
 }
-main.container > nav.small-container .nav-logo strong {
+nav.small-container .nav-logo strong {
   font-size: 1rem;
 }
 
@@ -2881,6 +2884,12 @@ main.container > nav.small-container .nav-logo strong {
   will-change: opacity;
   pointer-events: none;
   z-index: 0;
+  background-image: var(--slide-img-light);
+}
+@media (prefers-color-scheme: dark) {
+  .hero .slide {
+    background-image: var(--slide-img-dark);
+  }
 }
 .hero .slide.show {
   opacity: 1;
@@ -2932,8 +2941,13 @@ main.container > nav.small-container .nav-logo strong {
   flex-direction: column;
   text-align: center;
 }
-.hero .hero-offer .hero-offer-boxes .hero-offer-box i {
-  font-size: 6vh;
+@media (prefers-color-scheme: dark) {
+  .hero .hero-offer .hero-offer-boxes .hero-offer-box {
+    box-shadow: 0 4px 30px rgba(100, 100, 100, 0.3);
+  }
+}
+.hero .hero-offer .hero-offer-boxes .hero-offer-box img {
+  height: 6vh;
   margin-bottom: 1vh;
 }
 .hero .hero-offer .hero-offer-boxes .hero-offer-box h3 {
@@ -2945,7 +2959,7 @@ main.container > nav.small-container .nav-logo strong {
   line-height: 1.5;
   margin-bottom: 0;
 }
-@media (max-width: 600px) {
+@media (max-width: 800px) {
   .hero .hero-offer .hero-offer-boxes {
     flex-direction: column;
   }
@@ -2991,6 +3005,91 @@ main.container > nav.small-container .nav-logo strong {
   aspect-ratio: 18/9;
   border-radius: var(--pico-border-radius);
   object-fit: cover;
+}
+
+#events-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 2vh;
+}
+
+.events-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+.events-controls h1 {
+  margin-bottom: 0;
+}
+.events-controls img {
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 150ms ease-in-out, filter 150ms ease-in-out;
+}
+.events-controls img:hover {
+  opacity: 1;
+  filter: brightness(0) saturate(100%) invert(20%) sepia(17%) saturate(6230%) hue-rotate(266deg) brightness(97%) contrast(95%);
+}
+@media (prefers-color-scheme: dark) {
+  .events-controls img {
+    filter: invert(1);
+  }
+}
+
+.day-events-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.day-events-container .event-item {
+  background-color: var(--event-bg-light);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  cursor: pointer;
+  transition: transform 150ms ease-in-out, box-shadow 150ms ease-in-out;
+}
+@media (prefers-color-scheme: dark) {
+  .day-events-container .event-item {
+    background-color: var(--event-bg-dark);
+    box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1);
+  }
+}
+.day-events-container .event-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+@media (prefers-color-scheme: dark) {
+  .day-events-container .event-item:hover {
+    box-shadow: 0 6px 12px rgba(255, 255, 255, 0.15);
+  }
+}
+.day-events-container .event-item .event-middle > h3 {
+  margin-top: 0;
+  margin-bottom: 0;
+  color: var(--event-text-color);
+}
+.day-events-container .event-item .event-bottom {
+  display: flex;
+  flex-direction: row;
+}
+.day-events-container .event-item .event-bottom span {
+  opacity: 70%;
+}
+
+#events-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 2rem;
 }
 
 /*# sourceMappingURL=styles.css.map */

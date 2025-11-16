@@ -9,8 +9,7 @@
     <title>DUCC - Home</title>
 
     <script type="module" src="/js/misc/view.js" defer></script>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-</head>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 <body>
     <main class="container">
@@ -25,7 +24,6 @@
         </nav>
 
         <div id="home-view" class="view">
-
             <script type="module" src="/js/slides.js" defer></script>
             <div class="hero">
                 <div class="hero-title">
@@ -37,17 +35,17 @@
                     <h3>What We Offer</h3>
                     <div class="hero-offer-boxes">
                         <div class="hero-offer-box">
-                            <i class="material-icons">kayaking</i>
+                            <img src="images/icons/kayaking.svg" alt="">
                             <h3>Weekly Sessions</h3>
                             <p>Beginner-friendly trips of the Wear & Tees plus pool sessions.</p>
                         </div>
                         <div class="hero-offer-box">
-                            <i class="material-icons">kayaking</i>
+                            <img src="images/icons/camping.svg" alt="">
                             <h3>UK & Europe Trips</h3>
                             <p>Exciting whitewater adventures year-round.</p>
                         </div>
                         <div class="hero-offer-box">
-                            <i class="material-icons">kayaking</i>
+                            <img src="images/icons/social_leaderboard.svg" alt="">
                             <h3>Competitive Teams</h3>
                             <p>White Water Racing, Canoe Polo, Slalom & Freestyle.</p>
                         </div>
@@ -119,15 +117,20 @@
         </div>
 
         <script type="module" src="/js/events.js" defer></script>
-        <div id="events-view" class="view hidden">
-            <div class="small-container">
-                <h1>Upcoming Events</h1>
-                <div id="events-list">
-                    <p aria-busy="true">Loading events...</p>
+        <div id="events-view" class="view hidden small-container">
+            <div class="events-controls">
+                <div>
+                    <img class="prev-week" src="/images/icons/filled/circle-caret-left.svg" alt="Previous week" />
+                    <img class="next-week" src="/images/icons/filled/circle-caret-right.svg" alt="Next week" />
                 </div>
-                <div id="event-navigation"></div>
-
+                <h1>November 10 - 16, 2025</h1>
+                <button class="this-week-button">Today 📅</button>
             </div>
+
+            <div id="events-list">
+                <p aria-busy="true">Loading events...</p>
+            </div>
+            <div id="event-navigation"></div>
         </div>
 
         <script type="module" src="/js/login.js" defer></script>
