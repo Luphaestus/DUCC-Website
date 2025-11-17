@@ -13,7 +13,7 @@ function isCurrentView(viewID) {
     return CurrentView === viewID
 }
 
-function switchView(viewName, event = null) {
+function switchView(viewName) {
     const viewID = viewName + "-view"
 
     if (!isView(viewID)) {
@@ -27,7 +27,6 @@ function switchView(viewName, event = null) {
         return true
     }
 
-    if (event) { event.preventDefault() }
     window.history.pushState({}, viewID, window.location.origin + '/' + viewName)
 
 

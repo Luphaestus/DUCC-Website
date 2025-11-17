@@ -10,7 +10,10 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+
+app.use(express.static('public', {
+  maxAge: '1d'
+}));
 
 app.use(session({
   secret: 'supersecretkey',
@@ -43,6 +46,9 @@ let db;
 
     const events = require('./api/events.js');
     new events(app, db, auth).registerRoutes();
+
+    const User = require('./api/user.js');
+    new User(app, db).registerRoutes();
 
     app.get(/.*/, (req, res) => {
       console.log(`Non-API path '${req.originalUrl}' requested. Serving index.html.`);

@@ -1,4 +1,6 @@
-import { ajaxPost } from './misc/ajax.js';
+import { ajaxPost, ajaxGet } from './misc/ajax.js';
+import { switchView } from './misc/view.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const loginMessage = document.getElementById('login-message');
@@ -14,9 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Password:', password);
 
         ajaxPost('/api/login', { email, password }, (response) => {
-            console.log('Login successful:', response);
-            loginMessage.textContent = 'Login successful!';
-            loginMessage.style.color = 'green';
+            switchView('events');
         }, (error) => {
             console.error('Login failed:', error);
             loginMessage.textContent = 'Login failed. Please try again.';

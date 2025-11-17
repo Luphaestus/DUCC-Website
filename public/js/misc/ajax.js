@@ -8,8 +8,8 @@
  */
 function ajaxGet(url, successCallback, errorCallback) {
     const xhr = new XMLHttpRequest();
-    
-    xhr.onreadystatechange = function() {
+
+    xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
             if (xhr.status >= 200 && xhr.status < 300) {
                 try {
@@ -17,15 +17,15 @@ function ajaxGet(url, successCallback, errorCallback) {
                     successCallback(response);
                 } catch (e) {
                     console.log('Failed to parse response:', e);
-                    errorCallback('Failed to parse response: ' + e.message);
+                    if (errorCallback) errorCallback('Failed to parse response: ' + e.message);
                 }
             } else {
                 console.log('Request failed with status:', xhr.status);
-                errorCallback('Request failed with status: ' + xhr.status);
+                if (errorCallback) errorCallback('Request failed with status: ' + xhr.status);
             }
         }
     };
-    
+
     xhr.open('GET', url, true);
     xhr.send();
 }
@@ -39,8 +39,8 @@ function ajaxGet(url, successCallback, errorCallback) {
  */
 function ajaxPost(url, data, successCallback, errorCallback) {
     const xhr = new XMLHttpRequest();
-    
-    xhr.onreadystatechange = function() {
+
+    xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
             if (xhr.status >= 200 && xhr.status < 300) {
                 try {
@@ -59,7 +59,7 @@ function ajaxPost(url, data, successCallback, errorCallback) {
             }
         }
     };
-    
+
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(JSON.stringify(data));

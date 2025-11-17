@@ -10,20 +10,25 @@
 
     <script type="module" src="/js/misc/view.js" defer></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script type="module">
+        import { switchView } from '/js/misc/view.js';
+        window.switchView = switchView;
+    </script>
+
 
 <body>
     <main class="container">
         <script type="module" src="/js/navbar.js" defer></script>
         <nav class="small-container">
             <ul>
-                <li><a class="contrast nav-logo" href="/">
+                <li><a onclick="switchView('/')" class="contrast nav-logo" style="cursor: pointer;">
                         <img src="images/misc/ducc.png" alt="DUCC Logo">
                     </a></li>
             </ul>
             <ul class="navbar-items"></ul>
         </nav>
 
-        <div id="home-view" class="view">
+        <div id="home-view" class="view hidden">
             <script type="module" src="/js/slides.js" defer></script>
             <div class="hero">
                 <div class="hero-title">
@@ -123,7 +128,7 @@
                     <img class="prev-week" src="/images/icons/filled/circle-caret-left.svg" alt="Previous week" />
                     <img class="next-week" src="/images/icons/filled/circle-caret-right.svg" alt="Next week" />
                 </div>
-                <h1>November 10 - 16, 2025</h1>
+                <h1 id="events-controls-title"></h1>
                 <button class="this-week-button">Today 📅</button>
             </div>
 
@@ -136,7 +141,7 @@
         <script type="module" src="/js/login.js" defer></script>
         <div id="login-view" class="view hidden">
             <div class="small-container">
-                <h1>Login</h1>
+                <h1>Login/Register</h1>
                 <form id="login-form">
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required>

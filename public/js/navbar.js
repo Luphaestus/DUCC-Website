@@ -21,6 +21,7 @@ function create_item(entry) {
     }
 
     if (entry.contrast) clicky.className = 'contrast';
+    clicky.id = `nav-${entry.name.toLowerCase()}`;
     clicky.textContent = entry.name;
 
     switch (typeof entry.action) {

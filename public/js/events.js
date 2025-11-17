@@ -18,8 +18,8 @@ function formatEvent(event) {
 
     const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
 
-    const startTime = startDate.toLocaleTimeString('en-US', timeOptions);
-    const endTime = endDate.toLocaleTimeString('en-US', timeOptions);
+    const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
+    const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
 
     const tagsHtml = (event.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('');
 
@@ -62,6 +62,23 @@ function formatEvent(event) {
 
 function populateEvents() {
 
+    const title = document.getElementById('events-controls-title');
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1 + relativeWeekOffset * 7);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const options = { month: 'short', day: 'numeric' };
+    title.textContent = `${startOfWeek.toLocaleDateString('en-UK', options)} - ${endOfWeek.toLocaleDateString('en-UK', options)}`;
+
+    const thisWeekButton = document.querySelector('.this-week-button');
+    if (relativeWeekOffset === 0) {
+        thisWeekButton.disabled = true;
+    } else {
+        thisWeekButton.disabled = false;
+    }
+
     ajaxGet(`/api/events/rweek/${relativeWeekOffset}`, (data) => {
         const events = data.events;
         const eventsList = document.getElementById('events-list');
@@ -79,7 +96,7 @@ function populateEvents() {
                     html += '</div>';
                 }
                 last_day = new Date(event.start).getDate();
-                html += `<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>`;
+                html += `<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2>`;
                 html += '<div class="day-events-container">';
             }
             html += formatEvent(event);
@@ -89,16 +106,22 @@ function populateEvents() {
     });
 }
 
+
 document.addEventListener('DOMContentLoaded', () => {
     populateEvents();
 
     document.querySelector('.prev-week').addEventListener('click', () => {
         relativeWeekOffset--;
-        populateEvents(relativeWeekOffset);
+        populateEvents();
     });
 
     document.querySelector('.next-week').addEventListener('click', () => {
         relativeWeekOffset++;
-        populateEvents(relativeWeekOffset);
+        populateEvents();
+    });
+
+    document.querySelector('.this-week-button').addEventListener('click', () => {
+        relativeWeekOffset = 0;
+        populateEvents();
     });
 });
