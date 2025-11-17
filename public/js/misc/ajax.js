@@ -16,11 +16,9 @@ function ajaxGet(url, successCallback, errorCallback) {
                     const response = JSON.parse(xhr.responseText);
                     successCallback(response);
                 } catch (e) {
-                    console.log('Failed to parse response:', e);
                     if (errorCallback) errorCallback('Failed to parse response: ' + e.message);
                 }
             } else {
-                console.log('Request failed with status:', xhr.status);
                 if (errorCallback) errorCallback('Request failed with status: ' + xhr.status);
             }
         }

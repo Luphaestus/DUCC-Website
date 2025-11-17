@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static('public', {
-  maxAge: '1d'
+  maxAge: '0d'
 }));
 
 app.use(session({
@@ -45,13 +45,12 @@ let db;
     new slides(app).registerRoutes();
 
     const events = require('./api/events.js');
-    new events(app, db, auth).registerRoutes();
+    new events(app, db).registerRoutes();
 
     const User = require('./api/user.js');
     new User(app, db).registerRoutes();
 
     app.get(/.*/, (req, res) => {
-      console.log(`Non-API path '${req.originalUrl}' requested. Serving index.html.`);
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 

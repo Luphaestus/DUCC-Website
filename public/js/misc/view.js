@@ -1,3 +1,5 @@
+import { ajaxGet } from './ajax.js';
+
 let Views = []
 let CurrentView = ""
 
@@ -14,21 +16,32 @@ function isCurrentView(viewID) {
 }
 
 function switchView(viewName) {
+    if (viewName === '') {
+        ajaxGet('/api/user/loggedin', (data) => {
+            if (data.loggedIn) {
+                switchView('events');
+            } else {
+                switchView('home');
+            }
+        },
+            () => {
+                switchView('home');
+            });
+        return false
+    }
+
     const viewID = viewName + "-view"
 
     if (!isView(viewID)) {
-        console.warn('Attempted to switch to unknown view:', viewID)
-        switchView('home')
+        switchView('error')
         return false
     }
 
     if (isCurrentView(viewID)) {
-        // console.log('View is already current:', viewID)
         return true
     }
 
     window.history.pushState({}, viewID, window.location.origin + '/' + viewName)
-
 
     for (const v of Views) {
         const el = document.getElementById(v)

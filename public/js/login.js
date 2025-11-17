@@ -1,5 +1,6 @@
 import { ajaxPost, ajaxGet } from './misc/ajax.js';
 import { switchView } from './misc/view.js';
+import { setup_login_button } from './navbar.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
@@ -12,10 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = formData.get('email');
         const password = formData.get('password');
 
-        console.log('Submitting login for:', email);
-        console.log('Password:', password);
-
         ajaxPost('/api/login', { email, password }, (response) => {
+            setup_login_button();
             switchView('events');
         }, (error) => {
             console.error('Login failed:', error);

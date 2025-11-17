@@ -1,9 +1,26 @@
 import { switchView } from './misc/view.js';
+import { ajaxGet } from './misc/ajax.js';
+
 
 const navEntries = [
     { name: 'Home', type: 'text', contrast: true, action: { run: () => switchView('home') } },
     { name: 'Events', type: 'text', contrast: true, action: { run: () => switchView('events') } },
-    { name: 'Login', type: 'button', contrast: false, action: { run: () => switchView('login') } }
+    {
+        name: 'Login', type: 'button', contrast: false, action: {
+            run: () => {
+                ajaxGet('/api/user/loggedin', (data) => {
+                    if (data.loggedIn) {
+                        switchView('settings');
+                    } else {
+                        switchView('login');
+                    }
+                },
+                    () => {
+                        switchView('login');
+                    });
+            }
+        }
+    }
 ]
 
 function create_item(entry) {
@@ -44,6 +61,16 @@ function create_item(entry) {
     return li;
 }
 
+function setup_login_button() {
+    const loginButton = document.getElementById('nav-login');
+    if (!loginButton) return;
+
+    ajaxGet('/api/user/fname', (data) => {
+        const firstName = data.firstName;
+        loginButton.textContent = `Hello, ${firstName}`;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const navbarList = document.querySelector('.navbar-items');
     if (!navbarList) return;
@@ -51,4 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const entry of navEntries) {
         navbarList.appendChild(create_item(entry));
     }
+
+    setup_login_button();
 });
+
+export { setup_login_button };

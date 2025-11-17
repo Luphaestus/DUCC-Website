@@ -21,7 +21,6 @@ class UserDB {
 
     static async getDifficultyLevel(req, db) {
         if (!req.isAuthenticated || !req.isAuthenticated()) {
-            console.log('User not authenticated in getDifficultyLevel');
             return 401;
         }
 

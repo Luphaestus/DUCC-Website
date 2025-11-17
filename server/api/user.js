@@ -8,6 +8,14 @@ class User {
     }
 
     registerRoutes() {
+        this.app.get('/api/user/loggedin', (req, res) => {
+            if (req.isAuthenticated()) {
+                res.json({ loggedIn: true });
+            } else {
+                res.json({ loggedIn: false });
+            }
+        });
+
         this.app.get('/api/user/fname', async (req, res) => {
             const firstName = await UserDB.getFirstName(req, this.db);
             const errorResponse = errorCodetoResponse(firstName);
