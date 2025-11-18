@@ -4,6 +4,11 @@ import seedrandom from 'https://cdn.skypack.dev/seedrandom';
 let relativeWeekOffset = 0;
 
 
+/**
+ * Generates a pastel color hue based on a seed.
+ * @param {*} seed - The seed for the random number generator.
+ * @returns {{light: number, dark: number}} An object containing light and dark hue values.
+ */
 function pastelColourGenerator(seed) {
     const hue = Math.floor(seedrandom(seed)() * 360);
     return {
@@ -12,6 +17,11 @@ function pastelColourGenerator(seed) {
     };
 }
 
+/**
+ * Formats an event object into an HTML string for display.
+ * @param {object} event - The event object.
+ * @returns {string} An HTML formatted event.
+ */
 function formatEvent(event) {
     const startDate = new Date(event.start);
     const endDate = new Date(event.end);
@@ -60,6 +70,9 @@ function formatEvent(event) {
     `;
 }
 
+/**
+ * Populates the offsetted weekly events list via API.
+ */
 function populateEvents() {
 
     const title = document.getElementById('events-controls-title');

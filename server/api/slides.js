@@ -3,8 +3,6 @@ const fsp = fs.promises;
 const path = require('path');
 
 /**
- * Slides - manages slide image files and exposes API routes.
- *
  * Routes:
  *   GET  /api/slides/count    -> { count: number }
  *   GET  /api/slides/images   -> { images: string[] }
@@ -14,13 +12,17 @@ const path = require('path');
  * @module Slides
  */
 class Slides {
+
+  /**
+   * @param {object} app - The Express application instance.
+   */
   constructor(app) {
     this.app = app;
     this.dirParts = ['images', 'slides'];
     this.fullDir = path.join(__dirname, '..', '..', 'public', ...this.dirParts);
     this.allowedExt = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
-    this.files = []; 
-    this.paths = []; 
+    this.files = [];
+    this.paths = [];
     this._scanTimer = null;
     this._watcher = null;
 
@@ -29,11 +31,18 @@ class Slides {
     });
   }
 
+  /**
+   * Initializes the Slides instance by scanning for files and setting up a watcher.
+   * @private
+   */
   async _init() {
-    await this.scan();       
-    this._setupWatcher();   
+    await this.scan();
+    this._setupWatcher();
   }
 
+  /**
+   * Scans the slides directory for image files and updates the internal file lists.
+   */
   async scan() {
     let entries = [];
     try {
@@ -48,12 +57,16 @@ class Slides {
     const files = entries
       .filter(d => d.isFile() && this.allowedExt.has(path.extname(d.name).toLowerCase()))
       .map(d => d.name)
-      .sort(); 
+      .sort();
 
     this.files = files;
     this.paths = files.map(f => path.posix.join('/', ...this.dirParts, f));
   }
 
+  /**
+   * Schedules a scan of the slides directory after a short delay.
+   * @private
+   */
   _scheduleScan() {
     if (this._scanTimer) clearTimeout(this._scanTimer);
     this._scanTimer = setTimeout(() => {
@@ -62,6 +75,10 @@ class Slides {
     }, 250);
   }
 
+  /**
+   * Sets up a file system watcher for the slides directory to detect changes.
+   * @private
+   */
   _setupWatcher() {
     try {
       this._watcher = fs.watch(this.fullDir, { persistent: false }, (eventType, filename) => {
@@ -70,7 +87,7 @@ class Slides {
 
       this._watcher.on('error', (err) => {
         console.warn('Slides watcher error, watcher stopped:', err.message);
-        try { this._watcher.close(); } catch {}
+        try { this._watcher.close(); } catch { }
         this._watcher = null;
       });
     } catch (err) {
@@ -78,19 +95,36 @@ class Slides {
     }
   }
 
+  /**
+   * Returns an array of all slide image paths.
+   * @returns {string[]} An array of slide image paths.
+   */
   getFiles() {
     return Array.from(this.paths);
   }
 
+  /**
+   * Returns the total count of slide images.
+   * @returns {number} The number of slide images.
+   */
   getFileCount() {
     return this.files.length;
   }
 
+  /**
+   * Returns the path of the slide image at the specified index.
+   * @param {number} index - The index of the image to retrieve.
+   * @returns {string|null} The image path if found, otherwise null.
+   */
   getFileAt(index) {
     if (index >= 0 && index < this.paths.length) return this.paths[index];
     return null;
   }
 
+  /**
+   * Returns a random slide image path.
+   * @returns {string|null} A random image path if available, otherwise null.
+   */
   getRandomFile() {
     if (this.paths.length === 0) return null;
     return this.paths[Math.floor(Math.random() * this.paths.length)];
@@ -101,7 +135,7 @@ class Slides {
     this.app.get('/api/slides/count', (req, res) => {
       res.json({ count: this.getFileCount() });
     });
-    
+
     this.app.get('/api/slides/images', (req, res) => {
       const paths = this.getFiles();
       if (paths.length === 0) return res.status(404).json({ error: 'No slide images found' });
@@ -125,9 +159,12 @@ class Slides {
     });
   }
 
+  /**
+   * Closes the file system watcher and clears any pending scan timers.
+   */
   close() {
     if (this._watcher) {
-      try { this._watcher.close(); } catch {}
+      try { this._watcher.close(); } catch { }
       this._watcher = null;
     }
     if (this._scanTimer) {

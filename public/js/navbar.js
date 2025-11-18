@@ -23,6 +23,11 @@ const navEntries = [
     }
 ]
 
+/**
+ * Formats navigation items. 
+ * @param {object} entry - The navigation entry object containing name, type, contrast, and action.
+ * @returns {HTMLElement} The created list item element.
+ */
 function create_item(entry) {
     const li = document.createElement('li');
 
@@ -61,6 +66,9 @@ function create_item(entry) {
     return li;
 }
 
+/**
+ * Sets up the login button.
+ */
 function setup_login_button() {
     const loginButton = document.getElementById('nav-login');
     if (!loginButton) return;

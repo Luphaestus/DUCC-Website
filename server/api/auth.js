@@ -1,8 +1,24 @@
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
 
-
+/**
+ * Routes:
+ *   POST /api/signup -> Registers a new user.
+ *   POST /api/login  -> Authenticates a user and logs them in.
+ *   GET  /logout     -> Logs out the current user.
+ *
+ * Middleware:
+ *   isAuthenticated -> Checks if the user is authenticated.
+ *
+ * @module Auth
+ */
 class Auth {
+
+    /**
+     * @param {object} app - The Express application instance.
+     * @param {object} db - The database instance.
+     * @param {object} passport - The Passport.js instance.
+     */
     constructor(app, db, passport) {
         this.app = app;
         this.db = db;
@@ -97,6 +113,12 @@ class Auth {
         });
     }
 
+    /**
+     * Middleware to check if the user is authenticated.
+     * @param {object} req - The Express request object.
+     * @param {object} res - The Express response object.
+     * @param {function} next - The next middleware function.
+     */
     isAuthenticated(req, res, next) {
         if (req.isAuthenticated()) {
             return next();

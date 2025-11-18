@@ -1,7 +1,20 @@
 UserDB = require('../db/userDB.js');
 errorCodetoResponse = require('../misc/error.js');
 
+
+/**
+ * Routes:
+ *   GET  /api/user/loggedin -> { loggedIn: boolean }
+ *   GET  /api/user/fname    -> { firstName: string }
+ *
+ * @module User
+ */
 class User {
+
+    /**
+     * @param {object} app - The Express application instance.
+     * @param {object} db - The database instance.
+     */
     constructor(app, db) {
         this.app = app;
         this.db = db;

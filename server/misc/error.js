@@ -1,3 +1,9 @@
+/**
+ * Converts a numeric error code into a standardized error response object.
+ * @param {number} code - The error code to convert.
+ * @returns {object|boolean} An object containing `status` and `message` if the code is a number and recognized,
+ *                           or `false` if the input is not a number.
+ */
 function errorCodetoResponse(code) {
     if (typeof code !== 'number') {
         return false;

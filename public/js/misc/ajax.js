@@ -1,5 +1,3 @@
-// AJAX utility functions using XMLHttpRequest
-
 /**
  * Make an AJAX GET request
  * @param {string} url - The URL to fetch

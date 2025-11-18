@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let layers = [layerA, layerB];
   let active = 0;
 
+  /**
+   * Sets the hero background image.
+   * @param {HTMLElement} layer - The slide layer element.
+   * @param {string} url - The URL of the image to set as the background.
+   */
   const setLayerBg = (layer, url) => {
 
     let urlString = url ? `, url("${url}")` : '';
@@ -22,6 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     layer.style.setProperty('--slide-img-dark', "linear-gradient(to left, rgba(245, 246, 252, 0), rgb(77, 26, 87))" + urlString);
   };
 
+  /**
+   * Preloads an array of image URLs to avoid flickering.
+   * @param {string[]} urls - An array of image URLs to preload.
+   */
   const preload = (urls) => {
     urls.forEach(u => {
       const img = new Image();
@@ -29,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  /**
+   * Crossfades to a new slide image.
+   * @param {string} url - The URL of the new image to display.
+   */
   const crossfadeTo = (url) => {
     const next = 1 - active;
     setLayerBg(layers[next], url);

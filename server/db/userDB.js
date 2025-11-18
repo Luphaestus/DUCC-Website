@@ -1,4 +1,10 @@
 class UserDB {
+    /**
+     * Retrieves the first name of the authenticated user.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @returns {Promise<string|number>} A promise that resolves to the user's first name or an error code.
+     */
     static async getFirstName(req, db) {
         if (!req.isAuthenticated()) {
             return 401;
@@ -19,6 +25,12 @@ class UserDB {
         }
     }
 
+    /**
+     * Retrieves the difficulty level of the authenticated user.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @returns {Promise<number>} A promise that resolves to the user's difficulty level or an error code.
+     */
     static async getDifficultyLevel(req, db) {
         if (!req.isAuthenticated || !req.isAuthenticated()) {
             return 401;
