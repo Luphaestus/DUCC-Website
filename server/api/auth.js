@@ -105,10 +105,18 @@ class Auth {
             })(req, res, next);
         });
 
-        this.app.get('/logout', (req, res, next) => {
+
+        this.app.get('/api/logout', (req, res, next) => {
             req.logout((err) => {
                 if (err) { return next(err); }
-                res.status(200).send('Logged out successfully.');
+                req.session.destroy((err) => {
+                    if (err) {
+                        console.error('Error destroying session:', err);
+                        return res.status(500).json({ message: 'Could not log out.' });
+                    }
+                    res.clearCookie('connect.sid'); // Optional: clear the session cookie
+                    res.status(200).json({ message: 'Logged out successfully.' });
+                });
             });
         });
     }

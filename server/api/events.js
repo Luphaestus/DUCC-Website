@@ -3,13 +3,11 @@ const UserDB = require('../db/userDB.js');
 const errorCodetoResponse = require('../misc/error.js');
 
 
-const UnauthenticatedDefaultDifficulty = 2;
-const ErrorDefaultDifficulty = 5;
-
 /**
  * Routes:
- *  GET  /api/events               -> { events: Event[] }
+ * GET  /api/events               -> { events: Event[] }
  * GET  /api/events/rweek/:offset -> { events: Event[] }
+ * GET  /api/events/:id          -> { event: Event }
  *
  * @module Events
  */
@@ -24,28 +22,9 @@ class Events {
         this.db = db;
     }
 
-    /**
-     * @param {number} code - The error code to handle.
-     * @returns {number|object} The default difficulty level or an error response object.
-     */
-    handleCodeError(code) {
-        if (typeof code < 100) return code;
-        switch (code) {
-            case 401:
-            case 404:
-            case 500:
-                return UnauthenticatedDefaultDifficulty;
-            case 204:
-                return ErrorDefaultDifficulty;
-            default:
-                return errorCodetoResponse(code);
-        }
-    }
-
     registerRoutes() {
         this.app.get('/api/events/rweek/:offset', async (req, res) => {
-            const max_difficulty = this.handleCodeError(await UserDB.getDifficultyLevel(req, this.db));
-
+            const max_difficulty = await UserDB.getDifficultyLevel(req, this.db);
             if (typeof max_difficulty !== 'number') return res.status(max_difficulty.status).json({ error: max_difficulty.message });
 
             const offset = parseInt(req.params.offset, 10);
@@ -62,7 +41,7 @@ class Events {
         });
 
         this.app.get('/api/events', async (req, res) => {
-            const max_difficulty = this.handleCodeError(await UserDB.getDifficultyLevel(req, this.db));
+            const max_difficulty = await UserDB.getDifficultyLevel(req, this.db);
 
             if (typeof max_difficulty !== 'number') return res.status(max_difficulty.status).json({ error: max_difficulty.message });
 
@@ -74,6 +53,97 @@ class Events {
                 res.status(500).json({ error: 'Failed to fetch events' });
             }
         });
+
+        this.app.get('/api/event/:id', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ error: 'Event ID must be an integer' });
+            }
+
+            try {
+                const event = await EventsDB.get_event_by_id(req, this.db, eventId);
+                if (typeof event === 'number') {
+                    return res.status(event).json({ error: errorCodetoResponse(event).message });
+                }
+                if (!event) {
+                    return res.status(404).json({ error: 'Event not found' });
+                }
+
+                res.json({ event });
+            } catch (error) {
+                res.status(500).json({ error: 'Failed to fetch event' });
+            }
+        });
+
+        this.app.get('/api/event/:id/isAttending', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ error: 'Event ID must be an integer' });
+            }
+
+            try {
+                const isAttending = await EventsDB.is_user_attending_event(req, this.db, eventId);
+                if (typeof isAttending === 'number') {
+                    return res.status(isAttending).json({ error: errorCodetoResponse(isAttending).message });
+                }
+                res.json({ isAttending });
+            } catch (error) {
+                res.status(500).json({ error: 'Failed to check attendance status' });
+            }
+        });
+
+        this.app.post('/api/event/:id/attend', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ error: 'Event ID must be an integer' });
+            }
+
+            try {
+                const statusCode = await EventsDB.attend_event(req, this.db, eventId);
+                if (statusCode !== 200) {
+                    return res.status(statusCode).json({ error: errorCodetoResponse(statusCode).message });
+                }
+                res.status(200).json({ message: 'Successfully attended event' });
+            } catch (error) {
+                res.status(500).json({ error: 'Failed to attend event' });
+            }
+        });
+
+        this.app.post('/api/event/:id/leave', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ error: 'Event ID must be an integer' });
+            }
+
+            try {
+                const statusCode = await EventsDB.leave_event(req, this.db, eventId);
+                if (statusCode !== 200) {
+                    return res.status(statusCode).json({ error: errorCodetoResponse(statusCode).message });
+                }
+                res.status(200).json({ message: 'Successfully left event' });
+            } catch (error) {
+                res.status(500).json({ error: 'Failed to leave event' });
+            }
+        });
+
+        this.app.get('/api/event/:id/attendees', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ error: 'Event ID must be an integer' });
+            }
+
+            try {
+                const attendees = await EventsDB.get_users_attending_event(req, this.db, eventId);
+                if (typeof attendees === 'number') {
+                    return res.status(attendees).json({ error: errorCodetoResponse(attendees).message });
+                }
+                res.json({ attendees });
+            } catch (error) {
+                console.error('Failed to fetch event attendees:', error);
+                res.status(500).json({ error: 'Failed to fetch event attendees' });
+            }
+        });
+
     }
 }
 

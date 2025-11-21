@@ -15,6 +15,9 @@
         window.switchView = switchView;
     </script>
 
+    <link rel="stylesheet" href="https://motion-on-scroll.netlify.app/mos.css">
+    <script src="https://motion-on-scroll.netlify.app/mos.js"></script>
+</head>
 
 <body>
     <main class="container">
@@ -22,16 +25,20 @@
         <nav class="small-container">
             <ul>
                 <li><a onclick="switchView('')" class="contrast nav-logo" style="cursor: pointer;">
-                        <img src="images/misc/ducc.png" alt="DUCC Logo">
+                        <img src="/images/misc/ducc.png" alt="DUCC Logo">
                     </a></li>
             </ul>
             <ul class="navbar-items"></ul>
         </nav>
 
-        <div id="home-view" class="view hidden">
+        <script type="module" src="/js/misc/notification.js" defer></script>
+        <script type="module" src="/js/connection.js" defer></script>
+        <div id="notification-container" role="alert" aria-live="assertive"></div>
+
+        <div id="/home-view" class="view hidden">
             <script type="module" src="/js/slides.js" defer></script>
             <div class="hero">
-                <div class="hero-title">
+                <div class="hero-title" data-mos="fade-up">
                     <h1>Welcome to<br>Durham University<br>Canoe Club</h1>
                     <p>Paddle, Compete, Explore. Connect.</p>
                 </div>
@@ -39,18 +46,18 @@
                 <div class="hero-offer">
                     <h3>What We Offer</h3>
                     <div class="hero-offer-boxes">
-                        <div class="hero-offer-box">
-                            <img src="images/icons/kayaking.svg" alt="">
+                        <div class="hero-offer-box" data-mos="zoom-in">
+                            <img src="/images/icons/kayaking.svg" alt="">
                             <h3>Weekly Sessions</h3>
                             <p>Beginner-friendly trips of the Wear & Tees plus pool sessions.</p>
                         </div>
-                        <div class="hero-offer-box">
-                            <img src="images/icons/camping.svg" alt="">
+                        <div class="hero-offer-box" data-mos="zoom-in">
+                            <img src="/images/icons/camping.svg" alt="">
                             <h3>UK & Europe Trips</h3>
                             <p>Exciting whitewater adventures year-round.</p>
                         </div>
-                        <div class="hero-offer-box">
-                            <img src="images/icons/social_leaderboard.svg" alt="">
+                        <div class="hero-offer-box" data-mos="zoom-in">
+                            <img src="/images/icons/social_leaderboard.svg" alt="">
                             <h3>Competitive Teams</h3>
                             <p>White Water Racing, Canoe Polo, Slalom & Freestyle.</p>
                         </div>
@@ -62,7 +69,7 @@
 
                 <h1>About Us</h1>
 
-                <div class="about-us-para">
+                <div class="about-us-para" data-mos="slide-up">
                     <p>Durham University Canoe Club is one of the most successful university canoe clubs in the country.
                         We have something to offer everyone, whatever their ability or level of confidence.</p>
                     <p>The club has a relaxed and very friendly atmosphere. Our activities are flexible so members can
@@ -91,7 +98,7 @@
                             rel="noopener noreferrer">https://www.instagram.com/durhamuniversitycanoe/</a></p>
                 </div>
 
-                <div class="find-us-para">
+                <div class="find-us-para" data-mos="zoom-in">
                     <h1>Where to Find Us</h1>
                     <p>
                         Our boathouse is located at the Maiden Castle sports centre, which is about a fifteen-minute
@@ -112,9 +119,9 @@
                         boathouse. The images below will guide you.
                     </p>
                     <div class="find-us-images">
-                        <img src="images/misc/maiden-castle-outside.jpg"
+                        <img src="/images/misc/maiden-castle-outside.jpg"
                             alt="View from the main entrance of Maiden Castle">
-                        <img src="images/misc/boathouse-outside.jpg"
+                        <img src="/images/misc/boathouse-outside.jpg"
                             alt="Path leading from the road towards the river and boathouse">
                     </div>
                 </div>
@@ -122,7 +129,7 @@
         </div>
 
         <script type="module" src="/js/events.js" defer></script>
-        <div id="events-view" class="view hidden small-container">
+        <div id="/events-view" class="view hidden small-container">
             <div class="events-controls">
                 <div>
                     <img class="prev-week" src="/images/icons/filled/circle-caret-left.svg" alt="Previous week" />
@@ -138,17 +145,33 @@
             <div id="event-navigation"></div>
         </div>
 
-        <div id="error-view" class="view hidden">
-            <div class="container" style="text-align: center;">
-                <h1>404 - Page Not Found</h1>
-                <p>Oops! The page you are looking for does not exist.</p>
-                <p>It might have been moved, deleted, or you may have typed the address incorrectly.</p>
-                <button onclick="switchView('home')">Go to Homepage</button>
+        <script type="module" src="/js/event.js" defer></script>
+        <div id="/event/*-view" class="view hidden small-container">
+            <div id="event-detail">
+                <p aria-busy="true">Loading event...</p>
+            </div>
+        </div>
+
+        <script type="module" src="/js/signup.js" defer></script>
+        <div id="/signup-view" class="view hidden">
+            <div class="small-container">
+                <h1>Sign Up</h1>
+                <form id="signup-form">
+                    <label for="first-name">First Name:</label>
+                    <input type="text" id="signup-first-name" name="first-name" required>
+                    <label for="last-name">Last Name:</label>
+                    <input type="text" id="signup-last-name" name="last-name" required>
+                    <label for="email">Email:</label>
+                    <input type="email" id="signup-email" name="email" required>
+                    <label for="password">Password:</label>
+                    <input type="password" id="signup-password" name="password" required>
+                    <button type="submit">Sign Up</button>
+                </form>
             </div>
         </div>
 
         <script type="module" src="/js/login.js" defer></script>
-        <div id="login-view" class="view hidden">
+        <div id="/login-view" class="view hidden">
             <div class="small-container">
                 <h1>Login/Register</h1>
                 <form id="login-form">
@@ -163,6 +186,172 @@
                 <div id="login-message" role="alert" aria-live="assertive"></div>
             </div>
         </div>
+
+        <script type="module" src="/js/profile.js" defer></script>
+        <div id="/profile-view" class="view hidden">
+            <div class="small-container">
+                <h1>Profile</h1>
+                <div id="profile-info">
+                    <p aria-busy="true">Loading profile...</p>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="/js/legal.js" defer></script>
+        <div id="/legal-view" class="view hidden">
+            <h1>Legal & Medical Information Form</h1>
+            <div class="small-container hidden" id="legal-container">
+                <div id="grid-legal">
+                    <article>
+                        <form>
+                            <h3>Personal Information</h3>
+                            <label for="name">Name*</label>
+                            <input type="text" id="name" name="name" placeholder="e.g. John Doe">
+                            <label for="phone-number">Phone Number*</label>
+                            <input type="tel" id="phone-number" name="phone-number" placeholder="e.g. +44 7123 456789">
+                            <label for="date">Date of Birth*</label>
+                            <input type="date" id="date" name="date">
+                            <label for="address">Home Address*</label>
+                            <textarea id="address" name="address" rows="4"
+                                placeholder="e.g. 123 River St&#10;Maidenhead&#10;AB12 3CD&#10;United Kingdom"></textarea>
+                            <label for="college">College*</label>
+                            <Select id="college" name="college" placeholder="College">
+                                <option value="Select" disabled selected>Select your college</option>
+                                <option value="castle">Castle</option>
+                                <option value="collingwood">Collingwood</option>
+                                <option value="grey">Grey</option>
+                                <option value="hatfield">Hatfield</option>
+                                <option value="johnsnow">John Snow</option>
+                                <option value="jb">Josephine Butler</option>
+                                <option value="south">South</option>
+                                <option value="aidans">St Aidans</option>
+                                <option value="stchads">St Chads</option>
+                                <option value="stcuthberts">St Cuthberts</option>
+                                <option value="hildbede">St Hild & St Bede</option>
+                                <option value="stjohns">St Johns</option>
+                                <option value="stmarys">St Marys</option>
+                                <option value="stephenson">Stephenson</option>
+                                <option value="trevelyan">Trevelyan</option>
+                                <option value="ustinov">Ustinov</option>
+                                <option value="van-mildert">Van Mildert</option>
+                            </Select>
+                        </form>
+                    </article>
+
+                    <article>
+                        <form>
+                            <h3> Emergency Contact</h3>
+
+                            <label for="emergency-contact-name">Name*</label>
+                            <input type="text" id="emergency-contact-name" name="emergency-contact-name"
+                                placeholder="e.g. Jane Doe">
+                            <label for="emergency-contact-phone">Phone Number*</label>
+                            <input type="tel" id="emergency-contact-phone" name="emergency-contact-phone"
+                                placeholder="e.g. +44 7123 456789">
+                        </form>
+                    </article>
+
+                    <article>
+                        <form>
+                            <h3>Medical Information</h3>
+                            <fieldset>
+                                <label for="medical-condition">Do you have any medical condition that any individual
+                                    treating
+                                    you should
+                                    know about, including any alergies?*</label>
+
+                                <label for="medical-yes">
+                                    <input type="radio" id="medical-yes" name="medical-condition-radio" value="yes">
+                                    Yes
+                                </label>
+                                <label for="medical-no">
+                                    <input type="radio" id="medical-no" name="medical-condition-radio" value="no">
+                                    No
+                                </label>
+                                <input type="text" id="medical-condition" name="medical-condition"
+                                    placeholder="e.g. Asthma, bee sting allergy">
+                            </fieldset>
+                            <fieldset>
+                                <label for="medication-condition">Do you take medication to control a medical condition?
+                                    (Please
+                                    include
+                                    instructions where applicable)*</label>
+
+                                <label for="medication-yes">
+                                    <input type="radio" id="medication-yes" name="medication-radio" value="yes">
+                                    Yes
+                                </label>
+                                <label for="medication-no">
+                                    <input type="radio" id="medication-no" name="medication-radio" value="no">
+                                    No
+                                </label>
+                                <input type="text" id="medication-condition" name="medication-condition"
+                                    placeholder="e.g. Inhaler for asthma">
+                            </fieldset>
+                            <fieldset>
+                                <label for="no-incapacity-checkbox">I am not knowingly suffering from any medical
+                                    condition,
+                                    injury or
+                                    incapacity that could prevent me from participating fully in sporting
+                                    activities.*</label>
+                                <input type="checkbox" id="no-incapacity-checkbox" name="no-incapacity-checkbox">
+                            </fieldset>
+                        </form>
+                    </article>
+                </div>
+                <article>
+                    <form>
+                        <h3>Terms and Conditions</h3>
+                        <fieldset>
+                            <label for="terms-checkbox">I agree to the <a href="/club-rules" target="_blank"
+                                    rel="noopener noreferrer">Canoe Club Rules</a> and <a href="/safety-policy"
+                                    target="_blank" rel="noopener noreferrer">Canoe Club Safety Policy</a>.* </label>
+                            <input type="checkbox" id="terms-checkbox" name="terms-checkbox">
+                        </fieldset>
+                        <fieldset>
+                            <label for="debts-checkbox">I agree to pay any outstanding debts to the club at the end of
+                                each term and understand that I will not be allowed to graduate with outstanding debts.*
+                            </label>
+                            <input type="checkbox" id="debts-checkbox" name="debts-checkbox">
+                        </fieldset>
+                        <fieldset>
+                            <label for="data-checkbox">I am happy for Durham University Canoe Club to keep my details
+                                stored, encrypted, on the canoe club database.*</label>
+                            <input type="checkbox" id="data-checkbox" name="data-checkbox">
+                        </fieldset>
+                        <fieldset>
+                            <label for="keep-health-checkbox"> At the end of the year, all health forms will be removed
+                                from
+                                the server. If you would like yours to remain the the server so you don't have to fill
+                                it
+                                out again, please check this box. It will be your responsibility to ensure the the form
+                                is
+                                kept up-to-date.</label>
+                            <input type="checkbox" id="keep-health-checkbox" name="keep-health-checkbox">
+                        </fieldset>
+
+                        <button type="submit" id="health-form-submit">Submit</button>
+                    </form>
+                </article>
+            </div>
+
+            <div id="legal-not-authenticated" class="hidden">
+                <p>You must be logged in to view and submit the legal and medical information form.</p>
+                <button onclick="switchView('login')">Go to Login</button>
+                <button onclick="switchView('home')">Go to Homepage</button>
+                <button onclick="switchView('signup')">Go to Signup</button>
+            </div>
+        </div>
+
+        <div id="/error-view" class="view hidden">
+            <div class="container" style="text-align: center;">
+                <h1>404 - Page Not Found</h1>
+                <p>Oops! The page you are looking for does not exist.</p>
+                <p>It might have been moved, deleted, or you may have typed the address incorrectly.</p>
+                <button onclick="switchView('home')">Go to Homepage</button>
+            </div>
+        </div>
+
     </main>
 
     <footer>

@@ -61,4 +61,4 @@ class Event {
     }
 }
 
-export default Event;
+export { Event };

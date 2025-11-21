@@ -1,3 +1,5 @@
+const UserDB = require('./userDB.js');
+
 class eventsDB {
     /**
      * Retrieves all events from the database that have a difficulty level less than or equal to the specified maximum difficulty.
@@ -50,6 +52,109 @@ class eventsDB {
         targetDate.setDate(now.getDate() + offset * 7);
         return this.get_events_for_week(db, max_difficulty, targetDate);
     }
+
+    static async get_event_by_id(req, db, id) {
+        const event = await db.get(
+            'SELECT * FROM events WHERE id = ?',
+            [id]
+        );
+
+        if (!event) {
+            return 404;
+        }
+
+        const max_difficulty = await UserDB.getDifficultyLevel(req, db);
+        if (event.difficulty_level > max_difficulty) {
+            return 401;
+        }
+
+        return event;
+    }
+
+    static async is_user_attending_event(req, db, eventId) {
+        if (!req.isAuthenticated()) return 401;
+
+        const event = await this.get_event_by_id(req, db, eventId);
+        if (typeof event === 'number') {
+            return event;
+        }
+
+        const userId = req.user.id;
+
+        const existingJoin = await db.get(
+            'SELECT * FROM event_attendees WHERE event_id = ? AND user_id = ?',
+            [eventId, userId]
+        );
+
+        return !!existingJoin;
+    }
+
+    static async attend_event(req, db, eventId) {
+        if (!req.isAuthenticated()) return 401;
+
+        const event = await this.get_event_by_id(req, db, eventId);
+        if (typeof event === 'number') {
+            return event;
+        }
+
+        const userId = req.user.id;
+        const joinDate = new Date();
+
+        const existingJoin = await this.is_user_attending_event(req, db, eventId);
+
+        if (existingJoin) {
+            return 409;
+        }
+
+        await db.run(
+            'INSERT INTO event_attendees (event_id, user_id, joined_at) VALUES (?, ?, ?)',
+            [eventId, userId, joinDate.toISOString()]
+        );
+
+        return 200;
+    }
+
+    static async leave_event(req, db, eventId) {
+        if (!req.isAuthenticated()) return 401;
+
+        const event = await this.get_event_by_id(req, db, eventId);
+        if (typeof event === 'number') {
+            return event;
+        }
+
+        const userId = req.user.id;
+
+        const existingJoin = await this.is_user_attending_event(req, db, eventId);
+
+        if (!existingJoin) {
+            return 404;
+        }
+
+        await db.run(
+            'DELETE FROM event_attendees WHERE event_id = ? AND user_id = ?',
+            [eventId, userId]
+        );
+
+        return 200;
+    }
+
+    static async get_users_attending_event(req, db, eventId) {
+
+        if (!req.isAuthenticated()) return 401;
+
+        const event = await this.get_event_by_id(req, db, eventId);
+        if (typeof event === 'number') {
+            return event;
+        }
+
+        return db.all(
+            `SELECT u.id, u.first_name, u.last_name, u.email
+             FROM users u
+             JOIN event_attendees ea ON u.id = ea.user_id
+             WHERE ea.event_id = ?`, [eventId]
+        );
+    }
+
 }
 
 module.exports = eventsDB;

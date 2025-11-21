@@ -43,32 +43,42 @@ document.addEventListener('DOMContentLoaded', () => {
    * @param {string} url - The URL of the new image to display.
    */
   const crossfadeTo = (url) => {
-    const next = 1 - active;
-    setLayerBg(layers[next], url);
+    const nextLayerIndex = 1 - active;
+    const nextLayer = layers[nextLayerIndex];
+    const activeLayer = layers[active];
 
-    layers[next].offsetHeight;
+    setLayerBg(nextLayer, url);
 
-    layers[next].classList.add('show');
-    layers[active].classList.remove('show');
+    nextLayer.classList.add('show');
+    activeLayer.classList.remove('show');
 
-    active = next;
+    active = nextLayerIndex;
   };
 
-  ajaxGet('/api/slides/images', (data) => {
-    const imgs = Array.isArray(data) ? data : (Array.isArray(data.images) ? data.images : []);
+  ajaxGet('/api/slides/images').then((data) => {
+    const imgs = data?.images || [];
 
     if (!imgs.length) return;
     preload(imgs);
 
     let idx = Math.floor(Math.random() * imgs.length);
 
-    const initial = imgs[idx];
-    setLayerBg(layers[active], initial);
+    setLayerBg(layers[active], imgs[idx]);
     layers[active].classList.add('show');
+
+    // Set transition after the initial image is shown to prevent the first image from fading in.
+    setTimeout(() => {
+      layerA.style.transition = 'opacity 900ms ease';
+      layerB.style.transition = 'opacity 900ms ease';
+    }, 50);
 
     setInterval(() => {
       idx = (idx + 1) % imgs.length;
       crossfadeTo(imgs[idx]);
     }, 5000);
+  }).catch(error => {
+    console.error('Failed to load slide images:', error);
+    setLayerBg(layers[0], null);
+    layers[0].classList.add('show');
   });
 });

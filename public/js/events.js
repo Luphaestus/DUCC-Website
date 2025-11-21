@@ -1,4 +1,5 @@
 import { ajaxGet } from './misc/ajax.js';
+import { LoginEvent } from './login.js';
 import seedrandom from 'https://cdn.skypack.dev/seedrandom';
 
 let relativeWeekOffset = 0;
@@ -51,9 +52,8 @@ function formatEvent(event) {
         `;
     }
 
-
     return `
-        <div class="event-item" style="${style}">
+        <div class="event-item" style="${style}" onclick="switchView('event/${event.id}')">
             <div class="event-top">
                 <span>${startTime} - ${endTime}</span>
             </div>
@@ -73,7 +73,7 @@ function formatEvent(event) {
 /**
  * Populates the offsetted weekly events list via API.
  */
-function populateEvents() {
+async function populateEvents() {
 
     const title = document.getElementById('events-controls-title');
     const now = new Date();
@@ -92,18 +92,19 @@ function populateEvents() {
         thisWeekButton.disabled = false;
     }
 
-    ajaxGet(`/api/events/rweek/${relativeWeekOffset}`, (data) => {
+    try {
+        const data = await ajaxGet(`/api/events/rweek/${relativeWeekOffset}`);
         const events = data.events;
         const eventsList = document.getElementById('events-list');
 
-        if (events.length === 0) {
+        if (!events || events.length === 0) {
             eventsList.innerHTML = '<p>No events scheduled for this week.</p>';
             return;
         }
 
         let html = '';
         let last_day = null;
-        events.forEach(event => {
+        for (const event of events) {
             if (last_day !== new Date(event.start).getDate()) {
                 if (last_day !== null) {
                     html += '</div>';
@@ -113,10 +114,17 @@ function populateEvents() {
                 html += '<div class="day-events-container">';
             }
             html += formatEvent(event);
-        });
+        }
+
+        if (events.length > 0) {
+            html += '</div>';
+        }
 
         eventsList.innerHTML = html;
-    });
+    } catch (error) {
+        console.error('Failed to populate events:', error);
+        document.getElementById('events-list').innerHTML = '<p class="error-message">Failed to load events. Please try again later.</p>';
+    }
 }
 
 
@@ -135,6 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelector('.this-week-button').addEventListener('click', () => {
         relativeWeekOffset = 0;
+        populateEvents();
+    });
+
+    LoginEvent.subscribe(() => {
         populateEvents();
     });
 });

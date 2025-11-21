@@ -1,27 +1,13 @@
 import { switchView } from './misc/view.js';
 import { ajaxGet } from './misc/ajax.js';
-
+import { LoginEvent } from './login.js';
 
 const navEntries = [
-    { name: 'Home', type: 'text', contrast: true, action: { run: () => switchView('home') } },
-    { name: 'Events', type: 'text', contrast: true, action: { run: () => switchView('events') } },
-    {
-        name: 'Login', type: 'button', contrast: false, action: {
-            run: () => {
-                ajaxGet('/api/user/loggedin', (data) => {
-                    if (data.loggedIn) {
-                        switchView('settings');
-                    } else {
-                        switchView('login');
-                    }
-                },
-                    () => {
-                        switchView('login');
-                    });
-            }
-        }
-    }
-]
+    { name: 'Home', type: 'text', classes: "contrast", action: { run: () => switchView('/home') } },
+    { name: 'Events', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
+    { name: 'Login', id: 'login-button', type: 'button', action: { run: () => switchView('/login') } },
+    { name: 'Profile', id: 'profile-button', type: 'button', classes: "hidden", action: { run: () => switchView('/profile') } }
+];
 
 /**
  * Formats navigation items. 
@@ -42,8 +28,8 @@ function create_item(entry) {
             break;
     }
 
-    if (entry.contrast) clicky.className = 'contrast';
-    clicky.id = `nav-${entry.name.toLowerCase()}`;
+    if (entry.classes) clicky.className = entry.classes;
+    clicky.id = entry.id || `nav-${entry.name.toLowerCase()}`;
     clicky.textContent = entry.name;
 
     switch (typeof entry.action) {
@@ -67,16 +53,28 @@ function create_item(entry) {
 }
 
 /**
- * Sets up the login button.
+ * Updates the navigation bar based on the user's login state.
+ * @param {object} data - An object containing the login state, e.g., { loggedIn: true }.
  */
-function setup_login_button() {
-    const loginButton = document.getElementById('nav-login');
-    if (!loginButton) return;
+async function updateNavOnLoginState(data) {
+    const isLoggedIn = data.loggedIn;
 
-    ajaxGet('/api/user/fname', (data) => {
-        const firstName = data.firstName;
-        loginButton.textContent = `Hello, ${firstName}`;
-    });
+    const loginButton = document.getElementById('login-button');
+    const profileButton = document.getElementById('profile-button');
+
+    if (!loginButton || !profileButton) {
+        console.warn("Login or Profile button not found in navbar.");
+        return;
+    }
+
+    if (isLoggedIn) {
+        loginButton.classList.add('hidden');
+        profileButton.classList.remove('hidden');
+        profileButton.textContent = await ajaxGet('/api/user/name').then((data) => `Hello, ${data.name.first_name}`).catch(() => "Profile");
+    } else {
+        loginButton.classList.remove('hidden');
+        profileButton.classList.add('hidden');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -87,7 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
         navbarList.appendChild(create_item(entry));
     }
 
-    setup_login_button();
+    ajaxGet('/api/user/loggedin').then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ loggedIn: false }));
+
+    LoginEvent.subscribe((data) => {
+        updateNavOnLoginState(data);
+    });
 });
 
-export { setup_login_button };
+export { };

@@ -1,32 +1,39 @@
 import { ajaxGet } from './ajax.js';
+import { Event } from "./event.js";
+import { updateHistory } from './history.js';
 
-let Views = []
-let CurrentView = ""
+const ViewChangedEvent = new Event();
+let Paths = []
 
-/**
- * @returns {string[]} An array of registered view IDs.
- */
-function getViews() {
-    return Views.slice()
-}
 
 /**
  * Checks if a given view ID is registered.
  * @param {string} viewID - The ID of the view to check.
  * @returns {boolean} True if the view is registered, false otherwise.
  */
-function isView(viewID) {
-    return Views.includes(viewID)
+function getViewID(path) {
+    ("Resolving path:", path);
+    if (Paths.includes(path))
+        return path;
+    for (const registeredPath of Paths) {
+        const regex =
+            new RegExp('^' + registeredPath.replace(/\?/g, '.').replace(/\*/g, '.*') + '$');
+        if (regex.test(path)) {
+            return registeredPath;
+        }
+    }
+    return false;
 }
+
 
 /**
  * Checks if a given view ID is the currently active view.
  * Defaults to home if not authenticated, event otherwise.
- * @param {string} viewID - The ID of the view to check.
- * @returns {boolean} True if the view is currently active, false otherwise.
+ * @param {string} path - The path to check.
+ * @returns {boolean} True if the path is currently active, false otherwise.
  */
-function isCurrentView(viewID) {
-    return CurrentView === viewID
+function isCurrentPath(path) {
+    return String(window.location.pathname) === path
 }
 
 /**
@@ -34,65 +41,68 @@ function isCurrentView(viewID) {
  * @param {string} viewName - The name of the view to switch to.
  * @returns {boolean} True if the view switch was successful, false otherwise.
  */
-function switchView(viewName) {
-    if (viewName === '') {
-        ajaxGet('/api/user/loggedin', (data) => {
+function switchView(path, force = false) {
+    if (!path.startsWith('/')) path = '/' + path
+    if (path === '/') {
+        ajaxGet('/api/user/loggedin').then((data) => {
             if (data.loggedIn) {
-                switchView('events');
+                switchView('/events');
             } else {
-                switchView('home');
+                switchView('/home');
             }
-        },
-            () => {
-                switchView('home');
-            });
-        return false
-    }
-
-    const viewID = viewName + "-view"
-
-    if (!isView(viewID)) {
-        switchView('error')
-        return false
-    }
-
-    if (isCurrentView(viewID)) {
+        }).catch(() => {
+            switchView('/home');
+        });
         return true
     }
 
-    window.history.pushState({}, viewID, window.location.origin + '/' + viewName)
+    updateHistory(path);
 
-    for (const v of Views) {
-        const el = document.getElementById(v)
+    const resolvedPath = getViewID(path);
+
+    if (isCurrentPath(path) && !force) {
+        return true
+    }
+
+    if (path !== "/error") window.history.pushState({}, path, window.location.origin + path)
+
+    if (!resolvedPath) {
+        return switchView('/error');
+    }
+
+    for (const p of Paths) {
+        const el = document.getElementById(p + "-view");
+
         if (!el) continue
 
-        if (v === viewID) {
+        if (p === resolvedPath) {
             el.classList.remove('hidden')
         } else {
             el.classList.add('hidden')
         }
     }
 
-    CurrentView = viewID
-    document.title = `DUCC - ${viewName.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`
+    ViewChangedEvent.notify({ resolvedPath, path });
+
+    document.title = `DUCC - ${path.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`
 
 
     return true
 }
 
-
-document.addEventListener('DOMContentLoaded', () => {
-    Views = Array.from(document.querySelectorAll('.view')).map(v => v.id)
-});
-
 /*
 * Update content based on current URL path
 */
 function updateContent() {
-    switchView(String(window.location.pathname).substring(1));
+    switchView(String(window.location.pathname), true);
 }
 
 window.onpopstate = updateContent;
 window.onload = updateContent;
 
-export { getViews, isView, isCurrentView, switchView }
+document.addEventListener('DOMContentLoaded', () => {
+    Paths = Array.from(document.querySelectorAll('.view')).map(v => String(v.id).replace("-view", ''))
+});
+
+
+export { switchView, ViewChangedEvent };

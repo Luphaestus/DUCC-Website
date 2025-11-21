@@ -5,6 +5,7 @@ const express = require('express');
 const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
 const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 const passport = require('passport');
 const app = express();
 
@@ -16,9 +17,13 @@ app.use(express.static('public', {
 }));
 
 app.use(session({
+  store: new SQLiteStore({
+    db: 'database.db',
+    dir: '.'
+  }),
   secret: 'supersecretkey',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -32,6 +37,10 @@ let db;
     });
 
     console.log('Connected to the SQLite database.');
+
+    app.get('/api/health', (req, res) => {
+      res.status(200).send('OK');
+    });
 
     const Auth = require('./api/auth.js');
     const auth = new Auth(app, db, passport);
