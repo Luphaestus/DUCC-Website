@@ -1,13 +1,29 @@
 import { switchView } from './misc/view.js';
 import { ajaxGet } from './misc/ajax.js';
+import { Event } from './misc/event.js';
 import { LoginEvent } from './login.js';
+
+// --- Constants & Events ---
 
 const navEntries = [
     { name: 'Home', type: 'text', classes: "contrast", action: { run: () => switchView('/home') } },
     { name: 'Events', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
     { name: 'Login', id: 'login-button', type: 'button', action: { run: () => switchView('/login') } },
-    { name: 'Profile', id: 'profile-button', type: 'button', classes: "hidden", action: { run: () => switchView('/profile') } }
+    { name: 'Profile', id: 'profile-button', type: 'button', action: { run: () => switchView('/profile') } }
 ];
+
+const FirstNameChangedEvent = new Event();
+
+// --- Helper Functions ---
+
+/**
+ * Fetches the user's first name and updates the profile button text.
+ * @returns {Promise<void>}
+ */
+async function updateFirstNameInNav() {
+    const profileButton = document.getElementById('profile-button');
+    profileButton.textContent = await ajaxGet('/api/user/elements/first_name').then((data) => `Hello, ${data.first_name}`);
+}
 
 /**
  * Formats navigation items. 
@@ -57,10 +73,12 @@ function create_item(entry) {
  * @param {object} data - An object containing the login state, e.g., { loggedIn: true }.
  */
 async function updateNavOnLoginState(data) {
-    const isLoggedIn = data.loggedIn;
+    const isLoggedIn = data.authenticated;
 
     const loginButton = document.getElementById('login-button');
+    const loginLi = loginButton?.parentElement;
     const profileButton = document.getElementById('profile-button');
+    const profileLi = profileButton?.parentElement;
 
     if (!loginButton || !profileButton) {
         console.warn("Login or Profile button not found in navbar.");
@@ -68,14 +86,16 @@ async function updateNavOnLoginState(data) {
     }
 
     if (isLoggedIn) {
-        loginButton.classList.add('hidden');
-        profileButton.classList.remove('hidden');
-        profileButton.textContent = await ajaxGet('/api/user/name').then((data) => `Hello, ${data.name.first_name}`).catch(() => "Profile");
+        loginLi.classList.add('hidden');
+        profileLi.classList.remove('hidden');
+        updateFirstNameInNav();
     } else {
-        loginButton.classList.remove('hidden');
-        profileButton.classList.add('hidden');
+        loginLi.classList.remove('hidden');
+        profileLi.classList.add('hidden');
     }
 }
+
+// --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', () => {
     const navbarList = document.querySelector('.navbar-items');
@@ -85,11 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
         navbarList.appendChild(create_item(entry));
     }
 
-    ajaxGet('/api/user/loggedin').then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ loggedIn: false }));
-
+    ajaxGet('/api/auth/status').then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
     LoginEvent.subscribe((data) => {
         updateNavOnLoginState(data);
     });
+    FirstNameChangedEvent.subscribe(() => {
+        updateFirstNameInNav();
+    });
 });
 
-export { };
+export { FirstNameChangedEvent };

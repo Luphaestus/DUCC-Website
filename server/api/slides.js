@@ -138,23 +138,23 @@ class Slides {
 
     this.app.get('/api/slides/images', (req, res) => {
       const paths = this.getFiles();
-      if (paths.length === 0) return res.status(404).json({ error: 'No slide images found' });
+      if (paths.length === 0) return res.status(404).json({ message: 'No slide images found' });
       res.json({ images: paths });
     });
 
     this.app.get('/api/slides/random', (req, res) => {
       const image = this.getRandomFile();
-      if (!image) return res.status(404).json({ error: 'No slide images found' });
+      if (!image) return res.status(404).json({ message: 'No slide images found' });
       res.json({ image });
     });
 
     this.app.get('/api/slides/:index', (req, res) => {
       const index = parseInt(req.params.index, 10);
       if (Number.isNaN(index) || index < 0) {
-        return res.status(400).json({ error: 'Index must be a non-negative integer' });
+        return res.status(400).json({ message: 'Index must be a non-negative integer' });
       }
       const image = this.getFileAt(index);
-      if (!image) return res.status(404).json({ error: 'Image not found at the specified index' });
+      if (!image) return res.status(404).json({ message: 'Image not found at the specified index' });
       res.json({ image });
     });
   }

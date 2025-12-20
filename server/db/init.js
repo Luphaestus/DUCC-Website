@@ -56,7 +56,7 @@ console.log(`Running in ${env} mode`);
       id INTEGER PRIMARY KEY AUTOINCREMENT,
 
       email TEXT UNIQUE NOT NULL,
-      hashed_password TEXT NOT NULL,
+      hashed_password TEXT,
       first_name TEXT NOT NULL,
       last_name TEXT NOT NULL,
 
@@ -72,6 +72,9 @@ console.log(`Running in ${env} mode`);
       takes_medication BOOLEAN,
       medication_details TEXT,
 
+      free_sessions INTEGER NOT NULL DEFAULT 3,
+      is_member BOOLEAN NOT NULL DEFAULT 0,
+
       agrees_to_fitness_statement BOOLEAN,
       agrees_to_club_rules BOOLEAN,
       agrees_to_pay_debts BOOLEAN,
@@ -79,25 +82,20 @@ console.log(`Running in ${env} mode`);
       agrees_to_keep_health_data BOOLEAN,
       filled_legal_info BOOLEAN NOT NULL DEFAULT 0,
       
-      balance REAL NOT NULL DEFAULT 0.0,
-
       difficulty_level INTEGER not NULL DEFAULT 1,
       can_manage_events BOOLEAN NOT NULL DEFAULT 0,
       can_manage_users BOOLEAN NOT NULL DEFAULT 0,
+      can_manage_transactions BOOLEAN NOT NULL DEFAULT 0,
       is_instructor BOOLEAN NOT NULL DEFAULT 0,
       is_exec BOOLEAN NOT NULL DEFAULT 0,
-    
+      first_aid_expiry DATE,
+
       profile_picture_path TEXT,
 
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
       FOREIGN KEY (college_id) REFERENCES colleges(id)
     `, db);
-
-    if (user_table_exists) {
-      console.log('User table already exists. You may need to manually add the new columns or reset the database.');
-      // NOTE: In a production environment, you would write a migration script here.
-    }
 
     let event_table_exists = await createTable('events', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,6 +105,10 @@ console.log(`Running in ${env} mode`);
       start DATETIME NOT NULL,
       end DATETIME NOT NULL,
       difficulty_level INTEGER NOT NULL,
+      max_attendees INTEGER,
+      upfront_cost REAL NOT NULL DEFAULT 0,
+      upfront_cost_refund_cutoff DATETIME,
+      
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     `, db);
 
@@ -119,6 +121,15 @@ console.log(`Running in ${env} mode`);
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     `, db);
 
+    let transactions_table_exists = await createTable('transactions', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      amount REAL NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    `, db);
+
 
 
     if (!user_table_exists) {
@@ -127,10 +138,54 @@ console.log(`Running in ${env} mode`);
       const password = 'a';
       const hashedPassword = await bcrypt.hash(password, 10);
       await db.run(
-        `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, can_manage_users)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        [email, hashedPassword, 'Admin', 'User', 5, 1]
+        `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, can_manage_users, can_manage_events, can_manage_transactions, is_exec)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [email, hashedPassword, 'Admin', 'User', 5, 1, 1, 1, 1]
       );
+
+      if (env === 'dev') {
+        const userCount = await db.get('SELECT COUNT(*) as count FROM users');
+        console.log('Inserting random users for development...');
+        const password = 'password';
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen'];
+        const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+
+        for (let i = 0; i < 50; i++) {
+          const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+          const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+          const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@durham.ac.uk`;
+          const collegeId = Math.floor(Math.random() * 17) + 1;
+          const isMember = Math.random() > 0.5;
+          const filledLegal = Math.random() > 0.2;
+          const isInstructor = Math.random() > 0.9;
+
+          let firstAidExpiry = null;
+          if (Math.random() > 0.7) {
+            const d = new Date();
+            // Random date between -1 year and +2 years
+            const daysOffset = Math.floor(Math.random() * 1095) - 365;
+            d.setDate(d.getDate() + daysOffset);
+            firstAidExpiry = d.toISOString().split('T')[0];
+          }
+
+          const result = await db.run(
+            `INSERT INTO users (email, hashed_password, first_name, last_name, college_id, is_member, filled_legal_info, is_instructor, first_aid_expiry)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [email, hashedPassword, firstName, lastName, collegeId, isMember, filledLegal, isInstructor, firstAidExpiry]
+          );
+
+          const userId = result.lastID;
+          const numTx = Math.floor(Math.random() * 4);
+          for (let j = 0; j < numTx; j++) {
+            const amount = (Math.random() * 100 - 50).toFixed(2);
+            await db.run(`INSERT INTO transactions (user_id, amount, description) VALUES (?, ?, ?)`, [userId, amount, `Random transaction ${j + 1}`]);
+          }
+          console.log('Random users inserted.');
+        }
+      }
+
       console.log('Admin user created successfully with pre-filled credentials.');
     }
 
@@ -161,7 +216,9 @@ console.log(`Running in ${env} mode`);
             location: i % 2 === 0 ? 'Online' : 'Community Center',
             start: eventDate.toISOString().slice(0, 19).replace('T', ' '),
             end: endDate.toISOString().slice(0, 19).replace('T', ' '),
-            difficulty_level: Math.floor(Math.random() * 5) + 1
+            difficulty_level: Math.floor(Math.random() * 5) + 1,
+            max_attendees: Math.floor(Math.random() * 10) + 1,
+            upfront_cost: (Math.floor(Math.random() * 20) + 1)
           });
         }
 
@@ -172,11 +229,31 @@ console.log(`Running in ${env} mode`);
 
       for (const event of sampleEvents) {
         await db.run(
-          `INSERT INTO events (title, description, location, start, end, difficulty_level)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-          [event.title, event.description, event.location, event.start, event.end, event.difficulty_level]
+          `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [event.title, event.description, event.location, event.start, event.end, event.difficulty_level, event.max_attendees, event.upfront_cost]
         );
       }
+    }
+
+    if (!transactions_table_exists && env === 'dev') {
+      console.log('Creating initial transaction records...');
+      const adminUser = await db.get(`SELECT id FROM users WHERE email = ?`, ['a@a']);
+
+      const initialTransactions = [
+        { amount: 100.00, description: 'Initial membership fee' },
+        { amount: -20.00, description: 'Refund for event cancellation' },
+        { amount: -15.50, description: 'Purchase of club merchandise' }
+      ];
+
+      for (const tx of initialTransactions) {
+        await db.run(
+          `INSERT INTO transactions (user_id, amount, description)
+                 VALUES (?, ?, ?)`,
+          [adminUser.id, tx.amount, tx.description]
+        );
+      }
+      console.log('Initial transactions created successfully.');
     }
 
     console.log('Database initialized successfully.');

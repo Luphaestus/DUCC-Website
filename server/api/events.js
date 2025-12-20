@@ -1,6 +1,7 @@
 const EventsDB = require('../db/eventsDB.js');
+const transactionsDB = require('../db/transactionDB.js');
 const UserDB = require('../db/userDB.js');
-const errorCodetoResponse = require('../misc/error.js');
+const Globals = require('../misc/globals.js');
 
 
 /**
@@ -24,126 +25,162 @@ class Events {
 
     registerRoutes() {
         this.app.get('/api/events/rweek/:offset', async (req, res) => {
-            const max_difficulty = await UserDB.getDifficultyLevel(req, this.db);
-            if (typeof max_difficulty !== 'number') return res.status(max_difficulty.status).json({ error: max_difficulty.message });
+            const max_difficulty = await UserDB.getElements(req, this.db, "difficulty_level");
+            var errorMaxDifficulty = null;
+            if (max_difficulty.getStatus() == 401) {
+                errorMaxDifficulty = new Globals().getInt("Unauthorized_max_difficulty");
+            } else if (max_difficulty.isError()) { return max_difficulty.getResponse(res); }
 
             const offset = parseInt(req.params.offset, 10);
             if (Number.isNaN(offset)) {
-                return res.status(400).json({ error: 'Offset must be an integer' });
+                return res.status(400).json({ message: 'Offset must be an integer' });
             }
 
-            try {
-                const events = await EventsDB.get_events_relative_week(this.db, max_difficulty, offset);
-                res.json({ events });
-            } catch (error) {
-                res.status(500).json({ error: 'Failed to fetch events for relative week' });
-            }
+            const events = await EventsDB.get_events_relative_week(this.db, errorMaxDifficulty ? errorMaxDifficulty : max_difficulty.getData(), offset);
+            if (events.isError()) { return events.getResponse(res); }
+
+            res.json({ events: events.getData() });
         });
 
         this.app.get('/api/events', async (req, res) => {
-            const max_difficulty = await UserDB.getDifficultyLevel(req, this.db);
+            const max_difficulty = await UserDB.getElements(req, this.db, "difficulty_level");
+            if (max_difficulty.isError()) { return max_difficulty.getResponse(res); }
 
-            if (typeof max_difficulty !== 'number') return res.status(max_difficulty.status).json({ error: max_difficulty.message });
+            const events = await EventsDB.get_all_events(this.db, max_difficulty.getData());
+            if (events.isError()) { return events.getResponse(res); }
 
-            try {
-                const events = await EventsDB.get_all_events(this.db, max_difficulty);
-                res.json({ events });
-            } catch (error) {
-                console.error('Failed to fetch events:', error);
-                res.status(500).json({ error: 'Failed to fetch events' });
-            }
+            res.json({ events: events.getData() });
         });
 
         this.app.get('/api/event/:id', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {
-                return res.status(400).json({ error: 'Event ID must be an integer' });
+                return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            try {
-                const event = await EventsDB.get_event_by_id(req, this.db, eventId);
-                if (typeof event === 'number') {
-                    return res.status(event).json({ error: errorCodetoResponse(event).message });
-                }
-                if (!event) {
-                    return res.status(404).json({ error: 'Event not found' });
-                }
+            const event = await EventsDB.get_event_by_id(req, this.db, eventId);
+            if (event.isError()) { return event.getResponse(res); }
 
-                res.json({ event });
-            } catch (error) {
-                res.status(500).json({ error: 'Failed to fetch event' });
-            }
+            res.json({ event: event.getData() });
         });
 
         this.app.get('/api/event/:id/isAttending', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {
-                return res.status(400).json({ error: 'Event ID must be an integer' });
+                return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            try {
-                const isAttending = await EventsDB.is_user_attending_event(req, this.db, eventId);
-                if (typeof isAttending === 'number') {
-                    return res.status(isAttending).json({ error: errorCodetoResponse(isAttending).message });
-                }
-                res.json({ isAttending });
-            } catch (error) {
-                res.status(500).json({ error: 'Failed to check attendance status' });
-            }
+            const isAttending = await EventsDB.is_user_attending_event(req, this.db, eventId);
+            if (isAttending.isError()) { return isAttending.getResponse(res); }
+            res.json({ isAttending: isAttending.getData() });
         });
 
         this.app.post('/api/event/:id/attend', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {
-                return res.status(400).json({ error: 'Event ID must be an integer' });
+                return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            try {
-                const statusCode = await EventsDB.attend_event(req, this.db, eventId);
-                if (statusCode !== 200) {
-                    return res.status(statusCode).json({ error: errorCodetoResponse(statusCode).message });
-                }
-                res.status(200).json({ message: 'Successfully attended event' });
-            } catch (error) {
-                res.status(500).json({ error: 'Failed to attend event' });
+            const eventRes = await EventsDB.get_event_by_id(req, this.db, eventId)
+
+            if (eventRes.isError()) {
+                return res.status(404).json({ message: 'Event not found' });
             }
+
+            const attendeeCountRes = await EventsDB.get_event_attendance_count(req, this.db, eventId);
+            if (attendeeCountRes.isError()) { return attendeeCountRes.getResponse(res); }
+            if (eventRes.getData().max_attendees <= attendeeCountRes.getData()) {
+                return res.status(400).json({ message: 'Event has reached maximum number of attendees' });
+            }
+
+            const startDate = new Date(eventRes.getData().start);
+            const endDate = new Date(eventRes.getData().end);
+            const now = new Date();
+            if (now >= endDate) {
+                return res.status(400).json({ message: 'Cannot attend an event that has already ended' });
+            } else if (now >= startDate) {
+                return res.status(400).json({ message: 'Cannot attend an event that has already started' });
+            }
+
+            const balanceRes = await transactionsDB.get_balance(req, this.db, req.user.id);
+            if (balanceRes.isError()) { return balanceRes.getResponse(res); }
+            if (balanceRes.getData() < new Globals().getFloat('MinMoney')) {
+                return res.status(403).json({ message: 'User has outstanding debts' });
+            }
+
+            const membershipStatus = await UserDB.getElements(req, this.db, ['is_member', 'free_sessions', 'filled_legal_info']);
+            if (membershipStatus.isError()) { return membershipStatus.getResponse(res); }
+
+            if (!membershipStatus.getData().filled_legal_info) {
+                return res.status(403).json({ message: 'User has not filled legal information' });
+            }
+
+            if (!membershipStatus.getData().is_member && membershipStatus.getData().free_sessions <= 0) {
+                return res.status(403).json({ message: 'User is not a member or has no free sessions' });
+            }
+
+            if (!membershipStatus.getData().is_member) {
+                const newFreeSessions = membershipStatus.getData().free_sessions - 1;
+                const updateStatus = await UserDB.writeElements(req, this.db, { free_sessions: newFreeSessions });
+                if (updateStatus.isError()) { return updateStatus.getResponse(res); }
+            }
+
+            const status = await EventsDB.attend_event(req, this.db, eventId);
+            if (status.isError()) { return status.getResponse(res); }
+
+            transactionsDB.add_transaction(req, this.db, req.user.id, -eventRes.getData().upfront_cost, `${eventRes.getData().title} upfront cost`);
+
+            return status.getResponse(res);
         });
 
         this.app.post('/api/event/:id/leave', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {
-                return res.status(400).json({ error: 'Event ID must be an integer' });
+                return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            try {
-                const statusCode = await EventsDB.leave_event(req, this.db, eventId);
-                if (statusCode !== 200) {
-                    return res.status(statusCode).json({ error: errorCodetoResponse(statusCode).message });
-                }
-                res.status(200).json({ message: 'Successfully left event' });
-            } catch (error) {
-                res.status(500).json({ error: 'Failed to leave event' });
+            if (!(await EventsDB.is_user_attending_event(req, this.db, eventId)).getData()) {
+                return res.status(400).json({ message: 'User is not attending this event' });
             }
+
+            const eventRes = await EventsDB.get_event_by_id(req, this.db, eventId)
+
+            if (eventRes.isError()) {
+                return res.status(404).json({ message: 'Event not found' });
+            }
+
+            const startDate = new Date(eventRes.getData().start);
+            const endDate = new Date(eventRes.getData().end);
+            const now = new Date();
+            if (now >= endDate) {
+                return res.status(400).json({ message: 'Cannot leave an event that has already ended' });
+            } else if (now >= startDate) {
+                return res.status(400).json({ message: 'Cannot leave an event that has already started' });
+            }
+
+            const membershipStatus = await UserDB.getElements(req, this.db, ['is_member', 'free_sessions']);
+            if (membershipStatus.isError()) { return membershipStatus.getResponse(res); }
+
+            if (!membershipStatus.getData().is_member) {
+                const newFreeSessions = membershipStatus.getData().free_sessions + 1;
+                const updateStatus = await UserDB.writeElements(req, this.db, { free_sessions: newFreeSessions });
+                if (updateStatus.isError()) { return updateStatus.getResponse(res); }
+            }
+
+            const status = await EventsDB.leave_event(req, this.db, eventId);
+            return status.getResponse(res);
         });
 
         this.app.get('/api/event/:id/attendees', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {
-                return res.status(400).json({ error: 'Event ID must be an integer' });
+                return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            try {
-                const attendees = await EventsDB.get_users_attending_event(req, this.db, eventId);
-                if (typeof attendees === 'number') {
-                    return res.status(attendees).json({ error: errorCodetoResponse(attendees).message });
-                }
-                res.json({ attendees });
-            } catch (error) {
-                console.error('Failed to fetch event attendees:', error);
-                res.status(500).json({ error: 'Failed to fetch event attendees' });
-            }
+            const attendees = await EventsDB.get_users_attending_event(req, this.db, eventId);
+            if (attendees.isError()) { return attendees.getResponse(res); }
+            res.json({ attendees: attendees.getData() });
         });
-
     }
 }
 

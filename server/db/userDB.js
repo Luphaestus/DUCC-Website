@@ -1,274 +1,166 @@
+const { statusObject } = require('../misc/status.js');
+
 class UserDB {
-    /**
-     * Retrieves the first name of the authenticated user.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @returns {Promise<string|number>} A promise that resolves to the user's first name or an error code.
-     */
-    static async getName(req, db, id = null) {
-        if (!req.isAuthenticated()) {
-            return 401;
-        }
-
-        if (id && (await this.canManageUsers(req, db) !== 1)) {
-            return 403;
-        }
-
-        try {
-            const user = await db.get(
-                `SELECT first_name, last_name FROM users WHERE id = ?`,
-                id || req.user.id
-            );
-            if (!user) {
-                return 404;
-            }
-            return {
-                first_name: user.first_name,
-                last_name: user.last_name,
-            };
-        } catch (error) {
-            console.or('Database error in getName:', error);
-            return 500;
-        }
-    }
-
-    static async getProfile(req, db, id = null) {
-        if (!req.isAuthenticated()) {
-            return 401;
-        }
-
-        if (id && (await this.canManageUsers(req, db) !== 1)) {
-            return 403;
-        }
-
-        try {
-            const user = await db.get(
-                `SELECT id, email, first_name, last_name, can_manage_users FROM users WHERE id = ?`,
-                id || req.user.id
-            );
-            if (!user) {
-                return 404;
-            }
-            return user;
-        } catch (error) {
-            console.error('Database error in getProfile:', error);
-            return 500;
-        }
-    }
-
-    static async getUsers(req, db) {
-        if (!req.isAuthenticated() || (await this.canManageUsers(req, db) !== 1)) {
-            return 401;
-        }
-
-        try {
-            const users = await db.all(
-                `SELECT id, email, first_name, last_name, can_manage_users FROM users`
-            );
-            return users;
-        } catch (error) {
-            console.error('Database error in getUsers:', error);
-            return 500;
-        }
-    }
-
-
-
-
-    /**
-     * Retrieves the difficulty level of the authenticated user.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @returns {Promise<number>} A promise that resolves to the user's difficulty level or an error code.
-     */
-    static async getDifficultyLevel(req, db) {
-        if (!req.isAuthenticated || !req.isAuthenticated()) {
-            return 1;
-        }
-
-        try {
-            const user = await db.get(
-                `SELECT difficulty_level FROM users WHERE id = ?`,
-                [req.user.id]
-            );
-            if (!user) {
-                return 1;
-            }
-            if (user.difficulty_level === null || user.difficulty_level === undefined) {
-                return 1;
-            }
-            return user.difficulty_level;
-        } catch (error) {
-            return 1;
-        }
-    }
 
     static async canManageUsers(req, db) {
         if (!req.isAuthenticated()) {
-            return 401;
+            return new statusObject(401, 'User not authenticated');
         }
-
         try {
-            const user = await db.get(
-                `SELECT can_manage_users FROM users WHERE id = ?`,
-                [req.user.id]
-            );
-            if (!user) {
-                return 401;
-            }
-            return user.can_manage_users;
+            const row = await db.get('SELECT can_manage_users FROM users WHERE id = ?', req.user.id);
+            if (!row) return new statusObject(404, 'User not found');
+            return new statusObject(200, null, row.can_manage_users);
         } catch (error) {
-            return 401;
+            console.error('Database error in canManageUsers:', error);
+            return new statusObject(500, 'Database error');
         }
     }
 
-    static async getLegalInfo(req, db, id = null) {
-        if (!req.isAuthenticated()) {
-            return 401;
+    static async getUsers(req, db, options) {
+        const canManage = await this.canManageUsers(req, db);
+        if (canManage.isError()) return canManage;
+        if (canManage.getData() !== 1) return new statusObject(403, 'User not authorized');
+
+        const { page, limit, search, sort, order } = options;
+        const offset = (page - 1) * limit;
+        const searchTerm = `%${search}%`;
+
+        const allowedSorts = ['first_name', 'last_name', 'email', 'balance', 'first_aid_expiry', 'filled_legal_info', 'is_member', 'difficulty_level'];
+        const sortCol = allowedSorts.includes(sort) ? sort : 'last_name';
+        const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
+
+        try {
+            const query = `
+                SELECT 
+                    u.id, u.first_name, u.last_name, u.email, 
+                    u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
+                    COALESCE(SUM(t.amount), 0) as balance
+                FROM users u
+                LEFT JOIN transactions t ON u.id = t.user_id
+                WHERE (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)
+                GROUP BY u.id
+                ORDER BY ${sortCol} ${sortOrder}
+                LIMIT ? OFFSET ?
+            `;
+
+            const users = await db.all(query, [searchTerm, searchTerm, searchTerm, limit, offset]);
+
+            const countQuery = `
+                SELECT COUNT(*) as count 
+                FROM users 
+                WHERE (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)
+            `;
+            const countResult = await db.get(countQuery, [searchTerm, searchTerm, searchTerm]);
+            const totalUsers = countResult ? countResult.count : 0;
+            const totalPages = Math.ceil(totalUsers / limit);
+
+            return new statusObject(200, null, { users, totalPages, currentPage: page });
+        } catch (error) {
+            console.error('Database error in getUsers:', error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    static async getElements(req, db, elements, id = null) {
+        if (typeof elements === 'string') {
+            elements = [elements];
         }
 
-        if (id && (await this.canManageUsers(req, db) !== 1)) {
-            return 403;
+        if (!req.isAuthenticated()) {
+            return new statusObject(401, 'User not authenticated');
+        }
+
+        if (id && ((await this.canManageUsers(req, db)).getData() !== 1)) {
+            return new statusObject(403, 'User not authorized');
         }
 
         try {
             const user = await db.get(
-                `SELECT
-                    date_of_birth,
-                    college_id,
-                    emergency_contact_name,
-                    emergency_contact_phone,
-                    home_address,
-                    phone_number,
-                    has_medical_conditions,
-                    medical_conditions_details,
-                    takes_medication,
-                    medication_details,
-                    agrees_to_fitness_statement,
-                    agrees_to_club_rules,
-                    agrees_to_pay_debts,
-                    agrees_to_data_storage,
-                    agrees_to_keep_health_data,
-                    filled_legal_info
-                FROM users WHERE id = ?`,
+                `SELECT ${elements.join(', ')} FROM users WHERE id = ?`,
                 id || req.user.id
             );
             if (!user) {
-                return 404;
+                return new statusObject(404, 'User not found');
             }
-            if (user.college_id) {
-                const college = await db.get(
-                    `SELECT name FROM colleges WHERE id = ?`,
-                    [user.college_id]
-                );
-                user.college = college ? college.name : null;
-            } else {
-                user.college = null;
-            }
-            return user;
+            return new statusObject(200, null, user);
         } catch (error) {
-            console.error('Database error in getLegalInfo:', error);
-            return 500;
+            console.error(`Database error in getElements (${elements.join(', ')}):`, error);
+            return new statusObject(500, 'Database error');
         }
     }
 
-    static async setLegalInfo(req, db) {
+    static async writeElements(req, db, data, id = null) {
         if (!req.isAuthenticated()) {
-            return 401;
+            return new statusObject(401, 'User not authenticated');
         }
 
-        var {
-            date_of_birth,
-            college_id,
-            college,
-            emergency_contact_name,
-            emergency_contact_phone,
-            home_address,
-            phone_number,
-            has_medical_conditions,
-            medical_conditions_details,
-            takes_medication,
-            medication_details,
-            agrees_to_fitness_statement,
-            agrees_to_club_rules,
-            agrees_to_pay_debts,
-            agrees_to_data_storage,
-            agrees_to_keep_health_data,
-        } = req.body;
-
-        if (!agrees_to_fitness_statement || !agrees_to_club_rules || !agrees_to_pay_debts || !agrees_to_data_storage) {
-            return 400;
-        }
-
-        if (date_of_birth === undefined || emergency_contact_name === undefined ||
-            emergency_contact_phone === undefined || home_address === undefined || phone_number === undefined ||
-            has_medical_conditions === undefined || medical_conditions_details === undefined ||
-            takes_medication === undefined || medication_details === undefined) {
-            return 400;
-        }
-
-        if (college_id === undefined && college === undefined) {
-            return 400;
-        }
-
-        if (college_id === undefined) {
-            try {
-                const collegeRow = await db.get(
-                    `SELECT id FROM colleges WHERE name = ?`,
-                    [college]
-                );
-                if (!collegeRow) {
-                    return 400;
-                }
-                college_id = collegeRow.id;
-            } catch (error) {
-                console.error('Database error in setLegalInfo:', error);
-                return 500;
-            }
+        if (id && ((await this.canManageUsers(req, db)).getData() !== 1)) {
+            return new statusObject(403, 'User not authorized');
         }
 
         try {
             await db.run(
                 `UPDATE users SET
-                    date_of_birth = ?,
-                    college_id = ?,
-                    emergency_contact_name = ?,
-                    emergency_contact_phone = ?,
-                    home_address = ?,
-                    phone_number = ?,
-                    has_medical_conditions = ?,
-                    medical_conditions_details = ?,
-                    takes_medication = ?,
-                    medication_details = ?,
-                    agrees_to_fitness_statement = ?,
-                    agrees_to_club_rules = ?,
-                    agrees_to_pay_debts = ?,
-                    agrees_to_data_storage = ?,
-                    agrees_to_keep_health_data = ?,
-                    filled_legal_info = 1
+                    ${Object.keys(data).map(el => `${el} = ?`).join(', ')}
                 WHERE id = ?`,
-                [
-                    date_of_birth,
-                    college_id,
-                    emergency_contact_name,
-                    emergency_contact_phone,
-                    home_address,
-                    phone_number,
-                    has_medical_conditions,
-                    medical_conditions_details,
-                    takes_medication,
-                    medication_details,
-                    agrees_to_fitness_statement,
-                    agrees_to_club_rules,
-                    agrees_to_pay_debts,
-                    agrees_to_data_storage,
-                    agrees_to_keep_health_data,
-                    req.user.id
-                ]
+                [...Object.values(data), id || req.user.id]
             );
-            return 200;
+            return new statusObject(200, null);
         } catch (error) {
-            return 500;
+            console.error('Database error in writeElements:', error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+
+    static async setMembershipStatus(req, db, is_member, userId = null) {
+        if (!req.isAuthenticated()) {
+            return new statusObject(401, 'User not authenticated');
+        }
+
+        if (userId && ((await this.canManageUsers(req, db)).getData() !== 1)) {
+            return new statusObject(403, 'User not authorized');
+        }
+
+        return db.run(
+            `UPDATE users SET is_member = ? WHERE id = ?`,
+            [is_member ? 1 : 0, req.user.id]
+        ).then(() => new statusObject(200, null))
+            .catch((error) => {
+                console.error('Database error in setMembershipStatus:', error);
+                return new statusObject(500, 'Database error');
+            });
+    }
+
+    static async removeUser(req, db, real = false, userId = null) {
+        if (!req.isAuthenticated()) {
+            return new statusObject(401, 'User not authenticated');
+        }
+
+        if (userId && ((await this.canManageUsers(req, db)).getData() !== 1)) {
+            return new statusObject(403, 'User not authorized');
+        }
+
+        try {
+            if (!real) {
+                await db.run(
+                    `UPDATE users SET hashed_password = NULL WHERE id = ?`,
+                    [userId || req.user.id]
+                );
+            } else {
+                await db.run(
+                    `DELETE FROM users WHERE id = ?`,
+                    [userId || req.user.id]
+                );
+            }
+            await db.run(
+                `DELETE FROM event_attendees WHERE user_id = ?`,
+                [userId || req.user.id]
+            );
+            return new statusObject(200, null);
+        } catch (error) {
+            console.error('Database error in removeUser:', error);
+            return new statusObject(500, 'Database error');
         }
     }
 }

@@ -1,3 +1,4 @@
+const { statusObject } = require('../misc/status.js');
 const UserDB = require('./userDB.js');
 
 class eventsDB {
@@ -32,10 +33,11 @@ class eventsDB {
         endOfWeek.setDate(endOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
-        return db.all(
+        const events = await db.all(
             'SELECT * FROM events WHERE start BETWEEN ? AND ? AND difficulty_level <= ? ORDER BY start ASC',
             [startOfWeek.toISOString(), endOfWeek.toISOString(), max_difficulty]
         );
+        return new statusObject(200, null, events);
     }
 
     /**
@@ -53,6 +55,29 @@ class eventsDB {
         return this.get_events_for_week(db, max_difficulty, targetDate);
     }
 
+    static async getEventsAdmin(db, options) {
+        const { page, limit, search, sort, order } = options;
+        const offset = (page - 1) * limit;
+        const searchTerm = `%${search}%`;
+        const allowedSorts = ['title', 'start', 'location', 'difficulty_level', 'upfront_cost'];
+        const sortCol = allowedSorts.includes(sort) ? sort : 'start';
+        const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
+
+        try {
+            const query = `SELECT * FROM events WHERE title LIKE ? ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`;
+            const events = await db.all(query, [searchTerm, limit, offset]);
+
+            const countResult = await db.get('SELECT COUNT(*) as count FROM events WHERE title LIKE ?', [searchTerm]);
+            const totalEvents = countResult ? countResult.count : 0;
+            const totalPages = Math.ceil(totalEvents / limit);
+
+            return new statusObject(200, null, { events, totalPages, currentPage: page });
+        } catch (error) {
+            console.error(error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
     static async get_event_by_id(req, db, id) {
         const event = await db.get(
             'SELECT * FROM events WHERE id = ?',
@@ -60,22 +85,69 @@ class eventsDB {
         );
 
         if (!event) {
-            return 404;
+            return new statusObject(404, 'Event not found');
         }
 
-        const max_difficulty = await UserDB.getDifficultyLevel(req, db);
+        const max_difficulty = await UserDB.getElements(req, db, "difficulty_level");
         if (event.difficulty_level > max_difficulty) {
-            return 401;
+            return new statusObject(401, 'User not authorized');
         }
 
-        return event;
+        return new statusObject(200, null, event);
+    }
+
+    static async getEventByIdAdmin(db, id) {
+        try {
+            const event = await db.get('SELECT * FROM events WHERE id = ?', [id]);
+            if (!event) return new statusObject(404, 'Event not found');
+            return new statusObject(200, null, event);
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    static async createEvent(db, data) {
+        try {
+            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost } = data;
+            const result = await db.run(
+                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost]
+            );
+            return new statusObject(200, null, { id: result.lastID });
+        } catch (error) {
+            console.error(error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    static async updateEvent(db, id, data) {
+        try {
+            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost } = data;
+            await db.run(
+                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=? WHERE id=?`,
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, id]
+            );
+            return new statusObject(200, 'Event updated');
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    static async deleteEvent(db, id) {
+        try {
+            await db.run('DELETE FROM events WHERE id = ?', [id]);
+            return new statusObject(200, 'Event deleted');
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
     }
 
     static async is_user_attending_event(req, db, eventId) {
-        if (!req.isAuthenticated()) return 401;
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         const event = await this.get_event_by_id(req, db, eventId);
-        if (typeof event === 'number') {
+        if (event.isError()) {
             return event;
         }
 
@@ -86,14 +158,13 @@ class eventsDB {
             [eventId, userId]
         );
 
-        return !!existingJoin;
+        return new statusObject(200, null, !!existingJoin);
     }
 
     static async attend_event(req, db, eventId) {
-        if (!req.isAuthenticated()) return 401;
-
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         const event = await this.get_event_by_id(req, db, eventId);
-        if (typeof event === 'number') {
+        if (event.isError()) {
             return event;
         }
 
@@ -101,9 +172,12 @@ class eventsDB {
         const joinDate = new Date();
 
         const existingJoin = await this.is_user_attending_event(req, db, eventId);
+        if (existingJoin.isError()) {
+            return existingJoin;
+        }
 
-        if (existingJoin) {
-            return 409;
+        if (existingJoin.getData()) {
+            return new statusObject(409, 'User already attending event');
         }
 
         await db.run(
@@ -111,14 +185,13 @@ class eventsDB {
             [eventId, userId, joinDate.toISOString()]
         );
 
-        return 200;
+        return new statusObject(200, 'User successfully joined event');
     }
 
     static async leave_event(req, db, eventId) {
-        if (!req.isAuthenticated()) return 401;
-
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         const event = await this.get_event_by_id(req, db, eventId);
-        if (typeof event === 'number') {
+        if (event.isError()) {
             return event;
         }
 
@@ -127,7 +200,7 @@ class eventsDB {
         const existingJoin = await this.is_user_attending_event(req, db, eventId);
 
         if (!existingJoin) {
-            return 404;
+            return new statusObject(409, 'User is not attending event');
         }
 
         await db.run(
@@ -135,26 +208,43 @@ class eventsDB {
             [eventId, userId]
         );
 
-        return 200;
+        return new statusObject(200, 'User successfully left event');
     }
 
     static async get_users_attending_event(req, db, eventId) {
 
-        if (!req.isAuthenticated()) return 401;
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         const event = await this.get_event_by_id(req, db, eventId);
-        if (typeof event === 'number') {
+        if (event.isError()) {
             return event;
         }
 
-        return db.all(
+        const events = await db.all(
             `SELECT u.id, u.first_name, u.last_name, u.email
              FROM users u
              JOIN event_attendees ea ON u.id = ea.user_id
              WHERE ea.event_id = ?`, [eventId]
         );
+        return new statusObject(200, null, events);
     }
 
+    static async get_event_attendance_count(req, db, eventId) {
+
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+
+        const event = await this.get_event_by_id(req, db, eventId);
+        if (event.isError()) {
+            return event;
+        }
+
+        const result = await db.get(
+            `SELECT COUNT(*) AS attendance_count
+             FROM event_attendees
+             WHERE event_id = ?`, [eventId]
+        );
+        return new statusObject(200, null, result.attendance_count);
+    }
 }
 
 module.exports = eventsDB;

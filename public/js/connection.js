@@ -1,4 +1,5 @@
 import { notify, NotificationTypes } from './misc/notification.js';
+import { ViewChangedEvent } from './misc/view.js';
 
 let isServerConnected = true;
 
@@ -15,7 +16,7 @@ function updateConnectionStatus(newStatus) {
     if (isServerConnected) {
         currentNotification = notify('Connection Restored', 'You are reconnected to the server.', NotificationTypes.SUCCESS, 5000);
     } else {
-        currentNotification = notify('Connection Lost', 'You have been disconnected from the server.', NotificationTypes.ERROR, 5000);
+        currentNotification = notify('Connection Lost', 'You have been disconnected from the server. The page may function incorrectly.', NotificationTypes.ERROR, 5000);
     }
 }
 
@@ -43,6 +44,11 @@ setInterval(checkServerConnection, 5000);
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(checkServerConnection, 1000);
+    ViewChangedEvent.subscribe(() => {
+        checkServerConnection();
+    });
 });
+
+
 
 export { isServerConnected, checkServerConnection };

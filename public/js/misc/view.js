@@ -12,7 +12,6 @@ let Paths = []
  * @returns {boolean} True if the view is registered, false otherwise.
  */
 function getViewID(path) {
-    ("Resolving path:", path);
     if (Paths.includes(path))
         return path;
     for (const registeredPath of Paths) {
@@ -44,8 +43,8 @@ function isCurrentPath(path) {
 function switchView(path, force = false) {
     if (!path.startsWith('/')) path = '/' + path
     if (path === '/') {
-        ajaxGet('/api/user/loggedin').then((data) => {
-            if (data.loggedIn) {
+        ajaxGet('/api/auth/status').then((data) => {
+            if (data.authenticated) {
                 switchView('/events');
             } else {
                 switchView('/home');
@@ -64,7 +63,7 @@ function switchView(path, force = false) {
         return true
     }
 
-    if (path !== "/error") window.history.pushState({}, path, window.location.origin + path)
+    if (path !== "/error" && !isCurrentPath(path)) window.history.pushState({}, path, window.location.origin + path)
 
     if (!resolvedPath) {
         return switchView('/error');
@@ -96,6 +95,7 @@ function switchView(path, force = false) {
 function updateContent() {
     switchView(String(window.location.pathname), true);
 }
+
 
 window.onpopstate = updateContent;
 window.onload = updateContent;

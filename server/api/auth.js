@@ -3,8 +3,8 @@ const bcrypt = require('bcrypt');
 
 /**
  * Routes:
- *   POST /api/signup -> Registers a new user.
- *   POST /api/login  -> Authenticates a user and logs them in.
+ *   POST /api/auth/signup -> Registers a new user.
+ *   POST /api/auth/login  -> Authenticates a user and logs them in.
  *   GET  /logout     -> Logs out the current user.
  *
  * Middleware:
@@ -63,16 +63,21 @@ class Auth {
     }
 
     registerRoutes() {
-        this.app.post('/api/signup', async (req, res) => {
+        this.app.post('/api/auth/signup', async (req, res) => {
             const { email, password, first_name, last_name } = req.body;
 
             if (!email || !password || !first_name || !last_name) {
-                return res.status(400).send('Email, password, first name, and last name are required.');
+                return res.status(400).json({ message: 'Email, password, first name, and last name are required.' });
+            }
+
+            const nameRegex = /^[a-zA-Z'-]{1,50}$/;
+            if (!nameRegex.test(first_name) || !nameRegex.test(last_name)) {
+                return res.status(400).json({ message: 'Invalid First Name or Last Name. ' });
             }
 
             const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
             if (!emailRegex.test(email)) {
-                return res.status(400).send('Invalid email format. You must use your first.last@durham.ac.uk email.');
+                return res.status(400).json({ message: 'Invalid email format. You must use your first.last@durham.ac.uk email.' });
             }
 
             try {
@@ -80,15 +85,15 @@ class Auth {
 
                 await this.db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
 
-                res.status(201).send('User registered successfully.');
+                res.status(201).json({ message: 'User registered successfully.' });
 
             } catch (err) {
                 console.error(err);
-                res.status(500).send('Error registering user. Email may already be taken.');
+                res.status(500).json({ message: 'Error registering user. Email may already be taken.' });
             }
         });
 
-        this.app.post('/api/login', (req, res, next) => {
+        this.app.post('/api/auth/login', (req, res, next) => {
             this.passport.authenticate('local', (err, user, info) => {
                 if (err) {
                     return res.status(500).json({ message: 'An error occurred during authentication.' });
@@ -106,7 +111,7 @@ class Auth {
         });
 
 
-        this.app.get('/api/logout', (req, res, next) => {
+        this.app.get('/api/auth/logout', (req, res, next) => {
             req.logout((err) => {
                 if (err) { return next(err); }
                 req.session.destroy((err) => {
@@ -114,10 +119,18 @@ class Auth {
                         console.error('Error destroying session:', err);
                         return res.status(500).json({ message: 'Could not log out.' });
                     }
-                    res.clearCookie('connect.sid'); // Optional: clear the session cookie
+                    res.clearCookie('connect.sid');
                     res.status(200).json({ message: 'Logged out successfully.' });
                 });
             });
+        });
+
+        this.app.get('/api/auth/status', (req, res) => {
+            if (req.isAuthenticated()) {
+                res.json({ authenticated: true });
+            } else {
+                res.json({ authenticated: false });
+            }
         });
     }
 

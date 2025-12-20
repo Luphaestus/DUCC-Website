@@ -1,4 +1,4 @@
-let previousPath = null;
+let previousPath = [];
 let currentPath = window.location.pathname;
 
 /**
@@ -7,10 +7,10 @@ let currentPath = window.location.pathname;
  * @param {string} newPath The new path being navigated to.
  */
 function updateHistory(newPath) {
-    previousPath = currentPath;
+    previousPath.push(currentPath);
     currentPath = newPath;
 }
 
 export { updateHistory };
-export const getPreviousPath = () => previousPath;
+export const getPreviousPath = () => previousPath.pop();
 export const getCurrentPath = () => currentPath;

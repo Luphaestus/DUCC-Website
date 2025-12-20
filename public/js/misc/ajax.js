@@ -48,12 +48,13 @@ async function ajaxPost(url, data) {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
+                        console.log(xhr.responseText);
                         reject('Failed to parse response: ' + e.message);
                     }
                 } else {
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
-                        reject(errorResponse.error || 'Request failed');
+                        reject(errorResponse.message || 'Request failed');
                     } catch (e) {
                         reject('Request failed with status: ' + xhr.status);
                     }

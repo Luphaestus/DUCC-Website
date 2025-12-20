@@ -1,9 +1,33 @@
 import { ajaxGet } from './misc/ajax.js';
 import { LoginEvent } from './login.js';
+import './event.js';
 import seedrandom from 'https://cdn.skypack.dev/seedrandom';
+
+
+// --- Constants & Templates ---
+
+const HTML_TEMPLATE = `
+        <div id="/events-view" class="view hidden small-container">
+            <div class="events-controls">
+                <div>
+                    <img class="prev-week" src="/images/icons/filled/circle-caret-left.svg" alt="Previous week" />
+                    <img class="next-week" src="/images/icons/filled/circle-caret-right.svg" alt="Next week" />
+                </div>
+                <h1 id="events-controls-title"></h1>
+                <button class="this-week-button">Today 📅</button>
+            </div>
+
+            <div id="events-list">
+                <p aria-busy="true">Loading events...</p>
+            </div>
+            <div id="event-navigation"></div>
+        </div>`
+
+// --- State ---
 
 let relativeWeekOffset = 0;
 
+// --- Helper Functions ---
 
 /**
  * Generates a pastel color hue based on a seed.
@@ -70,8 +94,11 @@ function formatEvent(event) {
     `;
 }
 
+// --- Main Logic ---
+
 /**
  * Populates the offsetted weekly events list via API.
+ * @returns {Promise<void>}
  */
 async function populateEvents() {
 
@@ -128,6 +155,8 @@ async function populateEvents() {
 }
 
 
+// --- Initialization ---
+
 document.addEventListener('DOMContentLoaded', () => {
     populateEvents();
 
@@ -150,3 +179,5 @@ document.addEventListener('DOMContentLoaded', () => {
         populateEvents();
     });
 });
+
+document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

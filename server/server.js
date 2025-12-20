@@ -28,6 +28,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+const Globals = require('./misc/globals.js');
+new Globals();
+
 let db;
 (async () => {
   try {
@@ -58,6 +61,10 @@ let db;
 
     const User = require('./api/user.js');
     new User(app, db).registerRoutes();
+
+    const Admin = require('./api/admin.js');
+    new Admin(app, db).registerRoutes();
+
 
     app.get(/.*/, (req, res) => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
