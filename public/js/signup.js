@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
         validateInput(email, emailRegex, 'Invalid email format. Must be a first.last@durham.ac.uk address.');
 
-        if (password.value == "") {
+        if (password.value === "") {
             displayValidationMessage(password, 'Password cannot be empty.');
             password.ariaInvalid = 'true';
             displayValidationMessage(confirmPassword, 'Password cannot be empty.');

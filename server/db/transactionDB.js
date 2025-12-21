@@ -1,6 +1,6 @@
 const { statusObject } = require('../misc/status.js');
 
-class transactionsDB {
+class TransactionsDB {
     static async getElements(req, db, elements, id = null) {
         if (id == null) {
             id = req.user?.id;
@@ -55,21 +55,36 @@ class transactionsDB {
         return new statusObject(200, null, result.balance);
     }
 
-    static async add_transaction(req, db, userId, amount, description) {
+    static async add_transaction_admin(db, userId, amount, description, eventId = null) {
+        const createdAt = new Date().toISOString();
+
+        await db.run(
+            'INSERT INTO transactions (user_id, amount, description, created_at, event_id) VALUES (?, ?, ?, ?, ?)',
+            [userId, amount, description, createdAt, eventId]
+        );
+
+        const transactionId = await db.get('SELECT last_insert_rowid() AS id');
+
+        return new statusObject(200, 'Transaction added successfully', transactionId.id);
+    }
+
+    static async add_transaction(req, db, userId, amount, description, eventId = null) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         if (req.user.id !== userId && !req.user.can_manage_transactions) {
             return new statusObject(403, 'User not authorized');
         }
 
-        const createdAt = new Date().toISOString();
+        return this.add_transaction_admin(db, userId, amount, description, eventId);
+    }
 
-        await db.run(
-            'INSERT INTO transactions (user_id, amount, description, created_at) VALUES (?, ?, ?, ?)',
-            [userId, amount, description, createdAt]
+    static async get_transaction_exists(db, transactionId) {
+        const transaction = await db.get(
+            'SELECT id FROM transactions WHERE id = ?',
+            [transactionId]
         );
 
-        return new statusObject(200, 'Transaction added successfully');
+        return transaction !== undefined;
     }
 
     static async get_transactions(req, db, userId) {
@@ -95,18 +110,9 @@ class transactionsDB {
         return new statusObject(200, null, transactionsWithAfter.reverse());
     }
 
-    static async delete_transaction(req, db, transactionId) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (!req.user.can_manage_transactions) {
-            return new statusObject(403, 'User not authorized');
-        }
-
-        const transaction = await db.get(
-            'SELECT * FROM transactions WHERE id = ?',
-            [transactionId]
-        );
-
-        if (!transaction) {
+    static async delete_transaction_admin(db, transactionId) {
+        const transactionExists = await TransactionsDB.get_transaction_exists(db, transactionId);
+        if (!transactionExists) {
             return new statusObject(404, 'Transaction not found');
         }
 
@@ -115,7 +121,39 @@ class transactionsDB {
             [transactionId]
         );
 
+        await db.run(
+            'UPDATE event_attendees SET payment_transaction_id = NULL WHERE payment_transaction_id = ?',
+            [transactionId]
+        );
+
         return new statusObject(200, 'Transaction deleted successfully');
+    }
+
+    static async delete_transaction(req, db, transactionId) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+        if (!req.user.can_manage_transactions) {
+            return new statusObject(403, 'User not authorized');
+        }
+
+        return this.delete_transaction_admin(db, transactionId);
+    }
+
+    static async get_transactionid_by_event(req, db, eventId, userId) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+        if (req.user.id !== userId && !req.user.can_manage_transactions) {
+            return new statusObject(403, 'User not authorized');
+        }
+
+        const transaction = await db.get(
+            'SELECT id FROM transactions WHERE event_id = ? AND user_id = ?',
+            [eventId, userId]
+        );
+
+        if (!transaction) {
+            return new statusObject(404, 'Transaction not found');
+        }
+
+        return new statusObject(200, null, transaction.id);
     }
 
     static async edit_transaction(req, db, transactionId, amount, description) {
@@ -136,6 +174,24 @@ class transactionsDB {
 
         return new statusObject(200, 'Transaction updated successfully');
     }
+
+    static async get_transaction_by_id(req, db, transactionId) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+        if (!req.user.can_manage_transactions) {
+            return new statusObject(403, 'User not authorized');
+        }
+
+        const transaction = await db.get(
+            'SELECT * FROM transactions WHERE id = ?',
+            [transactionId]
+        );
+
+        if (!transaction) {
+            return new statusObject(404, 'Transaction not found');
+        }
+
+        return new statusObject(200, null, transaction);
+    }
 }
 
-module.exports = transactionsDB;
+module.exports = TransactionsDB;

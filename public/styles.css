@@ -2815,9 +2815,9 @@ body {
   --translucent-bg: color-mix(in srgb, color-mix(in srgb, var(--pico-background-color) 95%, var(--pico-color) 5%) 85%, transparent);
   --theme: white;
   --theme-opposite: black;
-  --colour-good: color: color-mix(in srgb, var(--theme-opposite) 50%, green);
-  --colour-warning: color: color-mix(in srgb, var(--theme-opposite) 50%, orange);
-  --colour-bad: color: color-mix(in srgb, var(--theme-opposite) 50%, red);
+  --colour-good: color-mix(in srgb, var(--theme-opposite) 50%, green);
+  --colour-warning: color-mix(in srgb, var(--theme-opposite) 50%, orange);
+  --colour-bad: color-mix(in srgb, var(--theme-opposite) 50%, red);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -3477,6 +3477,55 @@ nav.small-container .nav-logo {
 .event-content-split .event-attendees-section h3 {
   align-self: center;
   margin-top: 0;
+}
+
+.info-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+}
+.info-tooltip-wrapper svg {
+  width: 1.1em;
+  height: 1.1em;
+  opacity: 0.8;
+}
+.info-tooltip-wrapper:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: 280px;
+  background-color: var(--theme-opposite);
+  color: var(--theme);
+  text-align: center;
+  border-radius: 6px;
+  padding: 10px;
+  position: absolute;
+  z-index: 100;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.85rem;
+  font-weight: normal;
+  line-height: 1.3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--theme-opposite) transparent transparent transparent;
 }
 
 @media (min-width: 55em) {

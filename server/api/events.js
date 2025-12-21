@@ -1,8 +1,8 @@
 const EventsDB = require('../db/eventsDB.js');
-const transactionsDB = require('../db/transactionDB.js');
+const TransactionsDB = require('../db/transactionDB.js');
 const UserDB = require('../db/userDB.js');
 const Globals = require('../misc/globals.js');
-
+const { statusObject } = require('../misc/status.js');
 
 /**
  * Routes:
@@ -36,7 +36,7 @@ class Events {
                 return res.status(400).json({ message: 'Offset must be an integer' });
             }
 
-            const events = await EventsDB.get_events_relative_week(this.db, errorMaxDifficulty ? errorMaxDifficulty : max_difficulty.getData(), offset);
+            const events = await EventsDB.get_events_relative_week(this.db, errorMaxDifficulty !== null ? errorMaxDifficulty : max_difficulty.getData().difficulty_level, offset);
             if (events.isError()) { return events.getResponse(res); }
 
             res.json({ events: events.getData() });
@@ -46,7 +46,7 @@ class Events {
             const max_difficulty = await UserDB.getElements(req, this.db, "difficulty_level");
             if (max_difficulty.isError()) { return max_difficulty.getResponse(res); }
 
-            const events = await EventsDB.get_all_events(this.db, max_difficulty.getData());
+            const events = await EventsDB.get_all_events(this.db, max_difficulty.getData().difficulty_level);
             if (events.isError()) { return events.getResponse(res); }
 
             res.json({ events: events.getData() });
@@ -102,10 +102,15 @@ class Events {
                 return res.status(400).json({ message: 'Cannot attend an event that has already started' });
             }
 
-            const balanceRes = await transactionsDB.get_balance(req, this.db, req.user.id);
-            if (balanceRes.isError()) { return balanceRes.getResponse(res); }
-            if (balanceRes.getData() < new Globals().getFloat('MinMoney')) {
-                return res.status(403).json({ message: 'User has outstanding debts' });
+            const isUserPayingForEvent = await EventsDB.isUserPayingForEvent(req, this.db, eventId);
+            if (isUserPayingForEvent.isError()) { return isUserPayingForEvent.getResponse(res); }
+
+            if (!isUserPayingForEvent.getData()) {
+                const balanceRes = await TransactionsDB.get_balance(req, this.db, req.user.id);
+                if (balanceRes.isError()) { return balanceRes.getResponse(res); }
+                if (balanceRes.getData() < new Globals().getFloat('MinMoney')) {
+                    return res.status(403).json({ message: 'User has outstanding debts' });
+                }
             }
 
             const membershipStatus = await UserDB.getElements(req, this.db, ['is_member', 'free_sessions', 'filled_legal_info']);
@@ -119,19 +124,46 @@ class Events {
                 return res.status(403).json({ message: 'User is not a member or has no free sessions' });
             }
 
+            const isAttendingRes = await EventsDB.is_user_attending_event(req, this.db, eventId);
+            if (isAttendingRes.isError()) { return isAttendingRes.getResponse(res); }
+            if (isAttendingRes.getData()) {
+                return res.status(400).json({ message: 'User is already attending this event' });
+            }
+
             if (!membershipStatus.getData().is_member) {
                 const newFreeSessions = membershipStatus.getData().free_sessions - 1;
                 const updateStatus = await UserDB.writeElements(req, this.db, { free_sessions: newFreeSessions });
                 if (updateStatus.isError()) { return updateStatus.getResponse(res); }
             }
 
-            const status = await EventsDB.attend_event(req, this.db, eventId);
-            if (status.isError()) { return status.getResponse(res); }
+            let transactionStatus = new statusObject(200, null, null);
+            if (eventRes.getData().upfront_cost > 0) {
+                transactionStatus = await TransactionsDB.add_transaction(req, this.db, req.user.id, -eventRes.getData().upfront_cost, `${eventRes.getData().title} upfront cost`, eventId);
+                if (transactionStatus.isError()) {
+                    await EventsDB.leave_event(req, this.db, eventId);
+                    return transactionStatus.getResponse(res);
+                }
 
-            transactionsDB.add_transaction(req, this.db, req.user.id, -eventRes.getData().upfront_cost, `${eventRes.getData().title} upfront cost`);
+                if (eventRes.getData().upfront_refund_cutoff && (new Date() > new Date(eventRes.getData().upfront_refund_cutoff))) {
+                    const refundIdRes = await EventsDB.get_event_refund_id(req, this.db, eventId);
+                    if (!refundIdRes.isError()) {
+                        const refundData = refundIdRes.getData();
+                        if (refundData.user_id) {
+                            console.log("Processing refund after cutoff for user:", refundData.user_id);
+                            await EventsDB.refundEvent(this.db, eventId, refundData.user_id);
+                        } else {
+                            await TransactionsDB.delete_transaction_admin(this.db, refundData.payment_transaction_id);
+                        }
+                    }
+                }
 
-            return status.getResponse(res);
+                const status = await EventsDB.attend_event(req, this.db, eventId, transactionStatus.getData());
+                if (status.isError()) { return status.getResponse(res); }
+
+                return status.getResponse(res);
+            };
         });
+
 
         this.app.post('/api/event/:id/leave', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
@@ -168,6 +200,24 @@ class Events {
             }
 
             const status = await EventsDB.leave_event(req, this.db, eventId);
+            if (status.isError()) { return status.getResponse(res); }
+
+            if (eventRes.getData().upfront_cost > 0) {
+                if (!eventRes.getData().upfront_refund_cutoff || (new Date() <= new Date(eventRes.getData().upfront_refund_cutoff))) {
+                    const transactionIdStatus = await TransactionsDB.get_transactionid_by_event(req, this.db, eventId, req.user.id);
+                    if (transactionIdStatus.isError()) {
+                        await EventsDB.attend_event(req, this.db, eventId);
+                        return transactionIdStatus.getResponse(res);
+                    }
+
+                    const refundStatus = await TransactionsDB.delete_transaction(req, this.db, transactionIdStatus.getData());
+                    if (refundStatus.isError()) {
+                        await EventsDB.attend_event(req, this.db, eventId);
+                        return refundStatus.getResponse(res);
+                    }
+                }
+            }
+
             return status.getResponse(res);
         });
 

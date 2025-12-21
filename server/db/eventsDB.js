@@ -1,5 +1,6 @@
 const { statusObject } = require('../misc/status.js');
 const UserDB = require('./userDB.js');
+const TransactionsDB = require('./transactionDB.js');
 
 class eventsDB {
     /**
@@ -25,7 +26,7 @@ class eventsDB {
      * @returns {Promise<Array<object>>} A promise that resolves to an array of event objects.
      */
     static async get_events_for_week(db, max_difficulty, date = new Date()) {
-        const startOfWeek = date;
+        const startOfWeek = new Date(date);
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
         startOfWeek.setHours(0, 0, 0, 0);
 
@@ -37,6 +38,9 @@ class eventsDB {
             'SELECT * FROM events WHERE start BETWEEN ? AND ? AND difficulty_level <= ? ORDER BY start ASC',
             [startOfWeek.toISOString(), endOfWeek.toISOString(), max_difficulty]
         );
+
+        console.log('Events for week:', events);
+        console.log('max_difficulty:', max_difficulty);
         return new statusObject(200, null, events);
     }
 
@@ -88,8 +92,9 @@ class eventsDB {
             return new statusObject(404, 'Event not found');
         }
 
-        const max_difficulty = await UserDB.getElements(req, db, "difficulty_level");
-        if (event.difficulty_level > max_difficulty) {
+        const maxDifficultyRes = await UserDB.getElements(req, db, "difficulty_level");
+        if (maxDifficultyRes.isError()) return maxDifficultyRes;
+        if (event.difficulty_level > maxDifficultyRes.getData().difficulty_level) {
             return new statusObject(401, 'User not authorized');
         }
 
@@ -154,14 +159,14 @@ class eventsDB {
         const userId = req.user.id;
 
         const existingJoin = await db.get(
-            'SELECT * FROM event_attendees WHERE event_id = ? AND user_id = ?',
+            'SELECT * FROM event_attendees WHERE event_id = ? AND user_id = ? AND is_attending = 1',
             [eventId, userId]
         );
 
         return new statusObject(200, null, !!existingJoin);
     }
 
-    static async attend_event(req, db, eventId) {
+    static async attend_event(req, db, eventId, transactionId = null) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         const event = await this.get_event_by_id(req, db, eventId);
         if (event.isError()) {
@@ -181,8 +186,8 @@ class eventsDB {
         }
 
         await db.run(
-            'INSERT INTO event_attendees (event_id, user_id, joined_at) VALUES (?, ?, ?)',
-            [eventId, userId, joinDate.toISOString()]
+            'INSERT INTO event_attendees (event_id, user_id, joined_at, payment_transaction_id) VALUES (?, ?, ?, ?)',
+            [eventId, userId, joinDate.toISOString(), transactionId]
         );
 
         return new statusObject(200, 'User successfully joined event');
@@ -198,14 +203,17 @@ class eventsDB {
         const userId = req.user.id;
 
         const existingJoin = await this.is_user_attending_event(req, db, eventId);
+        if (existingJoin.isError()) {
+            return existingJoin;
+        }
 
-        if (!existingJoin) {
+        if (!existingJoin.getData()) {
             return new statusObject(409, 'User is not attending event');
         }
 
         await db.run(
-            'DELETE FROM event_attendees WHERE event_id = ? AND user_id = ?',
-            [eventId, userId]
+            'UPDATE event_attendees SET is_attending = 0, left_at = ? WHERE event_id = ? AND user_id = ?',
+            [new Date().toISOString(), eventId, userId]
         );
 
         return new statusObject(200, 'User successfully left event');
@@ -224,7 +232,7 @@ class eventsDB {
             `SELECT u.id, u.first_name, u.last_name, u.email
              FROM users u
              JOIN event_attendees ea ON u.id = ea.user_id
-             WHERE ea.event_id = ?`, [eventId]
+             WHERE ea.event_id = ? AND ea.is_attending = 1`, [eventId]
         );
         return new statusObject(200, null, events);
     }
@@ -241,10 +249,74 @@ class eventsDB {
         const result = await db.get(
             `SELECT COUNT(*) AS attendance_count
              FROM event_attendees
-             WHERE event_id = ?`, [eventId]
+             WHERE event_id = ? AND is_attending = 1`, [eventId]
         );
         return new statusObject(200, null, result.attendance_count);
     }
+
+    static async get_event_refund_id(req, db, eventId) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+
+        const event = await this.get_event_by_id(req, db, eventId);
+        if (event.isError()) {
+            return event;
+        }
+
+        const userRefund = await db.get(
+            `SELECT payment_transaction_id
+             FROM event_attendees
+             WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL
+             ORDER BY left_at ASC LIMIT 1`, [eventId, req.user.id]
+        );
+
+        if (userRefund && userRefund.payment_transaction_id) {
+            return new statusObject(200, null, userRefund);
+        }
+
+        const otherRefund = await db.get(
+            `SELECT payment_transaction_id, user_id
+             FROM event_attendees
+             WHERE event_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL
+             ORDER BY left_at ASC LIMIT 1`, [eventId]
+        );
+
+        if (otherRefund && otherRefund.payment_transaction_id) {
+            return new statusObject(200, null, otherRefund);
+        }
+
+
+        return new statusObject(404, 'No refund transaction found');
+    }
+
+    static async refundEvent(db, eventId, user_id) {
+        const eventRes = await this.getEventByIdAdmin(db, eventId);
+        if (eventRes.isError()) {
+            return eventRes;
+        }
+        const event = eventRes.getData();
+
+        TransactionsDB.add_transaction_admin(db, user_id, event.upfront_cost, `Refund for ${event.title} upfront cost`);
+
+        await db.run(
+            `UPDATE event_attendees SET payment_transaction_id = NULL 
+             WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL`,
+            [eventId, user_id]
+        );
+
+        return new statusObject(200, 'Event refunds processed');
+    }
+
+    static async isUserPayingForEvent(req, db, eventId) {
+        const paying = await db.get(
+            `SELECT payment_transaction_id 
+             FROM event_attendees 
+             WHERE event_id = ? AND user_id = ? AND payment_transaction_id IS NOT NULL`,
+            [eventId, req.user.id]
+        );
+
+        return new statusObject(200, null, !!paying);
+    }
+
 }
 
 module.exports = eventsDB;

@@ -1,4 +1,4 @@
-import { ajaxPost } from './misc/ajax.js';
+import { ajaxGet, ajaxPost } from './misc/ajax.js';
 import { switchView, ViewChangedEvent } from './misc/view.js';
 import { Event } from "./misc/event.js";
 import { getPreviousPath } from './misc/history.js';
@@ -63,8 +63,18 @@ function setupLoginForm() {
  */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/login') {
-        setupLoginForm();
+        ajaxGet('/api/auth/status').then((data => {
+            if (data.authenticated) {
+                const previousPath = getPreviousPath();
+                if (!previousPath || previousPath === '/login' || previousPath === '/signup' || previousPath === '/home')
+                    switchView('/events');
+                else {
+                    switchView(previousPath);
+                }
+            }
+        }));
     }
+    setupLoginForm();
 }
 
 // --- Initialization ---

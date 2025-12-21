@@ -30,6 +30,8 @@ console.log(`Running in ${env} mode`);
       driver: sqlite3.Database
     });
 
+    await db.exec('PRAGMA foreign_keys = ON;');
+
     console.log('Initializing database schema...');
 
     let college_table_exists = await createTable('colleges', `
@@ -107,7 +109,7 @@ console.log(`Running in ${env} mode`);
       difficulty_level INTEGER NOT NULL,
       max_attendees INTEGER,
       upfront_cost REAL NOT NULL DEFAULT 0,
-      upfront_cost_refund_cutoff DATETIME,
+      upfront_refund_cutoff DATETIME,
       
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     `, db);
@@ -116,9 +118,13 @@ console.log(`Running in ${env} mode`);
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       event_id INTEGER,
       user_id INTEGER,
-      joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_attending BOOLEAN NOT NULL DEFAULT 1,
+      joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      left_at DATETIME,
+      payment_transaction_id INTEGER,
       FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (payment_transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
     `, db);
 
     let transactions_table_exists = await createTable('transactions', `
@@ -126,8 +132,10 @@ console.log(`Running in ${env} mode`);
       user_id INTEGER,
       amount REAL NOT NULL,
       description TEXT,
+      event_id INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL
     `, db);
 
 
@@ -210,6 +218,14 @@ console.log(`Running in ${env} mode`);
           const endDate = new Date(eventDate);
           endDate.setHours(endDate.getHours() + 2);
 
+          let upfrontRefundCutoff = null;
+          if (Math.random() > 0.5) {
+            const cutoffDate = new Date(eventDate);
+            const cutoffOffsetDays = Math.floor(Math.random() * 3) + 1;
+            cutoffDate.setDate(cutoffDate.getDate() - cutoffOffsetDays);
+            upfrontRefundCutoff = cutoffDate.toISOString().slice(0, 19).replace('T', ' ');
+          }
+
           sampleEvents.push({
             title: `Sample Event ${i + 1}`,
             description: `This is sample event ${i + 1} for testing.`,
@@ -218,7 +234,8 @@ console.log(`Running in ${env} mode`);
             end: endDate.toISOString().slice(0, 19).replace('T', ' '),
             difficulty_level: Math.floor(Math.random() * 5) + 1,
             max_attendees: Math.floor(Math.random() * 10) + 1,
-            upfront_cost: (Math.floor(Math.random() * 20) + 1)
+            upfront_cost: (Math.floor(Math.random() * 20) + 1),
+            upfront_refund_cutoff: upfrontRefundCutoff
           });
         }
 
@@ -229,9 +246,9 @@ console.log(`Running in ${env} mode`);
 
       for (const event of sampleEvents) {
         await db.run(
-          `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [event.title, event.description, event.location, event.start, event.end, event.difficulty_level, event.max_attendees, event.upfront_cost]
+          `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [event.title, event.description, event.location, event.start, event.end, event.difficulty_level, event.max_attendees, event.upfront_cost, event.upfront_refund_cutoff]
         );
       }
     }

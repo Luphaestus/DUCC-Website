@@ -22,11 +22,25 @@ let notification = null;
 
 // --- Helper Functions ---
 
+/**
+ * Dismisses the current notification if it exists and displays a new one.
+ * @param {string} title - The notification title.
+ * @param {string} message - The notification message.
+ * @param {string} type - The notification type ('success', 'error', etc.).
+ */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
+// --- Main Update Function ---
+
+/**
+ * Handles navigation events for the event detail view, fetching and rendering event data.
+ * @param {object} params - The navigation event parameters.
+ * @param {string} params.resolvedPath - The resolved path from the router.
+ * @param {string} params.path - The actual URL path.
+ */
 async function NavigationEventListner({ resolvedPath, path }) {
     if (resolvedPath !== "/event/*") return;
 
@@ -35,6 +49,11 @@ async function NavigationEventListner({ resolvedPath, path }) {
 
     try {
         const { event } = await ajaxGet("/api" + path);
+
+        const refundCutOffPassed = event.upfront_refund_cutoff ? (new Date() > new Date(event.upfront_refund_cutoff)) : false;
+        const refundCutOffDaysLeft = event.upfront_refund_cutoff ? Math.ceil((new Date(event.upfront_refund_cutoff) - new Date()) / (1000 * 60 * 60 * 24)) : null; // Unused
+        const refundCutOffDateStr = event.upfront_refund_cutoff ? new Date(event.upfront_refund_cutoff).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'N/A';
+        const refundToolTip = `<span class="info-tooltip-wrapper">${INFO_SVG}<span class="tooltip-text">The upfront cost is non-refundable as it covers pre-booked expenses like transport or accommodation which the club cannot recover if you cancel. However, if someone else joins the event to take your place, you will be eligible for a refund.</span></span>`
 
         navContainer.innerHTML = `
             <div class="form-info" id="event-info-container">
@@ -47,8 +66,8 @@ async function NavigationEventListner({ resolvedPath, path }) {
                             <p>${DESCRIPTION_SVG} <strong>Description:</strong> ${event.description || 'No description provided.'}</p>
                             <p>${DIFFICULTY_SVG} <strong>Difficulty:</strong> ${event.difficulty_level}</p>
                             <p>${ATTENDEES_SVG} <strong>Max Attendees:</strong> ${event.max_attendees || 'Unlimited'}</p>
-                            <p>${COST_SVG} <strong>Upfront Cost:</strong> £${event.upfront_cost.toFixed(2)}</p>
-                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                            <p>${COST_SVG} <strong>Upfront Cost:</strong> £${event.upfront_cost.toFixed(2)} ${event.upfront_cost > 0 && event.upfront_refund_cutoff ? (refundCutOffPassed ? `- no refunds ${refundToolTip}` : `- refunds available until ${refundCutOffDateStr} (${refundCutOffDaysLeft} days left) ${refundToolTip}`) : ''}</p>
+                                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                                 <button id="attend-event-button" class="hidden">Attend Event</button>
                                 <button id="edit-event-button" class="hidden">Edit Event</button>
                             </div>
@@ -123,6 +142,8 @@ async function NavigationEventListner({ resolvedPath, path }) {
         navContainer.innerHTML = `<p class="error-message">Could not load event details. You may not have permission to view this event.</p>`;
     }
 }
+
+// --- Initialization ---
 
 ViewChangedEvent.subscribe(NavigationEventListner);
 
