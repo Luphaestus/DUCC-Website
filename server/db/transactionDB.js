@@ -1,6 +1,14 @@
 const { statusObject } = require('../misc/status.js');
 
 class TransactionsDB {
+    /**
+     * Retrieves specific transaction-related elements for a user.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {string[]} elements - The elements to retrieve ('balance' or 'transactions').
+     * @param {number|null} id - The user ID (defaults to authenticated user).
+     * @returns {Promise<statusObject>} A statusObject containing the requested data.
+     */
     static async getElements(req, db, elements, id = null) {
         if (id == null) {
             id = req.user?.id;
@@ -32,6 +40,13 @@ class TransactionsDB {
         return new statusObject(200, null, data);
     }
 
+    /**
+     * Calculates the current balance for a user.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number|null} userId - The user ID (defaults to authenticated user).
+     * @returns {Promise<statusObject>} A statusObject containing the balance.
+     */
     static async get_balance(req, db, userId = null) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
@@ -55,6 +70,15 @@ class TransactionsDB {
         return new statusObject(200, null, result.balance);
     }
 
+    /**
+     * Adds a transaction for a user (internal/admin use).
+     * @param {object} db - The database instance.
+     * @param {number} userId - The user ID.
+     * @param {number} amount - The transaction amount.
+     * @param {string} description - The transaction description.
+     * @param {number|null} eventId - The optional event ID associated with the transaction.
+     * @returns {Promise<statusObject>} A statusObject with the new transaction ID.
+     */
     static async add_transaction_admin(db, userId, amount, description, eventId = null) {
         const createdAt = new Date().toISOString();
 
@@ -68,6 +92,16 @@ class TransactionsDB {
         return new statusObject(200, 'Transaction added successfully', transactionId.id);
     }
 
+    /**
+     * Adds a transaction for a user (API use).
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} userId - The user ID.
+     * @param {number} amount - The transaction amount.
+     * @param {string} description - The transaction description.
+     * @param {number|null} eventId - The optional event ID associated with the transaction.
+     * @returns {Promise<statusObject>} A statusObject with the new transaction ID.
+     */
     static async add_transaction(req, db, userId, amount, description, eventId = null) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
@@ -78,6 +112,12 @@ class TransactionsDB {
         return this.add_transaction_admin(db, userId, amount, description, eventId);
     }
 
+    /**
+     * Checks if a transaction exists.
+     * @param {object} db - The database instance.
+     * @param {number} transactionId - The transaction ID.
+     * @returns {Promise<boolean>} True if the transaction exists, false otherwise.
+     */
     static async get_transaction_exists(db, transactionId) {
         const transaction = await db.get(
             'SELECT id FROM transactions WHERE id = ?',
@@ -87,6 +127,13 @@ class TransactionsDB {
         return transaction !== undefined;
     }
 
+    /**
+     * Retrieves all transactions for a user, calculating the running balance.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} userId - The user ID.
+     * @returns {Promise<statusObject>} A statusObject containing the list of transactions.
+     */
     static async get_transactions(req, db, userId) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         if (req.user.id !== userId && !req.user.can_manage_transactions) {
@@ -110,6 +157,12 @@ class TransactionsDB {
         return new statusObject(200, null, transactionsWithAfter.reverse());
     }
 
+    /**
+     * Deletes a transaction (internal/admin use).
+     * @param {object} db - The database instance.
+     * @param {number} transactionId - The transaction ID.
+     * @returns {Promise<statusObject>} A statusObject indicating success or failure.
+     */
     static async delete_transaction_admin(db, transactionId) {
         const transactionExists = await TransactionsDB.get_transaction_exists(db, transactionId);
         if (!transactionExists) {
@@ -129,6 +182,13 @@ class TransactionsDB {
         return new statusObject(200, 'Transaction deleted successfully');
     }
 
+    /**
+     * Deletes a transaction (API use).
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} transactionId - The transaction ID.
+     * @returns {Promise<statusObject>} A statusObject indicating success or failure.
+     */
     static async delete_transaction(req, db, transactionId) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         if (!req.user.can_manage_transactions) {
@@ -138,6 +198,14 @@ class TransactionsDB {
         return this.delete_transaction_admin(db, transactionId);
     }
 
+    /**
+     * Retrieves a transaction ID associated with an event and user.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} eventId - The event ID.
+     * @param {number} userId - The user ID.
+     * @returns {Promise<statusObject>} A statusObject containing the transaction ID.
+     */
     static async get_transactionid_by_event(req, db, eventId, userId) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         if (req.user.id !== userId && !req.user.can_manage_transactions) {
@@ -156,6 +224,15 @@ class TransactionsDB {
         return new statusObject(200, null, transaction.id);
     }
 
+    /**
+     * Edits a transaction.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} transactionId - The transaction ID.
+     * @param {number} amount - The new amount.
+     * @param {string} description - The new description.
+     * @returns {Promise<statusObject>} A statusObject indicating success or failure.
+     */
     static async edit_transaction(req, db, transactionId, amount, description) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         if (!req.user.can_manage_transactions) {
@@ -175,6 +252,13 @@ class TransactionsDB {
         return new statusObject(200, 'Transaction updated successfully');
     }
 
+    /**
+     * Retrieves a transaction by its ID.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} transactionId - The transaction ID.
+     * @returns {Promise<statusObject>} A statusObject containing the transaction data.
+     */
     static async get_transaction_by_id(req, db, transactionId) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         if (!req.user.can_manage_transactions) {

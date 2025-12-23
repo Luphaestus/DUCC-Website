@@ -2,6 +2,7 @@ import { ajaxGet, ajaxPost } from './misc/ajax.js';
 import { notify } from './misc/notification.js';
 import { ViewChangedEvent } from './misc/view.js';
 import { Event } from "./misc/event.js";
+import { requireAuth } from './misc/auth.js';
 
 // --- DOM IDs ---
 
@@ -170,13 +171,6 @@ const HTML_TEMPLATE = `<div id="/legal-view" class="view hidden">
                         <button type="submit" id=${submitButton_id}>Submit</button>
                     </form>
                 </article>
-            </div>
-
-            <div id="legal-not-authenticated" class="hidden">
-                <p>You must be logged in to view and submit the legal and medical information form.</p>
-                <button onclick="switchView('login')">Go to Login</button>
-                <button onclick="switchView('home')">Go to Homepage</button>
-                <button onclick="switchView('signup')">Go to Signup</button>
             </div>
         </div>`;
 
@@ -535,19 +529,11 @@ function bindStaticEvents() {
  */
 async function updateLegalPage(page) {
     if (page !== '/legal') return;
-    const authenticated = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
+
+    if (!await requireAuth()) return;
 
     const legalContainer = document.getElementById('legal-container');
-    const notAuthDiv = document.getElementById('legal-not-authenticated');
-
-    if (!authenticated) {
-        if (legalContainer) legalContainer.classList.add('hidden');
-        if (notAuthDiv) notAuthDiv.classList.remove('hidden');
-        return;
-    } else {
-        if (legalContainer) legalContainer.classList.remove('hidden');
-        if (notAuthDiv) notAuthDiv.classList.add('hidden');
-    }
+    if (legalContainer) legalContainer.classList.remove('hidden');
 
     await getCurrentMedicalData();
     await validateForm();

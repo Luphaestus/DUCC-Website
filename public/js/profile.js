@@ -4,6 +4,7 @@ import { LegalEvent } from './legal.js';
 import { notify } from './misc/notification.js';
 import { FirstNameChangedEvent } from './navbar.js';
 import { ViewChangedEvent } from './misc/view.js';
+import { requireAuth } from './misc/auth.js';
 
 // --- Constants & Templates ---
 
@@ -15,12 +16,6 @@ const HTML_TEMPLATE = `
 <div id="/profile-view" class="view hidden">
     <div class="small-container">
         <h1>Profile</h1>
-        <div id="profile-not-authenticated" class="hidden">
-            <p>You must be logged in to view your profile.</p>
-            <button onclick="switchView('login')">Go to Login</button>
-            <button onclick="switchView('home')">Go to Homepage</button>
-            <button onclick="switchView('signup')">Go to Signup</button>
-        </div>
         <div class="form-info" id="profile-info">
             <article class="form-box">
                 <h3>
@@ -87,6 +82,7 @@ const HTML_TEMPLATE = `
                 </h2>
                 <button id="profile-logout-button">Logout</button>
                 <button id="profile-delete-account-button" class="secondary">Delete Account</button>
+                <button id="admin-panel-button" class="secondary hidden">Go to Admin Panel</button>
             </article>
         </div>
     </div>
@@ -96,23 +92,6 @@ const HTML_TEMPLATE = `
 let notification = null;
 
 // --- Helper Functions ---
-
-/**
- * Toggles the visibility of profile information based on authentication status.
- * @param {boolean} isAuthenticated - Whether the user is authenticated.
- */
-function showAuthenticated(isAuthenticated) {
-    const profileInfoDiv = document.getElementById('profile-info');
-    const profileNotAuthenticated = document.getElementById('profile-not-authenticated');
-
-    if (isAuthenticated) {
-        profileInfoDiv.classList.remove('hidden');
-        profileNotAuthenticated.classList.add('hidden');
-    } else {
-        profileInfoDiv.classList.add('hidden');
-        profileNotAuthenticated.classList.remove('hidden');
-    }
-}
 
 /**
  * Calculates the current academic year string (e.g., "2023/2024").
@@ -297,7 +276,7 @@ function renderAidDetails(profile) {
 /**
  * Binds event listeners to static form elements (details, aid, logout).
  */
-function bindStaticEvents() {
+async function bindStaticEvents() {
     // Profile Details Form
     const firstname = document.getElementById('profile-firstname');
     const lastname = document.getElementById('profile-surname');
@@ -423,6 +402,21 @@ function bindStaticEvents() {
             displayNotification('Account deletion failed.', "You may have outstanding debts or other issues preventing account deletion.", 'error');
         }
     });
+
+    const admin = document.getElementById('admin-panel-button');
+
+    const isAdmin = await ajaxGet('/api/user/elements/can_manage_events,can_manage_users,is_exec');
+
+    if (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec) {
+        admin.classList.remove('hidden');
+    } else {
+        admin.classList.add('hidden');
+    }
+
+    admin.addEventListener('click', (event) => {
+        event.preventDefault();
+        switchView('/admin/');
+    });
 }
 
 // --- Main Update Function ---
@@ -432,26 +426,24 @@ function bindStaticEvents() {
  * @returns {Promise<void>} A promise that resolves when the update is complete.
  */
 async function updateProfilePage() {
+    if (!await requireAuth()) return;
+
     try {
         const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,can_manage_users,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance');
 
         if (profile) {
-            showAuthenticated(true);
             renderEventStatus(profile);
             renderInstructorStatus(profile);
             renderDetails(profile);
             renderAidDetails(profile);
-        } else {
-            showAuthenticated(false);
         }
     } catch (error) {
         console.error("Failed to update profile page:", error);
-        showAuthenticated(false);
     }
 }
 
 // --- Initialization ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     bindStaticEvents();
 
     LoginEvent.subscribe((data) => {

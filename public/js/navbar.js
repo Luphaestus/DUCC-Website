@@ -8,6 +8,7 @@ import { LoginEvent } from './login.js';
 const navEntries = [
     { name: 'Home', type: 'text', classes: "contrast", action: { run: () => switchView('/home') } },
     { name: 'Events', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
+    { name: 'Admin', id: 'admin-button', type: 'text', classes: "contrast", action: { run: () => switchView('/admin/') } },
     { name: 'Login', id: 'login-button', type: 'button', action: { run: () => switchView('/login') } },
     { name: 'Profile', id: 'profile-button', type: 'button', action: { run: () => switchView('/profile') } }
 ];
@@ -92,6 +93,16 @@ async function updateNavOnLoginState(data) {
     } else {
         loginLi.classList.remove('hidden');
         profileLi.classList.add('hidden');
+    }
+
+    const isAdmin = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,is_exec').catch(() => null);
+    const adminButton = document.getElementById('admin-button');
+    const adminLi = adminButton?.parentElement;
+
+    if (isAdmin && (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec)) {
+        adminLi.classList.remove('hidden');
+    } else {
+        adminLi.classList.add('hidden');
     }
 }
 

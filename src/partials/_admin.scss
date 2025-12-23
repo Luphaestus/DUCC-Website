@@ -1,0 +1,357 @@
+/* =========================================
+   Page: Admin
+   ========================================= */
+
+#\/admin\/\*-view {
+    width: 100%;
+    padding: 2rem;
+
+    h1 {
+        text-align: center;
+    }
+
+    &>div {
+        width: 100%;
+    }
+}
+
+.admin-controls-center {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.admin-controls-bar {
+    display: grid;
+    grid-template-columns: 1fr minmax(auto, 600px) 1fr;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    width: 100%;
+
+    .admin-nav-group {
+        justify-self: start;
+        display: flex;
+        gap: 0.5rem;
+
+        button {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        justify-self: center;
+
+        input {
+            width: 100%;
+            padding-right: 2.5rem;
+            margin-bottom: 0;
+        }
+
+        button {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            padding: 0.25rem;
+            margin: 0;
+            width: auto;
+            height: auto;
+            box-shadow: none;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+            backdrop-filter: none;
+
+            >svg {
+                color: var(--theme-colour);
+            }
+
+            &:hover,
+            &:focus {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                opacity: 1;
+            }
+
+            svg {
+                width: 1.2rem;
+                height: 1.2rem;
+                display: block;
+            }
+        }
+    }
+
+    .admin-actions {
+        justify-self: end;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        button {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+    }
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 0.5rem;
+
+        .admin-nav-group,
+        .search-input-wrapper,
+        .admin-actions {
+            justify-self: center;
+            width: 100%;
+            justify-content: center;
+        }
+    }
+}
+
+#admin-user-difficulty {
+    height: 2rem !important;
+}
+
+#admin-user-tabs {
+    height: 70%;
+    margin-left: 0;
+
+    >button {
+        padding: 8px;
+    }
+}
+
+#admin-user-legal-container,
+#admin-user-profile-container,
+#admin-user-general-info-container,
+.admin-nav-group,
+#admin-user-membership-container,
+#admin-user-permissions-container {
+    margin-left: 0 !important;
+}
+
+#admin-header-actions {
+    margin-right: 10px;
+}
+
+#new-tx-desc,
+#new-tx-amount,
+.tx-amount-input,
+.tx-actions,
+.tx-desc-input,
+.global-input {
+    margin: 0 !important;
+}
+
+.event-details-section {
+    p {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    p svg {
+        flex-shrink: 0;
+        display: block;
+    }
+}
+
+/* Pagination Styles */
+#events-pagination,
+#users-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+
+    .pagination-btn {
+        padding: 0.5rem 1rem;
+        margin: 0;
+        width: auto;
+    }
+}
+
+
+/* Admin Header & Layout */
+.admin-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    #admin-header-actions {
+        justify-self: start;
+        display: flex;
+        align-items: center;
+    }
+
+    h1 {
+        margin-bottom: 0;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    #admin-header-extra {
+        justify-self: end;
+    }
+}
+
+/* User Detail specific styles */
+.user-detail-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: none;
+
+    .tab-btn {
+        background: transparent;
+        border: 1px solid var(--muted-border-color);
+        color: var(--text-color);
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-radius: 50px;
+        /* Rounded pill shape */
+        margin-bottom: 0;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: var(--secondary-focus);
+        }
+
+        &.active {
+            background: var(--primary);
+            color: var(--primary-inverse);
+            border-color: var(--primary);
+            font-weight: bold;
+        }
+    }
+}
+
+.detail-difficulty-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0 !important;
+
+    strong {
+        white-space: nowrap;
+
+        >svg {
+            width: 1.3em;
+            height: 1.3em;
+            flex-shrink: 0;
+        }
+    }
+
+    input {
+        width: 80px;
+        margin-bottom: 0;
+    }
+}
+
+.transaction-add-box {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--secondary-focus);
+    /* Neutral sub-container style */
+    border-radius: var(--border-radius);
+    border: none;
+
+    h4 {
+        margin-top: 0;
+    }
+
+    .add-tx-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+
+        input[type="number"] {
+            width: 150px;
+            margin-bottom: 0;
+            background-color: var(--card-bg-color);
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            min-width: 200px;
+            margin-bottom: 0;
+            background-color: var(--card-bg-color);
+        }
+
+        button {
+            margin-bottom: 0;
+        }
+    }
+}
+
+.tx-amount-input {
+    width: 80px;
+    margin-bottom: 0;
+}
+
+.tx-desc-input {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.tx-actions {
+    display: flex;
+    gap: 0.5rem;
+
+    button {
+        margin-bottom: 0;
+    }
+}
+
+/* Admin Table Specifics */
+.admin-table {
+    tbody {
+        cursor: pointer;
+    }
+
+    th.sortable {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+            background-color: var(--secondary-focus);
+        }
+    }
+}
+
+/* Utilities */
+
+.error-text {
+    color: var(--del-color);
+}
+
+.full-width {
+    width: 100%;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+    margin: 0 !important;
+}
+
+.admin-controls-bar {
+    .user-name-header {
+        margin: 0 !important;
+        text-align: center;
+        display: block !important;
+        font-size: 2rem !important;
+    }
+}

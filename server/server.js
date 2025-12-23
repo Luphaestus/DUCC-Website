@@ -8,6 +8,7 @@ const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const passport = require('passport');
 const app = express();
+const fs = require('fs');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -32,6 +33,11 @@ const Globals = require('./misc/globals.js');
 new Globals();
 
 let db;
+
+/**
+ * Main application entry point.
+ * Initializes database connection, sets up middleware, registers routes, and starts the server.
+ */
 (async () => {
   try {
     db = await open({
@@ -45,7 +51,7 @@ let db;
       res.status(200).send('OK');
     });
 
-    const Auth = require('./api/auth.js');
+    const Auth = require('./api/AuthAPI.js');
     const auth = new Auth(app, db, passport);
     auth.registerRoutes();
 
@@ -53,18 +59,14 @@ let db;
       res.send(`<h1>Welcome to your dashboard, ${req.user.first_name}!</h1><a href="/logout">Logout</a>`);
     });
 
-    const slides = require('./api/slides.js');
-    new slides(app).registerRoutes();
+    const apiDir = path.join(__dirname, 'api');
+    const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.js'));
 
-    const events = require('./api/events.js');
-    new events(app, db).registerRoutes();
-
-    const User = require('./api/user.js');
-    new User(app, db).registerRoutes();
-
-    const Admin = require('./api/admin.js');
-    new Admin(app, db).registerRoutes();
-
+    for (const file of apiFiles) {
+      const ApiClass = require(path.join(apiDir, file));
+      const apiInstance = new ApiClass(app, db, passport);
+      apiInstance.registerRoutes();
+    }
 
     app.get(/.*/, (req, res) => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));

@@ -1,5 +1,6 @@
 import { ajaxGet } from './misc/ajax.js';
 import { ViewChangedEvent } from './misc/view.js';
+import { requireAuth } from './misc/auth.js';
 
 // --- Constants & Templates ---
 
@@ -75,8 +76,9 @@ async function updateTransactions() {
  * Only update transactions view when navigated to /transactions.
  * @param {object} params - The path navigated to.
  */
-function NavigationEventListner({ resolvedPath }) {
+async function NavigationEventListner({ resolvedPath }) {
     if (resolvedPath === '/transactions') {
+        if (!await requireAuth()) return;
         updateTransactions();
     }
 }

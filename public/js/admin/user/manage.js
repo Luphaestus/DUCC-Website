@@ -1,0 +1,184 @@
+import { ajaxGet } from '../../misc/ajax.js';
+import { switchView } from '../../misc/view.js';
+import { adminContentID, renderPaginationControls } from '../common.js';
+
+// --- Main Render Function ---
+
+/**
+ * Renders the user management interface.
+ * Sets up search, sorting, and pagination controls.
+ * Fetches initial data to display.
+ */
+export async function renderManageUsers() {
+    const adminContent = document.getElementById(adminContentID);
+    if (!adminContent) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const search = urlParams.get('search') || '';
+    const sort = urlParams.get('sort') || 'last_name';
+    const order = urlParams.get('order') || 'asc';
+    const page = parseInt(urlParams.get('page')) || 1;
+
+    const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions').catch(() => ({}));
+
+    adminContent.innerHTML = `
+        <div class="form-info">
+            <article class="form-box">
+                <div class="admin-controls-bar">
+                    <div class="admin-nav-group">
+                        <button onclick="switchView('/admin/users')" disabled>Users</button>
+                        ${perms.can_manage_events ? `<button onclick="switchView('/admin/events')">Events</button>` : ''}
+                        ${(await ajaxGet('/api/globals/status')).isPresident ? `<button onclick="switchView('/admin/globals')">Globals</button>` : ''}
+                    </div>
+                    <div class="search-input-wrapper">
+                        <input type="text" id="user-search-input" placeholder="Search by name..." value="${search}">
+                        <button id="user-search-btn" title="Search">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                        </button>
+                    </div>
+                    <div class="admin-actions">
+                        <!-- Placeholder for grid balance -->
+                    </div>
+                </div>
+                <div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="first_name">Name ↕</th>
+                                <th class="sortable" data-sort="balance">Balance ↕</th>
+                                <th class="sortable" data-sort="first_aid_expiry">First Aid ↕</th>
+                                <th class="sortable" data-sort="difficulty_level">Difficulty ↕</th>
+                                <th class="sortable" data-sort="is_member">Member ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="5">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="users-pagination"></div>
+            </article>
+        </div>
+    `;
+
+    const searchInput = document.getElementById('user-search-input');
+    const searchBtn = document.getElementById('user-search-btn');
+
+    const performSearch = () => {
+        const newSearch = searchInput.value;
+        updateUserParams({ search: newSearch, page: 1 });
+    };
+
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
+    });
+
+    adminContent.querySelectorAll('th.sortable').forEach(th => {
+        th.addEventListener('click', () => {
+            const currentSort = new URLSearchParams(window.location.search).get('sort') || 'last_name';
+            const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
+            const field = th.dataset.sort;
+            let newOrder = 'asc';
+            if (currentSort === field) {
+                newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+            }
+            updateUserParams({ sort: field, order: newOrder });
+        });
+    });
+
+    await fetchAndRenderUsers({ page, search, sort, order });
+}
+
+// --- Helper Functions ---
+
+/**
+ * Updates the URL parameters and refreshes the user list.
+ * @param {object} updates - Key-value pairs of parameters to update (page, search, sort, order).
+ */
+function updateUserParams(updates) {
+    const urlParams = new URLSearchParams(window.location.search);
+    for (const [key, value] of Object.entries(updates)) {
+        if (value === null || value === undefined || value === '') {
+            urlParams.delete(key);
+        } else {
+            urlParams.set(key, value);
+        }
+    }
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+    window.history.pushState({}, '', newUrl);
+
+    // Parse params back to object for fetchAndRenderUsers
+    const params = {
+        page: parseInt(urlParams.get('page')) || 1,
+        search: urlParams.get('search') || '',
+        sort: urlParams.get('sort') || 'last_name',
+        order: urlParams.get('order') || 'asc'
+    };
+    fetchAndRenderUsers(params);
+}
+
+/**
+ * Fetches users from the API based on filters and renders them into the table.
+ * @param {object} params - Filter parameters.
+ * @param {number} params.page - Current page number.
+ * @param {string} params.search - Search term.
+ * @param {string} params.sort - Field to sort by.
+ * @param {string} params.order - Sort order ('asc' or 'desc').
+ */
+async function fetchAndRenderUsers({ page, search, sort, order }) {
+    const tbody = document.getElementById('users-table-body');
+    const pagination = document.getElementById('users-pagination');
+
+    try {
+        const limit = 10;
+        const query = new URLSearchParams({ page, limit, search, sort, order }).toString();
+        const data = await ajaxGet(`/api/admin/users?${query}`);
+        const users = data.users || [];
+        const totalPages = data.totalPages || 1;
+
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
+            pagination.innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = users.map(user => {
+            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown';
+            const balance = user.balance !== undefined ? `£${Number(user.balance).toFixed(2)}` : 'N/A';
+
+            let firstAid = 'None';
+            if (user.first_aid_expiry) {
+                const expiry = new Date(user.first_aid_expiry);
+                firstAid = expiry > new Date() ? 'Valid' : 'Expired';
+            }
+
+            const difficulty = user.difficulty_level || 1;
+            const member = user.is_member ? 'Member' : 'Non-Member';
+
+            return `
+                <tr class="user-row" data-name="${fullName}" data-id="${user.id}">
+                    <td>${fullName}</td>
+                    <td>${balance}</td>
+                    <td>${firstAid}</td>
+                    <td>${difficulty}</td>
+                    <td>${member}</td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.querySelectorAll('.user-row').forEach(row => {
+            row.addEventListener('click', () => {
+                switchView(`/admin/user/${row.dataset.id}`);
+            });
+        });
+
+        renderPaginationControls(pagination, page, totalPages, (newPage) => {
+            updateUserParams({ page: newPage });
+        });
+
+    } catch (e) {
+        console.error("Error fetching users", e);
+        tbody.innerHTML = '<tr><td colspan="5">Error loading users.</td></tr>';
+    }
+}

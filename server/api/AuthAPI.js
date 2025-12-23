@@ -1,5 +1,6 @@
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
+const checkAuthentication = require('../misc/authentication');
 
 /**
  * Routes:
@@ -9,6 +10,7 @@ const bcrypt = require('bcrypt');
  *
  * Middleware:
  *   isAuthenticated -> Checks if the user is authenticated.
+ *   check -> Checks if the user is authenticated and has specific permissions.
  *
  * @module Auth
  */
@@ -111,7 +113,7 @@ class Auth {
         });
 
 
-        this.app.get('/api/auth/logout', (req, res, next) => {
+        this.app.get('/api/auth/logout', this.check(), (req, res, next) => {
             req.logout((err) => {
                 if (err) { return next(err); }
                 req.session.destroy((err) => {
@@ -141,10 +143,16 @@ class Auth {
      * @param {function} next - The next middleware function.
      */
     isAuthenticated(req, res, next) {
-        if (req.isAuthenticated()) {
-            return next();
-        }
-        res.status(401).json({ message: 'Unauthorized access.' });
+        return checkAuthentication()(req, res, next);
+    }
+
+    /**
+     * Middleware factory to check permissions.
+     * @param {...string} requirements - Permission requirements.
+     * @returns {function} Express middleware.
+     */
+    check(...requirements) {
+        return checkAuthentication(...requirements);
     }
 }
 

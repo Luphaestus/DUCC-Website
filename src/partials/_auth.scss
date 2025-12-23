@@ -1,0 +1,19 @@
+/* =========================================
+   Page: Transactions & Signup, Login
+   ========================================= */
+
+#\/transactions-view,
+#\/signup-view,
+#\/login-view {
+    width: 100%;
+    padding: 2rem;
+
+    h1 {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    &>div {
+        width: 100%;
+    }
+}

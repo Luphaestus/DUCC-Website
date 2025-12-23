@@ -4,6 +4,34 @@ const sqlite3 = require('sqlite3');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
+/**
+ * Generate a random password of given length.
+ * @param {number} length - The desired length of the password.
+ * @returns {string} The generated random password.
+ */
+function generateRandomPassword(length) {
+  var upperChars = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "M", "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
+  var lowerChars = ["a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "m", "n", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
+  var numbers = ["2", "3", "4", "5", "6", "7", "8", "9"];
+  var symbols = ["!", "#", "$", "%", "&", "*", "+", "-", "?", "@", "\"", "'", "(", ")", ",", ".", "/", ":", ";", "<", "=", ">", "[", "\\", "]", "^", "_", "`", "{", "}", "~"];
+
+  var allChars = upperChars.concat(lowerChars, numbers, symbols);
+
+  var password = "";
+  for (var i = 0; i < length; i++) {
+    var randomIndex = Math.floor(Math.random() * allChars.length);
+    password += allChars[randomIndex];
+  }
+  return password;
+}
+
+/**
+ * Creates a database table if it does not already exist.
+ * @param {string} tableName - The name of the table to create.
+ * @param {string} createStatement - The SQL statement defining the table columns and constraints.
+ * @param {object} db - The database instance.
+ * @returns {Promise<boolean>} True if the table already existed, false if it was created.
+ */
 async function createTable(tableName, createStatement, db) {
   const tableExists = await db.get(`
     SELECT name FROM sqlite_master WHERE type='table' AND name=?;
@@ -20,7 +48,10 @@ async function createTable(tableName, createStatement, db) {
 const env = process.env.NODE_ENV || 'development';
 console.log(`Running in ${env} mode`);
 
-
+/**
+ * Main initialization function.
+ * Connects to the database, creates tables, and populates initial data.
+ */
 (async () => {
   try {
     console.log('Opening database connection...');
@@ -138,12 +169,36 @@ console.log(`Running in ${env} mode`);
       FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL
     `, db);
 
+    let tags_table_exists = await createTable('tags', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      color TEXT DEFAULT '#808080',
+      description TEXT,
+      min_difficulty INTEGER
+    `, db);
+
+    let event_tags_table_exists = await createTable('event_tags', `
+      event_id INTEGER,
+      tag_id INTEGER,
+      PRIMARY KEY (event_id, tag_id),
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+      FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    `, db);
+
+    let tag_whitelists_table_exists = await createTable('tag_whitelists', `
+      tag_id INTEGER,
+      user_id INTEGER,
+      PRIMARY KEY (tag_id, user_id),
+      FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    `, db);
+
 
 
     if (!user_table_exists) {
       console.log('Inserting admin user...');
-      const email = 'a@a';
-      const password = 'a';
+      const email = 'admin@durham.ac.uk';
+      const password = generateRandomPassword(12);
       const hashedPassword = await bcrypt.hash(password, 10);
       await db.run(
         `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, can_manage_users, can_manage_events, can_manage_transactions, is_exec)
@@ -172,7 +227,6 @@ console.log(`Running in ${env} mode`);
           let firstAidExpiry = null;
           if (Math.random() > 0.7) {
             const d = new Date();
-            // Random date between -1 year and +2 years
             const daysOffset = Math.floor(Math.random() * 1095) - 365;
             d.setDate(d.getDate() + daysOffset);
             firstAidExpiry = d.toISOString().split('T')[0];
@@ -194,7 +248,12 @@ console.log(`Running in ${env} mode`);
         }
       }
 
-      console.log('Admin user created successfully with pre-filled credentials.');
+      console.log('Admin user created');
+      console.log("================================");
+      console.log("Admin login details:");
+      console.log(`Email: ${email}`);
+      console.log(`Password: ${password}`);
+      console.log("================================");
     }
 
 

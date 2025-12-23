@@ -2,8 +2,22 @@ const { statusObject } = require('../misc/status.js');
 const UserDB = require('../db/userDB.js');
 const transactionsDB = require('../db/transactionDB.js');
 const Globals = require('../misc/globals.js');
+const check = require('../misc/authentication');
 
+/**
+ * Routes:
+ *   GET  /api/user/elements/:elements -> { ...elements }
+ *   POST /api/user/elements           -> { success: boolean }
+ *   POST /api/user/join               -> { success: boolean }
+ *   POST /api/user/deleteAccount      -> { success: boolean }
+ *
+ * @module User
+ */
 class User {
+    /**
+     * @param {object} app - The Express application instance.
+     * @param {object} db - The database instance.
+     */
     constructor(app, db) {
         this.app = app;
         this.db = db;
@@ -27,9 +41,20 @@ class User {
         "agrees_to_keep_health_data"
     ];
 
-
+    /**
+     * Retrieves the current user's ID from the request object.
+     * @param {object} req - The Express request object.
+     * @returns {number|null} The user ID or null if not authenticated.
+     */
     static getID(req) { return req.user ? req.user.id : null; }
 
+    /**
+     * Retrieves accessible elements for a user.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {string|string[]} elements - The elements to retrieve.
+     * @returns {Promise<statusObject>} A promise resolving to a statusObject containing the retrieved data.
+     */
     static async getAccessibleElements(req, db, elements) {
         function isElementAccessibleByNormalUser(element) {
             const accessibleUserDB = [
@@ -123,6 +148,13 @@ class User {
         return new statusObject(200, null, result);
     }
 
+    /**
+     * Writes updateable elements for the user, performing validation.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {object} data - Key-value pairs of elements to update.
+     * @returns {Promise<statusObject>} A promise resolving to a statusObject indicating success or failure.
+     */
     static async writeNormalElements(req, db, data) {
         async function isNormalWritableElement(element, data, db) {
             async function getElement(element, data, db) {
@@ -305,7 +337,7 @@ class User {
     }
 
     registerRoutes() {
-        this.app.get('/api/user/elements/:elements', async (req, res) => {
+        this.app.get('/api/user/elements/:elements', check(), async (req, res) => {
             const elements = req.params.elements.split(',').map(e => e.trim());
             const status = await User.getAccessibleElements(req, this.db, elements);
             if (status.isError()) {
@@ -314,7 +346,7 @@ class User {
             res.json(status.getData());
         });
 
-        this.app.post('/api/user/elements', async (req, res) => {
+        this.app.post('/api/user/elements', check(), async (req, res) => {
             const status = await User.writeNormalElements(req, this.db, req.body);
             if (status.isError()) {
                 return status.getResponse(res);
@@ -322,7 +354,7 @@ class User {
             res.json({ success: true });
         });
 
-        this.app.post('/api/user/join', async (req, res) => {
+        this.app.post('/api/user/join', check(), async (req, res) => {
             try {
                 const membershipStatus = await UserDB.getElements(req, this.db, 'is_member');
                 if (membershipStatus.isError()) {
@@ -358,11 +390,7 @@ class User {
             }
         });
 
-        this.app.post('/api/user/deleteAccount', async (req, res) => {
-            if (!req.isAuthenticated()) {
-                return res.status(401).json({ message: 'User not authenticated' });
-            }
-
+        this.app.post('/api/user/deleteAccount', check(), async (req, res) => {
             const balance = await transactionsDB.get_balance(req, this.db);
             if (balance.isError()) {
                 return balance.getResponse(res);

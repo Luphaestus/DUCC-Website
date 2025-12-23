@@ -1,0 +1,31 @@
+@mixin translucent-card {
+    background-color: var(--translucent-bg);
+    border: 1px solid var(--translucent-bg);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 1vw;
+}
+
+@mixin card-highlights {
+    border-left: 4px solid var(--highlight);
+
+    svg {
+        color: var(--highlight);
+    }
+
+    &:nth-child(1) {
+        --highlight: color-mix(in srgb, purple 70%, var(--theme-opposite) 20%);
+    }
+
+    &:nth-child(2) {
+        --highlight: color-mix(in srgb, orange 70%, var(--theme-opposite) 20%);
+    }
+
+    &:nth-child(3) {
+        --highlight: color-mix(in srgb, green 70%, var(--theme-opposite) 20%);
+    }
+
+    &:nth-child(4) {
+        --highlight: color-mix(in srgb, red 70%, var(--theme-opposite) 20%);
+    }
+}

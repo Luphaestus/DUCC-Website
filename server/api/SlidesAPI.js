@@ -9,9 +9,9 @@ const path = require('path');
  *   GET  /api/slides/random   -> { image: string }
  *   GET  /api/slides/:index   -> { image: string }
  *
- * @module Slides
+ * @module SlidesAPI
  */
-class Slides {
+class SlidesAPI {
 
   /**
    * @param {object} app - The Express application instance.
@@ -174,4 +174,4 @@ class Slides {
   }
 }
 
-module.exports = Slides;
+module.exports = SlidesAPI;

@@ -1,0 +1,33 @@
+/**
+ * Middleware to check authentication and permissions.
+ * Supports checking multiple permission sets.
+ * Within a set (string), permissions separated by '|' are treated as OR.
+ * Between sets (arguments), all conditions must be met (AND).
+ * 
+ * @param {...string} requirements - Permission strings, e.g. 'is_exec', 'can_manage_events | can_manage_users'
+ */
+const checkAuthentication = (...requirements) => {
+    return (req, res, next) => {
+        if (!req.isAuthenticated || !req.isAuthenticated()) {
+            return res.status(401).json({ message: 'Unauthorized: Please log in.' });
+        }
+
+        const user = req.user;
+
+        for (const requirement of requirements) {
+            const permissions = requirement.split('|').map(p => p.trim());
+
+            const hasPermission = permissions.some(permission => user[permission]);
+
+            if (!hasPermission) {
+                return res.status(403).json({ message: 'Forbidden: Insufficient permissions.' });
+            }
+        }
+
+        next();
+    };
+};
+
+module.exports = checkAuthentication;
+
+

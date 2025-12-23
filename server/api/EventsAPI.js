@@ -9,10 +9,14 @@ const { statusObject } = require('../misc/status.js');
  * GET  /api/events               -> { events: Event[] }
  * GET  /api/events/rweek/:offset -> { events: Event[] }
  * GET  /api/events/:id          -> { event: Event }
+ * GET  /api/event/:id/isAttending -> { isAttending: boolean }
+ * POST /api/event/:id/attend    -> { message: string }
+ * POST /api/event/:id/leave     -> { message: string }
+ * GET  /api/event/:id/attendees -> { attendees: User[] }
  *
- * @module Events
+ * @module EventsAPI
  */
-class Events {
+class EventsAPI {
 
     /**
      * @param {object} app - The Express application instance.
@@ -23,6 +27,9 @@ class Events {
         this.db = db;
     }
 
+    /**
+     * Registers all event-related routes.
+     */
     registerRoutes() {
         this.app.get('/api/events/rweek/:offset', async (req, res) => {
             const max_difficulty = await UserDB.getElements(req, this.db, "difficulty_level");
@@ -89,7 +96,7 @@ class Events {
 
             const attendeeCountRes = await EventsDB.get_event_attendance_count(req, this.db, eventId);
             if (attendeeCountRes.isError()) { return attendeeCountRes.getResponse(res); }
-            if (eventRes.getData().max_attendees <= attendeeCountRes.getData()) {
+            if (eventRes.getData().max_attendees <= attendeeCountRes.getData() && eventRes.getData().max_attendees !== 0) {
                 return res.status(400).json({ message: 'Event has reached maximum number of attendees' });
             }
 
@@ -149,7 +156,6 @@ class Events {
                     if (!refundIdRes.isError()) {
                         const refundData = refundIdRes.getData();
                         if (refundData.user_id) {
-                            console.log("Processing refund after cutoff for user:", refundData.user_id);
                             await EventsDB.refundEvent(this.db, eventId, refundData.user_id);
                         } else {
                             await TransactionsDB.delete_transaction_admin(this.db, refundData.payment_transaction_id);
@@ -163,7 +169,6 @@ class Events {
                 return status.getResponse(res);
             };
         });
-
 
         this.app.post('/api/event/:id/leave', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
@@ -234,4 +239,4 @@ class Events {
     }
 }
 
-module.exports = Events;
+module.exports = EventsAPI;

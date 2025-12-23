@@ -1,0 +1,56 @@
+/* =========================================
+   Global Theme & Configuration
+   ========================================= */
+
+body {
+    color: reverse-color(var(--pico-color));
+    background-color: reverse-color(var(--pico-background-color));
+    --translucent-bg: color-mix(in srgb, color-mix(in srgb, var(--pico-background-color) 95%, var(--pico-color) 5%) 85%, transparent);
+    --theme: white;
+    --theme-opposite: black;
+    --colour-good: color-mix(in srgb, var(--theme-opposite) 50%, green);
+    --colour-warning: color-mix(in srgb, var(--theme-opposite) 50%, orange);
+    --colour-bad: color-mix(in srgb, var(--theme-opposite) 50%, red);
+
+    --table-border: 1px solid color-mix(in srgb, var(--pico-color) 20%, transparent);
+
+    --table-bg-head: color-mix(in srgb, var(--pico-primary) 15%, transparent);
+    --table-bg-hover-head: color-mix(in srgb, var(--pico-primary) 25%, transparent);
+    --table-bg-body: color-mix(in srgb, white 15%, transparent);
+    --table-bg-hover-body: color-mix(in srgb, white 25%, transparent);
+
+    #animated-background {
+        opacity: 0.6;
+
+        @media (prefers-color-scheme: dark) {
+            opacity: 0.4;
+        }
+    }
+
+    .bg-blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(50px);
+        will-change: transform;
+    }
+
+    .bg-icon {
+        position: absolute;
+        opacity: 0.12;
+        color: var(--pico-color);
+        pointer-events: none;
+        will-change: transform;
+        z-index: 1;
+
+        @media (prefers-color-scheme: dark) {
+            opacity: 0.06;
+        }
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        --theme: black;
+        --theme-opposite: white;
+    }
+}
