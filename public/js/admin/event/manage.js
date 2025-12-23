@@ -1,6 +1,6 @@
 import { ajaxGet } from '../../misc/ajax.js';
 import { switchView } from '../../misc/view.js';
-import { adminContentID } from '../common.js';
+import { adminContentID, renderAdminNavBar } from '../common.js';
 
 // --- Main Render Function ---
 
@@ -19,17 +19,11 @@ export async function renderManageEvents() {
     const order = urlParams.get('order') || 'asc';
     const page = parseInt(urlParams.get('page')) || 1;
 
-    const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_transactions').catch(() => ({}));
-
     adminContent.innerHTML = `
         <div class="form-info">
             <article class="form-box">
                 <div class="admin-controls-bar">
-                    <div class="admin-nav-group">
-                        ${(perms.can_manage_users || perms.can_manage_transactions) ? `<button onclick="switchView('/admin/users')">Users</button>` : ''}
-                        <button onclick="switchView('/admin/events')" disabled>Events</button>
-                        ${(await ajaxGet('/api/globals/status')).isPresident ? `<button onclick="switchView('/admin/globals')">Globals</button>` : ''}
-                    </div>
+                    ${await renderAdminNavBar('events')}
                     <div class="search-input-wrapper">
                         <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
                         <button id="event-search-btn" title="Search">

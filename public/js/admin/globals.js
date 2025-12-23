@@ -1,5 +1,5 @@
 import { ajaxGet, ajaxPost } from '../misc/ajax.js';
-import { adminContentID } from './common.js';
+import { adminContentID, renderAdminNavBar } from './common.js';
 import { notify } from '../misc/notification.js';
 
 // constants
@@ -19,17 +19,11 @@ export async function renderManageGlobals() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions').catch(() => ({}));
-
     adminContent.innerHTML = `
         <div class="form-info">
             <article class="form-box">
                 <div class="admin-controls-bar">
-                    <div class="admin-nav-group">
-                        ${(perms.can_manage_users || perms.can_manage_transactions) ? `<button onclick="switchView('/admin/users')">Users</button>` : ''}
-                        ${perms.can_manage_events ? `<button onclick="switchView('/admin/events')">Events</button>` : ''}
-                        ${(await ajaxGet('/api/globals/status')).isPresident ? `<button onclick="switchView('/admin/globals')" disabled>Globals</button>` : ''}
-                    </div>
+                    ${await renderAdminNavBar('globals')}
                 </div>
                 <div>
                     <table class="admin-table">

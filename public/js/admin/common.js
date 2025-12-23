@@ -1,3 +1,5 @@
+import { ajaxGet } from '../misc/ajax.js';
+
 // --- Constants ---
 
 export const adminContentID = 'admin-content';
@@ -38,4 +40,23 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
     container.appendChild(prevBtn);
     container.appendChild(info);
     container.appendChild(nextBtn);
+}
+
+/**
+ * Renders the admin navigation bar.
+ * @param {string} activeSection - The currently active section (e.g., 'users', 'events', 'tags', 'globals').
+ * @return <string> HTML string for the admin navigation bar.
+ */
+export async function renderAdminNavBar(activeSection) {
+    const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions').catch(() => ({}));
+    const isPresident = (await ajaxGet('/api/globals/status')).isPresident;
+
+    return `
+        <div class="admin-nav-group">
+            ${(perms.can_manage_users || perms.can_manage_transactions) ? `<button onclick="switchView('/admin/users')" ${activeSection === 'users' ? 'disabled' : ''}>Users</button>` : ''}
+            ${perms.can_manage_events ? `<button onclick="switchView('/admin/events')" ${activeSection === 'events' ? 'disabled' : ''}>Events</button>` : ''}
+            <button onclick="switchView('/admin/tags')" ${activeSection === 'tags' ? 'disabled' : ''}>Tags</button>
+            ${isPresident ? `<button onclick="switchView('/admin/globals')" ${activeSection === 'globals' ? 'disabled' : ''}>Globals</button>` : ''}
+        </div>
+    `;
 }

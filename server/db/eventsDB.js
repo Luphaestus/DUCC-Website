@@ -72,7 +72,7 @@ class eventsDB {
     static async getEventsAdmin(db, options) {
         const { page, limit, search, sort, order } = options;
         const offset = (page - 1) * limit;
-        
+
         const allowedSorts = ['title', 'start', 'location', 'difficulty_level', 'upfront_cost'];
         const sortCol = allowedSorts.includes(sort) ? sort : 'start';
         const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
@@ -136,19 +136,18 @@ class eventsDB {
             return new statusObject(401, 'User not authorized');
         }
 
-        // Tag Restrictions Check
         const tags = await TagsDB.getTagsForEvent(db, id);
         for (const tag of tags) {
             if (tag.min_difficulty && tag.min_difficulty > userDifficulty) {
                 return new statusObject(401, `User not authorized (Tag restriction: ${tag.name})`);
             }
-            
+
             const whitelist = await TagsDB.getWhitelist(db, tag.id);
             if (whitelist.getData() && whitelist.getData().length > 0) {
                 const userId = req.user.id;
                 const onList = whitelist.getData().find(u => u.id === userId);
                 if (!onList) {
-                     return new statusObject(401, `User not authorized (Tag restriction: ${tag.name})`);
+                    return new statusObject(401, `User not authorized (Tag restriction: ${tag.name})`);
                 }
             }
         }

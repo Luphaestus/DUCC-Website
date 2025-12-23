@@ -215,11 +215,11 @@ function renderTab(tabName, user, isPresident) {
                     try {
                         await ajaxPost(`/api/admin/user/${user.id}/elements`, { [field]: el.checked });
                         notify('Success', 'Permissions updated', 'success');
-                        user[field] = el.checked; // Update local user object to reflect change
+                        user[field] = el.checked;
                     } catch (e) {
                         console.error(e);
                         notify('Error', 'Failed to update permissions', 'error');
-                        el.checked = !el.checked; // Revert checkbox on error
+                        el.checked = !el.checked;
                     }
                 });
             };

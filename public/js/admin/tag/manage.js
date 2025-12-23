@@ -1,24 +1,16 @@
 import { ajaxGet } from '../../misc/ajax.js';
 import { switchView } from '../../misc/view.js';
-import { adminContentID } from '../common.js';
+import { adminContentID, renderAdminNavBar } from '../common.js';
 
 export async function renderManageTags() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_transactions').catch(() => ({}));
-    const isPresident = (await ajaxGet('/api/globals/status')).isPresident;
-
     adminContent.innerHTML = `
         <div class="form-info">
             <article class="form-box">
                 <div class="admin-controls-bar">
-                    <div class="admin-nav-group">
-                        ${(perms.can_manage_users || perms.can_manage_transactions) ? `<button onclick="switchView('/admin/users')">Users</button>` : ''}
-                        <button onclick="switchView('/admin/events')">Events</button>
-                        <button onclick="switchView('/admin/tags')" disabled>Tags</button>
-                        ${isPresident ? `<button onclick="switchView('/admin/globals')">Globals</button>` : ''}
-                    </div>
+                    ${await renderAdminNavBar('tags')}
                     <div class="admin-actions">
                         <button onclick="switchView('/admin/tag/new')" class="primary">Create New Tag</button>
                     </div>
@@ -47,8 +39,8 @@ export async function renderManageTags() {
 
 async function fetchAndRenderTags() {
     try {
-        const data = await ajaxGet('/api/tags');
-        const tags = data || []; 
+        const data = (await ajaxGet('/api/tags')).data;
+        const tags = data || [];
         const tbody = document.getElementById('tags-table-body');
 
         if (tags.length === 0) {

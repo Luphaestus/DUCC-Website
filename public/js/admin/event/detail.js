@@ -27,25 +27,33 @@ export async function renderEventDetail(id) {
     let event = {
         title: '', description: '', location: '',
         start: '', end: '', difficulty_level: 1,
-        max_attendees: 0, upfront_cost: 0, upfront_refund_cutoff: ''
+        max_attendees: 0, upfront_cost: 0, upfront_refund_cutoff: '', tags: []
     };
 
-    if (!isNew) {
-        try {
-            event = await ajaxGet(`/api/admin/event/${id}`);
+    let allTags = [];
+
+    try {
+        const eventData = !isNew ? await ajaxGet(`/api/admin/event/${id}`) : null;
+        const tagsData = (await ajaxGet('/api/tags')).data || [];
+
+        if (!isNew) {
+            event = eventData;
             event.start = new Date(event.start).toISOString().slice(0, 16);
             event.end = new Date(event.end).toISOString().slice(0, 16);
             if (event.upfront_refund_cutoff) {
                 event.upfront_refund_cutoff = new Date(event.upfront_refund_cutoff).toISOString().slice(0, 16);
             }
-        } catch (e) {
-            return adminContent.innerHTML = '<p>Error loading event.</p>';
         }
+        allTags = tagsData;
+
+    } catch (e) {
+        console.error(e);
+        return adminContent.innerHTML = '<p>Error loading event or tags.</p>';
     }
 
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) {
-        actionsEl.innerHTML = ' <button onclick="switchView(\'/admin/events\')" style="margin-bottom: 1rem;">&larr; Back to Events</button> ';
+        actionsEl.innerHTML = ` <button onclick="switchView('/admin/events')" style="margin-bottom: 1rem;">&larr; Back to Events</button> `;
     }
 
     adminContent.innerHTML = `
@@ -103,6 +111,17 @@ export async function renderEventDetail(id) {
                                 <input type="datetime-local" name="upfront_refund_cutoff" value="${event.upfront_refund_cutoff || ''}">
                             </div>
                         </p>
+                        
+                        <h3>Tags</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            ${allTags.map(tag => `
+                                <label style="display: inline-flex; align-items: center; gap: 5px; border: 1px solid #ccc; padding: 5px; border-radius: 5px; cursor: pointer;">
+                                    <input type="checkbox" name="tags" value="${tag.id}" ${event.tags && event.tags.find(t => t.id === tag.id) ? 'checked' : ''}>
+                                    <span style="width: 15px; height: 15px; border-radius: 50%; background-color: ${tag.color}; display: inline-block;"></span>
+                                    ${tag.name}
+                                </label>
+                            `).join('')}
+                        </div>
 
                     </div>
                 </div>
@@ -132,6 +151,10 @@ export async function renderEventDetail(id) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
+
+        // Handle tags manually because Object.fromEntries takes only the last value for a key
+        const selectedTags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
+        data.tags = selectedTags;
 
         try {
             if (isNew) {

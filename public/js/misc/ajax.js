@@ -68,4 +68,75 @@ async function ajaxPost(url, data) {
     });
 }
 
-export { ajaxGet, ajaxPost };
+/**
+ * Make an AJAX DELETE request
+ * @param {string} url - The URL to send the DELETE request to
+ * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
+ */
+async function ajaxDelete(url) {
+    checkServerConnection();
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    } catch (e) {
+                        reject('Failed to parse response: ' + e.message);
+                    }
+                } else {
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        reject(errorResponse.message || 'Request failed');
+                    } catch (e) {
+                        reject('Request failed with status: ' + xhr.status);
+                    }
+                }
+            }
+        };
+
+        xhr.open('DELETE', url, true);
+        xhr.send();
+    });
+}
+
+/**
+ * Make an AJAX PUT request
+ * @param {string} url - The URL to send the PUT request to
+ * @param {object} data - The data to send
+ * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
+ */
+async function ajaxPut(url, data) {
+    checkServerConnection();
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve(response);
+                    } catch (e) {
+                        reject('Failed to parse response: ' + e.message);
+                    }
+                } else {
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        reject(errorResponse.message || 'Request failed');
+                    } catch (e) {
+                        reject('Request failed with status: ' + xhr.status);
+                    }
+                }
+            }
+        };
+
+        xhr.open('PUT', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify(data));
+    });
+}
+export { ajaxGet, ajaxPost, ajaxDelete, ajaxPut };
