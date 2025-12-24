@@ -267,8 +267,7 @@ async function renderTagsTab(container, userId) {
             ajaxGet(`/api/user/${userId}/tags`)
         ]);
 
-        const allTags = allTagsData.tags || allTagsData;
-
+        const allTags = allTagsData.data || [];
         const availableTags = allTags.filter(tag => !userTags.some(ut => ut.id === tag.id));
 
         let html = `

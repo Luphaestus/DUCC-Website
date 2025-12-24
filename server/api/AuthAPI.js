@@ -1,6 +1,6 @@
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
-const checkAuthentication = require('../misc/authentication');
+const checkAuthentication = require('../misc/authentication.js');
 
 /**
  * Auth API module.

@@ -132,7 +132,6 @@ export async function renderTagDetail(id) {
     if (!isNew) {
         // Handle Tag Deletion
         document.getElementById('delete-tag-btn').onclick = async () => {
-            if (!confirm('Are you sure you want to delete this tag? Events using this tag will be affected.')) return;
             await ajaxDelete(`/api/tags/${id}`);
             notify('Success', 'Tag deleted successfully', NotificationTypes.SUCCESS);
             switchView('/admin/tags');
@@ -164,7 +163,7 @@ export async function renderTagDetail(id) {
                 try {
                     await ajaxPost(`/api/tags/${id}/whitelist`, { userId: userId });
                     notify('Success', 'User added to whitelist', NotificationTypes.SUCCESS);
-                    
+
                     // Refresh whitelist table
                     const newWhitelist = (await ajaxGet(`/api/tags/${id}/whitelist`)).data || [];
                     document.getElementById('whitelist-table-body').innerHTML = renderWhitelistRows(newWhitelist, id);
@@ -210,7 +209,7 @@ function setupRemoveButtons(tagId) {
             try {
                 await ajaxDelete(`/api/tags/${tagId}/whitelist/${userId}`);
                 notify('Success', 'User removed from whitelist', NotificationTypes.SUCCESS);
-                
+
                 // Refresh list
                 const newWhitelist = (await ajaxGet(`/api/tags/${tagId}/whitelist`)).data || [];
                 tbody.innerHTML = renderWhitelistRows(newWhitelist, tagId);

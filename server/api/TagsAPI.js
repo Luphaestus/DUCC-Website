@@ -1,5 +1,6 @@
 const TagsDB = require('../db/tagsDB.js');
 const { statusObject } = require('../misc/status.js');
+const check = require('../misc/authentication.js');
 
 /**
  * Tags API module.
@@ -34,16 +35,6 @@ class TagsAPI {
      */
     registerRoutes() {
         /**
-         * Middleware to ensure the user is an admin with event management permissions.
-         */
-        const checkAdmin = (req, res, next) => {
-            if (!req.isAuthenticated() || !req.user.can_manage_events) {
-                return res.status(403).json({ message: 'Unauthorized' });
-            }
-            next();
-        };
-
-        /**
          * GET /api/tags
          * Retrieves all tags from the database.
          */
@@ -57,7 +48,7 @@ class TagsAPI {
          * Creates a new tag.
          * Requires admin permissions.
          */
-        this.app.post('/api/tags', checkAdmin, async (req, res) => {
+        this.app.post('/api/tags', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.createTag(this.db, req.body);
             result.getResponse(res);
         });
@@ -67,7 +58,7 @@ class TagsAPI {
          * Updates an existing tag by ID.
          * Requires admin permissions.
          */
-        this.app.put('/api/tags/:id', checkAdmin, async (req, res) => {
+        this.app.put('/api/tags/:id', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.updateTag(this.db, req.params.id, req.body);
             result.getResponse(res);
         });
@@ -77,7 +68,7 @@ class TagsAPI {
          * Deletes a tag by ID.
          * Requires admin permissions.
          */
-        this.app.delete('/api/tags/:id', checkAdmin, async (req, res) => {
+        this.app.delete('/api/tags/:id', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.deleteTag(this.db, req.params.id);
             result.getResponse(res);
         });
@@ -87,7 +78,7 @@ class TagsAPI {
          * Retrieves the list of users who are whitelisted for a specific tag.
          * Requires admin permissions.
          */
-        this.app.get('/api/tags/:id/whitelist', checkAdmin, async (req, res) => {
+        this.app.get('/api/tags/:id/whitelist', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.getWhitelist(this.db, req.params.id);
             result.getResponse(res);
         });
@@ -97,7 +88,7 @@ class TagsAPI {
          * Adds a user to the whitelist for a specific tag.
          * Requires admin permissions.
          */
-        this.app.post('/api/tags/:id/whitelist', checkAdmin, async (req, res) => {
+        this.app.post('/api/tags/:id/whitelist', check('can_manage_events | can_manage_users'), async (req, res) => {
             const { userId } = req.body;
             const result = await TagsDB.addToWhitelist(this.db, req.params.id, userId);
             result.getResponse(res);
@@ -108,7 +99,7 @@ class TagsAPI {
          * Removes a user from the whitelist for a specific tag.
          * Requires admin permissions.
          */
-        this.app.delete('/api/tags/:id/whitelist/:userId', checkAdmin, async (req, res) => {
+        this.app.delete('/api/tags/:id/whitelist/:userId', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.removeFromWhitelist(this.db, req.params.id, req.params.userId);
             result.getResponse(res);
         });
@@ -118,9 +109,7 @@ class TagsAPI {
          * Retrieves tags for a specific user.
          * Allowed for the user themselves or an admin.
          */
-        this.app.get('/api/user/:userId/tags', async (req, res) => {
-            if (!req.isAuthenticated()) return res.status(401).json({ message: 'Unauthorized' });
-            
+        this.app.get('/api/user/:userId/tags', check(), async (req, res) => {
             // Authorization check: User must be requesting their own tags or be a user manager
             if (req.user.id != req.params.userId && !req.user.can_manage_users) {
                 return res.status(403).json({ message: 'Forbidden' });
@@ -139,9 +128,7 @@ class TagsAPI {
          * GET /api/user/tags
          * Retrieves tags for the currently authenticated user.
          */
-        this.app.get('/api/user/tags', async (req, res) => {
-            if (!req.isAuthenticated()) return res.status(401).json({ message: 'Unauthorized' });
-            
+        this.app.get('/api/user/tags', check(), async (req, res) => {
             try {
                 const tags = await TagsDB.getTagsForUser(this.db, req.user.id);
                 res.json(tags);
@@ -154,3 +141,4 @@ class TagsAPI {
 }
 
 module.exports = TagsAPI;
+

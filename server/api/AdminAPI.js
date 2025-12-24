@@ -2,7 +2,7 @@ const { statusObject } = require('../misc/status.js');
 const UserDB = require('../db/userDB.js');
 const transactionsDB = require('../db/transactionDB.js');
 const EventsDB = require('../db/eventsDB.js');
-const check = require('../misc/authentication');
+const check = require('../misc/authentication.js');
 const Globals = require('../misc/globals.js');
 
 /**

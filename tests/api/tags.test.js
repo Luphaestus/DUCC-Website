@@ -8,6 +8,7 @@ describe('Tags API', () => {
     let db;
     let adminId;
     let userId;
+    let userManagerId;
 
     beforeEach(async () => {
         db = await setupTestDb();
@@ -24,6 +25,12 @@ describe('Tags API', () => {
         );
         userId = userRes.lastID;
 
+        const userManagerRes = await db.run(
+            'INSERT INTO users (email, first_name, last_name, college_id, can_manage_users) VALUES (?, ?, ?, ?, ?)',
+            ['usermanager@durham.ac.uk', 'User', 'Manager', 1, 1]
+        );
+        userManagerId = userManagerRes.lastID;
+
         app = express();
         app.use(express.json());
 
@@ -33,6 +40,9 @@ describe('Tags API', () => {
             if (authHeader === 'admin') {
                 req.isAuthenticated = () => true;
                 req.user = { id: adminId, can_manage_events: true, can_manage_users: true };
+            } else if (authHeader === 'userManager') {
+                req.isAuthenticated = () => true;
+                req.user = { id: userManagerId, can_manage_events: false, can_manage_users: true };
             } else if (authHeader === 'user') {
                 req.isAuthenticated = () => true;
                 req.user = { id: userId, can_manage_events: false, can_manage_users: false };
@@ -73,23 +83,37 @@ describe('Tags API', () => {
         expect(res.statusCode).toBe(200);
     });
 
+    test('POST /api/tags works for user manager', async () => {
+        const res = await request(app)
+            .post('/api/tags')
+            .set('x-mock-user', 'userManager')
+            .send({ name: 'User Manager Tag' });
+        expect(res.statusCode).toBe(200);
+    });
+
     test('Whitelist operations', async () => {
         const tagRes = await db.run('INSERT INTO tags (name) VALUES (?)', ['Tag 1']);
         const tagId = tagRes.lastID;
 
-        // Add to whitelist
+        // Add to whitelist as admin
         const addRes = await request(app)
             .post(`/api/tags/${tagId}/whitelist`)
             .set('x-mock-user', 'admin')
             .send({ userId: userId });
         expect(addRes.statusCode).toBe(200);
 
+        // Add to whitelist as user manager
+        const addResUM = await request(app)
+            .post(`/api/tags/${tagId}/whitelist`)
+            .set('x-mock-user', 'userManager')
+            .send({ userId: adminId }); // Add admin to whitelist for fun
+        expect(addResUM.statusCode).toBe(200);
+
         // Get whitelist
         const listRes = await request(app)
             .get(`/api/tags/${tagId}/whitelist`)
-            .set('x-mock-user', 'admin');
+            .set('x-mock-user', 'userManager');
         expect(listRes.statusCode).toBe(200);
-        expect(listRes.body.data.length).toBe(1);
-        expect(listRes.body.data[0].id).toBe(userId);
+        expect(listRes.body.data.length).toBe(2);
     });
 });

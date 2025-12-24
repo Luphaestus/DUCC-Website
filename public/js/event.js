@@ -56,6 +56,7 @@ async function NavigationEventListner({ resolvedPath, path }) {
     if (!navContainer) return;
 
     try {
+        const loggedIn = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
         // Fetch event core data
         const { event } = await ajaxGet("/api" + path);
 
@@ -83,44 +84,47 @@ async function NavigationEventListner({ resolvedPath, path }) {
                                 <button id="edit-event-button" class="hidden">Edit Event</button>
                             </div>
                         </div>
+                        ${loggedIn ? `
                         <div class="event-attendees-section">
                             <h3>${ATTENDEES_SVG} Attendees</h3>
                             <ul class="attendees-list">
                                 <li aria-busy="true">Loading attendees...</li>
                             </ul>
-                        </div>
+                        </div>` : ''}
                     </div>
                 </article>
+                ${loggedIn ? `
                 <article class="form-box" id="event-attendees-container">
                     <h3>${ATTENDEES_SVG} Attendees</h3>
                     <ul class="attendees-list">
                         <li aria-busy="true">Loading attendees...</li>
                     </ul>
-                </article>
+                </article>` : ''}
             
             </div>`;
 
-        // Fetch and render the list of attendees
-        const attendeesResponse = await ajaxGet(`/api${path}/attendees`).catch(() => null);
-        const attendeesLists = document.querySelectorAll('.attendees-list');
+        if (loggedIn) {
+            // Fetch and render the list of attendees
+            const attendeesResponse = await ajaxGet(`/api${path}/attendees`).catch(() => null);
+            const attendeesLists = document.querySelectorAll('.attendees-list');
 
-        if (attendeesLists.length > 0) {
-            attendeesLists.forEach(attendeesList => {
-                if (attendeesResponse && attendeesResponse.attendees && attendeesResponse.attendees.length > 0) {
-                    attendeesList.innerHTML = '';
-                    for (const user of attendeesResponse.attendees) {
-                        const li = document.createElement('li');
-                        li.textContent = `${user.first_name} ${user.last_name}`;
-                        attendeesList.appendChild(li);
+            if (attendeesLists.length > 0) {
+                attendeesLists.forEach(attendeesList => {
+                    if (attendeesResponse && attendeesResponse.attendees && attendeesResponse.attendees.length > 0) {
+                        attendeesList.innerHTML = '';
+                        for (const user of attendeesResponse.attendees) {
+                            const li = document.createElement('li');
+                            li.textContent = `${user.first_name} ${user.last_name}`;
+                            attendeesList.appendChild(li);
+                        }
+                    } else {
+                        attendeesList.innerHTML = '<li>No attendees yet.</li>';
                     }
-                } else {
-                    attendeesList.innerHTML = '<li>No attendees yet.</li>';
-                }
-            });
+                });
+            }
         }
 
         const attendButton = document.getElementById('attend-event-button');
-        const loggedIn = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
 
         // Check for admin permissions to show 'Edit' button
         try {

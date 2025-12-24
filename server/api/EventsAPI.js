@@ -3,6 +3,7 @@ const TransactionsDB = require('../db/transactionDB.js');
 const UserDB = require('../db/userDB.js');
 const Globals = require('../misc/globals.js');
 const { statusObject } = require('../misc/status.js');
+const check = require('../misc/authentication.js');
 
 /**
  * Events API module.
@@ -288,8 +289,9 @@ class EventsAPI {
         /**
          * GET /api/event/:id/attendees
          * Fetches the list of users attending a specific event.
+         * Requires authentication.
          */
-        this.app.get('/api/event/:id/attendees', async (req, res) => {
+        this.app.get('/api/event/:id/attendees', check(), async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {
                 return res.status(400).json({ message: 'Event ID must be an integer' });
