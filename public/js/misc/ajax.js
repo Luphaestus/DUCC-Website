@@ -6,7 +6,6 @@ import { checkServerConnection } from '../connection.js';
  * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
  */
 async function ajaxGet(url) {
-    checkServerConnection();
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -37,7 +36,6 @@ async function ajaxGet(url) {
  * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
  */
 async function ajaxPost(url, data) {
-    checkServerConnection();
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -74,7 +72,6 @@ async function ajaxPost(url, data) {
  * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
  */
 async function ajaxDelete(url) {
-    checkServerConnection();
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -110,7 +107,6 @@ async function ajaxDelete(url) {
  * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
  */
 async function ajaxPut(url, data) {
-    checkServerConnection();
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 

@@ -8,16 +8,36 @@
     <link rel="stylesheet" href="/styles.css">
     <title>DUCC - Home</title>
 
+    <!-- Performance Optimizations: Preload Modules -->
+    <link rel="modulepreload" href="/js/misc/view.js">
+    <link rel="modulepreload" href="/js/background.js">
+    <link rel="modulepreload" href="/js/navbar.js">
+    <link rel="modulepreload" href="/js/connection.js">
+    <link rel="modulepreload" href="/js/home.js">
+    <link rel="modulepreload" href="/js/events.js">
+    <link rel="modulepreload" href="/js/signup.js">
+    <link rel="modulepreload" href="/js/login.js">
+    <link rel="modulepreload" href="/js/profile.js">
+    <link rel="modulepreload" href="/js/transactions.js">
+    <link rel="modulepreload" href="/js/legal.js">
+    <link rel="modulepreload" href="/js/admin/admin.js">
+
     <script type="module" src="/js/misc/view.js" defer></script>
     <script type="module" src="/js/background.js" defer></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Async Font Loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"></noscript>
+
     <script type="module">
         import { switchView } from '/js/misc/view.js';
         window.switchView = switchView;
     </script>
 
-    <link rel="stylesheet" href="https://motion-on-scroll.netlify.app/mos.css">
-    <script src="https://motion-on-scroll.netlify.app/mos.js"></script>
+    <link rel="stylesheet" href="/mos.css">
+    <script src="/js/mos.js" defer></script>
 </head>
 
 <body>
@@ -26,7 +46,7 @@
         <nav class="small-container">
             <ul>
                 <li><a onclick="switchView('')" class="contrast nav-logo" style="cursor: pointer;">
-                        <img src="/images/misc/ducc.png" alt="DUCC Logo">
+                        <img src="/images/misc/ducc.png" alt="DUCC Logo" width="40" height="40">
                     </a></li>
             </ul>
             <ul class="navbar-items"></ul>

@@ -31,7 +31,6 @@ body {
         position: absolute;
         border-radius: 50%;
         filter: blur(50px);
-        will-change: transform;
     }
 
     .bg-icon {
@@ -39,7 +38,6 @@ body {
         opacity: 0.12;
         color: var(--pico-color);
         pointer-events: none;
-        will-change: transform;
         z-index: 1;
 
         @media (prefers-color-scheme: dark) {

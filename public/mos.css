@@ -1,0 +1,298 @@
+/* 🌟 MotionOnScroll (MOS) Animation Library */
+/* Author: hellogirish07 (Girish) | https://github.com/hellogirish07/MOS-MotionOnScroll */
+/* Version: 1.0.0 */
+
+[data-mos] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition-property: opacity, transform;
+  transition-timing-function: ease;
+  transition-duration: var(--mos-duration, 0.8s);
+  transition-delay: var(--mos-delay, 0s);
+}
+
+/* When element becomes visible */
+[data-mos].mos-active {
+  opacity: 1;
+  transform: none;
+}
+
+/* 🌈 Fade Animations */
+[data-mos="fade-up"] {
+  transform: translateY(40px);
+}
+
+[data-mos="fade-down"] {
+  transform: translateY(-40px);
+}
+
+[data-mos="fade-left"] {
+  transform: translateX(-40px);
+}
+
+[data-mos="fade-right"] {
+  transform: translateX(40px);
+}
+
+/* 💨 Slide Animations */
+[data-mos="slide-up"] {
+  transform: translateY(80px);
+  opacity: 0;
+}
+
+[data-mos="slide-down"] {
+  transform: translateY(-80px);
+  opacity: 0;
+}
+
+[data-mos="slide-left"] {
+  transform: translateX(-80px);
+  opacity: 0;
+}
+
+[data-mos="slide-right"] {
+  transform: translateX(80px);
+  opacity: 0;
+}
+
+/* 🔍 Zoom Animations */
+[data-mos="zoom-in"] {
+  transform: scale(0.8);
+}
+
+[data-mos="zoom-out"] {
+  transform: scale(1.2);
+}
+
+/* 🔁 Flip Animations */
+[data-mos="flip-left"] {
+  transform: perspective(600px) rotateY(90deg);
+}
+
+[data-mos="flip-right"] {
+  transform: perspective(600px) rotateY(-90deg);
+}
+
+[data-mos="flip-up"] {
+  transform: perspective(600px) rotateX(-90deg);
+}
+
+[data-mos="flip-down"] {
+  transform: perspective(600px) rotateX(90deg);
+}
+
+[data-mos].mos-active[data-mos^="flip"] {
+  transform: perspective(600px) rotate(0);
+}
+
+/* 🔄 Rotate */
+[data-mos="rotate-in"] {
+  transform: rotate(-45deg);
+}
+
+[data-mos="rotate-in"].mos-active {
+  transform: rotate(0);
+}
+
+[data-mos="rotate-in-right"] {
+  transform: rotate(45deg);
+}
+
+[data-mos="rotate-in-right"].mos-active {
+  transform: rotate(0);
+}
+
+/* 🔄 Rotate Zoom */
+[data-mos="rotate-zoom"] {
+  transform: scale(0.7) rotate(-20deg);
+}
+
+[data-mos="rotate-zoom"].mos-active {
+  transform: scale(1) rotate(0);
+}
+
+
+/* 🟡 Bounce Up */
+[data-mos="bounce-up"] {
+  transform: translateY(60px);
+  opacity: 0;
+}
+
+[data-mos="bounce-up"].mos-active {
+  animation: mos-bounce-up var(--mos-duration, 0.8s) ease-out forwards;
+}
+
+@keyframes mos-bounce-up {
+  0% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+
+  60% {
+    transform: translateY(-10px);
+  }
+
+  80% {
+    transform: translateY(5px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🟡 Bounce Down */
+[data-mos="bounce-down"] {
+  transform: translateY(-60px);
+  opacity: 0;
+}
+
+[data-mos="bounce-down"].mos-active {
+  animation: mos-bounce-down var(--mos-duration, 0.8s) ease-out forwards;
+}
+
+@keyframes mos-bounce-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-60px);
+  }
+
+  60% {
+    transform: translateY(10px);
+  }
+
+  80% {
+    transform: translateY(-5px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 📐 Skew In */
+[data-mos="skew-in"] {
+  transform: skewY(10deg);
+  opacity: 0;
+}
+
+[data-mos="skew-in"].mos-active {
+  transform: skewY(0);
+  opacity: 1;
+}
+
+/* 📐 Skew Out */
+[data-mos="skew-out"] {
+  transform: skewY(-10deg);
+  opacity: 0;
+}
+
+[data-mos="skew-out"].mos-active {
+  transform: skewY(0);
+  opacity: 1;
+}
+
+/* 🌫️ Blur In */
+[data-mos="blur-in"] {
+  filter: blur(10px);
+  opacity: 0;
+}
+
+[data-mos="blur-in"].mos-active {
+  filter: blur(0);
+  opacity: 1;
+}
+
+/* 🌫️ Blur Out */
+[data-mos="blur-out"] {
+  filter: blur(0);
+  opacity: 0;
+}
+
+[data-mos="blur-out"].mos-active {
+  filter: blur(10px);
+  opacity: 1;
+}
+
+/* 🎈 Pop In */
+[data-mos="pop-in"] {
+  transform: scale(0.6);
+  opacity: 0;
+}
+
+[data-mos="pop-in"].mos-active {
+  animation: mos-pop-in var(--mos-duration, 0.6s) ease-out forwards;
+}
+
+@keyframes mos-pop-in {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+
+  70% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 🎈 Pop Out */
+[data-mos="pop-out"] {
+  transform: scale(1);
+  opacity: 1;
+}
+
+[data-mos="pop-out"].mos-active {
+  animation: mos-pop-out var(--mos-duration, 0.6s) ease-out forwards;
+}
+
+@keyframes mos-pop-out {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* 🔍 Fade Zoom Out */
+[data-mos="fade-zoom-out"] {
+  transform: scale(1.2);
+  opacity: 0;
+}
+
+[data-mos="fade-zoom-out"].mos-active {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* 🔍 Fade Zoom In */
+[data-mos="fade-zoom-in"] {
+  transform: scale(0.8);
+  opacity: 0;
+}
+
+[data-mos="fade-zoom-in"].mos-active {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* 🌀 Flip Zoom */
+[data-mos="flip-zoom"] {
+  transform: perspective(600px) rotateY(90deg) scale(0.7);
+  opacity: 0;
+}
+
+[data-mos="flip-zoom"].mos-active {
+  transform: perspective(600px) rotateY(0) scale(1);
+  opacity: 1;
+}

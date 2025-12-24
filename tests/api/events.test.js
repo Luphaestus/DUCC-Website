@@ -1,7 +1,7 @@
 const request = require('supertest');
 const express = require('express');
 const { setupTestDb } = require('../utils/db');
-const Events = require('../../server/api/events');
+const Events = require('../../server/api/EventsAPI');
 
 jest.mock('../../server/misc/globals', () => {
     return class Globals {

@@ -18,7 +18,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static('public', {
-  maxAge: '0d'
+  maxAge: '1h',
+  setHeaders: (res, path) => {
+    if (path.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
+      res.set('Cache-Control', 'public, max-age=86400'); // 1 day for images
+    }
+  }
 }));
 
 app.use(session({

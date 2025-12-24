@@ -32,21 +32,19 @@ function updateConnectionStatus(newStatus) {
 
 /**
  * Checks the server connection by fetching the health endpoint.
- * Throttles requests to once every 500ms.
+ * Throttles requests to once every 10000ms.
  * @returns {Promise<void>}
  */
 async function checkServerConnection() {
-    if (time_of_last_successful_check && Date.now() - time_of_last_successful_check < 500) {
+    if (time_of_last_successful_check && Date.now() - time_of_last_successful_check < 10000) {
         return;
     }
 
     try {
         const response = await fetch('/api/health');
+        updateConnectionStatus(response.ok);
         if (response.ok) {
-            updateConnectionStatus(true);
             time_of_last_successful_check = Date.now();
-        } else {
-            updateConnectionStatus(false);
         }
     } catch (error) {
         updateConnectionStatus(false);
@@ -55,10 +53,9 @@ async function checkServerConnection() {
 
 // --- Initialization ---
 
-setInterval(checkServerConnection, 5000);
+setInterval(checkServerConnection, 30000);
 
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(checkServerConnection, 1000);
     ViewChangedEvent.subscribe(() => {
         checkServerConnection();
     });

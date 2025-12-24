@@ -1,5 +1,13 @@
+/**
+ * background.js
+ * Manages the animated background with floating blobs and drifting icons.
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     const body = document.body;
+
+    // --- Configuration ---
+
     const colors = [
         'rgba(170, 64, 191, 0.1)', // Purple
         'rgba(91, 125, 196, 0.1)', // Blue-ish Grey
@@ -15,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </g>
         </svg>`;
 
+    // --- Container Setup ---
+
     const container = document.createElement('div');
     container.id = 'animated-background';
     container.style.position = 'fixed';
@@ -24,6 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
     container.style.overflow = 'hidden';
 
     body.appendChild(container);
+
+    // --- Animations ---
 
     const styleSheet = document.createElement('style');
     document.head.appendChild(styleSheet);
@@ -36,12 +48,15 @@ document.addEventListener('DOMContentLoaded', () => {
             100% { transform: translate(0, 0); }
         }
         @keyframes driftAcross {
-            from { left: -200px; transform: rotate(0deg); }
-            to { left: 100vw; transform: rotate(15deg); }
+            from { transform: translateX(-200px) rotate(0deg); }
+            to { transform: translateX(calc(100vw + 200px)) rotate(15deg); }
         }
     `;
     styleSheet.textContent = keyframes;
 
+    // --- Element Generation ---
+
+    // Create floating blobs
     colors.forEach((color, i) => {
         const blob = document.createElement('div');
         blob.className = 'bg-blob';
@@ -50,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         blob.style.width = `${size}vmax`;
         blob.style.height = `${size}vmax`;
         blob.style.backgroundColor = color;
+        blob.style.filter = 'blur(30px)';
 
         const positions = [
             { top: '-20%', left: '-20%' },
@@ -68,7 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(blob);
     });
 
-    for (let i = 0; i < 20; i++) {
+    // Create drifting kayak icons
+    for (let i = 0; i < 10; i++) {
         const icon = document.createElement('div');
         icon.className = 'bg-icon';
         icon.innerHTML = kayakSvg;
@@ -76,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const size = 60 + Math.random() * 100;
         icon.style.width = `${size}px`;
         icon.style.top = `${Math.random() * 100}vh`;
+        icon.style.left = "0";
 
         const duration = 40 + Math.random() * 60;
         const delay = Math.random() * -duration;

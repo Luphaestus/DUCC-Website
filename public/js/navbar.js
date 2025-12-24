@@ -71,7 +71,7 @@ function create_item(entry) {
 
 /**
  * Updates the navigation bar based on the user's login state.
- * @param {object} data - An object containing the login state, e.g., { loggedIn: true }.
+ * @param {object} data - An object containing the login state, e.g., { authenticated: true }.
  */
 async function updateNavOnLoginState(data) {
     const isLoggedIn = data.authenticated;
@@ -89,20 +89,29 @@ async function updateNavOnLoginState(data) {
     if (isLoggedIn) {
         loginLi.classList.add('hidden');
         profileLi.classList.remove('hidden');
-        updateFirstNameInNav();
+        
+        // Fetch all required user info in parallel
+        const [userData, permissions] = await Promise.all([
+            ajaxGet('/api/user/elements/first_name'),
+            ajaxGet('/api/user/elements/can_manage_users,can_manage_events,is_exec').catch(() => null)
+        ]);
+
+        if (userData && userData.first_name) {
+            profileButton.textContent = `Hello, ${userData.first_name}`;
+        }
+
+        const adminButton = document.getElementById('admin-button');
+        const adminLi = adminButton?.parentElement;
+
+        if (permissions && (permissions.can_manage_users || permissions.can_manage_events || permissions.is_exec)) {
+            adminLi.classList.remove('hidden');
+        } else {
+            adminLi.classList.add('hidden');
+        }
     } else {
         loginLi.classList.remove('hidden');
         profileLi.classList.add('hidden');
-    }
-
-    const isAdmin = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,is_exec').catch(() => null);
-    const adminButton = document.getElementById('admin-button');
-    const adminLi = adminButton?.parentElement;
-
-    if (isAdmin && (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec)) {
-        adminLi.classList.remove('hidden');
-    } else {
-        adminLi.classList.add('hidden');
+        document.getElementById('admin-button')?.parentElement?.classList.add('hidden');
     }
 }
 

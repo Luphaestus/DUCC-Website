@@ -2836,14 +2836,12 @@ body .bg-blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(50px);
-  will-change: transform;
 }
 body .bg-icon {
   position: absolute;
   opacity: 0.12;
   color: var(--pico-color);
   pointer-events: none;
-  will-change: transform;
   z-index: 1;
 }
 @media (prefers-color-scheme: dark) {
@@ -3495,7 +3493,6 @@ nav.small-container .nav-logo {
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0;
-  will-change: opacity;
   pointer-events: none;
   z-index: 0;
   background-image: var(--slide-img-light);
@@ -4385,3 +4382,5 @@ nav.small-container .nav-logo {
   flex-shrink: 0;
   width: auto;
 }
+
+/*# sourceMappingURL=styles.css.map */

@@ -54,10 +54,13 @@ class EventsAPI {
             const max_difficulty = await UserDB.getElements(req, this.db, "difficulty_level");
             if (max_difficulty.isError()) { return max_difficulty.getResponse(res); }
 
-            const events = await EventsDB.get_all_events(this.db, max_difficulty.getData().difficulty_level);
-            if (events.isError()) { return events.getResponse(res); }
-
-            res.json({ events: events.getData() });
+            try {
+                const events = await EventsDB.get_all_events(this.db, max_difficulty.getData().difficulty_level);
+                res.json({ events });
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
         });
 
         this.app.get('/api/event/:id', async (req, res) => {
@@ -163,12 +166,10 @@ class EventsAPI {
                         }
                     }
                 }
-
-                const status = await EventsDB.attend_event(req, this.db, eventId, transactionStatus.getData());
-                if (status.isError()) { return status.getResponse(res); }
-
-                return status.getResponse(res);
             };
+
+            const status = await EventsDB.attend_event(req, this.db, eventId, transactionStatus.getData());
+            return status.getResponse(res);
         });
 
         this.app.post('/api/event/:id/leave', async (req, res) => {

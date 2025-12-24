@@ -1,7 +1,11 @@
+/**
+ * events.js
+ * Manages the events view, including fetching and rendering weekly event lists.
+ */
+
 import { ajaxGet } from './misc/ajax.js';
 import { LoginEvent } from './login.js';
 import './event.js';
-import seedrandom from 'https://cdn.skypack.dev/seedrandom';
 
 
 // --- Constants & Templates ---
@@ -9,9 +13,9 @@ import seedrandom from 'https://cdn.skypack.dev/seedrandom';
 const HTML_TEMPLATE = `
         <div id="/events-view" class="view hidden small-container">
             <div class="events-controls">
-                <div>
-                    <img class="prev-week" src="/images/icons/filled/circle-caret-left.svg" alt="Previous week" />
-                    <img class="next-week" src="/images/icons/filled/circle-caret-right.svg" alt="Next week" />
+                <div class="week-nav-icons">
+                    <span class="prev-week nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10 -10 10a10 10 0 1 1 0 -20m2 13v-6a1 1 0 0 0 -1.707 -.708l-3 3a1 1 0 0 0 0 1.415l3 3a1 1 0 0 0 1.414 0l.083 -.094c.14 -.18 .21 -.396 .21 -.613" /></svg></span>
+                    <span class="next-week nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3.34a10 10 0 1 1 -15 8.66l.005 -.324a10 10 0 0 1 14.995 -8.336m-5.293 4.953a1 1 0 0 0 -1.707 .707v6c0 .217 .07 .433 .21 .613l.083 .094a1 1 0 0 0 1.414 0l3 -3a1 1 0 0 0 0 -1.414z" /></svg></span>
                 </div>
                 <h1 id="events-controls-title"></h1>
                 <button class="this-week-button">Today 📅</button>
@@ -30,18 +34,10 @@ let relativeWeekOffset = 0;
 // --- Helper Functions ---
 
 /**
- * Generates a pastel color hue based on a seed.
- * @param {*} seed - The seed for the random number generator.
- * @returns {{light: number, dark: number}} An object containing light and dark hue values.
+ * Extracts hue from a hex color string.
+ * @param {string} hex 
+ * @returns {number} Hue value (0-360)
  */
-function pastelColourGenerator(seed) {
-    const hue = Math.floor(seedrandom(seed)() * 360);
-    return {
-        light: hue,
-        dark: hue
-    };
-}
-
 function getHueFromHex(hex) {
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
     hex = hex.replace(shorthandRegex, function (m, r, g, b) {
@@ -59,7 +55,7 @@ function getHueFromHex(hex) {
     var h, s, l = (max + min) / 2;
 
     if (max == min) {
-        h = s = 0; // achromatic
+        h = s = 0; 
     } else {
         var d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
