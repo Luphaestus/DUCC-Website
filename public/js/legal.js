@@ -39,8 +39,8 @@ const submitButton_id = 'health-form-submit';
 // --- Constants & Templates ---
 
 const HTML_TEMPLATE = `<div id="/legal-view" class="view hidden">
-            <h1>Legal & Medical Information Form</h1>
             <div class="small-container hidden" id="legal-container">
+                <h1>Legal & Medical Information Form</h1>
                 <div id="grid-legal">
                     <article>
                         <form>

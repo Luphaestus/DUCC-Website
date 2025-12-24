@@ -4,16 +4,20 @@
    Page: Legal
    ========================================= */
 
-#\/legal-view {
+[id="/legal-view"] {
     width: 100%;
-    padding: 2rem;
-
-    >h1 {
-        margin-bottom: 2rem;
-        text-align: center;
-    }
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
     #legal-container {
+        width: 100%;
+        margin-top: 2rem;
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
 
         >article {
             background: rgba(255, 255, 255, .01);
@@ -46,7 +50,7 @@
 
     >article {
         margin-bottom: 1rem;
-        flex: 1 1 550px;
+        flex: 1 1 300px;
 
 
         background: rgba(255, 255, 255, .01);

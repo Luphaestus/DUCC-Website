@@ -16,9 +16,13 @@ import { requireAuth } from './misc/auth.js';
 
 // --- Constants & Templates ---
 
-const TICK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-.218 0 -.432 .002 -.642 .005l-.616 .017l-.299 .013l-.579 .034l-.553 .046c-4.785 .464 -6.732 2.411 -7.196 7.196l-.046 .553l-.034 .579c-.005 .098 -.01 .198 -.013 .299l-.017 .616l-.004 .318l-.001 .324c0 .218 .002 .432 .005 .642l.017 .616l.013 .299l.034 .579l.046 .553c.464 4.785 2.411 6.732 7.196 7.196l.553 .046l.579 .034c.098 .005 .198 .01 .299 .013l.616 .017l.642 .005l.642 -.005l.616 -.017l.299 -.013l.579 -.034l.553 -.046c4.785 -.464 6.732 -2.411 7.196 -7.196l.046 -.553l.034 -.579c.005 -.098 .01 -.198 .013 -.299l.017 -.616l.005 -.642l-.005 -.642l-.017 -.616l-.013 -.299l-.034 -.579l-.046 -.553c-.464 -4.785 -2.411 -6.732 -7.196 -7.196l-.553 -.046l-.579 -.034a28.058 28.058 0 0 0 -.299 -.013l-.616 -.017l-.318 -.004l-.324 -.001zm2.293 7.293a1 1 0 0 1 1.497 1.32l-.083 .094l-4 4a1 1 0 0 1 -1.32 .083l-.094 -.083l-2 -2a1 1 0 0 1 1.32 -1.497l.094 .083l1.293 1.292l3.293 -3.292z" fill="currentColor" stroke-width="0" /></svg>`;
+const TICK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-.218 0 -.432 .002 -.642 .005l-.616 .017l-.299 .013l-.579 .034l-.553 .046c-4.785 .464 -6.732 2.411 -7.196 7.196l-.046 .553l-.034 .579c-.005 .098 -.01 .198 -.013 .299l-.017 .616l-.004 .318l-.001 .324c0 .218 .002 .432 .005 .642l.017 .616l.013 .299l.034 .579l.046 .553c.464 4.785 2.411 6.732 7.196 7.196l.553 .046l.579 .034c.098 .005 .198 .01 .299 .013l.616 .017l.642 .005l.642 -.005l.616 -.017l.299 -.013l.579 -.034l.553 -.046c4.785 -.464 6.732 -2.411 7.196 -7.196l.046 -.553l.034 -.579c.005 -.098 .01 -.198 .013 -.299l.017 -.616l.005 -.642l-.005 -.642l-.017 -.616l-.013 -.299l-.034 -.579l-.046 -.553c-.464 -4.785 -2.411 -6.732 -7.196 -7.196l-.553 -.046l-.579 -.034a28.058 28.058 0 0 0 -.299 -.013l-.616 -.017l-.318 -.004l-.324 -.001zm2.293 7.293a1 1 0 0 1 1.497 1.32l-.083 .094l-4 4a1 1 0 0 1 -1.32 .083l-.094 -.083l-2 -2a1 1 0 0 1 1.32 -1.497l.094 .083l1.293 1.292l3.293 -3.292z" /></svg>`;
 
 const X_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.676 2.001l.324 -.001c7.752 0 10 2.248 10 10l-.005 .642c-.126 7.235 -2.461 9.358 -9.995 9.358l-.642 -.005c-7.13 -.125 -9.295 -2.395 -9.358 -9.67v-.325c0 -7.643 2.185 -9.936 9.676 -9.999m2.771 5.105a1 1 0 0 0 -1.341 .447l-1.106 2.21l-1.106 -2.21a1 1 0 0 0 -1.234 -.494l-.107 .047a1 1 0 0 0 -.447 1.341l1.774 3.553l-1.775 3.553a1 1 0 0 0 .345 1.283l.102 .058a1 1 0 0 0 1.341 -.447l1.107 -2.211l1.106 2.211a1 1 0 0 0 1.234 .494l.107 -.047a1 1 0 0 0 .447 -1.341l-1.776 -3.553l1.776 -3.553a1 1 0 0 0 -.345 -1.283z" /></svg>`;
+
+const SUCCESS_GREEN = '#2ecc71';
+const WARNING_ORANGE = '#f39c12';
+const ERROR_RED = '#e74c3c';
 
 /**
  * Main template for the profile view.
@@ -40,7 +44,7 @@ const HTML_TEMPLATE = `
                         <div><p id="membership-info-status"></p></div>
                         <div><p id="legal-form-status"></p></div>
                         <div><p id="debt-status"></p></div>
-                        <p id="profile-signup-status"></p>
+                        <p id="profile-signup-status" style="font-weight: bold; margin-top: 1rem;"></p>
                     </div>
                     <div id="instructor-status-container" class="sub-container">
                         <p id="instructor-status"></p>
@@ -102,9 +106,11 @@ const HTML_TEMPLATE = `
                     </svg>
                     Danger Zone
                 </h2>
-                <button id="profile-logout-button">Logout</button>
-                <button id="profile-delete-account-button" class="secondary">Delete Account</button>
-                <button id="admin-panel-button" class="secondary hidden">Go to Admin Panel</button>
+                <div class="danger-zone-actions">
+                    <button id="profile-logout-button">Logout</button>
+                    <button id="profile-delete-account-button" class="secondary">Delete Account</button>
+                    <button id="admin-panel-button" class="secondary hidden">Go to Admin Panel</button>
+                </div>
             </article>
         </div>
     </div>
@@ -115,9 +121,6 @@ let notification = null;
 
 // --- Helper Functions ---
 
-/**
- * Returns the current academic year string.
- */
 function getAcademicYear() {
     const date = new Date();
     const month = date.getMonth() + 1;
@@ -126,127 +129,108 @@ function getAcademicYear() {
     return `${startYear}/${startYear + 1}`;
 }
 
-/**
- * Displays a persistent notification.
- */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
+/**
+ * Helper to update status elements with correct colors and icons.
+ */
+function updateStatusUI(elementId, text, icon, color) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.innerHTML = `${icon} ${text}`;
+    el.style.color = color;
+    const svg = el.querySelector('svg');
+    if (svg) {
+        svg.style.fill = color;
+        svg.style.color = color;
+    }
+}
+
 // --- Render Functions ---
 
-/**
- * Renders membership status, legal form completion, and balance status.
- * @param {object} profile - User data from API.
- */
 function renderEventStatus(profile) {
     const profileMembership = document.getElementById('profile-membership');
-    const membershipStatusElements = document.getElementById("membership-info-status");
-    const legalFormStatus = document.getElementById('legal-form-status');
-    const debtStatus = document.getElementById('debt-status');
-    const signupStatus = document.getElementById('profile-signup-status');
     const academicYear = getAcademicYear();
+    const balance = Number(profile.balance);
+    const isLegalComplete = !!profile.filled_legal_info;
+    const hasDebt = balance < -20;
 
-    // Membership logic: show remaining free sessions or active membership
+    let boxColor = SUCCESS_GREEN;
+
+    // 1. Membership Status
     if (profile.is_member) {
-        membershipStatusElements.innerHTML = `${TICK_SVG} Your membership is active for the ${academicYear} academic year.`;
-        membershipStatusElements.style.color = 'var(--success)';
-        membershipStatusElements.querySelector('svg').style.fill = 'var(--success)';
-        profileMembership.style.setProperty('--colour', 'green');
+        updateStatusUI("membership-info-status", `Your membership is active for the ${academicYear} academic year.`, TICK_SVG, SUCCESS_GREEN);
     } else {
         if (profile.free_sessions > 0) {
-            membershipStatusElements.innerHTML = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining for the ${academicYear} academic year.
-                                      <p>Consider becoming a full member to enjoy unlimited sessions and support our club!
-                                      <button id="become-member-button" class="primary-button">Become a Member</button></p>`;
-            membershipStatusElements.style.color = 'var(--warning)';
-            profileMembership.style.setProperty('--colour', 'orange');
+            const msg = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining for the ${academicYear} academic year.
+                         <p>Consider becoming a full member to enjoy unlimited sessions!
+                         <button id="become-member-button" class="primary-button">Become a Member</button></p>`;
+            updateStatusUI("membership-info-status", msg, '', WARNING_ORANGE);
+            boxColor = WARNING_ORANGE;
         } else {
-            membershipStatusElements.innerHTML = `${X_SVG} Your membership is inactive for the ${academicYear} academic year.
-                                      <p>To continue attending sessions, please consider becoming a member.
-                                      <button id="become-member-button" class="primary-button">Become a Member</button></p>`;
-            membershipStatusElements.style.color = 'var(--error)';
-            membershipStatusElements.querySelector('svg').style.fill = 'var(--error)';
-            profileMembership.style.setProperty('--colour', 'red');
+            const msg = `Your membership is inactive for the ${academicYear} academic year.
+                         <p>To continue attending sessions, please consider becoming a member.
+                         <button id="become-member-button" class="primary-button">Become a Member</button></p>`;
+            updateStatusUI("membership-info-status", msg, X_SVG, ERROR_RED);
+            boxColor = ERROR_RED;
         }
     }
-    profileMembership.style.color = `var(--colour)`;
 
-    // Handle "Become a Member" click
+    // 2. Legal Form Status
+    const legalText = isLegalComplete ? 'Legal information form completed' : 'Legal information form not completed';
+    const legalAction = `<br><button onclick="event.preventDefault(); switchView('/legal')">View / Update Legal Form</button>`;
+    updateStatusUI('legal-form-status', legalText + legalAction, isLegalComplete ? TICK_SVG : X_SVG, isLegalComplete ? SUCCESS_GREEN : ERROR_RED);
+    if (!isLegalComplete) boxColor = ERROR_RED;
+
+    // 3. Debt Status
+    const debtText = hasDebt ? `You have outstanding debts of £${balance.toFixed(2)}` : `You have low/no outstanding debts (£${balance.toFixed(2)})`;
+    const debtAction = `<br><button onclick="event.preventDefault(); switchView('/transactions')">View Balance / Statement</button>`;
+    updateStatusUI('debt-status', debtText + debtAction, hasDebt ? X_SVG : TICK_SVG, hasDebt ? ERROR_RED : SUCCESS_GREEN);
+    if (hasDebt) boxColor = ERROR_RED;
+
+    // 4. Signup Eligibility Summary
+    const signupStatus = document.getElementById('profile-signup-status');
+    if (!isLegalComplete) {
+        signupStatus.innerHTML = "Please complete the legal and health forms to be eligible for event sign-ups.";
+        signupStatus.style.color = ERROR_RED;
+    } else if (hasDebt) {
+        signupStatus.innerHTML = "You have outstanding debts. Please clear your balance to sign up for events.";
+        signupStatus.style.color = ERROR_RED;
+    } else if (balance < -15) {
+        signupStatus.innerHTML = "You have a high balance. You may not be able to sign up for new events soon.";
+        signupStatus.style.color = WARNING_ORANGE;
+        if (boxColor === SUCCESS_GREEN) boxColor = WARNING_ORANGE;
+    } else {
+        signupStatus.innerHTML = "You can sign up to events.";
+        signupStatus.style.color = SUCCESS_GREEN;
+    }
+
+    profileMembership.style.setProperty('--colour', boxColor);
+    profileMembership.style.color = boxColor;
+
+    // Re-bind dynamic button after innerHTML change
     document.getElementById('become-member-button')?.addEventListener('click', async (event) => {
         event.preventDefault();
         await ajaxPost('/api/user/join');
         updateProfilePage();
     });
-
-    // Legal Form Logic
-    const legalColor = profile.filled_legal_info ? 'var(--success)' : 'var(--error)';
-    const legalIcon = profile.filled_legal_info ? TICK_SVG : X_SVG;
-    const legalText = profile.filled_legal_info ? 'Legal information form completed' : 'Legal information form not completed';
-
-    legalFormStatus.innerHTML = `${legalIcon} ${legalText}
-        <button onclick="event.preventDefault(); switchView('/legal')">View / Update Legal Form</button>`;
-    legalFormStatus.style.color = legalColor;
-    legalFormStatus.querySelector('svg').style.fill = legalColor;
-
-    // Debt/Balance logic
-    const hasDebt = profile.balance < -20;
-    const debtColor = hasDebt ? 'var(--error)' : 'var(--success)';
-    const debtIcon = hasDebt ? X_SVG : TICK_SVG;
-    const debtText = hasDebt ? `You have outstanding debts of £${profile.balance.toFixed(2)}` : `You have low outstanding debts of £${profile.balance.toFixed(2)}`;
-
-    debtStatus.innerHTML = `${debtIcon} ${debtText}
-        <button onclick="event.preventDefault(); switchView('/transactions')">View Balance / Statement</button>`;
-    debtStatus.style.color = debtColor;
-    debtStatus.querySelector('svg').style.fill = debtColor;
-
-    // Final Signup eligibility summary
-    let error = true;
-    if (!profile.filled_legal_info) {
-        signupStatus.innerHTML = "Please complete the legal and health forms to be eligible for event sign-ups.";
-    } else if (!profile.is_member) {
-        error = false;
-    } else if (profile.balance > 20) {
-        signupStatus.innerHTML = "You have outstanding debts. Please clear your balance to sign up for events.";
-    } else if (profile.balance > 15) {
-        signupStatus.innerHTML = "You have a high balance. You may not be able to sign up for new events.";
-        profileMembership.style.setProperty('--colour', 'orange');
-    } else {
-        signupStatus.innerHTML = "You can sign up to events.";
-        profileMembership.style.setProperty('--colour', 'green');
-        error = false;
-    }
-    profileMembership.style.color = `var(--colour)`;
-
-    if (error) {
-        profileMembership.style.setProperty('--colour', 'red');
-        profileMembership.style.color = `var(--colour)`;
-    }
 }
 
-/**
- * Renders instructor specific controls.
- */
 function renderInstructorStatus(profile) {
     const instructorStatusContainer = document.getElementById('instructor-status-container');
-    const instructorStatus = document.getElementById('instructor-status');
+    const instructorColor = profile.is_instructor ? SUCCESS_GREEN : ERROR_RED;
+    const instructorIcon = profile.is_instructor ? TICK_SVG : X_SVG;
+    const instructorText = profile.is_instructor ? 
+        `You are set up as an instructor. <button id="instructor-leave-btn" type="button">Remove Status</button>` : 
+        `You are currently not set up as a coach. <button id="instructor-signup-btn" type="button">Become a Coach</button>`;
 
-    if (profile.is_instructor) {
-        instructorStatus.innerHTML = `${TICK_SVG} You are set up as an instructor.
-                                <button id="instructor-leave-btn" type="button">Click to remove instructor status</button>`;
-        instructorStatus.style.color = 'var(--success)';
-        instructorStatus.querySelector('svg').style.fill = 'var(--success)';
-        instructorStatusContainer.style.setProperty('--colour', 'green');
-    } else {
-        instructorStatus.innerHTML = `${X_SVG} You are currently not set up as a coach.
-                                <button id="instructor-signup-btn" type="button">Click to make yourself a coach</button>`;
-        instructorStatus.style.color = 'var(--error)';
-        instructorStatus.querySelector('svg').style.fill = 'var(--error)';
-        instructorStatusContainer.style.setProperty('--colour', 'red');
-    }
-    instructorStatusContainer.style.color = `var(--colour)`;
+    updateStatusUI('instructor-status', instructorText, instructorIcon, instructorColor);
+    instructorStatusContainer.style.setProperty('--colour', instructorColor);
+    instructorStatusContainer.style.color = instructorColor;
 
-    // Event bindings for instructor toggle
     document.getElementById('instructor-signup-btn')?.addEventListener('click', async () => {
         await ajaxPost('/api/user/elements', { is_instructor: true });
         updateProfilePage();
@@ -258,18 +242,12 @@ function renderInstructorStatus(profile) {
     });
 }
 
-/**
- * Populates placeholder text for personal details.
- */
 function renderDetails(profile) {
     document.getElementById('profile-firstname').placeholder = profile.first_name;
     document.getElementById('profile-surname').placeholder = profile.last_name;
     document.getElementById('profile-email').placeholder = profile.email;
 }
 
-/**
- * Renders first aid and contact information.
- */
 function renderAidDetails(profile) {
     const contactNumberInput = document.getElementById('profile-contact-number');
     const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
@@ -285,13 +263,7 @@ function renderAidDetails(profile) {
     }
 }
 
-// --- Event Binding (Static Elements) ---
-
-/**
- * Initial binding of event listeners for form submissions and buttons.
- */
 async function bindStaticEvents() {
-    // --- Update Personal Details ---
     const firstname = document.getElementById('profile-firstname');
     const lastname = document.getElementById('profile-surname');
     const email = document.getElementById('profile-email');
@@ -308,10 +280,9 @@ async function bindStaticEvents() {
         event.preventDefault();
         if (submitButton.disabled) return;
 
-        // Validation
         const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
         if (email.value.trim() !== '' && !emailRegex.test(email.value.trim())) {
-            email.setCustomValidity('Email must be a firstname.lastname@durham.ac.uk address.');
+            email.setCustomValidity('Email must be a @durham.ac.uk address.');
             email.reportValidity();
             return;
         }
@@ -322,16 +293,12 @@ async function bindStaticEvents() {
         if (email.value.trim() !== '') updateData.email = email.value.trim();
         
         await ajaxPost('/api/user/elements', updateData);
-
-        displayNotification('Profile updated.', "Your profile has been successfully updated.", 'success');
+        displayNotification('Profile updated.', "Successfully updated.", 'success');
         FirstNameChangedEvent.notify();
-        firstname.value = '';
-        lastname.value = '';
-        email.value = '';
+        firstname.value = ''; lastname.value = ''; email.value = '';
         updateProfilePage();
     });
 
-    // --- Update Aid/Contact Details ---
     const contactNumberInput = document.getElementById('profile-contact-number');
     const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
     const aidSubmitButton = document.getElementById('profile-aid-submit-button');
@@ -350,24 +317,8 @@ async function bindStaticEvents() {
 
         const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
         if (contactNumberInput.value.trim() !== '' && !phonePattern.test(contactNumberInput.value.trim())) {
-            contactNumberInput.setCustomValidity('Please enter a valid phone number.');
+            contactNumberInput.setCustomValidity('Invalid phone number.');
             contactNumberInput.reportValidity();
-            return;
-        }
-
-        const firstAidDate = new Date(firstAidExpiryInput.value.trim());
-        const currentDate = new Date();
-        const twentyYearsFromNow = new Date();
-        twentyYearsFromNow.setFullYear(currentDate.getFullYear() + 20);
-
-        if (firstAidDate <= currentDate) {
-            firstAidExpiryInput.setCustomValidity('First aid expiry date must be in the future.');
-            firstAidExpiryInput.reportValidity();
-            return;
-        }
-        if (firstAidDate > twentyYearsFromNow) {
-            firstAidExpiryInput.setCustomValidity('First aid expiry date cannot be more than 20 years in the future.');
-            firstAidExpiryInput.reportValidity();
             return;
         }
 
@@ -375,26 +326,19 @@ async function bindStaticEvents() {
         if (contactNumberInput.value.trim() !== '') updateData.phone_number = contactNumberInput.value.trim();
         if (firstAidExpiryInput.value.trim() !== '') updateData.first_aid_expiry = firstAidExpiryInput.value.trim();
 
-        if (Object.keys(updateData).length > 0) {
-            await ajaxPost('/api/user/elements', updateData);
-        }
-
-        displayNotification('Aid details updated.', "Your first aid and contact number details have been successfully updated.", 'success');
-        contactNumberInput.value = '';
-        firstAidExpiryInput.value = '';
+        await ajaxPost('/api/user/elements', updateData);
+        displayNotification('Aid details updated.', "Successfully updated.", 'success');
+        contactNumberInput.value = ''; firstAidExpiryInput.value = '';
         updateProfilePage();
     });
 
     removeAidButton.addEventListener('click', async (event) => {
         event.preventDefault();
         await ajaxPost('/api/user/elements', { first_aid_expiry: null });
-        displayNotification('First aid expiry removed.', "Your first aid expiry date has been successfully removed.", 'success');
-        contactNumberInput.value = '';
-        firstAidExpiryInput.value = '';
+        displayNotification('Removed.', "First aid expiry removed.", 'success');
         updateProfilePage();
     });
 
-    // --- Logout & Account Deletion ---
     document.getElementById('profile-logout-button').addEventListener('click', async (event) => {
         event.preventDefault();
         await ajaxGet('/api/auth/logout');
@@ -404,41 +348,25 @@ async function bindStaticEvents() {
 
     document.getElementById('profile-delete-account-button').addEventListener('click', async (event) => {
         event.preventDefault();
-        const confirmation = confirm("Are you sure you want to delete your account? This action cannot be undone.");
-        if (!confirmation) return;
-
+        if (!confirm("Delete your account?")) return;
         try {
             await ajaxPost('/api/user/deleteAccount', {});
             LoginEvent.notify({ authenticated: false });
             switchView('/home');
-            displayNotification('Account deleted.', "Your account has been successfully deleted.", 'success');
-        }
-        catch (error) {
-            console.error("Failed to delete account:", error);
-            displayNotification('Account deletion failed.', "You may have outstanding debts or other issues preventing account deletion.", 'error');
+        } catch (error) {
+            displayNotification('Failed', "Could not delete account.", 'error');
         }
     });
 
-    // --- Admin Access ---
     const admin = document.getElementById('admin-panel-button');
     const isAdmin = await ajaxGet('/api/user/elements/can_manage_events,can_manage_users,is_exec');
-
     if (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec) {
         admin.classList.remove('hidden');
-    } else {
-        admin.classList.add('hidden');
     }
-
-    admin.addEventListener('click', (event) => {
-        event.preventDefault();
-        switchView('/admin/');
-    });
+    admin.addEventListener('click', (e) => { e.preventDefault(); switchView('/admin/'); });
 }
 
-/**
- * Fetches and renders user tags.
- */
-async function renderTags(profile) {
+async function renderTags() {
     const container = document.getElementById('profile-tags-container');
     try {
         const tags = await ajaxGet(`/api/user/tags`);
@@ -449,59 +377,35 @@ async function renderTags(profile) {
         } else {
             container.innerHTML = '<p>No tags assigned.</p>';
         }
-    }
-    catch (e) {
-        console.error("Failed to load tags", e);
+    } catch (e) {
         container.innerHTML = '<p>Failed to load tags.</p>';
     }
 }
 
-// --- Main Update Function ---
-
-/**
- * Primary state refresh for the profile page.
- * Fetches all necessary user data and triggers specialized render functions.
- */
 async function updateProfilePage() {
-    if (!await requireAuth()) return; // Redirect to login if session is expired
-
+    if (!await requireAuth()) return;
     try {
         const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,can_manage_users,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance');
-
         if (profile) {
             renderEventStatus(profile);
             renderInstructorStatus(profile);
             renderDetails(profile);
             renderAidDetails(profile);
-            renderTags(profile);
+            renderTags();
         }
     } catch (error) {
-        console.error("Failed to update profile page:", error);
+        console.error(error);
     }
 }
 
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
     bindStaticEvents();
-
-    // Listen for state change signals
-    LoginEvent.subscribe((data) => {
-        updateProfilePage();
-    });
-
-    LegalEvent.subscribe(() => {
-        updateProfilePage();
-    });
-
-    // Refresh data when navigating back to profile
+    LoginEvent.subscribe(() => updateProfilePage());
+    LegalEvent.subscribe(() => updateProfilePage());
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
-        if (resolvedPath === '/profile') {
-            updateProfilePage();
-        }
+        if (resolvedPath === '/profile') updateProfilePage();
     });
 });
 
-// Register the profile view with the main container
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
-
 export { FirstNameChangedEvent };
