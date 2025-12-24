@@ -1,10 +1,15 @@
 const { statusObject } = require('../misc/status.js');
 
+/**
+ * TagsDB module.
+ * Provides database operations for managing event tags and user whitelists.
+ * Tags allow for fine-grained access control and categorization of events.
+ */
 class TagsDB {
     /**
-     * Retrieves all tags.
+     * Retrieves all tags from the database.
      * @param {object} db - The database instance.
-     * @returns {Promise<statusObject>}
+     * @returns {Promise<statusObject>} A list of all tags.
      */
     static async getAllTags(db) {
         try {
@@ -17,10 +22,10 @@ class TagsDB {
     }
 
     /**
-     * Retrieves a tag by ID.
+     * Retrieves a single tag by its ID.
      * @param {object} db - The database instance.
      * @param {number} id - The tag ID.
-     * @returns {Promise<statusObject>}
+     * @returns {Promise<statusObject>} The tag data.
      */
     static async getTagById(db, id) {
         try {
@@ -33,10 +38,10 @@ class TagsDB {
     }
 
     /**
-     * Creates a new tag.
+     * Creates a new tag record.
      * @param {object} db - The database instance.
-     * @param {object} data - { name, color, description, min_difficulty }
-     * @returns {Promise<statusObject>}
+     * @param {object} data - The tag data (name, color, description, min_difficulty).
+     * @returns {Promise<statusObject>} The ID of the new tag.
      */
     static async createTag(db, data) {
         try {
@@ -52,10 +57,10 @@ class TagsDB {
     }
 
     /**
-     * Updates a tag.
+     * Updates an existing tag record.
      * @param {object} db - The database instance.
-     * @param {number} id - Tag ID.
-     * @param {object} data - Updated fields.
+     * @param {number} id - The tag ID.
+     * @param {object} data - The updated tag fields.
      * @returns {Promise<statusObject>}
      */
     static async updateTag(db, id, data) {
@@ -72,9 +77,9 @@ class TagsDB {
     }
 
     /**
-     * Deletes a tag.
+     * Deletes a tag record and its associated whitelists/event mappings (via cascading or manual cleanup).
      * @param {object} db - The database instance.
-     * @param {number} id - Tag ID.
+     * @param {number} id - The tag ID.
      * @returns {Promise<statusObject>}
      */
     static async deleteTag(db, id) {
@@ -87,10 +92,10 @@ class TagsDB {
     }
 
     /**
-     * Gets the whitelist (allowed users) for a tag.
+     * Retrieves the list of users who are whitelisted for a specific tag.
      * @param {object} db - The database instance.
-     * @param {number} tagId - Tag ID.
-     * @returns {Promise<statusObject>} List of users.
+     * @param {number} tagId - The tag ID.
+     * @returns {Promise<statusObject>} A list of users.
      */
     static async getWhitelist(db, tagId) {
         try {
@@ -107,10 +112,10 @@ class TagsDB {
     }
 
     /**
-     * Adds a user to a tag's whitelist.
+     * Adds a user to the whitelist for a specific tag.
      * @param {object} db - The database instance.
-     * @param {number} tagId - Tag ID.
-     * @param {number} userId - User ID.
+     * @param {number} tagId - The tag ID.
+     * @param {number} userId - The user ID.
      * @returns {Promise<statusObject>}
      */
     static async addToWhitelist(db, tagId, userId) {
@@ -123,10 +128,10 @@ class TagsDB {
     }
 
     /**
-     * Removes a user from a tag's whitelist.
+     * Removes a user from the whitelist for a specific tag.
      * @param {object} db - The database instance.
-     * @param {number} tagId - Tag ID.
-     * @param {number} userId - User ID.
+     * @param {number} tagId - The tag ID.
+     * @param {number} userId - The user ID.
      * @returns {Promise<statusObject>}
      */
     static async removeFromWhitelist(db, tagId, userId) {
@@ -139,29 +144,29 @@ class TagsDB {
     }
 
     /**
-     * Associates a tag with an event.
+     * Maps a tag to an event.
      * @param {object} db - The database instance.
-     * @param {number} eventId
-     * @param {number} tagId
+     * @param {number} eventId - The event ID.
+     * @param {number} tagId - The tag ID.
      */
     static async associateTag(db, eventId, tagId) {
         await db.run('INSERT OR IGNORE INTO event_tags (event_id, tag_id) VALUES (?, ?)', [eventId, tagId]);
     }
 
     /**
-     * Clears all tags for an event.
+     * Removes all tag mappings for a specific event.
      * @param {object} db - The database instance.
-     * @param {number} eventId
+     * @param {number} eventId - The event ID.
      */
     static async clearEventTags(db, eventId) {
         await db.run('DELETE FROM event_tags WHERE event_id = ?', [eventId]);
     }
 
     /**
-     * Gets tags for a specific event.
+     * Retrieves all tags associated with a specific event.
      * @param {object} db - The database instance.
-     * @param {number} eventId
-     * @returns {Promise<Array>}
+     * @param {number} eventId - The event ID.
+     * @returns {Promise<Array>} List of tag objects.
      */
     static async getTagsForEvent(db, eventId) {
         return db.all(`
@@ -173,10 +178,10 @@ class TagsDB {
     }
 
     /**
-     * Gets tags that a user is whitelisted for.
+     * Retrieves all tags for which a user is whitelisted.
      * @param {object} db - The database instance.
-     * @param {number} userId
-     * @returns {Promise<Array>}
+     * @param {number} userId - The user ID.
+     * @returns {Promise<Array>} List of tag objects.
      */
     static async getTagsForUser(db, userId) {
         return db.all(`

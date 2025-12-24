@@ -1,12 +1,16 @@
 const { statusObject } = require('../misc/status.js');
 
+/**
+ * UserDB module.
+ * Provides database operations for user profile management, permissions, and administrative user listings.
+ */
 class UserDB {
 
     /**
-     * Checks if the authenticated user has permission to manage users.
+     * Checks if the currently authenticated user has general user management permissions.
      * @param {object} req - The Express request object.
      * @param {object} db - The database instance.
-     * @returns {Promise<statusObject>} A statusObject containing the permission status (1 or 0).
+     * @returns {Promise<statusObject>} A statusObject containing the boolean-like permission status (1 or 0).
      */
     static async canManageUsers(req, db) {
         if (!req.isAuthenticated()) {
@@ -23,19 +27,15 @@ class UserDB {
     }
 
     /**
-     * Retrieves a paginated list of users with optional filtering and sorting.
+     * Retrieves a paginated and searchable list of users for administrative purposes.
+     * Includes the current balance for each user.
      * @param {object} req - The Express request object.
      * @param {object} db - The database instance.
-     * @param {object} options - Options for pagination, search, and sorting.
-     * @param {number} options.page - The page number.
-     * @param {number} options.limit - The number of items per page.
-     * @param {string} options.search - The search query string.
-     * @param {string} options.sort - The column to sort by.
-     * @param {string} options.order - The sort order ('asc' or 'desc').
-     * @returns {Promise<statusObject>} A statusObject containing the list of users and pagination info.
+     * @param {object} options - Options for pagination (page, limit), searching (search), and sorting (sort, order).
+     * @returns {Promise<statusObject>} A statusObject containing the list of users and pagination metadata.
      */
     static async getUsers(req, db, options) {
-        // Check permissions: can_manage_users OR can_manage_transactions
+        // Authorization check: Must be able to manage users OR transactions
         const perms = await db.get('SELECT can_manage_users, can_manage_transactions FROM users WHERE id = ?', req.user.id);
         if (!perms || (!perms.can_manage_users && !perms.can_manage_transactions)) {
             return new statusObject(403, 'User not authorized');
@@ -44,6 +44,7 @@ class UserDB {
         const { page, limit, search, sort, order } = options;
         const offset = (page - 1) * limit;
 
+        // Valid columns for sorting to prevent SQL injection
         const allowedSorts = ['first_name', 'last_name', 'email', 'balance', 'first_aid_expiry', 'filled_legal_info', 'is_member', 'difficulty_level'];
         const sortCol = allowedSorts.includes(sort) ? sort : 'last_name';
         const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
@@ -51,6 +52,7 @@ class UserDB {
         let whereClause = '';
         const params = [];
 
+        // Simple multi-term text search
         if (search) {
             const terms = search.trim().split(/\s+/);
             const conditions = terms.map(term => {
@@ -62,6 +64,7 @@ class UserDB {
         }
 
         try {
+            // Complex query joining users with their sum of transactions (balance)
             const query = `
                 SELECT 
                     u.id, u.first_name, u.last_name, u.email, 
@@ -77,6 +80,7 @@ class UserDB {
 
             const users = await db.all(query, [...params, limit, offset]);
 
+            // Get total count for pagination
             const countQuery = `
                 SELECT COUNT(*) as count 
                 FROM users u
@@ -94,12 +98,13 @@ class UserDB {
     }
 
     /**
-     * Retrieves specific elements (columns) for a user.
+     * Retrieves specific data elements (columns) for a user.
+     * Supports both reading own data and reading others (if admin).
      * @param {object} req - The Express request object.
      * @param {object} db - The database instance.
-     * @param {string|string[]} elements - The column name(s) to retrieve.
-     * @param {number|null} id - The user ID (defaults to authenticated user).
-     * @returns {Promise<statusObject>} A statusObject containing the retrieved data.
+     * @param {string|string[]} elements - The column names to retrieve.
+     * @param {number|null} id - Target user ID (defaults to current user).
+     * @returns {Promise<statusObject>}
      */
     static async getElements(req, db, elements, id = null) {
         if (typeof elements === 'string') {
@@ -110,6 +115,7 @@ class UserDB {
             return new statusObject(401, 'User not authenticated');
         }
 
+        // Authorization: Current user or someone with 'can_manage_users'
         if (id && ((await this.canManageUsers(req, db)).getData() !== 1)) {
             return new statusObject(403, 'User not authorized');
         }
@@ -130,12 +136,12 @@ class UserDB {
     }
 
     /**
-     * Updates specific elements (columns) for a user.
+     * Updates specific data elements (columns) for a user.
      * @param {object} req - The Express request object.
      * @param {object} db - The database instance.
-     * @param {object} data - Key-value pairs of columns to update.
-     * @param {number|null} id - The user ID (defaults to authenticated user).
-     * @returns {Promise<statusObject>} A statusObject indicating success or failure.
+     * @param {object} data - Key-value pairs of column names and new values.
+     * @param {number|null} id - Target user ID (defaults to current user).
+     * @returns {Promise<statusObject>}
      */
     static async writeElements(req, db, data, id = null) {
         if (!req.isAuthenticated()) {
@@ -161,12 +167,12 @@ class UserDB {
     }
 
     /**
-     * Sets the membership status for a user.
+     * Updates a user's membership status.
      * @param {object} req - The Express request object.
      * @param {object} db - The database instance.
-     * @param {boolean} is_member - The new membership status.
-     * @param {number|null} userId - The user ID (defaults to authenticated user).
-     * @returns {Promise<statusObject>} A statusObject indicating success or failure.
+     * @param {boolean} is_member - New status.
+     * @param {number|null} userId - Target user ID (defaults to current user).
+     * @returns {Promise<statusObject>}
      */
     static async setMembershipStatus(req, db, is_member, userId = null) {
         if (!req.isAuthenticated()) {
@@ -188,12 +194,14 @@ class UserDB {
     }
 
     /**
-     * Soft deletes (clears password) or hard deletes a user.
+     * Removes a user from the system.
+     * Supports both soft delete (clearing password) and hard delete.
+     * Also cleans up linked attendance records.
      * @param {object} req - The Express request object.
      * @param {object} db - The database instance.
-     * @param {boolean} real - If true, performs a hard delete. Otherwise, clears password.
-     * @param {number|null} userId - The user ID (defaults to authenticated user).
-     * @returns {Promise<statusObject>} A statusObject indicating success or failure.
+     * @param {boolean} real - If true, performs a hard DELETE. Otherwise, updates password to NULL.
+     * @param {number|null} userId - Target user ID (defaults to current user).
+     * @returns {Promise<statusObject>}
      */
     static async removeUser(req, db, real = false, userId = null) {
         if (!req.isAuthenticated()) {
@@ -206,16 +214,19 @@ class UserDB {
 
         try {
             if (!real) {
+                // Soft delete: keep the record but prevent login
                 await db.run(
                     `UPDATE users SET hashed_password = NULL WHERE id = ?`,
                     [userId || req.user.id]
                 );
             } else {
+                // Hard delete: remove the record entirely
                 await db.run(
                     `DELETE FROM users WHERE id = ?`,
                     [userId || req.user.id]
                 );
             }
+            // Always remove attendance records for deleted/deactivated users
             await db.run(
                 `DELETE FROM event_attendees WHERE user_id = ?`,
                 [userId || req.user.id]
@@ -228,13 +239,15 @@ class UserDB {
     }
 
     /** 
-     * Resets permissions for all users except the president.
+     * Resets administrative permissions for all users and assigns the "President" role to a new user.
+     * This is a critical security function.
      * @param {object} db - The database instance.
-     * @returns {Promise<statusObject>} A statusObject indicating success or failure.
+     * @param {number} newPresidentId - The ID of the user who will become the new President.
+     * @returns {Promise<statusObject>}
      */
     static async resetPermissions(db, newPresidentId) {
         try {
-            // Reset permissions for everyone else
+            // Reset permissions for everyone who is NOT the new president
             await db.run(`
                             UPDATE users 
                             SET can_manage_users = 0, 
@@ -244,7 +257,7 @@ class UserDB {
                             WHERE id != ?
                         `, [newPresidentId]);
 
-            // Grant all permissions to the new president
+            // Grant full administrative permissions to the new president
             await db.run(`
                             UPDATE users 
                             SET can_manage_users = 1, 

@@ -1,6 +1,10 @@
 /**
  * events.js
- * Manages the events view, including fetching and rendering weekly event lists.
+ * Events List View Module.
+ * 
+ * Responsible for displaying a weekly calendar of events.
+ * Users can navigate through weeks and see events they are eligible to attend.
+ * Events are color-coded based on their primary tag.
  */
 
 import { ajaxGet } from './misc/ajax.js';
@@ -10,6 +14,10 @@ import './event.js';
 
 // --- Constants & Templates ---
 
+/**
+ * Main template for the events view.
+ * Includes navigation controls (prev/next week) and a container for the list.
+ */
 const HTML_TEMPLATE = `
         <div id="/events-view" class="view hidden small-container">
             <div class="events-controls">
@@ -29,14 +37,15 @@ const HTML_TEMPLATE = `
 
 // --- State ---
 
-let relativeWeekOffset = 0;
+let relativeWeekOffset = 0; // 0 = current week, 1 = next week, etc.
 
 // --- Helper Functions ---
 
 /**
- * Extracts hue from a hex color string.
- * @param {string} hex 
- * @returns {number} Hue value (0-360)
+ * Utility to calculate the HSL hue from a HEX color code.
+ * Used to dynamically generate readable background colors for event cards.
+ * @param {string} hex - HEX color string.
+ * @returns {number} Hue value (0-360).
  */
 function getHueFromHex(hex) {
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -70,9 +79,10 @@ function getHueFromHex(hex) {
 }
 
 /**
- * Formats an event object into an HTML string for display.
- * @param {object} event - The event object.
- * @returns {string} An HTML formatted event.
+ * Formats a single event object into its HTML card representation.
+ * Includes logic for past events and tag-based theming.
+ * @param {object} event - The event data from API.
+ * @returns {string} HTML string.
  */
 function formatEvent(event) {
     const startDate = new Date(event.start);
@@ -83,11 +93,13 @@ function formatEvent(event) {
     const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
     const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
 
+    // Build tag chips
     const tagsHtml = (event.tags || []).map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px;">${tag.name}</span>`).join('');
 
     let hue = 0;
     let hasTags = false;
 
+    // Pick the most important tag to theme the event card
     if (event.tags && event.tags.length > 0) {
         hasTags = true;
         const highestPriorityTag = event.tags.reduce((prev, current) => {
@@ -105,6 +117,7 @@ function formatEvent(event) {
 
     let style = '';
     if (hasTags) {
+        // Generate light and dark versions of the tag color for the card background
         style = `
             --event-bg-light: hsl(${hue}, 70%, 85%); 
             --event-bg-dark: hsl(${hue}, 50%, 30%);
@@ -132,15 +145,19 @@ function formatEvent(event) {
 // --- Main Logic ---
 
 /**
- * Populates the offsetted weekly events list via API.
+ * Fetches events for the currently selected week and renders them.
+ * Groups events by day headers.
  * @returns {Promise<void>}
  */
 async function populateEvents() {
 
     const title = document.getElementById('events-controls-title');
     const now = new Date();
+    
+    // Calculate the date range for the header
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay() + 1 + relativeWeekOffset * 7);
+    // Adjust to Monday of the target week
+    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) + relativeWeekOffset * 7);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
@@ -166,12 +183,14 @@ async function populateEvents() {
 
         let html = '';
         let last_day = null;
+        // Group events by day
         for (const event of events) {
-            if (last_day !== new Date(event.start).getDate()) {
+            const eventDate = new Date(event.start).getDate();
+            if (last_day !== eventDate) {
                 if (last_day !== null) {
-                    html += '</div>';
+                    html += '</div>'; // Close previous day container
                 }
-                last_day = new Date(event.start).getDate();
+                last_day = eventDate;
                 html += `<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2>`;
                 html += '<div class="day-events-container">';
             }
@@ -179,7 +198,7 @@ async function populateEvents() {
         }
 
         if (events.length > 0) {
-            html += '</div>';
+            html += '</div>'; // Close last day container
         }
 
         eventsList.innerHTML = html;
@@ -193,8 +212,10 @@ async function populateEvents() {
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initial fetch
     populateEvents();
 
+    // Setup navigation controls
     document.querySelector('.prev-week').addEventListener('click', () => {
         relativeWeekOffset--;
         populateEvents();
@@ -210,9 +231,11 @@ document.addEventListener('DOMContentLoaded', () => {
         populateEvents();
     });
 
+    // Refresh events when user logs in (to show restricted events)
     LoginEvent.subscribe(() => {
         populateEvents();
     });
 });
 
+// Register view with the main container
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

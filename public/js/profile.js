@@ -6,12 +6,23 @@ import { FirstNameChangedEvent } from './navbar.js';
 import { ViewChangedEvent } from './misc/view.js';
 import { requireAuth } from './misc/auth.js';
 
+/**
+ * Profile View Module.
+ * 
+ * Manages the user profile page where members can update their details,
+ * check membership/instructor status, view balance, and manage their account.
+ * Integrates with multiple sub-systems (Legal, Auth, Transactions).
+ */
+
 // --- Constants & Templates ---
 
 const TICK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-.218 0 -.432 .002 -.642 .005l-.616 .017l-.299 .013l-.579 .034l-.553 .046c-4.785 .464 -6.732 2.411 -7.196 7.196l-.046 .553l-.034 .579c-.005 .098 -.01 .198 -.013 .299l-.017 .616l-.004 .318l-.001 .324c0 .218 .002 .432 .005 .642l.017 .616l.013 .299l.034 .579l.046 .553c.464 4.785 2.411 6.732 7.196 7.196l.553 .046l.579 .034c.098 .005 .198 .01 .299 .013l.616 .017l.642 .005l.642 -.005l.616 -.017l.299 -.013l.579 -.034l.553 -.046c4.785 -.464 6.732 -2.411 7.196 -7.196l.046 -.553l.034 -.579c.005 -.098 .01 -.198 .013 -.299l.017 -.616l.005 -.642l-.005 -.642l-.017 -.616l-.013 -.299l-.034 -.579l-.046 -.553c-.464 -4.785 -2.411 -6.732 -7.196 -7.196l-.553 -.046l-.579 -.034a28.058 28.058 0 0 0 -.299 -.013l-.616 -.017l-.318 -.004l-.324 -.001zm2.293 7.293a1 1 0 0 1 1.497 1.32l-.083 .094l-4 4a1 1 0 0 1 -1.32 .083l-.094 -.083l-2 -2a1 1 0 0 1 1.32 -1.497l.094 .083l1.293 1.292l3.293 -3.292z" fill="currentColor" stroke-width="0" /></svg>`;
 
 const X_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.676 2.001l.324 -.001c7.752 0 10 2.248 10 10l-.005 .642c-.126 7.235 -2.461 9.358 -9.995 9.358l-.642 -.005c-7.13 -.125 -9.295 -2.395 -9.358 -9.67v-.325c0 -7.643 2.185 -9.936 9.676 -9.999m2.771 5.105a1 1 0 0 0 -1.341 .447l-1.106 2.21l-1.106 -2.21a1 1 0 0 0 -1.234 -.494l-.107 .047a1 1 0 0 0 -.447 1.341l1.774 3.553l-1.775 3.553a1 1 0 0 0 .345 1.283l.102 .058a1 1 0 0 0 1.341 -.447l1.107 -2.211l1.106 2.211a1 1 0 0 0 1.234 .494l.107 -.047a1 1 0 0 0 .447 -1.341l-1.776 -3.553l1.776 -3.553a1 1 0 0 0 -.345 -1.283z" /></svg>`;
 
+/**
+ * Main template for the profile view.
+ */
 const HTML_TEMPLATE = `
 <div id="/profile-view" class="view hidden">
     <div class="small-container">
@@ -105,8 +116,7 @@ let notification = null;
 // --- Helper Functions ---
 
 /**
- * Calculates the current academic year string (e.g., "2023/2024").
- * @returns {string} The academic year string.
+ * Returns the current academic year string.
  */
 function getAcademicYear() {
     const date = new Date();
@@ -117,10 +127,7 @@ function getAcademicYear() {
 }
 
 /**
- * Dismisses the current notification if it exists and displays a new one.
- * @param {string} title - The notification title.
- * @param {string} message - The notification message.
- * @param {string} type - The notification type ('success', 'error', etc.).
+ * Displays a persistent notification.
  */
 function displayNotification(title, message, type) {
     if (notification) notification();
@@ -130,8 +137,8 @@ function displayNotification(title, message, type) {
 // --- Render Functions ---
 
 /**
- * Renders the membership, legal form, debt, and signup status sections.
- * @param {object} profile - The user profile object containing status information.
+ * Renders membership status, legal form completion, and balance status.
+ * @param {object} profile - User data from API.
  */
 function renderEventStatus(profile) {
     const profileMembership = document.getElementById('profile-membership');
@@ -141,7 +148,7 @@ function renderEventStatus(profile) {
     const signupStatus = document.getElementById('profile-signup-status');
     const academicYear = getAcademicYear();
 
-    // Membership Status
+    // Membership logic: show remaining free sessions or active membership
     if (profile.is_member) {
         membershipStatusElements.innerHTML = `${TICK_SVG} Your membership is active for the ${academicYear} academic year.`;
         membershipStatusElements.style.color = 'var(--success)';
@@ -151,7 +158,6 @@ function renderEventStatus(profile) {
         if (profile.free_sessions > 0) {
             membershipStatusElements.innerHTML = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining for the ${academicYear} academic year.
                                       <p>Consider becoming a full member to enjoy unlimited sessions and support our club!
-                                      Once your free sessions are used up, you will not be able to book more sessions until you become a member.
                                       <button id="become-member-button" class="primary-button">Become a Member</button></p>`;
             membershipStatusElements.style.color = 'var(--warning)';
             profileMembership.style.setProperty('--colour', 'orange');
@@ -166,14 +172,14 @@ function renderEventStatus(profile) {
     }
     profileMembership.style.color = `var(--colour)`;
 
-    // Bind dynamic button
+    // Handle "Become a Member" click
     document.getElementById('become-member-button')?.addEventListener('click', async (event) => {
         event.preventDefault();
         await ajaxPost('/api/user/join');
         updateProfilePage();
     });
 
-    // Legal Form Status
+    // Legal Form Logic
     const legalColor = profile.filled_legal_info ? 'var(--success)' : 'var(--error)';
     const legalIcon = profile.filled_legal_info ? TICK_SVG : X_SVG;
     const legalText = profile.filled_legal_info ? 'Legal information form completed' : 'Legal information form not completed';
@@ -183,7 +189,7 @@ function renderEventStatus(profile) {
     legalFormStatus.style.color = legalColor;
     legalFormStatus.querySelector('svg').style.fill = legalColor;
 
-    // Debt Status
+    // Debt/Balance logic
     const hasDebt = profile.balance < -20;
     const debtColor = hasDebt ? 'var(--error)' : 'var(--success)';
     const debtIcon = hasDebt ? X_SVG : TICK_SVG;
@@ -194,7 +200,7 @@ function renderEventStatus(profile) {
     debtStatus.style.color = debtColor;
     debtStatus.querySelector('svg').style.fill = debtColor;
 
-    // Signup Eligibility
+    // Final Signup eligibility summary
     let error = true;
     if (!profile.filled_legal_info) {
         signupStatus.innerHTML = "Please complete the legal and health forms to be eligible for event sign-ups.";
@@ -219,8 +225,7 @@ function renderEventStatus(profile) {
 }
 
 /**
- * Renders the instructor status section and binds related buttons.
- * @param {object} profile - The user profile object containing instructor status.
+ * Renders instructor specific controls.
  */
 function renderInstructorStatus(profile) {
     const instructorStatusContainer = document.getElementById('instructor-status-container');
@@ -241,7 +246,7 @@ function renderInstructorStatus(profile) {
     }
     instructorStatusContainer.style.color = `var(--colour)`;
 
-    // Bind dynamic buttons
+    // Event bindings for instructor toggle
     document.getElementById('instructor-signup-btn')?.addEventListener('click', async () => {
         await ajaxPost('/api/user/elements', { is_instructor: true });
         updateProfilePage();
@@ -254,8 +259,7 @@ function renderInstructorStatus(profile) {
 }
 
 /**
- * Populates the personal details form placeholders.
- * @param {object} profile - The user profile object containing personal details.
+ * Populates placeholder text for personal details.
  */
 function renderDetails(profile) {
     document.getElementById('profile-firstname').placeholder = profile.first_name;
@@ -264,8 +268,7 @@ function renderDetails(profile) {
 }
 
 /**
- * Populates the aid details form inputs and toggles the remove button.
- * @param {object} profile - The user profile object containing aid details.
+ * Renders first aid and contact information.
  */
 function renderAidDetails(profile) {
     const contactNumberInput = document.getElementById('profile-contact-number');
@@ -285,10 +288,10 @@ function renderAidDetails(profile) {
 // --- Event Binding (Static Elements) ---
 
 /**
- * Binds event listeners to static form elements (details, aid, logout).
+ * Initial binding of event listeners for form submissions and buttons.
  */
 async function bindStaticEvents() {
-    // Profile Details Form
+    // --- Update Personal Details ---
     const firstname = document.getElementById('profile-firstname');
     const lastname = document.getElementById('profile-surname');
     const email = document.getElementById('profile-email');
@@ -305,6 +308,7 @@ async function bindStaticEvents() {
         event.preventDefault();
         if (submitButton.disabled) return;
 
+        // Validation
         const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
         if (email.value.trim() !== '' && !emailRegex.test(email.value.trim())) {
             email.setCustomValidity('Email must be a firstname.lastname@durham.ac.uk address.');
@@ -316,6 +320,7 @@ async function bindStaticEvents() {
         if (firstname.value.trim() !== '') updateData.first_name = firstname.value.trim();
         if (lastname.value.trim() !== '') updateData.last_name = lastname.value.trim();
         if (email.value.trim() !== '') updateData.email = email.value.trim();
+        
         await ajaxPost('/api/user/elements', updateData);
 
         displayNotification('Profile updated.', "Your profile has been successfully updated.", 'success');
@@ -326,7 +331,7 @@ async function bindStaticEvents() {
         updateProfilePage();
     });
 
-    // Aid Details Form
+    // --- Update Aid/Contact Details ---
     const contactNumberInput = document.getElementById('profile-contact-number');
     const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
     const aidSubmitButton = document.getElementById('profile-aid-submit-button');
@@ -389,7 +394,7 @@ async function bindStaticEvents() {
         updateProfilePage();
     });
 
-    // Danger Zone
+    // --- Logout & Account Deletion ---
     document.getElementById('profile-logout-button').addEventListener('click', async (event) => {
         event.preventDefault();
         await ajaxGet('/api/auth/logout');
@@ -414,8 +419,8 @@ async function bindStaticEvents() {
         }
     });
 
+    // --- Admin Access ---
     const admin = document.getElementById('admin-panel-button');
-
     const isAdmin = await ajaxGet('/api/user/elements/can_manage_events,can_manage_users,is_exec');
 
     if (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec) {
@@ -431,8 +436,7 @@ async function bindStaticEvents() {
 }
 
 /**
- * Renders the user's tags.
- * @param {object} profile - The user profile object containing the ID.
+ * Fetches and renders user tags.
  */
 async function renderTags(profile) {
     const container = document.getElementById('profile-tags-container');
@@ -455,11 +459,11 @@ async function renderTags(profile) {
 // --- Main Update Function ---
 
 /**
- * Fetches user profile data and updates the profile page UI.
- * @returns {Promise<void>} A promise that resolves when the update is complete.
+ * Primary state refresh for the profile page.
+ * Fetches all necessary user data and triggers specialized render functions.
  */
 async function updateProfilePage() {
-    if (!await requireAuth()) return;
+    if (!await requireAuth()) return; // Redirect to login if session is expired
 
     try {
         const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,can_manage_users,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance');
@@ -480,6 +484,7 @@ async function updateProfilePage() {
 document.addEventListener('DOMContentLoaded', async () => {
     bindStaticEvents();
 
+    // Listen for state change signals
     LoginEvent.subscribe((data) => {
         updateProfilePage();
     });
@@ -488,6 +493,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateProfilePage();
     });
 
+    // Refresh data when navigating back to profile
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/profile') {
             updateProfilePage();
@@ -495,6 +501,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
+// Register the profile view with the main container
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
 export { FirstNameChangedEvent };

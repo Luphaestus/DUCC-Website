@@ -3,6 +3,12 @@ import { switchView, ViewChangedEvent } from './misc/view.js';
 import { Event } from "./misc/event.js";
 import { getPreviousPath } from './misc/history.js';
 
+/**
+ * Login Module.
+ * Manages the login view, including form validation, authentication requests,
+ * and intelligent redirection (returning the user to their previous page).
+ */
+
 // --- Constants & Templates ---
 
 const HTML_TEMPLATE = `<div id="/login-view" class="view hidden">
@@ -37,34 +43,36 @@ const HTML_TEMPLATE = `<div id="/login-view" class="view hidden">
             </div>
         </div>`;
 
-let messageElement = null;
+let messageElement = null; // Container for inline error messages
 let email = null;
 let password = null;
 
 
 // --- State ---
 
+/** Event emitted when a user successfully logs in */
 const LoginEvent = new Event();
 
 // --- Event Binding ---
 
 /**
- * Sets up the login form event listeners and error message container.
+ * Resets the login form to its default state.
  */
 function setupLoginForm() {
-    messageElement.textContent = '';
-    email.value = '';
-    password.value = '';
+    if (messageElement) messageElement.textContent = '';
+    if (email) email.value = '';
+    if (password) password.value = '';
 }
 
 /**
- * Handles navigation events for the login view.
- * @param {object} params - The navigation event parameters containing the resolved path.
+ * Listener for SPA view changes.
+ * Redirects already-authenticated users away from the login page.
  */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/login') {
         ajaxGet('/api/auth/status').then((data => {
             if (data.authenticated) {
+                // If already logged in, go back or to events
                 const previousPath = getPreviousPath();
                 if (!previousPath || previousPath === '/login' || previousPath === '/signup' || previousPath === '/home')
                     switchView('/events');
@@ -86,28 +94,36 @@ document.addEventListener('DOMContentLoaded', () => {
     email = document.getElementById('email');
     password = document.getElementById('password');
 
+    // Dynamically create message area for errors
     messageElement = document.createElement('div');
     messageElement.id = 'login-message';
     messageElement.setAttribute('role', 'alert');
     messageElement.style.marginBottom = '0';
     loginFooter.appendChild(messageElement);
+
+    // Handle form submission
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const formData = new FormData(loginForm);
-        const email = formData.get('email');
-        const password = formData.get('password');
+        const emailVal = formData.get('email');
+        const passwordVal = formData.get('password');
 
         try {
-            await ajaxPost('/api/auth/login', { email, password });
+            // Perform the authentication request
+            await ajaxPost('/api/auth/login', { email: emailVal, password: passwordVal });
+            
+            // Notify other components (like navbar) of the state change
             LoginEvent.notify({ authenticated: true });
 
+            // Intelligent redirect: go to where they were before, or default to events
             const previousPath = getPreviousPath();
             if (!previousPath || previousPath === '/login' || previousPath === '/signup' || previousPath === '/home')
                 switchView('/events');
             else
                 switchView(previousPath);
         } catch (error) {
+            // Display error feedback
             messageElement.textContent = error || 'Login failed. Please try again.';
             messageElement.style.color = '#FF6961';
             console.error('Login failed:', error);
@@ -117,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ViewChangedEvent.subscribe(ViewNavigationEventListener);
 });
 
+// Inject template into the main layout
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
 export { LoginEvent };

@@ -2,6 +2,15 @@ import { ajaxGet } from '../../misc/ajax.js';
 import { switchView } from '../../misc/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
 
+/**
+ * Tag Management Module (Admin).
+ * Displays a list of all tags currently defined in the system.
+ * Allows admins to click a tag to edit it or create a new one.
+ */
+
+/**
+ * Renders the main tag management interface.
+ */
 export async function renderManageTags() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
@@ -37,6 +46,9 @@ export async function renderManageTags() {
     await fetchAndRenderTags();
 }
 
+/**
+ * Fetches all tags from the API and populates the table.
+ */
 async function fetchAndRenderTags() {
     try {
         const data = (await ajaxGet('/api/tags')).data;
@@ -49,12 +61,17 @@ async function fetchAndRenderTags() {
             tbody.innerHTML = tags.map(tag => `
                 <tr class="tag-row" data-id="${tag.id}">
                     <td>${tag.name}</td>
-                    <td><span class="tag-color-badge" style="background-color: ${tag.color};">${tag.color}</span></td>
+                    <td>
+                        <span class="tag-color-badge" style="background-color: ${tag.color};">
+                            ${tag.color}
+                        </span>
+                    </td>
                     <td>${tag.min_difficulty || '-'}</td>
                     <td>${tag.description || ''}</td>
                 </tr>
             `).join('');
 
+            // Click-to-edit listener
             tbody.querySelectorAll('.tag-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/tag/${row.dataset.id}`);
             });

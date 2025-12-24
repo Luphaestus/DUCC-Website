@@ -3,36 +3,45 @@ const fsp = fs.promises;
 const path = require('path');
 
 /**
+ * Slides API module.
+ * Automatically scans a directory for image files and provides endpoints for the frontend slideshow.
+ * Includes a file system watcher to dynamically update the list of slides when files are added or removed.
+ *
  * Routes:
- *   GET  /api/slides/count    -> { count: number }
- *   GET  /api/slides/images   -> { images: string[] }
- *   GET  /api/slides/random   -> { image: string }
- *   GET  /api/slides/:index   -> { image: string }
+ *   GET  /api/slides/count    -> Returns the total number of available slides.
+ *   GET  /api/slides/images   -> Returns an array of all slide image URLs.
+ *   GET  /api/slides/random   -> Returns a single random slide image URL.
+ *   GET  /api/slides/:index   -> Returns the slide image URL at a specific index.
  *
  * @module SlidesAPI
  */
 class SlidesAPI {
 
   /**
+   * Initializes the SlidesAPI instance and starts the initial scan.
    * @param {object} app - The Express application instance.
    */
   constructor(app) {
     this.app = app;
+    // Parts of the path relative to the public directory
     this.dirParts = ['images', 'slides'];
+    // Absolute path to the slides directory
     this.fullDir = path.join(__dirname, '..', '..', 'public', ...this.dirParts);
+    // Supported image extensions
     this.allowedExt = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
-    this.files = [];
-    this.paths = [];
+    this.files = []; // List of filenames
+    this.paths = []; // List of URLs (relative to public root)
     this._scanTimer = null;
     this._watcher = null;
 
+    // Start initialization
     this._init().catch(err => {
       console.error('Slides init error:', err);
     });
   }
 
   /**
-   * Initializes the Slides instance by scanning for files and setting up a watcher.
+   * Performs the initial scan and sets up the file system watcher.
    * @private
    */
   async _init() {
@@ -41,7 +50,8 @@ class SlidesAPI {
   }
 
   /**
-   * Scans the slides directory for image files and updates the internal file lists.
+   * Scans the slides directory for valid image files.
+   * Updates internal state with the found files and their web-accessible paths.
    */
   async scan() {
     let entries = [];
@@ -54,17 +64,19 @@ class SlidesAPI {
       return;
     }
 
+    // Filter for files with allowed extensions
     const files = entries
       .filter(d => d.isFile() && this.allowedExt.has(path.extname(d.name).toLowerCase()))
       .map(d => d.name)
-      .sort();
+      .sort(); // Sort alphabetically for consistency
 
     this.files = files;
+    // Map to public URLs (e.g., /images/slides/banner.png)
     this.paths = files.map(f => path.posix.join('/', ...this.dirParts, f));
   }
 
   /**
-   * Schedules a scan of the slides directory after a short delay.
+   * Debounces the directory scan to avoid multiple rapid rescans during batch file operations.
    * @private
    */
   _scheduleScan() {
@@ -76,7 +88,8 @@ class SlidesAPI {
   }
 
   /**
-   * Sets up a file system watcher for the slides directory to detect changes.
+   * Sets up a persistent watcher on the slides directory.
+   * Rescans whenever a change (add, rename, delete) is detected.
    * @private
    */
   _setupWatcher() {
@@ -91,30 +104,31 @@ class SlidesAPI {
         this._watcher = null;
       });
     } catch (err) {
+      // Silently fail if watcher cannot be initialized (e.g., directory missing)
       this._watcher = null;
     }
   }
 
   /**
-   * Returns an array of all slide image paths.
-   * @returns {string[]} An array of slide image paths.
+   * Returns a copy of the current list of slide paths.
+   * @returns {string[]} Array of image URLs.
    */
   getFiles() {
     return Array.from(this.paths);
   }
 
   /**
-   * Returns the total count of slide images.
-   * @returns {number} The number of slide images.
+   * Returns the number of available slide images.
+   * @returns {number}
    */
   getFileCount() {
     return this.files.length;
   }
 
   /**
-   * Returns the path of the slide image at the specified index.
-   * @param {number} index - The index of the image to retrieve.
-   * @returns {string|null} The image path if found, otherwise null.
+   * Retrieves a slide path by its index.
+   * @param {number} index
+   * @returns {string|null} The image URL or null if out of bounds.
    */
   getFileAt(index) {
     if (index >= 0 && index < this.paths.length) return this.paths[index];
@@ -122,14 +136,17 @@ class SlidesAPI {
   }
 
   /**
-   * Returns a random slide image path.
-   * @returns {string|null} A random image path if available, otherwise null.
+   * Picks a random slide from the list.
+   * @returns {string|null} A random image URL or null if no slides exist.
    */
   getRandomFile() {
     if (this.paths.length === 0) return null;
     return this.paths[Math.floor(Math.random() * this.paths.length)];
   }
 
+  /**
+   * Registers Express routes for the Slides API.
+   */
   registerRoutes() {
 
     this.app.get('/api/slides/count', (req, res) => {
@@ -160,7 +177,7 @@ class SlidesAPI {
   }
 
   /**
-   * Closes the file system watcher and clears any pending scan timers.
+   * Cleans up resources (watcher and timers) when the instance is no longer needed.
    */
   close() {
     if (this._watcher) {

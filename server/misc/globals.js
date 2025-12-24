@@ -2,14 +2,18 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * Singleton class for managing global application settings.
- * Reads settings from a 'globals.json' file.
+ * Globals class.
+ * A Singleton that manages system-wide configuration settings stored in a JSON file.
+ * This allows settings like membership cost or minimum balance to be modified without code changes.
+ * 
+ * Note: Current implementation reads/writes to disk on every operation.
+ * 
  * @module Globals
  */
 class Globals {
     /**
-     * Initializes the Globals instance.
-     * Creates the 'globals.json' file with default values if it doesn't exist.
+     * Initializes the Globals instance using the Singleton pattern.
+     * Ensures 'globals.json' exists with default values if it is missing.
      */
     constructor() {
         if (Globals.instance) {
@@ -19,6 +23,7 @@ class Globals {
 
         this.path = path.resolve(__dirname, "../../globals.json");
 
+        // Bootstrap defaults if the config file is missing
         if (!fs.existsSync(this.path)) {
             fs.writeFileSync(this.path, JSON.stringify({
                 Unauthorized_max_difficulty: 1,
@@ -30,9 +35,10 @@ class Globals {
     }
 
     /** 
-     * Retrieves the value for the given key from the globals file.
-     * @param {string} key - The key to retrieve.
-     * @returns {any} The value associated with the key.
+     * Retrieves a value from the globals file.
+     * Reads and parses the entire file synchronously.
+     * @param {string} key - The configuration key to retrieve.
+     * @returns {any} The value, or undefined if not found.
      */
     get(key) {
         const data = JSON.parse(fs.readFileSync(this.path, 'utf-8'));
@@ -40,35 +46,36 @@ class Globals {
     }
 
     /**
-     * Retrieves an integer value for the given key from the globals file.
-     * @param {string} key - The key to retrieve.
-     * @returns {number} The integer value associated with the key.
+     * Retrieves a value and parses it as an integer.
+     * @param {string} key
+     * @returns {number}
      */
     getInt(key) {
         return parseInt(this.get(key), 10);
     }
 
     /**
-     * Retrieves a float value for the given key from the globals file.
-     * @param {string} key - The key to retrieve.
-     * @returns {number} The float value associated with the key.
+     * Retrieves a value and parses it as a float.
+     * @param {string} key
+     * @returns {number}
      */
     getFloat(key) {
         return parseFloat(this.get(key));
     }
 
     /**
-     * Retrieves all global settings.
-     * @returns {object} An object containing all global settings.
+     * Retrieves the entire global configuration object.
+     * @returns {object}
      */
     getAll() {
         return JSON.parse(fs.readFileSync(this.path, 'utf-8'));
     }
 
     /**
-     * Updates the value for the given key in the globals file.
+     * Updates a value in the globals file.
+     * Reads, modifies, and then re-writes the entire file synchronously.
      * @param {string} key - The key to update.
-     * @param {any} value - The new value.
+     * @param {any} value - The new value to set.
      */
     set(key, value) {
         const data = this.getAll();

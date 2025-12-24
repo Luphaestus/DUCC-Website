@@ -1,13 +1,16 @@
 /**
- * Represents a standardized response object for API operations.
- * Includes HTTP status code, message, and optional data payload.
+ * statusObject class.
+ * Provides a standardized structure for internal operation results and API responses.
+ * Unifies success/error handling across the application by encapsulating status codes,
+ * messages, and data payloads.
+ * 
  * @module statusObject
  */
 class statusObject {
     /**
-     * @param {number} status - The HTTP status code.
-     * @param {string} [message=null] - A descriptive message.
-     * @param {any} [data=null] - The data payload.
+     * @param {number} status - The HTTP status code (e.g., 200, 404, 500).
+     * @param {string} [message=null] - A human-readable message explaining the result.
+     * @param {any} [data=null] - The actual data payload of the result.
      */
     constructor(status, message = null, data = null) {
         this.status = status;
@@ -16,44 +19,44 @@ class statusObject {
     }
 
     /**
-     * Returns the HTTP status code.
-     * @returns {number} The status code.
+     * @returns {number} The HTTP status code.
      */
     getStatus() {
         return this.status;
     }
 
     /**
-     * Returns the descriptive message.
-     * @returns {string|null} The message.
+     * @returns {string|null} The descriptive message.
      */
     getMessage() {
         return this.message;
     }
 
     /**
-     * Sends the response using the provided Express response object.
+     * Sends the encapsulated state as a JSON response via Express.
+     * Handles formatting based on whether the object represents an error or success.
      * @param {object} res - The Express response object.
      * @returns {object} The Express response.
      */
     getResponse(res) {
         if (this.isError()) {
+            // Error response format
             return res.status(this.getStatus()).json({ message: this.getMessage() });
         }
 
+        // Success response format
         return res.status(this.getStatus()).json({ message: this.getMessage(), data: this.getData() });
     }
 
     /**
-     * Checks if the status indicates an error (status code >= 400).
-     * @returns {boolean} True if it is an error, false otherwise.
+     * Helper to determine if the operation failed.
+     * @returns {boolean} True if status code is 400 or above.
      */
     isError() {
         return this.status >= 400;
     }
 
     /**
-     * Returns the data payload.
      * @returns {any} The data payload.
      */
     getData() {

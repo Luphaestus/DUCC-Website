@@ -2,8 +2,18 @@ import { ajaxGet, ajaxPost } from '../misc/ajax.js';
 import { adminContentID, renderAdminNavBar } from './common.js';
 import { notify } from '../misc/notification.js';
 
-// constants
+/**
+ * Globals Management Module (Admin).
+ * Provides a table-based interface for the President to view and modify 
+ * system-wide settings like membership costs and minimum balance requirements.
+ */
 
+// --- Constants ---
+
+/**
+ * Metadata for global configuration keys.
+ * Used to provide human-readable names and descriptions in the admin UI.
+ */
 const ELEMENTS = {
     Unauthorized_max_difficulty: { name: "Unauthorized Max Difficulty", desc: "Maximum event difficulty level a logged-out user can view.", type: "number" },
     MinMoney: { name: "Minimum Money Balance", desc: "Minimum balance a user can have before being restricted from event sign-ups.", type: "number" },
@@ -13,7 +23,8 @@ const ELEMENTS = {
 
 
 /**
- * Renders the globals management interface.
+ * Renders the main globals management table.
+ * Includes conditional logic for the "President" dropdown.
  */
 export async function renderManageGlobals() {
     const adminContent = document.getElementById(adminContentID);
@@ -48,13 +59,15 @@ export async function renderManageGlobals() {
 }
 
 /**
- * Fetches global settings and renders them into the table.
+ * Fetches current global values and a list of all users from the API.
+ * Populates the table rows with appropriate inputs (number fields or user selects).
  */
 async function fetchAndRenderGlobals() {
     const tbody = document.getElementById('globals-table-body');
     if (!tbody) return;
 
     try {
+        // Fetch globals and user list in parallel
         const [globalsResponse, usersResponse] = await Promise.all([
             ajaxGet('/api/globals'),
             ajaxGet('/api/globals/users')
@@ -67,12 +80,14 @@ async function fetchAndRenderGlobals() {
             return;
         }
 
+        // Generate table rows
         tbody.innerHTML = Object.entries(globals).map(([key, value]) => {
             const displayName = ELEMENTS[key] ? ELEMENTS[key].name : key;
             const description = ELEMENTS[key] ? ELEMENTS[key].desc : '';
             const type = ELEMENTS[key] ? ELEMENTS[key].type : "text";
 
             let inputHtml = '';
+            // The President setting uses a searchable user dropdown
             if (key === 'President') {
                 inputHtml = `<select class="global-input" data-key="${key}">`;
                 users.filter(user => user.id !== globals.President).forEach(user => {
@@ -96,12 +111,14 @@ async function fetchAndRenderGlobals() {
             </tr>`;
         }).join('');
 
+        // Bind event listeners to Save buttons
         for (const [key, value] of Object.entries(globals)) {
             const btn = tbody.querySelector(`.save-global-btn[data-key="${key}"]`);
             btn.addEventListener('click', async () => {
                 const input = tbody.querySelector(`.global-input[data-key="${key}"]`);
                 const newValue = input.value;
 
+                // Validation for max difficulty range
                 if (key === 'Unauthorized_max_difficulty') {
                     const val = parseInt(newValue);
                     if (isNaN(val) || val < 1 || val > 5) {
@@ -110,6 +127,7 @@ async function fetchAndRenderGlobals() {
                     }
                 }
 
+                // Security check for transferring Presidency
                 let password = null;
                 if (key === 'President') {
                     password = await showPrompt("Please confirm your password to change the President:");
@@ -130,10 +148,10 @@ async function fetchAndRenderGlobals() {
 }
 
 /**
- * Updates a single global setting.
- * @param {string} key - The key to update.
- * @param {string} value - The new value.
- * @param {string|null} password - Optional password for sensitive updates.
+ * Sends an update request for a single global key.
+ * @param {string} key - Configuration key.
+ * @param {string} value - New value (parsed to float if numeric).
+ * @param {string|null} password - Required only for changing the President.
  */
 async function updateGlobal(key, value, password = null) {
     let parsedValue = value;
@@ -157,16 +175,16 @@ async function updateGlobal(key, value, password = null) {
 }
 
 /**
- * Shows a custom glassy prompt modal.
- * @param {string} message - The message to display.
- * @returns {Promise<string|null>} Resolves with the input string or null if cancelled.
+ * Custom Promise-based modal for password confirmation.
+ * @param {string} message - Text to display in the modal.
+ * @returns {Promise<string|null>} Resolves with the password or null if cancelled.
  */
 function showPrompt(message) {
     return new Promise((resolve) => {
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'custom-modal-overlay';
 
-        modalOverlay.innerHTML = `s
+        modalOverlay.innerHTML = `
             <div class="custom-modal-content">
                 <h3>Confirm Action</h3>
                 <p>${message}</p>
@@ -180,6 +198,7 @@ function showPrompt(message) {
 
         document.body.appendChild(modalOverlay);
 
+        // Simple enter-animation
         requestAnimationFrame(() => {
             modalOverlay.classList.add('visible');
         });
@@ -213,11 +232,13 @@ function showPrompt(message) {
         confirmBtn.addEventListener('click', handleConfirm);
         cancelBtn.addEventListener('click', handleCancel);
 
+        // Keyboard shortcuts
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') handleConfirm();
             if (e.key === 'Escape') handleCancel();
         });
 
+        // Close on backdrop click
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) handleCancel();
         });

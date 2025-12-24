@@ -3,16 +3,31 @@ import { switchView } from '../../misc/view.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '../../misc/notification.js';
 
+/**
+ * Tag Detail Editor Module (Admin).
+ * Manages individual tags used for event categorization and restriction.
+ * Includes:
+ * - Basic metadata editing (Name, Color, Description).
+ * - Difficulty-based access control setting.
+ * - Whitelist management: Restricting events with this tag to specific users only.
+ */
+
+/**
+ * Renders the tag editor form and whitelist management table.
+ * @param {string} id - The tag ID or 'new'.
+ */
 export async function renderTagDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
+    // Breadcrumb navigation
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) {
         actionsEl.innerHTML = '<button id="admin-back-btn">&larr; Back to Tags</button>';
         document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
     }
 
+    // Whitelist management requires user management permissions to search for users
     const userPerms = (await ajaxGet('/api/user/elements/can_manage_users')).can_manage_users
 
     const isNew = id === 'new';
@@ -21,6 +36,7 @@ export async function renderTagDetail(id) {
 
     if (!isNew) {
         try {
+            // Fetch tag details and current whitelist
             const tags = (await ajaxGet('/api/tags')).data || [];
 
             tag = tags.find(t => t.id == id);
@@ -34,6 +50,7 @@ export async function renderTagDetail(id) {
         }
     }
 
+    // Render Form
     adminContent.innerHTML = `
         <div class="form-info">
             <article class="form-box">
@@ -59,13 +76,14 @@ export async function renderTagDetail(id) {
                 
                 ${!isNew ? `
                     ${userPerms ? `
+                        <hr>
                         <h3>Whitelist (Restricted Access)</h3>
                         <p>Only users on this list can view/join events with this tag. (If empty, no whitelist restriction).</p>
                         <form id="whitelist-form" class="whitelist-form">
                         <label class="whitelist-form-label">
                             <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
                             <datalist id="users-datalist"></datalist>
-                            <button type="submit" class="whitelist-form-submit">Add</button>
+                            <button type="submit" class="whitelist-form-submit">Add User</button>
                         </label>
                         </form>
                         <table class="admin-table">
@@ -86,11 +104,13 @@ export async function renderTagDetail(id) {
         </div>
     `;
 
+    // Handle Tag Metadata Update
     document.getElementById('tag-form').onsubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
+        // Canonicalize empty difficulty to null for backend
         if (data.min_difficulty === '') data.min_difficulty = null;
         else data.min_difficulty = parseInt(data.min_difficulty);
 
@@ -110,24 +130,30 @@ export async function renderTagDetail(id) {
     };
 
     if (!isNew) {
+        // Handle Tag Deletion
         document.getElementById('delete-tag-btn').onclick = async () => {
+            if (!confirm('Are you sure you want to delete this tag? Events using this tag will be affected.')) return;
             await ajaxDelete(`/api/tags/${id}`);
             notify('Success', 'Tag deleted successfully', NotificationTypes.SUCCESS);
             switchView('/admin/tags');
         };
 
-        // Populate Datalist
+        // --- Whitelist Management Logic ---
         if (userPerms) {
             try {
+                // Populate autocomplete datalist with all users
+                // Note: limit=1000 is used as a workaround for pagination in search
                 const usersData = await ajaxGet('/api/admin/users?limit=1000');
                 const users = usersData.users || [];
                 const datalist = document.getElementById('users-datalist');
                 datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             } catch (e) { console.error("Failed to load users for autocomplete", e); }
 
+            // Handle adding a user to the whitelist
             document.getElementById('whitelist-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const inputVal = document.getElementById('whitelist-user-input').value;
+                // Extract ID from the "ID - Name (Email)" format
                 const userId = parseInt(inputVal.split(' - ')[0]);
 
                 if (!userId || isNaN(userId)) {
@@ -138,6 +164,8 @@ export async function renderTagDetail(id) {
                 try {
                     await ajaxPost(`/api/tags/${id}/whitelist`, { userId: userId });
                     notify('Success', 'User added to whitelist', NotificationTypes.SUCCESS);
+                    
+                    // Refresh whitelist table
                     const newWhitelist = (await ajaxGet(`/api/tags/${id}/whitelist`)).data || [];
                     document.getElementById('whitelist-table-body').innerHTML = renderWhitelistRows(newWhitelist, id);
                     document.getElementById('whitelist-user-input').value = '';
@@ -151,9 +179,14 @@ export async function renderTagDetail(id) {
     }
 }
 
+/**
+ * Generates HTML rows for the whitelist table.
+ * @param {Array} whitelist - List of users.
+ * @param {number} tagId - Parent tag ID.
+ * @returns {string} HTML string.
+ */
 function renderWhitelistRows(whitelist, tagId) {
     if (!whitelist || whitelist.length === 0) return '<tr><td colspan="3">No restrictions.</td></tr>';
-    console.log(whitelist)
     return whitelist.map(user => `
         <tr>
             <td>${user.first_name} ${user.last_name}</td>
@@ -163,6 +196,10 @@ function renderWhitelistRows(whitelist, tagId) {
     `).join('');
 }
 
+/**
+ * Sets up delegated event listener for "Remove" buttons in the whitelist table.
+ * @param {number} tagId
+ */
 function setupRemoveButtons(tagId) {
     const tbody = document.getElementById('whitelist-table-body');
     if (!tbody) return;
@@ -173,6 +210,8 @@ function setupRemoveButtons(tagId) {
             try {
                 await ajaxDelete(`/api/tags/${tagId}/whitelist/${userId}`);
                 notify('Success', 'User removed from whitelist', NotificationTypes.SUCCESS);
+                
+                // Refresh list
                 const newWhitelist = (await ajaxGet(`/api/tags/${tagId}/whitelist`)).data || [];
                 tbody.innerHTML = renderWhitelistRows(newWhitelist, tagId);
             } catch (err) {

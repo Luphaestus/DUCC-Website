@@ -4,6 +4,16 @@ import { ViewChangedEvent } from './misc/view.js';
 import { Event } from "./misc/event.js";
 import { requireAuth } from './misc/auth.js';
 
+/**
+ * Legal & Medical Module.
+ * Manages the complex form for collecting user personal, medical, and emergency contact data.
+ * Features:
+ * - Automated field mapping between API keys and DOM elements.
+ * - Dynamic validation (regex, required fields, date ranges).
+ * - "Sticky" field logic (certain fields update based on others).
+ * - Automatic population of existing data.
+ */
+
 // --- DOM IDs ---
 
 const name_id = 'name';
@@ -179,8 +189,7 @@ const HTML_TEMPLATE = `<div id="/legal-view" class="view hidden">
 // --- Field Mapping ---
 
 /**
- * Maps API keys to their corresponding DOM element IDs.
- * Used for automated data collection and form population.
+ * Mapping from Server API field names to Client-side DOM IDs.
  */
 const FIELD_MAP = {
     date_of_birth: date_of_birth_id,
@@ -203,23 +212,26 @@ const FIELD_MAP = {
 // --- State ---
 
 const LegalEvent = new Event();
-let minWarning = "none";
+/** Tracks validation status of every mapped field */
 const inputStatus = {};
+/** Controls whether empty fields show red borders (none) or not (true) */
+let minWarning = "none";
 let notification = null;
 
 // --- Validation Helpers ---
 
 /**
- * Updates the visual validation state of an element.
- * @param {HTMLElement} input - The input element.
- * @param {string} id - The ID key for inputStatus.
- * @param {boolean} isValid - Whether the input is valid.
+ * Syncs an input's visual state (aria-invalid) with its actual validity.
+ * @param {HTMLElement} input
+ * @param {string} id
+ * @param {boolean} isValid
  */
 function setValidationState(input, id, isValid) {
     if (isValid) {
         input.ariaInvalid = 'false';
         inputStatus[id] = true;
     } else {
+        // If field is empty, don't show error unless user has attempted submission (minWarning)
         input.ariaInvalid = input.value === '' ? minWarning : 'true';
         inputStatus[id] = false;
     }
@@ -227,39 +239,29 @@ function setValidationState(input, id, isValid) {
 
 // --- Helper Functions ---
 
-/**
- * Dismisses the current notification if it exists and displays a new one.
- * @param {string} title - The notification title.
- * @param {string} message - The notification message.
- * @param {string} type - The notification type ('success', 'error', etc.).
- */
+/** Standardized notification trigger */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
 /**
- * Validates that an input field is not empty.
+ * Checks for non-empty value.
  */
 function presence(id, watch = true) {
     const input = document.getElementById(id);
     if (!input) return false;
 
-    function validate(value) {
+    function validate() {
         setValidationState(input, id, input.value.trim() !== '');
     }
 
-    if (watch) {
-        input.addEventListener('input', () => {
-            validate(input.value);
-        });
-    }
-
-    validate(input.value);
+    if (watch) input.addEventListener('input', validate);
+    validate();
 }
 
 /**
- * Validates an input field against a regex pattern.
+ * Checks against a regular expression.
  */
 function regexInput(id, pattern, watch = true) {
     const input = document.getElementById(id);
@@ -270,17 +272,12 @@ function regexInput(id, pattern, watch = true) {
         setValidationState(input, id, isValid);
     }
 
-    if (watch) {
-        input.addEventListener('input', () => {
-            validate(input.value);
-        });
-    }
-
-    validate(input.value);
+    if (watch) input.addEventListener('input', validate);
+    validate();
 }
 
 /**
- * Validates that a checkbox is checked.
+ * Checks if a checkbox is ticked.
  */
 function validateCheckbox(id, watch = true) {
     const input = document.getElementById(id);
@@ -291,15 +288,12 @@ function validateCheckbox(id, watch = true) {
         input.ariaInvalid = input.checked ? 'false' : minWarning;
     }
 
-    if (watch) {
-        input.addEventListener('input', validate);
-    }
-
+    if (watch) input.addEventListener('input', validate);
     validate();
 }
 
 /**
- * Validates a pair of radio buttons (Yes/No) and toggles a detail input.
+ * Manages Yes/No radio pairs and conditionally shows a text area for "if yes, describe".
  */
 function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
     const inputYes = document.getElementById(idYes);
@@ -318,11 +312,11 @@ function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
             if (detailInput) {
                 if (inputYes.checked) {
                     detailInput.classList.remove('hidden');
-                    presence(detailId, false);
+                    presence(detailId, false); // Validate the detail field now
                     detailRequired = true;
                 } else {
                     detailInput.classList.add('hidden');
-                    inputStatus[detailId] = true;
+                    inputStatus[detailId] = true; // Mark as valid if "No" selected
                     detailRequired = false;
                 }
             }
@@ -353,13 +347,8 @@ function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
             setValidationState(input, id, input.value.trim() !== '');
         }
 
-        if (watch) {
-            input.addEventListener('input', () => {
-                validate(input.value);
-            });
-        }
-
-        validate(input.value);
+        if (watch) input.addEventListener('input', validate);
+        validate();
     }
 
     validate();
@@ -367,8 +356,7 @@ function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
 }
 
 /**
- * Collects all form data into an object based on FIELD_MAP.
- * @returns {object} The form data payload.
+ * Scrapes all mapped fields from the DOM and returns a JSON object for the API.
  */
 function getFormData() {
     const data = {};
@@ -376,8 +364,11 @@ function getFormData() {
         const el = document.getElementById(domId);
         if (!el) continue;
 
-        if (el.type === 'checkbox' || el.type === 'radio') {
+        if (el.type === 'checkbox') {
             data[apiKey] = el.checked;
+        } else if (el.type === 'radio') {
+            // Logic specifically for Yes/No pairs: API expects boolean
+            data[apiKey] = el.checked; 
         } else {
             data[apiKey] = el.value;
         }
@@ -386,8 +377,7 @@ function getFormData() {
 }
 
 /**
- * Populates form fields from a data object based on FIELD_MAP.
- * @param {object} data - The data to populate.
+ * Distributes data from a JSON object back into the DOM fields.
  */
 function populateForm(data) {
     for (const [apiKey, domId] of Object.entries(FIELD_MAP)) {
@@ -395,18 +385,19 @@ function populateForm(data) {
         if (!el || data[apiKey] === undefined || data[apiKey] === null) continue;
 
         if (el.type === 'checkbox') el.checked = !!data[apiKey];
-        else if (el.type === 'radio') el.checked = !!data[apiKey]; // Note: Only handles the 'Yes' radio
+        else if (el.type === 'radio') el.checked = !!data[apiKey];
         else el.value = data[apiKey];
     }
 }
 
 /**
- * Runs validation on all form fields.
- * @param {boolean} watch - Whether to attach input listeners for real-time validation.
+ * Comprehensive orchestrator for all form field validations.
+ * Includes fetching actual user names to disable the name field (preventing unauthorized name changes).
  */
 async function validateForm(watch = true) {
     const namePattern = /^[a-zA-Z\s ,.'-]+$/;
 
+    // Fetch official name to prevent editing here
     const name = await ajaxGet('/api/user/elements/first_name,last_name').then((data) => `${data.first_name} ${data.last_name}`).catch(() => null);
     const nameInput = document.getElementById(name_id);
     if (nameInput && name) {
@@ -420,9 +411,12 @@ async function validateForm(watch = true) {
 
     regexInput(emergency_contact_name_id, namePattern, watch);
 
+    // Common phone number pattern
     const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
     regexInput(phone_number_id, phonePattern, watch);
     regexInput(emergency_contact_phone_id, phonePattern, watch);
+    
+    // Date of Birth logic: Must be between 17 and 90 years old
     const dobInput = document.getElementById(date_of_birth_id);
     if (dobInput) {
         const today = new Date();
@@ -442,10 +436,7 @@ async function validateForm(watch = true) {
             setValidationState(dobInput, date_of_birth_id, isValid);
         }
 
-        if (watch) {
-            dobInput.addEventListener('input', validateDob);
-        }
-
+        if (watch) dobInput.addEventListener('input', validateDob);
         validateDob();
     }
 
@@ -457,32 +448,29 @@ async function validateForm(watch = true) {
             const isValid = collegeSelect.value && collegeSelect.value !== 'Select';
             setValidationState(collegeSelect, college_id, isValid);
         }
-
-        if (watch) {
-            collegeSelect.addEventListener('input', validateCollege);
-        }
-
+        if (watch) collegeSelect.addEventListener('input', validateCollege);
         validateCollege();
     }
 
+    // Medical logic pairs
     validateYeseNo(has_medical_conditions_id, has_medical_conditions_no_id, medical_conditions_details_id, watch);
     validateYeseNo(takes_medication_id, takes_medication_no_id, medication_details_id, watch);
 
+    // Term checkboxes
     [agrees_to_fitness_statement_id, agrees_to_club_rules_id, agrees_to_pay_debts_id].forEach(id => validateCheckbox(id, watch));
 
     validateCheckbox(agrees_to_data_storage_id, watch);
 }
 
 /**
- * Checks if all form inputs are currently valid.
- * @returns {boolean}
+ * Final check: Are all trackers in inputStatus marked as true?
  */
 function allInputsValid() {
     return Object.values(inputStatus).every(status => status === true);
 }
 
 /**
- * Fetches existing medical data and populates the form.
+ * Fetches current data from API and populates the form if the user has already filled it.
  */
 async function getCurrentMedicalData() {
     const keys = ['filled_legal_info', ...Object.keys(FIELD_MAP)].join(',');
@@ -491,6 +479,7 @@ async function getCurrentMedicalData() {
     if (!currentData || !currentData.filled_legal_info) return;
 
     populateForm(currentData);
+    // Extra handling for the 'No' radio buttons (mapping only handles 'Yes')
     document.getElementById(has_medical_conditions_no_id).checked = !currentData.has_medical_conditions;
     document.getElementById(takes_medication_no_id).checked = !currentData.takes_medication;
 }
@@ -498,7 +487,7 @@ async function getCurrentMedicalData() {
 // --- Event Binding (Static Elements) ---
 
 /**
- * Binds event listeners to static form elements.
+ * Binds the main submit handler.
  */
 function bindStaticEvents() {
     const submitButton = document.getElementById(submitButton_id);
@@ -507,16 +496,20 @@ function bindStaticEvents() {
     submitButton.addEventListener('click', async (event) => {
         event.preventDefault();
 
+        // Perform final validation check
         if (!allInputsValid()) {
-            minWarning = 'true';
+            minWarning = 'true'; // Force red borders on empty required fields
             displayNotification('Missing or incorrect fields.', 'Please fill out all required fields correctly.', 'error');
             await validateForm(false);
             return;
         }
 
+        // Send payload to server
         await ajaxPost('/api/user/elements', getFormData());
 
         displayNotification('Information Saved', 'Your legal and medical information has been saved successfully.', 'success');
+        
+        // Notify other modules (like Profile) that the legal info is now complete
         LegalEvent.notify();
     });
 }
@@ -524,17 +517,18 @@ function bindStaticEvents() {
 // --- Main Update Function ---
 
 /**
- * Updates the legal page UI based on authentication and current data.
- * @param {string} page - The current view path.
+ * Orchestrates the Legal view loading sequence.
  */
 async function updateLegalPage(page) {
     if (page !== '/legal') return;
 
+    // View is protected
     if (!await requireAuth()) return;
 
     const legalContainer = document.getElementById('legal-container');
     if (legalContainer) legalContainer.classList.remove('hidden');
 
+    // Load existing data first, then setup validation
     await getCurrentMedicalData();
     await validateForm();
 }
@@ -543,9 +537,11 @@ async function updateLegalPage(page) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     bindStaticEvents();
+    // Re-run setup whenever the SPA router switches to this view
     ViewChangedEvent.subscribe(async ({ resolvedPath }) => updateLegalPage(resolvedPath));
 });
 
+// Inject view template
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
 export { LegalEvent };

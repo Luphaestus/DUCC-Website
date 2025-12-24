@@ -2,6 +2,13 @@ import { ajaxGet, ajaxPost } from './misc/ajax.js';
 import { switchView } from './misc/view.js';
 import { ViewChangedEvent } from './misc/view.js';
 
+/**
+ * Signup Module.
+ * Manages the user registration view.
+ * Features extensive client-side validation (regex for names/emails, password matching)
+ * to provide immediate feedback before sending data to the server.
+ */
+
 // --- Constants & Templates ---
 
 const HTML_TEMPLATE = `<div id="/signup-view" class="view hidden">
@@ -49,29 +56,31 @@ const HTML_TEMPLATE = `<div id="/signup-view" class="view hidden">
 
 // --- State ---
 
-let messageElement = null;
+let messageElement = null; // General feedback area
 let firstName = null;
 let lastName = null;
 let email = null;
 let password = null;
 let confirmPassword = null;
-let validationMessages = {};
+let validationMessages = {}; // Tracker for field-specific error elements
 
 // --- Helper Functions ---
 
 /**
- * Handles navigation events for the signup view.
- * @param {object} params - The navigation event parameters containing the resolved path.
+ * Listener for SPA view changes.
+ * Redirects already-authenticated users and resets form fields.
  */
 async function NavigationEventListner({ resolvedPath }) {
     if (resolvedPath !== '/signup') return;
 
+    // Don't show signup if already logged in
     const authenticated = await ajaxGet('/api/auth/status').then(data => data.authenticated).catch(() => false);
     if (authenticated) {
         switchView('/events');
         return;
     }
 
+    // Reset UI state
     if (messageElement) messageElement.classList.add('hidden');
     if (firstName) {
         firstName.value = '';
@@ -98,8 +107,8 @@ async function NavigationEventListner({ resolvedPath }) {
 }
 
 /**
- * Displays an error message
- * @param {string} error - The error message to display.
+ * Displays a general error message at the bottom of the form.
+ * @param {string} error
  */
 function displayError(error) {
     if (messageElement) {
@@ -110,9 +119,9 @@ function displayError(error) {
 }
 
 /**
- * Displays a validation message below the specified input field.
- * @param {HTMLElement} inputElement - The input element to display the message for.
- * @param {string} message - The validation message.
+ * Displays a validation message immediately following an input field.
+ * @param {HTMLElement} inputElement - Target field.
+ * @param {string} message - Feedback text.
  */
 function displayValidationMessage(inputElement, message) {
     let messageId = `validation-message-${inputElement.id}`;
@@ -121,6 +130,7 @@ function displayValidationMessage(inputElement, message) {
         existingMessage = document.createElement('p');
         existingMessage.id = messageId;
         existingMessage.classList.add('validation-message');
+        // Insert after the input
         inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
     }
     existingMessage.textContent = message;
@@ -131,7 +141,7 @@ function displayValidationMessage(inputElement, message) {
 }
 
 /**
- * Clears all validation messages.
+ * Clears all inline field-specific validation messages.
  */
 function clearValidationMessages() {
     for (const inputId in validationMessages) {
@@ -143,11 +153,11 @@ function clearValidationMessages() {
 }
 
 /**
- * Validates a single input field against a regex pattern and displays a message if invalid.
- * @param {HTMLElement} inputElement - The input element to validate.
- * @param {RegExp} pattern - The regex pattern to test against.
- * @param {string} errorMessage - The message to display if validation fails.
- * @returns {boolean} True if valid, false otherwise.
+ * High-level helper to validate a single field and update its ARIA state.
+ * @param {HTMLElement} inputElement
+ * @param {RegExp} pattern
+ * @param {string} errorMessage
+ * @returns {boolean}
  */
 function validateInput(inputElement, pattern, errorMessage) {
     if (!pattern.test(inputElement.value)) {
@@ -156,6 +166,7 @@ function validateInput(inputElement, pattern, errorMessage) {
         return false;
     } else {
         inputElement.ariaInvalid = 'false';
+        // Clean up message if field is now valid
         if (validationMessages[inputElement.id]) {
             validationMessages[inputElement.id].remove();
             delete validationMessages[inputElement.id];
@@ -172,15 +183,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!signupForm) return;
 
+    // Create the general message container
     messageElement = document.createElement('div');
     messageElement.id = 'signup-message';
     messageElement.setAttribute('role', 'alert');
     messageElement.style.marginBottom = '0';
     signupFooter.appendChild(messageElement);
 
+    // Handle form submission
     signupForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
+        // Reset previous validation state
         messageElement.classList.add('hidden');
         clearValidationMessages();
 
@@ -192,17 +206,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const nameRegex = /^[a-zA-Z'-]{1,50}$/;
 
-        validateInput(firstName, nameRegex, 'First name can only contain letters, hyphens, and apostrophes.');
-        validateInput(lastName, nameRegex, 'Last name can only contain letters, hyphens, and apostrophes.');
+        // Perform validations
+        const isFirstNameValid = validateInput(firstName, nameRegex, 'First name can only contain letters, hyphens, and apostrophes.');
+        const isLastNameValid = validateInput(lastName, nameRegex, 'Last name can only contain letters, hyphens, and apostrophes.');
 
         const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
-        validateInput(email, emailRegex, 'Invalid email format. Must be a first.last@durham.ac.uk address.');
+        const isEmailValid = validateInput(email, emailRegex, 'Invalid email format. Must be a first.last@durham.ac.uk address.');
 
         if (password.value === "") {
             displayValidationMessage(password, 'Password cannot be empty.');
             password.ariaInvalid = 'true';
-            displayValidationMessage(confirmPassword, 'Password cannot be empty.');
-            confirmPassword.ariaInvalid = 'true';
         }
 
         if (password.value !== confirmPassword.value) {
@@ -210,8 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
             confirmPassword.ariaInvalid = 'true';
         }
 
-        if (password.value !== confirmPassword.value) {
-            displayError('Passwords do not match.');
+        // Halt if any basic validation failed
+        if (!isFirstNameValid || !isLastNameValid || !isEmailValid || password.value === "" || password.value !== confirmPassword.value) {
             return;
         }
 
@@ -224,9 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
+            // Attempt account creation
             await ajaxPost('/api/auth/signup', data);
             messageElement.textContent = 'Sign up successful! Redirecting to login...';
             messageElement.style.color = 'green';
+            messageElement.classList.remove('hidden');
+            // Delay redirect to allow user to see success message
             setTimeout(() => switchView('/login'), 1000);
         } catch (error) {
             displayError(error || 'Sign up failed. Please try again.');
@@ -236,4 +252,5 @@ document.addEventListener('DOMContentLoaded', () => {
     ViewChangedEvent.subscribe(NavigationEventListner);
 });
 
+// Register the view template
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

@@ -1,12 +1,23 @@
 import { ajaxGet } from './misc/ajax.js';
 import { ViewChangedEvent } from './misc/view.js';
 
+/**
+ * Home View Module.
+ * Manages the main landing page of the DUCC website.
+ * Features a cross-fading hero slideshow, scroll animations (via MOS),
+ * and an embedded Google Map.
+ */
+
 // --- DOM IDs ---
 
 const home_view_id = '/home-view';
 
 // --- Constants & Templates ---
 
+/**
+ * Large HTML template for the homepage.
+ * Note: Data attributes like 'data-mos' are used by mos.js for scroll animations.
+ */
 const HTML_TEMPLATE = `<div id="${home_view_id}" class="view hidden">
             <div class="hero">
                 <div class="hero-title" data-mos="fade-up">
@@ -101,7 +112,7 @@ const HTML_TEMPLATE = `<div id="${home_view_id}" class="view hidden">
 
 // --- State ---
 
-let layers = [];
+let layers = []; // Elements for cross-fading layers
 let activeLayerIndex = 0;
 let slideshowInterval = null;
 let slideImages = [];
@@ -110,7 +121,8 @@ let currentIdx = 0;
 // --- Helper Functions ---
 
 /**
- * Ensures the Google Maps iframe is loaded.
+ * Ensures the Google Maps iframe is loaded only when needed.
+ * Uses lazy loading via data-src attribute.
  */
 function initMap() {
     const mapIframe = document.querySelector('.map-container iframe');
@@ -120,9 +132,9 @@ function initMap() {
 }
 
 /**
- * Sets the hero background image.
+ * Sets the background of a hero slide layer with CSS gradients for readability.
  * @param {HTMLElement} layer - The slide layer element.
- * @param {string} url - The URL of the image to set as the background.
+ * @param {string} url - The URL of the image to set.
  */
 function setLayerBg(layer, url) {
     let urlString = url ? `, url("${url}")` : '';
@@ -132,33 +144,32 @@ function setLayerBg(layer, url) {
 }
 
 /**
- * Preloads an array of image URLs to avoid flickering.
- * Loads the first 3 immediately, and the rest gradually.
- * @param {string[]} urls - An array of image URLs to preload.
+ * Preloads hero images to ensure smooth transitions.
+ * @param {string[]} urls - List of image URLs.
  */
 function preload(urls) {
-    // Load first 3 immediately
+    // Load first 3 immediately for the start of the slideshow
     urls.slice(0, 3).forEach(u => {
         const img = new Image();
         img.src = u;
     });
 
-    // Load the rest with a delay
+    // Staggered loading for the rest to conserve bandwidth
     if (urls.length > 3) {
         setTimeout(() => {
             urls.slice(3).forEach((u, i) => {
                 setTimeout(() => {
                     const img = new Image();
                     img.src = u;
-                }, i * 500); // Stagger by 500ms
+                }, i * 500);
             });
         }, 2000);
     }
 }
 
 /**
- * Crossfades to a new slide image.
- * @param {string} url - The URL of the new image to display.
+ * Executes a crossfade transition between two slide layers.
+ * @param {string} url - The URL of the next image.
  */
 function crossfadeTo(url) {
     const nextLayerIndex = 1 - activeLayerIndex;
@@ -174,7 +185,7 @@ function crossfadeTo(url) {
 }
 
 /**
- * Starts the slideshow interval if images are loaded and not already running.
+ * Starts the automatic slideshow loop.
  */
 function startSlideshow() {
     if (slideshowInterval || slideImages.length === 0) return;
@@ -186,7 +197,7 @@ function startSlideshow() {
 }
 
 /**
- * Stops the slideshow interval.
+ * Stops the automatic slideshow loop.
  */
 function stopSlideshow() {
     if (slideshowInterval) {
@@ -198,8 +209,8 @@ function stopSlideshow() {
 // --- Main Update Function ---
 
 /**
- * Initializes the slideshow elements and starts the transition loop.
- * @param {HTMLElement} hero - The hero container element.
+ * Initializes slideshow DOM and fetches image list from API.
+ * @param {HTMLElement} hero - The hero container.
  */
 function initSlideshow(hero) {
     const layerA = document.createElement('div');
@@ -218,17 +229,17 @@ function initSlideshow(hero) {
         if (!slideImages.length) return;
         preload(slideImages);
 
+        // Start with a random slide
         currentIdx = Math.floor(Math.random() * slideImages.length);
 
         setLayerBg(layers[activeLayerIndex], slideImages[currentIdx]);
         layers[activeLayerIndex].classList.add('show');
 
-        // Set transition after the initial image is shown to prevent the first image from fading in.
+        // Delay applying transition property to prevent initial load flicker
         setTimeout(() => {
             layerA.style.transition = 'opacity 900ms ease';
             layerB.style.transition = 'opacity 900ms ease';
 
-            // Start the slideshow if we are currently viewing the home page
             if (window.location.pathname === '/home' || window.location.pathname === '/') {
                 startSlideshow();
             }
@@ -248,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSlideshow(hero);
     }
 
+    // Listen for SPA view changes to start/stop the slideshow and map
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/home') {
             startSlideshow();
@@ -262,4 +274,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Append the view template to the main container
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

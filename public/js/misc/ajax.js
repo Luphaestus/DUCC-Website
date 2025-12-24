@@ -1,16 +1,22 @@
 import { checkServerConnection } from '../connection.js';
 
 /**
- * Make an AJAX GET request
- * @param {string} url - The URL to fetch
- * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
+ * Ajax Module.
+ * Provides a standardized way to perform asynchronous HTTP requests using XMLHttpRequest.
+ * Wraps common HTTP verbs in Promises for easier consumption with async/await.
+ */
+
+/**
+ * Performs an HTTP GET request.
+ * @param {string} url - Target URL.
+ * @returns {Promise<object>} Parsed JSON response.
  */
 async function ajaxGet(url) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
         xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
+            if (xhr.readyState === 4) { // Request complete
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
                         const response = JSON.parse(xhr.responseText);
@@ -30,10 +36,10 @@ async function ajaxGet(url) {
 }
 
 /**
- * Make an AJAX POST request
- * @param {string} url - The URL to post to
- * @param {object} data - The data to send
- * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
+ * Performs an HTTP POST request with a JSON body.
+ * @param {string} url - Target URL.
+ * @param {object} data - Object to be stringified and sent as body.
+ * @returns {Promise<object>} Parsed JSON response.
  */
 async function ajaxPost(url, data) {
     return new Promise((resolve, reject) => {
@@ -50,6 +56,7 @@ async function ajaxPost(url, data) {
                         reject('Failed to parse response: ' + e.message);
                     }
                 } else {
+                    // Try to extract error message from response body
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
                         reject(errorResponse.message || 'Request failed');
@@ -67,9 +74,9 @@ async function ajaxPost(url, data) {
 }
 
 /**
- * Make an AJAX DELETE request
- * @param {string} url - The URL to send the DELETE request to
- * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
+ * Performs an HTTP DELETE request.
+ * @param {string} url - Target URL.
+ * @returns {Promise<object>}
  */
 async function ajaxDelete(url) {
     return new Promise((resolve, reject) => {
@@ -101,10 +108,10 @@ async function ajaxDelete(url) {
 }
 
 /**
- * Make an AJAX PUT request
- * @param {string} url - The URL to send the PUT request to
- * @param {object} data - The data to send
- * @returns {Promise<object>} A promise that resolves with the response data or rejects with an error.
+ * Performs an HTTP PUT request with a JSON body.
+ * @param {string} url - Target URL.
+ * @param {object} data - Data to send.
+ * @returns {Promise<object>}
  */
 async function ajaxPut(url, data) {
     return new Promise((resolve, reject) => {

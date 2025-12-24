@@ -2,17 +2,23 @@ import { ajaxGet } from '../../misc/ajax.js';
 import { switchView } from '../../misc/view.js';
 import { adminContentID, renderPaginationControls, renderAdminNavBar } from '../common.js';
 
+/**
+ * User Management Module (Admin).
+ * Provides a paginated and searchable table of all registered users.
+ * admins can filter by name/email, sort by various fields (balance, level, etc.),
+ * and click rows to access deep-dive user details.
+ */
+
 // --- Main Render Function ---
 
 /**
- * Renders the user management interface.
- * Sets up search, sorting, and pagination controls.
- * Fetches initial data to display.
+ * Renders the user management shell including search controls and table headers.
  */
 export async function renderManageUsers() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
+    // Load state from URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
     const search = urlParams.get('search') || '';
     const sort = urlParams.get('sort') || 'last_name';
@@ -32,7 +38,7 @@ export async function renderManageUsers() {
                         </button>
                     </div>
                     <div class="admin-actions">
-                        <!-- Placeholder for grid balance -->
+                        <!-- Space for future global actions -->
                     </div>
                 </div>
                 <div>
@@ -56,6 +62,7 @@ export async function renderManageUsers() {
         </div>
     `;
 
+    // --- Search Logic ---
     const searchInput = document.getElementById('user-search-input');
     const searchBtn = document.getElementById('user-search-btn');
 
@@ -69,6 +76,7 @@ export async function renderManageUsers() {
         if (e.key === 'Enter') performSearch();
     });
 
+    // --- Sort Logic ---
     adminContent.querySelectorAll('th.sortable').forEach(th => {
         th.addEventListener('click', () => {
             const currentSort = new URLSearchParams(window.location.search).get('sort') || 'last_name';
@@ -82,14 +90,15 @@ export async function renderManageUsers() {
         });
     });
 
+    // Load and render initial data
     await fetchAndRenderUsers({ page, search, sort, order });
 }
 
 // --- Helper Functions ---
 
 /**
- * Updates the URL parameters and refreshes the user list.
- * @param {object} updates - Key-value pairs of parameters to update (page, search, sort, order).
+ * Syncs search/sort/page state to the URL and triggers a re-fetch.
+ * @param {object} updates - Map of parameters to change.
  */
 function updateUserParams(updates) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -103,7 +112,7 @@ function updateUserParams(updates) {
     const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
     window.history.pushState({}, '', newUrl);
 
-    // Parse params back to object for fetchAndRenderUsers
+    // Re-render
     const params = {
         page: parseInt(urlParams.get('page')) || 1,
         search: urlParams.get('search') || '',
@@ -114,12 +123,8 @@ function updateUserParams(updates) {
 }
 
 /**
- * Fetches users from the API based on filters and renders them into the table.
- * @param {object} params - Filter parameters.
- * @param {number} params.page - Current page number.
- * @param {string} params.search - Search term.
- * @param {string} params.sort - Field to sort by.
- * @param {string} params.order - Sort order ('asc' or 'desc').
+ * Performs the actual data fetch and DOM generation for user rows.
+ * @param {object} params - Request parameters.
  */
 async function fetchAndRenderUsers({ page, search, sort, order }) {
     const tbody = document.getElementById('users-table-body');
@@ -138,10 +143,12 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
             return;
         }
 
+        // Map user objects to table rows
         tbody.innerHTML = users.map(user => {
             const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown';
             const balance = user.balance !== undefined ? `£${Number(user.balance).toFixed(2)}` : 'N/A';
 
+            // Calculated columns
             let firstAid = 'None';
             if (user.first_aid_expiry) {
                 const expiry = new Date(user.first_aid_expiry);
@@ -162,12 +169,14 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
             `;
         }).join('');
 
+        // Row click setup
         tbody.querySelectorAll('.user-row').forEach(row => {
             row.addEventListener('click', () => {
                 switchView(`/admin/user/${row.dataset.id}`);
             });
         });
 
+        // Render standard pagination controls
         renderPaginationControls(pagination, page, totalPages, (newPage) => {
             updateUserParams({ page: newPage });
         });

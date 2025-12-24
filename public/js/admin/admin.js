@@ -10,8 +10,19 @@ import { renderTagDetail } from './tag/detail.js';
 import { renderManageGlobals } from './globals.js';
 import { requireAuth } from '../misc/auth.js';
 
+/**
+ * Admin Module.
+ * acts as a nested router for all administrative functionalities.
+ * It listens for global view changes and, if the path is under /admin/*,
+ * it delegates rendering to specialized sub-modules (Users, Events, Tags, Globals).
+ */
+
 // --- Constants & Templates ---
 
+/**
+ * Main container for the admin area.
+ * Includes a header for dynamic titles/actions and a content area for sub-views.
+ */
 const HTML_TEMPLATE = `
 <div id="/admin/*-view" class="view hidden small-container">
     <div class="admin-header">
@@ -27,26 +38,32 @@ const HTML_TEMPLATE = `
 // --- Navigation & Routing ---
 
 /**
- * Handles navigation within the admin dashboard based on the current path.
- * Renders the appropriate view (users, events, details) or the default dashboard.
- * @param {object} eventData - Data from the ViewChangedEvent.
- * @param {string} eventData.resolvedPath - The resolved route path (e.g., "/admin/*").
- * @param {string} eventData.path - The full current path (e.g., "/admin/users").
+ * Nested router for the Admin section.
+ * Extends the main SPA router by handling sub-paths like /admin/users, /admin/event/1, etc.
+ * 
+ * @param {object} eventData - Data from the main ViewChangedEvent.
+ * @param {string} eventData.resolvedPath - The wildcard-resolved path (should be "/admin/*").
+ * @param {string} eventData.path - The actual browser path.
  */
 async function AdminNavigationListener({ resolvedPath, path }) {
     if (resolvedPath !== "/admin/*") return;
 
+    // Ensure session is still active before rendering sensitive info
     if (!await requireAuth()) return;
 
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
+    // Reset header state for the new sub-view
     const titleEl = document.getElementById('admin-dashboard-title');
     const actionsEl = document.getElementById('admin-header-actions');
     if (titleEl) titleEl.textContent = 'Admin Dashboard';
     if (actionsEl) actionsEl.innerHTML = '';
 
+    // Strip query parameters for routing logic
     const cleanPath = path.split('?')[0];
+
+    // --- Sub-route Dispatcher ---
 
     if (cleanPath === '/admin/users') {
         if (titleEl) titleEl.textContent = 'Admin Dashboard - Users';
@@ -73,6 +90,9 @@ async function AdminNavigationListener({ resolvedPath, path }) {
         const id = cleanPath.split('/').pop();
         await renderUserDetail(id);
     } else {
+        // --- Default Admin Home (Menu) ---
+        // Shown when the path is just /admin/ or doesn't match any specific sub-route.
+        // Dynamically shows buttons based on the user's specific administrative permissions.
         const adminContent = document.getElementById(adminContentID);
         const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions').catch(() => ({}));
 
@@ -116,6 +136,8 @@ async function AdminNavigationListener({ resolvedPath, path }) {
 
 // --- Initialization ---
 
+// Subscribe to global view changes to handle admin sub-navigation
 ViewChangedEvent.subscribe(AdminNavigationListener);
 
+// Inject the main admin view template into the body
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

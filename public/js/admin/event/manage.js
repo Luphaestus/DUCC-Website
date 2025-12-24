@@ -2,17 +2,23 @@ import { ajaxGet } from '../../misc/ajax.js';
 import { switchView } from '../../misc/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
 
+/**
+ * Event Management Module (Admin).
+ * Provides a paginated, searchable, and sortable table of all events.
+ * Users can click on rows to edit specific events or create new ones via the action bar.
+ */
+
 // --- Main Render Function ---
 
 /**
- * Renders the event management interface.
- * Sets up search, sorting, and pagination controls.
- * Fetches initial event data to display.
+ * Renders the event management shell.
+ * Includes the search bar, action buttons, and the table structure.
  */
 export async function renderManageEvents() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
+    // Read initial state from URL to support bookmarking/deep-linking of filters
     const urlParams = new URLSearchParams(window.location.search);
     const search = urlParams.get('search') || '';
     const sort = urlParams.get('sort') || 'start';
@@ -55,30 +61,34 @@ export async function renderManageEvents() {
         </div>
     `;
 
+    // --- Search Setup ---
     const searchInput = document.getElementById('event-search-input');
     const searchBtn = document.getElementById('event-search-btn');
 
     searchBtn.onclick = () => updateEventParams({ search: searchInput.value, page: 1 });
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
 
+    // --- Sort Setup ---
     adminContent.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {
             const currentSort = new URLSearchParams(window.location.search).get('sort') || 'start';
             const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
             const field = th.dataset.sort;
+            // Toggle order if clicking the same column, otherwise default to ascending
             const newOrder = (currentSort === field && currentOrder === 'asc') ? 'desc' : 'asc';
             updateEventParams({ sort: field, order: newOrder });
         };
     });
 
+    // Initial data load
     await fetchAndRenderEvents({ page, search, sort, order });
 }
 
 // --- Helper Functions ---
 
 /**
- * Updates the URL parameters and refreshes the event list.
- * @param {object} updates - Key-value pairs of parameters to update (page, search, sort, order).
+ * Updates the URL and triggers a re-render of the table.
+ * @param {object} updates - Changed parameters.
  */
 function updateEventParams(updates) {
     const params = new URLSearchParams(window.location.search);
@@ -87,8 +97,10 @@ function updateEventParams(updates) {
         else params.set(key, value);
     }
     const newUrl = `${window.location.pathname}?${params.toString()}`;
+    // Sync browser history so "Back" button works
     window.history.pushState({}, '', newUrl);
 
+    // Refresh content
     fetchAndRenderEvents({
         page: parseInt(params.get('page')) || 1,
         search: params.get('search') || '',
@@ -98,12 +110,9 @@ function updateEventParams(updates) {
 }
 
 /**
- * Fetches events from the API based on filters and renders them into the table.
- * @param {object} params - Filter parameters.
- * @param {number} params.page - Current page number.
- * @param {string} params.search - Search term.
- * @param {string} params.sort - Field to sort by.
- * @param {string} params.order - Sort order ('asc' or 'desc').
+ * Fetches event data from API and generates table rows.
+ * Also renders pagination controls.
+ * @param {object} params - Query parameters.
  */
 async function fetchAndRenderEvents({ page, search, sort, order }) {
     try {
@@ -116,6 +125,7 @@ async function fetchAndRenderEvents({ page, search, sort, order }) {
         if (events.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5">No events found.</td></tr>';
         } else {
+            // Map event data to HTML table rows
             tbody.innerHTML = events.map(event => `
                 <tr class="event-row" data-id="${event.id}">
                     <td>${event.title}</td>
@@ -126,11 +136,13 @@ async function fetchAndRenderEvents({ page, search, sort, order }) {
                 </tr>
             `).join('');
 
+            // Make rows clickable for editing
             tbody.querySelectorAll('.event-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/event/${row.dataset.id}`);
             });
         }
 
+        // --- Pagination Controls ---
         const pagination = document.getElementById('events-pagination');
         pagination.innerHTML = '';
         const prevBtn = document.createElement('button');

@@ -3,6 +3,16 @@ import { notify } from '../../misc/notification.js';
 import { switchView } from '../../misc/view.js';
 import { adminContentID } from '../common.js';
 
+/**
+ * Event Detail Editor Module (Admin).
+ * Provides a comprehensive form for creating new events or modifying existing ones.
+ * Handles:
+ * - Datetime input formatting for compatibility with native HTML5 controls.
+ * - Multi-select tag management.
+ * - Dynamic refund cutoff enabling/disabling.
+ * - Create, Read, Update, and Delete (CRUD) operations for events.
+ */
+
 // --- Icons ---
 
 const CALENDAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`;
@@ -16,14 +26,14 @@ const LOCATION_SVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBo
 // --- Main Render Function ---
 
 /**
- * Renders the event details view for creating or editing an event.
- * Handles form submission for creating/updating events and deletion.
- * @param {string} id - The event ID, or 'new' to create a new event.
+ * Renders the full event editing form.
+ * @param {string} id - The database ID of the event, or 'new' for creation mode.
  */
 export async function renderEventDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     const isNew = id === 'new';
 
+    // Default object for a new event
     let event = {
         title: '', description: '', location: '',
         start: '', end: '', difficulty_level: 1,
@@ -33,11 +43,13 @@ export async function renderEventDetail(id) {
     let allTags = [];
 
     try {
+        // Fetch existing data and all available tags
         const eventData = !isNew ? await ajaxGet(`/api/admin/event/${id}`) : null;
         const tagsData = (await ajaxGet('/api/tags')).data || [];
 
         if (!isNew) {
             event = eventData;
+            // Format ISO dates to datetime-local friendly strings (YYYY-MM-DDTHH:MM)
             event.start = new Date(event.start).toISOString().slice(0, 16);
             event.end = new Date(event.end).toISOString().slice(0, 16);
             if (event.upfront_refund_cutoff) {
@@ -51,17 +63,19 @@ export async function renderEventDetail(id) {
         return adminContent.innerHTML = '<p>Error loading event or tags.</p>';
     }
 
+    // Update breadcrumbs/navigation actions
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) {
         actionsEl.innerHTML = ` <button onclick="switchView('/admin/events')">&larr; Back to Events</button> `;
     }
 
+    // Render the form
     adminContent.innerHTML = `
         <form id="event-form" class="form-info">
             <article class="form-box">
                 <h2>${isNew ? 'Create Event' : 'Edit Event'}</h2>
                 
-                <input type="text" name="title" value="${event.title}" required class="event-title-input">
+                <input type="text" name="title" value="${event.title}" required class="event-title-input" placeholder="Event Title">
 
                 <div class="event-content-split">
                     <div class="event-details-section">
@@ -134,6 +148,7 @@ export async function renderEventDetail(id) {
         </form>
     `;
 
+    // Setup interactive elements: toggle cutoff input visibility
     const cutoffCheckbox = document.getElementById('has-refund-cutoff');
     const cutoffWrapper = document.getElementById('refund-cutoff-wrapper');
     const cutoffInput = cutoffWrapper.querySelector('input');
@@ -147,12 +162,13 @@ export async function renderEventDetail(id) {
         }
     };
 
+    // Form submission handler
     document.getElementById('event-form').onsubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
-        // Handle tags manually because Object.fromEntries takes only the last value for a key
+        // Explicitly extract selected tags (FormData helper doesn't support arrays of values well)
         const selectedTags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
         data.tags = selectedTags;
 
@@ -162,7 +178,12 @@ export async function renderEventDetail(id) {
                 notify('Success', 'Event created', 'success');
                 switchView('/admin/events');
             } else {
-                await fetch(`/api/admin/event/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                // Use standard fetch for PUT until ajax.js is updated to support it fully if needed
+                await fetch(`/api/admin/event/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
                 notify('Success', 'Event updated', 'success');
             }
         } catch (err) {
@@ -170,9 +191,9 @@ export async function renderEventDetail(id) {
         }
     };
 
+    // Deletion handler
     if (!isNew) {
         document.getElementById('delete-event-btn').onclick = async () => {
-            if (!confirm('Are you sure you want to delete this event?')) return;
             await fetch(`/api/admin/event/${id}`, { method: 'DELETE' });
             notify('Success', 'Event deleted', 'success');
             switchView('/admin/events');
