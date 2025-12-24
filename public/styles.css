@@ -3612,12 +3612,13 @@ nav.small-container .nav-logo {
 
 .find-us-images {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
 .find-us-images img {
   width: 100%;
+  max-width: 100%;
   aspect-ratio: 18/9;
   border-radius: var(--pico-border-radius);
   object-fit: cover;
