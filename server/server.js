@@ -62,13 +62,14 @@ let db;
  */
 (async () => {
   try {
-    // Open the SQLite database
+    // Open the SQLite database - use environment variable for Docker persistence
+    const dbPath = process.env.DATABASE_PATH || 'database.db';
     db = await open({
-      filename: 'database.db',
+      filename: dbPath,
       driver: sqlite3.Database
     });
 
-    console.log('Connected to the SQLite database.');
+    console.log(`Connected to the SQLite database at ${dbPath}.`);
 
     // Basic health check endpoint
     app.get('/api/health', (req, res) => {

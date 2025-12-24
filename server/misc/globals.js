@@ -21,7 +21,10 @@ class Globals {
         }
         Globals.instance = this;
 
-        this.path = path.resolve(__dirname, "../../globals.json");
+        // Place globals.json in the same directory as the database for persistence consistency
+        const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, "../../database.db");
+        const dbDir = path.dirname(dbPath);
+        this.path = path.join(dbDir, "globals.json");
 
         // Bootstrap defaults if the config file is missing
         if (!fs.existsSync(this.path)) {
