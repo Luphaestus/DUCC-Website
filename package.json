@@ -14,11 +14,11 @@
   "author": "Luphaestus",
   "type": "commonjs",
   "scripts": {
-    "db:init": "node server/db/init/init.js $NODE_ENV",
-    "start": "NODE_ENV=prod npm run db:init && node server/server.js",
+    "db:init": "cross-env-shell \"node server/db/init/init.js $NODE_ENV\"",
+    "start": "cross-env NODE_ENV=prod npm run db:init && cross-env NODE_ENV=prod node server/server.js",
     "sass": "sass --watch src:public --load-path=node_modules/@picocss/pico/scss/",
-    "dev:server": "NODE_ENV=dev nodemon server/server.js",
-    "dev": "NODE_ENV=dev npm run db:init && run-p sass dev:server",
+    "dev:server": "cross-env NODE_ENV=dev nodemon server/server.js",
+    "dev": "cross-env NODE_ENV=dev npm run db:init && cross-env NODE_ENV=dev run-p sass dev:server",
     "test": "jest"
   },
   "nodemonConfig": {
@@ -46,6 +46,7 @@
     "@types/express-session": "^1.18.2",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
+    "cross-env": "^10.1.0",
     "jest-environment-jsdom": "^30.2.0",
     "nodemon": "^3.1.11",
     "npm-run-all": "^4.1.5",

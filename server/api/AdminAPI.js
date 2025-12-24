@@ -71,8 +71,9 @@ class Admin {
             const search = req.query.search || '';
             const sort = req.query.sort || 'start';
             const order = req.query.order || 'asc';
+            const showPast = req.query.showPast === 'true';
 
-            const result = await EventsDB.getEventsAdmin(this.db, { page, limit, search, sort, order });
+            const result = await EventsDB.getEventsAdmin(this.db, { page, limit, search, sort, order, showPast });
             if (result.isError()) return result.getResponse(res);
             res.json(result.getData());
         });

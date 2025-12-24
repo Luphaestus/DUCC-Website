@@ -100,6 +100,19 @@
             margin-bottom: 0;
             white-space: nowrap;
         }
+
+        .admin-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0;
+            white-space: nowrap;
+            cursor: pointer;
+
+            input {
+                margin-bottom: 0;
+            }
+        }
     }
 
     @media (max-width: 768px) {

@@ -24,6 +24,7 @@ export async function renderManageEvents() {
     const sort = urlParams.get('sort') || 'start';
     const order = urlParams.get('order') || 'asc';
     const page = parseInt(urlParams.get('page')) || 1;
+    const showPast = urlParams.get('showPast') === 'true';
 
     adminContent.innerHTML = `
         <div class="form-info">
@@ -37,6 +38,10 @@ export async function renderManageEvents() {
                         </button>
                     </div>
                     <div class="admin-actions">
+                        <label class="admin-toggle-label">
+                            <input type="checkbox" id="show-past-toggle" ${showPast ? 'checked' : ''}>
+                            Show Past Events
+                        </label>
                         <button onclick="switchView('/admin/event/new')" class="primary">Create New Event</button>
                     </div>
                 </div>
@@ -64,9 +69,12 @@ export async function renderManageEvents() {
     // --- Search Setup ---
     const searchInput = document.getElementById('event-search-input');
     const searchBtn = document.getElementById('event-search-btn');
+    const pastToggle = document.getElementById('show-past-toggle');
 
     searchBtn.onclick = () => updateEventParams({ search: searchInput.value, page: 1 });
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
+
+    pastToggle.onchange = () => updateEventParams({ showPast: pastToggle.checked, page: 1 });
 
     // --- Sort Setup ---
     adminContent.querySelectorAll('th.sortable').forEach(th => {
@@ -81,7 +89,7 @@ export async function renderManageEvents() {
     });
 
     // Initial data load
-    await fetchAndRenderEvents({ page, search, sort, order });
+    await fetchAndRenderEvents({ page, search, sort, order, showPast });
 }
 
 // --- Helper Functions ---
@@ -93,7 +101,7 @@ export async function renderManageEvents() {
 function updateEventParams(updates) {
     const params = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(updates)) {
-        if (value === null || value === undefined || value === '') params.delete(key);
+        if (value === null || value === undefined || value === '' || value === false) params.delete(key);
         else params.set(key, value);
     }
     const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -105,7 +113,8 @@ function updateEventParams(updates) {
         page: parseInt(params.get('page')) || 1,
         search: params.get('search') || '',
         sort: params.get('sort') || 'start',
-        order: params.get('order') || 'asc'
+        order: params.get('order') || 'asc',
+        showPast: params.get('showPast') === 'true'
     });
 }
 
@@ -114,9 +123,9 @@ function updateEventParams(updates) {
  * Also renders pagination controls.
  * @param {object} params - Query parameters.
  */
-async function fetchAndRenderEvents({ page, search, sort, order }) {
+async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
     try {
-        const query = new URLSearchParams({ page, limit: 10, search, sort, order }).toString();
+        const query = new URLSearchParams({ page, limit: 10, search, sort, order, showPast }).toString();
         const data = await ajaxGet(`/api/admin/events?${query}`);
         const events = data.events || [];
         const totalPages = data.totalPages || 1;

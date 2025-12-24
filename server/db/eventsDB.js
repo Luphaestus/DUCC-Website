@@ -106,29 +106,35 @@ class eventsDB {
      * Includes full details and pagination.
      * @param {object} db - The database instance.
      * @param {object} options - Options for pagination, search, and sorting.
+     * @param {boolean} options.showPast - Whether to include past events.
      * @returns {Promise<statusObject>}
      */
     static async getEventsAdmin(db, options) {
-        const { page, limit, search, sort, order } = options;
+        const { page, limit, search, sort, order, showPast } = options;
         const offset = (page - 1) * limit;
 
         const allowedSorts = ['title', 'start', 'location', 'difficulty_level', 'upfront_cost'];
         const sortCol = allowedSorts.includes(sort) ? sort : 'start';
         const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
 
-        let whereClause = '';
+        let conditions = [];
         const params = [];
 
-        // Simple text search across multiple columns
         if (search) {
             const terms = search.trim().split(/\s+/);
-            const conditions = terms.map(term => {
+            terms.forEach(term => {
                 const termPattern = `%${term}%`;
                 params.push(termPattern, termPattern, termPattern);
-                return `(title LIKE ? OR location LIKE ? OR description LIKE ?)`;
+                conditions.push(`(title LIKE ? OR location LIKE ? OR description LIKE ?)`);
             });
-            whereClause = 'WHERE ' + conditions.join(' AND ');
         }
+
+        if (!showPast) {
+            conditions.push(`start >= ?`);
+            params.push(new Date().toISOString());
+        }
+
+        const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
         try {
             const query = `SELECT * FROM events ${whereClause} ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`;
