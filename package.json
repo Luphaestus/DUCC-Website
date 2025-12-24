@@ -17,6 +17,7 @@
     "db:init": "cross-env-shell \"node server/db/init/init.js $NODE_ENV\"",
     "start": "cross-env NODE_ENV=prod npm run db:init && cross-env NODE_ENV=prod node server/server.js",
     "sass": "sass --watch src:public --load-path=node_modules/@picocss/pico/scss/",
+    "sass:build": "sass src:public --load-path=node_modules/@picocss/pico/scss/ --no-source-map",
     "dev:server": "cross-env NODE_ENV=dev nodemon server/server.js",
     "dev": "cross-env NODE_ENV=dev npm run db:init && cross-env NODE_ENV=dev run-p sass dev:server",
     "test": "jest"

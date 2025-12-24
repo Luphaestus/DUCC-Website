@@ -19,7 +19,7 @@ RUN npm install
 COPY . .
 
 # Build assets (SASS)
-RUN npm run sass -- --no-watch
+RUN npm run sass:build
 
 # Create a directory for the database to ensure persistence
 RUN mkdir -p /app/data
