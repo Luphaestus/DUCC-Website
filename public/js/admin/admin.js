@@ -75,7 +75,7 @@ async function AdminNavigationListener({ resolvedPath, path }) {
     } else {
         const adminContent = document.getElementById(adminContentID);
         const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions').catch(() => ({}));
-        
+
         let globalsButton = '';
         try {
             const status = await ajaxGet('/api/globals/status');
@@ -90,17 +90,24 @@ async function AdminNavigationListener({ resolvedPath, path }) {
         if (perms.can_manage_users || perms.can_manage_transactions) {
             usersButton = `<button onclick="switchView('/admin/users')">Manage Users</button>`;
         }
-        
+
         let eventsButton = '';
         if (perms.can_manage_events) {
             eventsButton = `<button onclick="switchView('/admin/events')">Manage Events</button>`;
         }
+
+        let tagsButton = '';
+        if (perms.can_manage_events) {
+            tagsButton = `<button onclick="switchView('/admin/tags')">Manage Tags</button>`;
+        }
+
 
         adminContent.innerHTML = `
             <div class="admin-controls-center">
                 ${usersButton}
                 ${eventsButton}
                 ${globalsButton}
+                ${tagsButton}
             </div>
             <p class="text-center margin-top">Select an option to manage.</p>
         `;

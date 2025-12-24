@@ -43,7 +43,8 @@ class EventsAPI {
                 return res.status(400).json({ message: 'Offset must be an integer' });
             }
 
-            const events = await EventsDB.get_events_relative_week(this.db, errorMaxDifficulty !== null ? errorMaxDifficulty : max_difficulty.getData().difficulty_level, offset);
+
+            const events = await EventsDB.get_events_relative_week(this.db, errorMaxDifficulty !== null ? errorMaxDifficulty : max_difficulty.getData().difficulty_level, offset, req.user ? req.user.id : null);
             if (events.isError()) { return events.getResponse(res); }
 
             res.json({ events: events.getData() });

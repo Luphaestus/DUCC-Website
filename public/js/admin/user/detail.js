@@ -52,6 +52,7 @@ export async function renderUserDetail(userId) {
         if (canManageUsers) {
             tabsHtml += `
                 <button class="tab-btn" data-tab="legal">Legal</button>
+                <button class="tab-btn" data-tab="tags">Tags</button>
             `;
         }
         if (canManageTransactions) {
@@ -247,6 +248,101 @@ function renderTab(tabName, user, isPresident) {
         `;
     } else if (tabName === 'transactions') {
         renderTransactionsTab(container, user.id);
+    } else if (tabName === 'tags') {
+        renderTagsTab(container, user.id);
+    }
+}
+
+/**
+ * Fetches and renders the tags tab for the user.
+ * Allows adding and removing tags.
+ * @param {HTMLElement} container - The container to render the tags into.
+ * @param {string|number} userId - The ID of the user.
+ */
+async function renderTagsTab(container, userId) {
+    container.innerHTML = '<p aria-busy="true">Loading tags...</p>';
+    try {
+        const [allTagsData, userTags] = await Promise.all([
+            ajaxGet('/api/tags'),
+            ajaxGet(`/api/user/${userId}/tags`)
+        ]);
+
+        const allTags = allTagsData.tags || allTagsData;
+
+        const availableTags = allTags.filter(tag => !userTags.some(ut => ut.id === tag.id));
+
+        let html = `
+            <div class="event-details-section">
+                <h3>Tags</h3>
+                <div class="tag-controls">
+                    <select id="admin-add-tag-select" class="admin-tag-select">
+                        <option value="">Select a tag to add...</option>
+                        ${availableTags.map(tag => `<option value="${tag.id}">${tag.name}</option>`).join('')}
+                    </select>
+                    <button id="admin-add-tag-btn" disabled>Add Tag</button>
+                </div>
+                <div id="admin-user-tags-list" class="user-tags-list">
+        `;
+
+        if (userTags.length === 0) {
+            html += '<p>No tags assigned.</p>';
+        } else {
+            userTags.forEach(tag => {
+                html += `
+                    <div class="user-tag-item" style="background-color: ${tag.color};">
+                        <span>${tag.name}</span>
+                        <button class="remove-tag-btn" data-tag-id="${tag.id}">&times;</button>
+                    </div>
+                `;
+            });
+        }
+
+        html += `</div></div>`;
+        container.innerHTML = html;
+
+        // Bind events
+        const select = document.getElementById('admin-add-tag-select');
+        const addBtn = document.getElementById('admin-add-tag-btn');
+
+        if (select) {
+            select.onchange = () => {
+                addBtn.disabled = !select.value;
+            };
+
+            addBtn.onclick = async () => {
+                const tagId = select.value;
+                if (!tagId) return;
+
+                try {
+                    await ajaxPost(`/api/tags/${tagId}/whitelist`, { userId });
+                    notify('Success', 'Tag added', 'success');
+                    renderTagsTab(container, userId);
+                } catch (e) {
+                    console.error(e);
+                    notify('Error', 'Failed to add tag', 'error');
+                }
+            };
+        }
+
+        container.querySelectorAll('.remove-tag-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const tagId = btn.dataset.tagId;
+                if (!confirm('Are you sure you want to remove this tag from the user?')) return;
+
+                try {
+                    await fetch(`/api/tags/${tagId}/whitelist/${userId}`, { method: 'DELETE' });
+                    notify('Success', 'Tag removed', 'success');
+                    renderTagsTab(container, userId);
+                } catch (e) {
+                    console.error(e);
+                    notify('Error', 'Failed to remove tag', 'error');
+                }
+            };
+        });
+
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p class="error-text">Failed to load tags.</p>';
     }
 }
 

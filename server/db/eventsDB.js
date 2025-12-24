@@ -2,6 +2,7 @@ const { statusObject } = require('../misc/status.js');
 const UserDB = require('./userDB.js');
 const TransactionsDB = require('./transactionDB.js');
 const TagsDB = require('./tagsDB.js');
+const Globals = require('../misc/globals.js');
 
 class eventsDB {
     /**
@@ -24,9 +25,10 @@ class eventsDB {
      * @param {object} db - The database instance.
      * @param {number} max_difficulty - The maximum difficulty level of events to retrieve.
      * @param {Date} [date=new Date()] - The date within the target week. Defaults to the current date.
+     * @param {number} userId - The ID of the user requesting the events.
      * @returns {Promise<Array<object>>} A promise that resolves to an array of event objects.
      */
-    static async get_events_for_week(db, max_difficulty, date = new Date()) {
+    static async get_events_for_week(db, max_difficulty, date = new Date(), userId = null) {
         const startOfWeek = new Date(date);
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1);
         startOfWeek.setHours(0, 0, 0, 0);
@@ -40,7 +42,36 @@ class eventsDB {
             [startOfWeek.toISOString(), endOfWeek.toISOString(), max_difficulty]
         );
 
-        return new statusObject(200, null, events);
+        const visibleEvents = [];
+        for (const event of events) {
+            const tags = await TagsDB.getTagsForEvent(db, event.id);
+            let authorized = true;
+
+            for (const tag of tags) {
+                if (tag.min_difficulty && tag.min_difficulty > max_difficulty) {
+                    authorized = false;
+                    break;
+                }
+
+                const whitelist = await TagsDB.getWhitelist(db, tag.id);
+                if (whitelist.getData() && whitelist.getData().length > 0) {
+                    const onList = whitelist.getData().find(u => u.id === userId);
+                    if (!onList) {
+                        authorized = false;
+                        break;
+                    }
+                }
+            }
+
+            if (authorized) {
+                event.tags = tags;
+                visibleEvents.push(event);
+            }
+        }
+
+        visibleEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        return new statusObject(200, null, visibleEvents);
     }
 
     /**
@@ -49,13 +80,14 @@ class eventsDB {
      * @param {object} db - The database instance.
      * @param {number} max_difficulty - The maximum difficulty level of events to retrieve.
      * @param {number} [offset=0] - The offset in weeks from the current week. Defaults to 0 (current week).
+     * @param {number} userId - The ID of the user requesting the events.
      * @returns {Promise<Array<object>>} A promise that resolves to an array of event objects.
      */
-    static async get_events_relative_week(db, max_difficulty, offset = 0) {
+    static async get_events_relative_week(db, max_difficulty, offset = 0, userId = null) {
         const now = new Date();
         const targetDate = new Date(now);
         targetDate.setDate(now.getDate() + offset * 7);
-        return this.get_events_for_week(db, max_difficulty, targetDate);
+        return this.get_events_for_week(db, max_difficulty, targetDate, userId);
     }
 
     /**
@@ -128,18 +160,22 @@ class eventsDB {
             return new statusObject(404, 'Event not found');
         }
 
-        const maxDifficultyRes = await UserDB.getElements(req, db, "difficulty_level");
-        if (maxDifficultyRes.isError()) return maxDifficultyRes;
-        const userDifficulty = maxDifficultyRes.getData().difficulty_level;
+        const userDifficulty = req.user ? (await UserDB.getElements(req, db, "difficulty_level")).getData().difficulty_level : (new Globals()).getInt("Unauthorized_max_difficulty");
+
 
         if (event.difficulty_level > userDifficulty) {
             return new statusObject(401, 'User not authorized');
         }
 
         const tags = await TagsDB.getTagsForEvent(db, id);
+        let minNeededDifficulty = event.difficulty_level;
+
         for (const tag of tags) {
-            if (tag.min_difficulty && tag.min_difficulty > userDifficulty) {
-                return new statusObject(401, `User not authorized (Tag restriction: ${tag.name})`);
+            if (tag.min_difficulty) {
+                minNeededDifficulty = Math.max(minNeededDifficulty, tag.min_difficulty);
+                if (tag.min_difficulty > userDifficulty) {
+                    return new statusObject(401, `User not authorized (Tag restriction: ${tag.name})`);
+                }
             }
 
             const whitelist = await TagsDB.getWhitelist(db, tag.id);
@@ -153,6 +189,7 @@ class eventsDB {
         }
 
         event.tags = tags;
+        event.min_needed_difficulty = minNeededDifficulty;
         return new statusObject(200, null, event);
     }
 

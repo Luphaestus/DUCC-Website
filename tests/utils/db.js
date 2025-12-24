@@ -116,6 +116,37 @@ async function setupTestDb() {
         );
     `);
 
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            color TEXT DEFAULT '#808080',
+            description TEXT,
+            min_difficulty INTEGER,
+            priority INTEGER DEFAULT 0
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS event_tags (
+            event_id INTEGER,
+            tag_id INTEGER,
+            PRIMARY KEY (event_id, tag_id),
+            FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS tag_whitelists (
+            tag_id INTEGER,
+            user_id INTEGER,
+            PRIMARY KEY (tag_id, user_id),
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+    `);
+
     return db;
 }
 

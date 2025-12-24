@@ -50,6 +50,35 @@ class TagsAPI {
             const result = await TagsDB.removeFromWhitelist(this.db, req.params.id, req.params.userId);
             result.getResponse(res);
         });
+
+        this.app.get('/api/user/:userId/tags', async (req, res) => {
+            if (!req.isAuthenticated()) return res.status(401).json({ message: 'Unauthorized' });
+            
+            // Allow admin or the user themselves
+            if (req.user.id != req.params.userId && !req.user.can_manage_users) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+
+            try {
+                const tags = await TagsDB.getTagsForUser(this.db, req.params.userId);
+                res.json(tags);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        });
+
+        this.app.get('/api/user/tags', async (req, res) => {
+            if (!req.isAuthenticated()) return res.status(401).json({ message: 'Unauthorized' });
+            
+            try {
+                const tags = await TagsDB.getTagsForUser(this.db, req.user.id);
+                res.json(tags);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        });
     }
 }
 

@@ -76,6 +76,17 @@ const HTML_TEMPLATE = `
             <article class="form-box">
                 <h2>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    Your Tags
+                </h2>
+                <div id="profile-tags-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <p>Loading tags...</p>
+                </div>
+            </article>
+            <article class="form-box">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                     Danger Zone
@@ -419,6 +430,28 @@ async function bindStaticEvents() {
     });
 }
 
+/**
+ * Renders the user's tags.
+ * @param {object} profile - The user profile object containing the ID.
+ */
+async function renderTags(profile) {
+    const container = document.getElementById('profile-tags-container');
+    try {
+        const tags = await ajaxGet(`/api/user/tags`);
+        if (tags && tags.length > 0) {
+            container.innerHTML = tags.map(tag =>
+                `<span style="background-color: ${tag.color}; color: white; padding: 4px 8px; border-radius: 4px;">${tag.name}</span>`
+            ).join('');
+        } else {
+            container.innerHTML = '<p>No tags assigned.</p>';
+        }
+    }
+    catch (e) {
+        console.error("Failed to load tags", e);
+        container.innerHTML = '<p>Failed to load tags.</p>';
+    }
+}
+
 // --- Main Update Function ---
 
 /**
@@ -436,6 +469,7 @@ async function updateProfilePage() {
             renderInstructorStatus(profile);
             renderDetails(profile);
             renderAidDetails(profile);
+            renderTags(profile);
         }
     } catch (error) {
         console.error("Failed to update profile page:", error);

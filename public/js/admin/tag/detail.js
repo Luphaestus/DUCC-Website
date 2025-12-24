@@ -1,6 +1,7 @@
 import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '../../misc/ajax.js';
 import { switchView } from '../../misc/view.js';
 import { adminContentID } from '../common.js';
+import { notify, NotificationTypes } from '../../misc/notification.js';
 
 export async function renderTagDetail(id) {
     const adminContent = document.getElementById(adminContentID);
@@ -50,27 +51,22 @@ export async function renderTagDetail(id) {
                     <label>Description
                         <textarea name="description">${tag.description || ''}</textarea>
                     </label>
-                    <div class="grid">
-                        <button type="button" class="secondary" onclick="window.history.back()">Cancel</button>
+                    <div class="tag-detail-actions">
                         <button type="submit" class="primary">${isNew ? 'Create' : 'Save'}</button>
+                        ${!isNew ? `<button type="button" id="delete-tag-btn" class="contrast">Delete Tag</button>` : ''}
                     </div>
                 </form>
                 
                 ${!isNew ? `
-                    <div class="danger-zone">
-                        <h3>Danger Zone</h3>
-                        <button id="delete-tag-btn" class="contrast">Delete Tag</button>
-                    </div>
-
                     ${userPerms ? `
                         <h3>Whitelist (Restricted Access)</h3>
                         <p>Only users on this list can view/join events with this tag. (If empty, no whitelist restriction).</p>
-                        <form id="whitelist-form" style="display: flex; gap: 10px; align-items: flex-end;">
-                            <label style="flex-grow: 1;">Add User
-                                <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
-                                <datalist id="users-datalist"></datalist>
-                            </label>
-                            <button type="submit" style="margin-bottom: var(--spacing);">Add</button>
+                        <form id="whitelist-form" class="whitelist-form">
+                        <label class="whitelist-form-label">
+                            <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
+                            <datalist id="users-datalist"></datalist>
+                            <button type="submit" class="whitelist-form-submit">Add</button>
+                        </label>
                         </form>
                         <table class="admin-table">
                             <thead>
@@ -101,22 +97,23 @@ export async function renderTagDetail(id) {
         try {
             if (isNew) {
                 await ajaxPost('/api/tags', data);
+                notify('Success', 'Tag created successfully', NotificationTypes.SUCCESS);
                 switchView(`/admin/tags`);
             } else {
                 await ajaxPut(`/api/tags/${id}`, data);
+                notify('Success', 'Tag updated successfully', NotificationTypes.SUCCESS);
                 switchView(`/admin/tags`);
             }
         } catch (err) {
-            alert('Error saving tag: ' + err.message);
+            notify('Error', 'Error saving tag: ' + err.message, NotificationTypes.ERROR);
         }
     };
 
     if (!isNew) {
         document.getElementById('delete-tag-btn').onclick = async () => {
-            if (confirm('Are you sure you want to delete this tag?')) {
-                await ajaxDelete(`/api/tags/${id}`);
-                switchView('/admin/tags');
-            }
+            await ajaxDelete(`/api/tags/${id}`);
+            notify('Success', 'Tag deleted successfully', NotificationTypes.SUCCESS);
+            switchView('/admin/tags');
         };
 
         // Populate Datalist
@@ -134,17 +131,18 @@ export async function renderTagDetail(id) {
                 const userId = parseInt(inputVal.split(' - ')[0]);
 
                 if (!userId || isNaN(userId)) {
-                    alert("Please select a valid user from the list.");
+                    notify('Warning', 'Please select a valid user from the list.', NotificationTypes.WARNING);
                     return;
                 }
 
                 try {
                     await ajaxPost(`/api/tags/${id}/whitelist`, { userId: userId });
+                    notify('Success', 'User added to whitelist', NotificationTypes.SUCCESS);
                     const newWhitelist = (await ajaxGet(`/api/tags/${id}/whitelist`)).data || [];
                     document.getElementById('whitelist-table-body').innerHTML = renderWhitelistRows(newWhitelist, id);
                     document.getElementById('whitelist-user-input').value = '';
                 } catch (err) {
-                    alert('Error adding user: ' + err.message);
+                    notify('Error', 'Error adding user: ' + err.message, NotificationTypes.ERROR);
                 }
             };
         }
@@ -172,10 +170,13 @@ function setupRemoveButtons(tagId) {
     tbody.onclick = async (e) => {
         if (e.target.classList.contains('remove-whitelist-btn')) {
             const userId = e.target.dataset.userId;
-            if (confirm('Remove user from whitelist?')) {
+            try {
                 await ajaxDelete(`/api/tags/${tagId}/whitelist/${userId}`);
+                notify('Success', 'User removed from whitelist', NotificationTypes.SUCCESS);
                 const newWhitelist = (await ajaxGet(`/api/tags/${tagId}/whitelist`)).data || [];
                 tbody.innerHTML = renderWhitelistRows(newWhitelist, tagId);
+            } catch (err) {
+                notify('Error', 'Error removing user: ' + err.message, NotificationTypes.ERROR);
             }
         }
     }

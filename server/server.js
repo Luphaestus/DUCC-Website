@@ -1,5 +1,9 @@
 const PORT = process.env.PORT || 3000;
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 const path = require('path');
 const express = require('express');
 const { open } = require('sqlite');
@@ -60,7 +64,7 @@ let db;
     });
 
     const apiDir = path.join(__dirname, 'api');
-    const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.js'));
+    const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.js') && file !== 'AuthAPI.js');
 
     for (const file of apiFiles) {
       const ApiClass = require(path.join(apiDir, file));

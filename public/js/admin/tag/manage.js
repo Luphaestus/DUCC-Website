@@ -47,9 +47,9 @@ async function fetchAndRenderTags() {
             tbody.innerHTML = '<tr><td colspan="4">No tags found.</td></tr>';
         } else {
             tbody.innerHTML = tags.map(tag => `
-                <tr class="tag-row" data-id="${tag.id}" style="cursor: pointer;">
+                <tr class="tag-row" data-id="${tag.id}">
                     <td>${tag.name}</td>
-                    <td><span style="background-color: ${tag.color}; padding: 2px 8px; border-radius: 4px; color: white; text-shadow: 0 0 2px black;">${tag.color}</span></td>
+                    <td><span class="tag-color-badge" style="background-color: ${tag.color};">${tag.color}</span></td>
                     <td>${tag.min_difficulty || '-'}</td>
                     <td>${tag.description || ''}</td>
                 </tr>

@@ -42,6 +42,37 @@ function pastelColourGenerator(seed) {
     };
 }
 
+function getHueFromHex(hex) {
+    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+        return r + r + g + g + b + b;
+    });
+
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return 0;
+
+    var r = parseInt(result[1], 16) / 255;
+    var g = parseInt(result[2], 16) / 255;
+    var b = parseInt(result[3], 16) / 255;
+
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+
+    if (max == min) {
+        h = s = 0; // achromatic
+    } else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return Math.round(h * 360);
+}
+
 /**
  * Formats an event object into an HTML string for display.
  * @param {object} event - The event object.
@@ -56,28 +87,36 @@ function formatEvent(event) {
     const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
     const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
 
-    const tagsHtml = (event.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('');
+    const tagsHtml = (event.tags || []).map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px;">${tag.name}</span>`).join('');
 
-    const hues = pastelColourGenerator(startDate);
+    let hue = 0;
+    let hasTags = false;
+
+    if (event.tags && event.tags.length > 0) {
+        hasTags = true;
+        const highestPriorityTag = event.tags.reduce((prev, current) => {
+            return ((prev.priority || 0) > (current.priority || 0)) ? prev : current;
+        });
+        hue = getHueFromHex(highestPriorityTag.color || '#808080');
+    }
+
     const now = new Date();
-    const brightnessFactor = startDate > now ? 1 : 0.4;
+    const isPast = startDate < now;
 
-    if (brightnessFactor < 1) {
-        var style = `filter: brightness(${brightnessFactor});
-                    --event-bg-light: hsl(${hues.dark}, 50%, 30%); 
-                    --event-bg-dark: hsl(${hues.dark}, 50%, 30%);
-                    --event-text-color: white;
-                    color: white;
-        `;
-    } else {
-        var style = `
-            --event-bg-light: hsl(${hues.light}, 70%, 85%); 
-            --event-bg-dark: hsl(${hues.dark}, 50%, 30%);
+    let classes = 'event-item';
+    if (isPast) classes += ' past-event';
+    if (!hasTags) classes += ' glassy';
+
+    let style = '';
+    if (hasTags) {
+        style = `
+            --event-bg-light: hsl(${hue}, 70%, 85%); 
+            --event-bg-dark: hsl(${hue}, 50%, 30%);
         `;
     }
 
     return `
-        <div class="event-item" style="${style}" onclick="switchView('event/${event.id}')">
+        <div class="${classes}" style="${style}" onclick="switchView('event/${event.id}')">
             <div class="event-top">
                 <span>${startTime} - ${endTime}</span>
             </div>
@@ -88,7 +127,7 @@ function formatEvent(event) {
                 <div class="event-location">
                     <span>📍 ${event.location || 'No Location'}</span>
                 </div>
-                <div class="event-tags">${tagsHtml}</div>
+                <div class="event-tags" style="margin-left: auto;">${tagsHtml}</div>
             </div>
         </div>
     `;

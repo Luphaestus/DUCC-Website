@@ -154,6 +154,8 @@
 }
 
 .event-details-section {
+    flex: 1;
+
     p {
         display: flex;
         align-items: center;
@@ -354,5 +356,150 @@
         text-align: center;
         display: block !important;
         font-size: 2rem !important;
+    }
+}
+
+/* Tag Management Styles */
+.tag-color-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: white;
+    text-shadow: 0 0 2px black;
+}
+
+.tag-row {
+    cursor: pointer;
+}
+
+/* User Tags & Controls */
+.tag-controls {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
+
+    .admin-tag-select {
+        flex-grow: 1;
+    }
+}
+
+.user-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.user-tag-item {
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .remove-tag-btn {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        font-weight: bold;
+        box-shadow: none;
+
+        &:hover {
+            background: transparent;
+            opacity: 0.8;
+        }
+    }
+}
+
+/* Event Detail Styles */
+.event-title-input {
+    font-size: 1.5rem;
+    width: 100%;
+    font-weight: bold;
+}
+
+.event-location-input,
+.event-description-textarea {
+    width: 100%;
+}
+
+.refund-cutoff-p {
+    margin-bottom: 0.5rem;
+}
+
+.refund-cutoff-label {
+    cursor: pointer;
+}
+
+.event-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.event-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--muted-border-color);
+    padding: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.event-tag-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.tag-detail-actions,
+.event-detail-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+
+    #delete-tag-btn,
+    #delete-event-btn {
+        background-color: var(--del-color);
+        color: white;
+        border-color: var(--del-color);
+
+        &:hover {
+            background-color: var(--del-hover-color);
+        }
+    }
+}
+
+/* Whitelist Form Styles */
+
+.whitelist-form {
+
+    margin-bottom: var(--spacing);
+
+}
+
+
+
+.whitelist-form-label {
+
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+
+    input {
+        margin-bottom: 0;
+        flex-grow: 1;
+        width: auto;
+    }
+
+    .whitelist-form-submit {
+        margin-bottom: 0 !important;
+        flex-shrink: 0;
+        width: auto;
     }
 }

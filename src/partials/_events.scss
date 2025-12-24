@@ -87,6 +87,38 @@
             }
         }
     }
+
+    .event-item.glassy {
+        background: rgba(255, 255, 255, .01);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(7.7px);
+        -webkit-backdrop-filter: blur(7.7px);
+
+        @media (prefers-color-scheme: dark) {
+            background: rgba(255, 255, 255, .08);
+            box-shadow: 0 4px 30px rgba(255, 255, 255, 0.1);
+        }
+    }
+
+    .event-item.past-event {
+        opacity: 0.7;
+        filter: grayscale(0.8);
+        box-shadow: none;
+
+        @media (prefers-color-scheme: dark) {
+            opacity: 0.5;
+        }
+
+        &:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .tag {
+            filter: grayscale(0.5);
+            opacity: 0.8;
+        }
+    }
 }
 
 #events-list {

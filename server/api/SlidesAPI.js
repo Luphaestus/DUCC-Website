@@ -81,7 +81,7 @@ class SlidesAPI {
    */
   _setupWatcher() {
     try {
-      this._watcher = fs.watch(this.fullDir, { persistent: false }, (eventType, filename) => {
+      this._watcher = fs.watch(this.fullDir, { persistent: true }, (eventType, filename) => {
         this._scheduleScan();
       });
 

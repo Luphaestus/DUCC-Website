@@ -171,6 +171,21 @@ class TagsDB {
             WHERE et.event_id = ?
         `, [eventId]);
     }
+
+    /**
+     * Gets tags that a user is whitelisted for.
+     * @param {object} db - The database instance.
+     * @param {number} userId
+     * @returns {Promise<Array>}
+     */
+    static async getTagsForUser(db, userId) {
+        return db.all(`
+            SELECT t.* 
+            FROM tags t
+            JOIN tag_whitelists tw ON t.id = tw.tag_id
+            WHERE tw.user_id = ?
+        `, [userId]);
+    }
 }
 
 module.exports = TagsDB;

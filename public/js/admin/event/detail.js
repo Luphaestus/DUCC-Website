@@ -53,18 +53,18 @@ export async function renderEventDetail(id) {
 
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) {
-        actionsEl.innerHTML = ` <button onclick="switchView('/admin/events')" style="margin-bottom: 1rem;">&larr; Back to Events</button> `;
+        actionsEl.innerHTML = ` <button onclick="switchView('/admin/events')">&larr; Back to Events</button> `;
     }
 
     adminContent.innerHTML = `
         <form id="event-form" class="form-info">
             <article class="form-box">
-                <h2 style="margin-bottom: 1rem;">${isNew ? 'Create Event' : 'Edit Event'}</h2>
+                <h2>${isNew ? 'Create Event' : 'Edit Event'}</h2>
                 
-                <input type="text" name="title" value="${event.title}" required style="font-size: 1.5rem; width: 100%; font-weight: bold;">
+                <input type="text" name="title" value="${event.title}" required class="event-title-input">
 
                 <div class="event-content-split">
-                    <div class="event-details-section" style="flex: 1;">
+                    <div class="event-details-section">
                         <h3>${INFO_SVG} Event Details</h3>
                         
                         <p>
@@ -78,12 +78,12 @@ export async function renderEventDetail(id) {
                         
                         <p>
                             ${LOCATION_SVG} <strong>Location:</strong>
-                            <input class="nomargin" type="text" name="location" value="${event.location}" style="width: 100%;">
+                            <input class="nomargin event-location-input" type="text" name="location" value="${event.location}">
                         </p>
 
                         <p>
                             ${DESCRIPTION_SVG} <strong>Description:</strong>
-                            <textarea class="nomargin" name="description" rows="5" style="width: 100%;">${event.description}</textarea>
+                            <textarea class="nomargin event-description-textarea" name="description" rows="5">${event.description}</textarea>
                         </p>
 
                         <p>
@@ -101,9 +101,9 @@ export async function renderEventDetail(id) {
                             <input class="nomargin" type="number" step="0.01" name="upfront_cost" value="${event.upfront_cost}">
                         </p>
 
-                        <p style="margin-bottom: 0.5rem;">
+                        <p class="refund-cutoff-p">
                             ${COST_SVG} <strong>Refund Cutoff:</strong>
-                                <label class="nomargin" style="cursor: pointer;">
+                                <label class="nomargin refund-cutoff-label">
                                     <input class="nomargin" type="checkbox" id="has-refund-cutoff" ${event.upfront_refund_cutoff ? 'checked' : ''}>
                                     Enable Refund Cutoff
                                 </label>
@@ -113,11 +113,11 @@ export async function renderEventDetail(id) {
                         </p>
                         
                         <h3>Tags</h3>
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <div class="nomargin event-tags-list">
                             ${allTags.map(tag => `
-                                <label style="display: inline-flex; align-items: center; gap: 5px; border: 1px solid #ccc; padding: 5px; border-radius: 5px; cursor: pointer;">
+                                <label class="event-tag-badge">
                                     <input type="checkbox" name="tags" value="${tag.id}" ${event.tags && event.tags.find(t => t.id === tag.id) ? 'checked' : ''}>
-                                    <span style="width: 15px; height: 15px; border-radius: 50%; background-color: ${tag.color}; display: inline-block;"></span>
+                                    <span class="event-tag-dot" style="background-color: ${tag.color};"></span>
                                     ${tag.name}
                                 </label>
                             `).join('')}
@@ -126,9 +126,9 @@ export async function renderEventDetail(id) {
                     </div>
                 </div>
 
-                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <div class="event-detail-actions">
                     <button type="submit" class="primary-btn">${isNew ? 'Create Event' : 'Save Changes'}</button>
-                    ${!isNew ? `<button type="button" id="delete-event-btn" style="background-color: #d32f2f; color: white;">Delete Event</button>` : ''}
+                    ${!isNew ? `<button type="button" id="delete-event-btn">Delete Event</button>` : ''}
                 </div>
             </article>
         </form>

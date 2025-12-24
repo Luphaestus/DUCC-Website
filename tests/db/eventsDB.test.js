@@ -1,5 +1,6 @@
 const { setupTestDb } = require('../utils/db');
 const EventsDB = require('../../server/db/eventsDB');
+const TagsDB = require('../../server/db/tagsDB');
 
 describe('EventsDB', () => {
     let db;
@@ -113,5 +114,83 @@ describe('EventsDB', () => {
 
         const isAttending = await EventsDB.is_user_attending_event(req, db, eventId);
         expect(isAttending.getData()).toBe(false);
+    });
+
+    test('get_events_relative_week should sort events by start time even if some have tags', async () => {
+        // Create a tag
+        const tagRes = await TagsDB.createTag(db, { name: 'Test Tag', min_difficulty: 1 });
+        const tagId = tagRes.getData().id;
+
+        const now = new Date();
+        // Calculate next Monday to ensure we are in a clean week
+        const daysUntilNextMonday = (8 - now.getDay()) % 7 || 7;
+        const nextMonday = new Date(now);
+        nextMonday.setDate(now.getDate() + daysUntilNextMonday);
+        nextMonday.setHours(0, 0, 0, 0);
+
+        const date1 = new Date(nextMonday);
+        date1.setHours(10, 0, 0); // 10:00
+
+        const date2 = new Date(nextMonday);
+        date2.setHours(11, 0, 0); // 11:00
+
+        const date3 = new Date(nextMonday);
+        date3.setHours(12, 0, 0); // 12:00
+
+        // Insert event 1 (10:00) - No Tag
+        await EventsDB.createEvent(db, {
+            title: 'Event 1',
+            start: date1.toISOString(),
+            end: new Date(date1.getTime() + 3600000).toISOString(),
+            difficulty_level: 1,
+            max_attendees: 10,
+            upfront_cost: 0
+        });
+
+        // Insert event 3 (12:00) - No Tag
+        await EventsDB.createEvent(db, {
+            title: 'Event 3',
+            start: date3.toISOString(),
+            end: new Date(date3.getTime() + 3600000).toISOString(),
+            difficulty_level: 1,
+            max_attendees: 10,
+            upfront_cost: 0
+        });
+
+        // Insert event 2 (11:00) - Has Tag
+        const event2Res = await EventsDB.createEvent(db, {
+            title: 'Event 2',
+            start: date2.toISOString(),
+            end: new Date(date2.getTime() + 3600000).toISOString(),
+            difficulty_level: 1,
+            max_attendees: 10,
+            upfront_cost: 0,
+            tags: [tagId]
+        });
+
+        // Verify insertion and tags
+        const event2 = await EventsDB.get_event_by_id({ isAuthenticated: () => true, user: { id: userId } }, db, event2Res.getData().id);
+        expect(event2.getData().tags.length).toBe(1);
+
+        // Fetch events for that week
+        const result = await EventsDB.get_events_for_week(db, 5, nextMonday);
+        
+        expect(result.getStatus()).toBe(200);
+        const events = result.getData();
+        
+        expect(events.length).toBe(3);
+        
+        // Check order
+        expect(events[0].title).toBe('Event 1'); // 10:00
+        expect(events[1].title).toBe('Event 2'); // 11:00
+        expect(events[2].title).toBe('Event 3'); // 12:00
+        
+        // Check actual start times to be sure
+        const t1 = new Date(events[0].start).getTime();
+        const t2 = new Date(events[1].start).getTime();
+        const t3 = new Date(events[2].start).getTime();
+        
+        expect(t1).toBeLessThan(t2);
+        expect(t2).toBeLessThan(t3);
     });
 });
