@@ -3635,32 +3635,62 @@ nav.small-container .nav-logo {
 }
 
 .events-controls {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  justify-content: center;
   gap: 1rem;
   margin-top: 1rem;
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 1000px;
 }
 .events-controls h1 {
   margin-bottom: 0;
   text-align: center;
+  font-size: clamp(1.2rem, 4vw, 2rem);
+  white-space: nowrap;
 }
-.events-controls img {
-  width: 2rem;
-  height: 2rem;
+.events-controls .week-nav-icons {
+  display: flex;
+  gap: 0.5rem;
+}
+.events-controls .nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  opacity: 0.4;
-  transition: opacity 150ms ease-in-out, filter 150ms ease-in-out;
+  opacity: 0.6;
+  transition: all 150ms ease-in-out;
+  color: var(--theme-colour);
 }
-.events-controls img:hover {
+.events-controls .nav-icon:hover {
   opacity: 1;
-  filter: brightness(0) saturate(100%) invert(20%) sepia(17%) saturate(6230%) hue-rotate(266deg) brightness(97%) contrast(95%);
+  transform: scale(1.1);
 }
-@media (prefers-color-scheme: dark) {
-  .events-controls img {
-    filter: invert(1);
+.events-controls .nav-icon svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+.events-controls .this-week-button {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .events-controls {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "title title" "nav today";
+    gap: 0.75rem;
+  }
+  .events-controls h1 {
+    grid-area: title;
+  }
+  .events-controls .week-nav-icons {
+    grid-area: nav;
+    justify-self: start;
+  }
+  .events-controls .this-week-button {
+    grid-area: today;
+    justify-self: end;
   }
 }
 
