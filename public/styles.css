@@ -3626,7 +3626,7 @@ nav.small-container .nav-logo {
 /* =========================================
    Page: Events
    ========================================= */
-#events-view {
+[id="/events-view"] {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -3666,7 +3666,7 @@ nav.small-container .nav-logo {
 
 .day-events-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
