@@ -41,16 +41,9 @@ export async function renderManageUsers() {
                         <!-- Space for future global actions -->
                     </div>
                 </div>
-                <div>
+                <div id="users-table-container">
                     <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th class="sortable" data-sort="first_name">Name ↕</th>
-                                <th class="sortable" data-sort="balance">Balance ↕</th>
-                                <th class="sortable" data-sort="first_aid_expiry">First Aid ↕</th>
-                                <th class="sortable" data-sort="difficulty_level">Difficulty ↕</th>
-                                <th class="sortable" data-sort="is_member">Member ↕</th>
-                            </tr>
+                        <thead id="users-table-head">
                         </thead>
                         <tbody id="users-table-body">
                             <tr><td colspan="5">Loading...</td></tr>
@@ -74,20 +67,6 @@ export async function renderManageUsers() {
     searchBtn.addEventListener('click', performSearch);
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') performSearch();
-    });
-
-    // --- Sort Logic ---
-    adminContent.querySelectorAll('th.sortable').forEach(th => {
-        th.addEventListener('click', () => {
-            const currentSort = new URLSearchParams(window.location.search).get('sort') || 'last_name';
-            const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
-            const field = th.dataset.sort;
-            let newOrder = 'asc';
-            if (currentSort === field) {
-                newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
-            }
-            updateUserParams({ sort: field, order: newOrder });
-        });
     });
 
     // Load and render initial data
@@ -127,6 +106,7 @@ function updateUserParams(updates) {
  * @param {object} params - Request parameters.
  */
 async function fetchAndRenderUsers({ page, search, sort, order }) {
+    const thead = document.getElementById('users-table-head');
     const tbody = document.getElementById('users-table-body');
     const pagination = document.getElementById('users-pagination');
 
@@ -143,31 +123,65 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
             return;
         }
 
+        // Determine which columns to show based on the first user record
+        const sampleUser = users[0];
+        const columns = [
+            { key: 'name', label: 'Name', sort: 'first_name' }
+        ];
+
+        if (sampleUser.balance !== undefined) columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
+        if (sampleUser.first_aid_expiry !== undefined) columns.push({ key: 'first_aid', label: 'First Aid', sort: 'first_aid_expiry' });
+        if (sampleUser.difficulty_level !== undefined) columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });
+        if (sampleUser.is_member !== undefined) columns.push({ key: 'member', label: 'Member', sort: 'is_member' });
+
+        // Render Headers
+        thead.innerHTML = `
+            <tr>
+                ${columns.map(col => `
+                    <th class="sortable" data-sort="${col.sort}">
+                        ${col.label} ${sort === col.sort ? (order === 'asc' ? '↑' : '↓') : '↕'}
+                    </th>
+                `).join('')}
+            </tr>
+        `;
+
         // Map user objects to table rows
         tbody.innerHTML = users.map(user => {
             const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown';
-            const balance = user.balance !== undefined ? `£${Number(user.balance).toFixed(2)}` : 'N/A';
-
-            // Calculated columns
-            let firstAid = 'None';
-            if (user.first_aid_expiry) {
-                const expiry = new Date(user.first_aid_expiry);
-                firstAid = expiry > new Date() ? 'Valid' : 'Expired';
-            }
-
-            const difficulty = user.difficulty_level || 1;
-            const member = user.is_member ? 'Member' : 'Non-Member';
-
+            
             return `
-                <tr class="user-row" data-name="${fullName}" data-id="${user.id}">
-                    <td>${fullName}</td>
-                    <td>${balance}</td>
-                    <td>${firstAid}</td>
-                    <td>${difficulty}</td>
-                    <td>${member}</td>
+                <tr class="user-row" data-id="${user.id}">
+                    ${columns.map(col => {
+                        if (col.key === 'name') return `<td>${fullName}</td>`;
+                        if (col.key === 'balance') return `<td>£${Number(user.balance).toFixed(2)}</td>`;
+                        if (col.key === 'first_aid') {
+                            let status = 'N/A';
+                            if (user.first_aid_expiry) {
+                                status = new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired';
+                            }
+                            return `<td>${status}</td>`;
+                        }
+                        if (col.key === 'difficulty') return `<td>${user.difficulty_level || 'N/A'}</td>`;
+                        if (col.key === 'member') return `<td>${user.is_member ? 'Member' : 'Non-Member'}</td>`;
+                        return '<td>-</td>';
+                    }).join('')}
                 </tr>
             `;
         }).join('');
+
+        // Re-bind sort logic to new headers
+        thead.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const currentSort = new URLSearchParams(window.location.search).get('sort') || 'last_name';
+                const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
+                const field = th.dataset.sort;
+                let newOrder = 'asc';
+                if (currentSort === field) {
+                    newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+                }
+                updateUserParams({ sort: field, order: newOrder });
+            });
+        });
 
         // Row click setup
         tbody.querySelectorAll('.user-row').forEach(row => {

@@ -26,6 +26,7 @@ const MINUS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" f
 const SUCCESS_GREEN = '#2ecc71';
 const WARNING_ORANGE = '#f39c12';
 const ERROR_RED = '#e74c3c';
+const INFO_CYAN = '#3498db';
 
 /**
  * Main template for the profile view.
@@ -50,7 +51,7 @@ const HTML_TEMPLATE = `
                         <div id="profile-signup-status" class="status-item highlight-status" style="font-weight: bold; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);"></div>
                     </div>
                     <div id="instructor-status-container" class="sub-container">
-                        <div id="instructor-status"></div>
+                        <div id="instructor-status" class="status-item"></div>
                     </div>
                 </form>
             </article>
@@ -60,11 +61,16 @@ const HTML_TEMPLATE = `
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Swim Stats
+                    Your Info
                 </h2>
-                <div class="sub-container">
-                    <div id="swim-stats-info"></div>
-                    <p><button class="status-btn" onclick="switchView('/leaderboard')">View Swim Leaderboard</button></p>
+                <div class="sub-container" id="swim-stats-container" style="margin-bottom: 1rem;">
+                    <div id="recognition-stats-info"></div>
+                    <p><button class="status-btn" onclick="switchView('/swims')">View Swims</button></p>
+                </div>
+                <div class="sub-container" id="profile-tags-outer-container">
+                    <div id="profile-tags-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <p>Loading tags...</p>
+                    </div>
                 </div>
             </article>
 
@@ -104,17 +110,7 @@ const HTML_TEMPLATE = `
                     </div>
                 </form>
             </article>
-            <article class="form-box">
-                <h2>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    Your Tags
-                </h2>
-                <div id="profile-tags-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <p>Loading tags...</p>
-                </div>
-            </article>
+
             <article class="form-box">
                 <h2>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -238,8 +234,8 @@ function renderEventStatus(profile) {
                 const msg = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining for the ${academicYear} academic year.
                              <p>Become a full member to enjoy unlimited sessions!
                              <button id="become-member-button" class="status-btn">Become a Member</button></p>`;
-                updateStatusUI("membership-info-status", msg, MINUS_SVG, WARNING_ORANGE);
-                boxColor = WARNING_ORANGE;
+                updateStatusUI("membership-info-status", msg, MINUS_SVG, INFO_CYAN);
+                boxColor = INFO_CYAN;
             } else {
                 const msg = `Your membership is inactive for the ${academicYear} academic year.
                              <p>Please become a member to continue attending sessions.
@@ -258,11 +254,10 @@ function renderEventStatus(profile) {
         // 3. Debt Status
         const debtText = hasDebt ? `You have outstanding debts of £${balance.toFixed(2)}` : `You have low/no outstanding debts (£${balance.toFixed(2)})`;
         const debtAction = `<button class="status-btn" onclick="event.preventDefault(); switchView('/transactions')">Account Statement</button>`;
-        updateStatusUI('debt-status', debtText + (hasDebt ? debtAction : ''), hasDebt ? X_SVG : TICK_SVG, hasDebt ? ERROR_RED : SUCCESS_GREEN);
+        updateStatusUI('debt-status', debtText + debtAction, hasDebt ? X_SVG : TICK_SVG, hasDebt ? ERROR_RED : SUCCESS_GREEN);
         if (hasDebt) boxColor = ERROR_RED;
 
         // 4. Signup Eligibility Summary
-        const signupStatus = document.getElementById('profile-signup-status');
         if (!isLegalComplete) {
             updateStatusUI('profile-signup-status', "Please complete the legal forms to enable sign-ups.", X_SVG, ERROR_RED);
         } else if (hasDebt) {
@@ -320,9 +315,12 @@ function renderInstructorStatus(profile) {
 }
 
 function renderDetails(profile) {
-    document.getElementById('profile-firstname').placeholder = profile.first_name;
-    document.getElementById('profile-surname').placeholder = profile.last_name;
-    document.getElementById('profile-email').placeholder = profile.email;
+    const fnInput = document.getElementById('profile-firstname');
+    const lnInput = document.getElementById('profile-surname');
+    const emInput = document.getElementById('profile-email');
+    if (fnInput) fnInput.placeholder = profile.first_name;
+    if (lnInput) lnInput.placeholder = profile.last_name;
+    if (emInput) emInput.placeholder = profile.email;
 }
 
 function renderAidDetails(profile) {
@@ -330,13 +328,15 @@ function renderAidDetails(profile) {
     const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
     const removeAidButton = document.getElementById('profile-aid-remove-button');
 
-    contactNumberInput.placeholder = profile.phone_number || 'e.g., 07700 900333';
-    firstAidExpiryInput.value = profile.first_aid_expiry || '';
+    if (contactNumberInput) contactNumberInput.placeholder = profile.phone_number || 'e.g., 07700 900333';
+    if (firstAidExpiryInput) firstAidExpiryInput.value = profile.first_aid_expiry || '';
 
-    if (!profile.first_aid_expiry) {
-        removeAidButton.classList.add('hidden');
-    } else {
-        removeAidButton.classList.remove('hidden');
+    if (removeAidButton) {
+        if (!profile.first_aid_expiry) {
+            removeAidButton.classList.add('hidden');
+        } else {
+            removeAidButton.classList.remove('hidden');
+        }
     }
 }
 
@@ -347,34 +347,38 @@ async function bindStaticEvents() {
     const submitButton = document.getElementById('profile-submit-button');
 
     function updateSubmitButtonState() {
-        submitButton.disabled = firstname.value.trim() === '' && lastname.value.trim() === '' && email.value.trim() === '';
+        if (submitButton) submitButton.disabled = firstname.value.trim() === '' && lastname.value.trim() === '' && email.value.trim() === '';
     }
 
-    [firstname, lastname, email].forEach(el => el.addEventListener('input', updateSubmitButtonState));
+    if (firstname) firstname.addEventListener('input', updateSubmitButtonState);
+    if (lastname) lastname.addEventListener('input', updateSubmitButtonState);
+    if (email) email.addEventListener('input', updateSubmitButtonState);
     updateSubmitButtonState();
 
-    submitButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        if (submitButton.disabled) return;
+    if (submitButton) {
+        submitButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (submitButton.disabled) return;
 
-        const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
-        if (email.value.trim() !== '' && !emailRegex.test(email.value.trim())) {
-            email.setCustomValidity('Email must be a @durham.ac.uk address.');
-            email.reportValidity();
-            return;
-        }
+            const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
+            if (email.value.trim() !== '' && !emailRegex.test(email.value.trim())) {
+                email.setCustomValidity('Email must be a @durham.ac.uk address.');
+                email.reportValidity();
+                return;
+            }
 
-        const updateData = {};
-        if (firstname.value.trim() !== '') updateData.first_name = firstname.value.trim();
-        if (lastname.value.trim() !== '') updateData.last_name = lastname.value.trim();
-        if (email.value.trim() !== '') updateData.email = email.value.trim();
+            const updateData = {};
+            if (firstname.value.trim() !== '') updateData.first_name = firstname.value.trim();
+            if (lastname.value.trim() !== '') updateData.last_name = lastname.value.trim();
+            if (email.value.trim() !== '') updateData.email = email.value.trim();
 
-        await ajaxPost('/api/user/elements', updateData);
-        displayNotification('Profile updated.', "Successfully updated.", 'success');
-        FirstNameChangedEvent.notify();
-        firstname.value = ''; lastname.value = ''; email.value = '';
-        updateProfilePage();
-    });
+            await ajaxPost('/api/user/elements', updateData);
+            displayNotification('Profile updated.', "Successfully updated.", 'success');
+            FirstNameChangedEvent.notify();
+            firstname.value = ''; lastname.value = ''; email.value = '';
+            updateProfilePage();
+        });
+    }
 
     const contactNumberInput = document.getElementById('profile-contact-number');
     const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
@@ -382,80 +386,77 @@ async function bindStaticEvents() {
     const removeAidButton = document.getElementById('profile-aid-remove-button');
 
     function updateAidSubmitButtonState() {
-        aidSubmitButton.disabled = contactNumberInput.value.trim() === '' && firstAidExpiryInput.value.trim() === '';
+        if (aidSubmitButton) aidSubmitButton.disabled = contactNumberInput.value.trim() === '' && firstAidExpiryInput.value.trim() === '';
     }
 
-    [contactNumberInput, firstAidExpiryInput].forEach(el => el.addEventListener('input', updateAidSubmitButtonState));
+    if (contactNumberInput) contactNumberInput.addEventListener('input', updateAidSubmitButtonState);
+    if (firstAidExpiryInput) firstAidExpiryInput.addEventListener('input', updateAidSubmitButtonState);
     updateAidSubmitButtonState();
 
-    aidSubmitButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        if (aidSubmitButton.disabled) return;
+    if (aidSubmitButton) {
+        aidSubmitButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (aidSubmitButton.disabled) return;
 
-        const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
-        if (contactNumberInput.value.trim() !== '' && !phonePattern.test(contactNumberInput.value.trim())) {
-            contactNumberInput.setCustomValidity('Invalid phone number.');
-            contactNumberInput.reportValidity();
-            return;
-        }
+            const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
+            if (contactNumberInput.value.trim() !== '' && !phonePattern.test(contactNumberInput.value.trim())) {
+                contactNumberInput.setCustomValidity('Invalid phone number.');
+                contactNumberInput.reportValidity();
+                return;
+            }
 
-        const updateData = {};
-        if (contactNumberInput.value.trim() !== '') updateData.phone_number = contactNumberInput.value.trim();
-        if (firstAidExpiryInput.value.trim() !== '') updateData.first_aid_expiry = firstAidExpiryInput.value.trim();
+            const updateData = {};
+            if (contactNumberInput.value.trim() !== '') updateData.phone_number = contactNumberInput.value.trim();
+            if (firstAidExpiryInput.value.trim() !== '') updateData.first_aid_expiry = firstAidExpiryInput.value.trim();
 
-        await ajaxPost('/api/user/elements', updateData);
-        displayNotification('Aid details updated.', "Successfully updated.", 'success');
-        contactNumberInput.value = ''; firstAidExpiryInput.value = '';
-        updateProfilePage();
-    });
+            await ajaxPost('/api/user/elements', updateData);
+            displayNotification('Aid details updated.', "Successfully updated.", 'success');
+            contactNumberInput.value = ''; firstAidExpiryInput.value = '';
+            updateProfilePage();
+        });
+    }
 
-    removeAidButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        await ajaxPost('/api/user/elements', { first_aid_expiry: null });
-        displayNotification('Removed.', "First aid expiry removed.", 'success');
-        updateProfilePage();
-    });
+    if (removeAidButton) {
+        removeAidButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await ajaxPost('/api/user/elements', { first_aid_expiry: null });
+            displayNotification('Removed.', "First aid expiry removed.", 'success');
+            updateProfilePage();
+        });
+    }
 
-    document.getElementById('profile-logout-button').addEventListener('click', async (event) => {
-        event.preventDefault();
-        await ajaxGet('/api/auth/logout');
-        LoginEvent.notify({ authenticated: false });
-        switchView('/home');
-    });
-
-    document.getElementById('profile-delete-account-button').addEventListener('click', async (event) => {
-        event.preventDefault();
-        if (!confirm("Delete your account?")) return;
-        try {
-            await ajaxPost('/api/user/deleteAccount', {});
+    const logoutBtn = document.getElementById('profile-logout-button');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await ajaxGet('/api/auth/logout');
             LoginEvent.notify({ authenticated: false });
             switchView('/home');
-        } catch (error) {
-            displayNotification('Failed', "Could not delete account.", 'error');
-        }
-    });
+        });
+    }
+
+    const deleteBtn = document.getElementById('profile-delete-account-button');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            if (!confirm("Delete your account?")) return;
+            try {
+                await ajaxPost('/api/user/deleteAccount', {});
+                LoginEvent.notify({ authenticated: false });
+                switchView('/home');
+            } catch (error) {
+                displayNotification('Failed', "Could not delete account.", 'error');
+            }
+        });
+    }
 
     const admin = document.getElementById('admin-panel-button');
-    const isAdmin = await ajaxGet('/api/user/elements/can_manage_events,can_manage_users,is_exec');
-    if (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec) {
-        admin.classList.remove('hidden');
-    }
-    admin.addEventListener('click', (e) => { e.preventDefault(); switchView('/admin/'); });
-}
-
-async function renderTags() {
-    const container = document.getElementById('profile-tags-container');
-    try {
-        const tags = await ajaxGet(`/api/user/tags`);
-        if (tags && tags.length > 0) {
-            container.innerHTML = tags.map(tag =>
-                `<span style="background-color: ${tag.color}; color: white; padding: 4px 8px; border-radius: 4px;">${tag.name}</span>`
-            ).join('');
-        } else {
-            container.innerHTML = '<p>No tags assigned.</p>';
+    if (admin) {
+        const isAdmin = await ajaxGet('/api/user/elements/can_manage_events,can_manage_users,is_exec');
+        if (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec) {
+            admin.classList.remove('hidden');
         }
-    } catch (e) {
-        container.innerHTML = '<p>Failed to load tags.</p>';
+        admin.addEventListener('click', (e) => { e.preventDefault(); switchView('/admin/'); });
     }
 }
 
@@ -468,8 +469,7 @@ async function updateProfilePage() {
             renderInstructorStatus(profile);
             renderDetails(profile);
             renderAidDetails(profile);
-            renderTags();
-            renderSwimStats(profile);
+            renderRecognition(profile);
         }
     } catch (error) {
         console.error(error);
@@ -477,19 +477,34 @@ async function updateProfilePage() {
 }
 
 /**
- * Renders swim stats and rank.
+ * Renders swim stats and user tags together.
  */
-function renderSwimStats(profile) {
-    const info = document.getElementById('swim-stats-info');
-    if (!info) return;
+async function renderRecognition(profile) {
+    const info = document.getElementById('recognition-stats-info');
+    const tagsContainer = document.getElementById('profile-tags-container');
+    const swimContainer = document.getElementById('swim-stats-container');
+    const tagsOuterContainer = document.getElementById('profile-tags-outer-container');
 
+    if (!info || !tagsContainer) return;
+
+    if (swimContainer) {
+        swimContainer.style.setProperty('--colour', INFO_CYAN);
+        swimContainer.style.color = INFO_CYAN;
+    }
+
+    if (tagsOuterContainer) {
+        tagsOuterContainer.style.setProperty('--colour', '#9b59b6'); // Purple
+        tagsOuterContainer.style.color = '#9b59b6';
+    }
+
+    // 1. Render Swim Stats
     const swims = profile.swims || 0;
     const rank = profile.swimmer_rank || '-';
 
     function getOrdinal(n) {
-        if (isNaN(n)) return n;
+        if (isNaN(n) || n === '-') return n;
         const s = ["th", "st", "nd", "rd"],
-              v = n % 100;
+            v = n % 100;
         return n + (s[(v - 20) % 10] || s[v] || s[0]);
     }
 
@@ -507,6 +522,20 @@ function renderSwimStats(profile) {
             </div>
         </div>
     `;
+
+    // 2. Render Tags
+    try {
+        const tags = await ajaxGet(`/api/user/tags`);
+        if (tags && tags.length > 0) {
+            tagsContainer.innerHTML = tags.map(tag =>
+                `<span style="background-color: ${tag.color}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">${tag.name}</span>`
+            ).join('');
+        } else {
+            tagsContainer.innerHTML = '<p>No tags assigned.</p>';
+        }
+    } catch (e) {
+        tagsContainer.innerHTML = '<p>Failed to load tags.</p>';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

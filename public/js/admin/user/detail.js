@@ -21,6 +21,7 @@ const EMERGENCY_CONTACT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
 const MEDICAL_CONDITIONS = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 14C2 10.2288 2 8.34315 3.17157 7.17157C4.34315 6 6.22876 6 10 6H14C17.7712 6 19.6569 6 20.8284 7.17157C22 8.34315 22 10.2288 22 14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14Z" stroke="currentColor" stroke-width="1.5"/><path d="M16 6C16 4.11438 16 3.17157 15.4142 2.58579C14.8284 2 13.8856 2 12 2C10.1144 2 9.17157 2 8.58579 2.58579C8 3.17157 8 4.11438 8 6" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 14H10.5M12 12.5V15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="14" r="4" stroke="currentColor" stroke-width="1.5"/></svg>`
 const MEDICATION = `<svg viewBox="20 15 60 65" xmlns="http://www.w3.org/2000/svg"><path d="M64.73,49.35a1.63,1.63,0,0,0,1-1.48V24.73a4.83,4.83,0,0,0-4.83-4.83H29.81A4.82,4.82,0,0,0,25,24.73V65.3a4.82,4.82,0,0,0,4.82,4.83h15.8a1.61,1.61,0,0,0,1.45-.92A10.82,10.82,0,0,1,48.73,67l12-14.25A11.34,11.34,0,0,1,64.73,49.35ZM30.21,33.67a1.52,1.52,0,0,1,1.52-1.52h3.05v-3a1.52,1.52,0,0,1,1.52-1.48h1.52a1.53,1.53,0,0,1,1.52,1.53v2.95h3a1.55,1.55,0,0,1,1.53,1.53v1.52a1.56,1.56,0,0,1-1.53,1.53h-3v3.07a1.52,1.52,0,0,1-1.52,1.52H36.29a1.52,1.52,0,0,1-1.51-1.52v-3H31.73a1.52,1.52,0,0,1-1.52-1.52ZM49.32,58.18a1.61,1.61,0,0,1-1.61,1.61l-15.89,0a1.61,1.61,0,0,1-1.61-1.61V56.41a1.61,1.61,0,0,1,1.61-1.6H47.71a1.61,1.61,0,0,1,1.61,1.6Zm8.1-9.81A1.61,1.61,0,0,1,55.81,50h-24a1.61,1.61,0,0,1-1.61-1.61V46.63A1.61,1.61,0,0,1,31.82,45h24a1.61,1.61,0,0,1,1.61,1.61Z"/><path d="M73.38,53.77a6.72,6.72,0,0,0-9.4.54,2.43,2.43,0,0,0-.2.25l-5,5.88,10,8.51,0,0,0,0,5-5.88A6.59,6.59,0,0,0,73.38,53.77Z"/><path d="M56.66,63.1l0,0-5,5.88a6.62,6.62,0,0,0,9.93,8.76l.21-.25,5-5.88-10-8.51Z"/></svg>`;
 const FIRST_AID_EXPIRY = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g><path d="M12.144 1.157a8 8 0 10-.709 14.068 1 1 0 00-.858-1.806 6 6 0 112.86-7.955 1 1 0 001.814-.845 8 8 0 00-3.107-3.462z"/><path d="M7 5a1 1 0 112 0v4a1 1 0 01-.553.894l-2 1a1 1 0 11-.894-1.788L7 8.382V5zm9 10a1 1 0 11-2 0 1 1 0 012 0zm-1-7a1 1 0 00-1 1v3a1 1 0 102 0V9a1 1 0 00-1-1z"/></g></svg>`;
+const TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M18 2H6c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 13.9V17H8v2h8v-2h-3v-3.1c2.03-.41 3.61-2.01 4.39-4.06 2.47-.31 4.39-2.39 4.39-4.94V4c0-1.1-.9-2-2-2zm-1 5c-.55 0-1-.45-1-1V4h1v3zM7 7V4h1v2c0 .55-.45 1-1 1z"/></svg>`;
 
 // --- Main Render Function ---
 
@@ -95,12 +96,12 @@ export async function renderUserDetail(userId) {
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('tab', btn.dataset.tab);
                 window.history.replaceState({}, '', newUrl);
-                renderTab(btn.dataset.tab, user, isPresident);
+                renderTab(btn.dataset.tab, user, isPresident, canManageUsers);
             };
         });
 
         updateActiveTab(initialTabBtn);
-        renderTab(initialTabBtn.dataset.tab, user, isPresident);
+        renderTab(initialTabBtn.dataset.tab, user, isPresident, canManageUsers);
 
     } catch (e) {
         console.error(e);
@@ -121,8 +122,9 @@ export async function renderUserDetail(userId) {
  * @param {string} tabName - The name of the tab to render ('profile', 'legal', or 'transactions').
  * @param {object} user - The user object containing all user details.
  * @param {boolean} isPresident - Whether the current user is the president.
+ * @param {boolean} canManageUsers - Whether the user has management permissions.
  */
-function renderTab(tabName, user, isPresident) {
+function renderTab(tabName, user, isPresident, canManageUsers) {
     const container = document.getElementById('admin-tab-content');
     if (tabName === 'profile') {
         let permissionsHtml = '';
@@ -185,34 +187,41 @@ function renderTab(tabName, user, isPresident) {
                 ${generalInfoHtml}
                 <div class="event-details-section" id="admin-user-membership-container">
                      <h3>${DIFFICULTY_SVG} Status & Level</h3>
-                     <p>${USER_SVG} <strong>Member:</strong> ${user.is_member ? 'Yes' : 'No'}</p>
-                     <p>${INSTRUCTOR_SVG} <strong>Instructor:</strong> ${user.is_instructor ? 'Yes' : 'No'}</p>
-                     <p>${FREE_SESSIONS_SVG} <strong>Free Sessions:</strong> ${user.free_sessions}</p>
-                     <div class="detail-difficulty-control">
+                     <p>${USER_SVG} <strong>Member:</strong> ${user.is_member !== undefined ? (user.is_member ? 'Yes' : 'No') : 'N/A'}</p>
+                     <p>${INSTRUCTOR_SVG} <strong>Instructor:</strong> ${user.is_instructor !== undefined ? (user.is_instructor ? 'Yes' : 'No') : 'N/A'}</p>
+                     <p>${FREE_SESSIONS_SVG} <strong>Free Sessions:</strong> ${user.free_sessions !== undefined ? user.free_sessions : 'N/A'}</p>
+                     <div class="detail-difficulty-control" style="${user.difficulty_level === undefined ? 'display:none;' : ''}">
                         <strong>${DIFFICULT_SVG} Difficulty Level:</strong>
                         <input type="number" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5">
                      </div>
-                </div>
-                <div class="event-details-section" id="admin-user-swims-container">
-                     <h3>🏆 Swim Stats</h3>
-                     <p><strong>Current Swims:</strong> <span id="admin-user-swims-count">${user.swims || 0}</span></p>
-                     <button id="admin-add-swim-btn" class="status-btn">Add 1 Swim</button>
+                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; margin-left: 0; margin-right: 0;">
+                        <span style="display: flex; align-items: center; gap: 0.5rem;">
+                            ${TROPHY_SVG} <strong>Swims:</strong> 
+                        </span>
+                        <span id="admin-user-swims-count">${user.swims || 0}</span>
+                        ${canManageUsers ? `<button id="admin-add-swim-btn" class="status-btn" style="margin: 0; padding: 0.2rem 0.6rem;">+1</button>` : ''}
+                     </div>
                 </div>
                 ${permissionsHtml}
             </div>
         `;
 
-        const addSwimBtn = document.getElementById('admin-add-swim-btn');
-        addSwimBtn.onclick = async () => {
-            try {
-                await ajaxPost(`/api/user/${user.id}/swims`, { count: 1 });
-                user.swims = (user.swims || 0) + 1;
-                document.getElementById('admin-user-swims-count').textContent = user.swims;
-                notify('Success', 'Swim added', 'success');
-            } catch (e) {
-                notify('Error', 'Failed to add swim', 'error');
+        if (canManageUsers) {
+            const addSwimBtn = document.getElementById('admin-add-swim-btn');
+            if (addSwimBtn) {
+                addSwimBtn.onclick = async () => {
+                    try {
+                        await ajaxPost(`/api/user/${user.id}/swims`, { count: 1 });
+                        user.swims = (user.swims || 0) + 1;
+                        const countEl = document.getElementById('admin-user-swims-count');
+                        if (countEl) countEl.textContent = user.swims;
+                        notify('Success', 'Swim added', 'success');
+                    } catch (e) {
+                        notify('Error', 'Failed to add swim', 'error');
+                    }
+                };
             }
-        };
+        }
 
         const difficultyInput = document.getElementById('admin-user-difficulty');
         difficultyInput.onchange = async () => {

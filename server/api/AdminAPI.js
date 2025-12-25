@@ -44,9 +44,9 @@ class Admin {
         /**
          * GET /api/admin/users
          * Retrieves a paginated list of users.
-         * Requires 'can_manage_users' or 'can_manage_transactions' permissions.
+         * Requires 'can_manage_users', 'can_manage_transactions', or 'is_exec' permissions.
          */
-        this.app.get('/api/admin/users', check('can_manage_users | can_manage_transactions'), async (req, res) => {
+        this.app.get('/api/admin/users', check('can_manage_users | can_manage_transactions | is_exec'), async (req, res) => {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             const search = req.query.search || '';
@@ -130,11 +130,13 @@ class Admin {
         /**
          * GET /api/admin/user/:id
          * Retrieves detailed information and balance for a specific user.
-         * The returned fields depend on whether the admin has user management or transaction management permissions.
+         * The returned fields depend on the administrator's permissions.
          */
-        this.app.get('/api/admin/user/:id', check('can_manage_users | can_manage_transactions'), async (req, res) => {
+        this.app.get('/api/admin/user/:id', check('can_manage_users | can_manage_transactions | is_exec'), async (req, res) => {
             const userId = req.params.id;
             const canManageUsers = req.user.can_manage_users;
+            const canManageTransactions = req.user.can_manage_transactions;
+            const isExec = req.user.is_exec;
 
             let elements;
             if (canManageUsers) {
@@ -148,17 +150,18 @@ class Admin {
                     "difficulty_level", "can_manage_users", "can_manage_events", "can_manage_transactions", "is_exec",
                     "swims"
                 ];
-            } else {
+            } else if (canManageTransactions) {
                 // Restricted view for transaction managers
                 elements = [
                     "id", "first_name", "last_name",
                     "free_sessions", "is_member", "is_instructor",
-                    "difficulty_level"
+                    "difficulty_level", "swims"
                 ];
+            } else {
+                // Minimal view for execs who only manage swims
+                elements = ["id", "first_name", "last_name", "swims"];
             }
 
-            // Direct DB access is used here to bypass strict permission checks in UserDB.getElements
-            // since we have already validated authorization at the route level.
             try {
                 const user = await this.db.get(
                     `SELECT ${elements.join(', ')} FROM users WHERE id = ?`,
@@ -168,9 +171,11 @@ class Admin {
                     return new statusObject(404, 'User not found').getResponse(res);
                 }
 
-                // Append user's current balance
-                const balanceResult = await transactionsDB.get_balance(req, this.db, userId);
-                user.balance = balanceResult.getData() || 0;
+                // Append user's current balance if authorized
+                if (canManageUsers || canManageTransactions) {
+                    const balanceResult = await transactionsDB.get_balance(req, this.db, userId);
+                    user.balance = balanceResult.getData() || 0;
+                }
 
                 res.json(user);
             } catch (error) {

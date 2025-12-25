@@ -35,19 +35,21 @@ class UserDB {
      * @returns {Promise<statusObject>} A statusObject containing the list of users and pagination metadata.
      */
     static async getUsers(req, db, options) {
-        // Authorization check: Must be able to manage users OR transactions
-        const perms = await db.get('SELECT can_manage_users, can_manage_transactions FROM users WHERE id = ?', req.user.id);
-        if (!perms || (!perms.can_manage_users && !perms.can_manage_transactions)) {
+        // Authorization check: Must be able to manage users OR transactions OR be exec
+        const perms = await db.get('SELECT can_manage_users, can_manage_transactions, is_exec FROM users WHERE id = ?', req.user.id);
+        if (!perms || (!perms.can_manage_users && !perms.can_manage_transactions && !perms.is_exec)) {
             return new statusObject(403, 'User not authorized');
         }
 
         const { page, limit, search, sort, order } = options;
         const offset = (page - 1) * limit;
 
-        // Valid columns for sorting to prevent SQL injection
+        const isOnlyExec = perms.is_exec && !perms.can_manage_users && !perms.can_manage_transactions;
+
+        // Valid columns for sorting
         const allowedSorts = ['first_name', 'last_name', 'email', 'balance', 'first_aid_expiry', 'filled_legal_info', 'is_member', 'difficulty_level'];
-        const sortCol = allowedSorts.includes(sort) ? sort : 'last_name';
-        const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
+        let sortCol = allowedSorts.includes(sort) ? sort : (isOnlyExec ? 'first_name' : 'last_name');
+        let sortOrder = order === 'desc' ? 'DESC' : 'ASC';
 
         let whereClause = '';
         const params = [];
@@ -57,25 +59,47 @@ class UserDB {
             const terms = search.trim().split(/\s+/);
             const conditions = terms.map(term => {
                 const termPattern = `%${term}%`;
-                params.push(termPattern, termPattern, termPattern);
+                params.push(termPattern, termPattern);
+                // Restricted search for execs
+                if (isOnlyExec) return `(u.first_name LIKE ? OR u.last_name LIKE ? )`;
+                
+                params.push(termPattern);
                 return `(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)`;
             });
             whereClause = 'WHERE ' + conditions.join(' AND ');
         }
 
         try {
-            // Complex query joining users with their sum of transactions (balance)
-            const query = `
-                SELECT 
+            let selectFields;
+            let joinTransactions = '';
+            
+            if (isOnlyExec) {
+                selectFields = `u.id, u.first_name, u.last_name`;
+            } else {
+                selectFields = `
                     u.id, u.first_name, u.last_name, u.email, 
                     u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
                     u.swims,
                     COALESCE(SUM(t.amount), 0) as balance
+                `;
+                joinTransactions = `LEFT JOIN transactions t ON u.id = t.user_id`;
+            }
+
+            // Enhanced sorting for names (case-insensitive)
+            let orderBy = `${sortCol} ${sortOrder}`;
+            if (sortCol === 'first_name' || isOnlyExec) {
+                orderBy = `u.first_name COLLATE NOCASE ${sortOrder}, u.last_name COLLATE NOCASE ${sortOrder}`;
+            } else if (sortCol === 'last_name') {
+                orderBy = `u.last_name COLLATE NOCASE ${sortOrder}, u.first_name COLLATE NOCASE ${sortOrder}`;
+            }
+
+            const query = `
+                SELECT ${selectFields}
                 FROM users u
-                LEFT JOIN transactions t ON u.id = t.user_id
+                ${joinTransactions}
                 ${whereClause}
                 GROUP BY u.id
-                ORDER BY ${sortCol} ${sortOrder}
+                ORDER BY ${orderBy}
                 LIMIT ? OFFSET ?
             `;
 
