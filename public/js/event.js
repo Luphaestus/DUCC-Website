@@ -66,19 +66,39 @@ async function NavigationEventListner({ resolvedPath, path }) {
         const refundCutOffDateStr = event.upfront_refund_cutoff ? new Date(event.upfront_refund_cutoff).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'N/A';
         const refundToolTip = `<span class="info-tooltip-wrapper">${INFO_SVG}<span class="tooltip-text">The upfront cost is non-refundable as it covers pre-booked expenses like transport or accommodation which the club cannot recover if you cancel. However, if someone else joins the event to take your place, you will be eligible for a refund.</span></span>`
         
+        const tagsHtml = (event.tags || []).map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85em;">${tag.name}</span>`).join('');
+
         // Render main event information box
         navContainer.innerHTML = `
             <div class="form-info" id="event-info-container">
                 <article class="form-box">
-                    <h2 class="event-title-large">${event.title}</h2>
+                    <div class="event-header">
+                        <h2 class="event-title-large">${event.title}</h2>
+                        <div class="event-title-tags">${tagsHtml}</div>
+                    </div>
                     <div class="event-content-split">
                         <div class="event-details-section">
-                            <h3>${INFO_SVG} Event Details</h3>
-                            <p>${CALENDAR_SVG} <strong>Date:</strong> ${new Date(event.start).toLocaleString()} - ${new Date(event.end).toLocaleString()}</p>
-                            <p>${DESCRIPTION_SVG} <strong>Description:</strong> ${event.description || 'No description provided.'}</p>
-                            <p>${DIFFICULTY_SVG} <strong>Difficulty:</strong> ${event.difficulty_level}</p>
-                            <p>${ATTENDEES_SVG} <strong>Max Attendees:</strong> ${event.max_attendees || 'Unlimited'}</p>
-                            ${event.upfront_cost ? `<p>${COST_SVG} <strong>Upfront Cost:</strong> £${event.upfront_cost.toFixed(2)} ${event.upfront_cost > 0 && event.upfront_refund_cutoff ? (refundCutOffPassed ? `- no refunds ${refundToolTip}` : `- refunds available until ${refundCutOffDateStr} (${refundCutOffDaysLeft} days left) ${refundToolTip}`) : ''}</p>` : ''}
+                            <p class="detail-field">
+                                <span class="label">${CALENDAR_SVG} <strong>Date:</strong></span>
+                                <span class="value">${new Date(event.start).toLocaleString()} - ${new Date(event.end).toLocaleString()}</span>
+                            </p>
+                            <p class="detail-field">
+                                <span class="label">${DESCRIPTION_SVG} <strong>Description:</strong></span>
+                                <span class="value">${event.description || 'No description provided.'}</span>
+                            </p>
+                            <p class="detail-field">
+                                <span class="label">${DIFFICULTY_SVG} <strong>Difficulty:</strong></span>
+                                <span class="value">${event.difficulty_level}</span>
+                            </p>
+                            <p class="detail-field">
+                                <span class="label">${ATTENDEES_SVG} <strong>Max Attendees:</strong></span>
+                                <span class="value">${event.max_attendees || 'Unlimited'}</span>
+                            </p>
+                            ${event.upfront_cost ? `
+                            <p class="detail-field">
+                                <span class="label">${COST_SVG} <strong>Upfront Cost:</strong></span>
+                                <span class="value">£${event.upfront_cost.toFixed(2)} ${event.upfront_cost > 0 && event.upfront_refund_cutoff ? (refundCutOffPassed ? `- no refunds ${refundToolTip}` : `- refunds available until ${refundCutOffDateStr} (${refundCutOffDaysLeft} days left) ${refundToolTip}`) : ''}</span>
+                            </p>` : ''}
                             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                                 <button id="attend-event-button" class="hidden">Attend Event</button>
                                 <button id="edit-event-button" class="hidden">Edit Event</button>
