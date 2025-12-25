@@ -45,6 +45,8 @@ async function createTables(db) {
       is_exec BOOLEAN NOT NULL DEFAULT 0,
       first_aid_expiry DATE,
 
+      swims INTEGER NOT NULL DEFAULT 0,
+
       profile_picture_path TEXT,
 
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

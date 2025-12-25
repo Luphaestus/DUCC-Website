@@ -111,6 +111,35 @@ class EventsAPI {
         });
 
         /**
+         * GET /api/event/:id/isPaying
+         * Checks if the user has already paid for this event (even if not currently attending).
+         */
+        this.app.get('/api/event/:id/isPaying', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ message: 'Event ID must be an integer' });
+            }
+
+            const isPaying = await EventsDB.isUserPayingForEvent(req, this.db, eventId);
+            if (isPaying.isError()) { return isPaying.getResponse(res); }
+            res.json({ isPaying: isPaying.getData() });
+        });
+
+        /**
+         * GET /api/event/:id/coachCount
+         * Returns the number of instructors attending the event.
+         */
+        this.app.get('/api/event/:id/coachCount', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ message: 'Event ID must be an integer' });
+            }
+
+            const count = await EventsDB.getCoachesAttendingCount(this.db, eventId);
+            res.json({ count });
+        });
+
+        /**
          * POST /api/event/:id/attend
          * Signs the current user up for an event.
          * Includes checks for:
@@ -164,8 +193,16 @@ class EventsAPI {
             }
 
             // Check membership and legal info
-            const membershipStatus = await UserDB.getElements(req, this.db, ['is_member', 'free_sessions', 'filled_legal_info']);
+            const membershipStatus = await UserDB.getElements(req, this.db, ['is_member', 'free_sessions', 'filled_legal_info', 'is_instructor']);
             if (membershipStatus.isError()) { return membershipStatus.getResponse(res); }
+
+            // Ensure at least one coach is attending if user is not a coach
+            if (!membershipStatus.getData().is_instructor) {
+                const coachCount = await EventsDB.getCoachesAttendingCount(this.db, eventId);
+                if (coachCount === 0) {
+                    return res.status(403).json({ message: 'At least one coach must be attending before members can sign up.' });
+                }
+            }
 
             if (!membershipStatus.getData().filled_legal_info) {
                 return res.status(403).json({ message: 'User has not filled legal information' });
@@ -235,14 +272,48 @@ class EventsAPI {
             }
 
             const eventRes = await EventsDB.get_event_by_id(req, this.db, eventId)
+            const event = eventRes.getData();
 
             if (eventRes.isError()) {
                 return res.status(404).json({ message: 'Event not found' });
             }
 
+            // Check if this user is a coach
+            const userStatus = await UserDB.getElements(req, this.db, ['is_instructor']);
+            const isLeavingCoach = !!userStatus.getData().is_instructor;
+
+            // If leaving is a coach, check if they are the last one
+            if (isLeavingCoach) {
+                const coachCount = await EventsDB.getCoachesAttendingCount(this.db, eventId);
+                if (coachCount === 1) {
+                    // Last coach leaving: remove everyone else
+                    const attendees = await EventsDB.get_users_attending_event(req, this.db, eventId);
+                    if (!attendees.isError()) {
+                        for (const attendee of attendees.getData()) {
+                            if (attendee.id === req.user.id) continue;
+
+                            // Handle refunds for each removed attendee
+                            const attendeeReq = { user: { id: attendee.id }, isAuthenticated: () => true };
+                            const hasPaid = await EventsDB.isUserPayingForEvent(attendeeReq, this.db, eventId);
+                            
+                            if (hasPaid.getData()) {
+                                await EventsDB.refundEvent(this.db, eventId, attendee.id);
+                            }
+                            
+                            // Restore free session if applicable
+                            const attInfo = await UserDB.getElementsById(this.db, attendee.id, ['is_member', 'free_sessions']);
+                            if (!attInfo.getData().is_member) {
+                                await UserDB.writeElementsById(this.db, attendee.id, { free_sessions: attInfo.getData().free_sessions + 1 });
+                            }
+                        }
+                        await EventsDB.removeAllAttendees(this.db, eventId);
+                    }
+                }
+            }
+
             // Check timing
-            const startDate = new Date(eventRes.getData().start);
-            const endDate = new Date(eventRes.getData().end);
+            const startDate = new Date(event.start);
+            const endDate = new Date(event.end);
             const now = new Date();
             if (now >= endDate) {
                 return res.status(400).json({ message: 'Cannot leave an event that has already ended' });
@@ -250,7 +321,7 @@ class EventsAPI {
                 return res.status(400).json({ message: 'Cannot leave an event that has already started' });
             }
 
-            // Restore free session if applicable
+            // Restore free session for the leaving user if applicable
             const membershipStatus = await UserDB.getElements(req, this.db, ['is_member', 'free_sessions']);
             if (membershipStatus.isError()) { return membershipStatus.getResponse(res); }
 
@@ -260,25 +331,16 @@ class EventsAPI {
                 if (updateStatus.isError()) { return updateStatus.getResponse(res); }
             }
 
-            // Remove attendance record
+            // Remove attendance record for leaving user
             const status = await EventsDB.leave_event(req, this.db, eventId);
             if (status.isError()) { return status.getResponse(res); }
 
             // Handle refund of upfront cost if before cutoff
-            if (eventRes.getData().upfront_cost > 0) {
-                if (!eventRes.getData().upfront_refund_cutoff || (new Date() <= new Date(eventRes.getData().upfront_refund_cutoff))) {
+            if (event.upfront_cost > 0) {
+                if (!event.upfront_refund_cutoff || (new Date() <= new Date(event.upfront_refund_cutoff))) {
                     const transactionIdStatus = await TransactionsDB.get_transactionid_by_event(req, this.db, eventId, req.user.id);
-                    if (transactionIdStatus.isError()) {
-                        // Rollback leave if transaction lookup fails
-                        await EventsDB.attend_event(req, this.db, eventId);
-                        return transactionIdStatus.getResponse(res);
-                    }
-
-                    const refundStatus = await TransactionsDB.delete_transaction(req, this.db, transactionIdStatus.getData());
-                    if (refundStatus.isError()) {
-                        // Rollback leave if refund fails
-                        await EventsDB.attend_event(req, this.db, eventId);
-                        return refundStatus.getResponse(res);
+                    if (!transactionIdStatus.isError()) {
+                        await TransactionsDB.delete_transaction(req, this.db, transactionIdStatus.getData());
                     }
                 }
             }

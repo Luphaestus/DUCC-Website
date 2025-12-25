@@ -44,10 +44,14 @@ class eventsDB {
         endOfWeek.setDate(endOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
-        // Initial fetch by date range and base difficulty
+        // Initial fetch by date range and base difficulty, including attendance status
         const events = await db.all(
-            'SELECT * FROM events WHERE start BETWEEN ? AND ? AND difficulty_level <= ? ORDER BY start ASC',
-            [startOfWeek.toISOString(), endOfWeek.toISOString(), max_difficulty]
+            `SELECT e.*, 
+             EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
+             FROM events e 
+             WHERE e.start BETWEEN ? AND ? AND e.difficulty_level <= ? 
+             ORDER BY e.start ASC`,
+            [userId, startOfWeek.toISOString(), endOfWeek.toISOString(), max_difficulty]
         );
 
         const visibleEvents = [];
@@ -525,6 +529,13 @@ class eventsDB {
      * @param {number} eventId - The event ID.
      * @returns {Promise<statusObject>}
      */
+    /**
+     * Checks if the user has a transaction linked to their attendance at an event.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} eventId - The event ID.
+     * @returns {Promise<statusObject>}
+     */
     static async isUserPayingForEvent(req, db, eventId) {
         const paying = await db.get(
             `SELECT payment_transaction_id 
@@ -534,6 +545,39 @@ class eventsDB {
         );
 
         return new statusObject(200, null, !!paying);
+    }
+
+    /**
+     * Retrieves the count of instructors (coaches) currently attending an event.
+     * @param {object} db - The database instance.
+     * @param {number} eventId - The event ID.
+     * @returns {Promise<number>}
+     */
+    static async getCoachesAttendingCount(db, eventId) {
+        const result = await db.get(
+            `SELECT COUNT(*) as count 
+             FROM event_attendees ea
+             JOIN users u ON ea.user_id = u.id
+             WHERE ea.event_id = ? AND ea.is_attending = 1 AND u.is_instructor = 1`,
+            [eventId]
+        );
+        return result ? result.count : 0;
+    }
+
+    /**
+     * Marks all currently attending users as 'no longer attending' for a specific event.
+     * Useful for cancelling event attendance when requirements are no longer met.
+     * @param {object} db - The database instance.
+     * @param {number} eventId - The event ID.
+     * @returns {Promise<void>}
+     */
+    static async removeAllAttendees(db, eventId) {
+        await db.run(
+            `UPDATE event_attendees 
+             SET is_attending = 0, left_at = ? 
+             WHERE event_id = ? AND is_attending = 1`,
+            [new Date().toISOString(), eventId]
+        );
     }
 
 }

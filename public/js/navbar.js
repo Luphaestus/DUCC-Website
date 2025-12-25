@@ -1,14 +1,8 @@
-import { switchView } from './misc/view.js';
+import { switchView, ViewChangedEvent } from './misc/view.js';
 import { ajaxGet } from './misc/ajax.js';
 import { Event } from './misc/event.js';
 import { LoginEvent } from './login.js';
-
-/**
- * Navbar Module.
- * Manages the top navigation bar, including dynamic item generation,
- * authentication-aware visibility (Login vs Profile vs Admin),
- * and user-specific greetings.
- */
+import { BalanceChangedEvent } from './misc/globals.js';
 
 // --- Constants & Events ---
 
@@ -18,9 +12,9 @@ import { LoginEvent } from './login.js';
  * 'action' defines what happens when clicked (usually an SPA view switch).
  */
 const navEntries = [
-    { name: 'Home', type: 'text', classes: "contrast", action: { run: () => switchView('/home') } },
     { name: 'Events', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
     { name: 'Admin', id: 'admin-button', type: 'text', classes: "contrast", action: { run: () => switchView('/admin/') } },
+    { name: 'Balance: £0.00', id: 'balance-button', type: 'text', classes: "contrast", action: { run: () => switchView('/transactions') } },
     { name: 'Login', id: 'login-button', type: 'button', action: { run: () => switchView('/login') } },
     { name: 'Profile', id: 'profile-button', type: 'button', action: { run: () => switchView('/profile') } }
 ];
@@ -31,13 +25,24 @@ const FirstNameChangedEvent = new Event();
 // --- Helper Functions ---
 
 /**
- * Fetches the user's first name from the server and updates the profile button text.
- * @returns {Promise<void>}
+ * Fetches and updates the user's balance in the navbar.
  */
-async function updateFirstNameInNav() {
-    const profileButton = document.getElementById('profile-button');
-    if (profileButton) {
-        profileButton.textContent = await ajaxGet('/api/user/elements/first_name').then((data) => `Hello, ${data.first_name}`);
+async function updateBalanceInNav() {
+    const balanceButton = document.getElementById('balance-button');
+    if (balanceButton) {
+        const data = await ajaxGet('/api/user/elements/balance').catch(() => null);
+        if (data && data.balance !== undefined) {
+            const balance = Number(data.balance);
+            balanceButton.textContent = `Balance: £${balance.toFixed(2)}`;
+            
+            if (balance < -20) {
+                balanceButton.style.color = '#e74c3c'; // Red
+            } else if (balance < -10) {
+                balanceButton.style.color = '#f1c40f'; // Yellow
+            } else {
+                balanceButton.style.color = '';
+            }
+        }
     }
 }
 
@@ -61,7 +66,7 @@ function create_item(entry) {
     }
 
     if (entry.classes) clicky.className = entry.classes;
-    clicky.id = entry.id || `nav-${entry.name.toLowerCase()}`;
+    clicky.id = entry.id || `nav-${entry.name.toLowerCase().replace(/[^a-z]/g, '')}`;
     clicky.textContent = entry.name;
 
     // Handle both href-style and callback-style actions
@@ -97,6 +102,8 @@ async function updateNavOnLoginState(data) {
     const loginLi = loginButton?.parentElement;
     const profileButton = document.getElementById('profile-button');
     const profileLi = profileButton?.parentElement;
+    const balanceButton = document.getElementById('balance-button');
+    const balanceLi = balanceButton?.parentElement;
 
     if (!loginButton || !profileButton) {
         console.warn("Login or Profile button not found in navbar.");
@@ -104,18 +111,20 @@ async function updateNavOnLoginState(data) {
     }
 
     if (isLoggedIn) {
-        // Logged in: Hide login, show profile
+        // Logged in: Hide login, show profile and balance
         loginLi.classList.add('hidden');
         profileLi.classList.remove('hidden');
+        if (balanceLi) balanceLi.classList.remove('hidden');
         
-        // Fetch user data and permissions in parallel
-        const [userData, permissions] = await Promise.all([
-            ajaxGet('/api/user/elements/first_name'),
-            ajaxGet('/api/user/elements/can_manage_users,can_manage_events,is_exec').catch(() => null)
+        // Fetch permissions, balance, and swims in parallel
+        const [permissions, swimData] = await Promise.all([
+            ajaxGet('/api/user/elements/can_manage_users,can_manage_events,is_exec').catch(() => null),
+            ajaxGet('/api/user/elements/swims').catch(() => ({ swims: 0 })),
+            updateBalanceInNav()
         ]);
 
-        if (userData && userData.first_name) {
-            profileButton.textContent = `Hello, ${userData.first_name}`;
+        if (swimData && swimData.swims !== undefined) {
+            profileButton.textContent = `Profile (${swimData.swims})`;
         }
 
         const adminButton = document.getElementById('admin-button');
@@ -128,9 +137,10 @@ async function updateNavOnLoginState(data) {
             adminLi.classList.add('hidden');
         }
     } else {
-        // Logged out: Show login, hide profile and admin
+        // Logged out: Show login, hide profile, admin, and balance
         loginLi.classList.remove('hidden');
         profileLi.classList.add('hidden');
+        if (balanceLi) balanceLi.classList.add('hidden');
         document.getElementById('admin-button')?.parentElement?.classList.add('hidden');
     }
 }
@@ -153,11 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
     LoginEvent.subscribe((data) => {
         updateNavOnLoginState(data);
     });
-    
-    // Subscribe to profile update events
-    FirstNameChangedEvent.subscribe(() => {
-        updateFirstNameInNav();
+
+    BalanceChangedEvent.subscribe(() => {
+        updateBalanceInNav();
     });
+    
+    // Proactively update balance on every view change to ensure it is fresh
 });
 
-export { FirstNameChangedEvent };
+export { FirstNameChangedEvent, updateBalanceInNav };

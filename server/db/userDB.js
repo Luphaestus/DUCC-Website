@@ -69,6 +69,7 @@ class UserDB {
                 SELECT 
                     u.id, u.first_name, u.last_name, u.email, 
                     u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
+                    u.swims,
                     COALESCE(SUM(t.amount), 0) as balance
                 FROM users u
                 LEFT JOIN transactions t ON u.id = t.user_id
@@ -234,6 +235,103 @@ class UserDB {
             return new statusObject(200, null);
         } catch (error) {
             console.error('Database error in removeUser:', error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Checks if the currently authenticated user is an exec.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @returns {Promise<statusObject>}
+     */
+    static async canManageSwims(req, db) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+        try {
+            const row = await db.get('SELECT is_exec FROM users WHERE id = ?', req.user.id);
+            if (!row) return new statusObject(404, 'User not found');
+            return new statusObject(200, null, !!row.is_exec);
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Adds a number of swims to a user.
+     * @param {object} req - The Express request object.
+     * @param {object} db - The database instance.
+     * @param {number} userId - Target user ID.
+     * @param {number} count - Number of swims to add.
+     * @returns {Promise<statusObject>}
+     */
+    static async addSwims(req, db, userId, count) {
+        const canManage = await this.canManageSwims(req, db);
+        if (canManage.isError()) return canManage;
+        if (!canManage.getData()) return new statusObject(403, 'User not authorized to manage swims');
+
+        try {
+            await db.run('UPDATE users SET swims = swims + ? WHERE id = ?', [count, userId]);
+            return new statusObject(200, 'Swims added successfully');
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Gets the swim leaderboard.
+     * @param {object} db - The database instance.
+     * @returns {Promise<statusObject>}
+     */
+    static async getSwimsLeaderboard(db) {
+        try {
+            const users = await db.all('SELECT first_name, last_name, swims FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC');
+            
+            // Calculate ranks with ties (dense rank)
+            let rank = 0;
+            let lastSwims = -1;
+            const leaderboard = users.map((user, index) => {
+                if (user.swims !== lastSwims) {
+                    rank++;
+                    lastSwims = user.swims;
+                }
+                return { ...user, rank };
+            });
+
+            return new statusObject(200, null, leaderboard);
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Gets the swimmer rank for a specific user.
+     * @param {object} db - The database instance.
+     * @param {number} userId - The target user ID.
+     * @returns {Promise<statusObject>}
+     */
+    static async getUserSwimmerRank(db, userId) {
+        try {
+            const allSwimmers = await db.all('SELECT id, swims FROM users ORDER BY swims DESC');
+            
+            let rank = 0;
+            let lastSwims = -1;
+            let userRank = -1;
+            let userSwims = 0;
+
+            for (const s of allSwimmers) {
+                if (s.swims !== lastSwims) {
+                    rank++;
+                    lastSwims = s.swims;
+                }
+                if (s.id === userId) {
+                    userRank = rank;
+                    userSwims = s.swims;
+                    break;
+                }
+            }
+
+            return new statusObject(200, null, { rank: userRank, swims: userSwims });
+        } catch (error) {
             return new statusObject(500, 'Database error');
         }
     }

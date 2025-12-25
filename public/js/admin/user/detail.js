@@ -193,9 +193,26 @@ function renderTab(tabName, user, isPresident) {
                         <input type="number" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5">
                      </div>
                 </div>
+                <div class="event-details-section" id="admin-user-swims-container">
+                     <h3>🏆 Swim Stats</h3>
+                     <p><strong>Current Swims:</strong> <span id="admin-user-swims-count">${user.swims || 0}</span></p>
+                     <button id="admin-add-swim-btn" class="status-btn">Add 1 Swim</button>
+                </div>
                 ${permissionsHtml}
             </div>
         `;
+
+        const addSwimBtn = document.getElementById('admin-add-swim-btn');
+        addSwimBtn.onclick = async () => {
+            try {
+                await ajaxPost(`/api/user/${user.id}/swims`, { count: 1 });
+                user.swims = (user.swims || 0) + 1;
+                document.getElementById('admin-user-swims-count').textContent = user.swims;
+                notify('Success', 'Swim added', 'success');
+            } catch (e) {
+                notify('Error', 'Failed to add swim', 'error');
+            }
+        };
 
         const difficultyInput = document.getElementById('admin-user-difficulty');
         difficultyInput.onchange = async () => {

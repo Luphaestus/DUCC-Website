@@ -101,6 +101,8 @@ class User {
                 "first_aid_expiry",
                 "profile_picture_path",
                 "created_at",
+                "swims",
+                "swimmer_rank"
             ];
 
             const accessibleTransactionsDB = [
@@ -138,11 +140,21 @@ class User {
         // Fetch from UserDB
         let userResultData = {};
         if (userElements.length > 0) {
-            const userResult = await UserDB.getElements(req, db, userElements);
+            const needsRank = userElements.includes('swimmer_rank');
+            const cleanElements = userElements.filter(e => e !== 'swimmer_rank');
+            
+            const userResult = await UserDB.getElements(req, db, cleanElements);
             if (userResult.isError()) {
                 return userResult;
             }
             userResultData = userResult.getData();
+
+            if (needsRank) {
+                const rankRes = await UserDB.getUserSwimmerRank(db, req.user.id);
+                if (!rankRes.isError()) {
+                    userResultData.swimmer_rank = rankRes.getData().rank;
+                }
+            }
         }
 
         // Fetch from transactionsDB
@@ -462,6 +474,31 @@ class User {
                 }
                 res.json({ success: true });
             });
+        });
+
+        /**
+         * GET /api/user/swims/leaderboard
+         * Fetches the swim leaderboard.
+         */
+        this.app.get('/api/user/swims/leaderboard', check(), async (req, res) => {
+            const status = await UserDB.getSwimsLeaderboard(this.db);
+            return status.getResponse(res);
+        });
+
+        /**
+         * POST /api/user/:id/swims
+         * Adds swims to a user. Restricted to execs.
+         */
+        this.app.post('/api/user/:id/swims', check('is_exec'), async (req, res) => {
+            const userId = parseInt(req.params.id, 10);
+            const count = parseInt(req.body.count, 10);
+
+            if (isNaN(userId) || isNaN(count)) {
+                return res.status(400).json({ message: 'Invalid User ID or count' });
+            }
+
+            const status = await UserDB.addSwims(req, this.db, userId, count);
+            return status.getResponse(res);
         });
     }
 }

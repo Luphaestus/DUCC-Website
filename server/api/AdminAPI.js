@@ -145,7 +145,8 @@ class Admin {
                     "has_medical_conditions", "medical_conditions_details", "takes_medication", "medication_details",
                     "free_sessions", "is_member", "filled_legal_info", "is_instructor", "first_aid_expiry",
                     "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data",
-                    "difficulty_level", "can_manage_users", "can_manage_events", "can_manage_transactions", "is_exec"
+                    "difficulty_level", "can_manage_users", "can_manage_events", "can_manage_transactions", "is_exec",
+                    "swims"
                 ];
             } else {
                 // Restricted view for transaction managers

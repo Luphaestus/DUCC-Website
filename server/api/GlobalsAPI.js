@@ -108,6 +108,26 @@ class GlobalsAPI {
         });
 
         /**
+         * GET /api/globals/public/:key
+         * Returns specific global setting(s) that are safe for the public/regular users to see.
+         * Allowed keys: MembershipCost, MinMoney, Unauthorized_max_difficulty.
+         */
+        this.app.get('/api/globals/public/:key', async (req, res) => {
+            const allowedKeys = ['MembershipCost', 'MinMoney', 'Unauthorized_max_difficulty'];
+            const keys = req.params.key.split(',');
+            const result = {};
+            const globals = new Globals();
+
+            for (const key of keys) {
+                if (allowedKeys.includes(key)) {
+                    result[key] = globals.get(key);
+                }
+            }
+
+            res.json({ res: result });
+        });
+
+        /**
          * POST /api/globals/:key
          * Updates global variable(s).
          * Special handling for:

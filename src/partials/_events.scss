@@ -171,6 +171,63 @@
    Page: Event
    ========================================= */
 
+.event-warning-banner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    margin: 1rem 0 !important;
+    font-weight: bold;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+    svg {
+        width: 1.5rem;
+        height: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    &.error {
+        background: rgba(231, 76, 60, 0.15); // Transparent Red
+        color: #e74c3c;
+        border-color: rgba(231, 76, 60, 0.3);
+
+        svg {
+            fill: #e74c3c;
+        }
+    }
+
+    &.warning {
+        background: rgba(243, 156, 18, 0.15); // Transparent Orange
+        color: #f39c12;
+        border-color: rgba(243, 156, 18, 0.3);
+
+        svg {
+            fill: #f39c12;
+        }
+    }
+
+    .banner-btn {
+        margin-left: auto;
+        padding: 0.4rem 1rem;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+        width: auto;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 600px) {
+        .banner-btn {
+            margin-left: 0;
+            width: 100%;
+        }
+    }
+}
+
 [id="/event/*-view"] {
     overflow-x: hidden;
     width: 100%;
@@ -186,14 +243,15 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin: 0 !important;
 
     .event-title-large {
-        margin-bottom: 0;
+        margin: 0 !important;
     }
 
     .event-title-tags {
-        margin-bottom: 0;
+        margin: 0 !important;
+        padding: 0 !important;
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
@@ -217,42 +275,71 @@
     flex-wrap: wrap;
     gap: 2rem;
     margin-left: 0 !important;
+    padding: 0 !important;
 
     .event-details-section {
         flex: 2 1 400px;
         margin-left: 0 !important;
+        padding: 0 !important;
     }
 
     // --- Attendees Inset Section ---
 
     .event-attendees-section {
         flex: 1 1 250px;
-        background-color: color-mix(in srgb, var(--theme-opposite) 10%, transparent);
-        padding: 1.25rem;
-        border-radius: 0.5rem;
-        border: 1px solid var(--translucent-bg);
-        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
-        margin-right: 0;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         display: flex;
         flex-direction: column;
+        height: fit-content;
 
         @media (prefers-color-scheme: dark) {
-            box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.05);
         }
 
         @media (max-width: 55em) {
             display: none;
         }
 
-        ul {
+        h3 {
+            align-self: flex-start;
+            margin-top: 0;
+            margin-bottom: 1.25rem;
+            font-size: 1.1rem;
+            color: var(--pico-contrast);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            svg {
+                width: 1.2rem;
+                height: 1.2rem;
+            }
+        }
+
+        ul.attendees-list {
             list-style: none;
             padding: 0;
             margin: 0;
-        }
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
 
-        h3 {
-            align-self: center;
-            margin-top: 0;
+            li {
+                padding: 0.5rem 0.75rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 0.4rem;
+                font-size: 0.95rem;
+                transition: background 0.2s ease;
+
+                &:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+            }
         }
     }
 }

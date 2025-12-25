@@ -9,6 +9,7 @@
 
 import { ajaxGet } from './misc/ajax.js';
 import { LoginEvent } from './login.js';
+import { ViewChangedEvent } from './misc/view.js';
 import './event.js';
 
 
@@ -128,6 +129,7 @@ function formatEvent(event) {
         <div class="${classes}" style="${style}" onclick="switchView('event/${event.id}')">
             <div class="event-top">
                 <span>${startTime} - ${endTime}</span>
+                ${event.is_attending ? `<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">✓ Attending</span>` : ''}
             </div>
             <div class="event-middle">
                 <h3>${event.title || 'No Title'}</h3>
@@ -143,6 +145,19 @@ function formatEvent(event) {
 }
 
 // --- Main Logic ---
+
+/**
+ * Updates the URL query parameter for the current week offset.
+ */
+function updateUrlParams() {
+    const url = new URL(window.location);
+    if (relativeWeekOffset === 0) {
+        url.searchParams.delete('week');
+    } else {
+        url.searchParams.set('week', relativeWeekOffset);
+    }
+    window.history.pushState({}, '', url);
+}
 
 /**
  * Fetches events for the currently selected week and renders them.
@@ -212,28 +227,88 @@ async function populateEvents() {
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    const eventsView = document.getElementById('/events-view');
+    
+    // --- Swipe Functionality ---
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const diff = touchEndX - touchStartX;
+
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                // Swipe Right -> Previous Week
+                relativeWeekOffset--;
+                updateUrlParams();
+                populateEvents();
+            } else {
+                // Swipe Left -> Next Week
+                relativeWeekOffset++;
+                updateUrlParams();
+                populateEvents();
+            }
+        }
+    }
+
+    if (eventsView) {
+        eventsView.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        eventsView.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+    }
+
+    // Read initial offset from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const weekParam = parseInt(urlParams.get('week'));
+    if (!isNaN(weekParam)) {
+        relativeWeekOffset = weekParam;
+    }
+
     // Initial fetch
     populateEvents();
 
     // Setup navigation controls
     document.querySelector('.prev-week').addEventListener('click', () => {
         relativeWeekOffset--;
+        updateUrlParams();
         populateEvents();
     });
 
     document.querySelector('.next-week').addEventListener('click', () => {
         relativeWeekOffset++;
+        updateUrlParams();
         populateEvents();
     });
 
     document.querySelector('.this-week-button').addEventListener('click', () => {
         relativeWeekOffset = 0;
+        updateUrlParams();
         populateEvents();
     });
 
     // Refresh events when user logs in (to show restricted events)
     LoginEvent.subscribe(() => {
         populateEvents();
+    });
+
+    // Handle initial load and view changes
+    ViewChangedEvent.subscribe(({ resolvedPath }) => {
+        if (resolvedPath === '/events') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const weekParam = parseInt(urlParams.get('week'));
+            if (!isNaN(weekParam)) {
+                relativeWeekOffset = weekParam;
+            } else {
+                relativeWeekOffset = 0;
+            }
+            populateEvents();
+        }
     });
 });
 

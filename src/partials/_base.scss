@@ -39,7 +39,7 @@ input,
 select,
 textarea {
     background: rgba(255, 255, 255, 0.28);
-    border-radius: 16px;
+    border-radius: 6px;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(7.2px);
     -webkit-backdrop-filter: blur(7.2px);
@@ -78,7 +78,7 @@ button,
 [type="reset"],
 [role="button"] {
     background: color-mix(in srgb, var(--pico-primary) 55%, transparent);
-    border-radius: 16px;
+    border-radius: 6px;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
     backdrop-filter: blur(7.2px);
     -webkit-backdrop-filter: blur(7.2px);

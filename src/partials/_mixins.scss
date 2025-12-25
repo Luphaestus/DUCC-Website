@@ -26,6 +26,6 @@
     }
 
     &:nth-child(4) {
-        --highlight: color-mix(in srgb, red 70%, var(--theme-opposite) 20%);
+        --highlight: color-mix(in srgb, #3498db 70%, var(--theme-opposite) 20%);
     }
 }

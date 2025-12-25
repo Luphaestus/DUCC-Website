@@ -1,3 +1,5 @@
+@use "mixins" as *;
+
 /* =========================================
    Page: Profile
    ========================================= */
@@ -6,6 +8,10 @@
     h1 {
         margin: 2rem;
         text-align: center;
+    }
+
+    .form-box:last-child {
+        @include card-highlights;
     }
 }
 
@@ -40,4 +46,74 @@
         margin-bottom: 0;
         flex: 1 1 auto;
     }
+}
+
+/* Status Item Improvements */
+.status-item {
+    margin-bottom: 1rem;
+    
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    .status-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+
+        .status-icon {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            
+            svg {
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        .status-label {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+    }
+
+    .status-content {
+        margin-left: 2.25rem;
+        
+        p {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+    }
+}
+
+.status-btn {
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+    width: auto;
+    display: inline-block;
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid currentColor;
+    color: inherit !important;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+}
+
+.highlight-status {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.75rem;
+    border-radius: 8px;
 }

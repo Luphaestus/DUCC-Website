@@ -5,6 +5,7 @@ import { notify } from './misc/notification.js';
 import { FirstNameChangedEvent } from './navbar.js';
 import { ViewChangedEvent } from './misc/view.js';
 import { requireAuth } from './misc/auth.js';
+import { BalanceChangedEvent } from './misc/globals.js';
 
 /**
  * Profile View Module.
@@ -19,6 +20,8 @@ import { requireAuth } from './misc/auth.js';
 const TICK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-.218 0 -.432 .002 -.642 .005l-.616 .017l-.299 .013l-.579 .034l-.553 .046c-4.785 .464 -6.732 2.411 -7.196 7.196l-.046 .553l-.034 .579c-.005 .098 -.01 .198 -.013 .299l-.017 .616l-.004 .318l-.001 .324c0 .218 .002 .432 .005 .642l.017 .616l.013 .299l.034 .579l.046 .553c.464 4.785 2.411 6.732 7.196 7.196l.553 .046l.579 .034c.098 .005 .198 .01 .299 .013l.616 .017l.642 .005l.642 -.005l.616 -.017l.299 -.013l.579 -.034l.553 -.046c4.785 -.464 6.732 -2.411 7.196 -7.196l.046 -.553l.034 -.579c.005 -.098 .01 -.198 .013 -.299l.017 -.616l.005 -.642l-.005 -.642l-.017 -.616l-.013 -.299l-.034 -.579l-.046 -.553c-.464 -4.785 -2.411 -6.732 -7.196 -7.196l-.553 -.046l-.579 -.034a28.058 28.058 0 0 0 -.299 -.013l-.616 -.017l-.318 -.004l-.324 -.001zm2.293 7.293a1 1 0 0 1 1.497 1.32l-.083 .094l-4 4a1 1 0 0 1 -1.32 .083l-.094 -.083l-2 -2a1 1 0 0 1 1.32 -1.497l.094 .083l1.293 1.292l3.293 -3.292z" /></svg>`;
 
 const X_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.676 2.001l.324 -.001c7.752 0 10 2.248 10 10l-.005 .642c-.126 7.235 -2.461 9.358 -9.995 9.358l-.642 -.005c-7.13 -.125 -9.295 -2.395 -9.358 -9.67v-.325c0 -7.643 2.185 -9.936 9.676 -9.999m2.771 5.105a1 1 0 0 0 -1.341 .447l-1.106 2.21l-1.106 -2.21a1 1 0 0 0 -1.234 -.494l-.107 .047a1 1 0 0 0 -.447 1.341l1.774 3.553l-1.775 3.553a1 1 0 0 0 .345 1.283l.102 .058a1 1 0 0 0 1.341 -.447l1.107 -2.211l1.106 2.211a1 1 0 0 0 1.234 .494l.107 -.047a1 1 0 0 0 .447 -1.341l-1.776 -3.553l1.776 -3.553a1 1 0 0 0 -.345 -1.283z" /></svg>`;
+
+const MINUS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.676 2.001l.324 -.001c7.752 0 10 2.248 10 10l-.005 .642c-.126 7.235 -2.461 9.358 -9.995 9.358l-.642 -.005c-7.13 -.125 -9.295 -2.395 -9.358 -9.67v-.325c0 -7.643 2.185 -9.936 9.676 -9.999m3.324 8.999h-6a1 1 0 0 0 0 2h6a1 1 0 0 0 0 -2z" /></svg>`;
 
 const SUCCESS_GREEN = '#2ecc71';
 const WARNING_ORANGE = '#f39c12';
@@ -41,15 +44,28 @@ const HTML_TEMPLATE = `
                 </h3>
                 <form>
                     <div id="profile-membership" class="sub-container">
-                        <div><p id="membership-info-status"></p></div>
-                        <div><p id="legal-form-status"></p></div>
-                        <div><p id="debt-status"></p></div>
-                        <p id="profile-signup-status" style="font-weight: bold; margin-top: 1rem;"></p>
+                        <div id="membership-info-status" class="status-item"></div>
+                        <div id="legal-form-status" class="status-item"></div>
+                        <div id="debt-status" class="status-item"></div>
+                        <div id="profile-signup-status" class="status-item highlight-status" style="font-weight: bold; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);"></div>
                     </div>
                     <div id="instructor-status-container" class="sub-container">
-                        <p id="instructor-status"></p>
+                        <div id="instructor-status"></div>
                     </div>
                 </form>
+            </article>
+
+            <article class="form-box">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Swim Stats
+                </h2>
+                <div class="sub-container">
+                    <div id="swim-stats-info"></div>
+                    <p><button class="status-btn" onclick="switchView('/leaderboard')">View Swim Leaderboard</button></p>
+                </div>
             </article>
 
             <article class="form-box">
@@ -135,18 +151,67 @@ function displayNotification(title, message, type) {
 }
 
 /**
- * Helper to update status elements with correct colors and icons.
+ * Shows a custom glassy confirmation modal.
+ * @returns {Promise<boolean>}
  */
+function showConfirmModal(title, message) {
+    return new Promise((resolve) => {
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'custom-modal-overlay';
+
+        modalOverlay.innerHTML = `
+            <div class="custom-modal-content">
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <div class="modal-actions">
+                    <button class="btn-cancel" id="confirm-cancel">Cancel</button>
+                    <button class="btn-confirm" id="confirm-ok">Confirm</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modalOverlay);
+        requestAnimationFrame(() => modalOverlay.classList.add('visible'));
+
+        const cleanup = (val) => {
+            modalOverlay.classList.remove('visible');
+            setTimeout(() => {
+                if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
+                resolve(val);
+            }, 300);
+        };
+
+        modalOverlay.querySelector('#confirm-ok').onclick = () => cleanup(true);
+        modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(false);
+        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(false); };
+    });
+}
+
 function updateStatusUI(elementId, text, icon, color) {
     const el = document.getElementById(elementId);
     if (!el) return;
-    el.innerHTML = `${icon} ${text}`;
-    el.style.color = color;
-    const svg = el.querySelector('svg');
-    if (svg) {
-        svg.style.fill = color;
-        svg.style.color = color;
-    }
+
+    const hasHtml = text.includes('<');
+    const mainText = hasHtml ? text.split('<')[0] : text;
+    const subContent = hasHtml ? text.substring(text.indexOf('<')) : '';
+
+    el.innerHTML = `
+        <div class="status-header" style="color: ${color} !important;">
+            <span class="status-icon" style="fill: ${color} !important; color: ${color} !important;">
+                ${icon}
+            </span>
+            <span class="status-label">${mainText}</span>
+        </div>
+        <div class="status-content">
+            ${subContent}
+        </div>
+    `;
+
+    const svgs = el.querySelectorAll('svg');
+    svgs.forEach(svg => {
+        svg.style.setProperty('fill', color, 'important');
+        svg.style.setProperty('color', color, 'important');
+    });
 }
 
 // --- Render Functions ---
@@ -156,66 +221,78 @@ function renderEventStatus(profile) {
     const academicYear = getAcademicYear();
     const balance = Number(profile.balance);
     const isLegalComplete = !!profile.filled_legal_info;
-    const hasDebt = balance < -20;
 
-    let boxColor = SUCCESS_GREEN;
+    // Fetch dynamic costs and limits
+    ajaxGet('/api/globals/public/MembershipCost,MinMoney').then(globals => {
+        const membershipCost = globals.res?.MembershipCost || 50;
+        const minMoney = globals.res?.MinMoney || -20;
+        const hasDebt = balance < minMoney;
 
-    // 1. Membership Status
-    if (profile.is_member) {
-        updateStatusUI("membership-info-status", `Your membership is active for the ${academicYear} academic year.`, TICK_SVG, SUCCESS_GREEN);
-    } else {
-        if (profile.free_sessions > 0) {
-            const msg = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining for the ${academicYear} academic year.
-                         <p>Consider becoming a full member to enjoy unlimited sessions!
-                         <button id="become-member-button" class="primary-button">Become a Member</button></p>`;
-            updateStatusUI("membership-info-status", msg, '', WARNING_ORANGE);
-            boxColor = WARNING_ORANGE;
+        let boxColor = SUCCESS_GREEN;
+
+        // 1. Membership Status
+        if (profile.is_member) {
+            updateStatusUI("membership-info-status", `Your membership is active for the ${academicYear} academic year.`, TICK_SVG, SUCCESS_GREEN);
         } else {
-            const msg = `Your membership is inactive for the ${academicYear} academic year.
-                         <p>To continue attending sessions, please consider becoming a member.
-                         <button id="become-member-button" class="primary-button">Become a Member</button></p>`;
-            updateStatusUI("membership-info-status", msg, X_SVG, ERROR_RED);
-            boxColor = ERROR_RED;
+            if (profile.free_sessions > 0) {
+                const msg = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining for the ${academicYear} academic year.
+                             <p>Become a full member to enjoy unlimited sessions!
+                             <button id="become-member-button" class="status-btn">Become a Member</button></p>`;
+                updateStatusUI("membership-info-status", msg, MINUS_SVG, WARNING_ORANGE);
+                boxColor = WARNING_ORANGE;
+            } else {
+                const msg = `Your membership is inactive for the ${academicYear} academic year.
+                             <p>Please become a member to continue attending sessions.
+                             <button id="become-member-button" class="status-btn">Become a Member</button></p>`;
+                updateStatusUI("membership-info-status", msg, X_SVG, WARNING_ORANGE);
+                if (boxColor === SUCCESS_GREEN) boxColor = WARNING_ORANGE;
+            }
         }
-    }
 
-    // 2. Legal Form Status
-    const legalText = isLegalComplete ? 'Legal information form completed' : 'Legal information form not completed';
-    const legalAction = `<br><button onclick="event.preventDefault(); switchView('/legal')">View / Update Legal Form</button>`;
-    updateStatusUI('legal-form-status', legalText + legalAction, isLegalComplete ? TICK_SVG : X_SVG, isLegalComplete ? SUCCESS_GREEN : ERROR_RED);
-    if (!isLegalComplete) boxColor = ERROR_RED;
+        // 2. Legal Form Status
+        const legalText = isLegalComplete ? 'Legal information form completed' : 'Legal information form not completed';
+        const legalAction = `<button class="status-btn" onclick="event.preventDefault(); switchView('/legal')">Update Legal Form</button>`;
+        updateStatusUI('legal-form-status', legalText + legalAction, isLegalComplete ? TICK_SVG : X_SVG, isLegalComplete ? SUCCESS_GREEN : ERROR_RED);
+        if (!isLegalComplete) boxColor = ERROR_RED;
 
-    // 3. Debt Status
-    const debtText = hasDebt ? `You have outstanding debts of £${balance.toFixed(2)}` : `You have low/no outstanding debts (£${balance.toFixed(2)})`;
-    const debtAction = `<br><button onclick="event.preventDefault(); switchView('/transactions')">View Balance / Statement</button>`;
-    updateStatusUI('debt-status', debtText + debtAction, hasDebt ? X_SVG : TICK_SVG, hasDebt ? ERROR_RED : SUCCESS_GREEN);
-    if (hasDebt) boxColor = ERROR_RED;
+        // 3. Debt Status
+        const debtText = hasDebt ? `You have outstanding debts of £${balance.toFixed(2)}` : `You have low/no outstanding debts (£${balance.toFixed(2)})`;
+        const debtAction = `<button class="status-btn" onclick="event.preventDefault(); switchView('/transactions')">Account Statement</button>`;
+        updateStatusUI('debt-status', debtText + (hasDebt ? debtAction : ''), hasDebt ? X_SVG : TICK_SVG, hasDebt ? ERROR_RED : SUCCESS_GREEN);
+        if (hasDebt) boxColor = ERROR_RED;
 
-    // 4. Signup Eligibility Summary
-    const signupStatus = document.getElementById('profile-signup-status');
-    if (!isLegalComplete) {
-        signupStatus.innerHTML = "Please complete the legal and health forms to be eligible for event sign-ups.";
-        signupStatus.style.color = ERROR_RED;
-    } else if (hasDebt) {
-        signupStatus.innerHTML = "You have outstanding debts. Please clear your balance to sign up for events.";
-        signupStatus.style.color = ERROR_RED;
-    } else if (balance < -15) {
-        signupStatus.innerHTML = "You have a high balance. You may not be able to sign up for new events soon.";
-        signupStatus.style.color = WARNING_ORANGE;
-        if (boxColor === SUCCESS_GREEN) boxColor = WARNING_ORANGE;
-    } else {
-        signupStatus.innerHTML = "You can sign up to events.";
-        signupStatus.style.color = SUCCESS_GREEN;
-    }
+        // 4. Signup Eligibility Summary
+        const signupStatus = document.getElementById('profile-signup-status');
+        if (!isLegalComplete) {
+            updateStatusUI('profile-signup-status', "Please complete the legal forms to enable sign-ups.", X_SVG, ERROR_RED);
+        } else if (hasDebt) {
+            updateStatusUI('profile-signup-status', `You must clear your debt (must be above £${minMoney.toFixed(2)}) to enable sign-ups.`, X_SVG, ERROR_RED);
+        } else if (balance < -10) {
+            updateStatusUI('profile-signup-status', "You are close to your credit limit. Please clear your balance soon to avoid being blocked from sign-ups.", MINUS_SVG, WARNING_ORANGE);
+            if (boxColor === SUCCESS_GREEN) boxColor = WARNING_ORANGE;
+        } else if (balance < (minMoney + 5)) {
+            updateStatusUI('profile-signup-status', "Your balance is high. Please clear it soon.", MINUS_SVG, WARNING_ORANGE);
+            if (boxColor === SUCCESS_GREEN) boxColor = WARNING_ORANGE;
+        } else {
+            updateStatusUI('profile-signup-status', "You are eligible to sign up for events.", TICK_SVG, SUCCESS_GREEN);
+        }
 
-    profileMembership.style.setProperty('--colour', boxColor);
-    profileMembership.style.color = boxColor;
+        profileMembership.style.setProperty('--colour', boxColor);
 
-    // Re-bind dynamic button after innerHTML change
-    document.getElementById('become-member-button')?.addEventListener('click', async (event) => {
-        event.preventDefault();
-        await ajaxPost('/api/user/join');
-        updateProfilePage();
+        // Bind dynamic button with dynamic cost
+        document.getElementById('become-member-button')?.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const confirmed = await showConfirmModal(
+                "Confirm Membership",
+                `Annual membership costs <strong>£${membershipCost.toFixed(2)}</strong>. This will be added to your account balance. <br><br> <strong>Important:</strong> If this causes your debt to exceed £${Math.abs(minMoney).toFixed(2)}, you will be unable to sign up for new events until the balance is cleared, even if you have free sessions remaining.`
+            );
+
+            if (confirmed) {
+                await ajaxPost('/api/user/join');
+                BalanceChangedEvent.notify();
+                updateProfilePage();
+            }
+        });
     });
 }
 
@@ -223,9 +300,9 @@ function renderInstructorStatus(profile) {
     const instructorStatusContainer = document.getElementById('instructor-status-container');
     const instructorColor = profile.is_instructor ? SUCCESS_GREEN : ERROR_RED;
     const instructorIcon = profile.is_instructor ? TICK_SVG : X_SVG;
-    const instructorText = profile.is_instructor ? 
-        `You are set up as an instructor. <button id="instructor-leave-btn" type="button">Remove Status</button>` : 
-        `You are currently not set up as a coach. <button id="instructor-signup-btn" type="button">Become a Coach</button>`;
+    const instructorText = profile.is_instructor ?
+        `You are set up as an instructor. <p><button id="instructor-leave-btn" class="status-btn" type="button">Remove Status</button></p>` :
+        `You are currently not set up as a coach. <p><button id="instructor-signup-btn" class="status-btn" type="button">Become a Coach</button></p>`;
 
     updateStatusUI('instructor-status', instructorText, instructorIcon, instructorColor);
     instructorStatusContainer.style.setProperty('--colour', instructorColor);
@@ -291,7 +368,7 @@ async function bindStaticEvents() {
         if (firstname.value.trim() !== '') updateData.first_name = firstname.value.trim();
         if (lastname.value.trim() !== '') updateData.last_name = lastname.value.trim();
         if (email.value.trim() !== '') updateData.email = email.value.trim();
-        
+
         await ajaxPost('/api/user/elements', updateData);
         displayNotification('Profile updated.', "Successfully updated.", 'success');
         FirstNameChangedEvent.notify();
@@ -385,17 +462,51 @@ async function renderTags() {
 async function updateProfilePage() {
     if (!await requireAuth()) return;
     try {
-        const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,can_manage_users,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance');
+        const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,can_manage_users,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank');
         if (profile) {
             renderEventStatus(profile);
             renderInstructorStatus(profile);
             renderDetails(profile);
             renderAidDetails(profile);
             renderTags();
+            renderSwimStats(profile);
         }
     } catch (error) {
         console.error(error);
     }
+}
+
+/**
+ * Renders swim stats and rank.
+ */
+function renderSwimStats(profile) {
+    const info = document.getElementById('swim-stats-info');
+    if (!info) return;
+
+    const swims = profile.swims || 0;
+    const rank = profile.swimmer_rank || '-';
+
+    function getOrdinal(n) {
+        if (isNaN(n)) return n;
+        const s = ["th", "st", "nd", "rd"],
+              v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    info.innerHTML = `
+        <div class="status-item">
+            <div class="status-header" style="color: var(--pico-contrast) !important;">
+                <span class="status-icon">🏆</span>
+                <span class="status-label">Total Swims: ${swims}</span>
+            </div>
+        </div>
+        <div class="status-item">
+            <div class="status-header" style="color: var(--pico-contrast) !important;">
+                <span class="status-icon">🎖️</span>
+                <span class="status-label">Swimmer Rank: ${swims > 0 ? getOrdinal(rank) : 'No rank yet'}</span>
+            </div>
+        </div>
+    `;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

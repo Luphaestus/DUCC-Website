@@ -141,7 +141,7 @@ nav.small-container {
         }
 
 
-        flex: 1 1 300px;
+        flex: 1 1 450px;
 
         border-radius: .5rem;
         padding: 1.5rem;
@@ -173,6 +173,10 @@ nav.small-container {
         }
 
         @include card-highlights;
+
+        &:last-child:not(:first-child) {
+            --highlight: color-mix(in srgb, red 70%, var(--theme-opposite) 20%) !important;
+        }
     }
 }
 
