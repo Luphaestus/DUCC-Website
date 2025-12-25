@@ -171,6 +171,11 @@
    Page: Event
    ========================================= */
 
+[id="/event/*-view"] {
+    overflow-x: hidden;
+    width: 100%;
+}
+
 #event-info-container {
     margin-top: 2rem;
 }
