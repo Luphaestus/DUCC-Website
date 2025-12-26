@@ -86,7 +86,7 @@ export SSHPASS="$DROPLET_PASSWORD"
 if [ "$SHOW_LOGS" = true ]; then
     echo "--- Showing logs from $DROPLET_IP ---"
     # We use -f to follow logs. User can Ctrl+C to exit.
-    sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "cd DUCC-Website && docker compose logs -f"
+    sshpass -e ssh -t -o StrictHostKeyChecking=no root@"$DROPLET_IP" "cd DUCC-Website && docker compose logs -f"
     exit 0
 fi
 
