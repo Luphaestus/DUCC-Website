@@ -104,7 +104,7 @@ REMOTE_CMD="cd DUCC-Website && git pull"
 
 if [ "$CLEAR_DB" = true ]; then
     echo "       [INFO] Database will be cleared."
-    REMOTE_CMD="$REMOTE_CMD && rm -f data/database.db"
+    REMOTE_CMD="$REMOTE_CMD && rm -rf data/"
 fi
 
 if [ "$MODE" = "dev" ]; then
