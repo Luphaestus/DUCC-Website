@@ -97,30 +97,37 @@ echo "[1/3] Pushing changes to GitHub..."
 git push origin main
 
 # 2. Update remote server
-echo "[2/3] Updating remote server (git pull & docker build)..."
+echo "[2/3] Updating remote server..."
 
 # Construct the remote command
-REMOTE_CMD="cd DUCC-Website && git pull"
+# We use a subshell or chained commands. 
+# 1. Fetch and Reset Git (Forces remote to match origin, discarding local changes)
+REMOTE_CMD="cd DUCC-Website && git fetch --all && git reset --hard origin/main"
 
+# 2. Clear DB if requested
 if [ "$CLEAR_DB" = true ]; then
     echo "       [INFO] Database will be cleared."
     REMOTE_CMD="$REMOTE_CMD && rm -rf data/"
 fi
 
+# 3. Build Docker Images (Verbose output to avoid 'stuck' appearance)
+DOMAIN_VAL="${DOMAIN_NAME:-localhost}"
+REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose build --progress=plain"
+
+# 4. Run Application
 if [ "$MODE" = "dev" ]; then
     echo "       [INFO] Running in DEVELOPMENT mode."
-    # Override APP_CMD for dev mode
-    # We export NODE_ENV=dev so db:init picks it up, then run node server directly
+    # Export APP_CMD for dev mode
     REMOTE_CMD="$REMOTE_CMD && export APP_CMD='export NODE_ENV=dev && npm run db:init && node server/server.js'"
 else
     echo "       [INFO] Running in PRODUCTION mode."
-    # Unset APP_CMD to use default from docker-compose.yml
+    # Unset APP_CMD to use default
     REMOTE_CMD="$REMOTE_CMD && unset APP_CMD"
 fi
 
-DOMAIN_VAL="${DOMAIN_NAME:-localhost}"
-REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --build --force-recreate"
+REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --force-recreate"
 
+# Execute
 sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "$REMOTE_CMD"
 
 # 3. Success
