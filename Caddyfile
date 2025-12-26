@@ -1,0 +1,23 @@
+{
+    # Global options
+}
+
+{$DOMAIN_NAME:localhost} {
+    # Reverse proxy to the app service on port 3000
+    reverse_proxy app:3000
+    
+    # Enable compression
+    encode gzip
+    
+    # Basic security headers
+    header {
+        # enable HSTS
+        Strict-Transport-Security max-age=31536000;
+        # disable clients from sniffing the media type
+        X-Content-Type-Options nosniff
+        # clickjacking protection
+        X-Frame-Options DENY
+        # keep referrer data secure
+        Referrer-Policy no-referrer-when-downgrade
+    }
+}

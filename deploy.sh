@@ -24,7 +24,8 @@ git push origin main
 # 2. Update remote server
 echo "[2/3] Updating remote server (git pull & docker build)..."
 export SSHPASS="$DROPLET_PASSWORD"
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "cd DUCC-Website && git pull && docker compose up -d --build"
+DOMAIN_VAL="${DOMAIN_NAME:-localhost}"
+sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "cd DUCC-Website && git pull && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --build"
 
 # 3. Success
-echo "[3/3] Deployment complete! Site live at http://$DROPLET_IP"
+echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$DROPLET_IP if SSL pending/invalid)"

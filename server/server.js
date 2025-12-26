@@ -18,6 +18,9 @@ const passport = require('passport');
 const app = express();
 const fs = require('fs');
 
+// Trust the reverse proxy (Caddy)
+app.set('trust proxy', 1);
+
 // Parse request bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -41,6 +44,11 @@ app.use(session({
   secret: 'supersecretkey',
   resave: false,
   saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'prod', // Secure cookies in production
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 // 1 day
+  }
 }));
 
 // Passport authentication
