@@ -2,6 +2,27 @@
 
 # --- DUCC Deployment Script ---
 
+# Default values
+MODE="prod"
+CLEAR_DB=false
+SHOW_LOGS=false
+
+# Parse arguments
+for arg in "$@"
+do
+    case $arg in
+        -dev)
+        MODE="dev"
+        ;;
+        -clear)
+        CLEAR_DB=true
+        ;;
+        --logs)
+        SHOW_LOGS=true
+        ;;
+    esac
+done
+
 # Load credentials from .env.deploy
 if [ -f .env.deploy ]; then
     export $(grep -v '^#' .env.deploy | xargs)
@@ -15,7 +36,17 @@ if [ -z "$DROPLET_IP" ] || [ -z "$DROPLET_PASSWORD" ]; then
     exit 1
 fi
 
-echo "--- Starting Deployment to $DROPLET_IP ---"
+export SSHPASS="$DROPLET_PASSWORD"
+
+# --logs: Just show logs
+if [ "$SHOW_LOGS" = true ]; then
+    echo "--- Showing logs from $DROPLET_IP ---"
+    # We use -f to follow logs. User can Ctrl+C to exit.
+    sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "cd DUCC-Website && docker compose logs -f"
+    exit 0
+fi
+
+echo "--- Starting Deployment to $DROPLET_IP ($MODE mode) ---"
 
 # 1. Push latest changes to GitHub
 echo "[1/3] Pushing changes to GitHub..."
@@ -23,9 +54,35 @@ git push origin main
 
 # 2. Update remote server
 echo "[2/3] Updating remote server (git pull & docker build)..."
-export SSHPASS="$DROPLET_PASSWORD"
+
+# Construct the remote command
+REMOTE_CMD="cd DUCC-Website && git pull"
+
+if [ "$CLEAR_DB" = true ]; then
+    echo "       [INFO] Database will be cleared."
+    REMOTE_CMD="$REMOTE_CMD && rm -f data/database.db"
+fi
+
+if [ "$MODE" = "dev" ]; then
+    echo "       [INFO] Running in DEVELOPMENT mode."
+    # Override APP_CMD for dev mode
+    # We export NODE_ENV=dev so db:init picks it up, then run node server directly
+    REMOTE_CMD="$REMOTE_CMD && export APP_CMD='export NODE_ENV=dev && npm run db:init && node server/server.js'"
+else
+    echo "       [INFO] Running in PRODUCTION mode."
+    # Unset APP_CMD to use default from docker-compose.yml
+    REMOTE_CMD="$REMOTE_CMD && unset APP_CMD"
+fi
+
 DOMAIN_VAL="${DOMAIN_NAME:-localhost}"
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "cd DUCC-Website && git pull && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --build --force-recreate"
+REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --build --force-recreate"
+
+sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "$REMOTE_CMD"
 
 # 3. Success
 echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$DROPLET_IP if SSL pending/invalid)"
+
+if [ "$CLEAR_DB" = true ]; then
+    echo ""
+    echo "IMPORTANT: Database was cleared. Run './deploy.sh --logs' to see the new Admin password."
+fi
