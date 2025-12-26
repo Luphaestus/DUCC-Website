@@ -3,6 +3,9 @@
 }
 
 {$DOMAIN_NAME:localhost} {
+    # Use internal (self-signed) certificates to avoid CA issues with IP addresses
+    tls internal
+
     # Reverse proxy to the app service on port 3000
     reverse_proxy app:3000
     
