@@ -63,6 +63,8 @@ async function setupTestDb() {
             is_exec BOOLEAN NOT NULL DEFAULT 0,
             first_aid_expiry DATE,
 
+            swims INTEGER NOT NULL DEFAULT 0,
+
             profile_picture_path TEXT,
 
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -144,6 +146,18 @@ async function setupTestDb() {
             PRIMARY KEY (tag_id, user_id),
             FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS swim_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            added_by INTEGER NOT NULL,
+            count INTEGER NOT NULL DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
         );
     `);
 

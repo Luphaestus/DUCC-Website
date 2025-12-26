@@ -69,6 +69,9 @@ describe('Events API', () => {
     });
 
     test('POST /api/event/:id/attend allows joining', async () => {
+        // Make user a coach so they can join alone
+        await db.run('UPDATE users SET is_instructor = 1 WHERE id = ?', userId);
+        
         const res = await request(app).post(`/api/event/${eventId}/attend`);
         if (res.statusCode !== 200) {
             console.log(res.body);
@@ -77,5 +80,25 @@ describe('Events API', () => {
         
         const attendingRes = await request(app).get(`/api/event/${eventId}/isAttending`);
         expect(attendingRes.body.isAttending).toBe(true);
+    });
+
+    test('GET /api/event/:id/isPaying returns false initially', async () => {
+        const res = await request(app).get(`/api/event/${eventId}/isPaying`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.isPaying).toBe(false);
+    });
+
+    test('GET /api/event/:id/coachCount returns correct count', async () => {
+        // Current user is NOT a coach in setup
+        const res = await request(app).get(`/api/event/${eventId}/coachCount`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.count).toBe(0);
+
+        // Make user a coach and join
+        await db.run('UPDATE users SET is_instructor = 1 WHERE id = ?', userId);
+        await request(app).post(`/api/event/${eventId}/attend`);
+
+        const res2 = await request(app).get(`/api/event/${eventId}/coachCount`);
+        expect(res2.body.count).toBe(1);
     });
 });

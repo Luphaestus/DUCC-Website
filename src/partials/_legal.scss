@@ -1,9 +1,6 @@
 @use "mixins" as *;
 
-/* =========================================
-   Page: Legal
-   ========================================= */
-
+/* Legal View */
 [id="/legal-view"] {
     width: 100%;
     display: flex;
@@ -45,7 +42,7 @@
     }
 }
 
-
+/* Legal Form Grid */
 #grid-legal {
     display: flex;
     flex-wrap: wrap;
@@ -54,7 +51,6 @@
     >article {
         margin-bottom: 1rem;
         flex: 1 1 300px;
-
 
         background: rgba(255, 255, 255, .01);
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);

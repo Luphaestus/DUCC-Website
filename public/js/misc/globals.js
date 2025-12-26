@@ -1,10 +1,10 @@
 import { Event } from './event.js';
 
 /**
- * Global Events for decoupled communication.
+ * Global events for inter-module communication.
  */
 
-// Notifies when a transaction has occurred and balances need to be refreshed
+// Fired when a transaction occurs and balances need refreshing
 const BalanceChangedEvent = new Event();
 
 export { BalanceChangedEvent };

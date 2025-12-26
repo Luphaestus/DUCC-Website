@@ -1,22 +1,21 @@
 import { checkServerConnection } from '../connection.js';
 
 /**
- * Ajax Module.
- * Provides a standardized way to perform asynchronous HTTP requests using XMLHttpRequest.
- * Wraps common HTTP verbs in Promises for easier consumption with async/await.
+ * Wrapper for XMLHttpRequest using Promises.
+ * @module Ajax
  */
 
 /**
- * Performs an HTTP GET request.
- * @param {string} url - Target URL.
- * @returns {Promise<object>} Parsed JSON response.
+ * HTTP GET request.
+ * @param {string} url
+ * @returns {Promise<object>}
  */
 async function ajaxGet(url) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
         xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) { // Request complete
+            if (xhr.readyState === 4) {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
                         const response = JSON.parse(xhr.responseText);
@@ -36,10 +35,10 @@ async function ajaxGet(url) {
 }
 
 /**
- * Performs an HTTP POST request with a JSON body.
- * @param {string} url - Target URL.
- * @param {object} data - Object to be stringified and sent as body.
- * @returns {Promise<object>} Parsed JSON response.
+ * HTTP POST request with JSON body.
+ * @param {string} url
+ * @param {object} data
+ * @returns {Promise<object>}
  */
 async function ajaxPost(url, data) {
     return new Promise((resolve, reject) => {
@@ -52,11 +51,9 @@ async function ajaxPost(url, data) {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
-                        console.log(xhr.responseText);
                         reject('Failed to parse response: ' + e.message);
                     }
                 } else {
-                    // Try to extract error message from response body
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
                         reject(errorResponse.message || 'Request failed');
@@ -74,8 +71,8 @@ async function ajaxPost(url, data) {
 }
 
 /**
- * Performs an HTTP DELETE request.
- * @param {string} url - Target URL.
+ * HTTP DELETE request.
+ * @param {string} url
  * @returns {Promise<object>}
  */
 async function ajaxDelete(url) {
@@ -108,9 +105,9 @@ async function ajaxDelete(url) {
 }
 
 /**
- * Performs an HTTP PUT request with a JSON body.
- * @param {string} url - Target URL.
- * @param {object} data - Data to send.
+ * HTTP PUT request with JSON body.
+ * @param {string} url
+ * @param {object} data
  * @returns {Promise<object>}
  */
 async function ajaxPut(url, data) {

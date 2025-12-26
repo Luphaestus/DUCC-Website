@@ -8,20 +8,54 @@ import { requireAuth } from './misc/auth.js';
 import { BalanceChangedEvent } from './misc/globals.js';
 
 /**
- * Profile View Module.
- * 
- * Manages the user profile page where members can update their details,
- * check membership/instructor status, view balance, and manage their account.
- * Integrates with multiple sub-systems (Legal, Auth, Transactions).
+ * Profile view management.
+ * @module Profile
  */
 
 // --- Constants & Templates ---
 
-const TICK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-.218 0 -.432 .002 -.642 .005l-.616 .017l-.299 .013l-.579 .034l-.553 .046c-4.785 .464 -6.732 2.411 -7.196 7.196l-.046 .553l-.034 .579c-.005 .098 -.01 .198 -.013 .299l-.017 .616l-.004 .318l-.001 .324c0 .218 .002 .432 .005 .642l.017 .616l.013 .299l.034 .579l.046 .553c.464 4.785 2.411 6.732 7.196 7.196l.553 .046l.579 .034c.098 .005 .198 .01 .299 .013l.616 .017l.642 .005l.642 -.005l.616 -.017l.299 -.013l.579 -.034l.553 -.046c4.785 -.464 6.732 -2.411 7.196 -7.196l.046 -.553l.034 -.579c.005 -.098 .01 -.198 .013 -.299l.017 -.616l.005 -.642l-.005 -.642l-.017 -.616l-.013 -.299l-.034 -.579l-.046 -.553c-.464 -4.785 -2.411 -6.732 -7.196 -7.196l-.553 -.046l-.579 -.034a28.058 28.058 0 0 0 -.299 -.013l-.616 -.017l-.318 -.004l-.324 -.001zm2.293 7.293a1 1 0 0 1 1.497 1.32l-.083 .094l-4 4a1 1 0 0 1 -1.32 .083l-.094 -.083l-2 -2a1 1 0 0 1 1.32 -1.497l.094 .083l1.293 1.292l3.293 -3.292z" /></svg>`;
-
-const X_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.676 2.001l.324 -.001c7.752 0 10 2.248 10 10l-.005 .642c-.126 7.235 -2.461 9.358 -9.995 9.358l-.642 -.005c-7.13 -.125 -9.295 -2.395 -9.358 -9.67v-.325c0 -7.643 2.185 -9.936 9.676 -9.999m2.771 5.105a1 1 0 0 0 -1.341 .447l-1.106 2.21l-1.106 -2.21a1 1 0 0 0 -1.234 -.494l-.107 .047a1 1 0 0 0 -.447 1.341l1.774 3.553l-1.775 3.553a1 1 0 0 0 .345 1.283l.102 .058a1 1 0 0 0 1.341 -.447l1.107 -2.211l1.106 2.211a1 1 0 0 0 1.234 .494l.107 -.047a1 1 0 0 0 .447 -1.341l-1.776 -3.553l1.776 -3.553a1 1 0 0 0 -.345 -1.283z" /></svg>`;
-
-const MINUS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.676 2.001l.324 -.001c7.752 0 10 2.248 10 10l-.005 .642c-.126 7.235 -2.461 9.358 -9.995 9.358l-.642 -.005c-7.13 -.125 -9.295 -2.395 -9.358 -9.67v-.325c0 -7.643 2.185 -9.936 9.676 -9.999m3.324 8.999h-6a1 1 0 0 0 0 2h6a1 1 0 0 0 0 -2z" /></svg>`;
+const TICK_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+>
+  <path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-1.293 5.953a1 1 0 0 0 -1.32 -.083l-.094 .083l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.403 1.403l.083 .094l2 2l.094 .083a1 1 0 0 0 1.226 0l.094 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z" />
+</svg>`;
+const X_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+>
+  <path d="M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-6.489 5.8a1 1 0 0 0 -1.218 1.567l1.292 1.293l-1.292 1.293l-.083 .094a1 1 0 0 0 1.497 1.32l1.293 -1.292l1.293 1.292l.094 .083a1 1 0 0 0 1.32 -1.497l-1.292 -1.293l1.292 -1.293l.083 -.094a1 1 0 0 0 -1.497 -1.32l-1.293 1.292l-1.293 -1.292l-.094 -.083z" />
+</svg>`;
+const MINUS_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M9 12l6 0" />
+</svg>`;
+const TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q75 0 127.5-52.5T660-340q0-75-52.5-127.5T480-520q-75 0-127.5 52.5T300-340q0 75 52.5 127.5T480-160ZM363-572q20-11 42.5-17.5T451-598L350-800H250l113 228Zm234 0 114-228H610l-85 170 19 38q14 4 27 8.5t26 11.5ZM256-208q-17-29-26.5-62.5T220-340q0-36 9.5-69.5T256-472q-42 14-69 49.5T160-340q0 47 27 82.5t69 49.5Zm448 0q42-14 69-49.5t27-82.5q0-47-27-82.5T704-472q17 29 26.5 62.5T740-340q0 36-9.5 69.5T704-208ZM480-80q-40 0-76.5-11.5T336-123q-9 2-18 2.5t-19 .5q-91 0-155-64T80-339q0-87 58-149t143-69L120-880h280l80 160 80-160h280L680-559q85 8 142.5 70T880-340q0 92-64 156t-156 64q-9 0-18.5-.5T623-123q-31 20-67 31.5T480-80Zm0-260ZM363-572 250-800l113 228Zm234 0 114-228-114 228ZM406-230l28-91-74-53h91l29-96 29 96h91l-74 53 28 91-74-56-74 56Z"/></svg>`;
+const MEDAL_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+>
+  <path d="M12 2l.24 .004a7 7 0 0 1 6.76 6.996l-.003 .193l-.007 .192l-.018 .245l-.026 .242l-.024 .178a6.985 6.985 0 0 1 -.317 1.268l-.116 .308l-.153 .348a7.001 7.001 0 0 1 -12.688 -.028l-.13 -.297l-.052 -.133l-.08 -.217l-.095 -.294a6.96 6.96 0 0 1 -.093 -.344l-.06 -.271l-.049 -.271l-.02 -.139l-.039 -.323l-.024 -.365l-.006 -.292a7 7 0 0 1 6.76 -6.996l.24 -.004z" />
+</svg>`;
 
 const SUCCESS_GREEN = '#2ecc71';
 const WARNING_ORANGE = '#f39c12';
@@ -29,7 +63,7 @@ const ERROR_RED = '#e74c3c';
 const INFO_CYAN = '#3498db';
 
 /**
- * Main template for the profile view.
+ * Main profile view template.
  */
 const HTML_TEMPLATE = `
 <div id="/profile-view" class="view hidden">
@@ -133,6 +167,10 @@ let notification = null;
 
 // --- Helper Functions ---
 
+/**
+ * Get current academic year (e.g. 2025/2026).
+ * @returns {string}
+ */
 function getAcademicYear() {
     const date = new Date();
     const month = date.getMonth() + 1;
@@ -141,13 +179,16 @@ function getAcademicYear() {
     return `${startYear}/${startYear + 1}`;
 }
 
+/**
+ * Show persistent notification.
+ */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
 /**
- * Shows a custom glassy confirmation modal.
+ * Show custom confirmation modal.
  * @returns {Promise<boolean>}
  */
 function showConfirmModal(title, message) {
@@ -183,6 +224,9 @@ function showConfirmModal(title, message) {
     });
 }
 
+/**
+ * Update status UI with icon and color.
+ */
 function updateStatusUI(elementId, text, icon, color) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -212,13 +256,15 @@ function updateStatusUI(elementId, text, icon, color) {
 
 // --- Render Functions ---
 
+/**
+ * Render membership, legal, and balance status.
+ */
 function renderEventStatus(profile) {
     const profileMembership = document.getElementById('profile-membership');
     const academicYear = getAcademicYear();
     const balance = Number(profile.balance);
     const isLegalComplete = !!profile.filled_legal_info;
 
-    // Fetch dynamic costs and limits
     ajaxGet('/api/globals/public/MembershipCost,MinMoney').then(globals => {
         const membershipCost = globals.res?.MembershipCost || 50;
         const minMoney = globals.res?.MinMoney || -20;
@@ -226,7 +272,6 @@ function renderEventStatus(profile) {
 
         let boxColor = SUCCESS_GREEN;
 
-        // 1. Membership Status
         if (profile.is_member) {
             updateStatusUI("membership-info-status", `Your membership is active for the ${academicYear} academic year.`, TICK_SVG, SUCCESS_GREEN);
         } else {
@@ -245,36 +290,34 @@ function renderEventStatus(profile) {
             }
         }
 
-        // 2. Legal Form Status
         const legalText = isLegalComplete ? 'Legal information form completed' : 'Legal information form not completed';
-        const legalAction = `<button class="status-btn" onclick="event.preventDefault(); switchView('/legal')">Update Legal Form</button>`;
+        const legalAction = `<p>Ensure your medical and contact details are kept up to date.
+                             <button class="status-btn" onclick="event.preventDefault(); switchView('/legal')">Update Legal Form</button></p>`;
         updateStatusUI('legal-form-status', legalText + legalAction, isLegalComplete ? TICK_SVG : X_SVG, isLegalComplete ? SUCCESS_GREEN : ERROR_RED);
         if (!isLegalComplete) boxColor = ERROR_RED;
 
-        // 3. Debt Status
         const debtText = hasDebt ? `You have outstanding debts of £${balance.toFixed(2)}` : `You have low/no outstanding debts (£${balance.toFixed(2)})`;
-        const debtAction = `<button class="status-btn" onclick="event.preventDefault(); switchView('/transactions')">Account Statement</button>`;
+        const debtAction = `<p>Review your transaction history and manage your account balance.
+                             <button class="status-btn" onclick="event.preventDefault(); switchView('/transactions')">Account Statement</button></p>`;
         updateStatusUI('debt-status', debtText + debtAction, hasDebt ? X_SVG : TICK_SVG, hasDebt ? ERROR_RED : SUCCESS_GREEN);
         if (hasDebt) boxColor = ERROR_RED;
 
-        // 4. Signup Eligibility Summary
         if (!isLegalComplete) {
             updateStatusUI('profile-signup-status', "Please complete the legal forms to enable sign-ups.", X_SVG, ERROR_RED);
         } else if (hasDebt) {
             updateStatusUI('profile-signup-status', `You must clear your debt (must be above £${minMoney.toFixed(2)}) to enable sign-ups.`, X_SVG, ERROR_RED);
         } else if (balance < -10) {
             updateStatusUI('profile-signup-status', "You are close to your credit limit. Please clear your balance soon to avoid being blocked from sign-ups.", MINUS_SVG, WARNING_ORANGE);
-            if (boxColor === SUCCESS_GREEN) boxColor = WARNING_ORANGE;
+            if (boxColor !== ERROR_RED) boxColor = WARNING_ORANGE;
         } else if (balance < (minMoney + 5)) {
             updateStatusUI('profile-signup-status', "Your balance is high. Please clear it soon.", MINUS_SVG, WARNING_ORANGE);
-            if (boxColor === SUCCESS_GREEN) boxColor = WARNING_ORANGE;
+            if (boxColor !== ERROR_RED) boxColor = WARNING_ORANGE;
         } else {
             updateStatusUI('profile-signup-status', "You are eligible to sign up for events.", TICK_SVG, SUCCESS_GREEN);
         }
 
         profileMembership.style.setProperty('--colour', boxColor);
 
-        // Bind dynamic button with dynamic cost
         document.getElementById('become-member-button')?.addEventListener('click', async (event) => {
             event.preventDefault();
             const confirmed = await showConfirmModal(
@@ -291,6 +334,9 @@ function renderEventStatus(profile) {
     });
 }
 
+/**
+ * Render instructor status and controls.
+ */
 function renderInstructorStatus(profile) {
     const instructorStatusContainer = document.getElementById('instructor-status-container');
     const instructorColor = profile.is_instructor ? SUCCESS_GREEN : ERROR_RED;
@@ -314,6 +360,9 @@ function renderInstructorStatus(profile) {
     });
 }
 
+/**
+ * Populate personal details placeholders.
+ */
 function renderDetails(profile) {
     const fnInput = document.getElementById('profile-firstname');
     const lnInput = document.getElementById('profile-surname');
@@ -323,6 +372,9 @@ function renderDetails(profile) {
     if (emInput) emInput.placeholder = profile.email;
 }
 
+/**
+ * Render first aid and contact info.
+ */
 function renderAidDetails(profile) {
     const contactNumberInput = document.getElementById('profile-contact-number');
     const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
@@ -340,6 +392,9 @@ function renderAidDetails(profile) {
     }
 }
 
+/**
+ * Initialize static event listeners.
+ */
 async function bindStaticEvents() {
     const firstname = document.getElementById('profile-firstname');
     const lastname = document.getElementById('profile-surname');
@@ -460,6 +515,9 @@ async function bindStaticEvents() {
     }
 }
 
+/**
+ * Refresh profile data and UI.
+ */
 async function updateProfilePage() {
     if (!await requireAuth()) return;
     try {
@@ -477,7 +535,7 @@ async function updateProfilePage() {
 }
 
 /**
- * Renders swim stats and user tags together.
+ * Render swim stats and tags.
  */
 async function renderRecognition(profile) {
     const info = document.getElementById('recognition-stats-info');
@@ -485,56 +543,59 @@ async function renderRecognition(profile) {
     const swimContainer = document.getElementById('swim-stats-container');
     const tagsOuterContainer = document.getElementById('profile-tags-outer-container');
 
-    if (!info || !tagsContainer) return;
-
     if (swimContainer) {
         swimContainer.style.setProperty('--colour', INFO_CYAN);
         swimContainer.style.color = INFO_CYAN;
     }
 
     if (tagsOuterContainer) {
-        tagsOuterContainer.style.setProperty('--colour', '#9b59b6'); // Purple
-        tagsOuterContainer.style.color = '#9b59b6';
+        tagsOuterContainer.style.setProperty('--colour', INFO_CYAN);
+        tagsOuterContainer.style.color = INFO_CYAN;
     }
 
-    // 1. Render Swim Stats
-    const swims = profile.swims || 0;
-    const rank = profile.swimmer_rank || '-';
+    if (info) {
+        const stats = profile.swimmer_stats || { allTime: { swims: 0, rank: '-' }, yearly: { swims: 0, rank: '-' } };
 
-    function getOrdinal(n) {
-        if (isNaN(n) || n === '-') return n;
-        const s = ["th", "st", "nd", "rd"],
-            v = n % 100;
-        return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    }
-
-    info.innerHTML = `
-        <div class="status-item">
-            <div class="status-header" style="color: var(--pico-contrast) !important;">
-                <span class="status-icon">🏆</span>
-                <span class="status-label">Total Swims: ${swims}</span>
-            </div>
-        </div>
-        <div class="status-item">
-            <div class="status-header" style="color: var(--pico-contrast) !important;">
-                <span class="status-icon">🎖️</span>
-                <span class="status-label">Swimmer Rank: ${swims > 0 ? getOrdinal(rank) : 'No rank yet'}</span>
-            </div>
-        </div>
-    `;
-
-    // 2. Render Tags
-    try {
-        const tags = await ajaxGet(`/api/user/tags`);
-        if (tags && tags.length > 0) {
-            tagsContainer.innerHTML = tags.map(tag =>
-                `<span style="background-color: ${tag.color}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">${tag.name}</span>`
-            ).join('');
-        } else {
-            tagsContainer.innerHTML = '<p>No tags assigned.</p>';
+        function getOrdinal(n) {
+            if (n === undefined || n === null || n === '-' || n < 1) return '-';
+            const s = ["th", "st", "nd", "rd"],
+                v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
         }
-    } catch (e) {
-        tagsContainer.innerHTML = '<p>Failed to load tags.</p>';
+
+        info.innerHTML = `
+            <div class="status-item">
+                <div class="status-header" style="color: ${INFO_CYAN} !important;">
+                    <span class="status-icon" style="fill: ${INFO_CYAN};">
+                        ${TROPHY_SVG}
+                    </span>
+                    <span class="status-label">Current Year: ${stats.yearly.swims} swims (${getOrdinal(stats.yearly.rank)})</span>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-header" style="color: ${INFO_CYAN} !important;">
+                    <span class="status-icon" style="fill: ${INFO_CYAN};">
+                        ${MEDAL_SVG}
+                    </span>
+                    <span class="status-label">All-time: ${stats.allTime.swims} swims (${getOrdinal(stats.allTime.rank)})</span>
+                </div>
+            </div>
+        `;
+    }
+
+    if (tagsContainer) {
+        try {
+            const tags = await ajaxGet(`/api/user/tags`);
+            if (tags && tags.length > 0) {
+                tagsContainer.innerHTML = tags.map(tag =>
+                    `<span style="background-color: ${tag.color}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">${tag.name}</span>`
+                ).join('');
+            } else {
+                tagsContainer.innerHTML = '<p>No tags assigned.</p>';
+            }
+        } catch (e) {
+            tagsContainer.innerHTML = '<p>Failed to load tags.</p>';
+        }
     }
 }
 

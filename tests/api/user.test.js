@@ -77,4 +77,29 @@ describe('User API', () => {
         expect(tx).toBeDefined();
         expect(tx.amount).toBe(-10.0);
     });
+
+    test('GET /api/user/swims/leaderboard returns empty list initially', async () => {
+        const res = await request(app).get('/api/user/swims/leaderboard');
+        expect(res.statusCode).toBe(200);
+        expect(res.body.data).toEqual([]);
+    });
+
+    test('POST /api/user/:id/swims adds swims correctly', async () => {
+        // Mock req.user.is_exec = true
+        await db.run('UPDATE users SET is_exec = 1 WHERE id = ?', userId);
+        
+        const res = await request(app)
+            .post(`/api/user/${userId}/swims`)
+            .send({ count: 5 });
+        
+        expect(res.statusCode).toBe(200);
+        
+        const user = await db.get('SELECT swims FROM users WHERE id = ?', userId);
+        expect(user.swims).toBe(5);
+
+        // Check history
+        const history = await db.get('SELECT * FROM swim_history WHERE user_id = ?', userId);
+        expect(history).toBeDefined();
+        expect(history.count).toBe(5);
+    });
 });

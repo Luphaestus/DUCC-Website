@@ -3,45 +3,32 @@ const fsp = fs.promises;
 const path = require('path');
 
 /**
- * Slides API module.
- * Automatically scans a directory for image files and provides endpoints for the frontend slideshow.
- * Includes a file system watcher to dynamically update the list of slides when files are added or removed.
- *
- * Routes:
- *   GET  /api/slides/count    -> Returns the total number of available slides.
- *   GET  /api/slides/images   -> Returns an array of all slide image URLs.
- *   GET  /api/slides/random   -> Returns a single random slide image URL.
- *   GET  /api/slides/:index   -> Returns the slide image URL at a specific index.
- *
+ * API for scanning and serving slideshow images.
  * @module SlidesAPI
  */
 class SlidesAPI {
 
   /**
-   * Initializes the SlidesAPI instance and starts the initial scan.
-   * @param {object} app - The Express application instance.
+   * Initialize and start initial scan.
+   * @param {object} app
    */
   constructor(app) {
     this.app = app;
-    // Parts of the path relative to the public directory
     this.dirParts = ['images', 'slides'];
-    // Absolute path to the slides directory
     this.fullDir = path.join(__dirname, '..', '..', 'public', ...this.dirParts);
-    // Supported image extensions
     this.allowedExt = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
-    this.files = []; // List of filenames
-    this.paths = []; // List of URLs (relative to public root)
+    this.files = [];
+    this.paths = [];
     this._scanTimer = null;
     this._watcher = null;
 
-    // Start initialization
     this._init().catch(err => {
       console.error('Slides init error:', err);
     });
   }
 
   /**
-   * Performs the initial scan and sets up the file system watcher.
+   * Start scan and setup watcher.
    * @private
    */
   async _init() {
@@ -50,8 +37,7 @@ class SlidesAPI {
   }
 
   /**
-   * Scans the slides directory for valid image files.
-   * Updates internal state with the found files and their web-accessible paths.
+   * Scan directory for valid images and update internal paths.
    */
   async scan() {
     let entries = [];
@@ -64,19 +50,17 @@ class SlidesAPI {
       return;
     }
 
-    // Filter for files with allowed extensions
     const files = entries
       .filter(d => d.isFile() && this.allowedExt.has(path.extname(d.name).toLowerCase()))
       .map(d => d.name)
-      .sort(); // Sort alphabetically for consistency
+      .sort();
 
     this.files = files;
-    // Map to public URLs (e.g., /images/slides/banner.png)
     this.paths = files.map(f => path.posix.join('/', ...this.dirParts, f));
   }
 
   /**
-   * Debounces the directory scan to avoid multiple rapid rescans during batch file operations.
+   * Debounce directory scan.
    * @private
    */
   _scheduleScan() {
@@ -88,8 +72,7 @@ class SlidesAPI {
   }
 
   /**
-   * Sets up a persistent watcher on the slides directory.
-   * Rescans whenever a change (add, rename, delete) is detected.
+   * Watch directory for changes and trigger rescan.
    * @private
    */
   _setupWatcher() {
@@ -99,26 +82,25 @@ class SlidesAPI {
       });
 
       this._watcher.on('error', (err) => {
-        console.warn('Slides watcher error, watcher stopped:', err.message);
+        console.warn('Slides watcher error:', err.message);
         try { this._watcher.close(); } catch { }
         this._watcher = null;
       });
     } catch (err) {
-      // Silently fail if watcher cannot be initialized (e.g., directory missing)
       this._watcher = null;
     }
   }
 
   /**
-   * Returns a copy of the current list of slide paths.
-   * @returns {string[]} Array of image URLs.
+   * Get all slide URLs.
+   * @returns {string[]}
    */
   getFiles() {
     return Array.from(this.paths);
   }
 
   /**
-   * Returns the number of available slide images.
+   * Get count of slide images.
    * @returns {number}
    */
   getFileCount() {
@@ -126,9 +108,9 @@ class SlidesAPI {
   }
 
   /**
-   * Retrieves a slide path by its index.
+   * Get slide URL by index.
    * @param {number} index
-   * @returns {string|null} The image URL or null if out of bounds.
+   * @returns {string|null}
    */
   getFileAt(index) {
     if (index >= 0 && index < this.paths.length) return this.paths[index];
@@ -136,8 +118,8 @@ class SlidesAPI {
   }
 
   /**
-   * Picks a random slide from the list.
-   * @returns {string|null} A random image URL or null if no slides exist.
+   * Get random slide URL.
+   * @returns {string|null}
    */
   getRandomFile() {
     if (this.paths.length === 0) return null;
@@ -145,7 +127,7 @@ class SlidesAPI {
   }
 
   /**
-   * Registers Express routes for the Slides API.
+   * Register slides routes.
    */
   registerRoutes() {
 
@@ -155,29 +137,29 @@ class SlidesAPI {
 
     this.app.get('/api/slides/images', (req, res) => {
       const paths = this.getFiles();
-      if (paths.length === 0) return res.status(404).json({ message: 'No slide images found' });
+      if (paths.length === 0) return res.status(404).json({ message: 'No slides found' });
       res.json({ images: paths });
     });
 
     this.app.get('/api/slides/random', (req, res) => {
       const image = this.getRandomFile();
-      if (!image) return res.status(404).json({ message: 'No slide images found' });
+      if (!image) return res.status(404).json({ message: 'No slides found' });
       res.json({ image });
     });
 
     this.app.get('/api/slides/:index', (req, res) => {
       const index = parseInt(req.params.index, 10);
       if (Number.isNaN(index) || index < 0) {
-        return res.status(400).json({ message: 'Index must be a non-negative integer' });
+        return res.status(400).json({ message: 'Invalid index' });
       }
       const image = this.getFileAt(index);
-      if (!image) return res.status(404).json({ message: 'Image not found at the specified index' });
+      if (!image) return res.status(404).json({ message: 'Image not found' });
       res.json({ image });
     });
   }
 
   /**
-   * Cleans up resources (watcher and timers) when the instance is no longer needed.
+   * Cleanup watcher and timers.
    */
   close() {
     if (this._watcher) {

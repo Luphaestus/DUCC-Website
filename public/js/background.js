@@ -1,30 +1,18 @@
 /**
- * background.js
- * Animated Background Module.
- * 
- * Dynamically creates a decorative background consisting of:
- * 1. Large, blurred, floating colored blobs that move randomly.
- * 2. Drifting kayak icons that move across the screen.
- * 
- * This is implemented using vanilla JS to inject DOM elements and 
- * CSS Keyframe animations for performance.
+ * Animated background with floating blobs and drifting kayak icons.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     const body = document.body;
 
-    // --- Configuration ---
-
-    // Subtle background colors for the floating blobs
     const colors = [
-        'rgba(170, 64, 191, 0.1)', // Purple
-        'rgba(91, 125, 196, 0.1)', // Blue-ish Grey
-        'rgba(57, 134, 188, 0.1)', // Bright Blue
-        'rgba(43, 195, 195, 0.1)', // Teal
-        'rgba(38, 222, 129, 0.1)'  // Green
+        'rgba(170, 64, 191, 0.1)',
+        'rgba(91, 125, 196, 0.1)',
+        'rgba(57, 134, 188, 0.1)',
+        'rgba(43, 195, 195, 0.1)',
+        'rgba(38, 222, 129, 0.1)'
     ];
 
-    // Inline SVG for the drifting kayak icons
     const kayakSvg = `
         <svg viewBox="0 0 153.41 103.85" xmlns="http://www.w3.org/2000/svg">
             <g transform="translate(-247.58 -156.15)">
@@ -32,26 +20,19 @@ document.addEventListener('DOMContentLoaded', () => {
             </g>
         </svg>`;
 
-    // --- Container Setup ---
-
-    // Create a dedicated full-screen fixed container for the background elements
     const container = document.createElement('div');
     container.id = 'animated-background';
     container.style.position = 'fixed';
     container.style.inset = '0';
-    container.style.zIndex = '-10'; // Ensure it stays behind all content
-    container.style.pointerEvents = 'none'; // Allow clicks to pass through
+    container.style.zIndex = '-10';
+    container.style.pointerEvents = 'none';
     container.style.overflow = 'hidden';
-
     body.appendChild(container);
-
-    // --- Dynamic Styles Injection ---
 
     const styleSheet = document.createElement('style');
     document.head.appendChild(styleSheet);
 
-    // Define the keyframes for movement
-    const keyframes = `
+    styleSheet.textContent = `
         @keyframes floatAround {
             0% { transform: translate(0, 0); }
             33% { transform: translate(40vw, -40vh); }
@@ -63,22 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
             to { transform: translateX(calc(100vw + 200px)) rotate(15deg); }
         }
     `;
-    styleSheet.textContent = keyframes;
 
-    // --- Element Generation ---
-
-    // 1. Create floating blobs
+    // Generate floating blobs
     colors.forEach((color, i) => {
         const blob = document.createElement('div');
         blob.className = 'bg-blob';
-
         const size = 40 + (i * 10);
         blob.style.width = `${size}vmax`;
         blob.style.height = `${size}vmax`;
         blob.style.backgroundColor = color;
-        blob.style.filter = 'blur(30px)'; // Soft edges
+        blob.style.filter = 'blur(30px)';
 
-        // Initial spread-out positions
         const positions = [
             { top: '-20%', left: '-20%' },
             { top: '-20%', left: '60%' },
@@ -89,31 +65,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         blob.style.top = positions[i].top;
         blob.style.left = positions[i].left;
-
-        // Apply randomized float animation
         blob.style.animation = `floatAround ${40 + i * 10}s infinite ease-in-out`;
         blob.style.animationDelay = `${i * -20}s`;
-
         container.appendChild(blob);
     });
 
-    // 2. Create drifting kayak icons
+    // Generate drifting kayak icons
     for (let i = 0; i < 10; i++) {
         const icon = document.createElement('div');
         icon.className = 'bg-icon';
         icon.innerHTML = kayakSvg;
-
-        // Randomize size, vertical position, and speed
         const size = 60 + Math.random() * 100;
         icon.style.width = `${size}px`;
         icon.style.top = `${Math.random() * 100}vh`;
         icon.style.left = "0";
 
         const duration = 40 + Math.random() * 60;
-        const delay = Math.random() * -duration; // Negative delay to start mid-animation
         icon.style.animation = `driftAcross ${duration}s linear infinite`;
-        icon.style.animationDelay = `${delay}s`;
-
+        icon.style.animationDelay = `${Math.random() * -duration}s`;
         container.appendChild(icon);
     }
 });

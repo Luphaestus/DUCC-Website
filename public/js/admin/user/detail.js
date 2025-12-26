@@ -4,24 +4,261 @@ import { switchView } from '../../misc/view.js';
 import { adminContentID } from '../common.js';
 
 // --- Icons ---
-const USER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-const EMAIL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>`;
-const PHONE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
-const ID_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>`;
-const MEDICAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.5a4.5 4.5 0 1 1 4.5 4.5M12 7.5A4.5 4.5 0 1 0 7.5 12M12 7.5V9m-4.5 3a4.5 4.5 0 1 0 4.5 4.5M7.5 12H9m7.5 0a4.5 4.5 0 1 1-4.5 4.5M16.5 12H15m-3 4.5V15"></path></svg>`;
-const WALLET_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>`;
-const DIFFICULTY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`;
-const HOME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`;
-const INSTRUCTOR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="800px" height="800px" viewBox="0 0 31.178 31.178" xml:space="preserve"><g><g><circle cx="5.042" cy="5.721" r="3.866"/><path d="M30.779,6.78h-9.346V5.722h-2.479V6.78h-8.877H9.446v1.275h0.631v2.806l-1.452-0.692H6.449l-1.474,1.709l-1.426-1.709    l-3.133,0.582l-0.2,6.949h1.328l0.072,1.443h0.202v0.879v0.649v6.884H1.551L0,27.893v1.43h1.321l1.542-0.251l0.014,0.251h1.708    v-1.593v-0.173v-6.883h0.973v6.883v0.173v1.593h1.708l0.014-0.251l1.542,0.251h1.321v-1.43L8.59,27.557H8.325v-6.883v-0.65v-0.879    H8.57l0.316-6.4l1.191,0.539v7.355h9.136v2.343l-5.042,5.688h1.812l3.404-3.844v3.844h1.041v-3.84l3.399,3.84h1.841l-5.07-5.688    v-2.343h10.182V8.056h0.398V6.78H30.779z M29.887,19.7h-9.291h-1.383H10.97v-6.013l3.717,1.682l-0.014-2.317l-3.703-1.765V8.056    h18.917V19.7z"/></g></g></svg>`
-const FREE_SESSIONS_SVG = `<svg version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="800px" height="800px" viewBox="0 0 512 512" xml:space="preserve"><style type="text/css"></style><g><path class="st0" d="M278.202,321.188v30.469h30.344c-8.047,19.406-24.203,28.844-49.188,28.844   c-18.625,0-32.75-5.297-43.172-16.219c-10.484-10.984-15.594-22.922-15.594-36.5c0-15.625,5.234-28.25,15.969-38.625   c10.797-10.422,24-15.5,40.328-15.5c18.859,0,35.047,6.875,49.469,21.016l22.125-22.109   c-11.953-11.484-23.906-19.453-35.516-23.703c-11.5-4.219-24.344-6.359-38.188-6.359c-23.641,0-44.063,8.281-60.703,24.625   c-16.672,16.344-25.109,36.438-25.109,59.719c0,22.125,8.219,42.031,24.453,59.141c16.297,17.203,38.328,25.922,65.469,25.922   c11.797,0,22.156-1.344,30.766-3.969c8.766-2.688,17.078-7.188,24.719-13.391c7.609-6.172,13.781-13.281,18.375-21.125   c4.547-7.766,7.594-15.031,9.078-21.609c1.453-6.516,2.172-14.891,2.172-25.609v-5.016H278.202z"/><path class="st0" d="M476.232,174.734c2.203-8.547-2.953-17.266-11.516-19.484l-57.578-14.781l50.609-27.672   c7.75-4.234,10.594-13.969,6.359-21.719s-13.969-10.594-21.719-6.344l-64.062,35.047l39.219-95.25   c0.469-1.156,0.453-2.469-0.078-3.609c-0.516-1.141-1.5-2.016-2.688-2.422c0,0-31.688-16.438-49.594-16.438   c-37.047,0-73.047,19.422-105.813,19.422c-9.922,0-19.547-1.781-28.797-6.422C208.811,4.188,189.811,0,171.827,0   C144.655,0,96.53,18.766,96.53,18.766c-1.281,0.313-2.359,1.172-2.953,2.359c-0.594,1.172-0.641,2.547-0.141,3.766l43.172,104.859   c-5.313,2.625-9,8.031-9,14.344c0,5.438,2.734,10.234,6.891,13.125c-21.109,25.156-73.156,92.547-92.766,167.031   C13.467,431.703,76.514,512,255.42,512c178.89,0,241.937-80.297,213.671-187.75c-17.297-65.688-59.828-125.875-84.109-156.438   l71.781,18.438C465.311,188.453,474.029,183.297,476.232,174.734z M171.827,40c13.078,0,26.063,3.453,40.859,10.844   c14.109,7.063,29.813,10.641,46.688,10.641c21.266,0,41.078-5.438,60.234-10.688c16.391-4.5,31.859-8.734,45.578-8.734l1.875,0.031   l-35.406,86H179.17l-34.563-83.969C154.108,41.547,163.03,40,171.827,40z M419.811,421.094C394.499,453.922,336.124,472,255.42,472   c-80.719,0-139.094-18.078-164.406-50.906C74.499,399.656,70.92,370.5,80.42,334.438c21.906-83.25,91.844-159.766,92.516-160.5   l12.844-13.844h139.266l12.844,13.844c0.703,0.766,70.469,76.719,92.515,160.5C439.904,370.5,436.326,399.656,419.811,421.094z"/></g></svg>`;
-const DIFFICULT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" xml:space="preserve"><g><circle cx="127.8" cy="57.3" r="17.9"/><path d="M180.7,15.8c-3.6,0-6.7,2.5-7.6,5.8H82.5c-0.9-3.3-4-5.8-7.6-5.8c-3.6,0-6.7,2.5-7.6,5.8H48.8v5h18.3v32.9 c0,2.2,0.9,4.2,2.4,5.6l33.6,33.6v1.2v60.5v80.7c0,6.2,5,11.2,11.2,11.2c6.2,0,11.2-5,11.2-11.2v-78.5c0-1.2,1-2.2,2.2-2.2 c1.2,0,2.2,1,2.2,2.2v78.5c0,6.2,5,11.2,11.2,11.2c6.2,0,11.2-5,11.2-11.2v-80.7V98.9l33.6-33.6c1.5-1.4,2.4-3.5,2.4-5.6v-33h18.3 v-5h-18.6C187.4,18.3,184.3,15.8,180.7,15.8z M172.9,56.3l-17.5,17.5c-2.6,2.6-6.2,3.9-9.6,3.9h-17.9h-17.9c-3.5,0-7-1.3-9.6-3.9 L82.8,56.3V26.7h90.1V56.3z"/><rect x="36.1" y="1.8" width="11.1" height="44.4"/><rect x="22.5" y="13.3" width="11.1" height="21.4"/><rect x="208.5" y="1.8" width="11.1" height="44.4"/><rect x="222.1" y="13.3" width="11.1" height="21.4"/></g></svg>`;
-const FILLED_LEGAL_INFO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>`;
-const DATE_OF_BIRTH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>`;
-const EMERGENCY_CONTACT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/><path d="M15 7h6"/><path d="M18 4v6"/></svg>`;
-const MEDICAL_CONDITIONS = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 14C2 10.2288 2 8.34315 3.17157 7.17157C4.34315 6 6.22876 6 10 6H14C17.7712 6 19.6569 6 20.8284 7.17157C22 8.34315 22 10.2288 22 14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14Z" stroke="currentColor" stroke-width="1.5"/><path d="M16 6C16 4.11438 16 3.17157 15.4142 2.58579C14.8284 2 13.8856 2 12 2C10.1144 2 9.17157 2 8.58579 2.58579C8 3.17157 8 4.11438 8 6" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 14H10.5M12 12.5V15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="14" r="4" stroke="currentColor" stroke-width="1.5"/></svg>`
-const MEDICATION = `<svg viewBox="20 15 60 65" xmlns="http://www.w3.org/2000/svg"><path d="M64.73,49.35a1.63,1.63,0,0,0,1-1.48V24.73a4.83,4.83,0,0,0-4.83-4.83H29.81A4.82,4.82,0,0,0,25,24.73V65.3a4.82,4.82,0,0,0,4.82,4.83h15.8a1.61,1.61,0,0,0,1.45-.92A10.82,10.82,0,0,1,48.73,67l12-14.25A11.34,11.34,0,0,1,64.73,49.35ZM30.21,33.67a1.52,1.52,0,0,1,1.52-1.52h3.05v-3a1.52,1.52,0,0,1,1.52-1.48h1.52a1.53,1.53,0,0,1,1.52,1.53v2.95h3a1.55,1.55,0,0,1,1.53,1.53v1.52a1.56,1.56,0,0,1-1.53,1.53h-3v3.07a1.52,1.52,0,0,1-1.52,1.52H36.29a1.52,1.52,0,0,1-1.51-1.52v-3H31.73a1.52,1.52,0,0,1-1.52-1.52ZM49.32,58.18a1.61,1.61,0,0,1-1.61,1.61l-15.89,0a1.61,1.61,0,0,1-1.61-1.61V56.41a1.61,1.61,0,0,1,1.61-1.6H47.71a1.61,1.61,0,0,1,1.61,1.6Zm8.1-9.81A1.61,1.61,0,0,1,55.81,50h-24a1.61,1.61,0,0,1-1.61-1.61V46.63A1.61,1.61,0,0,1,31.82,45h24a1.61,1.61,0,0,1,1.61,1.61Z"/><path d="M73.38,53.77a6.72,6.72,0,0,0-9.4.54,2.43,2.43,0,0,0-.2.25l-5,5.88,10,8.51,0,0,0,0,5-5.88A6.59,6.59,0,0,0,73.38,53.77Z"/><path d="M56.66,63.1l0,0-5,5.88a6.62,6.62,0,0,0,9.93,8.76l.21-.25,5-5.88-10-8.51Z"/></svg>`;
-const FIRST_AID_EXPIRY = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><g><path d="M12.144 1.157a8 8 0 10-.709 14.068 1 1 0 00-.858-1.806 6 6 0 112.86-7.955 1 1 0 001.814-.845 8 8 0 00-3.107-3.462z"/><path d="M7 5a1 1 0 112 0v4a1 1 0 01-.553.894l-2 1a1 1 0 11-.894-1.788L7 8.382V5zm9 10a1 1 0 11-2 0 1 1 0 012 0zm-1-7a1 1 0 00-1 1v3a1 1 0 102 0V9a1 1 0 00-1-1z"/></g></svg>`;
-const TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M18 2H6c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 13.9V17H8v2h8v-2h-3v-3.1c2.03-.41 3.61-2.01 4.39-4.06 2.47-.31 4.39-2.39 4.39-4.94V4c0-1.1-.9-2-2-2zm-1 5c-.55 0-1-.45-1-1V4h1v3zM7 7V4h1v2c0 .55-.45 1-1 1z"/></svg>`;
+const USER_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>`;
+const EMAIL_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" />
+  <path d="M3 7l9 6l9 -6" />
+</svg>`;
+const PHONE_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" />
+</svg>`;
+const ID_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" />
+  <path d="M9 10m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M15 8l2 0" />
+  <path d="M15 12l2 0" />
+  <path d="M7 16l10 0" />
+</svg>`;
+const MEDICAL_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M13 3a1 1 0 0 1 1 1v4.535l3.928 -2.267a1 1 0 0 1 1.366 .366l1 1.732a1 1 0 0 1 -.366 1.366l-3.927 2.268l3.927 2.269a1 1 0 0 1 .366 1.366l-1 1.732a1 1 0 0 1 -1.366 .366l-3.928 -2.269v4.536a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-4.536l-3.928 2.268a1 1 0 0 1 -1.366 -.366l-1 -1.732a1 1 0 0 1 .366 -1.366l3.927 -2.268l-3.927 -2.268a1 1 0 0 1 -.366 -1.366l1 -1.732a1 1 0 0 1 1.366 -.366l3.928 2.267v-4.535a1 1 0 0 1 1 -1h2z" />
+</svg>`;
+const WALLET_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12" />
+  <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4" />
+</svg>`;
+const DIFFICULTY_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" />
+</svg>`;
+const HOME_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>`;
+const INSTRUCTOR_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" />
+  <path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" />
+</svg>`;
+const FREE_SESSIONS_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 5l0 2" />
+  <path d="M15 11l0 2" />
+  <path d="M15 17l0 2" />
+  <path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2" />
+</svg>`;
+const DIFFICULT_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M13.41 10.59l2.59 -2.59" />
+  <path d="M7 12a5 5 0 0 1 5 -5" />
+</svg>`;
+const FILLED_LEGAL_INFO = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+  <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+  <path d="M9 15l2 2l4 -4" />
+</svg>`;
+const DATE_OF_BIRTH = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" />
+  <path d="M16 3l0 4" />
+  <path d="M8 3l0 4" />
+  <path d="M4 11l16 0" />
+  <path d="M8 15h2v2h-2z" />
+</svg>`;
+const EMERGENCY_CONTACT = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+  <path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5" />
+  <path d="M6 10h4m-2 -2v4" />
+</svg>`;
+const MEDICAL_CONDITIONS = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" />
+  <path d="M7 20h10" />
+  <path d="M9 16v4" />
+  <path d="M15 16v4" />
+  <path d="M7 10h2l2 3l2 -6l1 3h3" />
+</svg>`;
+const MEDICATION = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4.5 12.5l8 -8a4.94 4.94 0 0 1 7 7l-8 8a4.94 4.94 0 0 1 -7 -7" />
+  <path d="M8.5 8.5l7 7" />
+</svg>`;
+const FIRST_AID_EXPIRY = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20.986 12.502a9 9 0 1 0 -5.973 7.98" />
+  <path d="M12 7v5l3 3" />
+  <path d="M19 16v3" />
+  <path d="M19 22v.01" />
+</svg>`;
+const TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q75 0 127.5-52.5T660-340q0-75-52.5-127.5T480-520q-75 0-127.5 52.5T300-340q0 75 52.5 127.5T480-160ZM363-572q20-11 42.5-17.5T451-598L350-800H250l113 228Zm234 0 114-228H610l-85 170 19 38q14 4 27 8.5t26 11.5ZM256-208q-17-29-26.5-62.5T220-340q0-36 9.5-69.5T256-472q-42 14-69 49.5T160-340q0 47 27 82.5t69 49.5Zm448 0q42-14 69-49.5t27-82.5q0-47-27-82.5T704-472q17 29 26.5 62.5T740-340q0 36-9.5 69.5T704-208ZM480-80q-40 0-76.5-11.5T336-123q-9 2-18 2.5t-19 .5q-91 0-155-64T80-339q0-87 58-149t143-69L120-880h280l80 160 80-160h280L680-559q85 8 142.5 70T880-340q0 92-64 156t-156 64q-9 0-18.5-.5T623-123q-31 20-67 31.5T480-80Zm0-260ZM363-572 250-800l113 228Zm234 0 114-228-114 228ZM406-230l28-91-74-53h91l29-96 29 96h91l-74 53 28 91-74-56-74 56Z"/></svg>`;
 
 // --- Main Render Function ---
 
@@ -45,9 +282,10 @@ export async function renderUserDetail(userId) {
         const status = await ajaxGet('/api/globals/status');
         const isPresident = status.isPresident;
 
-        const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_transactions').catch(() => ({}));
+        const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_transactions,is_exec').catch(() => ({}));
         const canManageUsers = perms.can_manage_users;
         const canManageTransactions = perms.can_manage_transactions;
+        const isExec = perms.is_exec;
 
         let tabsHtml = '<button class="tab-btn" data-tab="profile">Profile</button>';
         if (canManageUsers) {
@@ -96,12 +334,12 @@ export async function renderUserDetail(userId) {
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('tab', btn.dataset.tab);
                 window.history.replaceState({}, '', newUrl);
-                renderTab(btn.dataset.tab, user, isPresident, canManageUsers);
+                renderTab(btn.dataset.tab, user, isPresident, canManageUsers, isExec);
             };
         });
 
         updateActiveTab(initialTabBtn);
-        renderTab(initialTabBtn.dataset.tab, user, isPresident, canManageUsers);
+        renderTab(initialTabBtn.dataset.tab, user, isPresident, canManageUsers, isExec);
 
     } catch (e) {
         console.error(e);
@@ -123,10 +361,12 @@ export async function renderUserDetail(userId) {
  * @param {object} user - The user object containing all user details.
  * @param {boolean} isPresident - Whether the current user is the president.
  * @param {boolean} canManageUsers - Whether the user has management permissions.
+ * @param {boolean} isExec - Whether the user is an exec.
  */
-function renderTab(tabName, user, isPresident, canManageUsers) {
+function renderTab(tabName, user, isPresident, canManageUsers, isExec) {
     const container = document.getElementById('admin-tab-content');
     if (tabName === 'profile') {
+        const canManageSwims = canManageUsers || isExec;
         let permissionsHtml = '';
         if (isPresident) {
             permissionsHtml = `
@@ -160,53 +400,56 @@ function renderTab(tabName, user, isPresident, canManageUsers) {
             `;
         }
 
-        // Check if sensitive data is present (it won't be if the user is only a transaction manager)
-        const showSensitiveData = user.email !== undefined;
+        // Check if sensitive data is present
+        const hasGeneralInfo = user.email !== undefined || user.phone_number !== undefined || user.college_id !== undefined || user.balance !== undefined;
 
-        let generalInfoHtml;
-        if (showSensitiveData) {
+        let generalInfoHtml = '';
+        if (hasGeneralInfo) {
             generalInfoHtml = `
                 <div class="event-details-section" id="admin-user-general-info-container">
                     <h3>${USER_SVG} General Info</h3>
-                    <p>${EMAIL_SVG} <strong>Email:</strong> ${user.email}</p>
-                    <p>${PHONE_SVG} <strong>Phone:</strong> ${user.phone_number || 'N/A'}</p>
-                    <p>${USER_SVG} <strong>College:</strong> ${user.college_id || 'N/A'}</p>
-                    <p>${WALLET_SVG} <strong>Balance:</strong> £${Number(user.balance).toFixed(2)}</p>
+                    ${user.email !== undefined ? `<p>${EMAIL_SVG} <strong>Email:</strong> ${user.email}</p>` : ''}
+                    ${user.phone_number !== undefined ? `<p>${PHONE_SVG} <strong>Phone:</strong> ${user.phone_number || 'N/A'}</p>` : ''}
+                    ${user.college_id !== undefined ? `<p>${USER_SVG} <strong>College:</strong> ${user.college_id || 'N/A'}</p>` : ''}
+                    ${user.balance !== undefined ? `<p>${WALLET_SVG} <strong>Balance:</strong> £${Number(user.balance).toFixed(2)}</p>` : ''}
                 </div>`;
-        } else {
-            generalInfoHtml = `
-                <div class="event-details-section" id="admin-user-general-info-container">
-                    <h3>${USER_SVG} General Info</h3>
-                    <p><em>Personal contact information is hidden.</em></p>
-                    <p>${WALLET_SVG} <strong>Balance:</strong> £${Number(user.balance).toFixed(2)}</p>
+        }
+
+        const hasMembershipInfo = user.is_member !== undefined || user.is_instructor !== undefined || user.free_sessions !== undefined || user.difficulty_level !== undefined || user.swims !== undefined;
+
+        let membershipInfoHtml = '';
+        if (hasMembershipInfo) {
+            membershipInfoHtml = `
+                <div class="event-details-section" id="admin-user-membership-container">
+                     <h3>${DIFFICULTY_SVG} Status & Level</h3>
+                     ${user.is_member !== undefined ? `<p>${USER_SVG} <strong>Member:</strong> ${user.is_member ? 'Yes' : 'No'}</p>` : ''}
+                     ${user.is_instructor !== undefined ? `<p>${INSTRUCTOR_SVG} <strong>Instructor:</strong> ${user.is_instructor ? 'Yes' : 'No'}</p>` : ''}
+                     ${user.free_sessions !== undefined ? `<p>${FREE_SESSIONS_SVG} <strong>Free Sessions:</strong> ${user.free_sessions}</p>` : ''}
+                     ${user.difficulty_level !== undefined ? `
+                     <div class="detail-difficulty-control">
+                        <strong>${DIFFICULT_SVG} Difficulty Level:</strong>
+                        <input type="number" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5">
+                     </div>` : ''}
+                     ${user.swims !== undefined ? `
+                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; margin-left: 0; margin-right: 0;">
+                        <span style="display: flex; align-items: center; gap: 0.5rem;">
+                            ${TROPHY_SVG} <strong>Swims:</strong> 
+                        </span>
+                        <span id="admin-user-swims-count">${user.swims || 0}</span>
+                        ${canManageSwims ? `<button id="admin-add-swim-btn" class="status-btn" style="margin: 0; padding: 0.2rem 0.6rem;">+1</button>` : ''}
+                     </div>` : ''}
                 </div>`;
         }
 
         container.innerHTML = `
             <div class="event-content-split" id="admin-user-profile-container">
                 ${generalInfoHtml}
-                <div class="event-details-section" id="admin-user-membership-container">
-                     <h3>${DIFFICULTY_SVG} Status & Level</h3>
-                     <p>${USER_SVG} <strong>Member:</strong> ${user.is_member !== undefined ? (user.is_member ? 'Yes' : 'No') : 'N/A'}</p>
-                     <p>${INSTRUCTOR_SVG} <strong>Instructor:</strong> ${user.is_instructor !== undefined ? (user.is_instructor ? 'Yes' : 'No') : 'N/A'}</p>
-                     <p>${FREE_SESSIONS_SVG} <strong>Free Sessions:</strong> ${user.free_sessions !== undefined ? user.free_sessions : 'N/A'}</p>
-                     <div class="detail-difficulty-control" style="${user.difficulty_level === undefined ? 'display:none;' : ''}">
-                        <strong>${DIFFICULT_SVG} Difficulty Level:</strong>
-                        <input type="number" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5">
-                     </div>
-                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; margin-left: 0; margin-right: 0;">
-                        <span style="display: flex; align-items: center; gap: 0.5rem;">
-                            ${TROPHY_SVG} <strong>Swims:</strong> 
-                        </span>
-                        <span id="admin-user-swims-count">${user.swims || 0}</span>
-                        ${canManageUsers ? `<button id="admin-add-swim-btn" class="status-btn" style="margin: 0; padding: 0.2rem 0.6rem;">+1</button>` : ''}
-                     </div>
-                </div>
+                ${membershipInfoHtml}
                 ${permissionsHtml}
             </div>
         `;
 
-        if (canManageUsers) {
+        if (canManageSwims) {
             const addSwimBtn = document.getElementById('admin-add-swim-btn');
             if (addSwimBtn) {
                 addSwimBtn.onclick = async () => {
@@ -224,16 +467,18 @@ function renderTab(tabName, user, isPresident, canManageUsers) {
         }
 
         const difficultyInput = document.getElementById('admin-user-difficulty');
-        difficultyInput.onchange = async () => {
-            const level = difficultyInput.value;
-            try {
-                await ajaxPost(`/api/admin/user/${user.id}/elements`, { difficulty_level: level });
-                notify('Success', 'Difficulty level updated', 'success');
-            } catch (e) {
-                console.error(e);
-                notify('Error', 'Failed to update difficulty', 'error');
-            }
-        };
+        if (difficultyInput) {
+            difficultyInput.onchange = async () => {
+                const level = difficultyInput.value;
+                try {
+                    await ajaxPost(`/api/admin/user/${user.id}/elements`, { difficulty_level: level });
+                    notify('Success', 'Difficulty level updated', 'success');
+                } catch (e) {
+                    console.error(e);
+                    notify('Error', 'Failed to update difficulty', 'error');
+                }
+            };
+        }
 
         if (isPresident) {
             const bindPermissionToggle = (id, field) => {

@@ -1,21 +1,18 @@
 const { statusObject } = require('../misc/status.js');
-const UserDB = require('./userDB.js');
 const TransactionsDB = require('./transactionDB.js');
 const TagsDB = require('./tagsDB.js');
+const UserDB = require('./userDB.js');
 const Globals = require('../misc/globals.js');
 
 /**
- * eventsDB module.
- * Provides low-level database operations for events, including filtering by difficulty and tags,
- * week-based scheduling, and attendee management.
+ * Database operations for events, attendee management, and scheduling.
  */
 class eventsDB {
     /**
-     * Retrieves all events from the database that have a difficulty level less than or equal to the specified maximum difficulty.
-     * Events are ordered by their start time in ascending order.
-     * @param {object} db - The database instance.
-     * @param {number} max_difficulty - The maximum difficulty level of events to retrieve.
-     * @returns {Promise<Array<object>>} A promise that resolves to an array of event objects.
+     * Fetch all events up to max difficulty, ordered by start time.
+     * @param {object} db
+     * @param {number} max_difficulty
+     * @returns {Promise<Array<object>>}
      */
     static async get_all_events(db, max_difficulty) {
         return db.all(
@@ -25,17 +22,14 @@ class eventsDB {
     }
 
     /**
-     * Retrieves events for a specific week, based on a given date, that have a difficulty level less than or equal to the specified maximum difficulty.
-     * The week starts on Monday and ends on Sunday. Events are ordered by their start time in ascending order.
-     * Also checks tag-based restrictions (min difficulty and whitelists).
-     * @param {object} db - The database instance.
-     * @param {number} max_difficulty - The maximum difficulty level of events to retrieve.
-     * @param {Date} [date=new Date()] - The date within the target week. Defaults to the current date.
-     * @param {number} userId - The ID of the user requesting the events.
-     * @returns {Promise<statusObject>} A statusObject containing an array of event objects.
+     * Fetch events for a specific week up to max difficulty, including attendance status.
+     * @param {object} db
+     * @param {number} max_difficulty
+     * @param {Date} [date]
+     * @param {number} userId
+     * @returns {Promise<statusObject>}
      */
     static async get_events_for_week(db, max_difficulty, date = new Date(), userId = null) {
-        // Calculate start and end of the week (Monday to Sunday)
         const startOfWeek = new Date(date);
         startOfWeek.setDate(startOfWeek.getDate() - (startOfWeek.getDay() === 0 ? 6 : startOfWeek.getDay() - 1));
         startOfWeek.setHours(0, 0, 0, 0);
@@ -44,7 +38,6 @@ class eventsDB {
         endOfWeek.setDate(endOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
-        // Initial fetch by date range and base difficulty, including attendance status
         const events = await db.all(
             `SELECT e.*, 
              EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
@@ -55,23 +48,19 @@ class eventsDB {
         );
 
         const visibleEvents = [];
-        // Perform secondary filtering based on tag restrictions
         for (const event of events) {
             const tags = await TagsDB.getTagsForEvent(db, event.id);
             let authorized = true;
 
             for (const tag of tags) {
-                // Check if tag has its own min difficulty requirement
                 if (tag.min_difficulty && tag.min_difficulty > max_difficulty) {
                     authorized = false;
                     break;
                 }
 
-                // Check if tag has a whitelist of allowed users
                 const whitelist = await TagsDB.getWhitelist(db, tag.id);
                 if (whitelist.getData() && whitelist.getData().length > 0) {
-                    const onList = whitelist.getData().find(u => u.id === userId);
-                    if (!onList) {
+                    if (!whitelist.getData().find(u => u.id === userId)) {
                         authorized = false;
                         break;
                     }
@@ -85,32 +74,27 @@ class eventsDB {
         }
 
         visibleEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
-
         return new statusObject(200, null, visibleEvents);
     }
 
     /**
-     * Retrieves events for a week relative to the current week, based on an offset.
-     * An offset of 0 means the current week, 1 means next week, -1 means last week, and so on.
-     * @param {object} db - The database instance.
-     * @param {number} max_difficulty - The maximum difficulty level of events to retrieve.
-     * @param {number} [offset=0] - The offset in weeks from the current week. Defaults to 0.
-     * @param {number} userId - The ID of the user requesting the events.
+     * Fetch events for a relative week offset.
+     * @param {object} db
+     * @param {number} max_difficulty
+     * @param {number} offset
+     * @param {number} userId
      * @returns {Promise<statusObject>}
      */
     static async get_events_relative_week(db, max_difficulty, offset = 0, userId = null) {
-        const now = new Date();
-        const targetDate = new Date(now);
-        targetDate.setDate(now.getDate() + offset * 7);
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + offset * 7);
         return this.get_events_for_week(db, max_difficulty, targetDate, userId);
     }
 
     /**
-     * Retrieves events for admin management with filtering and sorting options.
-     * Includes full details and pagination.
-     * @param {object} db - The database instance.
-     * @param {object} options - Options for pagination, search, and sorting.
-     * @param {boolean} options.showPast - Whether to include past events.
+     * Fetch paginated events for admin with search/sort.
+     * @param {object} db
+     * @param {object} options
      * @returns {Promise<statusObject>}
      */
     static async getEventsAdmin(db, options) {
@@ -144,15 +128,12 @@ class eventsDB {
             const query = `SELECT * FROM events ${whereClause} ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`;
             const events = await db.all(query, [...params, limit, offset]);
 
-            // Enhance events with tags for admin view
             for (const event of events) {
                 event.tags = await TagsDB.getTagsForEvent(db, event.id);
             }
 
-            const countQuery = `SELECT COUNT(*) as count FROM events ${whereClause}`;
-            const countResult = await db.get(countQuery, params);
-            const totalEvents = countResult ? countResult.count : 0;
-            const totalPages = Math.ceil(totalEvents / limit);
+            const countResult = await db.get(`SELECT COUNT(*) as count FROM events ${whereClause}`, params);
+            const totalPages = Math.ceil((countResult ? countResult.count : 0) / limit);
 
             return new statusObject(200, null, { events, totalPages, currentPage: page });
         } catch (error) {
@@ -162,33 +143,22 @@ class eventsDB {
     }
 
     /**
-     * Retrieves an event by its ID, ensuring the user has permission to see it.
-     * Performs strict checks on difficulty and tag-based restrictions.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} id - The event ID.
+     * Fetch event by ID with permission and tag checks.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} id
      * @returns {Promise<statusObject>}
      */
     static async get_event_by_id(req, db, id) {
-        const event = await db.get(
-            'SELECT * FROM events WHERE id = ?',
-            [id]
-        );
+        const event = await db.get('SELECT * FROM events WHERE id = ?', [id]);
+        if (!event) return new statusObject(404, 'Event not found');
 
-        if (!event) {
-            return new statusObject(404, 'Event not found');
-        }
-
-        // Determine effective difficulty limit for the user
         const userDifficulty = req.user ? (await UserDB.getElements(req, db, "difficulty_level")).getData().difficulty_level : (new Globals()).getInt("Unauthorized_max_difficulty");
 
-
-        // Check base event difficulty
         if (event.difficulty_level > userDifficulty) {
             return new statusObject(401, 'User not authorized');
         }
 
-        // Check tag restrictions
         const tags = await TagsDB.getTagsForEvent(db, id);
         let minNeededDifficulty = event.difficulty_level;
 
@@ -196,17 +166,14 @@ class eventsDB {
             if (tag.min_difficulty) {
                 minNeededDifficulty = Math.max(minNeededDifficulty, tag.min_difficulty);
                 if (tag.min_difficulty > userDifficulty) {
-                    return new statusObject(401, `User not authorized (Tag restriction: ${tag.name})`);
+                    return new statusObject(401, `User not authorized (Tag: ${tag.name})`);
                 }
             }
 
-            // Check whitelist for restricted tags
             const whitelist = await TagsDB.getWhitelist(db, tag.id);
             if (whitelist.getData() && whitelist.getData().length > 0) {
-                const userId = req.user.id;
-                const onList = whitelist.getData().find(u => u.id === userId);
-                if (!onList) {
-                    return new statusObject(401, `User not authorized (Tag restriction: ${tag.name})`);
+                if (!whitelist.getData().find(u => u.id === req.user.id)) {
+                    return new statusObject(401, `User not authorized (Tag: ${tag.name})`);
                 }
             }
         }
@@ -217,9 +184,9 @@ class eventsDB {
     }
 
     /**
-     * Retrieves an event by its ID for admin purposes (bypasses security checks).
-     * @param {object} db - The database instance.
-     * @param {number} id - The event ID.
+     * Fetch event by ID for admin (no permission checks).
+     * @param {object} db
+     * @param {number} id
      * @returns {Promise<statusObject>}
      */
     static async getEventByIdAdmin(db, id) {
@@ -234,9 +201,9 @@ class eventsDB {
     }
 
     /**
-     * Creates a new event record.
-     * @param {object} db - The database instance.
-     * @param {object} data - The event data.
+     * Create new event and associate tags.
+     * @param {object} db
+     * @param {object} data
      * @returns {Promise<statusObject>}
      */
     static async createEvent(db, data) {
@@ -249,11 +216,8 @@ class eventsDB {
             );
             const eventId = result.lastID;
 
-            // Associate tags if provided
             if (tags && Array.isArray(tags)) {
-                for (const tagId of tags) {
-                    await TagsDB.associateTag(db, eventId, tagId);
-                }
+                for (const tagId of tags) await TagsDB.associateTag(db, eventId, tagId);
             }
 
             return new statusObject(200, null, { id: eventId });
@@ -264,10 +228,10 @@ class eventsDB {
     }
 
     /**
-     * Updates an existing event record.
-     * @param {object} db - The database instance.
-     * @param {number} id - The event ID.
-     * @param {object} data - The updated event data.
+     * Update event and sync tags.
+     * @param {object} db
+     * @param {number} id
+     * @param {object} data
      * @returns {Promise<statusObject>}
      */
     static async updateEvent(db, id, data) {
@@ -278,12 +242,9 @@ class eventsDB {
                 [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, id]
             );
 
-            // Re-sync tags
             if (tags && Array.isArray(tags)) {
                 await TagsDB.clearEventTags(db, id);
-                for (const tagId of tags) {
-                    await TagsDB.associateTag(db, id, tagId);
-                }
+                for (const tagId of tags) await TagsDB.associateTag(db, id, tagId);
             }
 
             return new statusObject(200, 'Event updated');
@@ -293,9 +254,9 @@ class eventsDB {
     }
 
     /**
-     * Deletes an event record.
-     * @param {object} db - The database instance.
-     * @param {number} id - The event ID.
+     * Delete event.
+     * @param {object} db
+     * @param {number} id
      * @returns {Promise<statusObject>}
      */
     static async deleteEvent(db, id) {
@@ -308,113 +269,108 @@ class eventsDB {
     }
 
     /**
-     * Checks if a user is currently registered for an event.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Verify if user is attending an event.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<statusObject>}
      */
     static async is_user_attending_event(req, db, eventId) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         const event = await this.get_event_by_id(req, db, eventId);
-        if (event.isError()) {
-            return event;
-        }
-
-        const userId = req.user.id;
+        if (event.isError()) return event;
 
         const existingJoin = await db.get(
             'SELECT * FROM event_attendees WHERE event_id = ? AND user_id = ? AND is_attending = 1',
-            [eventId, userId]
+            [eventId, req.user.id]
         );
 
         return new statusObject(200, null, !!existingJoin);
     }
 
     /**
-     * Creates an attendance record for a user at an event.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
-     * @param {number|null} transactionId - Associated payment transaction, if any.
+     * Register user for an event.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
+     * @param {number|null} transactionId
      * @returns {Promise<statusObject>}
      */
     static async attend_event(req, db, eventId, transactionId = null) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         const event = await this.get_event_by_id(req, db, eventId);
-        if (event.isError()) {
-            return event;
-        }
-
-        const userId = req.user.id;
-        const joinDate = new Date();
+        if (event.isError()) return event;
 
         const existingJoin = await this.is_user_attending_event(req, db, eventId);
-        if (existingJoin.isError()) {
-            return existingJoin;
-        }
-
-        if (existingJoin.getData()) {
-            return new statusObject(409, 'User already attending event');
-        }
+        if (existingJoin.isError()) return existingJoin;
+        if (existingJoin.getData()) return new statusObject(409, 'User already attending');
 
         await db.run(
             'INSERT INTO event_attendees (event_id, user_id, joined_at, payment_transaction_id) VALUES (?, ?, ?, ?)',
-            [eventId, userId, joinDate.toISOString(), transactionId]
+            [eventId, req.user.id, new Date().toISOString(), transactionId]
         );
 
-        return new statusObject(200, 'User successfully joined event');
+        return new statusObject(200, 'Joined successfully');
     }
 
     /**
-     * Marks a user as no longer attending an event (soft delete).
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Remove user from an event (soft delete).
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<statusObject>}
      */
     static async leave_event(req, db, eventId) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
         const event = await this.get_event_by_id(req, db, eventId);
-        if (event.isError()) {
-            return event;
-        }
-
-        const userId = req.user.id;
+        if (event.isError()) return event;
 
         const existingJoin = await this.is_user_attending_event(req, db, eventId);
-        if (existingJoin.isError()) {
-            return existingJoin;
-        }
-
-        if (!existingJoin.getData()) {
-            return new statusObject(409, 'User is not attending event');
-        }
+        if (existingJoin.isError()) return existingJoin;
+        if (!existingJoin.getData()) return new statusObject(409, 'User not attending');
 
         await db.run(
             'UPDATE event_attendees SET is_attending = 0, left_at = ? WHERE event_id = ? AND user_id = ?',
-            [new Date().toISOString(), eventId, userId]
+            [new Date().toISOString(), eventId, req.user.id]
         );
 
-        return new statusObject(200, 'User successfully left event');
+        return new statusObject(200, 'Left successfully');
     }
 
     /**
-     * Retrieves the list of active attendees for an event.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Fetch all users who have interacted with an event (attended or left).
+     * @param {object} db
+     * @param {number} eventId
+     * @returns {Promise<statusObject>}
+     */
+    static async get_all_event_attendees_history(db, eventId) {
+        try {
+            const attendees = await db.all(
+                `SELECT u.id, u.first_name, u.last_name, u.email, ea.is_attending, ea.left_at
+                 FROM users u
+                 JOIN event_attendees ea ON u.id = ea.user_id
+                 WHERE ea.event_id = ?
+                 ORDER BY ea.joined_at ASC`, [eventId]
+            );
+            return new statusObject(200, null, attendees);
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Fetch active attendees for an event.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<statusObject>}
      */
     static async get_users_attending_event(req, db, eventId) {
-
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         const event = await this.get_event_by_id(req, db, eventId);
-        if (event.isError()) {
-            return event;
-        }
+        if (event.isError()) return event;
 
         const events = await db.all(
             `SELECT u.id, u.first_name, u.last_name, u.email
@@ -426,160 +382,114 @@ class eventsDB {
     }
 
     /**
-     * Retrieves the current attendance count for an event.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Fetch attendee count for an event.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<statusObject>}
      */
     static async get_event_attendance_count(req, db, eventId) {
-
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         const event = await this.get_event_by_id(req, db, eventId);
-        if (event.isError()) {
-            return event;
-        }
+        if (event.isError()) return event;
 
-        const result = await db.get(
-            `SELECT COUNT(*) AS attendance_count
-             FROM event_attendees
-             WHERE event_id = ? AND is_attending = 1`, [eventId]
-        );
-        return new statusObject(200, null, result.attendance_count);
+        const result = await db.get(`SELECT COUNT(*) AS count FROM event_attendees WHERE event_id = ? AND is_attending = 1`, [eventId]);
+        return new statusObject(200, null, result.count);
     }
 
     /**
-     * Attempts to find a transaction ID for an upfront cost payment to refund.
-     * Looks first for the current user's most recent "leave" record, 
-     * then falls back to any available refund from another user if necessary.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Find a transaction ID for event refund.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<statusObject>}
      */
     static async get_event_refund_id(req, db, eventId) {
         if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         const event = await this.get_event_by_id(req, db, eventId);
-        if (event.isError()) {
-            return event;
-        }
+        if (event.isError()) return event;
 
-        // Try to find a transaction specifically from the current user leaving
         const userRefund = await db.get(
-            `SELECT payment_transaction_id
-             FROM event_attendees
-             WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL
+            `SELECT payment_transaction_id FROM event_attendees 
+             WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL 
              ORDER BY left_at ASC LIMIT 1`, [eventId, req.user.id]
         );
+        if (userRefund && userRefund.payment_transaction_id) return new statusObject(200, null, userRefund);
 
-        if (userRefund && userRefund.payment_transaction_id) {
-            return new statusObject(200, null, userRefund);
-        }
-
-        // Fallback: find any non-attending record with a transaction ID to "re-use" for the refund pool
         const otherRefund = await db.get(
-            `SELECT payment_transaction_id, user_id
-             FROM event_attendees
-             WHERE event_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL
+            `SELECT payment_transaction_id, user_id FROM event_attendees 
+             WHERE event_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL 
              ORDER BY left_at ASC LIMIT 1`, [eventId]
         );
+        if (otherRefund && otherRefund.payment_transaction_id) return new statusObject(200, null, otherRefund);
 
-        if (otherRefund && otherRefund.payment_transaction_id) {
-            return new statusObject(200, null, otherRefund);
-        }
-
-
-        return new statusObject(404, 'No refund transaction found');
+        return new statusObject(404, 'No refund found');
     }
 
     /**
-     * Processes a manual refund for an event.
-     * Adds a positive transaction to the user's account and clears the link to the event.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
-     * @param {number} user_id - The ID of the user receiving the refund.
+     * Process manual refund for an event.
+     * @param {object} db
+     * @param {number} eventId
+     * @param {number} user_id
      * @returns {Promise<statusObject>}
      */
     static async refundEvent(db, eventId, user_id) {
         const eventRes = await this.getEventByIdAdmin(db, eventId);
-        if (eventRes.isError()) {
-            return eventRes;
-        }
+        if (eventRes.isError()) return eventRes;
         const event = eventRes.getData();
 
-        // Add the refund transaction
-        TransactionsDB.add_transaction_admin(db, user_id, event.upfront_cost, `Refund for ${event.title} upfront cost`);
+        TransactionsDB.add_transaction_admin(db, user_id, event.upfront_cost, `Refund for ${event.title}`);
 
-        // Clear the transaction link in attendance records
         await db.run(
             `UPDATE event_attendees SET payment_transaction_id = NULL 
              WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL`,
             [eventId, user_id]
         );
 
-        return new statusObject(200, 'Event refunds processed');
+        return new statusObject(200, 'Refund processed');
     }
 
     /**
-     * Checks if the user has a transaction linked to their attendance at an event.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
-     * @returns {Promise<statusObject>}
-     */
-    /**
-     * Checks if the user has a transaction linked to their attendance at an event.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Verify if user paid for an event.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<statusObject>}
      */
     static async isUserPayingForEvent(req, db, eventId) {
         const paying = await db.get(
-            `SELECT payment_transaction_id 
-             FROM event_attendees 
+            `SELECT payment_transaction_id FROM event_attendees 
              WHERE event_id = ? AND user_id = ? AND payment_transaction_id IS NOT NULL`,
             [eventId, req.user.id]
         );
-
         return new statusObject(200, null, !!paying);
     }
 
     /**
-     * Retrieves the count of instructors (coaches) currently attending an event.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Fetch attending coach count.
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<number>}
      */
     static async getCoachesAttendingCount(db, eventId) {
         const result = await db.get(
-            `SELECT COUNT(*) as count 
-             FROM event_attendees ea
-             JOIN users u ON ea.user_id = u.id
-             WHERE ea.event_id = ? AND ea.is_attending = 1 AND u.is_instructor = 1`,
-            [eventId]
+            `SELECT COUNT(*) as count FROM event_attendees ea JOIN users u ON ea.user_id = u.id
+             WHERE ea.event_id = ? AND ea.is_attending = 1 AND u.is_instructor = 1`, [eventId]
         );
         return result ? result.count : 0;
     }
 
     /**
-     * Marks all currently attending users as 'no longer attending' for a specific event.
-     * Useful for cancelling event attendance when requirements are no longer met.
-     * @param {object} db - The database instance.
-     * @param {number} eventId - The event ID.
+     * Remove all attendees from an event.
+     * @param {object} db
+     * @param {number} eventId
      * @returns {Promise<void>}
      */
     static async removeAllAttendees(db, eventId) {
-        await db.run(
-            `UPDATE event_attendees 
-             SET is_attending = 0, left_at = ? 
-             WHERE event_id = ? AND is_attending = 1`,
-            [new Date().toISOString(), eventId]
-        );
+        await db.run(`UPDATE event_attendees SET is_attending = 0, left_at = ? WHERE event_id = ? AND is_attending = 1`, [new Date().toISOString(), eventId]);
     }
-
 }
 
 module.exports = eventsDB;

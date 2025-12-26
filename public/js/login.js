@@ -4,12 +4,9 @@ import { Event } from "./misc/event.js";
 import { getPreviousPath } from './misc/history.js';
 
 /**
- * Login Module.
- * Manages the login view, including form validation, authentication requests,
- * and intelligent redirection (returning the user to their previous page).
+ * User login view management.
+ * @module Login
  */
-
-// --- Constants & Templates ---
 
 const HTML_TEMPLATE = `<div id="/login-view" class="view hidden">
             <div class="small-container">
@@ -17,9 +14,21 @@ const HTML_TEMPLATE = `<div id="/login-view" class="view hidden">
                 <div class="form-info">
                     <article class="form-box">
                         <h3>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                            </svg>
+                            <svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+  <path d="M21 12h-13l3 -3" />
+  <path d="M11 15l-3 -3" />
+</svg>
                             Login to your account
                         </h3>
                         <form id="login-form">
@@ -43,20 +52,14 @@ const HTML_TEMPLATE = `<div id="/login-view" class="view hidden">
             </div>
         </div>`;
 
-let messageElement = null; // Container for inline error messages
+let messageElement = null;
 let email = null;
 let password = null;
 
-
-// --- State ---
-
-/** Event emitted when a user successfully logs in */
 const LoginEvent = new Event();
 
-// --- Event Binding ---
-
 /**
- * Resets the login form to its default state.
+ * Reset login form fields.
  */
 function setupLoginForm() {
     if (messageElement) messageElement.textContent = '';
@@ -65,75 +68,54 @@ function setupLoginForm() {
 }
 
 /**
- * Listener for SPA view changes.
- * Redirects already-authenticated users away from the login page.
+ * Handle view switch to login; redirect if already authenticated.
+ * @param {object} params
  */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/login') {
         ajaxGet('/api/auth/status').then((data => {
             if (data.authenticated) {
-                // If already logged in, go back or to events
-                const previousPath = getPreviousPath();
-                if (!previousPath || previousPath === '/login' || previousPath === '/signup' || previousPath === '/home')
-                    switchView('/events');
-                else {
-                    switchView(previousPath);
-                }
+                const prev = getPreviousPath();
+                if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
+                else switchView(prev);
             }
         }));
     }
     setupLoginForm();
 }
 
-// --- Initialization ---
-
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const loginFooter = document.getElementById('login-footer');
-
     email = document.getElementById('email');
     password = document.getElementById('password');
 
-    // Dynamically create message area for errors
     messageElement = document.createElement('div');
     messageElement.id = 'login-message';
     messageElement.setAttribute('role', 'alert');
     messageElement.style.marginBottom = '0';
     loginFooter.appendChild(messageElement);
 
-    // Handle form submission
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-
         const formData = new FormData(loginForm);
-        const emailVal = formData.get('email');
-        const passwordVal = formData.get('password');
 
         try {
-            // Perform the authentication request
-            await ajaxPost('/api/auth/login', { email: emailVal, password: passwordVal });
-            
-            // Notify other components (like navbar) of the state change
+            await ajaxPost('/api/auth/login', { email: formData.get('email'), password: formData.get('password') });
             LoginEvent.notify({ authenticated: true });
 
-            // Intelligent redirect: go to where they were before, or default to events
-            const previousPath = getPreviousPath();
-            if (!previousPath || previousPath === '/login' || previousPath === '/signup' || previousPath === '/home')
-                switchView('/events');
-            else
-                switchView(previousPath);
+            const prev = getPreviousPath();
+            if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
+            else switchView(prev);
         } catch (error) {
-            // Display error feedback
-            messageElement.textContent = error || 'Login failed. Please try again.';
+            messageElement.textContent = error || 'Login failed.';
             messageElement.style.color = '#FF6961';
-            console.error('Login failed:', error);
         }
     });
 
     ViewChangedEvent.subscribe(ViewNavigationEventListener);
 });
 
-// Inject template into the main layout
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
 export { LoginEvent };

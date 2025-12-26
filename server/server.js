@@ -1,12 +1,9 @@
 /**
- * Main server entry point for the DUCC Website.
- * Sets up Express, middleware (session, passport, static files), 
- * initializes database connections, and registers API routes.
+ * Main server entry point. Sets up Express, middleware, database, and routes.
  */
 
 const PORT = process.env.PORT || 3000;
 
-// Global error handler for unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
@@ -21,21 +18,21 @@ const passport = require('passport');
 const app = express();
 const fs = require('fs');
 
-// Middleware to parse JSON and URL-encoded request bodies
+// Parse request bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the 'public' directory with basic caching for images
+// Serve static files with image caching
 app.use(express.static('public', {
   maxAge: '1h',
   setHeaders: (res, path) => {
     if (path.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
-      res.set('Cache-Control', 'public, max-age=86400'); // 1 day for images
+      res.set('Cache-Control', 'public, max-age=86400');
     }
   }
 }));
 
-// Configure session management with SQLite storage
+// Session management with SQLite storage
 app.use(session({
   store: new SQLiteStore({
     db: 'database.db',
@@ -46,23 +43,21 @@ app.use(session({
   saveUninitialized: false,
 }));
 
-// Initialize Passport for authentication
+// Passport authentication
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Initialize global variables/configuration
+// Global configuration
 const Globals = require('./misc/globals.js');
 new Globals();
 
 let db;
 
 /**
- * Async initialization block.
- * Connects to the database and registers all API routes before starting the server.
+ * Initialize database, register routes, and start server.
  */
 (async () => {
   try {
-    // Open the SQLite database - use environment variable for Docker persistence
     const dbPath = process.env.DATABASE_PATH || 'database.db';
     db = await open({
       filename: dbPath,
@@ -71,22 +66,20 @@ let db;
 
     console.log(`Connected to the SQLite database at ${dbPath}.`);
 
-    // Basic health check endpoint
     app.get('/api/health', (req, res) => {
       res.status(200).send('OK');
     });
 
-    // Initialize Authentication API specifically first as other routes might depend on it
+    // Register Auth API first
     const Auth = require('./api/AuthAPI.js');
     const auth = new Auth(app, db, passport);
     auth.registerRoutes();
 
-    // Example protected dashboard route
     app.get('/dashboard', auth.isAuthenticated, (req, res) => {
       res.send(`<h1>Welcome to your dashboard, ${req.user.first_name}!</h1><a href="/logout">Logout</a>`);
     });
 
-    // Dynamically load and register all other API route modules from the 'api' directory
+    // Register remaining API modules dynamically
     const apiDir = path.join(__dirname, 'api');
     const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.js') && file !== 'AuthAPI.js');
 
@@ -96,12 +89,11 @@ let db;
       apiInstance.registerRoutes();
     }
 
-    // Catch-all route to serve the SPA (Single Page Application) frontend
+    // SPA catch-all route
     app.get(/.*/, (req, res) => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    // Start listening for incoming requests
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
       console.log('Press Ctrl+C to stop the server.');

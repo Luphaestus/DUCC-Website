@@ -1,19 +1,15 @@
 /**
- * Event Module.
- * Implements a lightweight Observer (Pub/Sub) pattern.
- * This is used for decoupled communication between different parts of the frontend
- * (e.g., notifying the navbar when a login occurs).
+ * Lightweight Pub/Sub implementation for decoupled communication.
  */
 class Event {
     constructor() {
-        /** @type {Set<Function>} Stores the unique callback functions for this event */
         this.subscribers = new Set();
     }
 
     /**
-     * Registers a callback function to be executed when the event is notified.
-     * @param {Function} callback - The function to call.
-     * @returns {Function} An unsubscribe function that removes the callback when called.
+     * Subscribe to the event.
+     * @param {Function} callback
+     * @returns {Function} Unsubscribe handle.
      */
     subscribe(callback) {
         this.subscribers.add(callback);
@@ -21,10 +17,9 @@ class Event {
     }
 
     /**
-     * Registers a callback that will be executed only ONCE.
-     * Automatically unsubscribes after the first execution.
-     * @param {Function} callback - The function to call.
-     * @returns {Function} An unsubscribe function.
+     * Subscribe for a single execution.
+     * @param {Function} callback
+     * @returns {Function} Unsubscribe handle.
      */
     once(callback) {
         const onceWrapper = (data) => {
@@ -35,19 +30,16 @@ class Event {
     }
 
     /**
-     * Removes a specific callback from the subscription list.
-     * @param {Function} callback - The callback to remove.
-     * @returns {Function} A reference back to subscribe for chaining (optional).
+     * Unsubscribe a callback.
+     * @param {Function} callback
      */
     unsubscribe(callback) {
         this.subscribers.delete(callback);
-        return () => this.subscribe(callback);
     }
 
     /**
-     * Executes all registered callback functions with the provided data.
-     * Wraps calls in try-catch to ensure one failing subscriber doesn't break others.
-     * @param {*} data - Payload to pass to each subscriber.
+     * Trigger the event, notifying all subscribers.
+     * @param {*} data - Payload.
      */
     notify(data) {
         this.subscribers.forEach(sub => {
@@ -60,7 +52,7 @@ class Event {
     }
 
     /**
-     * Removes all registered subscribers for this event.
+     * Remove all subscribers.
      */
     clear() {
         this.subscribers.clear();

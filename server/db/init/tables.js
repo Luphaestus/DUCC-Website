@@ -1,6 +1,9 @@
-const { createTable, generateRandomPassword } = require('./utils');
-const bcrypt = require('bcrypt');
+const { createTable } = require('./utils');
 
+/**
+ * Defines and creates the database schema.
+ * @param {object} db - Database instance.
+ */
 async function createTables(db) {
   await createTable('colleges', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -9,34 +12,28 @@ async function createTables(db) {
 
   await createTable('users', `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-
       email TEXT UNIQUE NOT NULL,
       hashed_password TEXT,
       first_name TEXT NOT NULL,
       last_name TEXT NOT NULL,
-
       date_of_birth DATE,
       college_id INTEGER,
       emergency_contact_name TEXT,
       emergency_contact_phone TEXT,
       home_address TEXT,
       phone_number TEXT,
-      
       has_medical_conditions BOOLEAN,
       medical_conditions_details TEXT,
       takes_medication BOOLEAN,
       medication_details TEXT,
-
       free_sessions INTEGER NOT NULL DEFAULT 3,
       is_member BOOLEAN NOT NULL DEFAULT 0,
-
       agrees_to_fitness_statement BOOLEAN,
       agrees_to_club_rules BOOLEAN,
       agrees_to_pay_debts BOOLEAN,
       agrees_to_data_storage BOOLEAN,
       agrees_to_keep_health_data BOOLEAN,
       filled_legal_info BOOLEAN NOT NULL DEFAULT 0,
-      
       difficulty_level INTEGER not NULL DEFAULT 1,
       can_manage_events BOOLEAN NOT NULL DEFAULT 0,
       can_manage_users BOOLEAN NOT NULL DEFAULT 0,
@@ -44,13 +41,9 @@ async function createTables(db) {
       is_instructor BOOLEAN NOT NULL DEFAULT 0,
       is_exec BOOLEAN NOT NULL DEFAULT 0,
       first_aid_expiry DATE,
-
       swims INTEGER NOT NULL DEFAULT 0,
-
       profile_picture_path TEXT,
-
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
       FOREIGN KEY (college_id) REFERENCES colleges(id)
     `, db);
 
@@ -65,7 +58,6 @@ async function createTables(db) {
       max_attendees INTEGER,
       upfront_cost REAL NOT NULL DEFAULT 0,
       upfront_refund_cutoff DATETIME,
-      
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     `, db);
 
@@ -116,6 +108,16 @@ async function createTables(db) {
       PRIMARY KEY (tag_id, user_id),
       FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    `, db);
+
+  await createTable('swim_history', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      added_by INTEGER NOT NULL,
+      count INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
     `, db);
 }
 

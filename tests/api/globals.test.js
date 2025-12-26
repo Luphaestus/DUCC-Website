@@ -98,4 +98,19 @@ describe('Globals API', () => {
         expect(res.statusCode).toBe(200);
         expect(mockGlobals.set).toHaveBeenCalledWith('SomeKey', 'NewValue');
     });
+
+    test('GET /api/globals/public/:key returns whitelisted values', async () => {
+        mockGlobals.get.mockImplementation((key) => {
+            if (key === 'MembershipCost') return 50;
+            return null;
+        });
+
+        const res = await request(app)
+            .get('/api/globals/public/MembershipCost,SecretKey')
+            .set('x-mock-user', 'user');
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.res).toEqual({ MembershipCost: 50 });
+        expect(res.body.res.SecretKey).toBeUndefined();
+    });
 });

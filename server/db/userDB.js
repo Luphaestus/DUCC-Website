@@ -1,16 +1,15 @@
 const { statusObject } = require('../misc/status.js');
 
 /**
- * UserDB module.
- * Provides database operations for user profile management, permissions, and administrative user listings.
+ * Database operations for user profiles, permissions, and administrative listings.
  */
 class UserDB {
 
     /**
-     * Checks if the currently authenticated user has general user management permissions.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @returns {Promise<statusObject>} A statusObject containing the boolean-like permission status (1 or 0).
+     * Verifies user management permissions.
+     * @param {object} req
+     * @param {object} db
+     * @returns {Promise<statusObject>}
      */
     static async canManageUsers(req, db) {
         if (!req.isAuthenticated()) {
@@ -27,15 +26,13 @@ class UserDB {
     }
 
     /**
-     * Retrieves a paginated and searchable list of users for administrative purposes.
-     * Includes the current balance for each user.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {object} options - Options for pagination (page, limit), searching (search), and sorting (sort, order).
-     * @returns {Promise<statusObject>} A statusObject containing the list of users and pagination metadata.
+     * Fetch paginated, searchable user list with balances.
+     * @param {object} req
+     * @param {object} db
+     * @param {object} options - Pagination, search, and sort parameters.
+     * @returns {Promise<statusObject>}
      */
     static async getUsers(req, db, options) {
-        // Authorization check: Must be able to manage users OR transactions OR be exec
         const perms = await db.get('SELECT can_manage_users, can_manage_transactions, is_exec FROM users WHERE id = ?', req.user.id);
         if (!perms || (!perms.can_manage_users && !perms.can_manage_transactions && !perms.is_exec)) {
             return new statusObject(403, 'User not authorized');
@@ -46,7 +43,6 @@ class UserDB {
 
         const isOnlyExec = perms.is_exec && !perms.can_manage_users && !perms.can_manage_transactions;
 
-        // Valid columns for sorting
         const allowedSorts = ['first_name', 'last_name', 'email', 'balance', 'first_aid_expiry', 'filled_legal_info', 'is_member', 'difficulty_level'];
         let sortCol = allowedSorts.includes(sort) ? sort : (isOnlyExec ? 'first_name' : 'last_name');
         let sortOrder = order === 'desc' ? 'DESC' : 'ASC';
@@ -54,13 +50,11 @@ class UserDB {
         let whereClause = '';
         const params = [];
 
-        // Simple multi-term text search
         if (search) {
             const terms = search.trim().split(/\s+/);
             const conditions = terms.map(term => {
                 const termPattern = `%${term}%`;
                 params.push(termPattern, termPattern);
-                // Restricted search for execs
                 if (isOnlyExec) return `(u.first_name LIKE ? OR u.last_name LIKE ? )`;
                 
                 params.push(termPattern);
@@ -85,7 +79,6 @@ class UserDB {
                 joinTransactions = `LEFT JOIN transactions t ON u.id = t.user_id`;
             }
 
-            // Enhanced sorting for names (case-insensitive)
             let orderBy = `${sortCol} ${sortOrder}`;
             if (sortCol === 'first_name' || isOnlyExec) {
                 orderBy = `u.first_name COLLATE NOCASE ${sortOrder}, u.last_name COLLATE NOCASE ${sortOrder}`;
@@ -105,12 +98,7 @@ class UserDB {
 
             const users = await db.all(query, [...params, limit, offset]);
 
-            // Get total count for pagination
-            const countQuery = `
-                SELECT COUNT(*) as count 
-                FROM users u
-                ${whereClause}
-            `;
+            const countQuery = `SELECT COUNT(*) as count FROM users u ${whereClause}`;
             const countResult = await db.get(countQuery, params);
             const totalUsers = countResult ? countResult.count : 0;
             const totalPages = Math.ceil(totalUsers / limit);
@@ -123,24 +111,18 @@ class UserDB {
     }
 
     /**
-     * Retrieves specific data elements (columns) for a user.
-     * Supports both reading own data and reading others (if admin).
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {string|string[]} elements - The column names to retrieve.
-     * @param {number|null} id - Target user ID (defaults to current user).
+     * Fetch specific columns for a user.
+     * @param {object} req
+     * @param {object} db
+     * @param {string|string[]} elements
+     * @param {number|null} id - Target user ID (defaults to current).
      * @returns {Promise<statusObject>}
      */
     static async getElements(req, db, elements, id = null) {
-        if (typeof elements === 'string') {
-            elements = [elements];
-        }
+        if (typeof elements === 'string') elements = [elements];
 
-        if (!req.isAuthenticated()) {
-            return new statusObject(401, 'User not authenticated');
-        }
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
-        // Authorization: Current user or someone with 'can_manage_users'
         if (id && ((await this.canManageUsers(req, db)).getData() !== 1)) {
             return new statusObject(403, 'User not authorized');
         }
@@ -150,9 +132,7 @@ class UserDB {
                 `SELECT ${elements.join(', ')} FROM users WHERE id = ?`,
                 id || req.user.id
             );
-            if (!user) {
-                return new statusObject(404, 'User not found');
-            }
+            if (!user) return new statusObject(404, 'User not found');
             return new statusObject(200, null, user);
         } catch (error) {
             console.error(`Database error in getElements (${elements.join(', ')}):`, error);
@@ -161,17 +141,15 @@ class UserDB {
     }
 
     /**
-     * Updates specific data elements (columns) for a user.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {object} data - Key-value pairs of column names and new values.
-     * @param {number|null} id - Target user ID (defaults to current user).
+     * Update user columns.
+     * @param {object} req
+     * @param {object} db
+     * @param {object} data
+     * @param {number|null} id
      * @returns {Promise<statusObject>}
      */
     static async writeElements(req, db, data, id = null) {
-        if (!req.isAuthenticated()) {
-            return new statusObject(401, 'User not authenticated');
-        }
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         if (id && ((await this.canManageUsers(req, db)).getData() !== 1)) {
             return new statusObject(403, 'User not authorized');
@@ -192,17 +170,15 @@ class UserDB {
     }
 
     /**
-     * Updates a user's membership status.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {boolean} is_member - New status.
-     * @param {number|null} userId - Target user ID (defaults to current user).
+     * Set membership status.
+     * @param {object} req
+     * @param {object} db
+     * @param {boolean} is_member
+     * @param {number|null} userId
      * @returns {Promise<statusObject>}
      */
     static async setMembershipStatus(req, db, is_member, userId = null) {
-        if (!req.isAuthenticated()) {
-            return new statusObject(401, 'User not authenticated');
-        }
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         if (userId && ((await this.canManageUsers(req, db)).getData() !== 1)) {
             return new statusObject(403, 'User not authorized');
@@ -219,19 +195,15 @@ class UserDB {
     }
 
     /**
-     * Removes a user from the system.
-     * Supports both soft delete (clearing password) and hard delete.
-     * Also cleans up linked attendance records.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {boolean} real - If true, performs a hard DELETE. Otherwise, updates password to NULL.
-     * @param {number|null} userId - Target user ID (defaults to current user).
+     * Remove user (soft or hard delete).
+     * @param {object} req
+     * @param {object} db
+     * @param {boolean} real - If true, performs hard delete.
+     * @param {number|null} userId
      * @returns {Promise<statusObject>}
      */
     static async removeUser(req, db, real = false, userId = null) {
-        if (!req.isAuthenticated()) {
-            return new statusObject(401, 'User not authenticated');
-        }
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
 
         if (userId && ((await this.canManageUsers(req, db)).getData() !== 1)) {
             return new statusObject(403, 'User not authorized');
@@ -239,23 +211,11 @@ class UserDB {
 
         try {
             if (!real) {
-                // Soft delete: keep the record but prevent login
-                await db.run(
-                    `UPDATE users SET hashed_password = NULL WHERE id = ?`,
-                    [userId || req.user.id]
-                );
+                await db.run(`UPDATE users SET hashed_password = NULL WHERE id = ?`, [userId || req.user.id]);
             } else {
-                // Hard delete: remove the record entirely
-                await db.run(
-                    `DELETE FROM users WHERE id = ?`,
-                    [userId || req.user.id]
-                );
+                await db.run(`DELETE FROM users WHERE id = ?`, [userId || req.user.id]);
             }
-            // Always remove attendance records for deleted/deactivated users
-            await db.run(
-                `DELETE FROM event_attendees WHERE user_id = ?`,
-                [userId || req.user.id]
-            );
+            await db.run(`DELETE FROM event_attendees WHERE user_id = ?`, [userId || req.user.id]);
             return new statusObject(200, null);
         } catch (error) {
             console.error('Database error in removeUser:', error);
@@ -264,9 +224,9 @@ class UserDB {
     }
 
     /**
-     * Checks if the currently authenticated user is an exec.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
+     * Verifies exec permissions.
+     * @param {object} req
+     * @param {object} db
      * @returns {Promise<statusObject>}
      */
     static async canManageSwims(req, db) {
@@ -281,11 +241,11 @@ class UserDB {
     }
 
     /**
-     * Adds a number of swims to a user.
-     * @param {object} req - The Express request object.
-     * @param {object} db - The database instance.
-     * @param {number} userId - Target user ID.
-     * @param {number} count - Number of swims to add.
+     * Add swims and record in history.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} userId
+     * @param {number} count
      * @returns {Promise<statusObject>}
      */
     static async addSwims(req, db, userId, count) {
@@ -294,26 +254,58 @@ class UserDB {
         if (!canManage.getData()) return new statusObject(403, 'User not authorized to manage swims');
 
         try {
+            await db.run('BEGIN TRANSACTION');
             await db.run('UPDATE users SET swims = swims + ? WHERE id = ?', [count, userId]);
+            await db.run('INSERT INTO swim_history (user_id, added_by, count) VALUES (?, ?, ?)', [userId, req.user.id, count]);
+            await db.run('COMMIT');
             return new statusObject(200, 'Swims added successfully');
         } catch (error) {
+            await db.run('ROLLBACK');
             return new statusObject(500, 'Database error');
         }
     }
 
     /**
-     * Gets the swim leaderboard.
-     * @param {object} db - The database instance.
+     * Get academic year start date (Sept 1st).
+     */
+    static getAcademicYearStart() {
+        const now = new Date();
+        const year = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
+        return new Date(year, 8, 1).toISOString();
+    }
+
+    /**
+     * Fetch swim leaderboard (all-time or yearly).
+     * @param {object} db
+     * @param {boolean} yearly
      * @returns {Promise<statusObject>}
      */
-    static async getSwimsLeaderboard(db) {
+    static async getSwimsLeaderboard(db, yearly = false) {
         try {
-            const users = await db.all('SELECT first_name, last_name, swims FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC');
+            let query;
+            let params = [];
+
+            if (yearly) {
+                const start = this.getAcademicYearStart();
+                query = `
+                    SELECT u.first_name, u.last_name, SUM(sh.count) as swims
+                    FROM users u
+                    JOIN swim_history sh ON u.id = sh.user_id
+                    WHERE sh.created_at >= ?
+                    GROUP BY u.id
+                    HAVING swims > 0
+                    ORDER BY swims DESC, u.last_name ASC
+                `;
+                params.push(start);
+            } else {
+                query = 'SELECT first_name, last_name, swims FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC';
+            }
+
+            const users = await db.all(query, params);
             
-            // Calculate ranks with ties (dense rank)
             let rank = 0;
             let lastSwims = -1;
-            const leaderboard = users.map((user, index) => {
+            const leaderboard = users.map((user) => {
                 if (user.swims !== lastSwims) {
                     rank++;
                     lastSwims = user.swims;
@@ -323,34 +315,51 @@ class UserDB {
 
             return new statusObject(200, null, leaderboard);
         } catch (error) {
+            console.error(error);
             return new statusObject(500, 'Database error');
         }
     }
 
     /**
-     * Gets the swimmer rank for a specific user.
-     * @param {object} db - The database instance.
-     * @param {number} userId - The target user ID.
+     * Fetch user's swim rank and count.
+     * @param {object} db
+     * @param {number} userId
+     * @param {boolean} yearly
      * @returns {Promise<statusObject>}
      */
-    static async getUserSwimmerRank(db, userId) {
+    static async getUserSwimmerRank(db, userId, yearly = false) {
         try {
-            const allSwimmers = await db.all('SELECT id, swims FROM users ORDER BY swims DESC');
+            let allSwimmers;
+            if (yearly) {
+                const start = this.getAcademicYearStart();
+                allSwimmers = await db.all(`
+                    SELECT u.id, SUM(sh.count) as swims
+                    FROM users u
+                    JOIN swim_history sh ON u.id = sh.user_id
+                    WHERE sh.created_at >= ?
+                    GROUP BY u.id
+                    ORDER BY swims DESC
+                `, [start]);
+            } else {
+                allSwimmers = await db.all('SELECT id, swims FROM users ORDER BY swims DESC');
+            }
             
             let rank = 0;
             let lastSwims = -1;
             let userRank = -1;
             let userSwims = 0;
 
-            for (const s of allSwimmers) {
-                if (s.swims !== lastSwims) {
-                    rank++;
-                    lastSwims = s.swims;
-                }
-                if (s.id === userId) {
-                    userRank = rank;
-                    userSwims = s.swims;
-                    break;
+            if (allSwimmers && allSwimmers.length > 0) {
+                for (const s of allSwimmers) {
+                    if (s.swims !== lastSwims) {
+                        rank++;
+                        lastSwims = s.swims;
+                    }
+                    if (s.id === userId) {
+                        userRank = rank;
+                        userSwims = s.swims;
+                        break;
+                    }
                 }
             }
 
@@ -361,15 +370,13 @@ class UserDB {
     }
 
     /** 
-     * Resets administrative permissions for all users and assigns the "President" role to a new user.
-     * This is a critical security function.
-     * @param {object} db - The database instance.
-     * @param {number} newPresidentId - The ID of the user who will become the new President.
+     * Reset permissions and assign new President.
+     * @param {object} db
+     * @param {number} newPresidentId
      * @returns {Promise<statusObject>}
      */
     static async resetPermissions(db, newPresidentId) {
         try {
-            // Reset permissions for everyone who is NOT the new president
             await db.run(`
                             UPDATE users 
                             SET can_manage_users = 0, 
@@ -379,7 +386,6 @@ class UserDB {
                             WHERE id != ?
                         `, [newPresidentId]);
 
-            // Grant full administrative permissions to the new president
             await db.run(`
                             UPDATE users 
                             SET can_manage_users = 1, 

@@ -3,17 +3,12 @@ import { switchView } from './view.js';
 import { notify, NotificationTypes } from './notification.js';
 
 /**
- * Authentication Helper.
- * Provides client-side protection for routes that require an active session.
+ * Client-side authentication protection.
  */
 
 /**
- * Checks if the user is authenticated by calling the server status endpoint.
- * If the user is NOT authenticated:
- * 1. A warning notification is shown.
- * 2. The SPA view is switched to '/login'.
- * 
- * @returns {Promise<boolean>} True if authenticated, false otherwise.
+ * Verifies session status; redirects to login if unauthenticated.
+ * @returns {Promise<boolean>}
  */
 export async function requireAuth() {
     try {
@@ -26,7 +21,6 @@ export async function requireAuth() {
         return true;
     } catch (error) {
         console.error("Auth check failed:", error);
-        // Error usually implies server is down or network issues
         notify('Error', 'Failed to verify authentication status.', NotificationTypes.ERROR);
         switchView('/login');
         return false;

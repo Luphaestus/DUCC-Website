@@ -8,8 +8,7 @@ const env = process.env.NODE_ENV || 'development';
 console.log(`Running in ${env} mode`);
 
 /**
- * Main initialization function.
- * Connects to the database, creates tables, and populates initial data.
+ * Database initialization: connects, creates tables, and seeds data.
  */
 (async () => {
   try {

@@ -1,7 +1,7 @@
 /**
- * Generate a random password of given length.
- * @param {number} length - The desired length of the password.
- * @returns {string} The generated random password.
+ * Generate a random password.
+ * @param {number} length
+ * @returns {string}
  */
 function generateRandomPassword(length) {
     var upperChars = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "M", "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
@@ -20,11 +20,11 @@ function generateRandomPassword(length) {
 }
 
 /**
- * Creates a database table if it does not already exist.
- * @param {string} tableName - The name of the table to create.
- * @param {string} createStatement - The SQL statement defining the table columns and constraints.
- * @param {object} db - The database instance.
- * @returns {Promise<boolean>} True if the table already existed, false if it was created.
+ * Creates a database table if missing.
+ * @param {string} tableName
+ * @param {string} createStatement
+ * @param {object} db
+ * @returns {Promise<boolean>} True if existed, false if created.
  */
 async function createTable(tableName, createStatement, db) {
     const tableExists = await db.get(`

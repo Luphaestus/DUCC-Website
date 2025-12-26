@@ -1,3 +1,4 @@
+/* Translucent Card Mixin */
 @mixin translucent-card {
     background-color: var(--translucent-bg);
     border: 1px solid var(--translucent-bg);
@@ -6,6 +7,7 @@
     border-radius: 1vw;
 }
 
+/* Card Highlights Mixin */
 @mixin card-highlights {
     border-left: 4px solid var(--highlight);
 

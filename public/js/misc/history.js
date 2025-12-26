@@ -1,19 +1,13 @@
 /**
- * History Module.
- * Provides manual tracking of navigation history within the SPA.
- * This complements the browser's native History API by maintaining a simple stack of visited paths.
+ * Tracks SPA navigation history via a path stack.
  */
 
-/** @type {string[]} Stack of previous paths */
 let previousPath = [];
-/** @type {string} The current active path */
 let currentPath = window.location.pathname;
 
 /**
- * Updates the navigation state by pushing the current path to the history stack
- * and setting the new path as current.
- * This should be called every time a successful view switch occurs.
- * @param {string} newPath - The new path being navigated to.
+ * Pushes current path to history stack and updates current path.
+ * @param {string} newPath
  */
 function updateHistory(newPath) {
     previousPath.push(currentPath);
@@ -23,13 +17,13 @@ function updateHistory(newPath) {
 export { updateHistory };
 
 /**
- * Pops and returns the most recent path from the history stack.
+ * Pop and return the previous path.
  * @returns {string|undefined}
  */
 export const getPreviousPath = () => previousPath.pop();
 
 /**
- * Returns the current path without modifying the stack.
+ * Return the current path.
  * @returns {string}
  */
 export const getCurrentPath = () => currentPath;

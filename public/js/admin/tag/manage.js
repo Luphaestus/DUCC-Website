@@ -3,13 +3,12 @@ import { switchView } from '../../misc/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
 
 /**
- * Tag Management Module (Admin).
- * Displays a list of all tags currently defined in the system.
- * Allows admins to click a tag to edit it or create a new one.
+ * Admin tag management list.
+ * @module AdminTagManage
  */
 
 /**
- * Renders the main tag management interface.
+ * Render tag management interface.
  */
 export async function renderManageTags() {
     const adminContent = document.getElementById(adminContentID);
@@ -47,7 +46,7 @@ export async function renderManageTags() {
 }
 
 /**
- * Fetches all tags from the API and populates the table.
+ * Fetch and render tags list.
  */
 async function fetchAndRenderTags() {
     try {
@@ -71,13 +70,11 @@ async function fetchAndRenderTags() {
                 </tr>
             `).join('');
 
-            // Click-to-edit listener
             tbody.querySelectorAll('.tag-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/tag/${row.dataset.id}`);
             });
         }
     } catch (e) {
-        console.error(e);
         const tbody = document.getElementById('tags-table-body');
         if (tbody) tbody.innerHTML = '<tr><td colspan="4">Error loading tags.</td></tr>';
     }

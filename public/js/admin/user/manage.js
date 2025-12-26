@@ -3,28 +3,22 @@ import { switchView } from '../../misc/view.js';
 import { adminContentID, renderPaginationControls, renderAdminNavBar } from '../common.js';
 
 /**
- * User Management Module (Admin).
- * Provides a paginated and searchable table of all registered users.
- * admins can filter by name/email, sort by various fields (balance, level, etc.),
- * and click rows to access deep-dive user details.
+ * Paginated and searchable user management table.
+ * @module AdminUserManage
  */
 
-// --- Main Render Function ---
-
 /**
- * Renders the user management shell including search controls and table headers.
+ * Render user management interface.
  */
 export async function renderManageUsers() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Load state from URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
     const search = urlParams.get('search') || '';
     const sort = urlParams.get('sort') || 'last_name';
     const order = urlParams.get('order') || 'asc';
     const page = parseInt(urlParams.get('page')) || 1;
-
 
     adminContent.innerHTML = `
         <div class="form-info">
@@ -33,18 +27,26 @@ export async function renderManageUsers() {
                     ${await renderAdminNavBar('users')}
                     <div class="search-input-wrapper">
                         <input type="text" id="user-search-input" placeholder="Search by name..." value="${search}">
-                        <button id="user-search-btn" title="Search">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
-                        </button>
-                    </div>
-                    <div class="admin-actions">
-                        <!-- Space for future global actions -->
-                    </div>
+                                                                        <button id="user-search-btn" title="Search">
+                                                                            <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  width="24"
+                                                  height="24"
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  stroke-width="2"
+                                                  stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                >
+                                                  <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+                                                  <path d="M21 21l-6 -6" />
+                                                </svg>
+                                                                        </button>                    </div>
                 </div>
                 <div id="users-table-container">
                     <table class="admin-table">
-                        <thead id="users-table-head">
-                        </thead>
+                        <thead id="users-table-head"></thead>
                         <tbody id="users-table-body">
                             <tr><td colspan="5">Loading...</td></tr>
                         </tbody>
@@ -55,55 +57,41 @@ export async function renderManageUsers() {
         </div>
     `;
 
-    // --- Search Logic ---
     const searchInput = document.getElementById('user-search-input');
     const searchBtn = document.getElementById('user-search-btn');
 
     const performSearch = () => {
-        const newSearch = searchInput.value;
-        updateUserParams({ search: newSearch, page: 1 });
+        updateUserParams({ search: searchInput.value, page: 1 });
     };
 
-    searchBtn.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') performSearch();
-    });
+    searchBtn.onclick = performSearch;
+    searchInput.onkeypress = (e) => { if (e.key === 'Enter') performSearch(); };
 
-    // Load and render initial data
     await fetchAndRenderUsers({ page, search, sort, order });
 }
 
-// --- Helper Functions ---
-
 /**
- * Syncs search/sort/page state to the URL and triggers a re-fetch.
- * @param {object} updates - Map of parameters to change.
+ * Update URL parameters and refresh user list.
+ * @param {object} updates
  */
 function updateUserParams(updates) {
     const urlParams = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(updates)) {
-        if (value === null || value === undefined || value === '') {
-            urlParams.delete(key);
-        } else {
-            urlParams.set(key, value);
-        }
+        if (!value) urlParams.delete(key);
+        else urlParams.set(key, value);
     }
-    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
-    window.history.pushState({}, '', newUrl);
+    window.history.pushState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
 
-    // Re-render
-    const params = {
+    fetchAndRenderUsers({
         page: parseInt(urlParams.get('page')) || 1,
         search: urlParams.get('search') || '',
         sort: urlParams.get('sort') || 'last_name',
         order: urlParams.get('order') || 'asc'
-    };
-    fetchAndRenderUsers(params);
+    });
 }
 
 /**
- * Performs the actual data fetch and DOM generation for user rows.
- * @param {object} params - Request parameters.
+ * Fetch and render users list.
  */
 async function fetchAndRenderUsers({ page, search, sort, order }) {
     const thead = document.getElementById('users-table-head');
@@ -111,11 +99,9 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
     const pagination = document.getElementById('users-pagination');
 
     try {
-        const limit = 10;
-        const query = new URLSearchParams({ page, limit, search, sort, order }).toString();
+        const query = new URLSearchParams({ page, limit: 10, search, sort, order }).toString();
         const data = await ajaxGet(`/api/admin/users?${query}`);
         const users = data.users || [];
-        const totalPages = data.totalPages || 1;
 
         if (users.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
@@ -123,80 +109,43 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
             return;
         }
 
-        // Determine which columns to show based on the first user record
-        const sampleUser = users[0];
-        const columns = [
-            { key: 'name', label: 'Name', sort: 'first_name' }
-        ];
+        const sample = users[0];
+        const columns = [{ key: 'name', label: 'Name', sort: 'first_name' }];
+        if (sample.balance !== undefined) columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
+        if (sample.first_aid_expiry !== undefined) columns.push({ key: 'first_aid', label: 'First Aid', sort: 'first_aid_expiry' });
+        if (sample.difficulty_level !== undefined) columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });
+        if (sample.is_member !== undefined) columns.push({ key: 'member', label: 'Member', sort: 'is_member' });
 
-        if (sampleUser.balance !== undefined) columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
-        if (sampleUser.first_aid_expiry !== undefined) columns.push({ key: 'first_aid', label: 'First Aid', sort: 'first_aid_expiry' });
-        if (sampleUser.difficulty_level !== undefined) columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });
-        if (sampleUser.is_member !== undefined) columns.push({ key: 'member', label: 'Member', sort: 'is_member' });
+        thead.innerHTML = `<tr>${columns.map(c => `<th class="sortable" data-sort="${c.sort}">${c.label} ${sort === c.sort ? (order === 'asc' ? '↑' : '↓') : '↕'}</th>`).join('')}</tr>`;
 
-        // Render Headers
-        thead.innerHTML = `
-            <tr>
-                ${columns.map(col => `
-                    <th class="sortable" data-sort="${col.sort}">
-                        ${col.label} ${sort === col.sort ? (order === 'asc' ? '↑' : '↓') : '↕'}
-                    </th>
-                `).join('')}
+        tbody.innerHTML = users.map(user => `
+            <tr class="user-row" data-id="${user.id}">
+                ${columns.map(col => {
+                    if (col.key === 'name') return `<td>${user.first_name} ${user.last_name}</td>`;
+                    if (col.key === 'balance') return `<td>£${Number(user.balance).toFixed(2)}</td>`;
+                    if (col.key === 'first_aid') return `<td>${user.first_aid_expiry ? (new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired') : 'N/A'}</td>`;
+                    if (col.key === 'difficulty') return `<td>${user.difficulty_level || 'N/A'}</td>`;
+                    if (col.key === 'member') return `<td>${user.is_member ? 'Member' : 'Non-Member'}</td>`;
+                    return '<td>-</td>';
+                }).join('')}
             </tr>
-        `;
+        `).join('');
 
-        // Map user objects to table rows
-        tbody.innerHTML = users.map(user => {
-            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown';
-            
-            return `
-                <tr class="user-row" data-id="${user.id}">
-                    ${columns.map(col => {
-                        if (col.key === 'name') return `<td>${fullName}</td>`;
-                        if (col.key === 'balance') return `<td>£${Number(user.balance).toFixed(2)}</td>`;
-                        if (col.key === 'first_aid') {
-                            let status = 'N/A';
-                            if (user.first_aid_expiry) {
-                                status = new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired';
-                            }
-                            return `<td>${status}</td>`;
-                        }
-                        if (col.key === 'difficulty') return `<td>${user.difficulty_level || 'N/A'}</td>`;
-                        if (col.key === 'member') return `<td>${user.is_member ? 'Member' : 'Non-Member'}</td>`;
-                        return '<td>-</td>';
-                    }).join('')}
-                </tr>
-            `;
-        }).join('');
-
-        // Re-bind sort logic to new headers
         thead.querySelectorAll('th.sortable').forEach(th => {
-            th.addEventListener('click', () => {
+            th.onclick = () => {
                 const currentSort = new URLSearchParams(window.location.search).get('sort') || 'last_name';
                 const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
                 const field = th.dataset.sort;
-                let newOrder = 'asc';
-                if (currentSort === field) {
-                    newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
-                }
-                updateUserParams({ sort: field, order: newOrder });
-            });
+                updateUserParams({ sort: field, order: (currentSort === field && currentOrder === 'asc') ? 'desc' : 'asc' });
+            };
         });
 
-        // Row click setup
         tbody.querySelectorAll('.user-row').forEach(row => {
-            row.addEventListener('click', () => {
-                switchView(`/admin/user/${row.dataset.id}`);
-            });
+            row.onclick = () => switchView(`/admin/user/${row.dataset.id}`);
         });
 
-        // Render standard pagination controls
-        renderPaginationControls(pagination, page, totalPages, (newPage) => {
-            updateUserParams({ page: newPage });
-        });
-
+        renderPaginationControls(pagination, page, data.totalPages || 1, (newPage) => updateUserParams({ page: newPage }));
     } catch (e) {
-        console.error("Error fetching users", e);
         tbody.innerHTML = '<tr><td colspan="5">Error loading users.</td></tr>';
     }
 }

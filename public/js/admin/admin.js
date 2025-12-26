@@ -11,17 +11,12 @@ import { renderManageGlobals } from './globals.js';
 import { requireAuth } from '../misc/auth.js';
 
 /**
- * Admin Module.
- * acts as a nested router for all administrative functionalities.
- * It listens for global view changes and, if the path is under /admin/*,
- * it delegates rendering to specialized sub-modules (Users, Events, Tags, Globals).
+ * Nested router for administrative modules.
+ * @module Admin
  */
 
-// --- Constants & Templates ---
-
 /**
- * Main container for the admin area.
- * Includes a header for dynamic titles/actions and a content area for sub-views.
+ * Admin layout template.
  */
 const HTML_TEMPLATE = `
 <div id="/admin/*-view" class="view hidden small-container">
@@ -35,35 +30,24 @@ const HTML_TEMPLATE = `
     </div>
 </div>`;
 
-// --- Navigation & Routing ---
-
 /**
- * Nested router for the Admin section.
- * Extends the main SPA router by handling sub-paths like /admin/users, /admin/event/1, etc.
- * 
- * @param {object} eventData - Data from the main ViewChangedEvent.
- * @param {string} eventData.resolvedPath - The wildcard-resolved path (should be "/admin/*").
- * @param {string} eventData.path - The actual browser path.
+ * Router for sub-paths within /admin/*.
+ * @param {object} eventData
  */
 async function AdminNavigationListener({ resolvedPath, path }) {
     if (resolvedPath !== "/admin/*") return;
 
-    // Ensure session is still active before rendering sensitive info
     if (!await requireAuth()) return;
 
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Reset header state for the new sub-view
     const titleEl = document.getElementById('admin-dashboard-title');
     const actionsEl = document.getElementById('admin-header-actions');
     if (titleEl) titleEl.textContent = 'Admin Dashboard';
     if (actionsEl) actionsEl.innerHTML = '';
 
-    // Strip query parameters for routing logic
     const cleanPath = path.split('?')[0];
-
-    // --- Sub-route Dispatcher ---
 
     if (cleanPath === '/admin/users') {
         if (titleEl) titleEl.textContent = 'Admin Dashboard - Users';
@@ -79,48 +63,32 @@ async function AdminNavigationListener({ resolvedPath, path }) {
         await renderManageGlobals();
     } else if (cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {
         if (titleEl) titleEl.textContent = 'Admin Dashboard - Event Details';
-        const id = cleanPath.split('/').pop();
-        await renderEventDetail(id);
+        await renderEventDetail(cleanPath.split('/').pop());
     } else if (cleanPath.match(/^\/admin\/tag\/(new|\d+)$/)) {
         if (titleEl) titleEl.textContent = 'Admin Dashboard - Tag Details';
-        const id = cleanPath.split('/').pop();
-        await renderTagDetail(id);
+        await renderTagDetail(cleanPath.split('/').pop());
     } else if (cleanPath.match(/^\/admin\/user\/\d+$/)) {
         if (titleEl) titleEl.textContent = 'Admin Dashboard - User Details';
-        const id = cleanPath.split('/').pop();
-        await renderUserDetail(id);
+        await renderUserDetail(cleanPath.split('/').pop());
     } else {
-        // --- Default Admin Home (Menu) ---
-        // Shown when the path is just /admin/ or doesn't match any specific sub-route.
-        // Dynamically shows buttons based on the user's specific administrative permissions.
-        const adminContent = document.getElementById(adminContentID);
-        const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions').catch(() => ({}));
+        const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions,is_exec').catch(() => ({}));
 
         let globalsButton = '';
         try {
             const status = await ajaxGet('/api/globals/status');
-            if (status.isPresident) {
-                globalsButton = `<button onclick="switchView('/admin/globals')">Manage Globals</button>`;
-            }
-        } catch (e) {
-            console.warn('Failed to check president status', e);
-        }
+            if (status.isPresident) globalsButton = `<button onclick="switchView('/admin/globals')">Manage Globals</button>`;
+        } catch (e) {}
 
         let usersButton = '';
-        if (perms.can_manage_users || perms.can_manage_transactions) {
+        if (perms.can_manage_users || perms.can_manage_transactions || perms.is_exec) {
             usersButton = `<button onclick="switchView('/admin/users')">Manage Users</button>`;
         }
 
         let eventsButton = '';
-        if (perms.can_manage_events) {
-            eventsButton = `<button onclick="switchView('/admin/events')">Manage Events</button>`;
-        }
+        if (perms.can_manage_events) eventsButton = `<button onclick="switchView('/admin/events')">Manage Events</button>`;
 
         let tagsButton = '';
-        if (perms.can_manage_events) {
-            tagsButton = `<button onclick="switchView('/admin/tags')">Manage Tags</button>`;
-        }
-
+        if (perms.can_manage_events) tagsButton = `<button onclick="switchView('/admin/tags')">Manage Tags</button>`;
 
         adminContent.innerHTML = `
             <div class="admin-controls-center">
@@ -134,10 +102,5 @@ async function AdminNavigationListener({ resolvedPath, path }) {
     }
 }
 
-// --- Initialization ---
-
-// Subscribe to global view changes to handle admin sub-navigation
 ViewChangedEvent.subscribe(AdminNavigationListener);
-
-// Inject the main admin view template into the body
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

@@ -3,27 +3,13 @@ const { statusObject } = require('../misc/status.js');
 const check = require('../misc/authentication.js');
 
 /**
- * Tags API module.
- * Manages event tags and user whitelists for restricted events.
- * Tags can be used to categorize events or restrict them to specific groups of users.
- * 
- * Routes:
- *   GET    /api/tags                  -> Returns all available tags.
- *   POST   /api/tags                  -> Creates a new tag (Admin only).
- *   PUT    /api/tags/:id              -> Updates a tag (Admin only).
- *   DELETE /api/api/tags/:id          -> Deletes a tag (Admin only).
- *   GET    /api/tags/:id/whitelist    -> Returns the list of users whitelisted for a tag (Admin only).
- *   POST   /api/tags/:id/whitelist    -> Adds a user to a tag whitelist (Admin only).
- *   DELETE /api/tags/:id/whitelist/:userId -> Removes a user from a tag whitelist (Admin only).
- *   GET    /api/user/:userId/tags     -> Returns tags associated with a specific user.
- *   GET    /api/user/tags             -> Returns tags associated with the current user.
- *
+ * API for managing event tags and user whitelists.
  * @module TagsAPI
  */
 class TagsAPI {
     /**
-     * @param {object} app - The Express application instance.
-     * @param {object} db - The database instance.
+     * @param {object} app
+     * @param {object} db
      */
     constructor(app, db) {
         this.app = app;
@@ -31,12 +17,11 @@ class TagsAPI {
     }
 
     /**
-     * Registers all tag-related routes.
+     * Registers tag-related routes.
      */
     registerRoutes() {
         /**
-         * GET /api/tags
-         * Retrieves all tags from the database.
+         * Fetch all tags.
          */
         this.app.get('/api/tags', async (req, res) => {
             const result = await TagsDB.getAllTags(this.db);
@@ -44,9 +29,7 @@ class TagsAPI {
         });
 
         /**
-         * POST /api/tags
-         * Creates a new tag.
-         * Requires admin permissions.
+         * Create a new tag (Admin).
          */
         this.app.post('/api/tags', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.createTag(this.db, req.body);
@@ -54,9 +37,7 @@ class TagsAPI {
         });
 
         /**
-         * PUT /api/tags/:id
-         * Updates an existing tag by ID.
-         * Requires admin permissions.
+         * Update a tag (Admin).
          */
         this.app.put('/api/tags/:id', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.updateTag(this.db, req.params.id, req.body);
@@ -64,9 +45,7 @@ class TagsAPI {
         });
 
         /**
-         * DELETE /api/tags/:id
-         * Deletes a tag by ID.
-         * Requires admin permissions.
+         * Delete a tag (Admin).
          */
         this.app.delete('/api/tags/:id', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.deleteTag(this.db, req.params.id);
@@ -74,9 +53,7 @@ class TagsAPI {
         });
 
         /**
-         * GET /api/tags/:id/whitelist
-         * Retrieves the list of users who are whitelisted for a specific tag.
-         * Requires admin permissions.
+         * Fetch whitelisted users for a tag (Admin).
          */
         this.app.get('/api/tags/:id/whitelist', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.getWhitelist(this.db, req.params.id);
@@ -84,20 +61,15 @@ class TagsAPI {
         });
 
         /**
-         * POST /api/tags/:id/whitelist
-         * Adds a user to the whitelist for a specific tag.
-         * Requires admin permissions.
+         * Add user to a tag whitelist (Admin).
          */
         this.app.post('/api/tags/:id/whitelist', check('can_manage_events | can_manage_users'), async (req, res) => {
-            const { userId } = req.body;
-            const result = await TagsDB.addToWhitelist(this.db, req.params.id, userId);
+            const result = await TagsDB.addToWhitelist(this.db, req.params.id, req.body.userId);
             result.getResponse(res);
         });
 
         /**
-         * DELETE /api/tags/:id/whitelist/:userId
-         * Removes a user from the whitelist for a specific tag.
-         * Requires admin permissions.
+         * Remove user from a tag whitelist (Admin).
          */
         this.app.delete('/api/tags/:id/whitelist/:userId', check('can_manage_events | can_manage_users'), async (req, res) => {
             const result = await TagsDB.removeFromWhitelist(this.db, req.params.id, req.params.userId);
@@ -105,12 +77,9 @@ class TagsAPI {
         });
 
         /**
-         * GET /api/user/:userId/tags
-         * Retrieves tags for a specific user.
-         * Allowed for the user themselves or an admin.
+         * Fetch tags for a specific user.
          */
         this.app.get('/api/user/:userId/tags', check(), async (req, res) => {
-            // Authorization check: User must be requesting their own tags or be a user manager
             if (req.user.id != req.params.userId && !req.user.can_manage_users) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
@@ -119,26 +88,22 @@ class TagsAPI {
                 const tags = await TagsDB.getTagsForUser(this.db, req.params.userId);
                 res.json(tags);
             } catch (error) {
-                console.error(error);
-                res.status(500).json({ message: 'Internal server error' });
+                res.status(500).json({ message: 'Internal error' });
             }
         });
 
         /**
-         * GET /api/user/tags
-         * Retrieves tags for the currently authenticated user.
+         * Fetch tags for current user.
          */
         this.app.get('/api/user/tags', check(), async (req, res) => {
             try {
                 const tags = await TagsDB.getTagsForUser(this.db, req.user.id);
                 res.json(tags);
             } catch (error) {
-                console.error(error);
-                res.status(500).json({ message: 'Internal server error' });
+                res.status(500).json({ message: 'Internal error' });
             }
         });
     }
 }
 
 module.exports = TagsAPI;
-

@@ -1,11 +1,9 @@
 /**
- * Notification Module.
- * Provides a toast-style notification system for the frontend.
- * Notifications automatically fade out after a set duration and can be dismissed manually by clicking.
+ * Toast-style notification system.
  */
 
 /**
- * Standard notification severity levels.
+ * Notification severity levels.
  */
 class NotificationTypes {
     static INFO = 'info';
@@ -15,13 +13,12 @@ class NotificationTypes {
 }
 
 /**
- * Helper to remove a notification element from the DOM with a fade-out animation.
- * @param {HTMLElement} notification - The element to remove.
+ * Removes a notification with a fade-out animation.
+ * @param {HTMLElement} notification
  */
 function closeNotification(notification) {
     notification.classList.remove('fade-in');
     
-    // Wait for the CSS fade-out animation to finish before removing from DOM
     const fadeOutListener = () => {
         notification.remove();
     };
@@ -31,18 +28,17 @@ function closeNotification(notification) {
 }
 
 /**
- * Creates and displays a new notification.
- * @param {string} title - Human-readable title.
- * @param {string} message - Human-readable detail message.
- * @param {string} type - Severity type from NotificationTypes.
- * @param {number} duration - Time in ms before automatic dismissal (default 5s).
- * @returns {Function} A function that can be called to manually dismiss this specific notification.
+ * Show a notification.
+ * @param {string} title
+ * @param {string} message
+ * @param {string} type
+ * @param {number} duration - Time in ms before auto-dismiss (default 5s).
+ * @returns {Function} Manual dismiss handle.
  */
 function notify(title, message, type = NotificationTypes.INFO, duration = 5000) {
     const notificationContainer = document.getElementById('notification-container');
     if (!notificationContainer) return;
 
-    // Create the notification card
     const notification = document.createElement('div');
     notification.classList.add('notification', `notification-${type}`, 'fade-in');
 
@@ -54,19 +50,16 @@ function notify(title, message, type = NotificationTypes.INFO, duration = 5000) 
     notificationMessage.textContent = message;
     notification.appendChild(notificationMessage);
 
-    // Allow manual dismissal on click
     notification.addEventListener('click', () => {
         closeNotification(notification);
     });
 
     notificationContainer.appendChild(notification);
 
-    // Setup automatic dismissal
     const autoCloseTimeout = setTimeout(() => {
         closeNotification(notification);
     }, duration);
 
-    // Return a handle to programmatically close it
     return () => {
         clearTimeout(autoCloseTimeout);
         closeNotification(notification);

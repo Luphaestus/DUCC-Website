@@ -1,17 +1,12 @@
 @use "mixins" as *;
 
-/* =========================================
-   Components
-   ========================================= */
-
-/* --- Sub-containers / Cards --- */
+/* Cards & Sub-containers */
 .sub-container {
     background-color: color-mix(in srgb, var(--colour, red) 9%, transparent);
     border: 1px solid color-mix(in srgb, var(--theme-opposite) 10%, color-mix(in srgb, var(--translucent-bg) 60%, var(--colour, red)));
     width: 100%;
     padding: 1rem;
     border-radius: 0.3rem;
-
     transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
 
     @media (prefers-color-scheme: light) {
@@ -23,12 +18,9 @@
         --warning: color-mix(in srgb, var(--theme-opposite) 50%, orange);
         --error: color-mix(in srgb, var(--theme-opposite) 50%, red);
         --ok: color-mix(in srgb, var(--theme-opposite) 50%, blue);
-
         font-weight: bold;
-
         transition: color 0.3s ease-in-out;
         margin-top: 0;
-
     }
 
     :last-child {
@@ -36,7 +28,7 @@
     }
 }
 
-/* --- Notifications --- */
+/* Notifications */
 #notification-container {
     position: fixed;
     top: var(--navbar-height);
@@ -61,24 +53,13 @@
         }
     }
 
-    .notification-error {
-        background-color: color-mix(in srgb, var(--translucent-bg) 90%, red);
-    }
-
-    .notification-success {
-        background-color: color-mix(in srgb, var(--translucent-bg) 90%, green);
-    }
-
-    .notification-info {
-        background-color: color-mix(in srgb, var(--translucent-bg) 90%, blue);
-    }
-
-    .notification-warning {
-        background-color: color-mix(in srgb, var(--translucent-bg) 90%, orange);
-    }
+    .notification-error { background-color: color-mix(in srgb, var(--translucent-bg) 90%, red); }
+    .notification-success { background-color: color-mix(in srgb, var(--translucent-bg) 90%, green); }
+    .notification-info { background-color: color-mix(in srgb, var(--translucent-bg) 90%, blue); }
+    .notification-warning { background-color: color-mix(in srgb, var(--translucent-bg) 90%, orange); }
 }
 
-/* --- Navbar --- */
+/* Navbar */
 nav.small-container {
     --navbar-height: 4rem;
     position: sticky;
@@ -99,25 +80,18 @@ nav.small-container {
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        cursor: pointer;
 
         img {
             height: 2rem;
             width: auto;
         }
 
-        strong {
-            font-size: 1rem;
-        }
-    }
-
-    .nav-logo {
-        cursor: pointer;
+        strong { font-size: 1rem; }
     }
 }
 
-
-
-/* --- Forms --- */
+/* Forms */
 .form-info {
     display: flex;
     flex-wrap: wrap;
@@ -129,7 +103,6 @@ nav.small-container {
 
     .form-box {
         transition: transform 150ms ease-in-out;
-
         background: rgba(255, 255, 255, .01);
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         backdrop-filter: blur(7.7px);
@@ -140,9 +113,7 @@ nav.small-container {
             box-shadow: 0 4px 30px rgba(255, 255, 255, 0.1);
         }
 
-
         flex: 1 1 450px;
-
         border-radius: .5rem;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
@@ -153,8 +124,7 @@ nav.small-container {
             gap: 1rem;
         }
 
-        h3,
-        h2 {
+        h3, h2 {
             display: flex;
             align-items: center;
             font-size: 1.25rem;
@@ -168,9 +138,7 @@ nav.small-container {
             }
         }
 
-        div {
-            margin: .5rem;
-        }
+        div { margin: .5rem; }
 
         @include card-highlights;
 
@@ -180,10 +148,7 @@ nav.small-container {
     }
 }
 
-/* =========================================
-   Components: Tooltips
-   ========================================= */
-
+/* Tooltips */
 .info-tooltip-wrapper {
     position: relative;
     display: inline-flex;
@@ -236,11 +201,17 @@ nav.small-container {
     }
 }
 
-.nomargin {
-    margin: 0 !important;
+.nomargin { margin: 0 !important; }
+
+.tag-badge {
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    display: inline-block;
 }
 
-/* --- Custom Glassy Modal --- */
+/* Custom Glassy Modal */
 .custom-modal-overlay {
     position: fixed;
     top: 0;
@@ -256,9 +227,7 @@ nav.small-container {
     opacity: 0;
     transition: opacity 0.3s ease;
 
-    &.visible {
-        opacity: 1;
-    }
+    &.visible { opacity: 1; }
 
     .custom-modal-content {
         background: rgba(255, 255, 255, 0.1);
@@ -280,19 +249,10 @@ nav.small-container {
         }
     }
 
-    &.visible .custom-modal-content {
-        transform: scale(1);
-    }
+    &.visible .custom-modal-content { transform: scale(1); }
 
-    h3 {
-        margin-top: 0;
-        margin-bottom: 1rem;
-        font-size: 1.25rem;
-    }
-
-    p {
-        margin-bottom: 1.5rem;
-    }
+    h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; }
+    p { margin-bottom: 1.5rem; }
 
     input[type="password"] {
         width: 100%;
@@ -317,9 +277,7 @@ nav.small-container {
             font-weight: bold;
             transition: background-color 0.2s, transform 0.1s;
 
-            &:active {
-                transform: scale(0.95);
-            }
+            &:active { transform: scale(0.95); }
         }
 
         .btn-cancel {
@@ -337,9 +295,7 @@ nav.small-container {
             background-color: var(--pico-primary);
             color: var(--pico-primary-inverse);
 
-            &:hover {
-                background-color: var(--pico-primary-hover);
-            }
+            &:hover { background-color: var(--pico-primary-hover); }
         }
     }
 }

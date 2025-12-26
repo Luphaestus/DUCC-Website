@@ -38,10 +38,13 @@ describe('Admin API', () => {
             const authHeader = req.headers['x-mock-user'];
             if (authHeader === 'admin') {
                 req.isAuthenticated = () => true;
-                req.user = { id: adminId, can_manage_users: true, can_manage_events: true, can_manage_transactions: true };
+                req.user = { id: adminId, can_manage_users: true, can_manage_events: true, can_manage_transactions: true, is_exec: true };
+            } else if (authHeader === 'exec') {
+                req.isAuthenticated = () => true;
+                req.user = { id: userId, can_manage_users: false, can_manage_events: false, can_manage_transactions: false, is_exec: true };
             } else if (authHeader === 'user') {
                 req.isAuthenticated = () => true;
-                req.user = { id: userId, can_manage_users: false, can_manage_events: false, can_manage_transactions: false };
+                req.user = { id: userId, can_manage_users: false, can_manage_events: false, can_manage_transactions: false, is_exec: false };
             } else {
                 req.isAuthenticated = () => false;
             }
@@ -88,6 +91,14 @@ describe('Admin API', () => {
         expect(event).toBeDefined();
     });
 
+    test('POST /api/admin/event fails for regular user', async () => {
+        const res = await request(app)
+            .post('/api/admin/event')
+            .set('x-mock-user', 'user')
+            .send({ title: 'Hack Event', start: '2025-01-01', end: '2025-01-01', difficulty_level: 1 });
+        expect(res.statusCode).toBe(403);
+    });
+
     test('POST /api/admin/user/:id/transaction adds transaction', async () => {
         const res = await request(app)
             .post(`/api/admin/user/${userId}/transaction`)
@@ -97,5 +108,38 @@ describe('Admin API', () => {
         expect(res.statusCode).toBe(200);
         const transaction = await db.get('SELECT * FROM transactions WHERE user_id = ?', [userId]);
         expect(transaction.amount).toBe(10);
+    });
+
+    test('GET /api/admin/user/:id fails for regular user', async () => {
+        const res = await request(app)
+            .get(`/api/admin/user/${adminId}`)
+            .set('x-mock-user', 'user');
+        expect(res.statusCode).toBe(403);
+    });
+
+    test('GET /api/admin/user/:id returns restricted data for exec', async () => {
+        const res = await request(app)
+            .get(`/api/admin/user/${adminId}`)
+            .set('x-mock-user', 'exec');
+        
+        expect(res.statusCode).toBe(200);
+        expect(res.body.first_name).toBeDefined();
+        expect(res.body.email).toBeUndefined(); // Sensitive
+        expect(res.body.balance).toBeUndefined(); // Sensitive
+    });
+
+    test('is_exec user can only see names in users list', async () => {
+        // Setup exec user
+        await db.run('UPDATE users SET is_exec = 1 WHERE id = ?', userId);
+        
+        const res = await request(app)
+            .get('/api/admin/users')
+            .set('x-mock-user', 'exec');
+        
+        expect(res.statusCode).toBe(200);
+        const firstUser = res.body.users[0];
+        expect(firstUser.first_name).toBeDefined();
+        expect(firstUser.email).toBeUndefined();
+        expect(firstUser.balance).toBeUndefined();
     });
 });

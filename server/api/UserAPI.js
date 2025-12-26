@@ -5,22 +5,13 @@ const Globals = require('../misc/globals.js');
 const check = require('../misc/authentication');
 
 /**
- * User API module.
- * Handles user profile data, validation, membership joining, and account deletion.
- * Includes complex validation logic for various user profile fields (the "elements").
- * 
- * Routes:
- *   GET  /api/user/elements/:elements -> Retrieves specific profile elements for the current user.
- *   POST /api/user/elements           -> Updates profile elements with validation.
- *   POST /api/user/join               -> Handles membership joining and fee deduction.
- *   POST /api/user/deleteAccount      -> Handles account deletion with debt checks.
- *
+ * API for user profiles, validation, membership, and account management.
  * @module User
  */
 class User {
     /**
-     * @param {object} app - The Express application instance.
-     * @param {object} db - The database instance.
+     * @param {object} app
+     * @param {object} db
      */
     constructor(app, db) {
         this.app = app;
@@ -28,475 +19,296 @@ class User {
     }
 
     /**
-     * List of elements that constitute "legal information".
-     * These must all be filled for the user to be considered "legal info complete".
+     * Required fields for complete legal/medical information.
      */
     static legalElements = [
-        "date_of_birth",
-        "college_id",
-        "emergency_contact_name",
-        "emergency_contact_phone",
-        "home_address",
-        "phone_number",
-        "has_medical_conditions",
-        "medical_conditions_details",
-        "takes_medication",
-        "medication_details",
-        "agrees_to_fitness_statement",
-        "agrees_to_club_rules",
-        "agrees_to_pay_debts",
-        "agrees_to_data_storage",
-        "agrees_to_keep_health_data"
+        "date_of_birth", "college_id", "emergency_contact_name", "emergency_contact_phone",
+        "home_address", "phone_number", "has_medical_conditions", "medical_conditions_details",
+        "takes_medication", "medication_details", "agrees_to_fitness_statement",
+        "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data"
     ];
 
     /**
-     * Helper to get the authenticated user ID.
-     * @param {object} req - Express request.
+     * Get authenticated user ID.
+     * @param {object} req
      * @returns {number|null}
      */
     static getID(req) { return req.user ? req.user.id : null; }
 
     /**
-     * Retrieves specific data elements for the current user, ensuring they are accessible.
-     * Combines data from both users and transactions tables.
-     * @param {object} req - Express request.
-     * @param {object} db - Database instance.
-     * @param {string|string[]} elements - The elements to retrieve.
+     * Fetch whitelisted profile elements for current user.
+     * @param {object} req
+     * @param {object} db
+     * @param {string|string[]} elements
      * @returns {Promise<statusObject>}
      */
     static async getAccessibleElements(req, db, elements) {
         /**
-         * Determines if an element is allowed to be read by a normal user.
-         * @param {string} element
-         * @returns {[boolean, boolean]} [isInUserDB, isInTransactionDB]
+         * Check element access permissions.
          */
         function isElementAccessibleByNormalUser(element) {
             const accessibleUserDB = [
-                "email",
-                "first_name",
-                "last_name",
-                "date_of_birth",
-                "college_id",
-                "emergency_contact_name",
-                "emergency_contact_phone",
-                "home_address",
-                "phone_number",
-                "has_medical_conditions",
-                "medical_conditions_details",
-                "takes_medication",
-                "medication_details",
-                "free_sessions",
-                "is_member",
-                "agrees_to_fitness_statement",
-                "agrees_to_club_rules",
-                "agrees_to_pay_debts",
-                "agrees_to_data_storage",
-                "agrees_to_keep_health_data",
-                "filled_legal_info",
-                "can_manage_events",
-                "can_manage_users",
-                "can_manage_transactions",
-                "is_instructor",
-                "is_exec",
-                "first_aid_expiry",
-                "profile_picture_path",
-                "created_at",
-                "swims",
-                "swimmer_rank"
+                "email", "first_name", "last_name", "date_of_birth", "college_id",
+                "emergency_contact_name", "emergency_contact_phone", "home_address",
+                "phone_number", "has_medical_conditions", "medical_conditions_details",
+                "takes_medication", "medication_details", "free_sessions", "is_member",
+                "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts",
+                "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info",
+                "can_manage_events", "can_manage_users", "can_manage_transactions",
+                "is_instructor", "is_exec", "first_aid_expiry", "profile_picture_path",
+                "created_at", "swims", "swimmer_rank"
             ];
-
-            const accessibleTransactionsDB = [
-                'balance',
-                'transactions'
-            ];
-
+            const accessibleTransactionsDB = ['balance', 'transactions'];
             return [accessibleUserDB.includes(element), accessibleTransactionsDB.includes(element)];
         }
 
-
-        if (typeof elements === 'string') {
-            elements = [elements];
-        }
+        if (typeof elements === 'string') elements = [elements];
 
         const userElements = [];
         const transactionElements = [];
 
-        // Categorize elements by their source database/module
         for (const element of elements) {
             const [accessibleUserDB, accessibleTransactionsDB] = isElementAccessibleByNormalUser(element);
-            if (!accessibleUserDB && !accessibleTransactionsDB) {
-                return new statusObject(403, 'User can not access element: ' + element);
-            }
-
-            if (accessibleUserDB) {
-                userElements.push(element);
-            }
-
-            if (accessibleTransactionsDB) {
-                transactionElements.push(element);
-            }
+            if (!accessibleUserDB && !accessibleTransactionsDB) return new statusObject(403, 'Forbidden element: ' + element);
+            if (accessibleUserDB) userElements.push(element);
+            if (accessibleTransactionsDB) transactionElements.push(element);
         }
 
-        // Fetch from UserDB
         let userResultData = {};
         if (userElements.length > 0) {
             const needsRank = userElements.includes('swimmer_rank');
             const cleanElements = userElements.filter(e => e !== 'swimmer_rank');
             
             const userResult = await UserDB.getElements(req, db, cleanElements);
-            if (userResult.isError()) {
-                return userResult;
-            }
+            if (userResult.isError()) return userResult;
             userResultData = userResult.getData();
 
             if (needsRank) {
-                const rankRes = await UserDB.getUserSwimmerRank(db, req.user.id);
-                if (!rankRes.isError()) {
-                    userResultData.swimmer_rank = rankRes.getData().rank;
-                }
+                const [allTimeRes, yearlyRes] = await Promise.all([
+                    UserDB.getUserSwimmerRank(db, req.user.id, false),
+                    UserDB.getUserSwimmerRank(db, req.user.id, true)
+                ]);
+                const allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
+                const yearlyData = yearlyRes.getData() || { rank: -1, swims: 0 };
+                userResultData.swimmer_stats = { allTime: allTimeData, yearly: yearlyData };
+                userResultData.swimmer_rank = allTimeData.rank;
             }
         }
 
-        // Fetch from transactionsDB
         let transactionResultData = {};
         if (transactionElements.length > 0) {
             const transactionResult = await transactionsDB.getElements(req, db, transactionElements);
-            if (transactionResult.isError()) {
-                return transactionResult;
-            }
+            if (transactionResult.isError()) return transactionResult;
             transactionResultData = transactionResult.getData();
         }
 
-        // Merge results
-        const result = { ...userResultData, ...transactionResultData };
-        return new statusObject(200, null, result);
+        return new statusObject(200, null, { ...userResultData, ...transactionResultData });
     }
 
     /**
-     * Writes profile updates for the current user after validating them.
-     * Automatically updates 'filled_legal_info' status if all required fields are now present.
-     * @param {object} req - Express request.
-     * @param {object} db - Database instance.
-     * @param {object} data - Key-value pairs to update.
+     * Validate and write profile updates.
+     * @param {object} req
+     * @param {object} db
+     * @param {object} data
      * @returns {Promise<statusObject>}
      */
     static async writeNormalElements(req, db, data) {
         /**
-         * Validates a single element update.
-         * Includes regex checks, range checks for dates, and logic dependencies.
+         * Internal validation for profile fields.
          */
         async function isNormalWritableElement(element, data, db) {
             async function getElement(element, data, db) {
-                if (element in data) {
-                    return new statusObject(200, "Retrieved from data", data[element]);
-                } else {
-                    const dataValue = await getAccessibleElement(element, db);
-                    return dataValue;
-                }
+                if (element in data) return new statusObject(200, null, data[element]);
+                return await User.getAccessibleElements(req, db, element);
             }
 
             const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
             const namePattern = /^[a-zA-Z\s ,.'-]+$/;
-
             const value = data[element];
-
-            var validated = false;
-            var errorMessage = "";
-
+            let validated = false;
+            let errorMessage = "";
 
             switch (element) {
                 case "email":
                     validated = /^[^@]+\.[^@]+@durham\.ac\.uk$/i.test(value);
-                    errorMessage = "Invalid email format. You must use your first.last@durham.ac.uk email."
+                    errorMessage = "Invalid email format (must be @durham.ac.uk)."
                     break;
                 case "first_name":
-                    validated = namePattern.test(value);
-                    errorMessage = "Invalid first name format."
-                    break;
                 case "last_name":
+                case "emergency_contact_name":
                     validated = namePattern.test(value);
-                    errorMessage = "Invalid last name format.";
+                    errorMessage = "Invalid name format.";
                     break;
                 case "date_of_birth":
                     const dob = new Date(value);
                     const today = new Date();
-                    // Age must be between 17 and 90
                     const maxDate = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate());
                     const minDate = new Date(today.getFullYear() - 90, today.getMonth(), today.getDate());
                     validated = dob >= minDate && dob <= maxDate;
-                    errorMessage = "Date of birth must be between 17 and 90 years ago.";
+                    errorMessage = "Age must be between 17 and 90.";
                     break;
                 case "college_id":
-                    // Verify college exists
                     const row = await db.get('SELECT id FROM colleges WHERE name = ?', [value]);
                     validated = !!row;
-                    errorMessage = "Invalid college ID.";
-                    break;
-                case "emergency_contact_name":
-                    validated = namePattern.test(value);
-                    errorMessage = "Invalid emergency contact name format.";
+                    errorMessage = "Invalid college.";
                     break;
                 case "emergency_contact_phone":
+                case "phone_number":
                     validated = phonePattern.test(value);
-                    errorMessage = "Invalid emergency contact phone number format.";
+                    errorMessage = "Invalid phone format.";
                     break;
                 case "home_address":
                     validated = value.trim() !== '';
-                    errorMessage = "Home address cannot be empty.";
-                    break;
-                case "phone_number":
-                    validated = phonePattern.test(value);
-                    errorMessage = "Invalid phone number format.";
+                    errorMessage = "Address required.";
                     break;
                 case "has_medical_conditions":
+                case "takes_medication":
+                case "agrees_to_keep_health_data":
+                case "is_instructor":
                     validated = typeof value === 'boolean';
-                    errorMessage = "Invalid value for has_medical_conditions.";
+                    errorMessage = "Invalid boolean value.";
                     break;
                 case "medical_conditions_details":
-                    // Required if has_medical_conditions is true
                     if ((await getElement("has_medical_conditions", data, db)).getData()) {
                         validated = value.trim() !== '';
-                        errorMessage = "Medical conditions details cannot be empty if medical conditions are present.";
+                        errorMessage = "Description required if conditions exist.";
                         break;
                     }
                     validated = true;
                     break;
-                case "takes_medication":
-                    validated = typeof value === 'boolean';
-                    errorMessage = "Invalid value for takes_medication.";
-                    break;
                 case "medication_details":
-                    // Required if takes_medication is true
                     if ((await getElement("takes_medication", data, db)).getData()) {
                         validated = value.trim() !== '';
-                        errorMessage = "Medication details cannot be empty if medication is taken.";
+                        errorMessage = "Description required if taking medication.";
                         break;
                     }
                     validated = true;
                     break;
                 case "agrees_to_fitness_statement":
-                    validated = value === true;
-                    errorMessage = "Must agree to fitness statement.";
-                    break;
                 case "agrees_to_club_rules":
-                    validated = value === true;
-                    errorMessage = "Must agree to club rules.";
-                    break;
                 case "agrees_to_pay_debts":
-                    validated = value === true;
-                    errorMessage = "Must agree to pay debts.";
-                    break;
                 case "agrees_to_data_storage":
                     validated = value === true;
-                    errorMessage = "Must agree to data storage.";
-                    break;
-                case "agrees_to_keep_health_data":
-                    validated = typeof value === 'boolean';
-                    errorMessage = "Invalid value for agrees_to_keep_health_data.";
-                    break;
-                case "is_instructor":
-                    validated = typeof value === 'boolean';
-                    errorMessage = "Invalid value for is_instructor.";
+                    errorMessage = "Agreement required.";
                     break;
                 case "first_aid_expiry":
-                    if (value === null) {
-                        validated = true;
-                        break;
-                    }
-                    const expiryDate = new Date(value);
+                    if (value === null) { validated = true; break; }
+                    const expiry = new Date(value);
                     const now = new Date();
-                    // Must be in future, capped at 20 years
-                    validated = expiryDate > now;
-                    if (validated) {
-                        const twentyYearsFromNow = new Date();
-                        twentyYearsFromNow.setFullYear(now.getFullYear() + 20);
-                        validated = expiryDate <= twentyYearsFromNow;
-                    }
-                    errorMessage = "First aid expiry date must be in the future, but not more than 20 years ahead.";
+                    const limit = new Date(); limit.setFullYear(now.getFullYear() + 20);
+                    validated = expiry > now && expiry <= limit;
+                    errorMessage = "Expiry must be in the future (max 20 years).";
                     break;
                 default:
                     return undefined;
             }
 
-            if (!validated) {
-                return new statusObject(400, errorMessage);
-            }
-
-            // Return whether this element is part of the legal information set
+            if (!validated) return new statusObject(400, errorMessage);
             return new statusObject(200, User.legalElements.includes(element));
         }
 
         async function getElement(element, data, db) {
-            if (element in data) {
-                return new statusObject(200, null, data[element]);
-            } else {
-                const dataValue = await User.getAccessibleElements(req, db, element);
-                return dataValue;
-            }
+            if (element in data) return new statusObject(200, null, data[element]);
+            return await User.getAccessibleElements(req, db, element);
         }
 
-        var legalUpdateNeeded = false;
-
-        // Validate all incoming elements
+        let legalUpdateNeeded = false;
         for (const element in data) {
-            const canWriteStatus = await isNormalWritableElement(element, data, db);
-            if (canWriteStatus.isError()) {
-                return canWriteStatus;
-            }
-            if (canWriteStatus.getMessage())
-                legalUpdateNeeded = true;
+            const status = await isNormalWritableElement(element, data, db);
+            if (status.isError()) return status;
+            if (status.getMessage()) legalUpdateNeeded = true;
         }
 
-        // If any legal elements were updated, check if the whole set is now complete
         if (legalUpdateNeeded) {
-            let allLegalElementsFilled = true;
+            let allFilled = true;
             for (const element of User.legalElements) {
-                const dataValue = await getElement(element, data, db);
-                if (dataValue.isError()) {
-                    allLegalElementsFilled = false;
-                    break;
-                }
-                if (dataValue.getData() === null || dataValue.getData() === undefined) {
-                    allLegalElementsFilled = false;
+                const val = await getElement(element, data, db);
+                if (val.isError() || val.getData() === null || val.getData() === undefined) {
+                    allFilled = false;
                     break;
                 }
             }
-            if (allLegalElementsFilled) {
-                data["filled_legal_info"] = 1;
-            }
+            if (allFilled) data["filled_legal_info"] = 1;
         }
 
-        // Commit updates to database
         const writeStatus = await UserDB.writeElements(req, db, data);
-        if (writeStatus.isError()) {
-            return writeStatus;
-        }
-        return new statusObject(200, null);
+        if (writeStatus.isError()) return writeStatus;
+        return new statusObject(200);
     }
 
     /**
-     * Registers Express routes for the User API.
+     * Register user routes.
      */
     registerRoutes() {
         /**
-         * GET /api/user/elements/:elements
-         * Retrieves a list of profile elements for the current user.
+         * Fetch profile elements.
          */
         this.app.get('/api/user/elements/:elements', check(), async (req, res) => {
             const elements = req.params.elements.split(',').map(e => e.trim());
             const status = await User.getAccessibleElements(req, this.db, elements);
-            if (status.isError()) {
-                return status.getResponse(res);
-            }
+            if (status.isError()) return status.getResponse(res);
             res.json(status.getData());
         });
 
         /**
-         * POST /api/user/elements
-         * Updates profile elements for the current user.
+         * Update profile elements.
          */
         this.app.post('/api/user/elements', check(), async (req, res) => {
             const status = await User.writeNormalElements(req, this.db, req.body);
-            if (status.isError()) {
-                return status.getResponse(res);
-            }
+            if (status.isError()) return status.getResponse(res);
             res.json({ success: true });
         });
 
         /**
-         * POST /api/user/join
-         * Handles the logic for a user joining as a member.
-         * Checks if already a member, deducts fee, and updates status.
+         * Process membership joining and fee.
          */
         this.app.post('/api/user/join', check(), async (req, res) => {
             try {
-                const membershipStatus = await UserDB.getElements(req, this.db, 'is_member');
-                if (membershipStatus.isError()) {
-                    return membershipStatus.getResponse(res);
-                }
+                const status = await UserDB.getElements(req, this.db, 'is_member');
+                if (status.isError()) return status.getResponse(res);
+                if (status.getData().is_member) return res.status(400).json({ message: 'Already a member.' });
 
-                const membershipInfo = membershipStatus.getData();
-                if (membershipInfo.is_member) {
-                    return res.status(400).json({ message: 'User is already a member.' });
-                }
+                const tx = await transactionsDB.add_transaction(req, this.db, User.getID(req), - new Globals().getFloat('MembershipCost'), 'Membership Fee');
+                if (typeof tx === 'number' && tx >= 400) return res.status(tx).json({ message: 'Transaction failed' });
 
-                // Add a transaction for the membership fee
-                const transactionCode = await transactionsDB.add_transaction(
-                    req,
-                    this.db,
-                    User.getID(req),
-                    - new Globals().getFloat('MembershipCost'),
-                    'Membership Fee'
-                );
-
-                if (typeof transactionCode === 'number' && transactionCode >= 400) {
-                    return res.status(transactionCode).json({ message: 'Transaction failed' });
-                }
-
-                // Update membership status in UserDB
-                const status = await UserDB.setMembershipStatus(req, this.db, true);
-                if (status.isError()) {
-                    return status.getResponse(res);
-                }
-
+                const update = await UserDB.setMembershipStatus(req, this.db, true);
+                if (update.isError()) return update.getResponse(res);
                 res.json({ success: true });
             } catch (err) {
-                console.error('Error in /api/user/join:', err);
-                res.status(500).json({ message: 'Internal server error' });
+                res.status(500).json({ message: 'Internal error' });
             }
         });
 
         /**
-         * POST /api/user/deleteAccount
-         * Deletes the user's account.
-         * Only allowed if the user has no outstanding debts (balance >= 0).
+         * Delete account (denied if in debt).
          */
         this.app.post('/api/user/deleteAccount', check(), async (req, res) => {
             const balance = await transactionsDB.get_balance(req, this.db);
-            if (balance.isError()) {
-                return balance.getResponse(res);
-            }
+            if (balance.isError()) return balance.getResponse(res);
+            if (balance.getData() < 0) return res.status(400).json({ message: 'Outstanding debts exist.' });
 
-            // Prevent deletion if there is debt
-            if (balance.getData() < 0) {
-                return res.status(400).json({ message: 'Cannot delete account with outstanding debts.' });
-            }
+            const status = await UserDB.removeUser(req, this.db);
+            if (status.isError()) return status.getResponse(res);
 
-            const deleteStatus = await UserDB.removeUser(req, this.db);
-            if (deleteStatus.isError()) {
-                return deleteStatus.getResponse(res);
-            }
-
-            // Log out the user after successful deletion
-            req.logout((err) => {
-                if (err) {
-                    console.error('Error logging out after account deletion:', err);
-                }
-                res.json({ success: true });
-            });
+            req.logout((err) => { res.json({ success: true }); });
         });
 
         /**
-         * GET /api/user/swims/leaderboard
-         * Fetches the swim leaderboard.
+         * Fetch swim leaderboard (all-time or yearly).
          */
         this.app.get('/api/user/swims/leaderboard', check(), async (req, res) => {
-            const status = await UserDB.getSwimsLeaderboard(this.db);
+            const yearly = req.query.yearly === 'true';
+            const status = await UserDB.getSwimsLeaderboard(this.db, yearly);
             return status.getResponse(res);
         });
 
         /**
-         * POST /api/user/:id/swims
-         * Adds swims to a user. Restricted to execs.
+         * Add swims to a user (Exec only).
          */
         this.app.post('/api/user/:id/swims', check('is_exec'), async (req, res) => {
             const userId = parseInt(req.params.id, 10);
             const count = parseInt(req.body.count, 10);
-
-            if (isNaN(userId) || isNaN(count)) {
-                return res.status(400).json({ message: 'Invalid User ID or count' });
-            }
-
+            if (isNaN(userId) || isNaN(count)) return res.status(400).json({ message: 'Invalid data' });
             const status = await UserDB.addSwims(req, this.db, userId, count);
             return status.getResponse(res);
         });

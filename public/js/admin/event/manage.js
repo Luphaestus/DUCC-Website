@@ -3,22 +3,17 @@ import { switchView } from '../../misc/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
 
 /**
- * Event Management Module (Admin).
- * Provides a paginated, searchable, and sortable table of all events.
- * Users can click on rows to edit specific events or create new ones via the action bar.
+ * Paginated, searchable, and sortable events management table.
+ * @module AdminEventManage
  */
 
-// --- Main Render Function ---
-
 /**
- * Renders the event management shell.
- * Includes the search bar, action buttons, and the table structure.
+ * Render event management interface.
  */
 export async function renderManageEvents() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Read initial state from URL to support bookmarking/deep-linking of filters
     const urlParams = new URLSearchParams(window.location.search);
     const search = urlParams.get('search') || '';
     const sort = urlParams.get('sort') || 'start';
@@ -33,10 +28,22 @@ export async function renderManageEvents() {
                     ${await renderAdminNavBar('events')}
                     <div class="search-input-wrapper">
                         <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
-                        <button id="event-search-btn" title="Search">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
-                        </button>
-                    </div>
+                                                                        <button id="event-search-btn" title="Search">
+                                                                            <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  width="24"
+                                                  height="24"
+                                                  viewBox="0 0 24 24"
+                                                  fill="none"
+                                                  stroke="currentColor"
+                                                  stroke-width="2"
+                                                  stroke-linecap="round"
+                                                  stroke-linejoin="round"
+                                                >
+                                                  <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+                                                  <path d="M21 21l-6 -6" />
+                                                </svg>
+                                                                        </button>                    </div>
                     <div class="admin-actions">
                         <label class="admin-toggle-label">
                             <input type="checkbox" id="show-past-toggle" ${showPast ? 'checked' : ''}>
@@ -66,37 +73,29 @@ export async function renderManageEvents() {
         </div>
     `;
 
-    // --- Search Setup ---
     const searchInput = document.getElementById('event-search-input');
     const searchBtn = document.getElementById('event-search-btn');
     const pastToggle = document.getElementById('show-past-toggle');
 
     searchBtn.onclick = () => updateEventParams({ search: searchInput.value, page: 1 });
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
-
     pastToggle.onchange = () => updateEventParams({ showPast: pastToggle.checked, page: 1 });
 
-    // --- Sort Setup ---
     adminContent.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {
             const currentSort = new URLSearchParams(window.location.search).get('sort') || 'start';
             const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
             const field = th.dataset.sort;
-            // Toggle order if clicking the same column, otherwise default to ascending
-            const newOrder = (currentSort === field && currentOrder === 'asc') ? 'desc' : 'asc';
-            updateEventParams({ sort: field, order: newOrder });
+            updateEventParams({ sort: field, order: (currentSort === field && currentOrder === 'asc') ? 'desc' : 'asc' });
         };
     });
 
-    // Initial data load
     await fetchAndRenderEvents({ page, search, sort, order, showPast });
 }
 
-// --- Helper Functions ---
-
 /**
- * Updates the URL and triggers a re-render of the table.
- * @param {object} updates - Changed parameters.
+ * Update URL parameters and refresh events list.
+ * @param {object} updates
  */
 function updateEventParams(updates) {
     const params = new URLSearchParams(window.location.search);
@@ -104,11 +103,8 @@ function updateEventParams(updates) {
         if (value === null || value === undefined || value === '' || value === false) params.delete(key);
         else params.set(key, value);
     }
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    // Sync browser history so "Back" button works
-    window.history.pushState({}, '', newUrl);
+    window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
 
-    // Refresh content
     fetchAndRenderEvents({
         page: parseInt(params.get('page')) || 1,
         search: params.get('search') || '',
@@ -119,9 +115,8 @@ function updateEventParams(updates) {
 }
 
 /**
- * Fetches event data from API and generates table rows.
- * Also renders pagination controls.
- * @param {object} params - Query parameters.
+ * Fetch and render events list.
+ * @param {object} params
  */
 async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
     try {
@@ -134,7 +129,6 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
         if (events.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5">No events found.</td></tr>';
         } else {
-            // Map event data to HTML table rows
             tbody.innerHTML = events.map(event => `
                 <tr class="event-row" data-id="${event.id}">
                     <td>${event.title}</td>
@@ -145,37 +139,25 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
                 </tr>
             `).join('');
 
-            // Make rows clickable for editing
             tbody.querySelectorAll('.event-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/event/${row.dataset.id}`);
             });
         }
 
-        // --- Pagination Controls ---
         const pagination = document.getElementById('events-pagination');
         pagination.innerHTML = '';
         const prevBtn = document.createElement('button');
         prevBtn.textContent = 'Prev';
         prevBtn.disabled = page <= 1;
-        prevBtn.classList.add('pagination-btn');
-        prevBtn.onclick = (e) => {
-            e.preventDefault();
-            updateEventParams({ page: page - 1 });
-        };
+        prevBtn.onclick = (e) => { e.preventDefault(); updateEventParams({ page: page - 1 }); };
 
         const nextBtn = document.createElement('button');
         nextBtn.textContent = 'Next';
         nextBtn.disabled = page >= totalPages;
-        nextBtn.classList.add('pagination-btn');
-        nextBtn.onclick = (e) => {
-            e.preventDefault();
-            updateEventParams({ page: page + 1 });
-        };
+        nextBtn.onclick = (e) => { e.preventDefault(); updateEventParams({ page: page + 1 }); };
 
         pagination.append(prevBtn, ` Page ${page} of ${totalPages} `, nextBtn);
-
     } catch (e) {
-        console.error(e);
         const tbody = document.getElementById('events-table-body');
         if (tbody) tbody.innerHTML = '<tr><td colspan="5">Error loading events.</td></tr>';
     }

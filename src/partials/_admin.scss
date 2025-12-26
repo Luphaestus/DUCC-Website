@@ -1,7 +1,4 @@
-/* =========================================
-   Page: Admin
-   ========================================= */
-
+/* Admin View */
 #\/admin\/\*-view {
     width: 100%;
     padding: 2rem;
@@ -183,7 +180,7 @@
     }
 }
 
-/* Pagination Styles */
+/* Pagination */
 #events-pagination,
 #users-pagination {
     display: flex;
@@ -198,7 +195,6 @@
         width: auto;
     }
 }
-
 
 /* Admin Header & Layout */
 .admin-header {
@@ -224,7 +220,7 @@
     }
 }
 
-/* User Detail specific styles */
+/* User Detail Tabs */
 .user-detail-tabs {
     display: flex;
     gap: 0.5rem;
@@ -238,7 +234,6 @@
         padding: 0.5rem 1rem;
         cursor: pointer;
         border-radius: 50px;
-        /* Rounded pill shape */
         margin-bottom: 0;
         transition: all 0.2s ease;
 
@@ -277,11 +272,11 @@
     }
 }
 
+/* Transactions Management */
 .transaction-add-box {
     margin-bottom: 1.5rem;
     padding: 1rem;
     background: var(--secondary-focus);
-    /* Neutral sub-container style */
     border-radius: var(--border-radius);
     border: none;
 
@@ -333,7 +328,7 @@
     }
 }
 
-/* Admin Table Specifics */
+/* Admin Table */
 .admin-table {
     tbody {
         cursor: pointer;
@@ -350,7 +345,6 @@
 }
 
 /* Utilities */
-
 .error-text {
     color: var(--del-color);
 }
@@ -374,7 +368,7 @@
     }
 }
 
-/* Tag Management Styles */
+/* Tag Management */
 .tag-color-badge {
     padding: 2px 8px;
     border-radius: 4px;
@@ -386,7 +380,6 @@
     cursor: pointer;
 }
 
-/* User Tags & Controls */
 .tag-controls {
     margin-bottom: 1rem;
     display: flex;
@@ -427,7 +420,7 @@
     }
 }
 
-/* Event Detail Styles */
+/* Event Detail */
 .event-title-input {
     font-size: 1.5rem;
     width: 100%;
@@ -488,18 +481,12 @@
     }
 }
 
-/* Whitelist Form Styles */
-
+/* Whitelist Form */
 .whitelist-form {
-
     margin-bottom: var(--spacing);
-
 }
 
-
-
 .whitelist-form-label {
-
     display: flex;
     gap: 10px;
     align-items: center;

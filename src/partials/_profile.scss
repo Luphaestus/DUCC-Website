@@ -1,9 +1,6 @@
 @use "mixins" as *;
 
-/* =========================================
-   Page: Profile
-   ========================================= */
-
+/* Profile View */
 #\/profile-view {
     h1 {
         margin: 2rem;
@@ -48,7 +45,7 @@
     }
 }
 
-/* Status Item Improvements */
+/* Status Items */
 .status-item {
     margin-bottom: 1rem;
     

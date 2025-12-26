@@ -1,7 +1,4 @@
-/* =========================================
-   Global Theme & Configuration
-   ========================================= */
-
+/* Global Theme */
 body {
     color: reverse-color(var(--pico-color));
     background-color: reverse-color(var(--pico-background-color));
@@ -21,10 +18,7 @@ body {
 
     #animated-background {
         opacity: 0.6;
-
-        @media (prefers-color-scheme: dark) {
-            opacity: 0.4;
-        }
+        @media (prefers-color-scheme: dark) { opacity: 0.4; }
     }
 
     .bg-blob {
@@ -39,10 +33,7 @@ body {
         color: var(--pico-color);
         pointer-events: none;
         z-index: 1;
-
-        @media (prefers-color-scheme: dark) {
-            opacity: 0.06;
-        }
+        @media (prefers-color-scheme: dark) { opacity: 0.06; }
     }
 }
 

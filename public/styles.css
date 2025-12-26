@@ -2806,9 +2806,7 @@ textarea,
     transition-duration: 0s !important;
   }
 }
-/* =========================================
-   Global Theme & Configuration
-   ========================================= */
+/* Global Theme */
 body {
   color: reverse-color(var(--pico-color));
   background-color: reverse-color(var(--pico-background-color));
@@ -2856,6 +2854,9 @@ body .bg-icon {
     --theme-opposite: white;
   }
 }
+/* Translucent Card Mixin */
+/* Card Highlights Mixin */
+/* Base Layout */
 body {
   display: flex;
   flex-direction: column;
@@ -2873,6 +2874,7 @@ main.container {
   flex: 1;
 }
 
+/* Button & Link Helpers */
 p > button {
   padding: 0.25rem;
   padding-left: 0.5rem;
@@ -2893,6 +2895,7 @@ p > svg {
   flex-shrink: 0;
 }
 
+/* Form Elements */
 input,
 select,
 textarea {
@@ -2941,6 +2944,7 @@ textarea[aria-invalid=false] {
   }
 }
 
+/* Button Variants */
 button,
 [type=button],
 [type=submit],
@@ -2991,14 +2995,14 @@ button.delete,
   }
 }
 
+/* Tables */
 table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   margin-bottom: 1.5rem;
 }
-table th,
-table td {
+table th, table td {
   padding: 0.75rem;
   text-align: left;
   border-bottom: var(--table-border);
@@ -3042,57 +3046,45 @@ table tbody::after {
   display: table-row;
   height: 0.5rem;
 }
-table tbody tr:first-child th,
-table tbody tr:first-child td {
+table tbody tr:first-child th, table tbody tr:first-child td {
   border-top: var(--table-border) !important;
 }
-table tbody tr:first-child th:first-child,
-table tbody tr:first-child td:first-child {
+table tbody tr:first-child th:first-child, table tbody tr:first-child td:first-child {
   border-left: var(--table-border) !important;
   border-top-left-radius: 0.3rem;
 }
-table tbody tr:first-child th:last-child,
-table tbody tr:first-child td:last-child {
+table tbody tr:first-child th:last-child, table tbody tr:first-child td:last-child {
   border-right: var(--table-border) !important;
   border-top-right-radius: 0.3rem;
 }
-table tbody tr:last-child th,
-table tbody tr:last-child td {
+table tbody tr:last-child th, table tbody tr:last-child td {
   border-bottom: var(--table-border) !important;
 }
-table tbody tr:last-child th:first-child,
-table tbody tr:last-child td:first-child {
+table tbody tr:last-child th:first-child, table tbody tr:last-child td:first-child {
   border-left: var(--table-border) !important;
   border-bottom-left-radius: 0.3rem;
 }
-table tbody tr:last-child th:last-child,
-table tbody tr:last-child td:last-child {
+table tbody tr:last-child th:last-child, table tbody tr:last-child td:last-child {
   border-right: var(--table-border) !important;
   border-bottom-right-radius: 0.3rem;
 }
-table tbody th:first-child,
-table tbody td:first-child {
+table tbody th:first-child, table tbody td:first-child {
   border-left: var(--table-border) !important;
   background-color: var(--table-bg-body) !important;
   backdrop-filter: blur(10px) !important;
 }
-table tbody th:last-child,
-table tbody td:last-child {
+table tbody th:last-child, table tbody td:last-child {
   border-right: var(--table-border) !important;
 }
-table tbody th,
-table tbody td {
+table tbody th, table tbody td {
   background-color: var(--table-bg-body) !important;
   backdrop-filter: blur(10px) !important;
 }
-table tbody tr:hover th,
-table tbody tr:hover td {
+table tbody tr:hover th, table tbody tr:hover td {
   background-color: var(--table-bg-hover-body) !important;
 }
 
-/* =========================================
-   Utilities & Animations
-   ========================================= */
+/* Utilities & Animations */
 .small-container {
   margin-left: auto;
   margin-right: auto;
@@ -3148,10 +3140,7 @@ table tbody tr:hover td {
     transform: translateX(0);
   }
 }
-/* =========================================
-   Components
-   ========================================= */
-/* --- Sub-containers / Cards --- */
+/* Cards & Sub-containers */
 .sub-container {
   background-color: color-mix(in srgb, var(--colour, red) 9%, transparent);
   border: 1px solid color-mix(in srgb, var(--theme-opposite) 10%, color-mix(in srgb, var(--translucent-bg) 60%, var(--colour, red)));
@@ -3178,7 +3167,7 @@ table tbody tr:hover td {
   margin-bottom: 0;
 }
 
-/* --- Notifications --- */
+/* Notifications */
 #notification-container {
   position: fixed;
   top: var(--navbar-height);
@@ -3220,7 +3209,7 @@ table tbody tr:hover td {
   background-color: color-mix(in srgb, var(--translucent-bg) 90%, orange);
 }
 
-/* --- Navbar --- */
+/* Navbar */
 nav.small-container {
   --navbar-height: 4rem;
   position: sticky;
@@ -3242,6 +3231,7 @@ nav.small-container .nav-logo {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
 }
 nav.small-container .nav-logo img {
   height: 2rem;
@@ -3250,11 +3240,8 @@ nav.small-container .nav-logo img {
 nav.small-container .nav-logo strong {
   font-size: 1rem;
 }
-nav.small-container .nav-logo {
-  cursor: pointer;
-}
 
-/* --- Forms --- */
+/* Forms */
 .form-info {
   display: flex;
   flex-wrap: wrap;
@@ -3287,16 +3274,14 @@ nav.small-container .nav-logo {
   flex-direction: column;
   gap: 1rem;
 }
-.form-info .form-box h3,
-.form-info .form-box h2 {
+.form-info .form-box h3, .form-info .form-box h2 {
   display: flex;
   align-items: center;
   font-size: 1.25rem;
   font-weight: bold;
   margin-bottom: 1rem;
 }
-.form-info .form-box h3 > svg,
-.form-info .form-box h2 > svg {
+.form-info .form-box h3 > svg, .form-info .form-box h2 > svg {
   width: 1.5rem;
   height: 1.5rem;
   margin-right: 0.75rem;
@@ -3326,9 +3311,7 @@ nav.small-container .nav-logo {
   --highlight: color-mix(in srgb, red 70%, var(--theme-opposite) 20%) !important;
 }
 
-/* =========================================
-   Components: Tooltips
-   ========================================= */
+/* Tooltips */
 .info-tooltip-wrapper {
   position: relative;
   display: inline-flex;
@@ -3382,7 +3365,15 @@ nav.small-container .nav-logo {
   margin: 0 !important;
 }
 
-/* --- Custom Glassy Modal --- */
+.tag-badge {
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  display: inline-block;
+}
+
+/* Custom Glassy Modal */
 .custom-modal-overlay {
   position: fixed;
   top: 0;
@@ -3474,9 +3465,7 @@ nav.small-container .nav-logo {
   background-color: var(--pico-primary-hover);
 }
 
-/* =========================================
-   Page: Home
-   ========================================= */
+/* Hero Section */
 .hero {
   position: relative;
   background-size: cover;
@@ -3594,6 +3583,7 @@ nav.small-container .nav-logo {
   bottom: -8vh;
 }
 
+/* About Us Section */
 .about-us-para {
   columns: 2;
   gap: 5vw;
@@ -3605,6 +3595,7 @@ nav.small-container .nav-logo {
   }
 }
 
+/* Find Us Section */
 .find-us-para {
   margin-top: 4vh;
 }
@@ -3628,9 +3619,7 @@ nav.small-container .nav-logo {
   object-fit: cover;
 }
 
-/* =========================================
-   Page: Events
-   ========================================= */
+/* Events View */
 [id="/events-view"] {
   width: 100%;
   display: flex;
@@ -3778,9 +3767,7 @@ nav.small-container .nav-logo {
   padding-bottom: 2rem;
 }
 
-/* =========================================
-   Page: Event
-   ========================================= */
+/* Event Detail View */
 .event-warning-banner {
   display: flex;
   align-items: center;
@@ -3935,6 +3922,16 @@ nav.small-container .nav-logo {
 .event-content-split .event-attendees-section ul.attendees-list li:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+.event-content-split .event-attendees-section ul.attendees-list li.attendee-left {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.event-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
 
 .detail-field {
   display: flex;
@@ -3975,9 +3972,7 @@ nav.small-container .nav-logo {
   }
 }
 
-/* =========================================
-   Page: Legal
-   ========================================= */
+/* Legal View */
 [id="/legal-view"] {
   width: 100%;
   display: flex;
@@ -4033,6 +4028,7 @@ nav.small-container .nav-logo {
   color: var(--highlight);
 }
 
+/* Legal Form Grid */
 #grid-legal {
   display: flex;
   flex-wrap: wrap;
@@ -4073,9 +4069,7 @@ nav.small-container .nav-logo {
   --highlight: color-mix(in srgb, #3498db 70%, var(--theme-opposite) 20%);
 }
 
-/* =========================================
-   Page: Profile
-   ========================================= */
+/* Profile View */
 #\/profile-view h1 {
   margin: 2rem;
   text-align: center;
@@ -4132,7 +4126,7 @@ nav.small-container .nav-logo {
   flex: 1 1 auto;
 }
 
-/* Status Item Improvements */
+/* Status Items */
 .status-item {
   margin-bottom: 1rem;
 }
@@ -4194,30 +4188,29 @@ nav.small-container .nav-logo {
   border-radius: 8px;
 }
 
-/* =========================================
-   Page: Transactions & Signup, Login
-   ========================================= */
+/* Transactions, Signup, Login & Swims View */
 #\/transactions-view,
 #\/signup-view,
-#\/login-view {
+#\/login-view,
+#\/swims-view {
   width: 100%;
   padding: 2rem;
 }
 #\/transactions-view h1,
 #\/signup-view h1,
-#\/login-view h1 {
+#\/login-view h1,
+#\/swims-view h1 {
   text-align: center;
   margin-bottom: 2rem;
 }
 #\/transactions-view > div,
 #\/signup-view > div,
-#\/login-view > div {
+#\/login-view > div,
+#\/swims-view > div {
   width: 100%;
 }
 
-/* =========================================
-   Page: Admin
-   ========================================= */
+/* Admin View */
 #\/admin\/\*-view {
   width: 100%;
   padding: 2rem;
@@ -4381,7 +4374,7 @@ nav.small-container .nav-logo {
   display: block;
 }
 
-/* Pagination Styles */
+/* Pagination */
 #events-pagination,
 #users-pagination {
   display: flex;
@@ -4418,7 +4411,7 @@ nav.small-container .nav-logo {
   justify-self: end;
 }
 
-/* User Detail specific styles */
+/* User Detail Tabs */
 .user-detail-tabs {
   display: flex;
   gap: 0.5rem;
@@ -4432,7 +4425,6 @@ nav.small-container .nav-logo {
   padding: 0.5rem 1rem;
   cursor: pointer;
   border-radius: 50px;
-  /* Rounded pill shape */
   margin-bottom: 0;
   transition: all 0.2s ease;
 }
@@ -4465,11 +4457,11 @@ nav.small-container .nav-logo {
   margin-bottom: 0;
 }
 
+/* Transactions Management */
 .transaction-add-box {
   margin-bottom: 1.5rem;
   padding: 1rem;
   background: var(--secondary-focus);
-  /* Neutral sub-container style */
   border-radius: var(--border-radius);
   border: none;
 }
@@ -4515,7 +4507,7 @@ nav.small-container .nav-logo {
   margin-bottom: 0;
 }
 
-/* Admin Table Specifics */
+/* Admin Table */
 .admin-table tbody {
   cursor: pointer;
 }
@@ -4549,7 +4541,7 @@ nav.small-container .nav-logo {
   font-size: 2rem !important;
 }
 
-/* Tag Management Styles */
+/* Tag Management */
 .tag-color-badge {
   padding: 2px 8px;
   border-radius: 4px;
@@ -4561,7 +4553,6 @@ nav.small-container .nav-logo {
   cursor: pointer;
 }
 
-/* User Tags & Controls */
 .tag-controls {
   margin-bottom: 1rem;
   display: flex;
@@ -4599,7 +4590,7 @@ nav.small-container .nav-logo {
   opacity: 0.8;
 }
 
-/* Event Detail Styles */
+/* Event Detail */
 .event-title-input {
   font-size: 1.5rem;
   width: 100%;
@@ -4663,7 +4654,7 @@ nav.small-container .nav-logo {
   background-color: var(--del-hover-color);
 }
 
-/* Whitelist Form Styles */
+/* Whitelist Form */
 .whitelist-form {
   margin-bottom: var(--spacing);
 }
@@ -4684,6 +4675,68 @@ nav.small-container .nav-logo {
   margin-bottom: 0 !important;
   flex-shrink: 0;
   width: auto;
+}
+
+/* Footer */
+footer {
+  width: 100%;
+  background-color: var(--translucent-bg);
+  backdrop-filter: blur(10px);
+  border-top: 0.5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
+  padding: 2rem 0;
+  margin-top: auto;
+  z-index: 10;
+}
+footer .small-container {
+  max-width: 1000px;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+footer .footer-content .social-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+footer .footer-content .social-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--pico-color);
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+footer .footer-content .social-links a:hover {
+  background: var(--pico-primary);
+  color: white;
+  transform: translateY(-2px);
+}
+footer .footer-content .social-links a img {
+  width: 1.2rem;
+  height: 1.2rem;
+  filter: invert(1);
+}
+@media (prefers-color-scheme: light) {
+  footer .footer-content .social-links a img {
+    filter: invert(0);
+  }
+}
+footer .footer-content .social-links a:hover img {
+  filter: invert(0) !important;
+}
+footer .footer-bottom {
+  text-align: center;
+}
+footer .footer-bottom p {
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
 }
 
 /*# sourceMappingURL=styles.css.map */
