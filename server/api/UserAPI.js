@@ -3,6 +3,7 @@ const UserDB = require('../db/userDB.js');
 const transactionsDB = require('../db/transactionDB.js');
 const Globals = require('../misc/globals.js');
 const check = require('../misc/authentication');
+const bcrypt = require('bcrypt');
 
 /**
  * API for user profiles, validation, membership, and account management.
@@ -283,14 +284,29 @@ class User {
          * Delete account (denied if in debt).
          */
         this.app.post('/api/user/deleteAccount', check(), async (req, res) => {
-            const balance = await transactionsDB.get_balance(req, this.db);
-            if (balance.isError()) return balance.getResponse(res);
-            if (balance.getData() < 0) return res.status(400).json({ message: 'Outstanding debts exist.' });
+            const { password } = req.body;
+            if (!password) return res.status(400).json({ message: 'Password is required to delete account.' });
 
-            const status = await UserDB.removeUser(req, this.db);
-            if (status.isError()) return status.getResponse(res);
+            try {
+                // Verify password
+                const user = await this.db.get('SELECT hashed_password FROM users WHERE id = ?', [req.user.id]);
+                if (!user || !user.hashed_password) return res.status(400).json({ message: 'User not found or invalid state.' });
 
-            req.logout((err) => { res.json({ success: true }); });
+                const isMatch = await bcrypt.compare(password, user.hashed_password);
+                if (!isMatch) return res.status(403).json({ message: 'Incorrect password.' });
+
+                const balance = await transactionsDB.get_balance(req, this.db);
+                if (balance.isError()) return balance.getResponse(res);
+                if (balance.getData() < 0) return res.status(400).json({ message: 'Outstanding debts exist.' });
+
+                const status = await UserDB.removeUser(req, this.db);
+                if (status.isError()) return status.getResponse(res);
+
+                req.logout((err) => { res.json({ success: true }); });
+            } catch (err) {
+                console.error(err);
+                res.status(500).json({ message: 'Internal server error.' });
+            }
         });
 
         /**

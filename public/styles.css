@@ -3373,6 +3373,27 @@ nav.small-container .nav-logo strong {
   display: inline-block;
 }
 
+.tab-btn {
+  background: transparent;
+  border: 1px solid var(--muted-border-color);
+  color: var(--text-color);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 50px;
+  margin-bottom: 0;
+  transition: all 0.2s ease;
+}
+.tab-btn:hover {
+  background: var(--secondary-focus);
+}
+.tab-btn.active {
+  background: var(--primary);
+  color: var(--primary-inverse);
+  border-color: var(--primary);
+  font-weight: bold;
+}
+
+/* Card Highlights Mixin */
 /* Custom Glassy Modal */
 .custom-modal-overlay {
   position: fixed;
@@ -4418,25 +4439,6 @@ nav.small-container .nav-logo strong {
   margin-bottom: 1.5rem;
   border-bottom: none;
 }
-.user-detail-tabs .tab-btn {
-  background: transparent;
-  border: 1px solid var(--muted-border-color);
-  color: var(--text-color);
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  border-radius: 50px;
-  margin-bottom: 0;
-  transition: all 0.2s ease;
-}
-.user-detail-tabs .tab-btn:hover {
-  background: var(--secondary-focus);
-}
-.user-detail-tabs .tab-btn.active {
-  background: var(--primary);
-  color: var(--primary-inverse);
-  border-color: var(--primary);
-  font-weight: bold;
-}
 
 .detail-difficulty-control {
   display: flex;
@@ -4737,6 +4739,22 @@ footer .footer-bottom p {
   margin-bottom: 0;
   font-size: 0.85rem;
   color: var(--pico-muted-color);
+}
+
+/* Swims View */
+#leaderboard-body .leaderboard-status {
+  text-align: center;
+}
+#leaderboard-body .leaderboard-error {
+  color: var(--del-color);
+  text-align: center;
+}
+
+.swims-tab-group {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 /*# sourceMappingURL=styles.css.map */

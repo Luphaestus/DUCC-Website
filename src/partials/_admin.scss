@@ -226,28 +226,6 @@
     gap: 0.5rem;
     margin-bottom: 1.5rem;
     border-bottom: none;
-
-    .tab-btn {
-        background: transparent;
-        border: 1px solid var(--muted-border-color);
-        color: var(--text-color);
-        padding: 0.5rem 1rem;
-        cursor: pointer;
-        border-radius: 50px;
-        margin-bottom: 0;
-        transition: all 0.2s ease;
-
-        &:hover {
-            background: var(--secondary-focus);
-        }
-
-        &.active {
-            background: var(--primary);
-            color: var(--primary-inverse);
-            border-color: var(--primary);
-            font-weight: bold;
-        }
-    }
 }
 
 .detail-difficulty-control {

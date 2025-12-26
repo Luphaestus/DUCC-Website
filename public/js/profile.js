@@ -225,6 +225,53 @@ function showConfirmModal(title, message) {
 }
 
 /**
+ * Show password confirmation modal.
+ * @returns {Promise<string|null>} Returns password if confirmed, null otherwise.
+ */
+function showPasswordModal(title, message) {
+    return new Promise((resolve) => {
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'custom-modal-overlay';
+
+        modalOverlay.innerHTML = `
+            <div class="custom-modal-content">
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <input type="password" id="confirm-password" placeholder="Enter your password" style="width: 100%; margin-bottom: 1rem;">
+                <div class="modal-actions">
+                    <button class="btn-cancel" id="confirm-cancel">Cancel</button>
+                    <button class="btn-confirm" id="confirm-ok">Confirm</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modalOverlay);
+        requestAnimationFrame(() => modalOverlay.classList.add('visible'));
+
+        const input = modalOverlay.querySelector('#confirm-password');
+        input.focus();
+
+        const cleanup = (val) => {
+            modalOverlay.classList.remove('visible');
+            setTimeout(() => {
+                if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
+                resolve(val);
+            }, 300);
+        };
+
+        const confirm = () => {
+            const password = input.value;
+            if (password) cleanup(password);
+        };
+
+        modalOverlay.querySelector('#confirm-ok').onclick = confirm;
+        modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(null);
+        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(null); };
+        input.onkeydown = (e) => { if (e.key === 'Enter') confirm(); };
+    });
+}
+
+/**
  * Update status UI with icon and color.
  */
 function updateStatusUI(elementId, text, icon, color) {
@@ -279,8 +326,8 @@ function renderEventStatus(profile) {
                 const msg = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining for the ${academicYear} academic year.
                              <p>Become a full member to enjoy unlimited sessions!
                              <button id="become-member-button" class="status-btn">Become a Member</button></p>`;
-                updateStatusUI("membership-info-status", msg, MINUS_SVG, INFO_CYAN);
-                boxColor = INFO_CYAN;
+                updateStatusUI("membership-info-status", msg, MINUS_SVG, WARNING_ORANGE);
+                boxColor = WARNING_ORANGE;
             } else {
                 const msg = `Your membership is inactive for the ${academicYear} academic year.
                              <p>Please become a member to continue attending sessions.
@@ -494,13 +541,17 @@ async function bindStaticEvents() {
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async (event) => {
             event.preventDefault();
-            if (!confirm("Delete your account?")) return;
+            const password = await showPasswordModal("Delete Account", "This action cannot be undone. Please enter your password to confirm.");
+            if (!password) return;
+
             try {
-                await ajaxPost('/api/user/deleteAccount', {});
+                await ajaxPost('/api/user/deleteAccount', { password });
                 LoginEvent.notify({ authenticated: false });
                 switchView('/home');
             } catch (error) {
-                displayNotification('Failed', "Could not delete account.", 'error');
+                // error is likely a statusObject or response object, try to extract message
+                const msg = error.message || "Could not delete account. Check your password.";
+                displayNotification('Failed', msg, 'error');
             }
         });
     }

@@ -13,7 +13,7 @@ const HTML_TEMPLATE = `
     <div class="small-container">
         <h1>Swims</h1>
         <article class="form-box">
-            <div class="admin-nav-group" style="margin-bottom: 1.5rem; justify-content: center;">
+            <div class="swims-tab-group admin-nav-group">
                 <button class="tab-btn active" id="swims-yearly-tab">Current Year</button>
                 <button class="tab-btn" id="swims-alltime-tab">All-time</button>
             </div>
@@ -27,7 +27,7 @@ const HTML_TEMPLATE = `
                         </tr>
                     </thead>
                     <tbody id="leaderboard-body">
-                        <tr><td colspan="3" style="text-align:center;" aria-busy="true">Loading leaderboard...</td></tr>
+                        <tr><td colspan="3" class="leaderboard-status" aria-busy="true">Loading leaderboard...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -43,13 +43,13 @@ async function populateLeaderboard(yearly = true) {
     const body = document.getElementById('leaderboard-body');
     if (!body) return;
 
-    body.innerHTML = '<tr><td colspan="3" style="text-align:center;" aria-busy="true">Loading leaderboard...</td></tr>';
+    body.innerHTML = '<tr><td colspan="3" class="leaderboard-status" aria-busy="true">Loading leaderboard...</td></tr>';
 
     try {
         const leaderboard = (await ajaxGet(`/api/user/swims/leaderboard?yearly=${yearly}`)).data;
 
         if (!leaderboard || leaderboard.length === 0) {
-            body.innerHTML = '<tr><td colspan="3" style="text-align:center;">No swimmers yet!</td></tr>';
+            body.innerHTML = '<tr><td colspan="3" class="leaderboard-status">No swimmers yet!</td></tr>';
             return;
         }
 
@@ -61,7 +61,7 @@ async function populateLeaderboard(yearly = true) {
             </tr>
         `).join('');
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--error);">Failed to load leaderboard.</td></tr>';
+        body.innerHTML = '<tr><td colspan="3" class="leaderboard-error">Failed to load leaderboard.</td></tr>';
     }
 }
 
@@ -71,12 +71,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.body.addEventListener('click', (e) => {
+        const yearlyBtn = document.getElementById('swims-yearly-tab');
+        const alltimeBtn = document.getElementById('swims-alltime-tab');
+
         if (e.target.id === 'swims-yearly-tab') {
-            document.getElementById('swims-alltime-tab').classList.remove('active');
+            alltimeBtn.classList.remove('active');
             e.target.classList.add('active');
             populateLeaderboard(true);
         } else if (e.target.id === 'swims-alltime-tab') {
-            document.getElementById('swims-yearly-tab').classList.remove('active');
+            yearlyBtn.classList.remove('active');
             e.target.classList.add('active');
             populateLeaderboard(false);
         }

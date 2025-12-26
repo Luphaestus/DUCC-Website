@@ -209,13 +209,37 @@ class UserDB {
             return new statusObject(403, 'User not authorized');
         }
 
+        const targetId = userId || req.user.id;
+
         try {
             if (!real) {
-                await db.run(`UPDATE users SET hashed_password = NULL WHERE id = ?`, [userId || req.user.id]);
+                // Soft delete: Anonymize user data but keep stats (swims, attendance)
+                await db.run(`
+                    UPDATE users SET 
+                        hashed_password = NULL,
+                        first_name = 'Deleted',
+                        last_name = 'User',
+                        email = 'deleted_' || id || '@durham.ac.uk', 
+                        phone_number = NULL,
+                        home_address = NULL,
+                        emergency_contact_name = NULL,
+                        emergency_contact_phone = NULL,
+                        medical_conditions_details = NULL,
+                        medication_details = NULL,
+                        profile_picture_path = NULL,
+                        is_member = 0,
+                        is_instructor = 0,
+                        is_exec = 0,
+                        can_manage_users = 0,
+                        can_manage_events = 0,
+                        can_manage_transactions = 0
+                    WHERE id = ?`, 
+                    [targetId]
+                );
             } else {
-                await db.run(`DELETE FROM users WHERE id = ?`, [userId || req.user.id]);
+                await db.run(`DELETE FROM users WHERE id = ?`, [targetId]);
+                await db.run(`DELETE FROM event_attendees WHERE user_id = ?`, [targetId]);
             }
-            await db.run(`DELETE FROM event_attendees WHERE user_id = ?`, [userId || req.user.id]);
             return new statusObject(200, null);
         } catch (error) {
             console.error('Database error in removeUser:', error);
