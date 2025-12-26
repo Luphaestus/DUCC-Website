@@ -12,37 +12,58 @@ show_help() {
     echo "Usage: ./deploy.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -dev      Deploy in development mode (NODE_ENV=dev). Seeds the database with test data."
-    echo "  -clear    Remove the existing database (data/database.db) before deploying."
-    echo "  --logs    Skip deployment and show real-time logs from the remote server."
-    echo "  --help    Show this help message and exit."
+    echo "  --dev, -d      Deploy in development mode (NODE_ENV=dev). Seeds the database with test data."
+    echo "  --clear, -c    Remove the existing database (data/database.db) before deploying."
+    echo "  --logs, -l     Skip deployment and show real-time logs from the remote server."
+    echo "  --help, -h     Show this help message and exit."
     echo ""
-    echo "Example:"
-    echo "  ./deploy.sh -dev -clear"
+    echo "Examples:"
+    echo "  ./deploy.sh --dev --clear"
+    echo "  ./deploy.sh -dc  (same as above)"
     exit 0
 }
 
 # Parse arguments
-for arg in "$@"
-do
-    case $arg in
-        -dev)
-        MODE="dev"
-        ;;
-        -clear)
-        CLEAR_DB=true
-        ;;
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dev)
+            MODE="dev"
+            shift
+            ;;
+        --clear)
+            CLEAR_DB=true
+            shift
+            ;;
         --logs)
-        SHOW_LOGS=true
-        ;;
+            SHOW_LOGS=true
+            shift
+            ;;
         --help)
-        show_help
-        ;;
+            show_help
+            ;;
+        -*)
+            # Handle short flags (can be combined, e.g., -dcl)
+            for (( i=1; i<${#1}; i++ )); do
+                char="${1:$i:1}"
+                case "$char" in
+                    d) MODE="dev" ;;
+                    c) CLEAR_DB=true ;;
+                    l) SHOW_LOGS=true ;;
+                    h) show_help ;;
+                    *)
+                        echo "Unknown option: -$char"
+                        echo "Use --help for usage information."
+                        exit 1
+                        ;;
+                esac
+            done
+            shift
+            ;;
         *)
-        echo "Unknown option: $arg"
-        echo "Use --help for usage information."
-        exit 1
-        ;;
+            echo "Unknown option: $1"
+            echo "Use --help for usage information."
+            exit 1
+            ;;
     esac
 done
 
