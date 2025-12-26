@@ -159,7 +159,7 @@ async function seedData(db, env) {
         const startDate = new Date(now);
         startDate.setDate(now.getDate() - (6 * 7));
         const endDate = new Date(now);
-        endDate.setDate(end.getDate() + (12 * 7));
+        endDate.setDate(endDate.getDate() + (12 * 7));
 
         const topicalNames = ["Pub Night", "Board Games", "Movie Night", "Quiz Night", "Karaoke", "Bar Crawl"];
         let currentDate = new Date(startDate);
