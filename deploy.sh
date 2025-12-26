@@ -125,7 +125,7 @@ else
     REMOTE_CMD="$REMOTE_CMD && unset APP_CMD"
 fi
 
-REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --force-recreate"
+REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --force-recreate --remove-orphans"
 
 # Execute
 sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "$REMOTE_CMD"
