@@ -1,5 +1,6 @@
 {
     # Global options
+    debug
 }
 
 {$DOMAIN_NAME:localhost} {
