@@ -4520,6 +4520,88 @@ nav.small-container .nav-logo strong {
 .admin-table th.sortable:hover {
   background-color: var(--secondary-focus);
 }
+@media (max-width: 600px) {
+  .admin-table {
+    border: 0;
+  }
+  .admin-table thead {
+    display: none;
+  }
+  .admin-table tr {
+    display: block;
+    margin-bottom: 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  }
+}
+@media (max-width: 600px) and (prefers-color-scheme: dark) {
+  .admin-table tr {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+}
+@media (max-width: 600px) {
+  .admin-table td {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.25rem 1rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.4rem;
+    margin-bottom: 0.5rem;
+    border: none;
+    text-align: left;
+    min-height: auto;
+  }
+  .admin-table td:last-child {
+    border-bottom: 0;
+    margin-bottom: 0;
+  }
+  .admin-table td::before {
+    content: attr(data-label) ": ";
+    font-weight: bold;
+    color: var(--pico-contrast);
+    flex: 0 0 auto;
+  }
+  .admin-table td {
+    /* Adjust content inside stacked table cells */
+  }
+  .admin-table td input, .admin-table td select, .admin-table td .tx-actions, .admin-table td .tag-color-badge {
+    width: auto !important;
+    display: inline-block;
+    margin: 0 !important;
+  }
+  .admin-table td .tx-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .admin-table td .tx-actions button {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+@media (max-width: 600px) and (max-width: 450px) {
+  .admin-table td {
+    gap: 0.25rem 0.5rem;
+  }
+}
+@media (max-width: 600px) and (max-width: 350px) {
+  .admin-table td {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+  }
+  .admin-table td::before {
+    width: 100%;
+  }
+}
 
 /* Utilities */
 .error-text {
@@ -4756,5 +4838,3 @@ footer .footer-bottom p {
   gap: 0.5rem;
   margin-bottom: 1.5rem;
 }
-
-/*# sourceMappingURL=styles.css.map */
