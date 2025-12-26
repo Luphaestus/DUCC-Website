@@ -330,52 +330,75 @@
 
         tr {
             display: block;
-            margin-bottom: 1rem;
-            border: 1px solid var(--muted-border-color);
-            border-radius: var(--border-radius);
-            padding: 0.5rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+
+            @media (prefers-color-scheme: dark) {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: rgba(255, 255, 255, 0.05);
+            }
         }
 
         td {
-            display: block;
-            text-align: right;
-            border-bottom: 1px solid var(--muted-border-color);
-            padding: 0.5rem;
-            position: relative;
-            padding-left: 50%;
-            min-height: 2.5rem;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.25rem 1rem;
+            padding: 0.5rem 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.4rem;
+            margin-bottom: 0.5rem;
+            border: none;
+            text-align: left;
+            min-height: auto;
 
             &:last-child {
                 border-bottom: 0;
+                margin-bottom: 0;
             }
 
             &::before {
-                content: attr(data-label);
-                position: absolute;
-                left: 0.5rem;
-                width: 45%;
-                text-align: left;
+                content: attr(data-label) ": ";
                 font-weight: bold;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                color: var(--pico-contrast);
+                flex: 0 0 auto;
             }
 
-            /* Adjust inputs inside stacked table cells */
-            input, select, .tx-actions {
-                width: 100% !important;
-                display: block;
+            /* Adjust content inside stacked table cells */
+            input, select, .tx-actions, .tag-color-badge {
+                width: auto !important;
+                display: inline-block;
                 margin: 0 !important;
             }
 
             .tx-actions {
                 display: flex;
                 flex-wrap: wrap;
-                justify-content: flex-end;
                 gap: 0.25rem;
                 
                 button {
-                    flex: 1 1 auto;
+                    padding: 0.2rem 0.5rem;
+                    font-size: 0.8rem;
+                }
+            }
+
+            @media (max-width: 450px) {
+                gap: 0.25rem 0.5rem;
+            }
+
+            @media (max-width: 350px) {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.1rem;
+                
+                &::before {
+                    width: 100%;
                 }
             }
         }
