@@ -130,9 +130,9 @@ function renderWhitelistRows(whitelist, tagId) {
     if (!whitelist || whitelist.length === 0) return '<tr><td colspan="3">No restrictions.</td></tr>';
     return whitelist.map(user => `
         <tr>
-            <td>${user.first_name} ${user.last_name}</td>
-            <td>${user.email}</td>
-            <td><button class="remove-whitelist-btn outline contrast" data-user-id="${user.id}">Remove</button></td>
+            <td data-label="Name">${user.first_name} ${user.last_name}</td>
+            <td data-label="Email">${user.email}</td>
+            <td data-label="Action"><button class="remove-whitelist-btn outline contrast" data-user-id="${user.id}">Remove</button></td>
         </tr>
     `).join('');
 }

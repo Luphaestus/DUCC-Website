@@ -131,11 +131,11 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
         } else {
             tbody.innerHTML = events.map(event => `
                 <tr class="event-row" data-id="${event.id}">
-                    <td>${event.title}</td>
-                    <td>${new Date(event.start).toLocaleString()}</td>
-                    <td>${event.location}</td>
-                    <td>${event.difficulty_level}</td>
-                    <td>£${event.upfront_cost.toFixed(2)}</td>
+                    <td data-label="Title">${event.title}</td>
+                    <td data-label="Date">${new Date(event.start).toLocaleString()}</td>
+                    <td data-label="Location">${event.location}</td>
+                    <td data-label="Difficulty">${event.difficulty_level}</td>
+                    <td data-label="Cost">£${event.upfront_cost.toFixed(2)}</td>
                 </tr>
             `).join('');
 

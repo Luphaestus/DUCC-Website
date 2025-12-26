@@ -636,11 +636,11 @@ async function renderTransactionsTab(container, userId) {
                     <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Balance After</th><th>Action</th></tr></thead>
                     <tbody>
                         <tr>
-                            <td>${formatedDate}</td>
-                            <td><input id="new-tx-desc" type="text" placeholder="Description"></td>
-                            <td><input id="new-tx-amount" type="number" step="0.01" placeholder="Amount"></td>
-                            <td id="new-tx-after">N/A</td>
-                            <td><button id="add-tx-btn">Add</button></td>
+                            <td data-label="Date">${formatedDate}</td>
+                            <td data-label="Description"><input id="new-tx-desc" type="text" placeholder="Description"></td>
+                            <td data-label="Amount"><input id="new-tx-amount" type="number" step="0.01" placeholder="Amount"></td>
+                            <td data-label="Balance After" id="new-tx-after">N/A</td>
+                            <td data-label="Action"><button id="add-tx-btn">Add</button></td>
                         </tr>
         `;
 
@@ -650,17 +650,17 @@ async function renderTransactionsTab(container, userId) {
             transactions.forEach(tx => {
                 html += `
                     <tr>
-                        <td>${new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
-                        <td>
+                        <td data-label="Date">${new Date(tx.created_at).toLocaleDateString('en-GB')}</td>
+                        <td data-label="Description">
                             <span class="tx-desc-text">${tx.description}</span>
                             <input class="tx-desc-input hidden" value="${tx.description}">
                         </td>
-                        <td>
+                        <td data-label="Amount">
                             <span class="tx-amount-text">£${tx.amount.toFixed(2)}</span>
                             <input type="number" step="0.01" class="tx-amount-input hidden" value="${tx.amount}">
                         </td>
-                        <td>£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}</td>
-                        <td>
+                        <td data-label="Balance After">£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}</td>
+                        <td data-label="Action">
                             <div class="tx-actions">
                                 <button class="edit-tx-btn" data-id="${tx.id}">Edit</button>
                                 <button class="save-tx-btn hidden" data-id="${tx.id}">Save</button>

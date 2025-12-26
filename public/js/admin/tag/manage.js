@@ -59,14 +59,14 @@ async function fetchAndRenderTags() {
         } else {
             tbody.innerHTML = tags.map(tag => `
                 <tr class="tag-row" data-id="${tag.id}">
-                    <td>${tag.name}</td>
-                    <td>
+                    <td data-label="Name">${tag.name}</td>
+                    <td data-label="Color">
                         <span class="tag-color-badge" style="background-color: ${tag.color};">
                             ${tag.color}
                         </span>
                     </td>
-                    <td>${tag.min_difficulty || '-'}</td>
-                    <td>${tag.description || ''}</td>
+                    <td data-label="Min Difficulty">${tag.min_difficulty || '-'}</td>
+                    <td data-label="Description">${tag.description || ''}</td>
                 </tr>
             `).join('');
 

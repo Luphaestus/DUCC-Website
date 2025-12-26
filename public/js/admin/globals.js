@@ -90,10 +90,10 @@ async function fetchAndRenderGlobals() {
 
             return `
             <tr class="global-row" data-key="${key}">
-                <td>${displayName}</td>
-                <td>${description}</td>
-                <td>${inputHtml}</td>
-                <td><button class="save-global-btn" data-key="${key}">Save</button></td>
+                <td data-label="Key">${displayName}</td>
+                <td data-label="Description">${description}</td>
+                <td data-label="Value">${inputHtml}</td>
+                <td data-label="Actions"><button class="save-global-btn" data-key="${key}">Save</button></td>
             </tr>`;
         }).join('');
 

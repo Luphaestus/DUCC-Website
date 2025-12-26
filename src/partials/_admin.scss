@@ -320,6 +320,66 @@
             background-color: var(--secondary-focus);
         }
     }
+
+    @media (max-width: 600px) {
+        border: 0;
+
+        thead {
+            display: none;
+        }
+
+        tr {
+            display: block;
+            margin-bottom: 1rem;
+            border: 1px solid var(--muted-border-color);
+            border-radius: var(--border-radius);
+            padding: 0.5rem;
+        }
+
+        td {
+            display: block;
+            text-align: right;
+            border-bottom: 1px solid var(--muted-border-color);
+            padding: 0.5rem;
+            position: relative;
+            padding-left: 50%;
+            min-height: 2.5rem;
+
+            &:last-child {
+                border-bottom: 0;
+            }
+
+            &::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0.5rem;
+                width: 45%;
+                text-align: left;
+                font-weight: bold;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            /* Adjust inputs inside stacked table cells */
+            input, select, .tx-actions {
+                width: 100% !important;
+                display: block;
+                margin: 0 !important;
+            }
+
+            .tx-actions {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 0.25rem;
+                
+                button {
+                    flex: 1 1 auto;
+                }
+            }
+        }
+    }
 }
 
 /* Utilities */

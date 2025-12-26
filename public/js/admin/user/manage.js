@@ -121,12 +121,12 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
         tbody.innerHTML = users.map(user => `
             <tr class="user-row" data-id="${user.id}">
                 ${columns.map(col => {
-                    if (col.key === 'name') return `<td>${user.first_name} ${user.last_name}</td>`;
-                    if (col.key === 'balance') return `<td>£${Number(user.balance).toFixed(2)}</td>`;
-                    if (col.key === 'first_aid') return `<td>${user.first_aid_expiry ? (new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired') : 'N/A'}</td>`;
-                    if (col.key === 'difficulty') return `<td>${user.difficulty_level || 'N/A'}</td>`;
-                    if (col.key === 'member') return `<td>${user.is_member ? 'Member' : 'Non-Member'}</td>`;
-                    return '<td>-</td>';
+                    if (col.key === 'name') return `<td data-label="Name">${user.first_name} ${user.last_name}</td>`;
+                    if (col.key === 'balance') return `<td data-label="Balance">£${Number(user.balance).toFixed(2)}</td>`;
+                    if (col.key === 'first_aid') return `<td data-label="First Aid">${user.first_aid_expiry ? (new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired') : 'N/A'}</td>`;
+                    if (col.key === 'difficulty') return `<td data-label="Difficulty">${user.difficulty_level || 'N/A'}</td>`;
+                    if (col.key === 'member') return `<td data-label="Member">${user.is_member ? 'Member' : 'Non-Member'}</td>`;
+                    return '<td data-label="-">-</td>';
                 }).join('')}
             </tr>
         `).join('');
