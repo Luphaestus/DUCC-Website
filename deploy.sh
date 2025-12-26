@@ -7,6 +7,21 @@ MODE="prod"
 CLEAR_DB=false
 SHOW_LOGS=false
 
+# Function to display help
+show_help() {
+    echo "Usage: ./deploy.sh [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -dev      Deploy in development mode (NODE_ENV=dev). Seeds the database with test data."
+    echo "  -clear    Remove the existing database (data/database.db) before deploying."
+    echo "  --logs    Skip deployment and show real-time logs from the remote server."
+    echo "  --help    Show this help message and exit."
+    echo ""
+    echo "Example:"
+    echo "  ./deploy.sh -dev -clear"
+    exit 0
+}
+
 # Parse arguments
 for arg in "$@"
 do
@@ -19,6 +34,14 @@ do
         ;;
         --logs)
         SHOW_LOGS=true
+        ;;
+        --help)
+        show_help
+        ;;
+        *)
+        echo "Unknown option: $arg"
+        echo "Use --help for usage information."
+        exit 1
         ;;
     esac
 done
