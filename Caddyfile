@@ -1,13 +1,8 @@
 {
     # Global options
-    # Use the IP address as the default SNI when the client doesn't provide one (e.g., accessing via IP)
-    default_sni 165.227.225.33
 }
 
 {$DOMAIN_NAME:localhost} {
-    # Use internal (self-signed) certificates to avoid CA issues with IP addresses
-    tls internal
-
     # Reverse proxy to the app service on port 3000
     reverse_proxy app:3000
     
