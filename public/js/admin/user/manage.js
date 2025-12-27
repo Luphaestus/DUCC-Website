@@ -80,7 +80,9 @@ function updateUserParams(updates) {
         if (value === null || value === undefined || value === '') urlParams.delete(key);
         else urlParams.set(key, value);
     }
-    window.history.pushState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+    const newSearch = urlParams.toString();
+    const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '');
+    window.history.pushState({}, '', newUrl);
 
     fetchAndRenderUsers({
         page: parseInt(urlParams.get('page')) || 1,
@@ -133,8 +135,9 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
 
         thead.querySelectorAll('th.sortable').forEach(th => {
             th.onclick = () => {
-                const currentSort = new URLSearchParams(window.location.search).get('sort') || 'last_name';
-                const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
+                const currentParams = new URLSearchParams(window.location.search);
+                const currentSort = currentParams.get('sort') || 'last_name';
+                const currentOrder = currentParams.get('order') || 'asc';
                 const field = th.dataset.sort;
                 updateUserParams({ sort: field, order: (currentSort === field && currentOrder === 'asc') ? 'desc' : 'asc' });
             };

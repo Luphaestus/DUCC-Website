@@ -101,7 +101,7 @@ function formatEvent(event) {
     const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
     const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
     const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
-    const tagsHtml = (event.tags || []).map(tag => '<span class="tag" style="background-color: ' + tag.color + '; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px;">' + tag.name + '</span>').join('');
+    const tagsHtml = (event.tags || []).map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px;">${tag.name}</span>`).join('');
     let hue = 0;
     let hasTags = false;
     if (event.tags && event.tags.length > 0) {
@@ -114,22 +114,22 @@ function formatEvent(event) {
     let classes = 'event-item';
     if (startDate < new Date()) classes += ' past-event';
     if (!hasTags) classes += ' glassy';
-    let style = hasTags ? '--event-bg-light: hsl(' + hue + ', 70%, 85%); --event-bg-dark: hsl(' + hue + ', 50%, 30%);' : '';
-    return '<div class="' + classes + '" style="' + style + '" onclick="switchView(\'event/' + event.id + '\')">' +
-            '<div class="event-top">' +
-                '<span>' + startTime + ' - ' + endTime + '</span>' +
-                (event.is_attending ? '<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">✓ Attending</span>' : '') + '
-            </div>' +
-            '<div class="event-middle">' +
-                '<h3>' + (event.title || 'No Title') + '</h3>' +
-            '</div>' +
-            '<div class="event-bottom">' +
-                '<div class="event-location">' +
-                    '<span>📍 ' + (event.location || 'No Location') + '</span>' +
-                '</div>' +
-                '<div class="event-tags" style="margin-left: auto;">' + tagsHtml + '</div>' +
-            '</div>' +
-        '</div>';
+    let style = hasTags ? `--event-bg-light: hsl(${hue}, 70%, 85%); --event-bg-dark: hsl(${hue}, 50%, 30%);` : '';
+    return `<div class="${classes}" style="${style}" onclick="switchView('event/${event.id}')">
+            <div class="event-top">
+                <span>${startTime} - ${endTime}</span>
+                ${event.is_attending ? `<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">✓ Attending</span>` : ''}
+            </div>
+            <div class="event-middle">
+                <h3>${event.title || 'No Title'}</h3>
+            </div>
+            <div class="event-bottom">
+                <div class="event-location">
+                    <span>📍 ${event.location || 'No Location'}</span>
+                </div>
+                <div class="event-tags" style="margin-left: auto;">${tagsHtml}</div>
+            </div>
+        </div>`;
 }
 
 function updateUrlParams() {
@@ -154,7 +154,7 @@ async function renderWeekContent(offset, targetElement) {
             if (last_day !== eventDate) {
                 if (last_day !== null) html += '</div>';
                 last_day = eventDate;
-                html += '<h2 class="event-day-header">' + new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' }) + '</h2><div class="day-events-container">';
+                html += `<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2><div class="day-events-container">`;
             }
             html += formatEvent(event);
         }
@@ -209,14 +209,14 @@ async function changeWeek(delta, animated = true) {
     nextView.innerHTML = '<p aria-busy="true" style="text-align: center; margin-top: 2rem;">Loading events...</p>';
     const loadPromise = renderWeekContent(relativeWeekOffset, nextView);
 
-    if (direction > 0) { // Forward
+    if (direction > 0) {
         slider.appendChild(nextView);
         slider.style.transition = 'none';
         slider.style.transform = 'translateX(' + currentTranslate + 'px)';
         slider.offsetHeight;
         slider.classList.add('transitioning');
         slider.style.transform = 'translateX(-100%)';
-    } else { // Backward
+    } else {
         slider.insertBefore(nextView, currentView);
         slider.style.transition = 'none';
         slider.style.transform = 'translateX(calc(-100% + ' + currentTranslate + 'px))';
@@ -229,7 +229,7 @@ async function changeWeek(delta, animated = true) {
         try {
             await loadPromise;
         } catch (e) {
-            console.error("Failed to load week content during animation", e);
+            console.error("Failed to load week content", e);
         } finally {
             currentView.innerHTML = nextView.innerHTML;
             slider.classList.remove('transitioning');
