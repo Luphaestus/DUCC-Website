@@ -222,6 +222,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.next-week').addEventListener('click', () => { relativeWeekOffset++; updateUrlParams(); populateEvents(); });
     document.querySelector('.this-week-button').addEventListener('click', () => { relativeWeekOffset = 0; updateUrlParams(); populateEvents(); });
 
+    document.addEventListener('keydown', (e) => {
+        const eventsView = document.getElementById('/events-view');
+        if (!eventsView || eventsView.classList.contains('hidden')) return;
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+        if (e.key === 'ArrowLeft') {
+            relativeWeekOffset--;
+            updateUrlParams();
+            populateEvents();
+        } else if (e.key === 'ArrowRight') {
+            relativeWeekOffset++;
+            updateUrlParams();
+            populateEvents();
+        }
+    });
+
     LoginEvent.subscribe(() => populateEvents());
 
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
