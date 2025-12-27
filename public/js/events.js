@@ -235,6 +235,13 @@ document.addEventListener('DOMContentLoaded', () => {
             relativeWeekOffset++;
             updateUrlParams();
             populateEvents();
+        } else if (e.key === ' ') {
+            e.preventDefault();
+            if (relativeWeekOffset !== 0) {
+                relativeWeekOffset = 0;
+                updateUrlParams();
+                populateEvents();
+            }
         }
     });
 
