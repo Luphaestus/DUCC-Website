@@ -184,15 +184,15 @@ async function changeWeek(delta, animated = true) {
     const currentView = document.getElementById('events-page-current');
     if (!slider || !currentView) return;
 
-    if (delta === 0 && relativeWeekOffset === 0) {
+    const oldOffset = relativeWeekOffset;
+    const newOffset = delta === 0 ? 0 : relativeWeekOffset + delta;
+    if (delta === 0 && oldOffset === 0) {
         await renderWeekContent(0, currentView);
         return;
     }
 
     isAnimating = true;
-    
-    let direction = delta !== 0 ? delta : (relativeWeekOffset > 0 ? -1 : 1);
-    relativeWeekOffset = delta === 0 ? 0 : relativeWeekOffset + delta;
+    relativeWeekOffset = newOffset;
     updateUrlParams();
     updateControls();
 
@@ -200,46 +200,50 @@ async function changeWeek(delta, animated = true) {
         await renderWeekContent(relativeWeekOffset, currentView);
         isAnimating = false;
         currentTranslate = 0;
+        slider.style.transition = 'none';
         slider.style.transform = 'translateX(0%)';
         return;
     }
 
+    const direction = delta !== 0 ? delta : (oldOffset > 0 ? -1 : 1);
     const nextView = document.createElement('div');
     nextView.className = 'events-page';
     nextView.innerHTML = '<p aria-busy="true" style="text-align: center; margin-top: 2rem;">Loading events...</p>';
     const loadPromise = renderWeekContent(relativeWeekOffset, nextView);
 
+    slider.style.transition = 'none';
     if (direction > 0) {
         slider.appendChild(nextView);
-        slider.style.transition = 'none';
         slider.style.transform = 'translateX(' + currentTranslate + 'px)';
-        slider.offsetHeight;
-        slider.classList.add('transitioning');
-        slider.style.transform = 'translateX(-100%)';
     } else {
         slider.insertBefore(nextView, currentView);
-        slider.style.transition = 'none';
         slider.style.transform = 'translateX(calc(-100% + ' + currentTranslate + 'px))';
-        slider.offsetHeight;
-        slider.classList.add('transitioning');
+    }
+
+    slider.offsetHeight; // force reflow
+
+    slider.style.transition = 'transform 0.3s ease-out';
+    if (direction > 0) {
+        slider.style.transform = 'translateX(-100%)';
+    } else {
         slider.style.transform = 'translateX(0%)';
     }
 
-    setTimeout(async () => {
-        try {
-            await loadPromise;
-        } catch (e) {
-            console.error("Failed to load week content", e);
-        } finally {
-            currentView.innerHTML = nextView.innerHTML;
-            slider.classList.remove('transitioning');
-            slider.style.transition = 'none';
-            slider.style.transform = 'translateX(0%)';
-            if (nextView.parentNode === slider) slider.removeChild(nextView);
-            isAnimating = false;
-            currentTranslate = 0;
-        }
-    }, 300);
+    // Wait for animation to finish
+    await new Promise(resolve => setTimeout(resolve, 310));
+
+    try {
+        await loadPromise;
+    } catch (e) {
+        console.error("Failed to load week content during animation", e);
+    } finally {
+        currentView.innerHTML = nextView.innerHTML;
+        slider.style.transition = 'none';
+        slider.style.transform = 'translateX(0%)';
+        if (nextView.parentNode === slider) slider.removeChild(nextView);
+        isAnimating = false;
+        currentTranslate = 0;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -252,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
         isDragging = true;
         startX = getPositionX(event);
-        if (slider) slider.classList.remove('transitioning');
+        if (slider) slider.style.transition = 'none';
         animationID = requestAnimationFrame(animation);
     };
     const touchMove = (event) => {
@@ -266,9 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentTranslate < -100) changeWeek(1);
         else if (currentTranslate > 100) changeWeek(-1);
         else if (slider) {
-            slider.classList.add('transitioning');
+            slider.style.transition = 'transform 0.3s ease-out';
             slider.style.transform = 'translateX(0%)';
-            setTimeout(() => { slider.classList.remove('transitioning'); currentTranslate = 0; }, 300);
+            setTimeout(() => { 
+                slider.style.transition = 'none';
+                currentTranslate = 0; 
+            }, 300);
         }
     };
     const animation = () => {
