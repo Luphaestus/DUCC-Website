@@ -335,6 +335,7 @@
     }
 
     @media (max-width: 600px) {
+        gap: 0.25rem 0.5rem;
         .label { flex: 1 1 100%; }
     }
 }
