@@ -75,22 +75,22 @@ else
     exit 1
 fi
 
-if [ -z "$DROPLET_IP" ] || [ -z "$DROPLET_PASSWORD" ]; then
-    echo "Error: DROPLET_IP or DROPLET_PASSWORD not set in .env.deploy."
+if [ -z "$SERVER_IP" ] || [ -z "$SERVER_PASSWORD" ]; then
+    echo "Error: SERVER_IP or SERVER_PASSWORD not set in .env.deploy."
     exit 1
 fi
 
-export SSHPASS="$DROPLET_PASSWORD"
+export SSHPASS="$SERVER_PASSWORD"
 
 # --logs: Just show logs
 if [ "$SHOW_LOGS" = true ]; then
-    echo "--- Showing logs from $DROPLET_IP ---"
+    echo "--- Showing logs from $SERVER_IP ---"
     # We use -f to follow logs. User can Ctrl+C to exit.
-    sshpass -e ssh -T -o StrictHostKeyChecking=no root@"$DROPLET_IP" "cd DUCC-Website && docker compose logs -f"
+    sshpass -e ssh -T -o StrictHostKeyChecking=no root@"$SERVER_IP" "cd DUCC-Website && docker compose logs -f"
     exit 0
 fi
 
-echo "--- Starting Deployment to $DROPLET_IP ($MODE mode) ---"
+echo "--- Starting Deployment to $SERVER_IP ($MODE mode) ---"
 
 # 1. Push latest changes to GitHub
 echo "[1/3] Pushing changes to GitHub..."
@@ -128,10 +128,10 @@ fi
 REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --force-recreate --remove-orphans"
 
 # Execute
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$DROPLET_IP" "$REMOTE_CMD"
+sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_CMD"
 
 # 3. Success
-echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$DROPLET_IP if SSL pending/invalid)"
+echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$SERVER_IP if SSL pending/invalid)"
 
 if [ "$CLEAR_DB" = true ]; then
     echo ""

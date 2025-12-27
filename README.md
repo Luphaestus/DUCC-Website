@@ -20,7 +20,7 @@ npm run db:init
 - `npm run sass:build`: Compiles SASS to public directory.
 
 ## Deployment
-Deployment requires a `.env.deploy` file containing `DROPLET_IP`, `DROPLET_PASSWORD`, and `DOMAIN_NAME`.
+Deployment requires a `.env.deploy` file containing `SERVER_IP`, `SERVER_PASSWORD`, and `DOMAIN_NAME`.
 
 ### Flags
 - `-d, --dev`: Sets NODE_ENV=dev and seeds test data.
