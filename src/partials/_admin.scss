@@ -213,6 +213,12 @@
         margin-bottom: 0;
         text-align: center;
         white-space: nowrap;
+
+        @media (max-width: 768px) {
+            .admin-title-prefix {
+                display: none;
+            }
+        }
     }
 
     #admin-header-extra {

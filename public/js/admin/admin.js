@@ -31,6 +31,20 @@ const HTML_TEMPLATE = `
 </div>`;
 
 /**
+ * Update the admin dashboard title responsively.
+ * @param {string} [section] - The name of the current section.
+ */
+function updateAdminTitle(section) {
+    const titleEl = document.getElementById('admin-dashboard-title');
+    if (!titleEl) return;
+    if (section) {
+        titleEl.innerHTML = `<span class="admin-title-prefix">Admin Dashboard - </span><span class="admin-title-section">${section}</span>`;
+    } else {
+        titleEl.innerHTML = `<span class="admin-title-section">Admin Dashboard</span>`;
+    }
+}
+
+/**
  * Router for sub-paths within /admin/*.
  * @param {object} eventData
  */
@@ -42,33 +56,32 @@ async function AdminNavigationListener({ resolvedPath, path }) {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    const titleEl = document.getElementById('admin-dashboard-title');
     const actionsEl = document.getElementById('admin-header-actions');
-    if (titleEl) titleEl.textContent = 'Admin Dashboard';
+    updateAdminTitle();
     if (actionsEl) actionsEl.innerHTML = '';
 
     const cleanPath = path.split('?')[0];
 
     if (cleanPath === '/admin/users') {
-        if (titleEl) titleEl.textContent = 'Admin Dashboard - Users';
+        updateAdminTitle('Users');
         await renderManageUsers();
     } else if (cleanPath === '/admin/events') {
-        if (titleEl) titleEl.textContent = 'Admin Dashboard - Events';
+        updateAdminTitle('Events');
         await renderManageEvents();
     } else if (cleanPath === '/admin/tags') {
-        if (titleEl) titleEl.textContent = 'Admin Dashboard - Tags';
+        updateAdminTitle('Tags');
         await renderManageTags();
     } else if (cleanPath === '/admin/globals') {
-        if (titleEl) titleEl.textContent = 'Admin Dashboard - Globals';
+        updateAdminTitle('Globals');
         await renderManageGlobals();
     } else if (cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {
-        if (titleEl) titleEl.textContent = 'Admin Dashboard - Event Details';
+        updateAdminTitle('Event Details');
         await renderEventDetail(cleanPath.split('/').pop());
     } else if (cleanPath.match(/^\/admin\/tag\/(new|\d+)$/)) {
-        if (titleEl) titleEl.textContent = 'Admin Dashboard - Tag Details';
+        updateAdminTitle('Tag Details');
         await renderTagDetail(cleanPath.split('/').pop());
     } else if (cleanPath.match(/^\/admin\/user\/\d+$/)) {
-        if (titleEl) titleEl.textContent = 'Admin Dashboard - User Details';
+        updateAdminTitle('User Details');
         await renderUserDetail(cleanPath.split('/').pop());
     } else {
         const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions,is_exec').catch(() => ({}));
