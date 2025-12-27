@@ -51,210 +51,634 @@ const HTML_TEMPLATE = `
                 <button class="this-week-button secondary">Today 📅</button>
             </div>
 
-            <div id="events-list">
-                <p aria-busy="true">Loading events...</p>
-            </div>
-            <div id="event-navigation"></div>
-        </div>`
+                        <div id="events-list">
 
-let relativeWeekOffset = 0;
+                            <div id="events-slider">
 
-/**
- * Calculate HSL hue from HEX color.
- * @param {string} hex
- * @returns {number}
- */
-function getHueFromHex(hex) {
-    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
-        return r + r + g + g + b + b;
-    });
+                                <div class="events-page" id="events-page-current">
 
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return 0;
+                                    <p aria-busy="true">Loading events...</p>
 
-    var r = parseInt(result[1], 16) / 255;
-    var g = parseInt(result[2], 16) / 255;
-    var b = parseInt(result[3], 16) / 255;
+                                </div>
 
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h, s, l = (max + min) / 2;
+                            </div>
 
-    if (max == min) {
-        h = s = 0; 
-    } else {
-        var d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-    }
-    return Math.round(h * 360);
-}
+                        </div>
 
-/**
- * Format event data into an HTML card.
- * @param {object} event
- * @returns {string}
- */
-function formatEvent(event) {
-    const startDate = new Date(event.start);
-    const endDate = new Date(event.end);
-    const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
-    const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
+                        <div id="event-navigation"></div>
 
-    const tagsHtml = (event.tags || []).map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px;">${tag.name}</span>`).join('');
+                    </div>`
 
-    let hue = 0;
-    let hasTags = false;
+            
 
-    if (event.tags && event.tags.length > 0) {
-        hasTags = true;
-        const highestPriorityTag = event.tags.reduce((prev, current) => {
-            return ((prev.priority || 0) > (current.priority || 0)) ? prev : current;
-        });
-        hue = getHueFromHex(highestPriorityTag.color || '#808080');
-    }
+            let relativeWeekOffset = 0;
 
-    let classes = 'event-item';
-    if (startDate < new Date()) classes += ' past-event';
-    if (!hasTags) classes += ' glassy';
+            let isDragging = false;
 
-    let style = hasTags ? `--event-bg-light: hsl(${hue}, 70%, 85%); --event-bg-dark: hsl(${hue}, 50%, 30%);` : '';
+            let startX = 0;
 
-    return `
-        <div class="${classes}" style="${style}" onclick="switchView('event/${event.id}')">
-            <div class="event-top">
-                <span>${startTime} - ${endTime}</span>
-                ${event.is_attending ? `<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">✓ Attending</span>` : ''}
-            </div>
-            <div class="event-middle">
-                <h3>${event.title || 'No Title'}</h3>
-            </div>
-            <div class="event-bottom">
-                <div class="event-location">
-                    <span>📍 ${event.location || 'No Location'}</span>
-                </div>
-                <div class="event-tags" style="margin-left: auto;">${tagsHtml}</div>
-            </div>
-        </div>
-    `;
-}
+            let currentTranslate = 0;
 
-/**
- * Sync week offset to URL.
- */
-function updateUrlParams() {
-    const url = new URL(window.location);
-    if (relativeWeekOffset === 0) url.searchParams.delete('week');
-    else url.searchParams.set('week', relativeWeekOffset);
-    window.history.pushState({}, '', url);
-}
+            let prevTranslate = 0;
 
-/**
- * Fetch and render events for the current week.
- * @returns {Promise<void>}
- */
-async function populateEvents() {
-    const title = document.getElementById('events-controls-title');
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) + relativeWeekOffset * 7);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+            let animationID = 0;
 
-    title.textContent = `${startOfWeek.toLocaleDateString('en-UK', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-UK', { month: 'short', day: 'numeric' })}`;
+            
 
-    const thisWeekButton = document.querySelector('.this-week-button');
-    if (thisWeekButton) thisWeekButton.disabled = relativeWeekOffset === 0;
+            /**
 
-    try {
-        const data = await ajaxGet(`/api/events/rweek/${relativeWeekOffset}`);
-        const events = data.events;
-        const eventsList = document.getElementById('events-list');
+             * Calculate HSL hue from HEX color.
 
-        if (!events || events.length === 0) {
-            eventsList.innerHTML = '<p>No events scheduled for this week.</p>';
-            return;
-        }
+             */
 
-        let html = '';
-        let last_day = null;
-        for (const event of events) {
-            const eventDate = new Date(event.start).getDate();
-            if (last_day !== eventDate) {
-                if (last_day !== null) html += '</div>';
-                last_day = eventDate;
-                html += `<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2><div class="day-events-container">`;
+            function getHueFromHex(hex) {
+
+                var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+
+                hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+
+                    return r + r + g + g + b + b;
+
+                });
+
+            
+
+                var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
+                if (!result) return 0;
+
+            
+
+                var r = parseInt(result[1], 16) / 255;
+
+                var g = parseInt(result[2], 16) / 255;
+
+                var b = parseInt(result[3], 16) / 255;
+
+            
+
+                var max = Math.max(r, g, b), min = Math.min(r, g, b);
+
+                var h, s, l = (max + min) / 2;
+
+            
+
+                if (max == min) {
+
+                    h = s = 0; 
+
+                } else {
+
+                    var d = max - min;
+
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+                    switch (max) {
+
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+
+                        case g: h = (b - r) / d + 2; break;
+
+                        case b: h = (r - g) / d + 4; break;
+
+                    }
+
+                    h /= 6;
+
+                }
+
+                return Math.round(h * 360);
+
             }
-            html += formatEvent(event);
-        }
-        if (events.length > 0) html += '</div>';
-        eventsList.innerHTML = html;
-    } catch (error) {
-        document.getElementById('events-list').innerHTML = '<p class="error-message">Failed to load events.</p>';
-    }
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    const eventsView = document.getElementById('/events-view');
-    let touchStartX = 0;
-    let touchEndX = 0;
+            
 
-    if (eventsView) {
-        eventsView.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
-        eventsView.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            const diff = touchEndX - touchStartX;
-            if (Math.abs(diff) > 50) {
-                relativeWeekOffset += (diff > 0 ? -1 : 1);
+            /**
+
+             * Format event data into an HTML card.
+
+             */
+
+            function formatEvent(event) {
+
+                const startDate = new Date(event.start);
+
+                const endDate = new Date(event.end);
+
+                const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+
+                const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
+
+                const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
+
+            
+
+                const tagsHtml = (event.tags || []).map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px;">${tag.name}</span>`).join('');
+
+            
+
+                let hue = 0;
+
+                let hasTags = false;
+
+            
+
+                if (event.tags && event.tags.length > 0) {
+
+                    hasTags = true;
+
+                    const highestPriorityTag = event.tags.reduce((prev, current) => {
+
+                        return ((prev.priority || 0) > (current.priority || 0)) ? prev : current;
+
+                    });
+
+                    hue = getHueFromHex(highestPriorityTag.color || '#808080');
+
+                }
+
+            
+
+                let classes = 'event-item';
+
+                if (startDate < new Date()) classes += ' past-event';
+
+                if (!hasTags) classes += ' glassy';
+
+            
+
+                let style = hasTags ? `--event-bg-light: hsl(${hue}, 70%, 85%); --event-bg-dark: hsl(${hue}, 50%, 30%);` : '';
+
+            
+
+                return `
+
+                    <div class="${classes}" style="${style}" onclick="switchView('event/${event.id}')">
+
+                        <div class="event-top">
+
+                            <span>${startTime} - ${endTime}</span>
+
+                            ${event.is_attending ? `<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">✓ Attending</span>` : ''}
+
+                        </div>
+
+                        <div class="event-middle">
+
+                            <h3>${event.title || 'No Title'}</h3>
+
+                        </div>
+
+                        <div class="event-bottom">
+
+                            <div class="event-location">
+
+                                <span>📍 ${event.location || 'No Location'}</span>
+
+                            </div>
+
+                            <div class="event-tags" style="margin-left: auto;">${tagsHtml}</div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+
+            
+
+            /**
+
+             * Sync week offset to URL.
+
+             */
+
+            function updateUrlParams() {
+
+                const url = new URL(window.location);
+
+                if (relativeWeekOffset === 0) url.searchParams.delete('week');
+
+                else url.searchParams.set('week', relativeWeekOffset);
+
+                window.history.pushState({}, '', url);
+
+            }
+
+            
+
+            /**
+
+             * Fetch and render events for a specific week into a target element.
+
+             */
+
+            async function renderWeekContent(offset, targetElement) {
+
+                try {
+
+                    const data = await ajaxGet(`/api/events/rweek/${offset}`);
+
+                    const events = data.events;
+
+            
+
+                    if (!events || events.length === 0) {
+
+                        targetElement.innerHTML = '<p style="text-align: center; margin-top: 2rem;">No events scheduled for this week.</p>';
+
+                        return;
+
+                    }
+
+            
+
+                    let html = '';
+
+                    let last_day = null;
+
+                    for (const event of events) {
+
+                        const eventDate = new Date(event.start).getDate();
+
+                        if (last_day !== eventDate) {
+
+                            if (last_day !== null) html += '</div>';
+
+                            last_day = eventDate;
+
+                            html += `<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2><div class="day-events-container">`;
+
+                        }
+
+                        html += formatEvent(event);
+
+                    }
+
+                    if (events.length > 0) html += '</div>';
+
+                    targetElement.innerHTML = html;
+
+                } catch (error) {
+
+                    targetElement.innerHTML = '<p class="error-message">Failed to load events.</p>';
+
+                }
+
+            }
+
+            
+
+            /**
+
+             * Update the controls (title and buttons).
+
+             */
+
+            function updateControls() {
+
+                const title = document.getElementById('events-controls-title');
+
+                if (!title) return;
+
+            
+
+                const now = new Date();
+
+                const startOfWeek = new Date(now);
+
+                startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) + relativeWeekOffset * 7);
+
+                const endOfWeek = new Date(startOfWeek);
+
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+            
+
+                title.textContent = `${startOfWeek.toLocaleDateString('en-UK', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-UK', { month: 'short', day: 'numeric' })}`;
+
+            
+
+                const thisWeekButton = document.querySelector('.this-week-button');
+
+                if (thisWeekButton) thisWeekButton.disabled = relativeWeekOffset === 0;
+
+            }
+
+            
+
+            /**
+
+             * Change the current week with an optional animation.
+
+             */
+
+            async function changeWeek(delta, animated = true) {
+
+                const slider = document.getElementById('events-slider');
+
+                const currentView = document.getElementById('events-page-current');
+
+                if (!slider || !currentView) return;
+
+            
+
+                const newOffset = delta === 0 ? 0 : relativeWeekOffset + delta;
+
+                if (delta === 0 && relativeWeekOffset === 0) return;
+
+            
+
+                relativeWeekOffset = newOffset;
+
                 updateUrlParams();
-                populateEvents();
+
+                updateControls();
+
+            
+
+                if (!animated) {
+
+                    await renderWeekContent(relativeWeekOffset, currentView);
+
+                    return;
+
+                }
+
+            
+
+                // Create next view
+
+                const nextView = document.createElement('div');
+
+                nextView.className = 'events-page';
+
+                nextView.innerHTML = '<p aria-busy="true">Loading events...</p>';
+
+                
+
+                // Position it
+
+                if (delta > 0 || (delta === 0 && prevTranslate < 0)) { // Going forward
+
+                    slider.appendChild(nextView);
+
+                    slider.style.transform = 'translateX(0%)';
+
+                } else { // Going backward
+
+                    slider.insertBefore(nextView, currentView);
+
+                    slider.style.transition = 'none';
+
+                    slider.style.transform = 'translateX(-100%)';
+
+                    // Force reflow
+
+                    slider.offsetHeight;
+
+                }
+
+            
+
+                // Start loading content
+
+                const loadPromise = renderWeekContent(relativeWeekOffset, nextView);
+
+            
+
+                // Animate
+
+                slider.classList.add('transitioning');
+
+                if (delta > 0 || (delta === 0 && prevTranslate < 0)) {
+
+                    slider.style.transform = 'translateX(-100%)';
+
+                } else {
+
+                    slider.style.transform = 'translateX(0%)';
+
+                }
+
+            
+
+                // Cleanup after animation
+
+                setTimeout(async () => {
+
+                    slider.classList.remove('transitioning');
+
+                    slider.style.transition = 'none';
+
+                    slider.style.transform = 'translateX(0%)';
+
+                    currentView.innerHTML = nextView.innerHTML;
+
+                    // If it was inserted before, we need to remove it from there
+
+                    if (nextView.parentNode === slider) {
+
+                        slider.removeChild(nextView);
+
+                    }
+
+                    await loadPromise; // Ensure content is set if it took longer than animation
+
+                    currentView.innerHTML = nextView.innerHTML;
+
+                }, 300);
+
             }
-        }, { passive: true });
-    }
 
-    document.querySelector('.prev-week').addEventListener('click', () => { relativeWeekOffset--; updateUrlParams(); populateEvents(); });
-    document.querySelector('.next-week').addEventListener('click', () => { relativeWeekOffset++; updateUrlParams(); populateEvents(); });
-    document.querySelector('.this-week-button').addEventListener('click', () => { relativeWeekOffset = 0; updateUrlParams(); populateEvents(); });
+            
 
-    document.addEventListener('keydown', (e) => {
-        const eventsView = document.getElementById('/events-view');
-        if (!eventsView || eventsView.classList.contains('hidden')) return;
-        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+            document.addEventListener('DOMContentLoaded', () => {
 
-        if (e.key === 'ArrowLeft') {
-            relativeWeekOffset--;
-            updateUrlParams();
-            populateEvents();
-        } else if (e.key === 'ArrowRight') {
-            relativeWeekOffset++;
-            updateUrlParams();
-            populateEvents();
-        } else if (e.key === ' ') {
-            e.preventDefault();
-            if (relativeWeekOffset !== 0) {
-                relativeWeekOffset = 0;
-                updateUrlParams();
-                populateEvents();
-            }
-        }
-    });
+                const eventsView = document.getElementById('/events-view');
 
-    LoginEvent.subscribe(() => populateEvents());
+                const slider = document.getElementById('events-slider');
 
-    ViewChangedEvent.subscribe(({ resolvedPath }) => {
-        if (resolvedPath === '/events') {
-            const urlParams = new URLSearchParams(window.location.search);
-            const weekParam = parseInt(urlParams.get('week'));
-            relativeWeekOffset = isNaN(weekParam) ? 0 : weekParam;
-            populateEvents();
-        }
-    });
-});
+            
 
-document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
+                const getPositionX = (event) => {
+
+                    return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
+
+                };
+
+            
+
+                const touchStart = (event) => {
+
+                    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+                    isDragging = true;
+
+                    startX = getPositionX(event);
+
+                    slider.classList.remove('transitioning');
+
+                    animationID = requestAnimationFrame(animation);
+
+                };
+
+            
+
+                const touchMove = (event) => {
+
+                    if (!isDragging) return;
+
+                    const currentX = getPositionX(event);
+
+                    currentTranslate = currentX - startX;
+
+                };
+
+            
+
+                const touchEnd = () => {
+
+                    isDragging = false;
+
+                    cancelAnimationFrame(animationID);
+
+            
+
+                    const movedBy = currentTranslate;
+
+                    if (movedBy < -100) {
+
+                        changeWeek(1);
+
+                    } else if (movedBy > 100) {
+
+                        changeWeek(-1);
+
+                    } else {
+
+                        // Snap back
+
+                        slider.classList.add('transitioning');
+
+                        slider.style.transform = 'translateX(0%)';
+
+                        setTimeout(() => slider.classList.remove('transitioning'), 300);
+
+                    }
+
+                    currentTranslate = 0;
+
+                };
+
+            
+
+                const animation = () => {
+
+                    setSliderPosition();
+
+                    if (isDragging) requestAnimationFrame(animation);
+
+                };
+
+            
+
+                const setSliderPosition = () => {
+
+                    slider.style.transform = `translateX(${currentTranslate}px)`;
+
+                };
+
+            
+
+                if (eventsView && slider) {
+
+                    slider.addEventListener('touchstart', touchStart, { passive: true });
+
+                    slider.addEventListener('touchmove', touchMove, { passive: true });
+
+                    slider.addEventListener('touchend', touchEnd);
+
+                    
+
+                    // Support mouse dragging too
+
+                    slider.addEventListener('mousedown', touchStart);
+
+                    slider.addEventListener('mousemove', touchMove);
+
+                    slider.addEventListener('mouseup', touchEnd);
+
+                    slider.addEventListener('mouseleave', () => { if(isDragging) touchEnd(); });
+
+                }
+
+            
+
+                document.querySelector('.prev-week').addEventListener('click', () => changeWeek(-1));
+
+                document.querySelector('.next-week').addEventListener('click', () => changeWeek(1));
+
+                document.querySelector('.this-week-button').addEventListener('click', () => changeWeek(0));
+
+            
+
+                document.addEventListener('keydown', (e) => {
+
+                    const eventsView = document.getElementById('/events-view');
+
+                    if (!eventsView || eventsView.classList.contains('hidden')) return;
+
+                    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+            
+
+                    if (e.key === 'ArrowLeft') {
+
+                        changeWeek(-1);
+
+                    } else if (e.key === 'ArrowRight') {
+
+                        changeWeek(1);
+
+                    } else if (e.key === ' ') {
+
+                        e.preventDefault();
+
+                        changeWeek(0);
+
+                    }
+
+                });
+
+            
+
+                LoginEvent.subscribe(() => changeWeek(0, false));
+
+            
+
+                ViewChangedEvent.subscribe(({ resolvedPath }) => {
+
+                    if (resolvedPath === '/events') {
+
+                        const urlParams = new URLSearchParams(window.location.search);
+
+                        const weekParam = parseInt(urlParams.get('week'));
+
+                        relativeWeekOffset = isNaN(weekParam) ? 0 : weekParam;
+
+                        changeWeek(0, false);
+
+                    }
+
+                });
+
+            });
+
+            
+
+            document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
+
+            
