@@ -20,7 +20,8 @@
     "sass:build": "sass src:public --load-path=node_modules/@picocss/pico/scss/ --no-source-map",
     "dev:server": "cross-env NODE_ENV=dev nodemon server/server.js",
     "dev": "cross-env NODE_ENV=dev npm run db:init && cross-env NODE_ENV=dev run-p sass dev:server",
-    "test": "jest"
+    "pretest": "cross-env NODE_ENV=test DATABASE_PATH=database.test.db npm run db:init",
+    "test": "cross-env NODE_ENV=test DATABASE_PATH=database.test.db jest --forceExit"
   },
   "nodemonConfig": {
     "ignore": [

@@ -185,11 +185,14 @@ async function changeWeek(delta, animated = true) {
     if (!slider || !currentView) return;
 
     const oldOffset = relativeWeekOffset;
-    const newOffset = delta === 0 ? 0 : relativeWeekOffset + delta;
-    if (delta === 0 && oldOffset === 0) {
-        await renderWeekContent(0, currentView);
-        return;
-    }
+    let newOffset = relativeWeekOffset;
+
+    // Handle delta: null/undefined = refresh, 0 = reset to today, other = shift
+    if (delta === 0) newOffset = 0;
+    else if (delta !== undefined && delta !== null) newOffset = relativeWeekOffset + delta;
+
+    // Early return if no change in offset (unless it's a forced refresh via delta=null)
+    if (newOffset === oldOffset && delta !== null && delta !== undefined) return;
 
     isAnimating = true;
     relativeWeekOffset = newOffset;
@@ -205,7 +208,15 @@ async function changeWeek(delta, animated = true) {
         return;
     }
 
-    const direction = delta !== 0 ? delta : (oldOffset > 0 ? -1 : 1);
+    // Direction for animation: 1 = next (slide left), -1 = prev (slide right)
+    let direction = delta;
+    if (delta === 0) direction = (oldOffset > 0) ? -1 : 1;
+    if (delta === null || delta === undefined) direction = 1;
+
+    relativeWeekOffset = newOffset;
+    updateUrlParams();
+    updateControls();
+
     const nextView = document.createElement('div');
     nextView.className = 'events-page';
     nextView.innerHTML = '<p aria-busy="true" style="text-align: center; margin-top: 2rem;">Loading events...</p>';
@@ -214,10 +225,10 @@ async function changeWeek(delta, animated = true) {
     slider.style.transition = 'none';
     if (direction > 0) {
         slider.appendChild(nextView);
-        slider.style.transform = 'translateX(' + currentTranslate + 'px)';
+        slider.style.transform = `translateX(${currentTranslate}px)`;
     } else {
         slider.insertBefore(nextView, currentView);
-        slider.style.transform = 'translateX(calc(-100% + ' + currentTranslate + 'px))';
+        slider.style.transform = `translateX(calc(-100% + ${currentTranslate}px))`;
     }
 
     slider.offsetHeight; // force reflow
@@ -229,7 +240,7 @@ async function changeWeek(delta, animated = true) {
         slider.style.transform = 'translateX(0%)';
     }
 
-    // Wait for animation to finish
+    // Wait for animation duration
     await new Promise(resolve => setTimeout(resolve, 310));
 
     try {
@@ -312,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const weekParam = parseInt(urlParams.get('week'));
             relativeWeekOffset = isNaN(weekParam) ? 0 : weekParam;
-            changeWeek(0, false);
+            changeWeek(null, false); 
         }
     });
 });

@@ -35,11 +35,15 @@ app.use(express.static('public', {
   }
 }));
 
+const dbPath = process.env.DATABASE_PATH || 'database.db';
+const dbDir = path.dirname(dbPath);
+const dbFile = path.basename(dbPath);
+
 // Session management with SQLite storage
 app.use(session({
   store: new SQLiteStore({
-    db: 'database.db',
-    dir: '.'
+    db: dbFile,
+    dir: dbDir
   }),
   secret: 'supersecretkey',
   resave: false,
@@ -64,15 +68,16 @@ let db;
 /**
  * Initialize database, register routes, and start server.
  */
-(async () => {
+const startServer = async () => {
   try {
-    const dbPath = process.env.DATABASE_PATH || 'database.db';
     db = await open({
       filename: dbPath,
       driver: sqlite3.Database
     });
 
-    console.log(`Connected to the SQLite database at ${dbPath}.`);
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`Connected to the SQLite database at ${dbPath}.`);
+    }
 
     app.get('/api/health', (req, res) => {
       res.status(200).send('OK');
@@ -102,12 +107,22 @@ let db;
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-      console.log('Press Ctrl+C to stop the server.');
-    });
+    if (require.main === module) {
+      app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+        console.log('Press Ctrl+C to stop the server.');
+      });
+    }
 
+    return { app, db };
   } catch (err) {
     console.error(err.message);
+    throw err;
   }
-})();
+};
+
+// Export the app immediately, and the initialization promise
+const serverReady = startServer();
+
+module.exports = app;
+module.exports.serverReady = serverReady;

@@ -9,8 +9,8 @@ import { BalanceChangedEvent } from './misc/globals.js';
  */
 const navEntries = [
     { name: 'Events', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
-    { name: 'Admin', id: 'admin-button', type: 'text', classes: "contrast", action: { run: () => switchView('/admin/') } },
     { name: 'Balance: £0.00', id: 'balance-button', type: 'text', classes: "contrast", action: { run: () => switchView('/transactions') } },
+    { name: 'Admin', id: 'admin-button', type: 'text', classes: "contrast", action: { run: () => switchView('/admin/') } },
     { name: 'Login', id: 'login-button', type: 'button', action: { run: () => switchView('/login') } },
     { name: 'Profile', id: 'profile-button', type: 'button', action: { run: () => switchView('/profile') } }
 ];
@@ -82,7 +82,7 @@ async function updateNavOnLoginState(data) {
         loginLi?.classList.add('hidden');
         profileLi?.classList.remove('hidden');
         balanceLi?.classList.remove('hidden');
-        
+
         const [permissions, swimData] = await Promise.all([
             ajaxGet('/api/user/elements/can_manage_users,can_manage_events,is_exec').catch(() => null),
             ajaxGet('/api/user/elements/swims').catch(() => ({ swims: 0 })),

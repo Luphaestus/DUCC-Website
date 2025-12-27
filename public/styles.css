@@ -3783,9 +3783,25 @@ nav.small-container .nav-logo strong {
 
 #events-list {
   width: 100%;
-  display: flex;
-  flex-direction: column;
   padding-bottom: 2rem;
+  overflow: hidden;
+  position: relative;
+}
+
+#events-slider {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  will-change: transform;
+}
+#events-slider.transitioning {
+  transition: transform 0.3s ease-out;
+}
+
+.events-page {
+  flex: 0 0 100%;
+  width: 100%;
+  min-height: 200px;
 }
 
 /* Event Detail View */
@@ -3982,6 +3998,9 @@ nav.small-container .nav-logo strong {
   min-width: 0;
 }
 @media (max-width: 600px) {
+  .detail-field {
+    gap: 0.25rem 0.5rem;
+  }
   .detail-field .label {
     flex: 1 1 100%;
   }
@@ -4428,6 +4447,11 @@ nav.small-container .nav-logo strong {
   text-align: center;
   white-space: nowrap;
 }
+@media (max-width: 768px) {
+  .admin-header h1 .admin-title-prefix {
+    display: none;
+  }
+}
 .admin-header #admin-header-extra {
   justify-self: end;
 }
@@ -4550,7 +4574,7 @@ nav.small-container .nav-logo strong {
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-start;
-    gap: 0.25rem 1rem;
+    gap: 0.1rem 0.25rem;
     padding: 0.5rem 0.75rem;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 0.4rem;
@@ -4838,3 +4862,5 @@ footer .footer-bottom p {
   gap: 0.5rem;
   margin-bottom: 1.5rem;
 }
+
+/*# sourceMappingURL=styles.css.map */
