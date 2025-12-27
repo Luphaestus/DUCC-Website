@@ -77,7 +77,7 @@ export async function renderManageUsers() {
 function updateUserParams(updates) {
     const urlParams = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(updates)) {
-        if (!value) urlParams.delete(key);
+        if (value === null || value === undefined || value === '') urlParams.delete(key);
         else urlParams.set(key, value);
     }
     window.history.pushState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
