@@ -3,6 +3,10 @@ import { switchView } from '../../misc/view.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '../../misc/notification.js';
 
+// --- Icons ---
+const ARROW_LEFT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>`;
+const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>`;
+
 /**
  * Admin tag creation and editing form.
  * @module AdminTagDetail
@@ -17,7 +21,7 @@ export async function renderTagDetail(id) {
     if (!adminContent) return;
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = '<button id="admin-back-btn">&larr; Back to Tags</button>';
+    if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn">${ARROW_LEFT_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
     const userPerms = (await ajaxGet('/api/user/elements/can_manage_users')).can_manage_users
@@ -132,7 +136,7 @@ function renderWhitelistRows(whitelist, tagId) {
         <tr>
             <td data-label="Name">${user.first_name} ${user.last_name}</td>
             <td data-label="Email">${user.email}</td>
-            <td data-label="Action"><button class="remove-whitelist-btn outline contrast" data-user-id="${user.id}">Remove</button></td>
+            <td data-label="Action"><button class="remove-whitelist-btn outline contrast" data-user-id="${user.id}">${CLOSE_SVG}</button></td>
         </tr>
     `).join('');
 }

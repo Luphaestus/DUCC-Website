@@ -259,6 +259,8 @@ const FIRST_AID_EXPIRY = `<svg
   <path d="M19 22v.01" />
 </svg>`;
 const TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-160q75 0 127.5-52.5T660-340q0-75-52.5-127.5T480-520q-75 0-127.5 52.5T300-340q0 75 52.5 127.5T480-160ZM363-572q20-11 42.5-17.5T451-598L350-800H250l113 228Zm234 0 114-228H610l-85 170 19 38q14 4 27 8.5t26 11.5ZM256-208q-17-29-26.5-62.5T220-340q0-36 9.5-69.5T256-472q-42 14-69 49.5T160-340q0 47 27 82.5t69 49.5Zm448 0q42-14 69-49.5t27-82.5q0-47-27-82.5T704-472q17 29 26.5 62.5T740-340q0 36-9.5 69.5T704-208ZM480-80q-40 0-76.5-11.5T336-123q-9 2-18 2.5t-19 .5q-91 0-155-64T80-339q0-87 58-149t143-69L120-880h280l80 160 80-160h280L680-559q85 8 142.5 70T880-340q0 92-64 156t-156 64q-9 0-18.5-.5T623-123q-31 20-67 31.5T480-80Zm0-260ZM363-572 250-800l113 228Zm234 0 114-228-114 228ZM406-230l28-91-74-53h91l29-96 29 96h91l-74 53 28 91-74-56-74 56Z"/></svg>`;
+const ARROW_LEFT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>`;
+const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>`;
 
 // --- Main Render Function ---
 
@@ -273,7 +275,7 @@ export async function renderUserDetail(userId) {
 
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) {
-        actionsEl.innerHTML = '<button id="admin-back-btn">&larr; Back to Users</button>';
+        actionsEl.innerHTML = `<button id="admin-back-btn">${ARROW_LEFT_SVG} Back to Users</button>`;
         document.getElementById('admin-back-btn').onclick = () => switchView('/admin/users');
     }
 
@@ -561,7 +563,7 @@ async function renderTagsTab(container, userId) {
                 html += `
                     <div class="user-tag-item" style="background-color: ${tag.color};">
                         <span>${tag.name}</span>
-                        <button class="remove-tag-btn" data-tag-id="${tag.id}">&times;</button>
+                        <button class="remove-tag-btn" data-tag-id="${tag.id}">${CLOSE_SVG}</button>
                     </div>
                 `;
             });

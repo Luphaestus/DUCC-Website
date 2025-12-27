@@ -7,6 +7,9 @@ import { adminContentID, renderAdminNavBar } from '../common.js';
  * @module AdminEventManage
  */
 
+// --- Icons ---
+const SORT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4 -4l4 4" /><path d="M16 15l-4 4l-4 -4" /></svg>`;
+
 /**
  * Render event management interface.
  */
@@ -56,11 +59,11 @@ export async function renderManageEvents() {
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th class="sortable" data-sort="title">Title ↕</th>
-                                <th class="sortable" data-sort="start">Date ↕</th>
-                                <th class="sortable" data-sort="location">Location ↕</th>
-                                <th class="sortable" data-sort="difficulty_level">Difficulty ↕</th>
-                                <th class="sortable" data-sort="upfront_cost">Cost ↕</th>
+                                <th class="sortable" data-sort="title">Title ${SORT_SVG}</th>
+                                <th class="sortable" data-sort="start">Date ${SORT_SVG}</th>
+                                <th class="sortable" data-sort="location">Location ${SORT_SVG}</th>
+                                <th class="sortable" data-sort="difficulty_level">Difficulty ${SORT_SVG}</th>
+                                <th class="sortable" data-sort="upfront_cost">Cost ${SORT_SVG}</th>
                             </tr>
                         </thead>
                         <tbody id="events-table-body">

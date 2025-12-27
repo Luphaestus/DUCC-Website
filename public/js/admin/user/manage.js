@@ -7,6 +7,11 @@ import { adminContentID, renderPaginationControls, renderAdminNavBar } from '../
  * @module AdminUserManage
  */
 
+// --- Icons ---
+const SORT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4 -4l4 4" /><path d="M16 15l-4 4l-4 -4" /></svg>`;
+const SORT_UP_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14" /><path d="M16 9l-4 -4l-4 4" /></svg>`;
+const SORT_DOWN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14" /><path d="M8 15l4 4l4 -4" /></svg>`;
+
 /**
  * Render user management interface.
  */
@@ -118,7 +123,7 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
         if (sample.difficulty_level !== undefined) columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });
         if (sample.is_member !== undefined) columns.push({ key: 'member', label: 'Member', sort: 'is_member' });
 
-        thead.innerHTML = `<tr>${columns.map(c => `<th class="sortable" data-sort="${c.sort}">${c.label} ${sort === c.sort ? (order === 'asc' ? '↑' : '↓') : '↕'}</th>`).join('')}</tr>`;
+        thead.innerHTML = `<tr>${columns.map(c => `<th class="sortable" data-sort="${c.sort}">${c.label} ${sort === c.sort ? (order === 'asc' ? SORT_UP_SVG : SORT_DOWN_SVG) : SORT_SVG}</th>`).join('')}</tr>`;
 
         tbody.innerHTML = users.map(user => `
             <tr class="user-row" data-id="${user.id}">
