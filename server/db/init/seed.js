@@ -56,6 +56,7 @@ async function seedData(db, env) {
             const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen'];
             const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Taylor', 'Moore', 'Jackson', 'Martin'];
 
+            await db.run('BEGIN TRANSACTION');
             for (let i = 0; i < 50; i++) {
                 const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
                 const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
@@ -97,6 +98,7 @@ async function seedData(db, env) {
                 }
                 await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, userId]);
             }
+            await db.run('COMMIT');
         }
 
         // Retroactive swim seeding for existing users
@@ -104,6 +106,7 @@ async function seedData(db, env) {
         if (swimHistoryCount.count === 0) {
             console.log('Seeding swim history for existing users...');
             const users = await db.all('SELECT id FROM users');
+            await db.run('BEGIN TRANSACTION');
             for (const user of users) {
                 const numSwims = Math.floor(Math.random() * 12);
                 let totalSwims = 0;
@@ -119,6 +122,7 @@ async function seedData(db, env) {
                 }
                 await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, user.id]);
             }
+            await db.run('COMMIT');
         }
 
         // Insert default tags
@@ -182,6 +186,7 @@ async function seedData(db, env) {
             }
         };
 
+        await db.run('BEGIN TRANSACTION');
         while (currentDate <= endDate) {
             const day = currentDate.getDay();
 
@@ -213,6 +218,7 @@ async function seedData(db, env) {
 
             currentDate.setDate(currentDate.getDate() + 1);
         }
+        await db.run('COMMIT');
         console.log('Sample events generated.');
     }
 }

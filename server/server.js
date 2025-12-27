@@ -75,6 +75,10 @@ const startServer = async () => {
       driver: sqlite3.Database
     });
 
+    // Enable WAL mode and busy timeout to prevent "database is locked" errors
+    await db.exec('PRAGMA journal_mode = WAL;');
+    await db.exec('PRAGMA busy_timeout = 5000;');
+
     if (process.env.NODE_ENV !== 'test') {
       console.log(`Connected to the SQLite database at ${dbPath}.`);
     }

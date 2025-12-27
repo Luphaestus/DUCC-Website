@@ -20,6 +20,8 @@ console.log(`Running in ${env} mode`);
       driver: sqlite3.Database
     });
 
+    await db.exec('PRAGMA journal_mode = WAL;');
+    await db.exec('PRAGMA busy_timeout = 5000;');
     await db.exec('PRAGMA foreign_keys = ON;');
 
     console.log('Initializing database schema...');
