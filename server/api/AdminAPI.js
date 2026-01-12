@@ -142,6 +142,7 @@ class Admin {
                     return res.status(403).json({ message: 'President only' });
                 }
             }
+            if (req.body.email) req.body.email = req.body.email.toLowerCase();
             const result = await UserDB.writeElements(req, this.db, req.body, req.params.id);
             result.getResponse(res);
         });

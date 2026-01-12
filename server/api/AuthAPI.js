@@ -22,8 +22,9 @@ class Auth {
         passport.use(new LocalStrategy(
             { usernameField: 'email' },
             async (email, password, done) => {
+                const lowerEmail = email.toLowerCase();
                 try {
-                    const user = await this.db.get('SELECT * FROM users WHERE email = ?', [email]);
+                    const user = await this.db.get('SELECT * FROM users WHERE email = ?', [lowerEmail]);
                     if (!user) return done(null, false, { message: 'Incorrect email.' });
 
                     const isMatch = await bcrypt.compare(password, user.hashed_password);
@@ -58,11 +59,13 @@ class Auth {
          * Register a new user with Durham email validation.
          */
         this.app.post('/api/auth/signup', async (req, res) => {
-            const { email, password, first_name, last_name } = req.body;
+            let { email, password, first_name, last_name } = req.body;
 
             if (!email || !password || !first_name || !last_name) {
                 return res.status(400).json({ message: 'All fields are required.' });
             }
+
+            email = email.toLowerCase();
 
             const nameRegex = /^[a-zA-Z'-]{1,50}$/;
             if (!nameRegex.test(first_name) || !nameRegex.test(last_name)) {

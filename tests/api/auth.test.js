@@ -126,4 +126,24 @@ describe('Auth API', () => {
         statusRes = await agent.get('/api/auth/status');
         expect(statusRes.body.authenticated).toBe(true);
     });
+
+    test('POST /api/auth/login is case-insensitive', async () => {
+        await request(app)
+            .post('/api/auth/signup')
+            .send({
+                email: 'Test.User@durham.ac.uk',
+                password: 'password123',
+                first_name: 'Test',
+                last_name: 'User'
+            });
+
+        const res = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: 'tEsT.uSeR@DuRhAm.Ac.Uk',
+                password: 'password123'
+            });
+        
+        expect(res.statusCode).toBe(200);
+    });
 });

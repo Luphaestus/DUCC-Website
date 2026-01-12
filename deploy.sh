@@ -111,7 +111,7 @@ if [ "$CLEAR_DB" = true ]; then
 fi
 
 # 3. Build Docker Images (Verbose output to avoid 'stuck' appearance)
-DOMAIN_VAL="${DOMAIN_NAME:-localhost}"
+DOMAIN_VAL="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
 REMOTE_CMD="$REMOTE_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose build --progress=plain"
 
 # 4. Run Application

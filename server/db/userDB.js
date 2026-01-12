@@ -154,6 +154,8 @@ class UserDB {
         if (id && ((await this.canManageUsers(req, db)).getData() !== 1)) {
             return new statusObject(403, 'User not authorized');
         }
+        
+        if (data.email) data.email = data.email.toLowerCase();
 
         try {
             await db.run(

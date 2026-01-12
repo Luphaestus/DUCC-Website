@@ -4540,9 +4540,17 @@ nav.small-container .nav-logo strong {
 .admin-table th.sortable {
   cursor: pointer;
   transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .admin-table th.sortable:hover {
   background-color: var(--secondary-focus);
+}
+.admin-table th.sortable svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 @media (max-width: 600px) {
   .admin-table {
@@ -4684,7 +4692,7 @@ nav.small-container .nav-logo strong {
   align-items: center;
   gap: 0.5rem;
 }
-.user-tag-item .remove-tag-btn {
+.user-tag-item .remove-tag-btn, .user-tag-item .remove-whitelist-btn {
   background: none;
   border: none;
   color: white;
@@ -4692,10 +4700,17 @@ nav.small-container .nav-logo strong {
   padding: 0;
   font-weight: bold;
   box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.user-tag-item .remove-tag-btn:hover {
+.user-tag-item .remove-tag-btn:hover, .user-tag-item .remove-whitelist-btn:hover {
   background: transparent;
   opacity: 0.8;
+}
+.user-tag-item .remove-tag-btn svg, .user-tag-item .remove-whitelist-btn svg {
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 /* Event Detail */

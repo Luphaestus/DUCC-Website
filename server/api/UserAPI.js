@@ -232,9 +232,19 @@ class User {
             if (allFilled) data["filled_legal_info"] = 1;
         }
 
+        if (data.email) data.email = data.email.toLowerCase();
+
         const writeStatus = await UserDB.writeElements(req, db, data);
         if (writeStatus.isError()) return writeStatus;
         return new statusObject(200);
+    }
+
+    /**
+     * Internal helper to preprocess input data before database operations.
+     * @param {object} data
+     */
+    static preprocessData(data) {
+        if (data.email) data.email = data.email.toLowerCase();
     }
 
     /**
@@ -255,6 +265,7 @@ class User {
          * Update profile elements.
          */
         this.app.post('/api/user/elements', check(), async (req, res) => {
+            User.preprocessData(req.body);
             const status = await User.writeNormalElements(req, this.db, req.body);
             if (status.isError()) return status.getResponse(res);
             res.json({ success: true });

@@ -34,7 +34,7 @@ async function seedData(db, env) {
         } catch (e) {}
 
         console.log('Inserting admin user...');
-        const email = 'admin@durham.ac.uk';
+        const email = 'admin@durham.ac.uk'.toLowerCase();
         const password = generateRandomPassword(12);
         const hashedPassword = await bcrypt.hash(password, 10);
         await db.run(
