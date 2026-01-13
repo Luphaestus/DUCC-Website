@@ -22,9 +22,9 @@ class Auth {
         passport.use(new LocalStrategy(
             { usernameField: 'email' },
             async (email, password, done) => {
-                const lowerEmail = email.toLowerCase();
+                const formatedEmail = email.replace(/\s/g, '').toLowerCase();
                 try {
-                    const user = await this.db.get('SELECT * FROM users WHERE email = ?', [lowerEmail]);
+                    const user = await this.db.get('SELECT * FROM users WHERE email = ?', [formatedEmail]);
                     if (!user) return done(null, false, { message: 'Incorrect email.' });
 
                     const isMatch = await bcrypt.compare(password, user.hashed_password);
@@ -65,7 +65,7 @@ class Auth {
                 return res.status(400).json({ message: 'All fields are required.' });
             }
 
-            email = email.toLowerCase();
+            email = email.replace(/\s/g, '').toLowerCase();
 
             const nameRegex = /^[a-zA-Z'-]{1,50}$/;
             if (!nameRegex.test(first_name) || !nameRegex.test(last_name)) {
@@ -93,7 +93,7 @@ class Auth {
             this.passport.authenticate('local', (err, user, info) => {
                 if (err) return res.status(500).json({ message: 'Authentication error.' });
                 if (!user) return res.status(401).json({ message: info.message || 'Authentication failed.' });
-                
+
                 req.logIn(user, (err) => {
                     if (err) return res.status(500).json({ message: 'Login error.' });
                     return res.status(200).json({ message: 'Login successful.', user });

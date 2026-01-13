@@ -14,7 +14,7 @@ console.log(`Running in ${env} mode`);
   try {
     console.log('Opening database connection...');
 
-    const dbPath = process.env.DATABASE_PATH || 'database.db';
+    const dbPath = process.env.DATABASE_PATH || 'data/database.db';
     const db = await open({
       filename: dbPath,
       driver: sqlite3.Database

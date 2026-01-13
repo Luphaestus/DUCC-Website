@@ -15,7 +15,7 @@ class Globals {
         }
         Globals.instance = this;
 
-        const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, "../../database.db");
+        const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, "../../data/database.db");
         const dbDir = path.dirname(dbPath);
         this.path = path.join(dbDir, "globals.json");
 

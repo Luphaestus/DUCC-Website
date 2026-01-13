@@ -79,7 +79,7 @@ class User {
         if (userElements.length > 0) {
             const needsRank = userElements.includes('swimmer_rank');
             const cleanElements = userElements.filter(e => e !== 'swimmer_rank');
-            
+
             const userResult = await UserDB.getElements(req, db, cleanElements);
             if (userResult.isError()) return userResult;
             userResultData = userResult.getData();
@@ -232,7 +232,7 @@ class User {
             if (allFilled) data["filled_legal_info"] = 1;
         }
 
-        if (data.email) data.email = data.email.toLowerCase();
+        if (data.email) data.email = data.email.replace(/\s/g, '').toLowerCase();
 
         const writeStatus = await UserDB.writeElements(req, db, data);
         if (writeStatus.isError()) return writeStatus;
@@ -244,7 +244,7 @@ class User {
      * @param {object} data
      */
     static preprocessData(data) {
-        if (data.email) data.email = data.email.toLowerCase();
+        if (data.email) data.email = data.email.replace(/\s/g, '').toLowerCase();
     }
 
     /**

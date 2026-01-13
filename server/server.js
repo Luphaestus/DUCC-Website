@@ -35,7 +35,7 @@ app.use(express.static('public', {
   }
 }));
 
-const dbPath = process.env.DATABASE_PATH || 'database.db';
+const dbPath = process.env.DATABASE_PATH || 'data/database.db';
 const dbDir = path.dirname(dbPath);
 const dbFile = path.basename(dbPath);
 

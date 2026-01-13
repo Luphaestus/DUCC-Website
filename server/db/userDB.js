@@ -56,7 +56,7 @@ class UserDB {
                 const termPattern = `%${term}%`;
                 params.push(termPattern, termPattern);
                 if (isOnlyExec) return `(u.first_name LIKE ? OR u.last_name LIKE ? )`;
-                
+
                 params.push(termPattern);
                 return `(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)`;
             });
@@ -66,7 +66,7 @@ class UserDB {
         try {
             let selectFields;
             let joinTransactions = '';
-            
+
             if (isOnlyExec) {
                 selectFields = `u.id, u.first_name, u.last_name`;
             } else {
@@ -154,8 +154,10 @@ class UserDB {
         if (id && ((await this.canManageUsers(req, db)).getData() !== 1)) {
             return new statusObject(403, 'User not authorized');
         }
-        
-        if (data.email) data.email = data.email.toLowerCase();
+
+        if (data.email) {
+            data.email = data.email.replace(/\s/g, '').toLowerCase();
+        }
 
         try {
             await db.run(
@@ -235,7 +237,7 @@ class UserDB {
                         can_manage_users = 0,
                         can_manage_events = 0,
                         can_manage_transactions = 0
-                    WHERE id = ?`, 
+                    WHERE id = ?`,
                     [targetId]
                 );
             } else {
@@ -328,7 +330,7 @@ class UserDB {
             }
 
             const users = await db.all(query, params);
-            
+
             let rank = 0;
             let lastSwims = -1;
             const leaderboard = users.map((user) => {
@@ -369,7 +371,7 @@ class UserDB {
             } else {
                 allSwimmers = await db.all('SELECT id, swims FROM users ORDER BY swims DESC');
             }
-            
+
             let rank = 0;
             let lastSwims = -1;
             let userRank = -1;

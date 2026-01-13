@@ -68,10 +68,6 @@ const HTML_TEMPLATE = `
 
 let relativeWeekOffset = 0;
 let isAnimating = false;
-let isDragging = false;
-let startX = 0;
-let currentTranslate = 0;
-let animationID = 0;
 
 function getHueFromHex(hex) {
     var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -207,7 +203,6 @@ async function changeWeek(delta, animated = true) {
     if (!animated) {
         await renderWeekContent(relativeWeekOffset, currentView);
         isAnimating = false;
-        currentTranslate = 0;
         slider.style.transition = 'none';
         slider.style.transform = 'translateX(0%)';
         return;
@@ -230,10 +225,10 @@ async function changeWeek(delta, animated = true) {
     slider.style.transition = 'none';
     if (direction > 0) {
         slider.appendChild(nextView);
-        slider.style.transform = `translateX(${currentTranslate}px)`;
+        slider.style.transform = `translateX(0)`;
     } else {
         slider.insertBefore(nextView, currentView);
-        slider.style.transform = `translateX(calc(-100% + ${currentTranslate}px))`;
+        slider.style.transform = `translateX(-100%)`;
     }
 
     slider.offsetHeight; // force reflow
@@ -258,56 +253,11 @@ async function changeWeek(delta, animated = true) {
         slider.style.transform = 'translateX(0%)';
         if (nextView.parentNode === slider) slider.removeChild(nextView);
         isAnimating = false;
-        currentTranslate = 0;
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const eventsView = document.getElementById('/events-view');
-    const slider = document.getElementById('events-slider');
-    const getPositionX = (event) => event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
-    
-    const touchStart = (event) => {
-        if (isAnimating) return;
-        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-        isDragging = true;
-        startX = getPositionX(event);
-        if (slider) slider.style.transition = 'none';
-        animationID = requestAnimationFrame(animation);
-    };
-    const touchMove = (event) => {
-        if (!isDragging) return;
-        currentTranslate = getPositionX(event) - startX;
-    };
-    const touchEnd = () => {
-        if (!isDragging) return;
-        isDragging = false;
-        cancelAnimationFrame(animationID);
-        if (currentTranslate < -100) changeWeek(1);
-        else if (currentTranslate > 100) changeWeek(-1);
-        else if (slider) {
-            slider.style.transition = 'transform 0.3s ease-out';
-            slider.style.transform = 'translateX(0%)';
-            setTimeout(() => { 
-                slider.style.transition = 'none';
-                currentTranslate = 0; 
-            }, 300);
-        }
-    };
-    const animation = () => {
-        if (slider) slider.style.transform = 'translateX(' + currentTranslate + 'px)';
-        if (isDragging) requestAnimationFrame(animation);
-    };
-
-    if (slider) {
-        slider.addEventListener('touchstart', touchStart, { passive: true });
-        slider.addEventListener('touchmove', touchMove, { passive: true });
-        slider.addEventListener('touchend', touchEnd);
-        slider.addEventListener('mousedown', touchStart);
-        window.addEventListener('mousemove', (e) => { if(isDragging) touchMove(e); });
-        window.addEventListener('mouseup', () => { if(isDragging) touchEnd(); });
-    }
-
+    // Events view initialization
     document.addEventListener('click', (e) => {
         if (e.target.closest('.prev-week')) changeWeek(-1);
         else if (e.target.closest('.next-week')) changeWeek(1);
