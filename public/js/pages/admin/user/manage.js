@@ -49,7 +49,7 @@ export async function renderManageUsers() {
                                                 </svg>
                                                                         </button>                    </div>
                 </div>
-                <div id="users-table-container">
+                <div id="users-table-container" class="table-responsive">
                     <table class="admin-table">
                         <thead id="users-table-head"></thead>
                         <tbody id="users-table-body">

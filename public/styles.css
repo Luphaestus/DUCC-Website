@@ -3770,9 +3770,10 @@ nav.small-container ul {
 
 .find-us-images {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+  margin-bottom: 2rem;
 }
 .find-us-images img {
   width: 100%;
@@ -3853,7 +3854,7 @@ nav.small-container ul {
 
 .day-events-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }

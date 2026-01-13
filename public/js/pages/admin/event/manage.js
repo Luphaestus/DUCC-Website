@@ -55,7 +55,7 @@ export async function renderManageEvents() {
                         <button onclick="switchView('/admin/event/new')" class="primary">Create New Event</button>
                     </div>
                 </div>
-                <div>
+                <div class="table-responsive">
                     <table class="admin-table">
                         <thead>
                             <tr>

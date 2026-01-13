@@ -59,7 +59,10 @@ async function updateTransactions() {
         tbody.appendChild(row);
     });
     table.appendChild(tbody);
-    transactionsView.appendChild(table);
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('table-responsive');
+    wrapper.appendChild(table);
+    transactionsView.appendChild(wrapper);
 }
 
 /**

@@ -19,7 +19,7 @@ const HTML_TEMPLATE = `
                 <button class="tab-btn active" id="swims-yearly-tab">Current Year</button>
                 <button class="tab-btn" id="swims-alltime-tab">All-time</button>
             </div>
-            <div id="leaderboard-container">
+            <div id="leaderboard-container" class="table-responsive">
                 <table role="grid">
                     <thead>
                         <tr>
