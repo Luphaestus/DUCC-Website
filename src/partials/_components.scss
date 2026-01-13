@@ -73,7 +73,7 @@
 /* Navbar */
 nav.small-container {
     --navbar-height: 4rem;
-    position: sticky;
+    position: fixed;
     top: 0;
     width: 100%;
     min-height: var(--navbar-height);
@@ -87,10 +87,6 @@ nav.small-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-
-    &.nav-hidden {
-        transform: translateY(-100%);
-    }
 
     @media (prefers-color-scheme: dark) {
         box-shadow: 0 2px 8px rgba(100, 100, 100, .5);

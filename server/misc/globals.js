@@ -10,9 +10,6 @@ class Globals {
      * Initializes the instance and ensures 'globals.json' exists with defaults.
      */
     constructor() {
-        if (Globals.instance) {
-            return Globals.instance;
-        }
         Globals.instance = this;
 
         const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, "../../data/database.db");

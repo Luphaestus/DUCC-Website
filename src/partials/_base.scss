@@ -1,16 +1,19 @@
 /* Base Layout */
+html,
 body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 main.container {
     display: block;
     margin: 0;
     padding: 0;
+    padding-top: 4rem;
     padding-inline: 0;
-    padding-block: 0;
+    padding-block-end: 0;
     width: 100%;
     max-width: none;
     flex: 1;

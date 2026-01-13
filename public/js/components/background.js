@@ -23,11 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.createElement('div');
     container.id = 'animated-background';
     container.style.position = 'fixed';
-    container.style.inset = '0';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100vw';
+    container.style.height = '100vh';
     container.style.zIndex = '-10';
     container.style.pointerEvents = 'none';
     container.style.overflow = 'hidden';
-    body.appendChild(container);
+    body.prepend(container);
 
     const styleSheet = document.createElement('style');
     document.head.appendChild(styleSheet);

@@ -2857,18 +2857,21 @@ body .bg-icon {
 /* Translucent Card Mixin */
 /* Card Highlights Mixin */
 /* Base Layout */
+html,
 body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 main.container {
   display: block;
   margin: 0;
   padding: 0;
+  padding-top: 4rem;
   padding-inline: 0;
-  padding-block: 0;
+  padding-block-end: 0;
   width: 100%;
   max-width: none;
   flex: 1;
@@ -3212,7 +3215,7 @@ table tbody tr:hover th, table tbody tr:hover td {
 /* Navbar */
 nav.small-container {
   --navbar-height: 4rem;
-  position: sticky;
+  position: fixed;
   top: 0;
   width: 100%;
   min-height: var(--navbar-height);
@@ -3225,9 +3228,6 @@ nav.small-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-nav.small-container.nav-hidden {
-  transform: translateY(-100%);
 }
 @media (prefers-color-scheme: dark) {
   nav.small-container {
@@ -3404,7 +3404,7 @@ nav.small-container ul {
   }
 }
 .form-info .form-box {
-  flex: 1 1 450px;
+  flex: 1 1 300px;
   border-radius: 0.5rem;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -3950,8 +3950,8 @@ nav.small-container ul {
 /* Event Detail View */
 .event-warning-banner {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  flex-wrap: nowrap;
   gap: 1rem;
   padding: 1rem 1.5rem;
   border-radius: 0.75rem;
@@ -3966,6 +3966,7 @@ nav.small-container ul {
   width: 1.5rem;
   height: 1.5rem;
   flex-shrink: 0;
+  margin-top: 0.2rem;
 }
 .event-warning-banner.error {
   background: rgba(231, 76, 60, 0.15);
@@ -3992,9 +3993,13 @@ nav.small-container ul {
   white-space: nowrap;
 }
 @media (max-width: 600px) {
+  .event-warning-banner {
+    flex-wrap: wrap;
+  }
   .event-warning-banner .banner-btn {
     margin-left: 0;
     width: 100%;
+    margin-top: 0.5rem;
   }
 }
 
@@ -4044,7 +4049,7 @@ nav.small-container ul {
   padding: 0 !important;
 }
 .event-content-split .event-details-section {
-  flex: 2 1 400px;
+  flex: 2 1 250px;
   margin-left: 0 !important;
   padding: 0 !important;
 }
@@ -4409,6 +4414,7 @@ nav.small-container ul {
   justify-content: center;
   gap: 1rem;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
 .admin-controls-bar {
