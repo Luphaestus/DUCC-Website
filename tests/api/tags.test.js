@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const TagsAPI = require('../../server/api/TagsAPI');
 
 describe('Tags API', () => {
@@ -12,7 +12,7 @@ describe('Tags API', () => {
 
     beforeEach(async () => {
         db = await setupTestDb();
-        
+
         const adminRes = await db.run(
             'INSERT INTO users (email, first_name, last_name, college_id, can_manage_events, can_manage_users) VALUES (?, ?, ?, ?, ?, ?)',
             ['admin@durham.ac.uk', 'Admin', 'User', 1, 1, 1]

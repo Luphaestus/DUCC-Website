@@ -1,5 +1,5 @@
-import { ajaxGet, ajaxPost } from '../misc/ajax.js';
-import { switchView, addRoute, ViewChangedEvent } from '../misc/view.js';
+import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { switchView, addRoute, ViewChangedEvent } from '/js/utils/view.js';
 
 /**
  * User registration view management.

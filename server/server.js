@@ -39,6 +39,10 @@ const dbPath = process.env.DATABASE_PATH || 'data/database.db';
 const dbDir = path.dirname(dbPath);
 const dbFile = path.basename(dbPath);
 
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 // Session management with SQLite storage
 app.use(session({
   store: new SQLiteStore({

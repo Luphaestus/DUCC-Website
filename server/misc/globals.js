@@ -18,6 +18,9 @@ class Globals {
         const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, "../../data/database.db");
         const dbDir = path.dirname(dbPath);
         this.path = path.join(dbDir, "globals.json");
+        if (!fs.existsSync(dbDir)) {
+            fs.mkdirSync(dbDir, { recursive: true });
+        }
 
         if (!fs.existsSync(this.path)) {
             fs.writeFileSync(this.path, JSON.stringify({

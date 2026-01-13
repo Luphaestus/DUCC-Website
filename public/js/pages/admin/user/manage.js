@@ -1,5 +1,5 @@
-import { ajaxGet } from '../../misc/ajax.js';
-import { switchView } from '../../misc/view.js';
+import { ajaxGet } from '/js/utils/ajax.js';
+import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderPaginationControls, renderAdminNavBar } from '../common.js';
 
 /**
@@ -128,13 +128,13 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
         tbody.innerHTML = users.map(user => `
             <tr class="user-row" data-id="${user.id}">
                 ${columns.map(col => {
-                    if (col.key === 'name') return `<td data-label="Name">${user.first_name} ${user.last_name}</td>`;
-                    if (col.key === 'balance') return `<td data-label="Balance">£${Number(user.balance).toFixed(2)}</td>`;
-                    if (col.key === 'first_aid') return `<td data-label="First Aid">${user.first_aid_expiry ? (new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired') : 'N/A'}</td>`;
-                    if (col.key === 'difficulty') return `<td data-label="Difficulty">${user.difficulty_level || 'N/A'}</td>`;
-                    if (col.key === 'member') return `<td data-label="Member">${user.is_member ? 'Member' : 'Non-Member'}</td>`;
-                    return '<td data-label="-">-</td>';
-                }).join('')}
+            if (col.key === 'name') return `<td data-label="Name">${user.first_name} ${user.last_name}</td>`;
+            if (col.key === 'balance') return `<td data-label="Balance">£${Number(user.balance).toFixed(2)}</td>`;
+            if (col.key === 'first_aid') return `<td data-label="First Aid">${user.first_aid_expiry ? (new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired') : 'N/A'}</td>`;
+            if (col.key === 'difficulty') return `<td data-label="Difficulty">${user.difficulty_level || 'N/A'}</td>`;
+            if (col.key === 'member') return `<td data-label="Member">${user.is_member ? 'Member' : 'Non-Member'}</td>`;
+            return '<td data-label="-">-</td>';
+        }).join('')}
             </tr>
         `).join('');
 

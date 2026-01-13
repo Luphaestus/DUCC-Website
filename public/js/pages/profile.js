@@ -1,11 +1,11 @@
 import { LoginEvent } from './login.js';
-import { ajaxGet, ajaxPost } from '../misc/ajax.js';
+import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { LegalEvent } from './legal.js';
-import { notify } from '../misc/notification.js';
-import { FirstNameChangedEvent } from '../components/navbar.js';
-import { ViewChangedEvent, addRoute } from '../misc/view.js';
-import { requireAuth } from '../misc/auth.js';
-import { BalanceChangedEvent } from '../misc/globals.js';
+import { notify } from '/js/components/notification.js';
+import { FirstNameChangedEvent } from '/js/components/navbar.js';
+import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
+import { requireAuth } from '/js/utils/auth.js';
+import { BalanceChangedEvent } from '/js/utils/globals.js';
 
 /**
  * Profile view management.

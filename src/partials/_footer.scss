@@ -8,6 +8,10 @@ footer {
     margin-top: auto;
     z-index: 10;
 
+    @media (max-width: 768px) {
+        padding-top: 5rem;
+    }
+
     .small-container {
         max-width: 1000px;
         padding: 0 2rem;

@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const Events = require('../../server/api/EventsAPI');
 
 jest.mock('../../server/misc/globals', () => {
@@ -38,7 +38,7 @@ describe('Events API', () => {
         const now = new Date();
         const start = new Date(now); start.setDate(start.getDate() + 1);
         const end = new Date(start); end.setHours(end.getHours() + 2);
-        
+
         const eventRes = await db.run(`
             INSERT INTO events (title, start, end, difficulty_level, upfront_cost, max_attendees) 
             VALUES ('E1', ?, ?, 1, 0, 10)
@@ -71,13 +71,13 @@ describe('Events API', () => {
     test('POST /api/event/:id/attend allows joining', async () => {
         // Make user a coach so they can join alone
         await db.run('UPDATE users SET is_instructor = 1 WHERE id = ?', userId);
-        
+
         const res = await request(app).post(`/api/event/${eventId}/attend`);
         if (res.statusCode !== 200) {
             console.log(res.body);
         }
         expect(res.statusCode).toBe(200);
-        
+
         const attendingRes = await request(app).get(`/api/event/${eventId}/isAttending`);
         expect(attendingRes.body.isAttending).toBe(true);
     });

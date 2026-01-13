@@ -1,5 +1,5 @@
-import { notify, NotificationTypes } from './misc/notification.js';
-import { ViewChangedEvent } from './misc/view.js';
+import { notify, NotificationTypes } from '/js/components/notification.js';
+import { ViewChangedEvent } from './utils/view.js';
 
 /**
  * Polls server health to monitor connectivity.

@@ -1,7 +1,7 @@
-import { ajaxGet, ajaxPost } from '../misc/ajax.js';
-import { switchView, ViewChangedEvent, addRoute } from '../misc/view.js';
-import { Event } from "../misc/event.js";
-import { getPreviousPath } from '../misc/history.js';
+import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { switchView, ViewChangedEvent, addRoute } from '/js/utils/view.js';
+import { Event } from "/js/utils/event.js";
+import { getPreviousPath } from '/js/utils/history.js';
 
 /**
  * User login view management.

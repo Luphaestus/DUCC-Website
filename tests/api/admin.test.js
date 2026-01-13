@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const AdminAPI = require('../../server/api/AdminAPI');
 const Globals = require('../../server/misc/globals');
 
@@ -18,7 +18,7 @@ describe('Admin API', () => {
 
     beforeEach(async () => {
         db = await setupTestDb();
-        
+
         const adminRes = await db.run(
             'INSERT INTO users (email, first_name, last_name, college_id, can_manage_users, can_manage_events, can_manage_transactions) VALUES (?, ?, ?, ?, ?, ?, ?)',
             ['admin@durham.ac.uk', 'Admin', 'User', 1, 1, 1, 1]
@@ -86,7 +86,7 @@ describe('Admin API', () => {
                 upfront_cost: 0
             });
         expect(res.statusCode).toBe(200);
-        
+
         const event = await db.get('SELECT * FROM events WHERE title = ?', ['New Event']);
         expect(event).toBeDefined();
     });
@@ -104,7 +104,7 @@ describe('Admin API', () => {
             .post(`/api/admin/user/${userId}/transaction`)
             .set('x-mock-user', 'admin')
             .send({ amount: 10, description: 'Top up' });
-        
+
         expect(res.statusCode).toBe(200);
         const transaction = await db.get('SELECT * FROM transactions WHERE user_id = ?', [userId]);
         expect(transaction.amount).toBe(10);
@@ -121,7 +121,7 @@ describe('Admin API', () => {
         const res = await request(app)
             .get(`/api/admin/user/${adminId}`)
             .set('x-mock-user', 'exec');
-        
+
         expect(res.statusCode).toBe(200);
         expect(res.body.first_name).toBeDefined();
         expect(res.body.email).toBeUndefined(); // Sensitive
@@ -131,11 +131,11 @@ describe('Admin API', () => {
     test('is_exec user can only see names in users list', async () => {
         // Setup exec user
         await db.run('UPDATE users SET is_exec = 1 WHERE id = ?', userId);
-        
+
         const res = await request(app)
             .get('/api/admin/users')
             .set('x-mock-user', 'exec');
-        
+
         expect(res.statusCode).toBe(200);
         const firstUser = res.body.users[0];
         expect(firstUser.first_name).toBeDefined();

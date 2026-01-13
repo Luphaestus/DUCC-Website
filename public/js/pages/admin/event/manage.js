@@ -1,5 +1,5 @@
-import { ajaxGet } from '../../misc/ajax.js';
-import { switchView } from '../../misc/view.js';
+import { ajaxGet } from '/js/utils/ajax.js';
+import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
 
 /**

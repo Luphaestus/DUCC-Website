@@ -1,6 +1,6 @@
-import { ajaxGet, ajaxPost } from '../../misc/ajax.js';
-import { notify } from '../../misc/notification.js';
-import { switchView } from '../../misc/view.js';
+import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { notify } from '/js/components/notification.js';
+import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
 
 /**

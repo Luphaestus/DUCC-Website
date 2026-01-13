@@ -1,5 +1,5 @@
-import { ViewChangedEvent, switchView, addRoute } from '../misc/view.js';
-import { ajaxGet } from '../misc/ajax.js';
+import { ViewChangedEvent, switchView, addRoute } from '/js/utils/view.js';
+import { ajaxGet } from '/js/utils/ajax.js';
 import { adminContentID } from './common.js';
 import { renderManageUsers } from './user/manage.js';
 import { renderUserDetail } from './user/detail.js';
@@ -8,7 +8,7 @@ import { renderEventDetail } from './event/detail.js';
 import { renderManageTags } from './tag/manage.js';
 import { renderTagDetail } from './tag/detail.js';
 import { renderManageGlobals } from './globals.js';
-import { requireAuth } from '../misc/auth.js';
+import { requireAuth } from '/js/utils/auth.js';
 
 /**
  * Nested router for administrative modules.
@@ -92,7 +92,7 @@ async function AdminNavigationListener({ viewId, path }) {
         try {
             const status = await ajaxGet('/api/globals/status');
             if (status.isPresident) globalsButton = `<button onclick="switchView('/admin/globals')">Manage Globals</button>`;
-        } catch (e) {}
+        } catch (e) { }
 
         let usersButton = '';
         if (perms.can_manage_users || perms.can_manage_transactions || perms.is_exec) {

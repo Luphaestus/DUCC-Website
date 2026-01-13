@@ -9,7 +9,7 @@
     <title>DUCC - Home</title>
 
     <!-- Performance Optimizations: Preload Modules -->
-    <link rel="modulepreload" href="/js/misc/view.js">
+    <link rel="modulepreload" href="/js/utils/view.js">
     <link rel="modulepreload" href="/js/components/background.js">
     <link rel="modulepreload" href="/js/components/navbar.js">
     <link rel="modulepreload" href="/js/connection.js">
@@ -20,10 +20,10 @@
     <link rel="modulepreload" href="/js/pages/profile.js">
     <link rel="modulepreload" href="/js/pages/transactions.js">
     <link rel="modulepreload" href="/js/pages/legal.js">
-    <link rel="modulepreload" href="/js/admin/admin.js">
+    <link rel="modulepreload" href="/js/pages/admin/admin.js">
 
-    <script type="module" src="/js/misc/view.js" defer></script>
-    <script type="module" src="/js/background.js" defer></script>
+    <script type="module" src="/js/utils/view.js" defer></script>
+    <script type="module" src="/js/components/background.js" defer></script>
 
     <!-- Async Font Loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,7 +35,7 @@
     </noscript>
 
     <script type="module">
-        import { switchView } from '/js/misc/view.js';
+        import { switchView } from '/js/utils/view.js';
         window.switchView = switchView;
     </script>
 
@@ -45,7 +45,7 @@
 
 <body>
     <main class="container">
-        <script type="module" src="/js/navbar.js" defer></script>
+        <script type="module" src="/js/components/navbar.js" defer></script>
         <nav class="small-container">
             <ul>
                 <li><a onclick="switchView('/home')" class="contrast nav-logo" style="cursor: pointer;">
@@ -55,7 +55,7 @@
             <ul class="navbar-items"></ul>
         </nav>
 
-        <script type="module" src="/js/misc/notification.js" defer></script>
+        <script type="module" src="/js/components/notification.js" defer></script>
         <script type="module" src="/js/connection.js" defer></script>
         <div id="notification-container" role="alert" aria-live="assertive"></div>
 

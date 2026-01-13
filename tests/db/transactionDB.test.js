@@ -1,4 +1,4 @@
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const TransactionsDB = require('../../server/db/transactionDB');
 
 describe('TransactionsDB', () => {

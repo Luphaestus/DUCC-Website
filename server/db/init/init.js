@@ -2,6 +2,8 @@ const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
 const { createTables } = require('./tables');
 const { seedData } = require('./seed');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const env = process.env.NODE_ENV || 'development';
@@ -15,6 +17,12 @@ console.log(`Running in ${env} mode`);
     console.log('Opening database connection...');
 
     const dbPath = process.env.DATABASE_PATH || 'data/database.db';
+    const dbDir = path.dirname(dbPath);
+
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+
     const db = await open({
       filename: dbPath,
       driver: sqlite3.Database

@@ -221,7 +221,7 @@ class EventsAPI {
                             if (attendee.id === req.user.id) continue;
                             const hasPaid = await EventsDB.isUserPayingForEvent({ user: { id: attendee.id }, isAuthenticated: () => true }, this.db, eventId);
                             if (hasPaid.getData()) await EventsDB.refundEvent(this.db, eventId, attendee.id);
-                            
+
                             const attInfo = await UserDB.getElementsById(this.db, attendee.id, ['is_member', 'free_sessions']);
                             if (!attInfo.getData().is_member) await UserDB.writeElementsById(this.db, attendee.id, { free_sessions: attInfo.getData().free_sessions + 1 });
                         }

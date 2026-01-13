@@ -2,7 +2,7 @@ const request = require('supertest');
 const express = require('express');
 const session = require('express-session');
 const passportModule = require('passport');
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const Auth = require('../../server/api/AuthAPI');
 
 describe('Auth API', () => {
@@ -40,9 +40,9 @@ describe('Auth API', () => {
                 first_name: 'Test',
                 last_name: 'User'
             });
-        
+
         expect(res.statusCode).toBe(201);
-        
+
         const user = await db.get('SELECT * FROM users WHERE email = ?', ['test.user@durham.ac.uk']);
         expect(user).toBeDefined();
         expect(user.first_name).toBe('Test');
@@ -57,7 +57,7 @@ describe('Auth API', () => {
                 first_name: 'Test',
                 last_name: 'User'
             });
-        
+
         expect(res.statusCode).toBe(400);
     });
 
@@ -78,7 +78,7 @@ describe('Auth API', () => {
                 email: 'test.user@durham.ac.uk',
                 password: 'password123'
             });
-        
+
         expect(res.statusCode).toBe(200);
         expect(res.body.message).toBe('Login successful.');
     });
@@ -99,13 +99,13 @@ describe('Auth API', () => {
                 email: 'test.user@durham.ac.uk',
                 password: 'wrongpassword'
             });
-        
+
         expect(res.statusCode).toBe(401);
     });
 
     test('GET /api/auth/status returns correct state', async () => {
         const agent = request.agent(app);
-        
+
         let statusRes = await agent.get('/api/auth/status');
         expect(statusRes.body.authenticated).toBe(false);
 
@@ -143,7 +143,7 @@ describe('Auth API', () => {
                 email: 'tEsT.uSeR@DuRhAm.Ac.Uk',
                 password: 'password123'
             });
-        
+
         expect(res.statusCode).toBe(200);
     });
 });

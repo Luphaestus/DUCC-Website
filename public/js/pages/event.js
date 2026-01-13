@@ -1,7 +1,7 @@
-import { ViewChangedEvent, switchView, addRoute } from "../misc/view.js";
-import { ajaxGet, ajaxPost } from "../misc/ajax.js";
-import { notify } from '../misc/notification.js';
-import { BalanceChangedEvent } from '../misc/globals.js';
+import { ViewChangedEvent, switchView, addRoute } from "/js/utils/view.js";
+import { ajaxGet, ajaxPost } from "/js/utils/ajax.js";
+import { notify } from '/js/components/notification.js';
+import { BalanceChangedEvent } from '/js/utils/globals.js';
 
 /**
  * View details for a single event and manage sign-ups.
@@ -243,7 +243,7 @@ async function NavigationEventListner({ viewId, path }) {
         const start = new Date(event.start);
         const month = start.toLocaleDateString('en-GB', { month: 'short' });
         const day = start.getDate();
-        
+
         const mins = start.getMinutes();
         const hour = start.getHours();
         const timeStr = `${hour % 12 || 12}${mins ? ':' + mins.toString().padStart(2, '0') : ''}${hour >= 12 ? 'pm' : 'am'}`;

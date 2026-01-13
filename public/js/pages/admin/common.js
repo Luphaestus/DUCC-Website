@@ -1,4 +1,4 @@
-import { ajaxGet } from '../misc/ajax.js';
+import { ajaxGet } from '/js/utils/ajax.js';
 
 /**
  * Shared admin UI components and constants.

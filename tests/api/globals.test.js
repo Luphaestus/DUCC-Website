@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const GlobalsAPI = require('../../server/api/GlobalsAPI');
 const Globals = require('../../server/misc/globals');
 
@@ -14,7 +14,7 @@ describe('Globals API', () => {
 
     beforeEach(async () => {
         db = await setupTestDb();
-        
+
         // Mock Globals instance
         mockGlobals = {
             getInt: jest.fn(),
@@ -94,7 +94,7 @@ describe('Globals API', () => {
             .post('/api/globals/SomeKey')
             .set('x-mock-user', 'president')
             .send({ value: 'NewValue' });
-        
+
         expect(res.statusCode).toBe(200);
         expect(mockGlobals.set).toHaveBeenCalledWith('SomeKey', 'NewValue');
     });
@@ -108,7 +108,7 @@ describe('Globals API', () => {
         const res = await request(app)
             .get('/api/globals/public/MembershipCost,SecretKey')
             .set('x-mock-user', 'user');
-        
+
         expect(res.statusCode).toBe(200);
         expect(res.body.res).toEqual({ MembershipCost: 50 });
         expect(res.body.res.SecretKey).toBeUndefined();

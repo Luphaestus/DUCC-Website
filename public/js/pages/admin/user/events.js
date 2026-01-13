@@ -2,9 +2,9 @@
  * Weekly calendar view for events.
  */
 
-import { ajaxGet } from './misc/ajax.js';
+import { ajaxGet } from './utils/ajax.js';
 import { LoginEvent } from './login.js';
-import { ViewChangedEvent } from './misc/view.js';
+import { ViewChangedEvent } from './utils/view.js';
 import './event.js';
 
 /**

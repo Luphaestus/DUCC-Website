@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const User = require('../../server/api/UserAPI');
 
 // Mock Globals
@@ -57,7 +57,7 @@ describe('User API', () => {
         const res = await request(app)
             .post('/api/user/elements')
             .send({ first_name: 'Updated' });
-        
+
         expect(res.statusCode).toBe(200);
         expect(res.body.success).toBe(true);
 
@@ -87,13 +87,13 @@ describe('User API', () => {
     test('POST /api/user/:id/swims adds swims correctly', async () => {
         // Mock req.user.is_exec = true
         await db.run('UPDATE users SET is_exec = 1 WHERE id = ?', userId);
-        
+
         const res = await request(app)
             .post(`/api/user/${userId}/swims`)
             .send({ count: 5 });
-        
+
         expect(res.statusCode).toBe(200);
-        
+
         const user = await db.get('SELECT swims FROM users WHERE id = ?', userId);
         expect(user.swims).toBe(5);
 

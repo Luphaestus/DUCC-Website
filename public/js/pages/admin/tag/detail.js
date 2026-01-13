@@ -1,7 +1,7 @@
-import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '../../misc/ajax.js';
-import { switchView } from '../../misc/view.js';
+import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
+import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
-import { notify, NotificationTypes } from '../../misc/notification.js';
+import { notify, NotificationTypes } from '/js/components/notification.js';
 
 // --- Icons ---
 const ARROW_LEFT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>`;
@@ -102,7 +102,7 @@ export async function renderTagDetail(id) {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('users-datalist');
                 datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
-            } catch (e) {}
+            } catch (e) { }
 
             document.getElementById('whitelist-form').onsubmit = async (e) => {
                 e.preventDefault();

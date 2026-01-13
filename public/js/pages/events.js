@@ -2,9 +2,9 @@
  * Weekly calendar view for events.
  */
 
-import { ajaxGet } from '../misc/ajax.js';
+import { ajaxGet } from '/js/utils/ajax.js';
 import { LoginEvent } from './login.js';
-import { ViewChangedEvent, addRoute } from '../misc/view.js';
+import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import './event.js';
 
 // --- Icons ---
@@ -84,7 +84,7 @@ function getHueFromHex(hex) {
     var max = Math.max(r, g, b), min = Math.min(r, g, b);
     var h, s, l = (max + min) / 2;
     if (max == min) {
-        h = s = 0; 
+        h = s = 0;
     } else {
         var d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const weekParam = parseInt(urlParams.get('week'));
             relativeWeekOffset = isNaN(weekParam) ? 0 : weekParam;
-            changeWeek(null, false); 
+            changeWeek(null, false);
         }
     });
 });

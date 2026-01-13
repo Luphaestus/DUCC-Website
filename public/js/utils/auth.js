@@ -1,6 +1,6 @@
 import { ajaxGet } from './ajax.js';
 import { switchView } from './view.js';
-import { notify, NotificationTypes } from './notification.js';
+import { notify, NotificationTypes } from '/js/components/notification.js';
 
 /**
  * Client-side authentication protection.

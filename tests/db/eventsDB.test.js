@@ -1,4 +1,4 @@
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const EventsDB = require('../../server/db/eventsDB');
 const TagsDB = require('../../server/db/tagsDB');
 
@@ -174,22 +174,22 @@ describe('EventsDB', () => {
 
         // Fetch events for that week
         const result = await EventsDB.get_events_for_week(db, 5, nextMonday);
-        
+
         expect(result.getStatus()).toBe(200);
         const events = result.getData();
-        
+
         expect(events.length).toBe(3);
-        
+
         // Check order
         expect(events[0].title).toBe('Event 1'); // 10:00
         expect(events[1].title).toBe('Event 2'); // 11:00
         expect(events[2].title).toBe('Event 3'); // 12:00
-        
+
         // Check actual start times to be sure
         const t1 = new Date(events[0].start).getTime();
         const t2 = new Date(events[1].start).getTime();
         const t3 = new Date(events[2].start).getTime();
-        
+
         expect(t1).toBeLessThan(t2);
         expect(t2).toBeLessThan(t3);
     });

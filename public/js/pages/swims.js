@@ -1,5 +1,5 @@
-import { ajaxGet } from '../misc/ajax.js';
-import { ViewChangedEvent, addRoute } from '../misc/view.js';
+import { ajaxGet } from '/js/utils/ajax.js';
+import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 
 /**
  * Ranked list of users by swim count.

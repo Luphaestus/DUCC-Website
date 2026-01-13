@@ -1,8 +1,8 @@
-import { ajaxGet, ajaxPost } from '../misc/ajax.js';
-import { notify } from '../misc/notification.js';
-import { ViewChangedEvent, addRoute } from '../misc/view.js';
-import { Event } from "../misc/event.js";
-import { requireAuth } from '../misc/auth.js';
+import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { notify } from '/js/components/notification.js';
+import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
+import { Event } from "/js/utils/event.js";
+import { requireAuth } from '/js/utils/auth.js';
 
 /**
  * Legal & Medical information form management.
@@ -315,7 +315,7 @@ async function validateForm(watch = true) {
     const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
     regexInput(phone_number_id, phonePattern, watch);
     regexInput(emergency_contact_phone_id, phonePattern, watch);
-    
+
     const dobInput = document.getElementById(date_of_birth_id);
     if (dobInput) {
         const today = new Date();

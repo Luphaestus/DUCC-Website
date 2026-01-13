@@ -1,4 +1,4 @@
-const { setupTestDb } = require('../utils/db');
+const { setupTestDb } = require('/js/utils/db');
 const UserDB = require('../../server/db/userDB');
 const bcrypt = require('bcrypt');
 
@@ -10,7 +10,7 @@ describe('UserDB', () => {
     beforeEach(async () => {
         db = await setupTestDb();
         const hashedPassword = await bcrypt.hash('password', 10);
-        
+
         const res1 = await db.run(
             `INSERT INTO users (email, hashed_password, first_name, last_name, college_id)
              VALUES (?, ?, ?, ?, ?)`,
@@ -58,8 +58,8 @@ describe('UserDB', () => {
         });
 
         test('normal user cannot retrieve other user data (caught by access check logic usually, but here checking DB layer permission)', async () => {
-             // UserDB.getElements with explicit ID checks canManageUsers
-             const req = {
+            // UserDB.getElements with explicit ID checks canManageUsers
+            const req = {
                 isAuthenticated: () => true,
                 user: { id: user1Id }
             };

@@ -1,6 +1,6 @@
-import { ajaxGet, ajaxPost } from '../misc/ajax.js';
+import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { adminContentID, renderAdminNavBar } from './common.js';
-import { notify } from '../misc/notification.js';
+import { notify } from '/js/components/notification.js';
 
 /**
  * Admin interface for managing system-wide settings.

@@ -1,6 +1,6 @@
-import { ajaxGet } from '../misc/ajax.js';
-import { ViewChangedEvent, addRoute } from '../misc/view.js';
-import { requireAuth } from '../misc/auth.js';
+import { ajaxGet } from '/js/utils/ajax.js';
+import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
+import { requireAuth } from '/js/utils/auth.js';
 
 /**
  * User financial history view.
