@@ -1,13 +1,15 @@
-import { ajaxGet } from './misc/ajax.js';
-import { ViewChangedEvent } from './misc/view.js';
-import { requireAuth } from './misc/auth.js';
+import { ajaxGet } from '../misc/ajax.js';
+import { ViewChangedEvent, addRoute } from '../misc/view.js';
+import { requireAuth } from '../misc/auth.js';
 
 /**
  * User financial history view.
  * @module Transactions
  */
 
-const HTML_TEMPLATE = `<div id="/transactions-view" class="view hidden small-container">
+addRoute('/transactions', 'transactions');
+
+const HTML_TEMPLATE = `<div id="transactions-view" class="view hidden small-container">
             <h1>Your Transactions</h1>
             <div id="transactions-list">
                 <p aria-busy="true">Loading transactions...</p>

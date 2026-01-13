@@ -1,12 +1,13 @@
-import { ajaxGet } from './misc/ajax.js';
-import { ViewChangedEvent } from './misc/view.js';
+import { ajaxGet } from '../misc/ajax.js';
+import { ViewChangedEvent, addRoute } from '../misc/view.js';
 
 /**
  * Home page view management.
  * @module Home
  */
 
-const home_view_id = '/home-view';
+const home_view_id = 'home-view';
+addRoute('/home', 'home');
 
 /**
  * Home page template.

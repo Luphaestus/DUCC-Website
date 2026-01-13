@@ -10,26 +10,29 @@
 
     <!-- Performance Optimizations: Preload Modules -->
     <link rel="modulepreload" href="/js/misc/view.js">
-    <link rel="modulepreload" href="/js/background.js">
-    <link rel="modulepreload" href="/js/navbar.js">
+    <link rel="modulepreload" href="/js/components/background.js">
+    <link rel="modulepreload" href="/js/components/navbar.js">
     <link rel="modulepreload" href="/js/connection.js">
-    <link rel="modulepreload" href="/js/home.js">
-    <link rel="modulepreload" href="/js/events.js">
-    <link rel="modulepreload" href="/js/signup.js">
-    <link rel="modulepreload" href="/js/login.js">
-    <link rel="modulepreload" href="/js/profile.js">
-    <link rel="modulepreload" href="/js/transactions.js">
-    <link rel="modulepreload" href="/js/legal.js">
+    <link rel="modulepreload" href="/js/pages/home.js">
+    <link rel="modulepreload" href="/js/pages/events.js">
+    <link rel="modulepreload" href="/js/pages/signup.js">
+    <link rel="modulepreload" href="/js/pages/login.js">
+    <link rel="modulepreload" href="/js/pages/profile.js">
+    <link rel="modulepreload" href="/js/pages/transactions.js">
+    <link rel="modulepreload" href="/js/pages/legal.js">
     <link rel="modulepreload" href="/js/admin/admin.js">
 
     <script type="module" src="/js/misc/view.js" defer></script>
     <script type="module" src="/js/background.js" defer></script>
-    
+
     <!-- Async Font Loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"></noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" media="print"
+        onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    </noscript>
 
     <script type="module">
         import { switchView } from '/js/misc/view.js';
@@ -57,15 +60,15 @@
         <div id="notification-container" role="alert" aria-live="assertive"></div>
 
 
-        <script type="module" src="/js/home.js" defer></script>
-        <script type="module" src="/js/events.js" defer></script>
-        <script type="module" src="/js/signup.js" defer></script>
-        <script type="module" src="/js/login.js" defer></script>
-        <script type="module" src="/js/profile.js" defer></script>
-        <script type="module" src="/js/transactions.js" defer></script>
-        <script type="module" src="/js/legal.js" defer></script>
-        <script type="module" src="/js/swims.js" defer></script>
-        <script type="module" src="/js/admin/admin.js" defer></script>
+        <script type="module" src="/js/pages/home.js" defer></script>
+        <script type="module" src="/js/pages/events.js" defer></script>
+        <script type="module" src="/js/pages/signup.js" defer></script>
+        <script type="module" src="/js/pages/login.js" defer></script>
+        <script type="module" src="/js/pages/profile.js" defer></script>
+        <script type="module" src="/js/pages/transactions.js" defer></script>
+        <script type="module" src="/js/pages/legal.js" defer></script>
+        <script type="module" src="/js/pages/swims.js" defer></script>
+        <script type="module" src="/js/pages/admin/admin.js" defer></script>
 
         <div id="/error-view" class="view hidden">
             <div class="container" style="text-align: center;">

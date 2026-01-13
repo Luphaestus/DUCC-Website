@@ -2,9 +2,9 @@
  * Weekly calendar view for events.
  */
 
-import { ajaxGet } from './misc/ajax.js';
+import { ajaxGet } from '../misc/ajax.js';
 import { LoginEvent } from './login.js';
-import { ViewChangedEvent } from './misc/view.js';
+import { ViewChangedEvent, addRoute } from '../misc/view.js';
 import './event.js';
 
 // --- Icons ---
@@ -12,11 +12,13 @@ const CALENDAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height=
 const CHECK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10" /></svg>`;
 const LOCATION_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" /></svg>`;
 
+addRoute('/events', 'events');
+
 /**
  * Main events view template.
  */
 const HTML_TEMPLATE = `
-        <div id="/events-view" class="view hidden small-container">
+        <div id="events-view" class="view hidden small-container">
             <div class="events-controls">
                 <div class="week-nav-icons">
                     <span class="prev-week nav-icon" title="Previous Week"><svg
@@ -265,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('keydown', (e) => {
-        const ev = document.getElementById('/events-view');
+        const ev = document.getElementById('events-view');
         if (!ev || ev.classList.contains('hidden') || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
         if (e.key === 'ArrowLeft') changeWeek(-1);
         else if (e.key === 'ArrowRight') changeWeek(1);

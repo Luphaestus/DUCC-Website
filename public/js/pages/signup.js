@@ -1,13 +1,14 @@
-import { ajaxGet, ajaxPost } from './misc/ajax.js';
-import { switchView } from './misc/view.js';
-import { ViewChangedEvent } from './misc/view.js';
+import { ajaxGet, ajaxPost } from '../misc/ajax.js';
+import { switchView, addRoute, ViewChangedEvent } from '../misc/view.js';
 
 /**
  * User registration view management.
  * @module Signup
  */
 
-const HTML_TEMPLATE = `<div id="/signup-view" class="view hidden">
+addRoute('/signup', 'signup');
+
+const HTML_TEMPLATE = `<div id="signup-view" class="view hidden">
             <div class="small-container">
                 <h1>Sign Up</h1>
                 <div class="form-info">

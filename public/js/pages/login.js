@@ -1,14 +1,16 @@
-import { ajaxGet, ajaxPost } from './misc/ajax.js';
-import { switchView, ViewChangedEvent } from './misc/view.js';
-import { Event } from "./misc/event.js";
-import { getPreviousPath } from './misc/history.js';
+import { ajaxGet, ajaxPost } from '../misc/ajax.js';
+import { switchView, ViewChangedEvent, addRoute } from '../misc/view.js';
+import { Event } from "../misc/event.js";
+import { getPreviousPath } from '../misc/history.js';
 
 /**
  * User login view management.
  * @module Login
  */
 
-const HTML_TEMPLATE = `<div id="/login-view" class="view hidden">
+addRoute('/login', 'login');
+
+const HTML_TEMPLATE = `<div id="login-view" class="view hidden">
             <div class="small-container">
                 <h1>Login</h1>
                 <div class="form-info">

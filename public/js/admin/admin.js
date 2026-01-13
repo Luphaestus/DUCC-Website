@@ -1,4 +1,4 @@
-import { ViewChangedEvent, switchView } from '../misc/view.js';
+import { ViewChangedEvent, switchView, addRoute } from '../misc/view.js';
 import { ajaxGet } from '../misc/ajax.js';
 import { adminContentID } from './common.js';
 import { renderManageUsers } from './user/manage.js';
@@ -15,11 +15,13 @@ import { requireAuth } from '../misc/auth.js';
  * @module Admin
  */
 
+addRoute('/admin/*', 'admin');
+
 /**
  * Admin layout template.
  */
 const HTML_TEMPLATE = `
-<div id="/admin/*-view" class="view hidden small-container">
+<div id="admin-view" class="view hidden small-container">
     <div class="admin-header">
         <div id="admin-header-actions"></div>
         <h1 id="admin-dashboard-title">Admin Dashboard</h1>
@@ -48,8 +50,8 @@ function updateAdminTitle(section) {
  * Router for sub-paths within /admin/*.
  * @param {object} eventData
  */
-async function AdminNavigationListener({ resolvedPath, path }) {
-    if (resolvedPath !== "/admin/*") return;
+async function AdminNavigationListener({ viewId, path }) {
+    if (viewId !== "admin") return;
 
     if (!await requireAuth()) return;
 

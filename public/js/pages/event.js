@@ -1,7 +1,7 @@
-import { ViewChangedEvent, switchView } from "./misc/view.js";
-import { ajaxGet, ajaxPost } from "./misc/ajax.js";
-import { notify } from './misc/notification.js';
-import { BalanceChangedEvent } from './misc/globals.js';
+import { ViewChangedEvent, switchView, addRoute } from "../misc/view.js";
+import { ajaxGet, ajaxPost } from "../misc/ajax.js";
+import { notify } from '../misc/notification.js';
+import { BalanceChangedEvent } from '../misc/globals.js';
 
 /**
  * View details for a single event and manage sign-ups.
@@ -124,10 +124,12 @@ const MINUS_SVG = `<svg
   <path d="M9 12l6 0" />
 </svg>`;
 
+addRoute('/event/:id', 'event');
+
 /**
  * Base template for event detail view.
  */
-const HTML_TEMPLATE = `<div id="/event/*-view" class="view hidden small-container">
+const HTML_TEMPLATE = `<div id="event-view" class="view hidden small-container">
             <div id="event-detail">
                 <p aria-busy="true">Loading event...</p>
             </div>
@@ -147,8 +149,8 @@ function displayNotification(title, message, type) {
  * Handle view switch to a specific event.
  * @param {object} params
  */
-async function NavigationEventListner({ resolvedPath, path }) {
-    if (resolvedPath !== "/event/*") return;
+async function NavigationEventListner({ viewId, path }) {
+    if (viewId !== "event") return;
 
     const navContainer = document.getElementById('event-detail');
     if (!navContainer) return;

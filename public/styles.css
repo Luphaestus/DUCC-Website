@@ -3641,7 +3641,7 @@ nav.small-container .nav-logo strong {
 }
 
 /* Events View */
-[id="/events-view"] {
+#events-view {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -3855,7 +3855,7 @@ nav.small-container .nav-logo strong {
   }
 }
 
-[id="/event/*-view"] {
+#event-view {
   overflow-x: hidden;
   width: 100%;
 }
@@ -4013,39 +4013,39 @@ nav.small-container .nav-logo strong {
 }
 
 /* Legal View */
-[id="/legal-view"] {
+#legal-view {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-[id="/legal-view"] #legal-container {
+#legal-view #legal-container {
   width: 100%;
   margin-top: 2rem;
 }
-[id="/legal-view"] #legal-container h1 {
+#legal-view #legal-container h1 {
   text-align: center;
   margin-bottom: 2rem;
 }
-[id="/legal-view"] #legal-container > article {
+#legal-view #legal-container > article {
   border-left: 4px solid var(--highlight);
 }
-[id="/legal-view"] #legal-container > article svg {
+#legal-view #legal-container > article svg {
   color: var(--highlight);
 }
-[id="/legal-view"] #legal-container > article:nth-child(1) {
+#legal-view #legal-container > article:nth-child(1) {
   --highlight: color-mix(in srgb, purple 70%, var(--theme-opposite) 20%);
 }
-[id="/legal-view"] #legal-container > article:nth-child(2) {
+#legal-view #legal-container > article:nth-child(2) {
   --highlight: color-mix(in srgb, orange 70%, var(--theme-opposite) 20%);
 }
-[id="/legal-view"] #legal-container > article:nth-child(3) {
+#legal-view #legal-container > article:nth-child(3) {
   --highlight: color-mix(in srgb, green 70%, var(--theme-opposite) 20%);
 }
-[id="/legal-view"] #legal-container > article:nth-child(4) {
+#legal-view #legal-container > article:nth-child(4) {
   --highlight: color-mix(in srgb, #3498db 70%, var(--theme-opposite) 20%);
 }
-[id="/legal-view"] #legal-container > article {
+#legal-view #legal-container > article {
   --highlight: color-mix(in srgb, red 70%, var(--theme-opposite) 20%) !important;
   background: rgba(255, 255, 255, 0.01);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
@@ -4054,17 +4054,17 @@ nav.small-container .nav-logo strong {
   border: 1px solid color-mix(in srgb, var(--pico-background-color) 90%, var(--pico-color) 10%);
 }
 @media (prefers-color-scheme: dark) {
-  [id="/legal-view"] #legal-container > article {
+  #legal-view #legal-container > article {
     background: rgba(255, 255, 255, 0.08);
     box-shadow: 0 4px 30px rgba(255, 255, 255, 0.1);
     border: 1px solid color-mix(in srgb, var(--pico-background-color) 80%, var(--pico-color) 20%);
   }
 }
-[id="/legal-view"] #legal-container > article {
+#legal-view #legal-container > article {
   --highlight: color-mix(in srgb, red 70%, var(--theme-opposite) 20%);
   border-left: 4px solid var(--highlight);
 }
-[id="/legal-view"] #legal-container > article svg {
+#legal-view #legal-container > article svg {
   color: var(--highlight);
 }
 
@@ -4110,26 +4110,26 @@ nav.small-container .nav-logo strong {
 }
 
 /* Profile View */
-#\/profile-view h1 {
+#profile-view h1 {
   margin: 2rem;
   text-align: center;
 }
-#\/profile-view .form-box:last-child {
+#profile-view .form-box:last-child {
   border-left: 4px solid var(--highlight);
 }
-#\/profile-view .form-box:last-child svg {
+#profile-view .form-box:last-child svg {
   color: var(--highlight);
 }
-#\/profile-view .form-box:last-child:nth-child(1) {
+#profile-view .form-box:last-child:nth-child(1) {
   --highlight: color-mix(in srgb, purple 70%, var(--theme-opposite) 20%);
 }
-#\/profile-view .form-box:last-child:nth-child(2) {
+#profile-view .form-box:last-child:nth-child(2) {
   --highlight: color-mix(in srgb, orange 70%, var(--theme-opposite) 20%);
 }
-#\/profile-view .form-box:last-child:nth-child(3) {
+#profile-view .form-box:last-child:nth-child(3) {
   --highlight: color-mix(in srgb, green 70%, var(--theme-opposite) 20%);
 }
-#\/profile-view .form-box:last-child:nth-child(4) {
+#profile-view .form-box:last-child:nth-child(4) {
   --highlight: color-mix(in srgb, #3498db 70%, var(--theme-opposite) 20%);
 }
 
@@ -4228,37 +4228,36 @@ nav.small-container .nav-logo strong {
   border-radius: 8px;
 }
 
-/* Transactions, Signup, Login & Swims View */
-#\/transactions-view,
-#\/signup-view,
-#\/login-view,
-#\/swims-view {
+#transactions-view,
+#signup-view,
+#login-view,
+#swims-view {
   width: 100%;
   padding: 2rem;
 }
-#\/transactions-view h1,
-#\/signup-view h1,
-#\/login-view h1,
-#\/swims-view h1 {
+#transactions-view h1,
+#signup-view h1,
+#login-view h1,
+#swims-view h1 {
   text-align: center;
   margin-bottom: 2rem;
 }
-#\/transactions-view > div,
-#\/signup-view > div,
-#\/login-view > div,
-#\/swims-view > div {
+#transactions-view > div,
+#signup-view > div,
+#login-view > div,
+#swims-view > div {
   width: 100%;
 }
 
 /* Admin View */
-#\/admin\/\*-view {
+#admin-view {
   width: 100%;
   padding: 2rem;
 }
-#\/admin\/\*-view h1 {
+#admin-view h1 {
   text-align: center;
 }
-#\/admin\/\*-view > div {
+#admin-view > div {
   width: 100%;
 }
 

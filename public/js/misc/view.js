@@ -8,21 +8,33 @@ import { updateHistory } from './history.js';
  */
 
 const ViewChangedEvent = new Event();
-let Paths = []
+const Routes = [];
 
 /**
- * Resolve URL path to a view ID, supporting wildcards.
- * @param {string} path
- * @returns {string|boolean} Resolved ID or false.
+ * Register a route explicitly.
+ * @param {string} pattern - URL pattern (e.g. '/events', '/admin/*', '/user/:id')
+ * @param {string} viewId - ID of the view element (without '-view' suffix)
  */
-function getViewID(path) {
-    if (Paths.includes(path)) return path;
+export function addRoute(pattern, viewId) {
+    const regexString = '^' + pattern
+        .replace(/\//g, '\\/') // Escape slashes
+        .replace(/:(\w+)/g, '([^/]+)') // Named parameters
+        .replace(/\*/g, '.*') + '$'; // Wildcard
 
-    for (const registeredPath of Paths) {
-        const regex = new RegExp('^' + registeredPath.replace(/\?/, '.').replace(/\*/, '.*') + '$');
-        if (regex.test(path)) return registeredPath;
-    }
-    return false;
+    Routes.push({
+        pattern,
+        regex: new RegExp(regexString),
+        viewId
+    });
+}
+
+/**
+ * Find the matching route for a path.
+ * @param {string} path 
+ * @returns {Object|null} Route object or null
+ */
+function matchRoute(path) {
+    return Routes.find(route => route.regex.test(path)) || null;
 }
 
 /**
@@ -52,7 +64,7 @@ function switchView(path, force = false) {
     }
 
     updateHistory(path);
-    const resolvedPath = getViewID(path);
+    const route = matchRoute(path);
 
     if (isCurrentPath(path) && !force) return true
 
@@ -60,16 +72,23 @@ function switchView(path, force = false) {
         window.history.pushState({}, path, window.location.origin + path);
     }
 
-    if (!resolvedPath) return switchView('/error');
+    if (!route) return switchView('/error');
 
-    for (const p of Paths) {
-        const el = document.getElementById(p + "-view");
-        if (!el) continue
-        if (p === resolvedPath) el.classList.remove('hidden')
-        else el.classList.add('hidden')
-    }
+    // Toggle views
+    const allViews = document.querySelectorAll('.view');
+    allViews.forEach(el => {
+        if (el.id === route.viewId + '-view') {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    });
 
-    ViewChangedEvent.notify({ resolvedPath, path });
+    ViewChangedEvent.notify({ 
+        resolvedPath: route.pattern, 
+        viewId: route.viewId, 
+        path 
+    });
     document.title = `DUCC - ${path.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`
 
     return true
@@ -86,7 +105,17 @@ window.onpopstate = updateContent;
 window.onload = updateContent;
 
 document.addEventListener('DOMContentLoaded', () => {
-    Paths = Array.from(document.querySelectorAll('.view')).map(v => String(v.id).replace("-view", ''))
+    // Scan for existing views and register them if not already registered
+    document.querySelectorAll('.view').forEach(v => {
+        const id = v.id;
+        if (id.endsWith('-view')) {
+            const viewId = id.slice(0, -5);
+            // If the ID looks like a path (starts with /), use it as a pattern.
+            if (viewId.startsWith('/') && !Routes.some(r => r.pattern === viewId)) {
+                addRoute(viewId, viewId);
+            }
+        }
+    });
 });
 
 export { switchView, ViewChangedEvent };

@@ -1,7 +1,7 @@
 @use "mixins" as *;
 
 /* Legal View */
-[id="/legal-view"] {
+#legal-view {
     width: 100%;
     display: flex;
     flex-direction: column;

@@ -1,8 +1,8 @@
-import { switchView, ViewChangedEvent } from './misc/view.js';
-import { ajaxGet } from './misc/ajax.js';
-import { Event } from './misc/event.js';
-import { LoginEvent } from './login.js';
-import { BalanceChangedEvent } from './misc/globals.js';
+import { switchView, ViewChangedEvent } from '../misc/view.js';
+import { ajaxGet } from '../misc/ajax.js';
+import { Event } from '../misc/event.js';
+import { LoginEvent } from '../pages/login.js';
+import { BalanceChangedEvent } from '../misc/globals.js';
 
 /**
  * Navigation configuration.

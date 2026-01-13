@@ -1,16 +1,18 @@
-import { LoginEvent } from './login.js'
-import { ajaxGet, ajaxPost } from './misc/ajax.js';
+import { LoginEvent } from './login.js';
+import { ajaxGet, ajaxPost } from '../misc/ajax.js';
 import { LegalEvent } from './legal.js';
-import { notify } from './misc/notification.js';
-import { FirstNameChangedEvent } from './navbar.js';
-import { ViewChangedEvent } from './misc/view.js';
-import { requireAuth } from './misc/auth.js';
-import { BalanceChangedEvent } from './misc/globals.js';
+import { notify } from '../misc/notification.js';
+import { FirstNameChangedEvent } from '../components/navbar.js';
+import { ViewChangedEvent, addRoute } from '../misc/view.js';
+import { requireAuth } from '../misc/auth.js';
+import { BalanceChangedEvent } from '../misc/globals.js';
 
 /**
  * Profile view management.
  * @module Profile
  */
+
+addRoute('/profile', 'profile');
 
 // --- Constants & Templates ---
 
@@ -66,7 +68,7 @@ const INFO_CYAN = '#3498db';
  * Main profile view template.
  */
 const HTML_TEMPLATE = `
-<div id="/profile-view" class="view hidden">
+<div id="profile-view" class="view hidden">
     <div class="small-container">
         <h1>Profile</h1>
         <div class="form-info" id="profile-info">

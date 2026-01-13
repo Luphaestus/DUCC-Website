@@ -1,8 +1,8 @@
-import { ajaxGet, ajaxPost } from './misc/ajax.js';
-import { notify } from './misc/notification.js';
-import { ViewChangedEvent } from './misc/view.js';
-import { Event } from "./misc/event.js";
-import { requireAuth } from './misc/auth.js';
+import { ajaxGet, ajaxPost } from '../misc/ajax.js';
+import { notify } from '../misc/notification.js';
+import { ViewChangedEvent, addRoute } from '../misc/view.js';
+import { Event } from "../misc/event.js";
+import { requireAuth } from '../misc/auth.js';
 
 /**
  * Legal & Medical information form management.
@@ -30,7 +30,9 @@ const agrees_to_data_storage_id = 'data-checkbox';
 const agrees_to_keep_health_data_id = 'keep-health-checkbox';
 const submitButton_id = 'health-form-submit';
 
-const HTML_TEMPLATE = `<div id="/legal-view" class="view hidden">
+addRoute('/legal', 'legal');
+
+const HTML_TEMPLATE = `<div id="legal-view" class="view hidden">
             <div class="small-container hidden" id="legal-container">
                 <h1>Legal & Medical Information Form</h1>
                 <div id="grid-legal">
