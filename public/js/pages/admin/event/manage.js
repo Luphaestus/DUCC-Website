@@ -1,14 +1,13 @@
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
+import { UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG } from '../../../../images/icons/outline/icons.js'
+
 
 /**
  * Paginated, searchable, and sortable events management table.
  * @module AdminEventManage
  */
-
-// --- Icons ---
-const SORT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4 -4l4 4" /><path d="M16 15l-4 4l-4 -4" /></svg>`;
 
 /**
  * Render event management interface.
@@ -31,22 +30,10 @@ export async function renderManageEvents() {
                     ${await renderAdminNavBar('events')}
                     <div class="search-input-wrapper">
                         <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
-                                                                        <button id="event-search-btn" title="Search">
-                                                                            <svg
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  width="24"
-                                                  height="24"
-                                                  viewBox="0 0 24 24"
-                                                  fill="none"
-                                                  stroke="currentColor"
-                                                  stroke-width="2"
-                                                  stroke-linecap="round"
-                                                  stroke-linejoin="round"
-                                                >
-                                                  <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
-                                                  <path d="M21 21l-6 -6" />
-                                                </svg>
-                                                                        </button>                    </div>
+                            <button id="event-search-btn" title="Search">
+                                ${SEARCH_SVG}
+                            </button>
+                    </div>
                     <div class="admin-actions">
                         <label class="admin-toggle-label">
                             <input type="checkbox" id="show-past-toggle" ${showPast ? 'checked' : ''}>
@@ -57,15 +44,7 @@ export async function renderManageEvents() {
                 </div>
                 <div class="table-responsive">
                     <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th class="sortable" data-sort="title">Title ${SORT_SVG}</th>
-                                <th class="sortable" data-sort="start">Date ${SORT_SVG}</th>
-                                <th class="sortable" data-sort="location">Location ${SORT_SVG}</th>
-                                <th class="sortable" data-sort="difficulty_level">Difficulty ${SORT_SVG}</th>
-                                <th class="sortable" data-sort="upfront_cost">Cost ${SORT_SVG}</th>
-                            </tr>
-                        </thead>
+                        <thead id="events-table-head"></thead>
                         <tbody id="events-table-body">
                             <tr><td colspan="5">Loading...</td></tr>
                         </tbody>
@@ -83,15 +62,6 @@ export async function renderManageEvents() {
     searchBtn.onclick = () => updateEventParams({ search: searchInput.value, page: 1 });
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
     pastToggle.onchange = () => updateEventParams({ showPast: pastToggle.checked, page: 1 });
-
-    adminContent.querySelectorAll('th.sortable').forEach(th => {
-        th.onclick = () => {
-            const currentSort = new URLSearchParams(window.location.search).get('sort') || 'start';
-            const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
-            const field = th.dataset.sort;
-            updateEventParams({ sort: field, order: (currentSort === field && currentOrder === 'asc') ? 'desc' : 'asc' });
-        };
-    });
 
     await fetchAndRenderEvents({ page, search, sort, order, showPast });
 }
@@ -122,12 +92,37 @@ function updateEventParams(updates) {
  * @param {object} params
  */
 async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
+    const thead = document.getElementById('events-table-head');
+    const tbody = document.getElementById('events-table-body');
+
     try {
         const query = new URLSearchParams({ page, limit: 10, search, sort, order, showPast }).toString();
         const data = await ajaxGet(`/api/admin/events?${query}`);
         const events = data.events || [];
         const totalPages = data.totalPages || 1;
-        const tbody = document.getElementById('events-table-body');
+
+        const columns = [
+            { key: 'title', label: 'Title', sort: 'title' },
+            { key: 'start', label: 'Date', sort: 'start' },
+            { key: 'location', label: 'Location', sort: 'location' },
+            { key: 'difficulty_level', label: 'Difficulty', sort: 'difficulty_level' },
+            { key: 'upfront_cost', label: 'Cost', sort: 'upfront_cost' }
+        ];
+
+        thead.innerHTML = `<tr>${columns.map(c => `
+            <th class="sortable" data-sort="${c.sort}">
+                ${c.label} ${sort === c.sort ? (order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
+            </th>
+        `).join('')}</tr>`;
+
+        thead.querySelectorAll('th.sortable').forEach(th => {
+            th.onclick = () => {
+                const currentSort = new URLSearchParams(window.location.search).get('sort') || 'start';
+                const currentOrder = new URLSearchParams(window.location.search).get('order') || 'asc';
+                const field = th.dataset.sort;
+                updateEventParams({ sort: field, order: (currentSort === field && currentOrder === 'asc') ? 'desc' : 'asc' });
+            };
+        });
 
         if (events.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5">No events found.</td></tr>';
@@ -161,7 +156,6 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
 
         pagination.append(prevBtn, ` Page ${page} of ${totalPages} `, nextBtn);
     } catch (e) {
-        const tbody = document.getElementById('events-table-body');
         if (tbody) tbody.innerHTML = '<tr><td colspan="5">Error loading events.</td></tr>';
     }
 }

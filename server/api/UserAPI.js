@@ -132,7 +132,7 @@ class User {
             switch (element) {
                 case "email":
                     validated = /^[^@]+\.[^@]+@durham\.ac\.uk$/i.test(value);
-                    errorMessage = "Invalid email format (must be @durham.ac.uk)."
+                    errorMessage = "Invalid email format (must be first.last@durham.ac.uk)."
                     break;
                 case "first_name":
                 case "last_name":

@@ -4719,6 +4719,7 @@ nav.small-container ul {
   vertical-align: middle;
   margin-left: 0.5rem;
   margin-bottom: 0.2rem;
+  fill: var(--pico-contrast);
 }
 @media (max-width: 600px) {
   .admin-table {
@@ -4772,7 +4773,10 @@ nav.small-container ul {
   .admin-table td {
     /* Adjust content inside stacked table cells */
   }
-  .admin-table td input, .admin-table td select, .admin-table td .tx-actions, .admin-table td .tag-color-badge {
+  .admin-table td input,
+  .admin-table td select,
+  .admin-table td .tx-actions,
+  .admin-table td .tag-color-badge {
     width: auto !important;
     display: inline-block;
     margin: 0 !important;
@@ -4860,7 +4864,8 @@ nav.small-container ul {
   align-items: center;
   gap: 0.5rem;
 }
-.user-tag-item .remove-tag-btn, .user-tag-item .remove-whitelist-btn {
+.user-tag-item .remove-tag-btn,
+.user-tag-item .remove-whitelist-btn {
   background: none;
   border: none;
   color: white;
@@ -4872,11 +4877,13 @@ nav.small-container ul {
   align-items: center;
   justify-content: center;
 }
-.user-tag-item .remove-tag-btn:hover, .user-tag-item .remove-whitelist-btn:hover {
+.user-tag-item .remove-tag-btn:hover,
+.user-tag-item .remove-whitelist-btn:hover {
   background: transparent;
   opacity: 0.8;
 }
-.user-tag-item .remove-tag-btn svg, .user-tag-item .remove-whitelist-btn svg {
+.user-tag-item .remove-tag-btn svg,
+.user-tag-item .remove-whitelist-btn svg {
   width: 1.2rem;
   height: 1.2rem;
 }

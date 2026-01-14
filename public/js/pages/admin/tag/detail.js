@@ -2,10 +2,7 @@ import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
-
-// --- Icons ---
-const ARROW_LEFT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" /></svg>`;
-const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>`;
+import { ARROW_FORWARD_IOS_SVG, CLOSE_SVG } from "../../../../images/icons/outline/icons.js"
 
 /**
  * Admin tag creation and editing form.
@@ -21,7 +18,7 @@ export async function renderTagDetail(id) {
     if (!adminContent) return;
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn">${ARROW_LEFT_SVG} Back to Tags</button>`;
+    if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn">${ARROW_FORWARD_IOS_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
     const userPerms = (await ajaxGet('/api/user/elements/can_manage_users')).can_manage_users

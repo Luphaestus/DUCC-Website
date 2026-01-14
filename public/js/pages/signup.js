@@ -1,5 +1,6 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { switchView, addRoute, ViewChangedEvent } from '/js/utils/view.js';
+import { ACCOUNT_BOX_SVG } from '../../images/icons/outline/icons.js';
 
 /**
  * User registration view management.
@@ -14,20 +15,7 @@ const HTML_TEMPLATE = `<div id="signup-view" class="view hidden">
                 <div class="form-info">
                     <article class="form-box">
                         <h3>
-                            <svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
->
-  <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-</svg>
+                            ${ACCOUNT_BOX_SVG}
                             Create Account
                         </h3>
                         <form id="signup-form">
@@ -183,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isFirstNameValid = validateInput(firstName, nameRegex, 'Invalid first name.');
         const isLastNameValid = validateInput(lastName, nameRegex, 'Invalid last name.');
-        const isEmailValid = validateInput(email, emailRegex, 'Invalid email format (must be @durham.ac.uk).');
+        const isEmailValid = validateInput(email, emailRegex, 'Invalid email format (must be first.last@durham.ac.uk).');
 
         if (password.value === "") {
             displayValidationMessage(password, 'Password required.');

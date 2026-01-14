@@ -6,11 +6,7 @@ import { ajaxGet } from '/js/utils/ajax.js';
 import { LoginEvent } from './login.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import './event.js';
-
-// --- Icons ---
-const CALENDAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" /></svg>`;
-const CHECK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10" /></svg>`;
-const LOCATION_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" /></svg>`;
+import { CALENDAR_TODAY_SVG, CHECK_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
 
 addRoute('/events', 'events');
 
@@ -21,41 +17,11 @@ const HTML_TEMPLATE = `
         <div id="events-view" class="view hidden small-container">
             <div class="events-controls">
                 <div class="week-nav-icons">
-                    <span class="prev-week nav-icon" title="Previous Week"><svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
->
-  <path d="M12 21a9 9 0 1 0 0 -18a9 9 0 0 0 0 18" />
-  <path d="M8 12l4 4" />
-  <path d="M8 12h8" />
-  <path d="M12 8l-4 4" />
-</svg></span>
-                    <span class="next-week nav-icon" title="Next Week"><svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  stroke-width="2"
-  stroke-linecap="round"
-  stroke-linejoin="round"
->
-  <path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0 -18" />
-  <path d="M16 12l-4 -4" />
-  <path d="M16 12h-8" />
-  <path d="M12 16l4 -4" />
-</svg></span>
+                    <span class="prev-week nav-icon" title="Previous Week">${ARROW_BACK_IOS_NEW_SVG}</span>
+                    <span class="next-week nav-icon" title="Next Week">${ARROW_FORWARD_IOS_SVG}</span>
                 </div>
                 <h1 id="events-controls-title">Loading Week...</h1>
-                <button class="this-week-button secondary">Today ${CALENDAR_SVG}</button>
+                <button class="this-week-button secondary">Today ${CALENDAR_TODAY_SVG}</button>
             </div>
 
             <div id="events-list">
@@ -128,7 +94,7 @@ function formatEvent(event) {
             </div>
             <div class="event-bottom">
                 <div class="event-location">
-                    <span>${LOCATION_SVG} ${event.location || 'No Location'}</span>
+                    <span>${LOCATION_ON_SVG} ${event.location || 'No Location'}</span>
                 </div>
                 <div class="event-tags" style="margin-left: auto;">${tagsHtml}</div>
             </div>

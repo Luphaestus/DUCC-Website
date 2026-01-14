@@ -74,7 +74,7 @@ class Auth {
 
             const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
             if (!emailRegex.test(email)) {
-                return res.status(400).json({ message: 'Invalid email format (must be @durham.ac.uk).' });
+                return res.status(400).json({ message: 'Invalid email format (must be first.last@durham.ac.uk).' });
             }
 
             try {
