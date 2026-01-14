@@ -45,16 +45,24 @@ footer {
                     transform: translateY(-2px);
                 }
 
+                svg {
+                    color: var(--theme-opposite);
+                }
+
+                &:hover svg {
+                    color: var(--theme-colour);
+                }
+
                 img {
                     width: 1.2rem;
                     height: 1.2rem;
-                    filter: invert(1); 
-                    
+                    filter: invert(1);
+
                     @media (prefers-color-scheme: light) {
                         filter: invert(0);
                     }
                 }
-                
+
                 &:hover img {
                     filter: invert(0) !important;
                 }
@@ -64,7 +72,7 @@ footer {
 
     .footer-bottom {
         text-align: center;
-        
+
         p {
             margin-bottom: 0;
             font-size: 0.85rem;

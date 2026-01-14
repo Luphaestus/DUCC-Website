@@ -3966,7 +3966,6 @@ nav.small-container ul {
   width: 1.5rem;
   height: 1.5rem;
   flex-shrink: 0;
-  margin-top: 0.2rem;
 }
 .event-warning-banner.error {
   background: rgba(231, 76, 60, 0.15);
@@ -4397,6 +4396,7 @@ nav.small-container ul {
 #transactions-view,
 #signup-view,
 #login-view,
+#\/error-view,
 #swims-view {
   width: 100%;
   padding: 2rem;
@@ -4404,6 +4404,7 @@ nav.small-container ul {
 #transactions-view h1,
 #signup-view h1,
 #login-view h1,
+#\/error-view h1,
 #swims-view h1 {
   text-align: center;
   margin-bottom: 2rem;
@@ -4411,6 +4412,7 @@ nav.small-container ul {
 #transactions-view > div,
 #signup-view > div,
 #login-view > div,
+#\/error-view > div,
 #swims-view > div {
   width: 100%;
 }
@@ -5019,6 +5021,12 @@ footer .footer-content .social-links a:hover {
   background: var(--pico-primary);
   color: white;
   transform: translateY(-2px);
+}
+footer .footer-content .social-links a svg {
+  color: var(--theme-opposite);
+}
+footer .footer-content .social-links a:hover svg {
+  color: var(--theme-colour);
 }
 footer .footer-content .social-links a img {
   width: 1.2rem;
