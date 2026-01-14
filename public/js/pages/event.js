@@ -120,8 +120,22 @@ const MINUS_SVG = `<svg
   stroke-linecap="round"
   stroke-linejoin="round"
 >
-  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M12 12m-9 0a9 0 1 0 18 0a9 0 1 0 -18 0" />
   <path d="M9 12l6 0" />
+</svg>`;
+const WAITLIST_SVG = `<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 12m-9 0a9 0 1 0 18 0a9 0 1 0 -18 0" />
+  <path d="M12 7l0 5l3 3" />
 </svg>`;
 
 addRoute('/event/:id', 'event');
@@ -146,33 +160,120 @@ function displayNotification(title, message, type) {
 }
 
 /**
- * Handle view switch to a specific event.
- * @param {object} params
+ * Fill the attendees list in the UI.
+ * @param {number} eventId 
  */
-async function NavigationEventListner({ viewId, path }) {
-    if (viewId !== "event") return;
-
-    const navContainer = document.getElementById('event-detail');
-    if (!navContainer) return;
-
+async function fillAttendeesList(eventId) {
     try {
-        const loggedIn = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
-        const requests = [ajaxGet("/api" + path)];
-        if (loggedIn) {
-            requests.push(ajaxGet('/api/user/elements/is_member,free_sessions,filled_legal_info,balance,is_instructor'));
-            requests.push(ajaxGet(`/api${path}/isAttending`));
-            requests.push(ajaxGet(`/api${path}/attendees`));
-            requests.push(ajaxGet(`/api${path}/isPaying`).catch(() => ({ isPaying: false })));
+        const response = await ajaxGet(`/api/event/${eventId}/attendees`);
+        const attendees = response.attendees || [];
+
+        const attendeesListHtml = attendees.length > 0 ? attendees.map(u => {
+            if (u.is_attending === 0) {
+                return `<li class="attendee-left">${u.first_name} ${u.last_name} (Left)</li>`;
+            }
+            return `<li>${u.first_name} ${u.last_name}</li>`;
+        }).join('') : '<li>No attendees yet.</li>';
+
+        document.querySelectorAll('.attendees-list').forEach(el => {
+            el.innerHTML = attendeesListHtml;
+        });
+    } catch (e) {
+        console.error("Failed to fill attendees list", e);
+    }
+}
+
+/**
+ * Fill the waiting list information in the UI.
+ * @param {number} eventId 
+ * @param {boolean} isFull
+ */
+async function fillWaitlist(eventId, isFull) {
+    try {
+        const data = await ajaxGet(`/api/event/${eventId}/waitlist`);
+
+        const summaryField = document.getElementById('waitlist-summary-field');
+        const summaryValue = document.getElementById('waitlist-summary-value');
+        const adminSections = document.querySelectorAll('.waitlist-admin-section');
+        const adminLists = document.querySelectorAll('.waitlist-admin-list');
+
+        // Only show waitlist summary if event is full
+        if (isFull && (data.count > 0 || data.position)) {
+            summaryField?.classList.remove('hidden');
+            if (summaryValue) {
+                if (data.position) {
+                    // User is on waitlist: hide total count, show people in front
+                    summaryValue.innerHTML = `<strong>${data.position - 1}</strong> people in front of you`;
+                } else {
+                    // User not on waitlist: show total count
+                    summaryValue.innerHTML = `<strong>${data.count || 0}</strong> people waiting`;
+                }
+            }
+        } else {
+            summaryField?.classList.add('hidden');
         }
 
-        const [eventResponse, userProfile, isAttendingRes, attendeesResponse, isPayingRes] = await Promise.all(requests);
+        // Always show full list for execs if anyone is on it
+        if (data.waitlist && data.waitlist.length > 0) {
+            adminSections.forEach(s => s.classList.remove('hidden'));
+            if (adminLists.length > 0) {
+                const listHtml = data.waitlist.map(u => `<li>${u.first_name} ${u.last_name} (${u.email})</li>`).join('');
+                adminLists.forEach(l => l.innerHTML = listHtml);
+            }
+        } else {
+            adminSections.forEach(s => s.classList.add('hidden'));
+        }
+    } catch (e) {
+        console.error("Failed to fill waitlist", e);
+    }
+}
+
+/**
+ * Setup and update the attend/leave/waitlist button.
+ */
+async function setupEventButtons(eventId, path, resolvedPath) {
+    try {
+        const loggedIn = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
+        const attendButton = document.getElementById('attend-event-button');
+        const buttonContainer = attendButton?.parentElement;
+        const warningContainer = document.getElementById('event-warning-container');
+        const attendeeContainers = [document.querySelector('.event-attendees-section'), document.getElementById('event-attendees-container')];
+        const waitlistCountField = document.getElementById('waitlist-count-field');
+
+        if (!loggedIn) {
+            buttonContainer?.classList.add('hidden');
+            attendeeContainers.forEach(c => c?.classList.add('hidden'));
+            waitlistCountField?.classList.add('hidden');
+            if (warningContainer) warningContainer.innerHTML = '';
+            return;
+        }
+
+        attendeeContainers.forEach(c => c?.classList.remove('hidden'));
+        waitlistCountField?.classList.remove('hidden');
+
+        const [userProfile, isAttendingRes, isPayingRes, isOnWaitlistRes, coachCountRes, attendeesResponse, eventResponse] = await Promise.all([
+            ajaxGet('/api/user/elements/is_member,free_sessions,filled_legal_info,balance,is_instructor'),
+            ajaxGet(`/api/event/${eventId}/isAttending`),
+            ajaxGet(`/api/event/${eventId}/isPaying`).catch(() => ({ isPaying: false })),
+            ajaxGet(`/api/event/${eventId}/isOnWaitlist`).catch(() => ({ isOnWaitlist: false })),
+            ajaxGet(`/api/event/${eventId}/coachCount`).catch(() => ({ count: 0 })),
+            ajaxGet(`/api/event/${eventId}/attendees`).catch(() => ({ attendees: [] })),
+            ajaxGet(`/api/event/${eventId}`)
+        ]);
+
         const { event } = eventResponse;
         const isAttending = isAttendingRes?.isAttending || false;
         const isPaying = isPayingRes?.isPaying || false;
-
+        const isOnWaitlist = isOnWaitlistRes?.isOnWaitlist || false;
         const attendees = attendeesResponse?.attendees || [];
-        const coachCountRes = await ajaxGet(`/api/event/${event.id}/coachCount`).catch(() => ({ count: 0 }));
         const coachCount = coachCountRes.count;
+
+        const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
+        const attendeeCount = activeAttendees.length;
+        const isFull = event.max_attendees > 0 && attendeeCount >= event.max_attendees;
+
+        // Refresh waitlist info
+        await fillWaitlist(eventId, isFull);
 
         let canAttend = true;
         let warningHtml = '';
@@ -180,11 +281,7 @@ async function NavigationEventListner({ viewId, path }) {
         const startDate = new Date(event.start);
         const endDate = new Date(event.end);
 
-        // Filter out attendees who have left for the count check
-        const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
-        const attendeeCount = activeAttendees.length;
-
-        if (loggedIn && !isAttending) {
+        if (!isAttending) {
             if (now > endDate) {
                 canAttend = false;
                 warningHtml = `<div class="event-warning-banner error">${X_SVG} This event has already ended.</div>`;
@@ -194,9 +291,9 @@ async function NavigationEventListner({ viewId, path }) {
             } else if (!userProfile.is_instructor && coachCount === 0) {
                 canAttend = false;
                 warningHtml = `<div class="event-warning-banner warning">${MINUS_SVG} At least one coach must sign up before members can join this event.</div>`;
-            } else if (event.max_attendees > 0 && attendeeCount >= event.max_attendees) {
+            } else if (isFull) {
                 canAttend = false;
-                warningHtml = `<div class="event-warning-banner warning">${MINUS_SVG} This event is currently full.</div>`;
+                warningHtml = `<div class="event-warning-banner warning">${MINUS_SVG} This event is currently full. ${!isOnWaitlist ? 'You can join the waiting list.' : ''}</div>`;
             } else if (!userProfile.filled_legal_info) {
                 canAttend = false;
                 warningHtml = `<div class="event-warning-banner error">
@@ -218,17 +315,75 @@ async function NavigationEventListner({ viewId, path }) {
             }
         }
 
+        if (warningContainer) {
+            warningContainer.innerHTML = warningHtml;
+            const infoContainer = document.getElementById('event-info-container');
+            if (infoContainer) infoContainer.style.marginTop = warningHtml ? '1rem' : '2rem';
+        }
+
+        if (attendButton) {
+            attendButton.classList.remove('hidden');
+            buttonContainer?.classList.remove('hidden');
+
+            if (isAttending) attendButton.textContent = 'Leave Event';
+            else if (isOnWaitlist) attendButton.textContent = 'Leave Waiting List';
+            else if (isFull) attendButton.textContent = 'Join Waiting List';
+            else attendButton.textContent = 'Attend Event';
+
+            const shouldDisable = !canAttend && !isAttending && !isOnWaitlist && !isFull;
+            attendButton.disabled = shouldDisable;
+            attendButton.style.opacity = shouldDisable ? '0.5' : '1';
+            attendButton.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
+
+            const newBtn = attendButton.cloneNode(true);
+            attendButton.parentNode.replaceChild(newBtn, attendButton);
+
+            newBtn.addEventListener('click', async () => {
+                if (shouldDisable) return;
+                if (isAttending && userProfile.is_instructor && coachCount === 1 && attendees.length > 1) {
+                    if (!confirm("Warning: You are the last coach. Leaving will remove all other attendees. Proceed?")) return;
+                }
+
+                try {
+                    let url = `/api/event/${event.id}/attend`;
+                    if (isAttending) url = `/api/event/${event.id}/leave`;
+                    else if (isOnWaitlist) url = `/api/event/${event.id}/waitlist/leave`;
+                    else if (isFull) url = `/api/event/${event.id}/waitlist/join`;
+
+                    await ajaxPost(url, {});
+                    BalanceChangedEvent.notify();
+                    await fillAttendeesList(eventId);
+                    await fillWaitlist(eventId);
+                    await setupEventButtons(eventId, path, resolvedPath);
+                } catch (error) {
+                    displayNotification('Action Failed', error, 'error');
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Failed to setup event buttons", e);
+    }
+}
+
+/**
+ * Handle view switch to a specific event.
+ * @param {object} params
+ */
+async function NavigationEventListner({ viewId, path, resolvedPath }) {
+    if (viewId !== "event") return;
+
+    const navContainer = document.getElementById('event-detail');
+    if (!navContainer) return;
+
+    try {
+        const eventResponse = await ajaxGet("/api" + path);
+        const { event } = eventResponse;
+
+        const now = new Date();
         const refundCutOffPassed = event.upfront_refund_cutoff ? (now > new Date(event.upfront_refund_cutoff)) : false;
         const refundCutOffDateStr = event.upfront_refund_cutoff ? new Date(event.upfront_refund_cutoff).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'N/A';
         const refundToolTip = `<span class="info-tooltip-wrapper">${INFO_SVG}<span class="tooltip-text">The upfront cost is non-refundable as it covers pre-booked expenses. Refunds are only possible if someone else takes your place after the cutoff.</span></span>`
         const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>`).join('');
-
-        const attendeesListHtml = attendees.length > 0 ? attendees.map(u => {
-            if (u.is_attending === 0) {
-                return `<li class="attendee-left">${u.first_name} ${u.last_name} (Left)</li>`;
-            }
-            return `<li>${u.first_name} ${u.last_name}</li>`;
-        }).join('') : '<li>No attendees yet.</li>';
 
         // Format duration
         const durationMs = new Date(event.end) - new Date(event.start);
@@ -251,8 +406,8 @@ async function NavigationEventListner({ viewId, path }) {
         const dateTimeStr = `${month} ${day}, ${timeStr}`;
 
         navContainer.innerHTML = `
-            ${warningHtml}
-            <div class="form-info" id="event-info-container" style="margin-top: ${warningHtml ? '1rem' : '2rem'}">
+            <div id="event-warning-container"></div>
+            <div class="form-info" id="event-info-container">
                 <article class="form-box">
                     <div class="event-header">
                         <h2 class="event-title-large">${event.title}</h2>
@@ -280,6 +435,10 @@ async function NavigationEventListner({ viewId, path }) {
                                 <span class="label">${ATTENDEES_SVG} <strong>Max Attendees:</strong></span>
                                 <span class="value">${event.max_attendees || 'Unlimited'}</span>
                             </p>
+                            <p class="detail-field hidden" id="waitlist-summary-field">
+                                <span class="label">${WAITLIST_SVG} <strong>Waitlist:</strong></span>
+                                <span class="value" id="waitlist-summary-value"></span>
+                            </p>
                             ${event.upfront_cost ? `
                             <p class="detail-field">
                                 <span class="label">${COST_SVG} <strong>Upfront Cost:</strong></span>
@@ -290,64 +449,41 @@ async function NavigationEventListner({ viewId, path }) {
                                 <button id="edit-event-button" class="hidden">Edit Event</button>
                             </div>
                         </div>
-                        ${loggedIn ? `
-                        <div class="event-attendees-section">
+                        <div class="event-attendees-section hidden">
                             <h3>${ATTENDEES_SVG} Attendees</h3>
-                            <ul class="attendees-list">
-                                ${attendeesListHtml}
-                            </ul>
-                        </div>` : ''}
+                            <ul class="attendees-list"></ul>
+                        </div>
+                        <div class="waitlist-admin-section event-attendees-section hidden">
+                            <h3>${WAITLIST_SVG} Waiting List (Admin)</h3>
+                            <ol class="waitlist-admin-list waitlist-names-list"></ol>
+                        </div>
                     </div>
                 </article>
-                ${loggedIn ? `
                 <article class="form-box" id="event-attendees-container">
                     <h3>${ATTENDEES_SVG} Attendees</h3>
-                    <ul class="attendees-list">
-                        ${attendeesListHtml}
-                    </ul>
-                </article>` : ''}
+                    <ul class="attendees-list"></ul>
+                    <div class="waitlist-admin-section hidden">
+                        <h3>${WAITLIST_SVG} Waiting List (Admin)</h3>
+                        <ol class="waitlist-admin-list waitlist-names-list"></ol>
+                    </div>
+                </article>
             </div>`;
 
-        const attendButton = document.getElementById('attend-event-button');
-        const buttonContainer = attendButton?.parentElement;
-
-        try {
-            const perms = await ajaxGet('/api/user/elements/can_manage_events');
+        // Check manage perms
+        ajaxGet('/api/user/elements/can_manage_events').then(perms => {
             if (perms?.can_manage_events) {
                 const editBtn = document.getElementById('edit-event-button');
                 editBtn?.classList.remove('hidden');
                 editBtn.onclick = () => switchView(`/admin/event/${event.id}`);
             }
-        } catch (e) { }
+        }).catch(() => { });
 
-        if (attendButton) {
-            if (!loggedIn) {
-                buttonContainer?.classList.add('hidden');
-            } else {
-                attendButton.textContent = isAttending ? 'Leave Event' : 'Attend Event';
-                attendButton.classList.remove('hidden');
+        const eventId = event.id;
+        await Promise.all([
+            fillAttendeesList(eventId),
+            setupEventButtons(eventId, path, resolvedPath)
+        ]);
 
-                if (!canAttend) {
-                    attendButton.disabled = true;
-                    attendButton.style.opacity = '0.5';
-                    attendButton.style.cursor = 'not-allowed';
-                }
-
-                attendButton.addEventListener('click', async () => {
-                    if (!canAttend && !isAttending) return;
-                    if (isAttending && userProfile.is_instructor && coachCount === 1 && attendees.length > 1) {
-                        if (!confirm("Warning: You are the last coach. Leaving will remove all other attendees. Proceed?")) return;
-                    }
-                    try {
-                        await ajaxPost(`/api/event/${event.id}/${isAttending ? 'leave' : 'attend'}`, {});
-                        BalanceChangedEvent.notify();
-                        NavigationEventListner({ resolvedPath, path });
-                    } catch (error) {
-                        displayNotification('Action Failed', error, 'error');
-                    }
-                });
-            }
-        }
     } catch (error) {
         navContainer.innerHTML = `<p class="error-message">Could not load event details.</p>`;
     }

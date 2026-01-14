@@ -425,7 +425,13 @@ function renderTab(tabName, user, isPresident, canManageUsers, isExec) {
                 <div class="event-details-section" id="admin-user-membership-container">
                      <h3>${DIFFICULTY_SVG} Status & Level</h3>
                      ${user.is_member !== undefined ? `<p>${USER_SVG} <strong>Member:</strong> ${user.is_member ? 'Yes' : 'No'}</p>` : ''}
-                     ${user.is_instructor !== undefined ? `<p>${INSTRUCTOR_SVG} <strong>Instructor:</strong> ${user.is_instructor ? 'Yes' : 'No'}</p>` : ''}
+                     ${user.is_instructor !== undefined ? `
+                     <p>
+                        <label>
+                            ${INSTRUCTOR_SVG} <strong>Instructor:</strong>
+                            ${canManageUsers ? `<input type="checkbox" id="admin-user-instructor" ${user.is_instructor ? 'checked' : ''}>` : (user.is_instructor ? 'Yes' : 'No')}
+                        </label>
+                     </p>` : ''}
                      ${user.free_sessions !== undefined ? `<p>${FREE_SESSIONS_SVG} <strong>Free Sessions:</strong> ${user.free_sessions}</p>` : ''}
                      ${user.difficulty_level !== undefined ? `
                      <div class="detail-difficulty-control">
@@ -463,6 +469,23 @@ function renderTab(tabName, user, isPresident, canManageUsers, isExec) {
                         notify('Success', 'Swim added', 'success');
                     } catch (e) {
                         notify('Error', 'Failed to add swim', 'error');
+                    }
+                };
+            }
+        }
+
+        if (canManageUsers) {
+            const instructorToggle = document.getElementById('admin-user-instructor');
+            if (instructorToggle) {
+                instructorToggle.onchange = async () => {
+                    try {
+                        await ajaxPost(`/api/admin/user/${user.id}/elements`, { is_instructor: instructorToggle.checked });
+                        notify('Success', 'Instructor status updated', 'success');
+                        user.is_instructor = instructorToggle.checked;
+                    } catch (e) {
+                        console.error(e);
+                        notify('Error', 'Failed to update instructor status', 'error');
+                        instructorToggle.checked = !instructorToggle.checked;
                     }
                 };
             }

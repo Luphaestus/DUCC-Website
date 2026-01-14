@@ -254,6 +254,46 @@ class EventsAPI {
                 }
             }
 
+            // Check waiting list and promote
+            const nextUserRes = await EventsDB.get_next_on_waiting_list(this.db, eventId);
+            const nextUserId = nextUserRes.getData();
+
+            if (nextUserId) {
+                try {
+                    // Fetch user details for eligibility check
+                    const nextUser = await UserDB.getElementsById(this.db, nextUserId, ['is_member', 'free_sessions', 'filled_legal_info']);
+                    if (!nextUser.isError()) {
+                        const u = nextUser.getData();
+
+                        // Check eligibility (ignoring debt for waiting list promotion)
+                        let eligible = true;
+                        if (!u.filled_legal_info) eligible = false;
+                        if (!u.is_member && u.free_sessions <= 0) eligible = false;
+
+                        if (eligible) {
+                            if (!u.is_member) {
+                                await UserDB.writeElementsById(this.db, nextUserId, { free_sessions: u.free_sessions - 1 });
+                            }
+
+                            let transactionId = null;
+                            if (event.upfront_cost > 0) {
+                                const txRes = await TransactionsDB.add_transaction_admin(this.db, nextUserId, -event.upfront_cost, `${event.title} upfront cost (Waitlist Promotion)`);
+                                if (!txRes.isError()) {
+                                    transactionId = txRes.getData();
+                                }
+                            }
+
+                            // Promote user
+                            const mockReq = { user: { id: nextUserId }, isAuthenticated: () => true };
+                            await EventsDB.attend_event(mockReq, this.db, eventId, transactionId);
+                            await EventsDB.remove_user_from_waiting_list(this.db, eventId, nextUserId);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error promoting user from waitlist:", e);
+                }
+            }
+
             return status.getResponse(res);
         });
 
@@ -279,6 +319,86 @@ class EventsAPI {
 
             if (attendees.isError()) return attendees.getResponse(res);
             res.json({ attendees: attendees.getData() });
+        });
+
+        /**
+         * Check if current user is on the waiting list.
+         */
+        this.app.get('/api/event/:id/isOnWaitlist', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) return res.status(400).json({ message: 'Event ID must be an integer' });
+
+            const onList = await EventsDB.is_user_on_waiting_list(req, this.db, eventId);
+            if (onList.isError()) return onList.getResponse(res);
+            res.json({ isOnWaitlist: onList.getData() });
+        });
+
+        /**
+         * Join waiting list.
+         */
+        this.app.post('/api/event/:id/waitlist/join', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) return res.status(400).json({ message: 'Event ID must be an integer' });
+
+            const eventRes = await EventsDB.get_event_by_id(req, this.db, eventId);
+            if (eventRes.isError()) return res.status(404).json({ message: 'Event not found' });
+
+            // Ensure event is actually full or meets criteria?
+            // User can only join waitlist if they are NOT attending.
+            const isAttending = await EventsDB.is_user_attending_event(req, this.db, eventId);
+            if (isAttending.getData()) return res.status(400).json({ message: 'Already attending' });
+
+            const status = await EventsDB.join_waiting_list(req, this.db, eventId);
+            return status.getResponse(res);
+        });
+
+        /**
+         * Leave waiting list.
+         */
+        this.app.post('/api/event/:id/waitlist/leave', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) return res.status(400).json({ message: 'Event ID must be an integer' });
+
+            const status = await EventsDB.leave_waiting_list(req, this.db, eventId);
+            return status.getResponse(res);
+        });
+
+        /**
+         * Get waiting list information for an event.
+         */
+        this.app.get('/api/event/:id/waitlist', async (req, res) => {
+            const eventId = parseInt(req.params.id, 10);
+            if (Number.isNaN(eventId)) {
+                return res.status(400).json({ message: 'Event ID must be an integer' });
+            }
+
+            const userElements = await UserDB.getElements(req, this.db, 'is_exec');
+            const isExec = !userElements.isError() && !!userElements.getData().is_exec;
+
+            const waitlistCount = await EventsDB.get_waiting_list_count(this.db, eventId);
+            if (waitlistCount.isError()) return waitlistCount.getResponse(res);
+
+            const result = {
+                count: waitlistCount.getData()
+            };
+
+            if (isExec) {
+                const waitlist = await EventsDB.get_waiting_list(this.db, eventId);
+                if (waitlist.isError()) return waitlist.getResponse(res);
+                result.waitlist = waitlist.getData();
+            }
+
+            if (req.user) {
+                const onList = await EventsDB.is_user_on_waiting_list(req, this.db, eventId);
+                if (!onList.isError() && onList.getData()) {
+                    const position = await EventsDB.get_waiting_list_position(this.db, eventId, req.user.id);
+                    if (!position.isError()) {
+                        result.position = position.getData();
+                    }
+                }
+            }
+
+            res.json(result);
         });
     }
 }

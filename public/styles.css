@@ -4049,7 +4049,7 @@ nav.small-container ul {
   padding: 0 !important;
 }
 .event-content-split .event-details-section {
-  flex: 2 1 250px;
+  flex: 2 1 350px;
   margin-left: 0 !important;
   padding: 0 !important;
 }
@@ -4097,17 +4097,30 @@ nav.small-container ul {
   flex-direction: column;
   gap: 0.5rem;
 }
-.event-content-split .event-attendees-section ul.attendees-list li {
+.event-content-split .event-attendees-section ol.waitlist-names-list {
+  list-style-position: inside;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.event-content-split .event-attendees-section ul.attendees-list li,
+.event-content-split .event-attendees-section ol.waitlist-names-list li {
   padding: 0.5rem 0.75rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0.4rem;
   font-size: 0.95rem;
   transition: background 0.2s ease;
+  display: list-item;
+  /* Ensure it behaves like a list item for numbering */
 }
-.event-content-split .event-attendees-section ul.attendees-list li:hover {
+.event-content-split .event-attendees-section ul.attendees-list li:hover,
+.event-content-split .event-attendees-section ol.waitlist-names-list li:hover {
   background: rgba(255, 255, 255, 0.1);
 }
-.event-content-split .event-attendees-section ul.attendees-list li.attendee-left {
+.event-content-split .event-attendees-section ul.attendees-list li.attendee-left,
+.event-content-split .event-attendees-section ol.waitlist-names-list li.attendee-left {
   text-decoration: line-through;
   opacity: 0.6;
 }
@@ -4123,7 +4136,7 @@ nav.small-container ul {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.5rem 1rem;
+  gap: 0.25rem 1rem;
   margin-bottom: 1rem;
   margin-left: 0 !important;
 }
@@ -4141,9 +4154,8 @@ nav.small-container ul {
   flex-shrink: 0;
 }
 .detail-field .value {
-  flex: 1 1 250px;
+  flex: 1 1 auto;
   word-break: break-word;
-  min-width: 0;
 }
 @media (max-width: 600px) {
   .detail-field {
@@ -4151,6 +4163,12 @@ nav.small-container ul {
   }
   .detail-field .label {
     flex: 1 1 100%;
+    font-size: 0.9rem;
+  }
+  .detail-field .value {
+    flex: 1 1 100%;
+    font-size: 0.9rem;
+    padding-left: 1.75rem;
   }
 }
 
@@ -4688,9 +4706,7 @@ nav.small-container ul {
 .admin-table th.sortable {
   cursor: pointer;
   transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  white-space: nowrap;
 }
 .admin-table th.sortable:hover {
   background-color: var(--secondary-focus);
@@ -4699,6 +4715,10 @@ nav.small-container ul {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+  margin-bottom: 0.2rem;
 }
 @media (max-width: 600px) {
   .admin-table {

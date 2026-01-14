@@ -119,6 +119,15 @@ async function createTables(db) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
     `, db);
+
+  await createTable('event_waiting_list', `
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER,
+      user_id INTEGER,
+      joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    `, db);
 }
 
 module.exports = { createTables };

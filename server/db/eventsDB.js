@@ -346,14 +346,59 @@ class eventsDB {
      */
     static async get_all_event_attendees_history(db, eventId) {
         try {
-            const attendees = await db.all(
+            const rows = await db.all(
                 `SELECT u.id, u.first_name, u.last_name, u.email, ea.is_attending, ea.left_at
                  FROM users u
                  JOIN event_attendees ea ON u.id = ea.user_id
                  WHERE ea.event_id = ?
                  ORDER BY ea.joined_at ASC`, [eventId]
             );
-            return new statusObject(200, null, attendees);
+
+            const userMap = new Map();
+
+            for (const row of rows) {
+                if (!userMap.has(row.id)) {
+                    userMap.set(row.id, {
+                        id: row.id,
+                        first_name: row.first_name,
+                        last_name: row.last_name,
+                        email: row.email,
+                        is_attending: 0,
+                        left_at: null
+                    });
+                }
+
+                const user = userMap.get(row.id);
+
+                if (row.is_attending === 1) {
+                    user.is_attending = 1;
+                    user.left_at = null;
+                } else {
+                    if (user.is_attending !== 1) {
+                        const rowLeft = row.left_at ? new Date(row.left_at).getTime() : 0;
+                        const currLeft = user.left_at ? new Date(user.left_at).getTime() : 0;
+                        if (rowLeft > currLeft) {
+                            user.left_at = row.left_at;
+                        }
+                    }
+                }
+            }
+
+            const result = Array.from(userMap.values());
+
+            result.sort((a, b) => {
+                if (a.is_attending !== b.is_attending) {
+                    return b.is_attending - a.is_attending; // Active (1) first
+                }
+                if (a.is_attending === 1) {
+                    return a.last_name.localeCompare(b.last_name);
+                }
+                const tA = a.left_at ? new Date(a.left_at).getTime() : 0;
+                const tB = b.left_at ? new Date(b.left_at).getTime() : 0;
+                return tB - tA;
+            });
+
+            return new statusObject(200, null, result);
         } catch (error) {
             return new statusObject(500, 'Database error');
         }
@@ -489,6 +534,138 @@ class eventsDB {
      */
     static async removeAllAttendees(db, eventId) {
         await db.run(`UPDATE event_attendees SET is_attending = 0, left_at = ? WHERE event_id = ? AND is_attending = 1`, [new Date().toISOString(), eventId]);
+    }
+
+    /**
+     * Check if user is on waiting list.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
+     * @returns {Promise<statusObject>}
+     */
+    static async is_user_on_waiting_list(req, db, eventId) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+        const result = await db.get('SELECT 1 FROM event_waiting_list WHERE event_id = ? AND user_id = ?', [eventId, req.user.id]);
+        return new statusObject(200, null, !!result);
+    }
+
+    /**
+     * Join waiting list.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
+     * @returns {Promise<statusObject>}
+     */
+    static async join_waiting_list(req, db, eventId) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+        
+        const onList = await this.is_user_on_waiting_list(req, db, eventId);
+        if (onList.getData()) return new statusObject(409, 'Already on waiting list');
+
+        await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, req.user.id]);
+        return new statusObject(200, 'Joined waiting list');
+    }
+
+    /**
+     * Leave waiting list.
+     * @param {object} req
+     * @param {object} db
+     * @param {number} eventId
+     * @returns {Promise<statusObject>}
+     */
+    static async leave_waiting_list(req, db, eventId) {
+        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
+        await db.run('DELETE FROM event_waiting_list WHERE event_id = ? AND user_id = ?', [eventId, req.user.id]);
+        return new statusObject(200, 'Left waiting list');
+    }
+
+    /**
+     * Get next user on waiting list.
+     * @param {object} db
+     * @param {number} eventId
+     * @returns {Promise<statusObject>}
+     */
+    static async get_next_on_waiting_list(db, eventId) {
+        const user = await db.get('SELECT user_id FROM event_waiting_list WHERE event_id = ? ORDER BY joined_at ASC LIMIT 1', [eventId]);
+        return new statusObject(200, null, user ? user.user_id : null);
+    }
+
+    /**
+     * Remove user from waiting list (admin/system).
+     * @param {object} db
+     * @param {number} eventId
+     * @param {number} userId
+     */
+    static async remove_user_from_waiting_list(db, eventId, userId) {
+        await db.run('DELETE FROM event_waiting_list WHERE event_id = ? AND user_id = ?', [eventId, userId]);
+    }
+
+    /**
+     * Get all users in waiting list for an event.
+     * @param {object} db
+     * @param {number} eventId
+     * @returns {Promise<statusObject>}
+     */
+    static async get_waiting_list(db, eventId) {
+        try {
+            const users = await db.all(
+                `SELECT u.id, u.first_name, u.last_name, u.email, wl.joined_at
+                 FROM event_waiting_list wl
+                 JOIN users u ON wl.user_id = u.id
+                 WHERE wl.event_id = ?
+                 ORDER BY wl.joined_at ASC`,
+                [eventId]
+            );
+            return new statusObject(200, null, users);
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Get waiting list count for an event.
+     * @param {object} db
+     * @param {number} eventId
+     * @returns {Promise<statusObject>}
+     */
+    static async get_waiting_list_count(db, eventId) {
+        try {
+            const result = await db.get(
+                `SELECT COUNT(*) as count FROM event_waiting_list WHERE event_id = ?`,
+                [eventId]
+            );
+            return new statusObject(200, null, result ? result.count : 0);
+        } catch (error) {
+             return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Get user position in waiting list.
+     * @param {object} db
+     * @param {number} eventId
+     * @param {number} userId
+     * @returns {Promise<statusObject>}
+     */
+    static async get_waiting_list_position(db, eventId, userId) {
+        try {
+            const userEntry = await db.get(
+                `SELECT joined_at FROM event_waiting_list WHERE event_id = ? AND user_id = ?`,
+                [eventId, userId]
+            );
+            
+            if (!userEntry) return new statusObject(404, 'User not on waiting list');
+
+            const posResult = await db.get(
+                 `SELECT COUNT(*) as count FROM event_waiting_list WHERE event_id = ? AND joined_at < ?`,
+                 [eventId, userEntry.joined_at]
+            );
+            
+            return new statusObject(200, null, posResult ? posResult.count + 1 : 1);
+            
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
     }
 }
 

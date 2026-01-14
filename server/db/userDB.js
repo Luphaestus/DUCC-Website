@@ -127,15 +127,75 @@ class UserDB {
             return new statusObject(403, 'User not authorized');
         }
 
+        const mappedElements = elements.map(e => 
+            e === 'balance' 
+                ? '(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = users.id) as balance' 
+                : e
+        );
+
         try {
             const user = await db.get(
-                `SELECT ${elements.join(', ')} FROM users WHERE id = ?`,
+                `SELECT ${mappedElements.join(', ')} FROM users WHERE id = ?`,
                 id || req.user.id
             );
             if (!user) return new statusObject(404, 'User not found');
             return new statusObject(200, null, user);
         } catch (error) {
             console.error(`Database error in getElements (${elements.join(', ')}):`, error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Fetch specific columns for a user by ID (Internal/System use).
+     * @param {object} db
+     * @param {number} id
+     * @param {string|string[]} elements
+     * @returns {Promise<statusObject>}
+     */
+    static async getElementsById(db, id, elements) {
+        if (typeof elements === 'string') elements = [elements];
+
+        const mappedElements = elements.map(e => 
+            e === 'balance' 
+                ? '(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = users.id) as balance' 
+                : e
+        );
+
+        try {
+            const user = await db.get(
+                `SELECT ${mappedElements.join(', ')} FROM users WHERE id = ?`,
+                id
+            );
+            if (!user) return new statusObject(404, 'User not found');
+            return new statusObject(200, null, user);
+        } catch (error) {
+            console.error(`Database error in getElementsById (${elements.join(', ')}):`, error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Update user columns by ID (Internal/System use).
+     * @param {object} db
+     * @param {number} id
+     * @param {object} data
+     * @returns {Promise<statusObject>}
+     */
+    static async writeElementsById(db, id, data) {
+        if (data.email) {
+            data.email = data.email.replace(/\s/g, '').toLowerCase();
+        }
+        try {
+            await db.run(
+                `UPDATE users SET
+                    ${Object.keys(data).map(el => `${el} = ?`).join(', ')}
+                WHERE id = ?`,
+                [...Object.values(data), id]
+            );
+            return new statusObject(200, null);
+        } catch (error) {
+            console.error('Database error in writeElementsById:', error);
             return new statusObject(500, 'Database error');
         }
     }

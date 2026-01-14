@@ -1,4 +1,4 @@
-import { checkServerConnection } from '../connection.js';
+import { checkServerConnection, reportConnectionFailure, reportConnectionSuccess } from '../connection.js';
 
 /**
  * Wrapper for XMLHttpRequest using Promises.
@@ -16,7 +16,11 @@ async function ajaxGet(url) {
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
-                if (xhr.status >= 200 && xhr.status < 300) {
+                if (xhr.status === 0) {
+                    reportConnectionFailure();
+                    reject('Network error');
+                } else if (xhr.status >= 200 && xhr.status < 300) {
+                    reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
@@ -27,6 +31,11 @@ async function ajaxGet(url) {
                     reject('Request failed with status: ' + xhr.status);
                 }
             }
+        };
+
+        xhr.onerror = function () {
+            reportConnectionFailure();
+            reject('Network error');
         };
 
         xhr.open('GET', url, true);
@@ -46,7 +55,11 @@ async function ajaxPost(url, data) {
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
-                if (xhr.status >= 200 && xhr.status < 300) {
+                if (xhr.status === 0) {
+                    reportConnectionFailure();
+                    reject('Network error');
+                } else if (xhr.status >= 200 && xhr.status < 300) {
+                    reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
@@ -62,6 +75,11 @@ async function ajaxPost(url, data) {
                     }
                 }
             }
+        };
+
+        xhr.onerror = function () {
+            reportConnectionFailure();
+            reject('Network error');
         };
 
         xhr.open('POST', url, true);
@@ -81,7 +99,11 @@ async function ajaxDelete(url) {
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
-                if (xhr.status >= 200 && xhr.status < 300) {
+                if (xhr.status === 0) {
+                    reportConnectionFailure();
+                    reject('Network error');
+                } else if (xhr.status >= 200 && xhr.status < 300) {
+                    reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
@@ -97,6 +119,11 @@ async function ajaxDelete(url) {
                     }
                 }
             }
+        };
+
+        xhr.onerror = function () {
+            reportConnectionFailure();
+            reject('Network error');
         };
 
         xhr.open('DELETE', url, true);
@@ -116,7 +143,11 @@ async function ajaxPut(url, data) {
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
-                if (xhr.status >= 200 && xhr.status < 300) {
+                if (xhr.status === 0) {
+                    reportConnectionFailure();
+                    reject('Network error');
+                } else if (xhr.status >= 200 && xhr.status < 300) {
+                    reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
@@ -132,6 +163,11 @@ async function ajaxPut(url, data) {
                     }
                 }
             }
+        };
+
+        xhr.onerror = function () {
+            reportConnectionFailure();
+            reject('Network error');
         };
 
         xhr.open('PUT', url, true);

@@ -177,43 +177,79 @@ async function seedData(db, env) {
         const createEvent = async (data) => {
             const res = await db.run(
                 `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [data.title, data.description, data.location, data.start, data.end, data.difficulty_level || 1, 20, data.upfront_cost, data.upfront_refund_cutoff || null]
+                [data.title, data.description, data.location, data.start, data.end, data.difficulty_level || 1, data.max_attendees !== undefined ? data.max_attendees : 20, data.upfront_cost, data.upfront_refund_cutoff || null]
             );
             if (data.tags) {
                 for (const tagId of data.tags) {
                     await db.run('INSERT INTO event_tags (event_id, tag_id) VALUES (?, ?)', [res.lastID, tagId]);
                 }
             }
+            return res.lastID;
         };
+
+        const allUsers = await db.all('SELECT id FROM users');
+        const instructors = await db.all('SELECT id FROM users WHERE is_instructor = 1');
 
         await db.run('BEGIN TRANSACTION');
         while (currentDate <= endDate) {
             const day = currentDate.getDay();
+            let eventId = null;
+            let maxAttendees = 20;
 
             if (day === 3) { // Wednesday
-                await createEvent({ title: `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: 0, tags: [tagIds['socials']] });
-                await createEvent({ title: "Wednesday Warriors", description: "Chill paddling.", location: "Boathouse", start: setTime(currentDate, 13, 0), end: setTime(currentDate, 14, 0), upfront_cost: 0, tags: [tagIds['chill']] });
-            }
-
-            if (day === 4) { // Thursday
+                maxAttendees = 0; // Unlimited
+                eventId = await createEvent({ title: `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: 0, max_attendees: 0, tags: [tagIds['socials']] });
+            } else if (day === 4) { // Thursday
                 const startT = new Date(currentDate); startT.setHours(14, 0, 0, 0);
                 const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 48);
-                await createEvent({ title: "Slalom/White Water", description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: 12, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']] });
-            }
-
-            if (day === 5) { // Friday
+                eventId = await createEvent({ title: "Slalom/White Water", description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: 12, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']] });
+            } else if (day === 5) { // Friday
                 const startT = new Date(currentDate); startT.setHours(19, 0, 0, 0);
                 const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 24);
-                await createEvent({ title: "Polo Pool Session", description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: 6, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']] });
-            }
-
-            if ([1, 2, 4, 5].includes(day) && Math.random() < 0.7) {
+                eventId = await createEvent({ title: "Polo Pool Session", description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: 6, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']] });
+            } else if ([1, 2].includes(day) && Math.random() < 0.7) {
                 const type = ['polo', 'white water', 'slalom'][Math.floor(Math.random() * 3)];
-                await createEvent({ title: `${type.toUpperCase()} Ergs`, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: 0, tags: [tagIds['ergs'], tagIds[type]] });
+                maxAttendees = 5;
+                eventId = await createEvent({ title: `${type.toUpperCase()} Ergs`, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: 0, max_attendees: 5, tags: [tagIds['ergs'], tagIds[type]] });
             }
 
-            if (day === 6) { // Saturday
-                await createEvent({ title: "Polo Competition", description: "Club competition.", location: "Leeds", start: setTime(currentDate, 9, 0), end: setTime(currentDate, 17, 0), upfront_cost: 15, tags: [tagIds['polo-team']] });
+            if (eventId) {
+                let numAttendees = 0;
+                const isPopular = Math.random() > 0.8; // 20% chance of being popular
+
+                if (maxAttendees === 0) { // Socials
+                    numAttendees = Math.floor(Math.random() * 15); 
+                    if (isPopular) numAttendees += 20;
+                } else if (maxAttendees === 5) { // Ergs
+                    numAttendees = Math.floor(Math.random() * 4); // 0-3 normally
+                    if (isPopular) numAttendees = 5 + Math.floor(Math.random() * 3); // 5-7 (waitlist)
+                } else { // Others (20)
+                    numAttendees = Math.floor(Math.random() * 10); // 0-9 normally
+                    if (isPopular) numAttendees = 20 + Math.floor(Math.random() * 5); // 20-24 (waitlist)
+                }
+
+                const shuffledUsers = allUsers.sort(() => 0.5 - Math.random());
+                
+                // Ensure at least one instructor for most events if possible
+                if (instructors.length > 0 && Math.random() > 0.2) {
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [eventId, instructors[0].id, 1]);
+                }
+
+                let currentCount = 1; 
+                for (const user of shuffledUsers) {
+                    if (user.id === (instructors[0] ? instructors[0].id : -1)) continue; // Skip if already added instructor
+
+                    if (maxAttendees === 0 || currentCount < maxAttendees) { 
+                        if (currentCount < numAttendees) {
+                            await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [eventId, user.id, 1]);
+                            currentCount++;
+                        }
+                    } else if (currentCount < numAttendees) {
+                        // Add to waiting list if full
+                        await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, user.id]);
+                        currentCount++;
+                    }
+                }
             }
 
             currentDate.setDate(currentDate.getDate() + 1);

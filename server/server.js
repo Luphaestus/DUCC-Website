@@ -25,11 +25,16 @@ app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files with image caching
+// Serve static files with image caching (disabled in dev)
+const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
 app.use(express.static('public', {
-  maxAge: '1h',
+  maxAge: isDev ? '0' : '1h',
   setHeaders: (res, path) => {
-    if (path.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
+    if (isDev) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+    } else if (path.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
       res.set('Cache-Control', 'public, max-age=86400');
     }
   }
