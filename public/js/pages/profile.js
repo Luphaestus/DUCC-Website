@@ -274,13 +274,13 @@ function renderEventStatus(profile) {
 
         const legalText = isLegalComplete ? 'Legal information form completed' : 'Legal information form not completed';
         const legalAction = `<p>Ensure your medical and contact details are kept up to date.
-                             <button class="status-btn" onclick="event.preventDefault(); switchView('/legal')">Update Legal Form</button></p>`;
+                             <button class="status-btn" data-nav="/legal">Update Legal Form</button></p>`;
         updateStatusUI('legal-form-status', legalText + legalAction, isLegalComplete ? CHECK_SVG : CLOSE_SVG, isLegalComplete ? SUCCESS_GREEN : ERROR_RED);
         if (!isLegalComplete) boxColor = ERROR_RED;
 
         const debtText = hasDebt ? `You have outstanding debts of £${balance.toFixed(2)}` : `You have low/no outstanding debts (£${balance.toFixed(2)})`;
         const debtAction = `<p>Review your transaction history and manage your account balance.
-                             <button class="status-btn" onclick="event.preventDefault(); switchView('/transactions')">Account Statement</button></p>`;
+                             <button class="status-btn" data-nav="/transactions">Account Statement</button></p>`;
         updateStatusUI('debt-status', debtText + debtAction, hasDebt ? CLOSE_SVG : CHECK_SVG, hasDebt ? ERROR_RED : SUCCESS_GREEN);
         if (hasDebt) boxColor = ERROR_RED;
 

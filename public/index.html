@@ -28,17 +28,9 @@
     <script type="module" src="/js/components/background.js" defer></script>
 
     <!-- Async Font Loading -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" media="print"
-        onload="this.media='all'">
-    <noscript>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    </noscript>
-
+    
     <script type="module">
         import { switchView } from '/js/utils/view.js';
-        window.switchView = switchView;
     </script>
 
     <link rel="stylesheet" href="/mos.css">
@@ -50,7 +42,7 @@
         <script type="module" src="/js/components/navbar.js" defer></script>
         <nav class="small-container">
             <ul>
-                <li><a onclick="switchView('/home')" class="contrast nav-logo" style="cursor: pointer;">
+                <li><a data-nav="/home" class="contrast nav-logo" style="cursor: pointer;">
                         <img src="/images/misc/ducc.png" alt="DUCC Logo" width="40" height="40">
                     </a></li>
             </ul>
@@ -81,7 +73,7 @@
                 <h1>404 - Page Not Found</h1>
                 <p>Oops! The page you are looking for does not exist.</p>
                 <p>It might have been moved, deleted, or you may have typed the address incorrectly.</p>
-                <button onclick="switchView('home')">Go to Homepage</button>
+                <button data-nav="home">Go to Homepage</button>
             </div>
         </div>
 

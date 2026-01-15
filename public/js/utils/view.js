@@ -116,6 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('[data-nav]');
+        if (link) {
+            e.preventDefault();
+            switchView(link.dataset.nav);
+        }
+    });
 });
 
 export { switchView, ViewChangedEvent };

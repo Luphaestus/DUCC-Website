@@ -84,7 +84,7 @@ function formatEvent(event) {
     if (startDate < new Date()) classes += ' past-event';
     if (!hasTags) classes += ' glassy';
     let style = hasTags ? `--event-bg-light: hsl(${hue}, 70%, 85%); --event-bg-dark: hsl(${hue}, 50%, 30%);` : '';
-    return `<div class="${classes}" style="${style}" onclick="switchView('event/${event.id}')">
+    return `<div class="${classes}" style="${style}" data-nav="event/${event.id}">
             <div class="event-top">
                 <span>${startTime} - ${endTime}</span>
                 ${event.is_attending ? `<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">${CHECK_SVG} Attending</span>` : ''}

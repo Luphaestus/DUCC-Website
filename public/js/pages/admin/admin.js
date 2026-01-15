@@ -91,19 +91,19 @@ async function AdminNavigationListener({ viewId, path }) {
         let globalsButton = '';
         try {
             const status = await ajaxGet('/api/globals/status');
-            if (status.isPresident) globalsButton = `<button onclick="switchView('/admin/globals')">Manage Globals</button>`;
+            if (status.isPresident) globalsButton = `<button data-nav="/admin/globals">Manage Globals</button>`;
         } catch (e) { }
 
         let usersButton = '';
         if (perms.can_manage_users || perms.can_manage_transactions || perms.is_exec) {
-            usersButton = `<button onclick="switchView('/admin/users')">Manage Users</button>`;
+            usersButton = `<button data-nav="/admin/users">Manage Users</button>`;
         }
 
         let eventsButton = '';
-        if (perms.can_manage_events) eventsButton = `<button onclick="switchView('/admin/events')">Manage Events</button>`;
+        if (perms.can_manage_events) eventsButton = `<button data-nav="/admin/events">Manage Events</button>`;
 
         let tagsButton = '';
-        if (perms.can_manage_events) tagsButton = `<button onclick="switchView('/admin/tags')">Manage Tags</button>`;
+        if (perms.can_manage_events) tagsButton = `<button data-nav="/admin/tags">Manage Tags</button>`;
 
         adminContent.innerHTML = `
             <div class="admin-controls-center">

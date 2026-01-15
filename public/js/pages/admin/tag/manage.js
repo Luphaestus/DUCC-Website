@@ -20,7 +20,7 @@ export async function renderManageTags() {
                 <div class="admin-controls-bar">
                     ${await renderAdminNavBar('tags')}
                     <div class="admin-actions">
-                        <button onclick="switchView('/admin/tag/new')" class="primary">Create New Tag</button>
+                        <button data-nav="/admin/tag/new" class="primary">Create New Tag</button>
                     </div>
                 </div>
                 <div>

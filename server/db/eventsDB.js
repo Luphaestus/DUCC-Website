@@ -34,6 +34,10 @@ class eventsDB {
         startOfWeek.setDate(startOfWeek.getDate() - (startOfWeek.getDay() === 0 ? 6 : startOfWeek.getDay() - 1));
         startOfWeek.setHours(0, 0, 0, 0);
 
+        if (isNaN(startOfWeek.getTime())) {
+            return new statusObject(400, 'Invalid date range');
+        }
+
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(endOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);

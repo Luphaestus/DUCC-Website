@@ -21,6 +21,18 @@ const fs = require('fs');
 // Trust the reverse proxy (Caddy)
 app.set('trust proxy', 1);
 
+// Disable X-Powered-By header
+app.disable('x-powered-by');
+
+// Security Headers (CSP)
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self' https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
+
 // Parse request bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

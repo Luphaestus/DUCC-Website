@@ -35,7 +35,7 @@ export async function renderEventDetail(id) {
     }
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = ` <button onclick="switchView('/admin/events')">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
+    if (actionsEl) actionsEl.innerHTML = ` <button data-nav="/admin/events">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
 
     adminContent.innerHTML = `
         <form id="event-form" class="form-info">

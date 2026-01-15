@@ -39,7 +39,7 @@ export async function renderManageEvents() {
                             <input type="checkbox" id="show-past-toggle" ${showPast ? 'checked' : ''}>
                             Show Past Events
                         </label>
-                        <button onclick="switchView('/admin/event/new')" class="primary">Create New Event</button>
+                        <button data-nav="/admin/event/new" class="primary">Create New Event</button>
                     </div>
                 </div>
                 <div class="table-responsive">

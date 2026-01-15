@@ -35,7 +35,7 @@ const HTML_TEMPLATE = `<div id="login-view" class="view hidden">
                                 <button class="nobottommargin" type="submit">Login</button>
                             </div>
                         </form>
-                        <p class="nobottommargin">Don't have an account? <a onclick="switchView('signup')" style="cursor: pointer;">Sign Up</a></p>
+                        <p class="nobottommargin">Don't have an account? <a data-nav="signup" style="cursor: pointer;">Sign Up</a></p>
                     </article>
                 </div>
             </div>

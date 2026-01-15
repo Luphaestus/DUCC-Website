@@ -55,10 +55,10 @@ export async function renderAdminNavBar(activeSection) {
 
     return `
         <div class="admin-nav-group">
-            ${(perms.can_manage_users || perms.can_manage_transactions || perms.is_exec) ? `<button onclick="switchView('/admin/users')" ${activeSection === 'users' ? 'disabled' : ''}>Users</button>` : ''}
-            ${perms.can_manage_events ? `<button onclick="switchView('/admin/events')" ${activeSection === 'events' ? 'disabled' : ''}>Events</button>` : ''}
-            <button onclick="switchView('/admin/tags')" ${activeSection === 'tags' ? 'disabled' : ''}>Tags</button>
-            ${isPresident ? `<button onclick="switchView('/admin/globals')" ${activeSection === 'globals' ? 'disabled' : ''}>Globals</button>` : ''}
+            ${(perms.can_manage_users || perms.can_manage_transactions || perms.is_exec) ? `<button data-nav="/admin/users" ${activeSection === 'users' ? 'disabled' : ''}>Users</button>` : ''}
+            ${perms.can_manage_events ? `<button data-nav="/admin/events" ${activeSection === 'events' ? 'disabled' : ''}>Events</button>` : ''}
+            <button data-nav="/admin/tags" ${activeSection === 'tags' ? 'disabled' : ''}>Tags</button>
+            ${isPresident ? `<button data-nav="/admin/globals" ${activeSection === 'globals' ? 'disabled' : ''}>Globals</button>` : ''}
         </div>
     `;
 }

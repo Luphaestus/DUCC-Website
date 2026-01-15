@@ -170,19 +170,19 @@ async function setupEventButtons(eventId, path, resolvedPath) {
                 canAttend = false;
                 warningHtml = `<div class="event-warning-banner error">
                     ${CLOSE_SVG} You must complete your legal and medical information before signing up.
-                    <button class="banner-btn" onclick="switchView('/legal')">Complete Form</button>
+                    <button class="banner-btn" data-nav="/legal">Complete Form</button>
                 </div>`;
             } else if (!userProfile.is_member && userProfile.free_sessions <= 0) {
                 canAttend = false;
                 warningHtml = `<div class="event-warning-banner error">
                     ${CLOSE_SVG} You are not a member and have no free sessions remaining.
-                    <button class="banner-btn" onclick="switchView('/profile')">Join Club</button>
+                    <button class="banner-btn" data-nav="/profile">Join Club</button>
                 </div>`;
             } else if (userProfile.balance < -20 && !isPaying) {
                 canAttend = false;
                 warningHtml = `<div class="event-warning-banner error">
                     ${CLOSE_SVG} You have outstanding debts and cannot sign up for new events.
-                    <button class="banner-btn" onclick="switchView('/transactions')">View Balance</button>
+                    <button class="banner-btn" data-nav="/transactions">View Balance</button>
                 </div>`;
             }
         }
