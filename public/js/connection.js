@@ -61,8 +61,6 @@ function reportConnectionFailure() {
         const noConnectionView = document.getElementById('no-connection-view');
         if (noConnectionView) {
             noConnectionView.classList.remove('hidden');
-            // Ensure style is applied if inline styles were overwritten (though here we use class)
-            // But we defined inline styles in HTML, class hidden overrides display.
         }
     }
 }

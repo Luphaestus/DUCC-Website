@@ -7,7 +7,10 @@ import { renderManageEvents } from './event/manage.js';
 import { renderEventDetail } from './event/detail.js';
 import { renderManageTags } from './tag/manage.js';
 import { renderTagDetail } from './tag/detail.js';
+import { renderManageRoles } from './role/manage.js';
+import { renderRoleDetail } from './role/detail.js';
 import { renderManageGlobals } from './globals.js';
+import { renderUserAdvanced } from './user/advanced.js';
 import { requireAuth } from '/js/utils/auth.js';
 
 /**
@@ -20,7 +23,7 @@ addRoute('/admin/*', 'admin');
 /**
  * Admin layout template.
  */
-const HTML_TEMPLATE = `
+const HTML_TEMPLATE = /*html*/`
 <div id="admin-view" class="view hidden small-container">
     <div class="admin-header">
         <div id="admin-header-actions"></div>
@@ -55,6 +58,21 @@ async function AdminNavigationListener({ viewId, path }) {
 
     if (!await requireAuth()) return;
 
+    const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
+    const perms = userData.permissions || [];
+    
+    if (perms.length === 0) {
+        switchView('/unauthorized');
+        return;
+    }
+
+    const canManageUsers = perms.includes('user.manage');
+    const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');
+    const canManageTransactions = perms.includes('transaction.manage');
+    const canManageRoles = perms.includes('role.manage');
+    const isExec = perms.length > 0;
+    const isPresident = await ajaxGet('/api/globals/status').then(_ => true).catch(() => false);
+
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
@@ -64,53 +82,63 @@ async function AdminNavigationListener({ viewId, path }) {
 
     const cleanPath = path.split('?')[0];
 
-    if (cleanPath === '/admin/users') {
-        updateAdminTitle('Users');
-        await renderManageUsers();
-    } else if (cleanPath === '/admin/events') {
-        updateAdminTitle('Events');
-        await renderManageEvents();
-    } else if (cleanPath === '/admin/tags') {
-        updateAdminTitle('Tags');
-        await renderManageTags();
+    const canAccessUsers = canManageUsers || canManageTransactions || isExec;
+    const canAccessEvents = canManageEvents;
+    const canAccessTags = canManageEvents; 
+    const canAccessRoles = canManageRoles;
+    const canAccessGlobals = isPresident;
+
+    if (cleanPath === '/admin/users' || cleanPath.match(/^\/admin\/user\/\d+(\/advanced)?$/)) {
+        if (!canAccessUsers) return switchView('/unauthorized');
+        updateAdminTitle(cleanPath.includes('advanced') ? 'Advanced User Settings' : (cleanPath.match(/\d+$/) ? 'User Details' : 'Users'));
+        
+        if (cleanPath === '/admin/users') await renderManageUsers();
+        else if (cleanPath.includes('advanced')) await renderUserAdvanced(cleanPath.split('/')[3]);
+        else await renderUserDetail(cleanPath.split('/').pop());
+
+    } else if (cleanPath === '/admin/events' || cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {
+        if (!canAccessEvents) return switchView('/unauthorized');
+        updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Event Details' : 'Events');
+        
+        if (cleanPath === '/admin/events') await renderManageEvents();
+        else await renderEventDetail(cleanPath.split('/').pop());
+
+    } else if (cleanPath === '/admin/tags' || cleanPath.match(/^\/admin\/tag\/(new|\d+)$/)) {
+        if (!canAccessTags) return switchView('/unauthorized');
+        updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Tag Details' : 'Tags');
+        
+        if (cleanPath === '/admin/tags') await renderManageTags();
+        else await renderTagDetail(cleanPath.split('/').pop());
+
+    } else if (cleanPath === '/admin/roles' || cleanPath.match(/^\/admin\/role\/(new|\d+)$/)) {
+        if (!canAccessRoles) return switchView('/unauthorized');
+        updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Role Details' : 'Roles');
+        
+        if (cleanPath === '/admin/roles') await renderManageRoles();
+        else await renderRoleDetail(cleanPath.split('/').pop());
+
     } else if (cleanPath === '/admin/globals') {
+        if (!canAccessGlobals) return switchView('/unauthorized');
         updateAdminTitle('Globals');
         await renderManageGlobals();
-    } else if (cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {
-        updateAdminTitle('Event Details');
-        await renderEventDetail(cleanPath.split('/').pop());
-    } else if (cleanPath.match(/^\/admin\/tag\/(new|\d+)$/)) {
-        updateAdminTitle('Tag Details');
-        await renderTagDetail(cleanPath.split('/').pop());
-    } else if (cleanPath.match(/^\/admin\/user\/\d+$/)) {
-        updateAdminTitle('User Details');
-        await renderUserDetail(cleanPath.split('/').pop());
-    } else {
-        const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions,is_exec').catch(() => ({}));
 
-        let globalsButton = '';
-        try {
-            const status = await ajaxGet('/api/globals/status');
-            if (status.isPresident) globalsButton = `<button data-nav="/admin/globals">Manage Globals</button>`;
-        } catch (e) { }
+    } else if (cleanPath === '/admin' || cleanPath === '/admin/') {
+        // Main Dashboard Home
+        console.log('Admin Dashboard Permissions:', { canManageUsers, canManageEvents, canManageTransactions, canManageRoles, isExec });
 
-        let usersButton = '';
-        if (perms.can_manage_users || perms.can_manage_transactions || perms.is_exec) {
-            usersButton = `<button data-nav="/admin/users">Manage Users</button>`;
-        }
-
-        let eventsButton = '';
-        if (perms.can_manage_events) eventsButton = `<button data-nav="/admin/events">Manage Events</button>`;
-
-        let tagsButton = '';
-        if (perms.can_manage_events) tagsButton = `<button data-nav="/admin/tags">Manage Tags</button>`;
+        let usersButton = canAccessUsers ? `<button data-nav="/admin/users">Manage Users</button>` : '';
+        let eventsButton = canAccessEvents ? `<button data-nav="/admin/events">Manage Events</button>` : '';
+        let tagsButton = canAccessTags ? `<button data-nav="/admin/tags">Manage Tags</button>` : '';
+        let rolesButton = canAccessRoles ? `<button data-nav="/admin/roles">Manage Roles</button>` : '';
+        let globalsButton = canAccessGlobals ? `<button data-nav="/admin/globals">Manage Globals</button>` : '';
 
         adminContent.innerHTML = `
             <div class="admin-controls-center">
                 ${usersButton}
                 ${eventsButton}
-                ${globalsButton}
                 ${tagsButton}
+                ${rolesButton}
+                ${globalsButton}
             </div>
             <p class="text-center margin-top">Select an option to manage.</p>
         `;

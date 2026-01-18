@@ -1,6 +1,7 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { switchView } from '/js/utils/view.js';
+import { showConfirmModal, showPasswordModal } from '/js/utils/modal.js';
 import { adminContentID } from '../common.js';
 import { ARROW_BACK_IOS_NEW_SVG, ID_CARD_SVG, PERSON_SVG, MAIL_SVG, CALL_SVG, WALLET_SVG, BOLT_SVG, CAST_FOR_EDUCATION_SVG, LOCAL_ACTIVITY_SVG, MEDICAL_INFORMATION_SVG, POOL_SVG, CLOSE_SVG, CONTRACT_SVG, HEALING_SVG, PILL_SVG, HOME_SVG, PREGNANCY_SVG, EMERGENCY_SVG } from '../../../../images/icons/outline/icons.js';
 
@@ -23,14 +24,13 @@ export async function renderUserDetail(userId) {
 
     try {
         const user = await ajaxGet(`/api/admin/user/${userId}`);
-        console.log(user);
-        const status = await ajaxGet('/api/globals/status');
-        const isPresident = status.isPresident;
 
-        const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_transactions,is_exec').catch(() => ({}));
-        const canManageUsers = perms.can_manage_users;
-        const canManageTransactions = perms.can_manage_transactions;
-        const isExec = perms.is_exec;
+        const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
+        const userPerms = userData.permissions || [];
+
+        const canManageUsers = userPerms.includes('user.manage');
+        const canManageTransactions = userPerms.includes('transaction.manage');
+        const isExec = userPerms.length > 0;
 
         let tabsHtml = '<button class="tab-btn" data-tab="profile">Profile</button>';
         if (canManageUsers) {
@@ -45,7 +45,7 @@ export async function renderUserDetail(userId) {
             `;
         }
 
-        adminContent.innerHTML = `
+        adminContent.innerHTML = /*html*/`
             <div class="form-info user-detail-container" id="user-detail-container">
                 <article class="form-box">
                     <div class="admin-controls-bar">
@@ -79,12 +79,12 @@ export async function renderUserDetail(userId) {
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('tab', btn.dataset.tab);
                 window.history.replaceState({}, '', newUrl);
-                renderTab(btn.dataset.tab, user, isPresident, canManageUsers, isExec);
+                renderTab(btn.dataset.tab, user, userPerms, canManageUsers, isExec);
             };
         });
 
         updateActiveTab(initialTabBtn);
-        renderTab(initialTabBtn.dataset.tab, user, isPresident, canManageUsers, isExec);
+        renderTab(initialTabBtn.dataset.tab, user, userPerms, canManageUsers, isExec);
 
     } catch (e) {
         console.error(e);
@@ -104,48 +104,49 @@ export async function renderUserDetail(userId) {
  * Renders the content of the selected tab.
  * @param {string} tabName - The name of the tab to render ('profile', 'legal', or 'transactions').
  * @param {object} user - The user object containing all user details.
- * @param {boolean} isPresident - Whether the current user is the president.
+ * @param {array} userPerms - The array of permissions the current user has.
  * @param {boolean} canManageUsers - Whether the user has management permissions.
  * @param {boolean} isExec - Whether the user is an exec.
  */
-function renderTab(tabName, user, isPresident, canManageUsers, isExec) {
+async function renderTab(tabName, user, userPerms, canManageUsers, isExec) {
     const container = document.getElementById('admin-tab-content');
     if (tabName === 'profile') {
-        const canManageSwims = canManageUsers || isExec;
-        let permissionsHtml = '';
-        if (isPresident) {
-            permissionsHtml = `
-                <div class="event-details-section" id="admin-user-permissions-container">
-                    <h3>${ID_CARD_SVG} Permissions</h3>
-                    <p>
-                        <label>
-                            <input type="checkbox" id="perm-manage-users" ${user.can_manage_users ? 'checked' : ''}>
-                            Manage Users
-                        </label>
-                    </p>
-                    <p>
-                        <label>
-                            <input type="checkbox" id="perm-manage-events" ${user.can_manage_events ? 'checked' : ''}>
-                            Manage Events
-                        </label>
-                    </p>
-                    <p>
-                        <label>
-                            <input type="checkbox" id="perm-manage-transactions" ${user.can_manage_transactions ? 'checked' : ''}>
-                            Manage Transactions
-                        </label>
-                    </p>
-                    <p>
-                        <label>
-                            <input type="checkbox" id="perm-is-exec" ${user.is_exec ? 'checked' : ''}>
-                            Is Exec
-                        </label>
-                    </p>
+        const canManageSwims = userPerms.includes('swims.manage');
+
+        let rolesHtml = '';
+        let advancedHtml = '';
+
+        if (canManageUsers) {
+            const [allRoles, allPerms, allTagsRes] = await Promise.all([
+                ajaxGet('/api/admin/roles').catch(() => []),
+                ajaxGet('/api/admin/permissions').catch(() => []),
+                ajaxGet('/api/tags').catch(() => ({ data: [] }))
+            ]);
+            const allTags = allTagsRes.data || [];
+
+            const userRoleId = (user.roles && user.roles.length > 0) ? user.roles[0].id : '';
+
+            rolesHtml = `
+                <div class="event-details-section" id="admin-user-roles-container">
+                    <h3>${ID_CARD_SVG} Role</h3>
+                    <p class="small-text">Users can have only one role. Roles define the base permissions.</p>
+                    <select id="admin-user-role-select" class="full-width">
+                        <option value="">No Role</option>
+                        ${allRoles.map(role => `<option value="${role.id}" ${role.id == userRoleId ? 'selected' : ''}>${role.name}</option>`).join('')}
+                    </select>
                 </div>
             `;
+
+            if (userPerms.includes('user.manage.advanced')) {
+                advancedHtml = `
+                    <div style="margin-top: 1rem;">
+                        <button class="contrast outline" data-nav="/admin/user/${user.id}/advanced">Advanced Settings</button>
+                    </div>
+                `;
+            }
         }
 
-        // Check if sensitive data is present
+        // Check if sensitive data is present        
         const hasGeneralInfo = user.email !== undefined || user.phone_number !== undefined || user.college_id !== undefined || user.balance !== undefined;
 
         let generalInfoHtml = '';
@@ -196,9 +197,50 @@ function renderTab(tabName, user, isPresident, canManageUsers, isExec) {
             <div class="event-content-split" id="admin-user-profile-container">
                 ${generalInfoHtml}
                 ${membershipInfoHtml}
-                ${permissionsHtml}
+                ${rolesHtml}
+                ${advancedHtml}
             </div>
         `;
+
+        if (canManageUsers) {
+            const roleSelect = document.getElementById('admin-user-role-select');
+            let lastValue = roleSelect.value;
+
+            roleSelect.onchange = async () => {
+                const roleId = roleSelect.value;
+                const roleName = roleSelect.options[roleSelect.selectedIndex].text;
+
+                const payload = { roleId };
+
+                if (roleName === 'President') {
+                    const confirmed = await showConfirmModal("Transfer President Role", "Are you sure you want to transfer the President role? This will reset all other roles and permissions in the club. This action is irreversible.");
+                    if (!confirmed) {
+                        roleSelect.value = lastValue;
+                        return;
+                    }
+                    const password = await showPasswordModal("Confirm Transfer", "Please enter your current password to confirm the transfer:");
+                    if (!password) {
+                        roleSelect.value = lastValue;
+                        return;
+                    }
+                    payload.password = password;
+                }
+
+                try {
+                    await ajaxPost(`/api/admin/user/${user.id}/role`, payload);
+                    notify('Success', 'Role updated', 'success');
+                    lastValue = roleId;
+
+                    if (roleName === 'President') {
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    notify('Error', e.message || 'Failed to update role', 'error');
+                    roleSelect.value = lastValue;
+                }
+            };
+        }
 
         if (canManageSwims) {
             const addSwimBtn = document.getElementById('admin-add-swim-btn');
@@ -246,28 +288,6 @@ function renderTab(tabName, user, isPresident, canManageUsers, isExec) {
                     notify('Error', 'Failed to update difficulty', 'error');
                 }
             };
-        }
-
-        if (isPresident) {
-            const bindPermissionToggle = (id, field) => {
-                const el = document.getElementById(id);
-                el.addEventListener('change', async () => {
-                    try {
-                        await ajaxPost(`/api/admin/user/${user.id}/elements`, { [field]: el.checked });
-                        notify('Success', 'Permissions updated', 'success');
-                        user[field] = el.checked;
-                    } catch (e) {
-                        console.error(e);
-                        notify('Error', 'Failed to update permissions', 'error');
-                        el.checked = !el.checked;
-                    }
-                });
-            };
-
-            bindPermissionToggle('perm-manage-users', 'can_manage_users');
-            bindPermissionToggle('perm-manage-events', 'can_manage_events');
-            bindPermissionToggle('perm-manage-transactions', 'can_manage_transactions');
-            bindPermissionToggle('perm-is-exec', 'is_exec');
         }
 
     } else if (tabName === 'legal') {

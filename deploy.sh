@@ -92,7 +92,7 @@ fi
 
 echo "--- Starting Deployment to $SERVER_IP ($MODE mode) ---"
 
-# 1. Push latest changes to GitHub
+# Push latest changes to GitHub
 echo "[1/3] Pushing changes to GitHub..."
 git push origin main
 

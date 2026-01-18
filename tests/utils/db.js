@@ -58,11 +58,7 @@ async function setupTestDb() {
             filled_legal_info BOOLEAN NOT NULL DEFAULT 0,
             
             difficulty_level INTEGER not NULL DEFAULT 1,
-            can_manage_events BOOLEAN NOT NULL DEFAULT 0,
-            can_manage_users BOOLEAN NOT NULL DEFAULT 0,
-            can_manage_transactions BOOLEAN NOT NULL DEFAULT 0,
             is_instructor BOOLEAN NOT NULL DEFAULT 0,
-            is_exec BOOLEAN NOT NULL DEFAULT 0,
             first_aid_expiry DATE,
 
             swims INTEGER NOT NULL DEFAULT 0,
@@ -87,6 +83,7 @@ async function setupTestDb() {
             max_attendees INTEGER,
             upfront_cost REAL NOT NULL DEFAULT 0,
             upfront_refund_cutoff DATETIME,
+            status TEXT CHECK(status IN ('active', 'canceled')) NOT NULL DEFAULT 'active',
             
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
@@ -127,7 +124,9 @@ async function setupTestDb() {
             color TEXT DEFAULT '#808080',
             description TEXT,
             min_difficulty INTEGER,
-            priority INTEGER DEFAULT 0
+            priority INTEGER DEFAULT 0,
+            join_policy TEXT CHECK(join_policy IN ('open', 'whitelist', 'role')) DEFAULT 'open',
+            view_policy TEXT CHECK(view_policy IN ('open', 'whitelist', 'role')) DEFAULT 'open'
         );
     `);
 
@@ -151,6 +150,73 @@ async function setupTestDb() {
         );
     `);
 
+    // RBAC Tables
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slug TEXT UNIQUE NOT NULL,
+            description TEXT
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS role_permissions (
+            role_id INTEGER,
+            permission_id INTEGER,
+            PRIMARY KEY (role_id, permission_id),
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS user_roles (
+            user_id INTEGER,
+            role_id INTEGER,
+            PRIMARY KEY (user_id, role_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS user_permissions (
+            user_id INTEGER,
+            permission_id INTEGER,
+            PRIMARY KEY (user_id, permission_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS user_managed_tags (
+            user_id INTEGER,
+            tag_id INTEGER,
+            PRIMARY KEY (user_id, tag_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS role_managed_tags (
+            role_id INTEGER,
+            tag_id INTEGER,
+            PRIMARY KEY (role_id, tag_id),
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        );
+    `);
+
     await db.exec(`
         CREATE TABLE IF NOT EXISTS swim_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -160,6 +226,17 @@ async function setupTestDb() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS event_waiting_list (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
     `);
 

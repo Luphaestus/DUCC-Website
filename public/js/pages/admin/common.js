@@ -50,14 +50,23 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
  * @returns {Promise<string>} HTML string.
  */
 export async function renderAdminNavBar(activeSection) {
-    const perms = await ajaxGet('/api/user/elements/can_manage_users,can_manage_events,can_manage_transactions,is_exec').catch(() => ({}));
-    const isPresident = (await ajaxGet('/api/globals/status')).isPresident;
+    const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
+    const perms = userData.permissions || [];
+    const isPresident = await ajaxGet('/api/globals/status').then(_ => true).catch(() => false);
 
-    return `
+
+    const canManageUsers = perms.includes('user.manage');
+    const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');
+    const canManageTransactions = perms.includes('transaction.manage');
+    const canManageRoles = perms.includes('role.manage');
+    const isExec = perms.length > 0;
+
+    return /*html*/`
         <div class="admin-nav-group">
-            ${(perms.can_manage_users || perms.can_manage_transactions || perms.is_exec) ? `<button data-nav="/admin/users" ${activeSection === 'users' ? 'disabled' : ''}>Users</button>` : ''}
-            ${perms.can_manage_events ? `<button data-nav="/admin/events" ${activeSection === 'events' ? 'disabled' : ''}>Events</button>` : ''}
-            <button data-nav="/admin/tags" ${activeSection === 'tags' ? 'disabled' : ''}>Tags</button>
+            ${(canManageUsers || canManageTransactions || isExec) ? `<button data-nav="/admin/users" ${activeSection === 'users' ? 'disabled' : ''}>Users</button>` : ''}
+            ${canManageEvents ? `<button data-nav="/admin/events" ${activeSection === 'events' ? 'disabled' : ''}>Events</button>` : ''}
+            ${canManageEvents ? `<button data-nav="/admin/tags" ${activeSection === 'tags' ? 'disabled' : ''}>Tags</button>` : ''}
+            ${canManageRoles ? `<button data-nav="/admin/roles" ${activeSection === 'roles' ? 'disabled' : ''}>Roles</button>` : ''}
             ${isPresident ? `<button data-nav="/admin/globals" ${activeSection === 'globals' ? 'disabled' : ''}>Globals</button>` : ''}
         </div>
     `;

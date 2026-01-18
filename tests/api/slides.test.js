@@ -4,25 +4,26 @@ const path = require('path');
 const fs = require('fs');
 const SlidesAPI = require('../../server/api/SlidesAPI');
 
-jest.mock('fs', () => ({
-    ...jest.requireActual('fs'),
-    watch: jest.fn(),
-    promises: {
-        readdir: jest.fn()
-    }
-}));
-
 describe('Slides API', () => {
     let app;
     let slidesAPI;
+    let readdirSpy;
+    let watchSpy;
 
     beforeEach(async () => {
-        fs.promises.readdir.mockResolvedValue([
+        // Spy on fs.promises.readdir
+        readdirSpy = vi.spyOn(fs.promises, 'readdir').mockResolvedValue([
             { isFile: () => true, name: 'slide1.png' },
             { isFile: () => true, name: 'slide2.jpg' },
             { isFile: () => false, name: 'folder' },
             { isFile: () => true, name: 'notimage.txt' }
         ]);
+
+        // Spy on fs.watch (return a dummy watcher)
+        watchSpy = vi.spyOn(fs, 'watch').mockImplementation(() => ({
+            on: vi.fn(),
+            close: vi.fn()
+        }));
 
         app = express();
         slidesAPI = new SlidesAPI(app);
@@ -32,8 +33,8 @@ describe('Slides API', () => {
     });
 
     afterEach(() => {
-        slidesAPI.close();
-        jest.clearAllMocks();
+        if (slidesAPI) slidesAPI.close();
+        vi.restoreAllMocks();
     });
 
     test('GET /api/slides/count returns correct count', async () => {

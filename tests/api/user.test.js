@@ -1,20 +1,11 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const User = require('../../server/api/UserAPI');
-
-// Mock Globals
-jest.mock('../../server/misc/globals', () => {
-    return class Globals {
-        getFloat(key) {
-            if (key === 'MembershipCost') return 10.0;
-            return 0;
-        }
-    };
-});
+const Globals = require('../../server/misc/globals');
 
 // Mock Authentication Middleware
-jest.mock('../../server/misc/authentication', () => {
+vi.mock('../../server/misc/authentication.js', () => {
     return () => (req, res, next) => next();
 });
 
@@ -25,6 +16,11 @@ describe('User API', () => {
     let userId;
 
     beforeEach(async () => {
+        vi.spyOn(Globals.prototype, 'getFloat').mockImplementation((key) => {
+            if (key === 'MembershipCost') return 10.0;
+            return 0;
+        });
+
         db = await setupTestDb();
         const res = await db.run(`INSERT INTO users (email, first_name, last_name, is_member) VALUES ('u@d.ac.uk', 'U', 'S', 0)`);
         userId = res.lastID;
@@ -34,6 +30,7 @@ describe('User API', () => {
 
         // Mock authentication middleware globally for the app in tests
         app.use((req, res, next) => {
+            req.db = db;
             req.isAuthenticated = () => true;
             req.user = { id: userId, email: 'u@d.ac.uk' };
             req.logout = (cb) => cb();
@@ -45,6 +42,7 @@ describe('User API', () => {
 
     afterEach(async () => {
         await db.close();
+        vi.restoreAllMocks();
     });
 
     test('GET /api/user/elements/:elements returns data', async () => {
@@ -85,9 +83,17 @@ describe('User API', () => {
     });
 
     test('POST /api/user/:id/swims adds swims correctly', async () => {
-        // Mock req.user.is_exec = true
-        await db.run('UPDATE users SET is_exec = 1 WHERE id = ?', userId);
+        // Create Exec role and assign
+        await db.run("INSERT INTO roles (name) VALUES ('Exec')");
+        const roleId = (await db.get("SELECT id FROM roles WHERE name = 'Exec'")).id;
+        
+        // Grant swims.manage permission to Exec role (fixes 403 if auth mock fails)
+        await db.run("INSERT INTO permissions (slug) VALUES ('swims.manage')");
+        const permId = (await db.get("SELECT id FROM permissions WHERE slug = 'swims.manage'")).id;
+        await db.run("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)", [roleId, permId]);
 
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [userId, roleId]);
+        
         const res = await request(app)
             .post(`/api/user/${userId}/swims`)
             .send({ count: 5 });

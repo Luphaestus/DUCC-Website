@@ -8,7 +8,7 @@ import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 
 addRoute('/swims', 'swims');
 
-const HTML_TEMPLATE = `
+const HTML_TEMPLATE = /*html*/`
 <div id="swims-view" class="view hidden">
     <div class="small-container">
         <h1>Swims</h1>

@@ -142,6 +142,58 @@ class TagsDB {
     }
 
     /**
+     * Fetch managers for a tag.
+     * @param {object} db
+     * @param {number} tagId
+     * @returns {Promise<statusObject>}
+     */
+    static async getManagers(db, tagId) {
+        try {
+            const users = await db.all(`
+                SELECT u.id, u.first_name, u.last_name, u.email
+                FROM users u
+                JOIN user_managed_tags umt ON u.id = umt.user_id
+                WHERE umt.tag_id = ?
+            `, [tagId]);
+            return new statusObject(200, null, users);
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Add a manager to a tag.
+     * @param {object} db
+     * @param {number} tagId
+     * @param {number} userId
+     * @returns {Promise<statusObject>}
+     */
+    static async addManager(db, tagId, userId) {
+        try {
+            await db.run('INSERT OR IGNORE INTO user_managed_tags (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
+            return new statusObject(200, 'Manager added');
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Remove a manager from a tag.
+     * @param {object} db
+     * @param {number} tagId
+     * @param {number} userId
+     * @returns {Promise<statusObject>}
+     */
+    static async removeManager(db, tagId, userId) {
+        try {
+            await db.run('DELETE FROM user_managed_tags WHERE tag_id = ? AND user_id = ?', [tagId, userId]);
+            return new statusObject(200, 'Manager removed');
+        } catch (error) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Link a tag to an event.
      * @param {object} db
      * @param {number} eventId

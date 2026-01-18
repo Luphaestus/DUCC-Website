@@ -37,7 +37,7 @@ export async function renderEventDetail(id) {
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = ` <button data-nav="/admin/events">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
 
-    adminContent.innerHTML = `
+    adminContent.innerHTML = /*html*/`
         <form id="event-form" class="form-info">
             <article class="form-box">
                 <h2>${isNew ? 'Create Event' : 'Edit Event'}</h2>

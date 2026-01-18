@@ -32,7 +32,7 @@ const submitButton_id = 'health-form-submit';
 
 addRoute('/legal', 'legal');
 
-const HTML_TEMPLATE = `<div id="legal-view" class="view hidden">
+const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
             <div class="small-container hidden" id="legal-container">
                 <h1>Legal & Medical Information Form</h1>
                 <div id="grid-legal">

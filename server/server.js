@@ -15,18 +15,31 @@ const sqlite3 = require('sqlite3');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const passport = require('passport');
-const app = express();
 const fs = require('fs');
+const livereload = require("livereload");
+const connectLiveReload = require("connect-livereload");
+const app = express();
 
-// Trust the reverse proxy (Caddy)
+const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
+
+const liveReloadServer = livereload.createServer();
+liveReloadServer.watch(path.join(__dirname, '..', 'public'));
+app.use(connectLiveReload());
+
 app.set('trust proxy', 1);
-
-// Disable X-Powered-By header
 app.disable('x-powered-by');
 
 // Security Headers (CSP)
 app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self' https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';");
+  let csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self' https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
+  
+  if (isDev) {
+    // Allow livereload in dev
+    csp = csp.replace("script-src 'self'", "script-src 'self' 'unsafe-inline' http://localhost:35729");
+    csp += " connect-src 'self' ws://localhost:35729;";
+  }
+
+  res.setHeader("Content-Security-Policy", csp);
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -38,7 +51,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files with image caching (disabled in dev)
-const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
 app.use(express.static('public', {
   maxAge: isDev ? '0' : '1h',
   setHeaders: (res, path) => {
@@ -66,7 +78,7 @@ app.use(session({
     db: dbFile,
     dir: dbDir
   }),
-  secret: 'supersecretkey',
+  secret: process.env.SESSION_SECRET || 'dev-secret-key-change-me-in-prod',
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -96,13 +108,18 @@ const startServer = async () => {
       driver: sqlite3.Database
     });
 
-    // Enable WAL mode and busy timeout to prevent "database is locked" errors
+    // Enable WAL mode and busy timeout
     await db.exec('PRAGMA journal_mode = WAL;');
     await db.exec('PRAGMA busy_timeout = 5000;');
 
     if (process.env.NODE_ENV !== 'test') {
       console.log(`Connected to the SQLite database at ${dbPath}.`);
     }
+
+    app.use((req, res, next) => {
+      req.db = db;
+      next();
+    });
 
     app.get('/api/health', (req, res) => {
       res.status(200).send('OK');
@@ -119,12 +136,53 @@ const startServer = async () => {
 
     // Register remaining API modules dynamically
     const apiDir = path.join(__dirname, 'api');
-    const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.js') && file !== 'AuthAPI.js');
+    
+    const cliProgress = require('cli-progress');
+    const colors = require('ansi-colors');
 
-    for (const file of apiFiles) {
-      const ApiClass = require(path.join(apiDir, file));
-      const apiInstance = new ApiClass(app, db, passport);
-      apiInstance.registerRoutes();
+    const getAllApiFiles = (dir, fileList = []) => {
+        const files = fs.readdirSync(dir, { withFileTypes: true });
+        for (const dirent of files) {
+            const fullPath = path.join(dir, dirent.name);
+            if (dirent.isDirectory()) {
+                getAllApiFiles(fullPath, fileList);
+            } else if (dirent.isFile() && dirent.name.endsWith('.js') && dirent.name !== 'AuthAPI.js') {
+                fileList.push(fullPath);
+            }
+        }
+        return fileList;
+    };
+
+    const apiFiles = getAllApiFiles(apiDir);
+    
+    if (process.env.NODE_ENV !== 'test' && apiFiles.length > 0) {
+        console.log(colors.cyan('Registering API modules...'));
+        const progressBar = new cliProgress.SingleBar({
+            format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
+            barCompleteChar: '\u2588',
+            barIncompleteChar: '\u2591',
+            hideCursor: true
+        });
+
+        progressBar.start(apiFiles.length, 0, { file: 'Initializing...' });
+
+        for (let i = 0; i < apiFiles.length; i++) {
+            const fullPath = apiFiles[i];
+            const fileName = path.basename(fullPath);
+            progressBar.update(i + 1, { file: fileName });
+            
+            const ApiClass = require(fullPath);
+            const apiInstance = new ApiClass(app, db, passport);
+            apiInstance.registerRoutes();
+        }
+        progressBar.stop();
+    } else {
+        // Fallback for tests or no files
+        for (const fullPath of apiFiles) {
+            const ApiClass = require(fullPath);
+            const apiInstance = new ApiClass(app, db, passport);
+            apiInstance.registerRoutes();
+        }
     }
 
     // SPA catch-all route
@@ -146,7 +204,6 @@ const startServer = async () => {
   }
 };
 
-// Export the app immediately, and the initialization promise
 const serverReady = startServer();
 
 module.exports = app;

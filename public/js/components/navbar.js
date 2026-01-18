@@ -83,16 +83,18 @@ async function updateNavOnLoginState(data) {
         profileLi?.classList.remove('hidden');
         balanceLi?.classList.remove('hidden');
 
-        const [permissions, swimData] = await Promise.all([
-            ajaxGet('/api/user/elements/can_manage_users,can_manage_events,is_exec').catch(() => null),
+        const [userData, swimData] = await Promise.all([
+            ajaxGet('/api/user/elements/permissions').catch(() => ({})),
             ajaxGet('/api/user/elements/swims').catch(() => ({ swims: 0 })),
             updateBalanceInNav()
         ]);
 
+        const perms = userData.permissions || [];
+
         if (swimData?.swims !== undefined) profileButton.textContent = `Profile (${swimData.swims})`;
 
         const adminLi = document.getElementById('admin-button')?.parentElement;
-        if (permissions && (permissions.can_manage_users || permissions.can_manage_events || permissions.is_exec)) {
+        if (perms.length > 0) {
             adminLi?.classList.remove('hidden');
         } else adminLi?.classList.add('hidden');
     } else {

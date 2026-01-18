@@ -3181,6 +3181,7 @@ table tbody tr:hover th, table tbody tr:hover td {
   align-items: flex-end;
   flex-direction: column;
   padding-top: 0.5rem;
+  pointer-events: none;
 }
 #notification-container .notification {
   background-color: var(--translucent-bg);
@@ -3713,14 +3714,10 @@ nav.small-container ul {
     box-shadow: 0 4px 30px rgba(100, 100, 100, 0.3);
   }
 }
-.hero .hero-offer .hero-offer-boxes .hero-offer-box img {
+.hero .hero-offer .hero-offer-boxes .hero-offer-box svg {
   height: 6vh;
+  width: auto;
   margin-bottom: 1vh;
-}
-@media (prefers-color-scheme: light) {
-  .hero .hero-offer .hero-offer-boxes .hero-offer-box img {
-    filter: invert(1);
-  }
 }
 .hero .hero-offer .hero-offer-boxes .hero-offer-box h3 {
   font-size: 2.5vh;
@@ -3950,8 +3947,9 @@ nav.small-container ul {
 /* Event Detail View */
 .event-warning-banner {
   display: flex;
-  align-items: flex-start;
-  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem 1.5rem;
   border-radius: 0.75rem;
@@ -3983,6 +3981,21 @@ nav.small-container ul {
 .event-warning-banner.warning svg {
   fill: #f39c12;
 }
+.event-warning-banner.info {
+  background: rgba(52, 152, 219, 0.15);
+  color: #3498db;
+  border-color: rgba(52, 152, 219, 0.3);
+}
+.event-warning-banner.info svg {
+  fill: #3498db;
+}
+.event-warning-banner .banner-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
 .event-warning-banner .banner-btn {
   margin-left: auto;
   padding: 0.4rem 1rem;
@@ -3993,7 +4006,8 @@ nav.small-container ul {
 }
 @media (max-width: 600px) {
   .event-warning-banner {
-    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
   }
   .event-warning-banner .banner-btn {
     margin-left: 0;
@@ -4174,6 +4188,67 @@ nav.small-container ul {
 @media (min-width: 55em) {
   #event-attendees-container {
     display: none;
+  }
+}
+
+.event-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 2rem;
+  margin-bottom: 4rem;
+}
+.event-error-state .error-icon {
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+  padding: 1.5rem;
+  border-radius: 50%;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.event-error-state .error-icon svg {
+  width: 3rem;
+  height: 3rem;
+  fill: currentColor;
+}
+.event-error-state.denied .error-icon {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+.event-error-state.warning .error-icon {
+  background: rgba(243, 156, 18, 0.1);
+  color: #f39c12;
+}
+.event-error-state h2 {
+  margin-bottom: 0.5rem;
+  color: var(--pico-contrast);
+}
+.event-error-state p {
+  color: var(--pico-secondary);
+  max-width: 400px;
+  margin-bottom: 2rem;
+}
+.event-error-state .error-actions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 320px;
+}
+.event-error-state .error-actions button {
+  flex: 1;
+  margin-bottom: 0;
+}
+@media (max-width: 600px) {
+  .event-error-state .error-actions {
+    flex-direction: column;
   }
 }
 
@@ -4421,12 +4496,21 @@ nav.small-container ul {
 #admin-view {
   width: 100%;
   padding: 2rem;
+  overflow-x: hidden;
+}
+@media (max-width: 576px) {
+  #admin-view {
+    padding: 0.5rem;
+  }
 }
 #admin-view h1 {
   text-align: center;
+  font-size: 1.5rem;
+  word-wrap: break-word;
 }
 #admin-view > div {
   width: 100%;
+  overflow-x: auto;
 }
 
 .admin-controls-center {
@@ -4437,98 +4521,130 @@ nav.small-container ul {
   flex-wrap: wrap;
 }
 
-.admin-controls-bar {
-  display: grid;
-  grid-template-columns: 1fr minmax(auto, 600px) 1fr;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+/* Updated Admin Controls Layout */
+.admin-controls-container {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
-.admin-controls-bar .admin-nav-group {
-  justify-self: start;
+
+.admin-nav-row {
+  width: 100%;
+}
+.admin-nav-row .admin-nav-group {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
-.admin-controls-bar .admin-nav-group button {
+.admin-nav-row .admin-nav-group button {
   margin-bottom: 0;
   white-space: nowrap;
 }
-.admin-controls-bar .search-input-wrapper {
+
+.admin-tools-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  /* Context for floating menu */
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.admin-actions button {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+#toggle-filters-btn svg,
+#toggle-user-filters-btn svg {
+  color: var(--theme-opposite);
+}
+
+/* Updated Search Input with Icon */
+.search-input-wrapper {
+  flex: 1 1 200px;
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
-  justify-self: center;
 }
-.admin-controls-bar .search-input-wrapper input {
+.search-input-wrapper input {
   width: 100%;
-  padding-right: 2.5rem;
+  padding-right: 2.5rem !important;
+  /* Space for icon */
   margin-bottom: 0;
+  height: 2.5rem;
 }
-.admin-controls-bar .search-input-wrapper button {
+.search-input-wrapper button {
   position: absolute;
-  right: 0.5rem;
+  right: 0.25rem;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
   padding: 0.25rem;
   margin: 0;
-  width: auto;
-  height: auto;
-  box-shadow: none;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-  backdrop-filter: none;
+  color: var(--pico-color) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: opacity 0.2s;
 }
-.admin-controls-bar .search-input-wrapper button > svg {
-  color: var(--theme-colour);
-}
-.admin-controls-bar .search-input-wrapper button:hover, .admin-controls-bar .search-input-wrapper button:focus {
-  background: transparent;
-  border: none;
-  box-shadow: none;
+.search-input-wrapper button:hover {
   opacity: 1;
+  box-shadow: none;
+  background: transparent !important;
 }
-.admin-controls-bar .search-input-wrapper button svg {
-  width: 1.2rem;
-  height: 1.2rem;
-  display: block;
+.search-input-wrapper button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: var(--theme-opposite);
 }
-.admin-controls-bar .admin-actions {
-  justify-self: end;
+
+/* Floating Filter Menu */
+.filter-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  z-index: 1000;
+  background-color: var(--card-bg-color, #1f2937);
+  /* Fallback */
+  background-color: var(--pico-card-background-color);
+  border: 1px solid var(--muted-border-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  width: 300px;
+  min-width: 250px;
+}
+.filter-panel.hidden {
+  display: none;
+}
+.filter-panel .grid {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.admin-controls-bar .admin-actions button {
-  margin-bottom: 0;
-  white-space: nowrap;
-}
-.admin-controls-bar .admin-actions .admin-toggle-label {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 0;
-  white-space: nowrap;
-  cursor: pointer;
 }
-.admin-controls-bar .admin-actions .admin-toggle-label input {
-  margin-bottom: 0;
+.filter-panel label {
+  margin-bottom: 0.5rem;
 }
-@media (max-width: 768px) {
-  .admin-controls-bar {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 0.5rem;
-  }
-  .admin-controls-bar .admin-nav-group,
-  .admin-controls-bar .search-input-wrapper,
-  .admin-controls-bar .admin-actions {
-    justify-self: center;
+@media (max-width: 500px) {
+  .filter-panel {
     width: 100%;
-    justify-content: center;
+    /* Full width on small screens? Or keep fixed? */
+    right: auto;
+    left: 0;
+    width: calc(100vw - 2rem);
   }
 }
 
@@ -4547,9 +4663,9 @@ nav.small-container ul {
 #admin-user-legal-container,
 #admin-user-profile-container,
 #admin-user-general-info-container,
-.admin-nav-group,
 #admin-user-membership-container,
-#admin-user-permissions-container {
+#admin-user-permissions-container,
+.admin-actions {
   margin-left: 0 !important;
 }
 
@@ -4557,15 +4673,23 @@ nav.small-container ul {
   margin-right: 10px;
 }
 
+.admin-actions {
+  margin-right: 0 !important;
+}
+
 #new-tx-desc,
 #new-tx-amount,
 .tx-amount-input,
 .tx-actions,
-.admin-actions,
 .tx-desc-input,
 .global-input,
 .tag-controls,
-#admin-add-tag-select {
+.search-input-wrapper,
+#admin-add-tag-select,
+.admin-controls-container,
+.admin-nav-row,
+.admin-nav-group,
+.admin-actions {
   margin: 0 !important;
 }
 
@@ -4723,7 +4847,7 @@ nav.small-container ul {
   margin-bottom: 0.2rem;
   fill: var(--pico-contrast);
 }
-@media (max-width: 600px) {
+@media (max-width: 680px) {
   .admin-table {
     border: 0;
   }
@@ -4740,13 +4864,13 @@ nav.small-container ul {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   }
 }
-@media (max-width: 600px) and (prefers-color-scheme: dark) {
+@media (max-width: 680px) and (prefers-color-scheme: dark) {
   .admin-table tr {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.05);
   }
 }
-@media (max-width: 600px) {
+@media (max-width: 680px) {
   .admin-table td {
     display: flex;
     flex-direction: row;
@@ -4793,12 +4917,12 @@ nav.small-container ul {
     font-size: 0.8rem;
   }
 }
-@media (max-width: 600px) and (max-width: 450px) {
+@media (max-width: 680px) and (max-width: 450px) {
   .admin-table td {
     gap: 0.25rem 0.5rem;
   }
 }
-@media (max-width: 600px) and (max-width: 350px) {
+@media (max-width: 680px) and (max-width: 350px) {
   .admin-table td {
     flex-direction: column;
     align-items: flex-start;
@@ -4977,6 +5101,49 @@ nav.small-container ul {
   width: auto;
 }
 
+/* Permissions Grid */
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.5rem;
+}
+.permissions-grid label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  background: var(--card-sectioning-background-color);
+}
+.permissions-grid label input {
+  margin-top: 0.3em;
+  /* Align checkbox with text top */
+}
+.permissions-grid label div {
+  /* Container for text */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Delete Button Overrides */
+button.delete {
+  background-color: #d32f2f !important;
+  border-color: #d32f2f !important;
+  color: white !important;
+}
+button.delete:hover {
+  background-color: #b71c1c !important;
+  border-color: #b71c1c !important;
+}
+
+/* Ensure contrast buttons don't override delete if present */
+button.contrast.delete {
+  background-color: #d32f2f !important;
+  border-color: #d32f2f !important;
+  color: white !important;
+}
+
 /* Footer */
 footer {
   width: 100%;
@@ -5064,6 +5231,36 @@ footer .footer-bottom p {
   justify-content: center;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+}
+
+#no-connection-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+#no-connection-view .container {
+  text-align: center;
+  color: white;
+}
+#no-connection-view .container svg {
+  margin-bottom: 1rem;
+  width: 64px;
+  height: 64px;
+}
+#no-connection-view .container h1 {
+  color: white;
+}
+#no-connection-view .container p {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /*# sourceMappingURL=styles.css.map */

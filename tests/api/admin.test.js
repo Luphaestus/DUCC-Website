@@ -1,14 +1,12 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('/js/utils/db');
-const AdminAPI = require('../../server/api/AdminAPI');
+const { setupTestDb } = require('../utils/db');
+const AdminEventsAPI = require('../../server/api/admin/AdminEventsAPI.js');
+const AdminUsersAPI = require('../../server/api/admin/AdminUsersAPI.js');
+const AdminRolesAPI = require('../../server/api/admin/AdminRolesAPI.js');
+const AdminTransactionsAPI = require('../../server/api/admin/AdminTransactionsAPI.js');
+const AdminCollegesAPI = require('../../server/api/admin/AdminCollegesAPI.js');
 const Globals = require('../../server/misc/globals');
-
-jest.mock('../../server/misc/globals', () => {
-    return jest.fn().mockImplementation(() => ({
-        getInt: (key) => (key === 'President' ? 1 : 0)
-    }));
-});
 
 describe('Admin API', () => {
     let app;
@@ -19,11 +17,32 @@ describe('Admin API', () => {
     beforeEach(async () => {
         db = await setupTestDb();
 
+        vi.spyOn(Globals.prototype, 'getInt').mockImplementation((key) => (key === 'President' ? 1 : 0));
+        vi.spyOn(Globals.prototype, 'getFloat').mockReturnValue(0);
+
+        // Setup Roles & Permissions
+        await db.run("INSERT INTO permissions (slug) VALUES ('user.manage'), ('event.manage.all'), ('transaction.manage'), ('event.manage.scoped')");
+        
+        await db.run("INSERT INTO roles (name) VALUES ('Admin'), ('Exec')");
+        const adminRoleId = (await db.get("SELECT id FROM roles WHERE name = 'Admin'")).id;
+        const execRoleId = (await db.get("SELECT id FROM roles WHERE name = 'Exec'")).id;
+
+        const perms = await db.all("SELECT id, slug FROM permissions");
+        for (const p of perms) {
+            if (['user.manage', 'event.manage.all', 'transaction.manage'].includes(p.slug)) {
+                await db.run("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)", [adminRoleId, p.id]);
+            }
+            if (p.slug === 'event.manage.scoped') {
+                await db.run("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)", [execRoleId, p.id]);
+            }
+        }
+
         const adminRes = await db.run(
-            'INSERT INTO users (email, first_name, last_name, college_id, can_manage_users, can_manage_events, can_manage_transactions) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            ['admin@durham.ac.uk', 'Admin', 'User', 1, 1, 1, 1]
+            'INSERT INTO users (email, first_name, last_name, college_id) VALUES (?, ?, ?, ?)',
+            ['admin@durham.ac.uk', 'Admin', 'User', 1]
         );
-        adminId = adminRes.lastID; // Should be 1 as per setupTestDb and mock
+        adminId = adminRes.lastID;
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, adminRoleId]);
 
         const userRes = await db.run(
             'INSERT INTO users (email, first_name, last_name, college_id) VALUES (?, ?, ?, ?)',
@@ -35,28 +54,34 @@ describe('Admin API', () => {
         app.use(express.json());
 
         app.use((req, res, next) => {
+            req.db = db; // Attach db for middleware
             const authHeader = req.headers['x-mock-user'];
             if (authHeader === 'admin') {
                 req.isAuthenticated = () => true;
-                req.user = { id: adminId, can_manage_users: true, can_manage_events: true, can_manage_transactions: true, is_exec: true };
+                req.user = { id: adminId };
             } else if (authHeader === 'exec') {
+                // Assign exec role temporarily or use a separate user
                 req.isAuthenticated = () => true;
-                req.user = { id: userId, can_manage_users: false, can_manage_events: false, can_manage_transactions: false, is_exec: true };
+                req.user = { id: userId }; // Will need to assign role in test
             } else if (authHeader === 'user') {
                 req.isAuthenticated = () => true;
-                req.user = { id: userId, can_manage_users: false, can_manage_events: false, can_manage_transactions: false, is_exec: false };
+                req.user = { id: userId };
             } else {
                 req.isAuthenticated = () => false;
             }
             next();
         });
 
-        const adminAPI = new AdminAPI(app, db);
-        adminAPI.registerRoutes();
+        new AdminEventsAPI(app, db).registerRoutes();
+        new AdminUsersAPI(app, db).registerRoutes();
+        new AdminRolesAPI(app, db).registerRoutes();
+        new AdminTransactionsAPI(app, db).registerRoutes();
+        new AdminCollegesAPI(app, db).registerRoutes();
     });
 
     afterEach(async () => {
         await db.close();
+        vi.restoreAllMocks();
     });
 
     test('GET /api/admin/users requires permissions', async () => {
@@ -118,6 +143,9 @@ describe('Admin API', () => {
     });
 
     test('GET /api/admin/user/:id returns restricted data for exec', async () => {
+        const execRoleId = (await db.get("SELECT id FROM roles WHERE name = 'Exec'")).id;
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [userId, execRoleId]);
+
         const res = await request(app)
             .get(`/api/admin/user/${adminId}`)
             .set('x-mock-user', 'exec');
@@ -130,7 +158,8 @@ describe('Admin API', () => {
 
     test('is_exec user can only see names in users list', async () => {
         // Setup exec user
-        await db.run('UPDATE users SET is_exec = 1 WHERE id = ?', userId);
+        const execRoleId = (await db.get("SELECT id FROM roles WHERE name = 'Exec'")).id;
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [userId, execRoleId]);
 
         const res = await request(app)
             .get('/api/admin/users')

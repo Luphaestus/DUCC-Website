@@ -14,16 +14,18 @@ export async function renderManageTags() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    adminContent.innerHTML = `
+    adminContent.innerHTML = /*html*/`
         <div class="form-info">
             <article class="form-box">
-                <div class="admin-controls-bar">
-                    ${await renderAdminNavBar('tags')}
-                    <div class="admin-actions">
-                        <button data-nav="/admin/tag/new" class="primary">Create New Tag</button>
+                <div class="admin-controls-container">
+                    <div class="admin-nav-row">
+                         ${await renderAdminNavBar('tags')}
                     </div>
-                </div>
-                <div>
+                    <div class="admin-tools-row">
+                        <div class="admin-actions">
+                            <button data-nav="/admin/tag/new" class="primary">Create New Tag</button>
+                        </div>
+                    </div>
                     <table class="admin-table">
                         <thead>
                             <tr>

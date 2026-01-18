@@ -1,4 +1,4 @@
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const EventsDB = require('../../server/db/eventsDB');
 const TagsDB = require('../../server/db/tagsDB');
 

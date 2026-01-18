@@ -122,12 +122,38 @@ Paginated list of all events for administrative management.
 ### User Deep Dive
 `GET /api/admin/user/:id`
 
-Returns full profile, balance, and transaction history for a specific user.
+Returns full profile, balance, transaction history, and assigned roles for a specific user.
 
-### Update User Permissions
+### Update User Profile (Admin)
 `POST /api/admin/user/:id/elements`
 
-Special endpoint for updating administrative permissions. Restricted to the President.
+Updates user profile fields. Legacy permission flags are ignored.
+
+### Role Management
+
+#### List Roles
+`GET /api/admin/roles`
+
+Returns all defined roles and their permissions.
+
+#### Create Role
+`POST /api/admin/role`
+
+Creates a new role.
+- `name` (string)
+- `description` (string)
+- `permissions` (array of strings): List of permission slugs (e.g., `user.manage`).
+
+#### Assign Role
+`POST /api/admin/user/:id/role`
+
+Assigns a role to a user.
+- `roleId` (integer)
+
+#### Remove Role
+`DELETE /api/admin/user/:id/role/:roleId`
+
+Removes a role from a user.
 
 ---
 

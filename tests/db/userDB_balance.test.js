@@ -44,7 +44,7 @@ describe('UserDB Balance', () => {
             isAuthenticated: () => true,
             user: { id: userId }
         };
-        const result = await UserDB.getElements(req, db, ['id', 'balance']);
+        const result = await UserDB.getElementsById(db, userId, ['id', 'balance']);
         expect(result.getStatus()).toBe(200);
         expect(result.getData()).toEqual({ id: userId, balance: 5.50 });
     });
@@ -62,7 +62,7 @@ describe('UserDB Balance', () => {
             isAuthenticated: () => true,
             user: { id: noTransUserId }
         };
-        const result = await UserDB.getElements(req, db, ['id', 'balance']);
+        const result = await UserDB.getElementsById(db, userId, ['id', 'balance']);
         expect(result.getStatus()).toBe(200);
         expect(result.getData()).toEqual({ id: noTransUserId, balance: 0 });
     });

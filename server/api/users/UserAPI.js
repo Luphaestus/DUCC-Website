@@ -1,8 +1,9 @@
-const { statusObject } = require('../misc/status.js');
-const UserDB = require('../db/userDB.js');
-const transactionsDB = require('../db/transactionDB.js');
-const Globals = require('../misc/globals.js');
-const check = require('../misc/authentication');
+const { statusObject } = require('../../misc/status.js');
+const UserDB = require('../../db/userDB.js');
+const SwimsDB = require('../../db/swimsDB.js');
+const transactionsDB = require('../../db/transactionDB.js');
+const Globals = require('../../misc/globals.js');
+const check = require('../../misc/authentication.js');
 const bcrypt = require('bcrypt');
 
 /**
@@ -55,9 +56,8 @@ class User {
                 "takes_medication", "medication_details", "free_sessions", "is_member",
                 "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts",
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info",
-                "can_manage_events", "can_manage_users", "can_manage_transactions",
-                "is_instructor", "is_exec", "first_aid_expiry", "profile_picture_path",
-                "created_at", "swims", "swimmer_rank"
+                "is_instructor", "first_aid_expiry", "profile_picture_path",
+                "created_at", "swims", "swimmer_rank", "permissions", "roles"
             ];
             const accessibleTransactionsDB = ['balance', 'transactions'];
             return [accessibleUserDB.includes(element), accessibleTransactionsDB.includes(element)];
@@ -78,27 +78,63 @@ class User {
         let userResultData = {};
         if (userElements.length > 0) {
             const needsRank = userElements.includes('swimmer_rank');
-            const cleanElements = userElements.filter(e => e !== 'swimmer_rank');
+            const needsPerms = userElements.includes('permissions');
+            const needsRoles = userElements.includes('roles');
+            const cleanElements = userElements.filter(e => !['swimmer_rank', 'permissions', 'roles'].includes(e));
 
-            const userResult = await UserDB.getElements(req, db, cleanElements);
-            if (userResult.isError()) return userResult;
-            userResultData = userResult.getData();
+            let userResult;
+            if (cleanElements.length > 0) {
+                userResult = await UserDB.getElements(db, req.user.id, cleanElements);
+                if (userResult.isError()) return userResult;
+                userResultData = userResult.getData();
+            }
 
             if (needsRank) {
                 const [allTimeRes, yearlyRes] = await Promise.all([
-                    UserDB.getUserSwimmerRank(db, req.user.id, false),
-                    UserDB.getUserSwimmerRank(db, req.user.id, true)
+                    SwimsDB.getUserSwimmerRank(db, req.user.id, false),
+                    SwimsDB.getUserSwimmerRank(db, req.user.id, true)
                 ]);
                 const allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
                 const yearlyData = yearlyRes.getData() || { rank: -1, swims: 0 };
                 userResultData.swimmer_stats = { allTime: allTimeData, yearly: yearlyData };
                 userResultData.swimmer_rank = allTimeData.rank;
             }
+
+            if (needsPerms || needsRoles) {
+                // Fetch roles
+                const roles = await db.all('SELECT r.id, r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?', [req.user.id]);
+                if (needsRoles) userResultData.roles = roles;
+                
+                if (needsPerms) {
+                    const Permissions = require('../../misc/permissions.js');
+                    
+                    const rolePerms = await db.all(`
+                        SELECT DISTINCT p.slug 
+                        FROM permissions p
+                        JOIN role_permissions rp ON p.id = rp.permission_id
+                        JOIN user_roles ur ON rp.role_id = ur.role_id
+                        WHERE ur.user_id = ?
+                    `, [req.user.id]);
+                    
+                    const directPerms = await db.all(`
+                        SELECT DISTINCT p.slug 
+                        FROM permissions p
+                        JOIN user_permissions up ON p.id = up.permission_id
+                        WHERE up.user_id = ?
+                    `, [req.user.id]);
+
+                    const allSlugs = new Set([
+                        ...rolePerms.map(p => p.slug), 
+                        ...directPerms.map(p => p.slug)
+                    ]);
+                    userResultData.permissions = Array.from(allSlugs);
+                }
+            }
         }
 
         let transactionResultData = {};
         if (transactionElements.length > 0) {
-            const transactionResult = await transactionsDB.getElements(req, db, transactionElements);
+            const transactionResult = await transactionsDB.getElements(db, req.user.id, transactionElements);
             if (transactionResult.isError()) return transactionResult;
             transactionResultData = transactionResult.getData();
         }
@@ -234,7 +270,7 @@ class User {
 
         if (data.email) data.email = data.email.replace(/\s/g, '').toLowerCase();
 
-        const writeStatus = await UserDB.writeElements(req, db, data);
+        const writeStatus = await UserDB.writeElements(db, req.user.id, data);
         if (writeStatus.isError()) return writeStatus;
         return new statusObject(200);
     }
@@ -276,14 +312,14 @@ class User {
          */
         this.app.post('/api/user/join', check(), async (req, res) => {
             try {
-                const status = await UserDB.getElements(req, this.db, 'is_member');
+                const status = await UserDB.getElements(this.db, req.user.id, 'is_member');
                 if (status.isError()) return status.getResponse(res);
                 if (status.getData().is_member) return res.status(400).json({ message: 'Already a member.' });
 
-                const tx = await transactionsDB.add_transaction(req, this.db, User.getID(req), - new Globals().getFloat('MembershipCost'), 'Membership Fee');
+                const tx = await transactionsDB.add_transaction(this.db, User.getID(req), - new Globals().getFloat('MembershipCost'), 'Membership Fee');
                 if (typeof tx === 'number' && tx >= 400) return res.status(tx).json({ message: 'Transaction failed' });
 
-                const update = await UserDB.setMembershipStatus(req, this.db, true);
+                const update = await UserDB.setMembershipStatus(this.db, req.user.id, true);
                 if (update.isError()) return update.getResponse(res);
                 res.json({ success: true });
             } catch (err) {
@@ -306,11 +342,11 @@ class User {
                 const isMatch = await bcrypt.compare(password, user.hashed_password);
                 if (!isMatch) return res.status(403).json({ message: 'Incorrect password.' });
 
-                const balance = await transactionsDB.get_balance(req, this.db);
+                const balance = await transactionsDB.get_balance(this.db, req.user.id);
                 if (balance.isError()) return balance.getResponse(res);
-                if (balance.getData() < 0) return res.status(400).json({ message: 'Outstanding debts exist.' });
+                if (balance.getData() !== 0) return res.status(400).json({ message: 'Balance must be zero to delete account.' });
 
-                const status = await UserDB.removeUser(req, this.db);
+                const status = await UserDB.removeUser(this.db, req.user.id);
                 if (status.isError()) return status.getResponse(res);
 
                 req.logout((err) => { res.json({ success: true }); });
@@ -318,26 +354,6 @@ class User {
                 console.error(err);
                 res.status(500).json({ message: 'Internal server error.' });
             }
-        });
-
-        /**
-         * Fetch swim leaderboard (all-time or yearly).
-         */
-        this.app.get('/api/user/swims/leaderboard', check(), async (req, res) => {
-            const yearly = req.query.yearly === 'true';
-            const status = await UserDB.getSwimsLeaderboard(this.db, yearly);
-            return status.getResponse(res);
-        });
-
-        /**
-         * Add swims to a user (Exec only).
-         */
-        this.app.post('/api/user/:id/swims', check('is_exec'), async (req, res) => {
-            const userId = parseInt(req.params.id, 10);
-            const count = parseInt(req.body.count, 10);
-            if (isNaN(userId) || isNaN(count)) return res.status(400).json({ message: 'Invalid data' });
-            const status = await UserDB.addSwims(req, this.db, userId, count);
-            return status.getResponse(res);
         });
     }
 }

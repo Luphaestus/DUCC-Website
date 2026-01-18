@@ -1,4 +1,5 @@
 const { statusObject } = require('../misc/status.js');
+const { Permissions } = require('../misc/permissions.js');
 
 /**
  * Database operations for user financial records and balances.
@@ -6,25 +7,23 @@ const { statusObject } = require('../misc/status.js');
 class TransactionsDB {
     /**
      * Fetch user transaction data (balance or transactions).
-     * @param {object} req
      * @param {object} db
+     * @param {number} userId
      * @param {string[]} elements
-     * @param {number|null} id
      * @returns {Promise<statusObject>}
      */
-    static async getElements(req, db, elements, id = null) {
-        if (id == null) id = req.user?.id;
+    static async getElements(db, userId, elements) {
         const data = {};
 
         for (const element of elements) {
             switch (element) {
                 case "balance":
-                    var response = await this.get_balance(req, db, id);
+                    var response = await this.get_balance(db, userId);
                     if (response.isError()) return response;
                     data[element] = response.getData();
                     break;
                 case "transactions":
-                    var response = await this.get_transactions(req, db, id);
+                    var response = await this.get_transactions(db, userId);
                     if (response.isError()) return response;
                     data[element] = response.getData();
                     break;
@@ -37,19 +36,11 @@ class TransactionsDB {
 
     /**
      * Calculate user balance by summing transactions.
-     * @param {object} req
      * @param {object} db
-     * @param {number|null} userId
+     * @param {number} userId
      * @returns {Promise<statusObject>}
      */
-    static async get_balance(req, db, userId = null) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (userId == null) userId = req.user.id;
-
-        if (req.user.id !== userId && !req.user.can_manage_transactions) {
-            return new statusObject(403, 'User not authorized');
-        }
-
+    static async get_balance(db, userId) {
         const result = await db.get('SELECT SUM(amount) AS balance FROM transactions WHERE user_id = ?', [userId]);
         return new statusObject(200, null, result?.balance ?? 0);
     }
@@ -63,7 +54,7 @@ class TransactionsDB {
      * @param {number|null} eventId
      * @returns {Promise<statusObject>}
      */
-    static async add_transaction_admin(db, userId, amount, description, eventId = null) {
+    static async _add_transaction_internal(db, userId, amount, description, eventId = null) {
         await db.run(
             'INSERT INTO transactions (user_id, amount, description, created_at, event_id) VALUES (?, ?, ?, ?, ?)',
             [userId, amount, description, new Date().toISOString(), eventId]
@@ -73,8 +64,7 @@ class TransactionsDB {
     }
 
     /**
-     * Add transaction record with auth checks.
-     * @param {object} req
+     * Add transaction record.
      * @param {object} db
      * @param {number} userId
      * @param {number} amount
@@ -82,12 +72,8 @@ class TransactionsDB {
      * @param {number|null} eventId
      * @returns {Promise<statusObject>}
      */
-    static async add_transaction(req, db, userId, amount, description, eventId = null) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (req.user.id !== userId && !req.user.can_manage_transactions) {
-            return new statusObject(403, 'User not authorized');
-        }
-        return this.add_transaction_admin(db, userId, amount, description, eventId);
+    static async add_transaction(db, userId, amount, description, eventId = null) {
+        return this._add_transaction_internal(db, userId, amount, description, eventId);
     }
 
     /**
@@ -103,17 +89,11 @@ class TransactionsDB {
 
     /**
      * Fetch all transactions for a user with running balance, newest first.
-     * @param {object} req
      * @param {object} db
      * @param {number} userId
      * @returns {Promise<statusObject>}
      */
-    static async get_transactions(req, db, userId) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (req.user.id !== userId && !req.user.can_manage_transactions) {
-            return new statusObject(403, 'User not authorized');
-        }
-
+    static async get_transactions(db, userId) {
         const transactions = await db.all(
             'SELECT id, amount, description, created_at FROM transactions WHERE user_id = ? ORDER BY created_at ASC',
             [userId]
@@ -134,7 +114,7 @@ class TransactionsDB {
      * @param {number} transactionId
      * @returns {Promise<statusObject>}
      */
-    static async delete_transaction_admin(db, transactionId) {
+    static async _delete_transaction_internal(db, transactionId) {
         if (!await this.get_transaction_exists(db, transactionId)) {
             return new statusObject(404, 'Transaction not found');
         }
@@ -146,32 +126,23 @@ class TransactionsDB {
     }
 
     /**
-     * Delete transaction with auth checks.
-     * @param {object} req
+     * Delete transaction.
      * @param {object} db
      * @param {number} transactionId
      * @returns {Promise<statusObject>}
      */
-    static async delete_transaction(req, db, transactionId) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (!req.user.can_manage_transactions) return new statusObject(403, 'User not authorized');
-        return this.delete_transaction_admin(db, transactionId);
+    static async delete_transaction(db, transactionId) {
+        return this._delete_transaction_internal(db, transactionId);
     }
 
     /**
      * Fetch transaction ID for a specific event/user.
-     * @param {object} req
      * @param {object} db
      * @param {number} eventId
      * @param {number} userId
      * @returns {Promise<statusObject>}
      */
-    static async get_transactionid_by_event(req, db, eventId, userId) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (req.user.id !== userId && !req.user.can_manage_transactions) {
-            return new statusObject(403, 'User not authorized');
-        }
-
+    static async get_transactionid_by_event(db, eventId, userId) {
         const transaction = await db.get('SELECT id FROM transactions WHERE event_id = ? AND user_id = ?', [eventId, userId]);
         if (!transaction) return new statusObject(404, 'Transaction not found');
         return new statusObject(200, null, transaction.id);
@@ -179,17 +150,13 @@ class TransactionsDB {
 
     /**
      * Update transaction details.
-     * @param {object} req
      * @param {object} db
      * @param {number} transactionId
      * @param {number} amount
      * @param {string} description
      * @returns {Promise<statusObject>}
      */
-    static async edit_transaction(req, db, transactionId, amount, description) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (!req.user.can_manage_transactions) return new statusObject(403, 'User not authorized');
-
+    static async edit_transaction(db, transactionId, amount, description) {
         const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [transactionId]);
         if (!transaction) return new statusObject(404, 'Transaction not found');
 
@@ -199,15 +166,11 @@ class TransactionsDB {
 
     /**
      * Fetch a single transaction by ID.
-     * @param {object} req
      * @param {object} db
      * @param {number} transactionId
      * @returns {Promise<statusObject>}
      */
-    static async get_transaction_by_id(req, db, transactionId) {
-        if (!req.isAuthenticated()) return new statusObject(401, 'User not authenticated');
-        if (!req.user.can_manage_transactions) return new statusObject(403, 'User not authorized');
-
+    static async get_transaction_by_id(db, transactionId) {
         const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [transactionId]);
         if (!transaction) return new statusObject(404, 'Transaction not found');
         return new statusObject(200, null, transaction);

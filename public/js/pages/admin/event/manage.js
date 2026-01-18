@@ -22,26 +22,60 @@ export async function renderManageEvents() {
     const order = urlParams.get('order') || 'asc';
     const page = parseInt(urlParams.get('page')) || 1;
     const showPast = urlParams.get('showPast') === 'true';
+    const minCost = urlParams.get('minCost') || '';
+    const maxCost = urlParams.get('maxCost') || '';
+    const difficulty = urlParams.get('difficulty') || '';
+    const location = urlParams.get('location') || '';
 
-    adminContent.innerHTML = `
+    adminContent.innerHTML = /*html*/`
         <div class="form-info">
             <article class="form-box">
-                <div class="admin-controls-bar">
-                    ${await renderAdminNavBar('events')}
-                    <div class="search-input-wrapper">
-                        <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
-                            <button id="event-search-btn" title="Search">
-                                ${SEARCH_SVG}
-                            </button>
+                <div class="admin-controls-container">
+                    <div class="admin-nav-row">
+                         ${await renderAdminNavBar('events')}
                     </div>
-                    <div class="admin-actions">
-                        <label class="admin-toggle-label">
-                            <input type="checkbox" id="show-past-toggle" ${showPast ? 'checked' : ''}>
-                            Show Past Events
-                        </label>
-                        <button data-nav="/admin/event/new" class="primary">Create New Event</button>
+                    <div class="admin-tools-row">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
+                                <button id="event-search-btn" title="Search">
+                                    ${SEARCH_SVG}
+                                </button>
+                        </div>
+                        <div class="admin-actions">
+                             <button id="toggle-filters-btn" class="contrast outline">Filters ${UNFOLD_MORE_SVG}</button>
+                             <div id="advanced-filters-panel" class="filter-panel hidden">
+                                <div class="grid">
+                                     <label>
+                                        Events Display
+                                        <select id="filter-show-past">
+                                            <option value="false" ${!showPast ? 'selected' : ''}>Upcoming Only</option>
+                                            <option value="true" ${showPast ? 'selected' : ''}>All Events</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        Difficulty
+                                        <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
+                                    </label>
+                                    <label>
+                                        Min Cost
+                                        <input type="number" id="filter-min-cost" value="${minCost}" step="0.01">
+                                    </label>
+                                     <label>
+                                        Max Cost
+                                        <input type="number" id="filter-max-cost" value="${maxCost}" step="0.01">
+                                    </label>
+                                    <label>
+                                        Location
+                                        <input type="text" id="filter-location" value="${location}" placeholder="Contains...">
+                                    </label>
+                                </div>
+                                <button id="apply-filters-btn" class="small-btn">Apply Filters</button>
+                            </div>
+                            <button data-nav="/admin/event/new" class="primary">Create New Event</button>
+                        </div>
                     </div>
                 </div>
+
                 <div class="table-responsive">
                     <table class="admin-table">
                         <thead id="events-table-head"></thead>
@@ -57,13 +91,29 @@ export async function renderManageEvents() {
 
     const searchInput = document.getElementById('event-search-input');
     const searchBtn = document.getElementById('event-search-btn');
-    const pastToggle = document.getElementById('show-past-toggle');
+    const filterBtn = document.getElementById('toggle-filters-btn');
+    const filterPanel = document.getElementById('advanced-filters-panel');
+    const applyBtn = document.getElementById('apply-filters-btn');
 
     searchBtn.onclick = () => updateEventParams({ search: searchInput.value, page: 1 });
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
-    pastToggle.onchange = () => updateEventParams({ showPast: pastToggle.checked, page: 1 });
+    
+    filterBtn.onclick = () => {
+        filterPanel.classList.toggle('hidden');
+    };
 
-    await fetchAndRenderEvents({ page, search, sort, order, showPast });
+    applyBtn.onclick = () => {
+        updateEventParams({
+            showPast: document.getElementById('filter-show-past').value,
+            minCost: document.getElementById('filter-min-cost').value,
+            maxCost: document.getElementById('filter-max-cost').value,
+            difficulty: document.getElementById('filter-difficulty').value,
+            location: document.getElementById('filter-location').value,
+            page: 1
+        });
+    };
+
+    await fetchAndRenderEvents({ page, search, sort, order, showPast, minCost, maxCost, difficulty, location });
 }
 
 /**
@@ -83,7 +133,11 @@ function updateEventParams(updates) {
         search: params.get('search') || '',
         sort: params.get('sort') || 'start',
         order: params.get('order') || 'asc',
-        showPast: params.get('showPast') === 'true'
+        showPast: params.get('showPast') === 'true',
+        minCost: params.get('minCost') || '',
+        maxCost: params.get('maxCost') || '',
+        difficulty: params.get('difficulty') || '',
+        location: params.get('location') || ''
     });
 }
 
@@ -91,12 +145,12 @@ function updateEventParams(updates) {
  * Fetch and render events list.
  * @param {object} params
  */
-async function fetchAndRenderEvents({ page, search, sort, order, showPast }) {
+async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCost, maxCost, difficulty, location }) {
     const thead = document.getElementById('events-table-head');
     const tbody = document.getElementById('events-table-body');
 
     try {
-        const query = new URLSearchParams({ page, limit: 10, search, sort, order, showPast }).toString();
+        const query = new URLSearchParams({ page, limit: 10, search, sort, order, showPast, minCost, maxCost, difficulty, location }).toString();
         const data = await ajaxGet(`/api/admin/events?${query}`);
         const events = data.events || [];
         const totalPages = data.totalPages || 1;

@@ -1,4 +1,4 @@
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const TagsDB = require('../../server/db/tagsDB');
 
 describe('TagsDB', () => {

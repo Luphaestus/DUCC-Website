@@ -1,5 +1,4 @@
 const TagsDB = require('../db/tagsDB.js');
-const { statusObject } = require('../misc/status.js');
 const check = require('../misc/authentication.js');
 
 /**
@@ -29,50 +28,74 @@ class TagsAPI {
         });
 
         /**
-         * Create a new tag (Admin).
+         * Create a new tag.
          */
-        this.app.post('/api/tags', check('can_manage_events | can_manage_users'), async (req, res) => {
+        this.app.post('/api/tags', check('perm:event.write.all | perm:manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.createTag(this.db, req.body);
             result.getResponse(res);
         });
 
         /**
-         * Update a tag (Admin).
+         * Update a tag.
          */
-        this.app.put('/api/tags/:id', check('can_manage_events | can_manage_users'), async (req, res) => {
+        this.app.put('/api/tags/:id', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.updateTag(this.db, req.params.id, req.body);
             result.getResponse(res);
         });
 
         /**
-         * Delete a tag (Admin).
+         * Delete a tag.
          */
-        this.app.delete('/api/tags/:id', check('can_manage_events | can_manage_users'), async (req, res) => {
+        this.app.delete('/api/tags/:id', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.deleteTag(this.db, req.params.id);
             result.getResponse(res);
         });
 
         /**
-         * Fetch whitelisted users for a tag (Admin).
+         * Fetch whitelisted users for a tag.
          */
-        this.app.get('/api/tags/:id/whitelist', check('can_manage_events | can_manage_users'), async (req, res) => {
+        this.app.get('/api/tags/:id/whitelist', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.getWhitelist(this.db, req.params.id);
             result.getResponse(res);
         });
 
         /**
-         * Add user to a tag whitelist (Admin).
+         * Add user to a tag whitelist.
          */
-        this.app.post('/api/tags/:id/whitelist', check('can_manage_events | can_manage_users'), async (req, res) => {
+        this.app.post('/api/tags/:id/whitelist', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.addToWhitelist(this.db, req.params.id, req.body.userId);
             result.getResponse(res);
         });
 
         /**
-         * Remove user from a tag whitelist (Admin).
+         * Remove user from a tag whitelist.
          */
-        this.app.delete('/api/tags/:id/whitelist/:userId', check('can_manage_events | can_manage_users'), async (req, res) => {
+        this.app.delete('/api/tags/:id/whitelist/:userId', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.removeFromWhitelist(this.db, req.params.id, req.params.userId);
+            result.getResponse(res);
+        });
+
+        /**
+         * Fetch managers for a tag.
+         */
+        this.app.get('/api/tags/:id/managers', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
+            const result = await TagsDB.getManagers(this.db, req.params.id);
+            result.getResponse(res);
+        });
+
+        /**
+         * Add manager to a tag.
+         */
+        this.app.post('/api/tags/:id/managers', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
+            const result = await TagsDB.addManager(this.db, req.params.id, req.body.userId);
+            result.getResponse(res);
+        });
+
+        /**
+         * Remove manager from a tag.
+         */
+        this.app.delete('/api/tags/:id/managers/:userId', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
+            const result = await TagsDB.removeManager(this.db, req.params.id, req.params.userId);
             result.getResponse(res);
         });
 
@@ -80,8 +103,13 @@ class TagsAPI {
          * Fetch tags for a specific user.
          */
         this.app.get('/api/user/:userId/tags', check(), async (req, res) => {
-            if (req.user.id != req.params.userId && !req.user.can_manage_users) {
-                return res.status(403).json({ message: 'Forbidden' });
+            // Need user.manage or be same user
+            if (req.user.id != req.params.userId) {
+                // Check permissions dynamically since check() just authed
+                const Permissions = require('../misc/permissions.js');
+                if (!await Permissions.hasPermission(this.db, req.user.id, 'user.manage')) {
+                    return res.status(403).json({ message: 'Forbidden' });
+                }
             }
 
             try {

@@ -33,8 +33,6 @@ async function createTable(tableName, createStatement, db) {
 
     if (tableExists) return true;
 
-    console.log(`Creating table: ${tableName}`);
-
     await db.exec(`CREATE TABLE IF NOT EXISTS ${tableName} (${createStatement});`);
     return false;
 }

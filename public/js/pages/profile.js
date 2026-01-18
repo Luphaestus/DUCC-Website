@@ -6,6 +6,8 @@ import { FirstNameChangedEvent } from '/js/components/navbar.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { requireAuth } from '/js/utils/auth.js';
 import { BalanceChangedEvent } from '/js/utils/globals.js';
+import { switchView } from '/js/utils/view.js';
+import { showConfirmModal, showPasswordModal } from '/js/utils/modal.js';
 import { CHECK_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, TROPHY_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, AR_ON_YOU_SVG, TRIP_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG } from '../../images/icons/outline/icons.js';
 
 /**
@@ -25,7 +27,7 @@ const INFO_CYAN = '#3498db';
 /**
  * Main profile view template.
  */
-const HTML_TEMPLATE = `
+const HTML_TEMPLATE = /*html*/`
 <div id="profile-view" class="view hidden">
     <div class="small-container">
         <h1>Profile</h1>
@@ -55,7 +57,7 @@ const HTML_TEMPLATE = `
                 </h2>
                 <div class="sub-container" id="swim-stats-container" style="margin-bottom: 1rem;">
                     <div id="recognition-stats-info"></div>
-                    <p><button class="status-btn" onclick="switchView('/swims')">View Swims</button></p>
+                    <p><button class="status-btn" data-nav="/swims">View Swims</button></p>
                 </div>
                 <div class="sub-container" id="profile-tags-outer-container">
                     <div id="profile-tags-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -123,90 +125,6 @@ function displayNotification(title, message, type) {
 }
 
 /**
- * Show custom confirmation modal.
- * @returns {Promise<boolean>}
- */
-function showConfirmModal(title, message) {
-    return new Promise((resolve) => {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'custom-modal-overlay';
-
-        modalOverlay.innerHTML = `
-            <div class="custom-modal-content">
-                <h3>${title}</h3>
-                <p>${message}</p>
-                <div class="modal-actions">
-                    <button class="btn-cancel" id="confirm-cancel">Cancel</button>
-                    <button class="btn-confirm" id="confirm-ok">Confirm</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modalOverlay);
-        requestAnimationFrame(() => modalOverlay.classList.add('visible'));
-
-        const cleanup = (val) => {
-            modalOverlay.classList.remove('visible');
-            setTimeout(() => {
-                if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
-                resolve(val);
-            }, 300);
-        };
-
-        modalOverlay.querySelector('#confirm-ok').onclick = () => cleanup(true);
-        modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(false);
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(false); };
-    });
-}
-
-/**
- * Show password confirmation modal.
- * @returns {Promise<string|null>} Returns password if confirmed, null otherwise.
- */
-function showPasswordModal(title, message) {
-    return new Promise((resolve) => {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'custom-modal-overlay';
-
-        modalOverlay.innerHTML = `
-            <div class="custom-modal-content">
-                <h3>${title}</h3>
-                <p>${message}</p>
-                <input type="password" id="confirm-password" placeholder="Enter your password" style="width: 100%; margin-bottom: 1rem;">
-                <div class="modal-actions">
-                    <button class="btn-cancel" id="confirm-cancel">Cancel</button>
-                    <button class="btn-confirm" id="confirm-ok">Confirm</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modalOverlay);
-        requestAnimationFrame(() => modalOverlay.classList.add('visible'));
-
-        const input = modalOverlay.querySelector('#confirm-password');
-        input.focus();
-
-        const cleanup = (val) => {
-            modalOverlay.classList.remove('visible');
-            setTimeout(() => {
-                if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
-                resolve(val);
-            }, 300);
-        };
-
-        const confirm = () => {
-            const password = input.value;
-            if (password) cleanup(password);
-        };
-
-        modalOverlay.querySelector('#confirm-ok').onclick = confirm;
-        modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(null);
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(null); };
-        input.onkeydown = (e) => { if (e.key === 'Enter') confirm(); };
-    });
-}
-
-/**
  * Update status UI with icon and color.
  */
 function updateStatusUI(elementId, text, icon, color) {
@@ -247,7 +165,7 @@ function renderEventStatus(profile) {
     const balance = Number(profile.balance);
     const isLegalComplete = !!profile.filled_legal_info;
 
-    ajaxGet('/api/globals/public/MembershipCost,MinMoney').then(globals => {
+    ajaxGet('/api/globals/MembershipCost,MinMoney').then(globals => {
         const membershipCost = globals.res?.MembershipCost || 50;
         const minMoney = globals.res?.MinMoney || -20;
         const hasDebt = balance < minMoney;
@@ -493,8 +411,9 @@ async function bindStaticEvents() {
 
     const admin = document.getElementById('admin-panel-button');
     if (admin) {
-        const isAdmin = await ajaxGet('/api/user/elements/can_manage_events,can_manage_users,is_exec');
-        if (isAdmin.can_manage_users || isAdmin.can_manage_events || isAdmin.is_exec) {
+        const userData = await ajaxGet('/api/user/elements/permissions').catch(() => null);
+        const perms = userData ? userData.permissions || [] : [];
+        if (perms.length > 0) {
             admin.classList.remove('hidden');
         }
         admin.addEventListener('click', (e) => { e.preventDefault(); switchView('/admin/'); });
@@ -507,7 +426,7 @@ async function bindStaticEvents() {
 async function updateProfilePage() {
     if (!await requireAuth()) return;
     try {
-        const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,can_manage_users,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank');
+        const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank');
         if (profile) {
             renderEventStatus(profile);
             renderInstructorStatus(profile);

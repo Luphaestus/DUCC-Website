@@ -1,4 +1,4 @@
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const TransactionsDB = require('../../server/db/transactionDB');
 
 describe('TransactionsDB', () => {
@@ -9,6 +9,16 @@ describe('TransactionsDB', () => {
         db = await setupTestDb();
         const res = await db.run(`INSERT INTO users (email, first_name, last_name) VALUES ('u@d.ac.uk', 'U', 'S')`);
         userId = res.lastID;
+
+        // Setup Permissions
+        await db.run("INSERT INTO permissions (slug) VALUES ('transaction.manage')");
+        const permId = (await db.get("SELECT id FROM permissions WHERE slug = 'transaction.manage'")).id;
+        await db.run("INSERT INTO roles (name) VALUES ('Treasurer')");
+        const roleId = (await db.get("SELECT id FROM roles WHERE name = 'Treasurer'")).id;
+        await db.run("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)", [roleId, permId]);
+        
+        // Assign role to user for managed tests
+        // We will assign it dynamically in tests if needed, or create a separate admin user
     });
 
     afterEach(async () => {
@@ -16,28 +26,26 @@ describe('TransactionsDB', () => {
     });
 
     test('add_transaction updates balance', async () => {
-        const req = {
-            isAuthenticated: () => true,
-            user: { id: userId, can_manage_transactions: true }
-        };
+        // Assign role
+        const roleId = (await db.get("SELECT id FROM roles WHERE name = 'Treasurer'")).id;
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [userId, roleId]);
 
-        await TransactionsDB.add_transaction(req, db, userId, 50, 'Credit');
-        await TransactionsDB.add_transaction(req, db, userId, -20, 'Debit');
+        await TransactionsDB.add_transaction(db, userId, 50, 'Credit');
+        await TransactionsDB.add_transaction(db, userId, -20, 'Debit');
 
-        const balanceRes = await TransactionsDB.get_balance(req, db, userId);
+        const balanceRes = await TransactionsDB.get_balance(db, userId);
         expect(balanceRes.getStatus()).toBe(200);
         expect(balanceRes.getData()).toBe(30);
     });
 
     test('get_transactions returns history', async () => {
-        const req = {
-            isAuthenticated: () => true,
-            user: { id: userId, can_manage_transactions: true }
-        };
+        // Assign role
+        const roleId = (await db.get("SELECT id FROM roles WHERE name = 'Treasurer'")).id;
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [userId, roleId]);
 
-        await TransactionsDB.add_transaction(req, db, userId, 100, 'Init');
+        await TransactionsDB.add_transaction(db, userId, 100, 'Init');
 
-        const historyRes = await TransactionsDB.get_transactions(req, db, userId);
+        const historyRes = await TransactionsDB.get_transactions(db, userId);
         expect(historyRes.getStatus()).toBe(200);
         const history = historyRes.getData();
         expect(history.length).toBe(1);

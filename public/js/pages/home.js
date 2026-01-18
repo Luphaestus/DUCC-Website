@@ -14,7 +14,7 @@ addRoute('/home', 'home');
 /**
  * Home page template.
  */
-const HTML_TEMPLATE = `<div id="${home_view_id}" class="view hidden">
+const HTML_TEMPLATE = /*html*/`<div id="${home_view_id}" class="view hidden">
             <div class="hero">
                 <div class="hero-title" data-mos="fade-up">
                     <h1>Welcome to<br>Durham University<br>Canoe Club</h1>

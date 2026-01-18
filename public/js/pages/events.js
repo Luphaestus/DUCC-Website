@@ -13,7 +13,7 @@ addRoute('/events', 'events');
 /**
  * Main events view template.
  */
-const HTML_TEMPLATE = `
+const HTML_TEMPLATE = /*html*/`
         <div id="events-view" class="view hidden small-container">
             <div class="events-controls">
                 <div class="week-nav-icons">
@@ -84,10 +84,10 @@ function formatEvent(event) {
     if (startDate < new Date()) classes += ' past-event';
     if (!hasTags) classes += ' glassy';
     let style = hasTags ? `--event-bg-light: hsl(${hue}, 70%, 85%); --event-bg-dark: hsl(${hue}, 50%, 30%);` : '';
-    return `<div class="${classes}" style="${style}" data-nav="event/${event.id}">
+    return /*html*/`<div class="${classes}" style="${style}" data-nav="event/${event.id}">
             <div class="event-top">
                 <span>${startTime} - ${endTime}</span>
-                ${event.is_attending ? `<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">${CHECK_SVG} Attending</span>` : ''}
+                ${event.is_attending ? /*html*/`<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">${CHECK_SVG} Attending</span>` : ''}
             </div>
             <div class="event-middle">
                 <h3>${event.title || 'No Title'}</h3>
@@ -113,7 +113,7 @@ async function renderWeekContent(offset, targetElement) {
         const data = await ajaxGet("/api/events/rweek/" + offset);
         const events = data.events;
         if (!events || events.length === 0) {
-            targetElement.innerHTML = '<p style="text-align: center; margin-top: 2rem;">No events scheduled for this week.</p>';
+            targetElement.innerHTML = /*html*/`<p style="text-align: center; margin-top: 2rem;">No events scheduled for this week.</p>`;
             return;
         }
         let html = '';
@@ -123,14 +123,14 @@ async function renderWeekContent(offset, targetElement) {
             if (last_day !== eventDate) {
                 if (last_day !== null) html += '</div>';
                 last_day = eventDate;
-                html += `<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2><div class="day-events-container">`;
+                html += /*html*/`<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2><div class="day-events-container">`;
             }
             html += formatEvent(event);
         }
         if (events.length > 0) html += '</div>';
         targetElement.innerHTML = html;
     } catch (error) {
-        targetElement.innerHTML = '<p class="error-message">Failed to load events.</p>';
+        targetElement.innerHTML = /*html*/`<p class="error-message">Failed to load events.</p>`;
     }
 }
 
@@ -156,11 +156,9 @@ async function changeWeek(delta, animated = true) {
     const oldOffset = relativeWeekOffset;
     let newOffset = relativeWeekOffset;
 
-    // Handle delta: null/undefined = refresh, 0 = reset to today, other = shift
     if (delta === 0) newOffset = 0;
     else if (delta !== undefined && delta !== null) newOffset = relativeWeekOffset + delta;
 
-    // Early return if no change in offset (unless it's a forced refresh via delta=null)
     if (newOffset === oldOffset && delta !== null && delta !== undefined) return;
 
     isAnimating = true;
@@ -176,7 +174,6 @@ async function changeWeek(delta, animated = true) {
         return;
     }
 
-    // Direction for animation: 1 = next (slide left), -1 = prev (slide right)
     let direction = delta;
     if (delta === 0) direction = (oldOffset > 0) ? -1 : 1;
     if (delta === null || delta === undefined) direction = 1;

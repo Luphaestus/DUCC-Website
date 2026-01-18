@@ -20,18 +20,53 @@ export async function renderManageUsers() {
     const sort = urlParams.get('sort') || 'last_name';
     const order = urlParams.get('order') || 'asc';
     const page = parseInt(urlParams.get('page')) || 1;
+    const inDebt = urlParams.get('inDebt') || '';
+    const isMember = urlParams.get('isMember') || '';
+    const difficulty = urlParams.get('difficulty') || '';
 
-    adminContent.innerHTML = `
+    adminContent.innerHTML = /*html*/`
         <div class="form-info">
             <article class="form-box">
-                <div class="admin-controls-bar">
-                    ${await renderAdminNavBar('users')}
-                    <div class="search-input-wrapper">
-                        <input type="text" id="user-search-input" placeholder="Search by name..." value="${search}">
-                                                                        <button id="user-search-btn" title="Search">
-                            ${SEARCH_SVG}
-                                                                        </button>                    </div>
+                <div class="admin-controls-container">
+                    <div class="admin-nav-row">
+                        ${await renderAdminNavBar('users')}
+                    </div>
+                    <div class="admin-tools-row">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="user-search-input" placeholder="Search by name..." value="${search}">
+                            <button id="user-search-btn" title="Search">${SEARCH_SVG}</button>
+                        </div>
+                        <div class="admin-actions">
+                            <button id="toggle-user-filters-btn" class="contrast outline">Filters ${UNFOLD_MORE_SVG}</button>
+                            <div id="advanced-user-filters-panel" class="filter-panel hidden">
+                                <div class="grid">
+                                    <label>
+                                        In Debt
+                                        <select id="filter-in-debt">
+                                            <option value="">All</option>
+                                            <option value="true" ${inDebt === 'true' ? 'selected' : ''}>In Debt</option>
+                                            <option value="false" ${inDebt === 'false' ? 'selected' : ''}>Not In Debt</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        Membership
+                                        <select id="filter-is-member">
+                                            <option value="">All</option>
+                                            <option value="true" ${isMember === 'true' ? 'selected' : ''}>Members</option>
+                                            <option value="false" ${isMember === 'false' ? 'selected' : ''}>Non-Members</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        Difficulty
+                                        <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
+                                    </label>
+                                </div>
+                                <button id="apply-user-filters-btn" class="small-btn">Apply Filters</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
                 <div id="users-table-container" class="table-responsive">
                     <table class="admin-table">
                         <thead id="users-table-head"></thead>
@@ -47,6 +82,9 @@ export async function renderManageUsers() {
 
     const searchInput = document.getElementById('user-search-input');
     const searchBtn = document.getElementById('user-search-btn');
+    const filterBtn = document.getElementById('toggle-user-filters-btn');
+    const filterPanel = document.getElementById('advanced-user-filters-panel');
+    const applyBtn = document.getElementById('apply-user-filters-btn');
 
     const performSearch = () => {
         updateUserParams({ search: searchInput.value, page: 1 });
@@ -54,8 +92,19 @@ export async function renderManageUsers() {
 
     searchBtn.onclick = performSearch;
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') performSearch(); };
+    
+    filterBtn.onclick = () => filterPanel.classList.toggle('hidden');
+    
+    applyBtn.onclick = () => {
+        updateUserParams({
+            inDebt: document.getElementById('filter-in-debt').value,
+            isMember: document.getElementById('filter-is-member').value,
+            difficulty: document.getElementById('filter-difficulty').value,
+            page: 1
+        });
+    };
 
-    await fetchAndRenderUsers({ page, search, sort, order });
+    await fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember, difficulty });
 }
 
 /**
@@ -65,7 +114,7 @@ export async function renderManageUsers() {
 function updateUserParams(updates) {
     const urlParams = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(updates)) {
-        if (value === null || value === undefined || value === '') urlParams.delete(key);
+        if (value === null || value === undefined || value === '' || value === false) urlParams.delete(key);
         else urlParams.set(key, value);
     }
     const newSearch = urlParams.toString();
@@ -76,20 +125,23 @@ function updateUserParams(updates) {
         page: parseInt(urlParams.get('page')) || 1,
         search: urlParams.get('search') || '',
         sort: urlParams.get('sort') || 'last_name',
-        order: urlParams.get('order') || 'asc'
+        order: urlParams.get('order') || 'asc',
+        inDebt: urlParams.get('inDebt') || '',
+        isMember: urlParams.get('isMember') || '',
+        difficulty: urlParams.get('difficulty') || ''
     });
 }
 
 /**
  * Fetch and render users list.
  */
-async function fetchAndRenderUsers({ page, search, sort, order }) {
+async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember, difficulty }) {
     const thead = document.getElementById('users-table-head');
     const tbody = document.getElementById('users-table-body');
     const pagination = document.getElementById('users-pagination');
 
     try {
-        const query = new URLSearchParams({ page, limit: 10, search, sort, order }).toString();
+        const query = new URLSearchParams({ page, limit: 10, search, sort, order, inDebt, isMember, difficulty }).toString();
         const data = await ajaxGet(`/api/admin/users?${query}`);
         const users = data.users || [];
 

@@ -11,7 +11,7 @@ import { LOGIN_SVG } from '../../images/icons/outline/icons.js';
 
 addRoute('/login', 'login');
 
-const HTML_TEMPLATE = `<div id="login-view" class="view hidden">
+const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
             <div class="small-container">
                 <h1>Login</h1>
                 <div class="form-info">

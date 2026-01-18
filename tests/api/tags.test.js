@@ -1,7 +1,8 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const TagsAPI = require('../../server/api/TagsAPI');
+const Globals = require('../../server/misc/globals');
 
 describe('Tags API', () => {
     let app;
@@ -11,13 +12,32 @@ describe('Tags API', () => {
     let userManagerId;
 
     beforeEach(async () => {
+        vi.spyOn(Globals.prototype, 'getInt').mockReturnValue(0);
+        vi.spyOn(Globals.prototype, 'getFloat').mockReturnValue(0);
+
         db = await setupTestDb();
 
+        // Setup Permissions & Roles
+        await db.run("INSERT INTO permissions (slug) VALUES ('user.manage'), ('event.manage.all')");
+        
+        await db.run("INSERT INTO roles (name) VALUES ('Admin'), ('UserManager')");
+        const adminRoleId = (await db.get("SELECT id FROM roles WHERE name = 'Admin'")).id;
+        const umRoleId = (await db.get("SELECT id FROM roles WHERE name = 'UserManager'")).id;
+
+        const perms = await db.all("SELECT id, slug FROM permissions");
+        for (const p of perms) {
+            await db.run("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)", [adminRoleId, p.id]); // Admin gets all
+            if (p.slug === 'user.manage') {
+                await db.run("INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)", [umRoleId, p.id]);
+            }
+        }
+
         const adminRes = await db.run(
-            'INSERT INTO users (email, first_name, last_name, college_id, can_manage_events, can_manage_users) VALUES (?, ?, ?, ?, ?, ?)',
-            ['admin@durham.ac.uk', 'Admin', 'User', 1, 1, 1]
+            'INSERT INTO users (email, first_name, last_name, college_id) VALUES (?, ?, ?, ?)',
+            ['admin@durham.ac.uk', 'Admin', 'User', 1]
         );
         adminId = adminRes.lastID;
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, adminRoleId]);
 
         const userRes = await db.run(
             'INSERT INTO users (email, first_name, last_name, college_id) VALUES (?, ?, ?, ?)',
@@ -26,26 +46,28 @@ describe('Tags API', () => {
         userId = userRes.lastID;
 
         const userManagerRes = await db.run(
-            'INSERT INTO users (email, first_name, last_name, college_id, can_manage_users) VALUES (?, ?, ?, ?, ?)',
-            ['usermanager@durham.ac.uk', 'User', 'Manager', 1, 1]
+            'INSERT INTO users (email, first_name, last_name, college_id) VALUES (?, ?, ?, ?)',
+            ['usermanager@durham.ac.uk', 'User', 'Manager', 1]
         );
         userManagerId = userManagerRes.lastID;
+        await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [userManagerId, umRoleId]);
 
         app = express();
         app.use(express.json());
 
         // Middleware to mock authentication
         app.use((req, res, next) => {
+            req.db = db;
             const authHeader = req.headers['x-mock-user'];
             if (authHeader === 'admin') {
                 req.isAuthenticated = () => true;
-                req.user = { id: adminId, can_manage_events: true, can_manage_users: true };
+                req.user = { id: adminId };
             } else if (authHeader === 'userManager') {
                 req.isAuthenticated = () => true;
-                req.user = { id: userManagerId, can_manage_events: false, can_manage_users: true };
+                req.user = { id: userManagerId };
             } else if (authHeader === 'user') {
                 req.isAuthenticated = () => true;
-                req.user = { id: userId, can_manage_events: false, can_manage_users: false };
+                req.user = { id: userId };
             } else {
                 req.isAuthenticated = () => false;
             }
@@ -58,6 +80,7 @@ describe('Tags API', () => {
 
     afterEach(async () => {
         await db.close();
+        vi.restoreAllMocks();
     });
 
     test('GET /api/tags returns all tags', async () => {

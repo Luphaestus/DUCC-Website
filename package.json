@@ -15,28 +15,30 @@
   "type": "commonjs",
   "scripts": {
     "db:init": "cross-env-shell \"node server/db/init/init.js $NODE_ENV\"",
-    "start": "cross-env NODE_ENV=prod npm run db:init && cross-env NODE_ENV=prod node server/server.js",
+    "start": "cross-env NODE_ENV=prod npm run --silent db:init && cross-env NODE_ENV=prod node server/server.js",
     "sass": "sass --watch src:public --load-path=node_modules/@picocss/pico/scss/",
     "sass:build": "sass src:public --load-path=node_modules/@picocss/pico/scss/ --no-source-map",
-    "dev:server": "cross-env NODE_ENV=dev nodemon server/server.js",
-    "dev": "cross-env NODE_ENV=dev npm run db:init && cross-env NODE_ENV=dev run-p sass dev:server",
-    "pretest": "cross-env NODE_ENV=test DATABASE_PATH=database.test.db npm run db:init",
-    "test": "cross-env NODE_ENV=test DATABASE_PATH=database.test.db jest --forceExit"
+    "dev:server": "cross-env NODE_ENV=dev nodemon --quiet server/server.js",
+    "dev": "cross-env NODE_ENV=dev npm run --silent db:init && cross-env NODE_ENV=dev run-p --silent sass dev:server",
+    "pretest": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db npm run --silent db:init",
+    "test": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest run",
+    "test:watch": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest"
   },
   "nodemonConfig": {
-    "ignore": [
-      "public/*",
-      "src/*"
-    ]
+    "watch": [
+      "server/"
+    ],
+    "ext": "js,json"
   },
   "dependencies": {
     "@picocss/pico": "^2.1.1",
+    "ansi-colors": "^4.1.3",
     "bcrypt": "^6.0.0",
+    "cli-progress": "^3.12.0",
     "connect-sqlite3": "^0.9.16",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
-    "jest": "^30.2.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "sass": "^1.94.0",
@@ -48,10 +50,12 @@
     "@types/express-session": "^1.18.2",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
+    "connect-livereload": "^0.6.1",
     "cross-env": "^10.1.0",
-    "jest-environment-jsdom": "^30.2.0",
+    "livereload": "^0.10.3",
     "nodemon": "^3.1.11",
     "npm-run-all": "^4.1.5",
-    "supertest": "^7.1.4"
+    "supertest": "^7.1.4",
+    "vitest": "^4.0.17"
   }
 }

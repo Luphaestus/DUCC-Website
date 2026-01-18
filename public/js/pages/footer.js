@@ -5,7 +5,7 @@ import { MAIL_SVG } from "../../images/icons/outline/icons.js";
  * @module Footer
  */
 
-const HTML_TEMPLATE = `
+const HTML_TEMPLATE = /*html*/`
     <footer>
         <div class="small-container">
             <div class="footer-content">

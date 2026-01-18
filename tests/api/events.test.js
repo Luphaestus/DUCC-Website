@@ -1,21 +1,10 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const Events = require('../../server/api/EventsAPI');
+const Globals = require('../../server/misc/globals');
 
-jest.mock('../../server/misc/globals', () => {
-    return class Globals {
-        getInt(key) {
-            if (key === 'Unauthorized_max_difficulty') return 1;
-            return 0;
-        }
-        getFloat(key) {
-            return -1000; // MinMoney, allow debt
-        }
-    };
-});
-
-jest.mock('../../server/misc/authentication', () => {
+vi.mock('../../server/misc/authentication', () => {
     return () => (req, res, next) => next();
 });
 
@@ -26,6 +15,12 @@ describe('Events API', () => {
     let eventId;
 
     beforeEach(async () => {
+        vi.spyOn(Globals.prototype, 'getInt').mockImplementation((key) => {
+            if (key === 'Unauthorized_max_difficulty') return 1;
+            return 0;
+        });
+        vi.spyOn(Globals.prototype, 'getFloat').mockReturnValue(-1000);
+
         db = await setupTestDb();
         // Insert user who is a member and has filled legal info to allow attendance
         const res = await db.run(`
@@ -60,6 +55,7 @@ describe('Events API', () => {
 
     afterEach(async () => {
         await db.close();
+        vi.restoreAllMocks();
     });
 
     test('GET /api/events returns events', async () => {

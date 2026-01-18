@@ -2,7 +2,8 @@ import { ViewChangedEvent, switchView, addRoute } from "/js/utils/view.js";
 import { ajaxGet, ajaxPost } from "/js/utils/ajax.js";
 import { notify } from '/js/components/notification.js';
 import { BalanceChangedEvent } from '/js/utils/globals.js';
-import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, AVG_PACE_SVG } from '../../images/icons/outline/icons.js';
+import { showConfirmModal } from '/js/utils/modal.js';
+import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, AVG_PACE_SVG, BRIGHTNESS_ALERT_SVG } from '../../images/icons/outline/icons.js';
 
 /**
  * View details for a single event and manage sign-ups.
@@ -15,7 +16,7 @@ addRoute('/event/:id', 'event');
 /**
  * Base template for event detail view.
  */
-const HTML_TEMPLATE = `<div id="event-view" class="view hidden small-container">
+const HTML_TEMPLATE = /*html*/`<div id="event-view" class="view hidden small-container">
             <div id="event-detail">
                 <p aria-busy="true">Loading event...</p>
             </div>
@@ -116,74 +117,86 @@ async function setupEventButtons(eventId, path, resolvedPath) {
             buttonContainer?.classList.add('hidden');
             attendeeContainers.forEach(c => c?.classList.add('hidden'));
             waitlistCountField?.classList.add('hidden');
-            if (warningContainer) warningContainer.innerHTML = '';
+            if (warningContainer) {
+                warningContainer.innerHTML = /*html*/`
+                    <div class="event-warning-banner info">
+                        <span>${INFO_SVG} Please log in to sign up for this event.</span>
+                        <div class="banner-actions">
+                            <button class="banner-btn" data-nav="/login">Login</button>
+                            <button class="banner-btn secondary" data-nav="/signup">Sign Up</button>
+                        </div>
+                    </div>`;
+                const infoContainer = document.getElementById('event-info-container');
+                if (infoContainer) infoContainer.style.marginTop = '1rem';
+            }
             return;
         }
 
         attendeeContainers.forEach(c => c?.classList.remove('hidden'));
         waitlistCountField?.classList.remove('hidden');
 
-        const [userProfile, isAttendingRes, isPayingRes, isOnWaitlistRes, coachCountRes, attendeesResponse, eventResponse] = await Promise.all([
-            ajaxGet('/api/user/elements/is_member,free_sessions,filled_legal_info,balance,is_instructor'),
+        const [isAttendingRes, isOnWaitlistRes, attendeesResponse, eventResponse, canJoinRes, userRes, coachCountRes] = await Promise.all([
             ajaxGet(`/api/event/${eventId}/isAttending`),
-            ajaxGet(`/api/event/${eventId}/isPaying`).catch(() => ({ isPaying: false })),
             ajaxGet(`/api/event/${eventId}/isOnWaitlist`).catch(() => ({ isOnWaitlist: false })),
-            ajaxGet(`/api/event/${eventId}/coachCount`).catch(() => ({ count: 0 })),
             ajaxGet(`/api/event/${eventId}/attendees`).catch(() => ({ attendees: [] })),
-            ajaxGet(`/api/event/${eventId}`)
+            ajaxGet(`/api/event/${eventId}`),
+            ajaxGet(`/api/event/${eventId}/canJoin`).catch(e => ({ canJoin: false, reason: e.message || 'Error' })),
+            ajaxGet('/api/user/elements/is_instructor').catch(() => ({ is_instructor: false })),
+            ajaxGet(`/api/event/${eventId}/coachCount`).catch(() => ({ count: 0 }))
         ]);
 
         const { event } = eventResponse;
-        const isAttending = isAttendingRes?.isAttending || false;
-        const isPaying = isPayingRes?.isPaying || false;
-        const isOnWaitlist = isOnWaitlistRes?.isOnWaitlist || false;
-        const attendees = attendeesResponse?.attendees || [];
+        const isInstructor = userRes.is_instructor;
         const coachCount = coachCountRes.count;
+        
+        if (!event.signup_required) {
+            buttonContainer?.classList.add('hidden');
+            attendeeContainers.forEach(c => c?.classList.add('hidden'));
+            waitlistCountField?.classList.add('hidden');
+            if (warningContainer) warningContainer.innerHTML = `<div class="event-warning-banner info">${INFO_SVG} No sign-up required for this event.</div>`;
+            return;
+        }
 
+        const isAttending = isAttendingRes?.isAttending || false;
+        const isOnWaitlist = isOnWaitlistRes?.isOnWaitlist || false;
+        
+        const attendees = attendeesResponse?.attendees || [];
         const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
         const attendeeCount = activeAttendees.length;
         const isFull = event.max_attendees > 0 && attendeeCount >= event.max_attendees;
 
         // Refresh waitlist info
-        await fillWaitlist(eventId, isFull);
+        if (event.enable_waitlist) {
+            await fillWaitlist(eventId, isFull);
+        } else {
+            waitlistCountField?.classList.add('hidden');
+        }
 
         let canAttend = true;
         let warningHtml = '';
-        const now = new Date();
-        const startDate = new Date(event.start);
-        const endDate = new Date(event.end);
 
-        if (!isAttending) {
-            if (now > endDate) {
+        if (event.status === 'canceled') {
+            canAttend = false;
+            warningHtml = `<div class="event-warning-banner error">${CLOSE_SVG} This event has been canceled.</div>`;
+        } else if (!isAttending) {
+            if (!canJoinRes.canJoin) {
                 canAttend = false;
-                warningHtml = `<div class="event-warning-banner error">${CLOSE_SVG} This event has already ended.</div>`;
-            } else if (now > startDate) {
-                canAttend = false;
-                warningHtml = `<div class="event-warning-banner error">${CLOSE_SVG} This event has already started.</div>`;
-            } else if (!userProfile.is_instructor && coachCount === 0) {
-                canAttend = false;
-                warningHtml = `<div class="event-warning-banner warning">${CHECK_INDETERMINATE_SMALL_SVG} At least one coach must sign up before members can join this event.</div>`;
-            } else if (isFull) {
-                canAttend = false;
-                warningHtml = `<div class="event-warning-banner warning">${CHECK_INDETERMINATE_SMALL_SVG} This event is currently full. ${!isOnWaitlist ? 'You can join the waiting list.' : ''}</div>`;
-            } else if (!userProfile.filled_legal_info) {
-                canAttend = false;
-                warningHtml = `<div class="event-warning-banner error">
-                    ${CLOSE_SVG} You must complete your legal and medical information before signing up.
-                    <button class="banner-btn" data-nav="/legal">Complete Form</button>
-                </div>`;
-            } else if (!userProfile.is_member && userProfile.free_sessions <= 0) {
-                canAttend = false;
-                warningHtml = `<div class="event-warning-banner error">
-                    ${CLOSE_SVG} You are not a member and have no free sessions remaining.
-                    <button class="banner-btn" data-nav="/profile">Join Club</button>
-                </div>`;
-            } else if (userProfile.balance < -20 && !isPaying) {
-                canAttend = false;
-                warningHtml = `<div class="event-warning-banner error">
-                    ${CLOSE_SVG} You have outstanding debts and cannot sign up for new events.
-                    <button class="banner-btn" data-nav="/transactions">View Balance</button>
-                </div>`;
+                let actionBtn = '';
+                
+                if (canJoinRes.reason.includes('Legal info')) {
+                    actionBtn = `<button class="banner-btn" data-nav="/legal">Complete Form</button>`;
+                } else if (canJoinRes.reason.includes('free sessions')) {
+                    actionBtn = `<button class="banner-btn" data-nav="/profile">Join Club</button>`;
+                } else if (canJoinRes.reason.includes('debts')) {
+                    actionBtn = `<button class="banner-btn" data-nav="/transactions">View Balance</button>`;
+                } 
+
+                if (isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full') {
+                     warningHtml = `<div class="event-warning-banner warning">${CHECK_INDETERMINATE_SMALL_SVG} This event is full. You can join the waiting list.</div>`;
+                     canAttend = false; // Main button becomes Join Waitlist
+                } else {
+                     warningHtml = `<div class="event-warning-banner error"><span>${CLOSE_SVG} ${canJoinRes.reason}</span> ${actionBtn}</div>`;
+                }
             }
         }
 
@@ -199,10 +212,13 @@ async function setupEventButtons(eventId, path, resolvedPath) {
 
             if (isAttending) attendButton.textContent = 'Leave Event';
             else if (isOnWaitlist) attendButton.textContent = 'Leave Waiting List';
-            else if (isFull) attendButton.textContent = 'Join Waiting List';
+            else if (isFull && event.enable_waitlist) attendButton.textContent = 'Join Waiting List';
             else attendButton.textContent = 'Attend Event';
 
-            const shouldDisable = !canAttend && !isAttending && !isOnWaitlist && !isFull;
+            const canJoinWaitlist = isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full'; 
+            
+            const shouldDisable = !canAttend && !isAttending && !isOnWaitlist && !canJoinWaitlist;
+            
             attendButton.disabled = shouldDisable;
             attendButton.style.opacity = shouldDisable ? '0.5' : '1';
             attendButton.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
@@ -212,8 +228,16 @@ async function setupEventButtons(eventId, path, resolvedPath) {
 
             newBtn.addEventListener('click', async () => {
                 if (shouldDisable) return;
-                if (isAttending && userProfile.is_instructor && coachCount === 1 && attendees.length > 1) {
-                    if (!confirm("Warning: You are the last coach. Leaving will remove all other attendees. Proceed?")) return;
+                
+                if (isAttending) {
+                    const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
+                    if (isInstructor && coachCount === 1 && activeAttendees.length > 1) {
+                        const confirmed = await showConfirmModal(
+                            "Cancel Event?",
+                            "You are the only instructor attending. If you leave, the event will be <strong>canceled</strong> and all other attendees will be notified. Are you sure?"
+                        );
+                        if (!confirmed) return;
+                    }
                 }
 
                 try {
@@ -277,7 +301,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
 
         const dateTimeStr = `${month} ${day}, ${timeStr}`;
 
-        navContainer.innerHTML = `
+        navContainer.innerHTML = /*html*/`
             <div id="event-warning-container"></div>
             <div class="form-info" id="event-info-container">
                 <article class="form-box">
@@ -342,13 +366,13 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
             </div>`;
 
         // Check manage perms
-        ajaxGet('/api/user/elements/can_manage_events').then(perms => {
-            if (perms?.can_manage_events) {
+        ajaxGet(`/api/event/${event.id}/canManage`).then(res => {
+            if (res.canManage) {
                 const editBtn = document.getElementById('edit-event-button');
                 editBtn?.classList.remove('hidden');
                 editBtn.onclick = () => switchView(`/admin/event/${event.id}`);
             }
-        }).catch(() => { });
+        }).catch(() => {});
 
         const eventId = event.id;
         await Promise.all([
@@ -358,7 +382,32 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
 
     } catch (error) {
         console.error("Failed to load event details", error);
-        navContainer.innerHTML = `<p class="error-message">Could not load event details.</p>`;
+        const loggedIn = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
+
+        if (!loggedIn) {
+            navContainer.innerHTML = /*html*/`
+                <div class="event-error-state warning">
+                    <div class="error-icon">${BRIGHTNESS_ALERT_SVG}</div>
+                    <h2>Event Unavailable</h2>
+                    <p>This event may not exist, or you may need to log in to view it.</p>
+                    <div class="error-actions">
+                        <button data-nav="/login">Login</button>
+                        <button class="secondary" data-nav="/signup">Sign Up</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            navContainer.innerHTML = /*html*/`
+                <div class="event-error-state denied">
+                    <div class="error-icon">${CLOSE_SVG}</div>
+                    <h2>Access Denied</h2>
+                    <p>This event may not exist, or you may not have permission to view it.</p>
+                    <div class="error-actions">
+                        <button data-nav="/events">Back to Events</button>
+                    </div>
+                </div>
+            `;
+        }
     }
 }
 

@@ -2,6 +2,8 @@ const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
 const checkAuthentication = require('../misc/authentication.js');
 
+//todo fix
+
 /**
  * API for authentication, registration, and session management.
  * @module Auth
@@ -78,10 +80,32 @@ class Auth {
             }
 
             try {
+                // Check for soft-deleted account
+                const deletedEmail = 'deleted:' + email;
+                const existingUser = await this.db.get('SELECT id FROM users WHERE email = ?', [deletedEmail]);
+
                 const hashedPassword = await bcrypt.hash(password, 10);
-                await this.db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
-                res.status(201).json({ message: 'User registered successfully.' });
+
+                if (existingUser) {
+                    // Restore account
+                    await this.db.run(`
+                        UPDATE users SET 
+                            email = ?, 
+                            hashed_password = ?, 
+                            first_name = ?, 
+                            last_name = ?,
+                            created_at = CURRENT_TIMESTAMP 
+                        WHERE id = ?`, 
+                        [email, hashedPassword, first_name, last_name, existingUser.id]
+                    );
+                    res.status(200).json({ message: 'Account restored successfully.' });
+                } else {
+                    // Create new account
+                    await this.db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
+                    res.status(201).json({ message: 'User registered successfully.' });
+                }
             } catch (err) {
+                console.error(err);
                 res.status(500).json({ message: 'Registration failed. Email may be taken.' });
             }
         });

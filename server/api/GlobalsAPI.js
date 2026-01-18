@@ -1,20 +1,8 @@
 const Globals = require('../misc/globals.js');
-const { statusObject } = require('../misc/status.js');
-const bcrypt = require('bcrypt');
 const UserDB = require('../db/userDB.js');
-
-/**
- * Check if user is President.
- * @param {object} req
- * @returns {statusObject}
- */
-function isPresident(req) {
-    if (req.user && new Globals().getInt('President') === req.user.id) {
-        return new statusObject(200);
-    } else {
-        return new statusObject(403, 'User not authorized');
-    }
-}
+const RolesDB = require('../db/rolesDB.js');
+const check = require('../misc/authentication.js');
+const { Permissions } = require('../misc/permissions.js');
 
 /**
  * API for system-wide configuration.
@@ -37,102 +25,79 @@ class GlobalsAPI {
         /**
          * Get President status.
          */
-        this.app.get('/api/globals/status', (req, res) => {
-            const isPres = isPresident(req);
-            if (isPres.isError()) res.json({ isPresident: false });
-            else res.json({ isPresident: true });
+        this.app.get('/api/globals/status', check("role:President"))
+
+        /**
+         * Fetch paginated users list for global settings.
+         */
+        this.app.get('/api/globals/users', check('role:President'), async (req, res) => {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const search = req.query.search || '';
+            const sort = req.query.sort || 'last_name';
+            const order = req.query.order || 'asc';
+
+            const inDebt = req.query.inDebt;
+            const isMember = req.query.isMember;
+            const difficulty = req.query.difficulty;
+
+            const userPerms = {
+                canManageUsers: await Permissions.hasPermission(this.db, req.user.id, 'user.manage'),
+                canManageTrans: await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage'),
+                canManageEvents: await Permissions.hasPermission(this.db, req.user.id, 'event.manage.all'),
+                isScopedExec: await Permissions.hasPermission(this.db, req.user.id, 'event.manage.scoped')
+            };
+
+            const result = await UserDB.getUsers(this.db, userPerms, { page, limit, search, sort, order, inDebt, isMember, difficulty });
+            if (result.isError()) return result.getResponse(res);
+            res.json(result.getData());
         });
 
         /**
-         * Fetch users list for global settings (President only).
+         * Fetch all global settings.
          */
-        this.app.get('/api/globals/users', async (req, res) => {
-            const isPres = isPresident(req);
-            if (isPres.isError()) return isPres.getResponse(res);
+        this.app.get('/api/globals', check('role:President'), async (req, res) => {
+            const globals = new Globals().getAll();
 
-            try {
-                const users = await this.db.all('SELECT id, first_name, last_name FROM users ORDER BY first_name ASC, last_name ASC');
-                res.json({ users });
-            } catch (err) {
-                res.status(500).json({ message: 'Database error' });
+            // Inject current President ID
+            const presidentRes = await RolesDB.getFirstUserIdByRoleName(this.db, 'President');
+            if (!presidentRes.isError()) {
+                globals['President'] = presidentRes.getData();
             }
+
+            res.json({ res: globals });
         });
 
         /**
-         * Fetch all global settings (President only).
+         * Fetch specific global settings by key.
          */
-        this.app.get('/api/globals', (req, res) => {
-            const isPres = isPresident(req);
-            if (isPres.isError()) return isPres.getResponse(res);
-            res.json({ res: new Globals().getAll() });
-        });
 
-        /**
-         * Fetch specific global settings by key (President only).
-         */
         this.app.get('/api/globals/:key', async (req, res) => {
-            const isPres = isPresident(req);
-            if (isPres.isError()) return isPres.getResponse(res);
+            let permission = 'Guest';
 
-            const keys = req.params.key.split(',');
-            const result = {};
-            for (const key of keys) result[key] = new Globals().get(key);
-            res.json({ res: result });
-        });
-
-        /**
-         * Fetch whitelisted global settings (Public).
-         */
-        this.app.get('/api/globals/public/:key', async (req, res) => {
-            const allowedKeys = ['MembershipCost', 'MinMoney', 'Unauthorized_max_difficulty'];
-            const keys = req.params.key.split(',');
-            const result = {};
-            const globals = new Globals();
-
-            for (const key of keys) {
-                if (allowedKeys.includes(key)) result[key] = globals.get(key);
+            if (req.user !== undefined) {
+                if (await Permissions.hasRole(this.db, req.user.id, 'President')) {
+                    permission = 'President';
+                } else {
+                    permission = 'Authenticated';
+                }
             }
-            res.json({ res: result });
+
+            res.json({ res: new Globals().getKeys(req.params.key.split(','), permission) });
         });
 
         /**
-         * Update global settings (President only).
+         * Update global settings.
          */
-        this.app.post('/api/globals/:key', async (req, res) => {
-            const isPres = isPresident(req);
-            if (isPres.isError()) return isPres.getResponse(res);
-
+        this.app.post('/api/globals/:key', check('role:President'), async (req, res) => {
             const key = req.params.key;
             const globals = new Globals();
-
-            if (req.body.value !== undefined) {
-                if (key === 'Unauthorized_max_difficulty') {
-                    const val = parseInt(req.body.value);
-                    if (isNaN(val) || val < 1 || val > 5) {
-                        return new statusObject(400, 'Must be an integer between 1 and 5').getResponse(res);
-                    }
-                }
-
-                if (key === 'President') {
-                    if (!req.body.password) return new statusObject(400, 'Password required').getResponse(res);
-                    try {
-                        const isMatch = await bcrypt.compare(req.body.password, req.user.hashed_password);
-                        if (!isMatch) return new statusObject(403, 'Incorrect password').getResponse(res);
-                        const resetStatus = await UserDB.resetPermissions(this.db, req.body.value);
-                        if (resetStatus.isError()) return resetStatus.getResponse(res);
-                    } catch (err) {
-                        return new statusObject(500, 'Internal error').getResponse(res);
-                    }
-                }
-
+            try {
                 globals.set(key, req.body.value);
-                res.json({ message: `Global '${key}' updated.` });
-            } else if (typeof req.body === 'object' && req.body !== null) {
-                for (const k in req.body) globals.set(k, req.body[k]);
-                res.json({ message: 'Globals updated.' });
-            } else {
-                return new statusObject(400, 'Invalid body').getResponse(res);
+            } catch (error) {
+                return res.status(400).json({ message: error.message });
             }
+            res.json({ success: true });
         });
     }
 }

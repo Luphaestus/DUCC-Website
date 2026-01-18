@@ -2,6 +2,8 @@ const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 
+//todo fix
+
 /**
  * API for scanning and serving slideshow images.
  * @module SlidesAPI

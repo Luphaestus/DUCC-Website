@@ -2,7 +2,7 @@ const request = require('supertest');
 const express = require('express');
 const session = require('express-session');
 const passportModule = require('passport');
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const Auth = require('../../server/api/AuthAPI');
 
 describe('Auth API', () => {

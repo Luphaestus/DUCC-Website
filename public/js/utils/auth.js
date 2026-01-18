@@ -14,15 +14,13 @@ export async function requireAuth() {
     try {
         const data = await ajaxGet('/api/auth/status');
         if (!data.authenticated) {
-            notify('Access Denied', 'You need to log in to access that page', NotificationTypes.WARNING);
-            switchView('/login');
+            switchView('/unauthorized');
             return false;
         }
         return true;
     } catch (error) {
         console.error("Auth check failed:", error);
-        notify('Error', 'Failed to verify authentication status.', NotificationTypes.ERROR);
-        switchView('/login');
+        switchView('/unauthorized');
         return false;
     }
 }

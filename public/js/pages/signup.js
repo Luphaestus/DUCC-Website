@@ -9,7 +9,7 @@ import { ACCOUNT_BOX_SVG } from '../../images/icons/outline/icons.js';
 
 addRoute('/signup', 'signup');
 
-const HTML_TEMPLATE = `<div id="signup-view" class="view hidden">
+const HTML_TEMPLATE = /*html*/`<div id="signup-view" class="view hidden">
             <div class="small-container">
                 <h1>Sign Up</h1>
                 <div class="form-info">

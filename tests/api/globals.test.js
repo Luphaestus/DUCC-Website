@@ -1,38 +1,36 @@
 const request = require('supertest');
 const express = require('express');
-const { setupTestDb } = require('/js/utils/db');
+const { setupTestDb } = require('../utils/db');
 const GlobalsAPI = require('../../server/api/GlobalsAPI');
 const Globals = require('../../server/misc/globals');
-
-jest.mock('../../server/misc/globals');
 
 describe('Globals API', () => {
     let app;
     let db;
     let presidentId;
-    let mockGlobals;
 
     beforeEach(async () => {
         db = await setupTestDb();
 
-        // Mock Globals instance
-        mockGlobals = {
-            getInt: jest.fn(),
-            get: jest.fn(),
-            getAll: jest.fn(),
-            set: jest.fn()
-        };
-        Globals.mockImplementation(() => mockGlobals);
+        // Spy on Globals methods
+        vi.spyOn(Globals.prototype, 'getInt').mockImplementation((key) => (key === 'President' ? 1 : 0));
+        vi.spyOn(Globals.prototype, 'getFloat').mockReturnValue(0);
+        vi.spyOn(Globals.prototype, 'get').mockReturnValue(null);
+        vi.spyOn(Globals.prototype, 'getAll').mockReturnValue({});
+        vi.spyOn(Globals.prototype, 'set').mockImplementation(() => {});
+
+        // Create President Role
+        await db.run("INSERT INTO roles (name, description) VALUES ('President', 'Club President')");
+        const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
 
         const res = await db.run(
             'INSERT INTO users (email, first_name, last_name, college_id) VALUES (?, ?, ?, ?)',
             ['pres@durham.ac.uk', 'Pres', 'Ident', 1]
         );
         presidentId = res.lastID;
-        mockGlobals.getInt.mockImplementation((key) => {
-            if (key === 'President') return presidentId;
-            return 0;
-        });
+        
+        // Assign President role
+        await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [presidentId, presidentRole.id]);
 
         app = express();
         app.use(express.json());
@@ -57,6 +55,7 @@ describe('Globals API', () => {
 
     afterEach(async () => {
         await db.close();
+        vi.restoreAllMocks();
     });
 
     test('GET /api/globals/status returns true for president', async () => {
@@ -81,12 +80,14 @@ describe('Globals API', () => {
     });
 
     test('GET /api/globals works for president', async () => {
-        mockGlobals.getAll.mockReturnValue({ Key: 'Value' });
+        Globals.prototype.getAll.mockReturnValue({ Key: 'Value' });
+        Globals.prototype.getInt.mockImplementation((key) => key === 'President' ? presidentId : 0);
+
         const res = await request(app)
             .get('/api/globals')
             .set('x-mock-user', 'president');
         expect(res.statusCode).toBe(200);
-        expect(res.body.res).toEqual({ Key: 'Value' });
+        expect(res.body.res).toEqual({ Key: 'Value', President: presidentId });
     });
 
     test('POST /api/globals/:key updates value', async () => {
@@ -96,21 +97,6 @@ describe('Globals API', () => {
             .send({ value: 'NewValue' });
 
         expect(res.statusCode).toBe(200);
-        expect(mockGlobals.set).toHaveBeenCalledWith('SomeKey', 'NewValue');
-    });
-
-    test('GET /api/globals/public/:key returns whitelisted values', async () => {
-        mockGlobals.get.mockImplementation((key) => {
-            if (key === 'MembershipCost') return 50;
-            return null;
-        });
-
-        const res = await request(app)
-            .get('/api/globals/public/MembershipCost,SecretKey')
-            .set('x-mock-user', 'user');
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body.res).toEqual({ MembershipCost: 50 });
-        expect(res.body.res.SecretKey).toBeUndefined();
+        expect(Globals.prototype.set).toHaveBeenCalledWith('SomeKey', 'NewValue');
     });
 });

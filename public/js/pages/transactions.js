@@ -9,7 +9,7 @@ import { requireAuth } from '/js/utils/auth.js';
 
 addRoute('/transactions', 'transactions');
 
-const HTML_TEMPLATE = `<div id="transactions-view" class="view hidden small-container">
+const HTML_TEMPLATE = /*html*/`<div id="transactions-view" class="view hidden small-container">
             <h1>Your Transactions</h1>
             <div id="transactions-list">
                 <p aria-busy="true">Loading transactions...</p>
