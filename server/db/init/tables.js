@@ -217,6 +217,28 @@ async function createTables(db) {
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
+    },
+    {
+      name: 'file_categories',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        default_visibility TEXT CHECK(default_visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members'
+      `
+    },
+    {
+      name: 'files',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        author TEXT,
+        date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        size INTEGER,
+        filename TEXT,
+        category_id INTEGER,
+        visibility TEXT CHECK(visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members',
+        FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL
+      `
     }
   ];
 

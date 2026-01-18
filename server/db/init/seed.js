@@ -48,7 +48,11 @@ async function seedData(db, env) {
         { slug: 'swims.manage', desc: 'Manage swims' },
         { slug: 'user.manage.advanced', desc: 'Advanced user management (direct permissions, profile edits)' },
         { slug: 'tag.read', desc: 'View tags' },
-        { slug: 'tag.write', desc: 'Edit tags' }
+        { slug: 'tag.write', desc: 'Edit tags' },
+        { slug: 'file.read', desc: 'View and download files' },
+        { slug: 'file.write', desc: 'Upload and delete files' },
+        { slug: 'file.edit', desc: 'Edit file metadata' },
+        { slug: 'file.category.manage', desc: 'Manage file categories' }
     ];
 
     const permIds = {};
@@ -59,13 +63,24 @@ async function seedData(db, env) {
     }
 
     // Always seed President role
-    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write'];
+    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage'];
     await db.run('INSERT OR IGNORE INTO roles (name, description) VALUES (?, ?)', ['President', 'The Club President with full administrative access.']);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
     for (const permSlug of presidentPerms) {
         if (permIds[permSlug]) {
             await db.run('INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presidentRole.id, permIds[permSlug]]);
         }
+    }
+
+    // Seed file categories
+    const categories = [
+        { name: 'Minutes', visibility: 'members' },
+        { name: 'Policies', visibility: 'public' },
+        { name: 'Training', visibility: 'members' },
+        { name: 'Misc', visibility: 'members' }
+    ];
+    for (const cat of categories) {
+        await db.run('INSERT OR IGNORE INTO file_categories (name, default_visibility) VALUES (?, ?)', [cat.name, cat.visibility]);
     }
 
     if (env === 'dev' || env === 'development') {
@@ -197,12 +212,12 @@ async function seedData(db, env) {
         }
 
         const roles = [
-            { name: 'Vice Captain (Durham)', perms: ['user.manage', 'event.manage.all', 'swims.manage'] },
+            { name: 'Vice Captain (Durham)', perms: ['user.manage', 'event.manage.all', 'swims.manage', 'file.write'] },
             { name: 'Club Coach', perms: ['event.manage.all', 'swims.manage'] },
             { name: 'Treasurer', perms: ['transaction.manage'] },
-            { name: 'Trip Officer', perms: ['event.manage.all', 'swims.manage'] },
+            { name: 'Trip Officer', perms: ['event.manage.all', 'swims.manage', 'file.write'] },
             { name: 'Kit and Safety Officer', perms: [] },
-            { name: 'Media Secretary', perms: [] },
+            { name: 'Media Secretary', perms: ['file.write', 'file.edit'] },
             { name: 'Social Secretary (Durham)', perms: ['event.manage.scoped'], scopedTags: ['socials'] },
             { name: 'Polo Captain', perms: ['event.manage.scoped', 'swims.manage'], scopedTags: ['polo', 'polo-team'] },
             { name: 'Slalom Captain', perms: ['event.manage.scoped', 'swims.manage'], scopedTags: ['slalom', 'slalom-team'] },

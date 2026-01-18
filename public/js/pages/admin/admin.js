@@ -11,6 +11,7 @@ import { renderManageRoles } from './role/manage.js';
 import { renderRoleDetail } from './role/detail.js';
 import { renderManageGlobals } from './globals.js';
 import { renderUserAdvanced } from './user/advanced.js';
+import { renderAdminFiles } from './files.js';
 import { requireAuth } from '/js/utils/auth.js';
 
 /**
@@ -32,6 +33,7 @@ const HTML_TEMPLATE = /*html*/`
     </div>
     <div id="${adminContentID}">
         <p>Select an option to manage.</p>
+    
     </div>
 </div>`;
 
@@ -70,6 +72,7 @@ async function AdminNavigationListener({ viewId, path }) {
     const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');
     const canManageTransactions = perms.includes('transaction.manage');
     const canManageRoles = perms.includes('role.manage');
+    const canManageDocs = perms.includes('document.write') || perms.includes('document.edit');
     const isExec = perms.length > 0;
     const isPresident = await ajaxGet('/api/globals/status').then(_ => true).catch(() => false);
 
@@ -82,11 +85,13 @@ async function AdminNavigationListener({ viewId, path }) {
 
     const cleanPath = path.split('?')[0];
 
+    // Protection logic based on button visibility
     const canAccessUsers = canManageUsers || canManageTransactions || isExec;
     const canAccessEvents = canManageEvents;
     const canAccessTags = canManageEvents; 
     const canAccessRoles = canManageRoles;
     const canAccessGlobals = isPresident;
+    const canAccessDocs = canManageDocs;
 
     if (cleanPath === '/admin/users' || cleanPath.match(/^\/admin\/user\/\d+(\/advanced)?$/)) {
         if (!canAccessUsers) return switchView('/unauthorized');
@@ -117,6 +122,11 @@ async function AdminNavigationListener({ viewId, path }) {
         if (cleanPath === '/admin/roles') await renderManageRoles();
         else await renderRoleDetail(cleanPath.split('/').pop());
 
+    } else if (cleanPath === '/admin/files') {
+        if (!canAccessDocs) return switchView('/unauthorized');
+        updateAdminTitle('Files');
+        await renderAdminFiles();
+
     } else if (cleanPath === '/admin/globals') {
         if (!canAccessGlobals) return switchView('/unauthorized');
         updateAdminTitle('Globals');
@@ -129,6 +139,7 @@ async function AdminNavigationListener({ viewId, path }) {
         let usersButton = canAccessUsers ? `<button data-nav="/admin/users">Manage Users</button>` : '';
         let eventsButton = canAccessEvents ? `<button data-nav="/admin/events">Manage Events</button>` : '';
         let tagsButton = canAccessTags ? `<button data-nav="/admin/tags">Manage Tags</button>` : '';
+        let filesButton = canAccessDocs ? `<button data-nav="/admin/files">Manage Files</button>` : '';
         let rolesButton = canAccessRoles ? `<button data-nav="/admin/roles">Manage Roles</button>` : '';
         let globalsButton = canAccessGlobals ? `<button data-nav="/admin/globals">Manage Globals</button>` : '';
 
@@ -137,6 +148,7 @@ async function AdminNavigationListener({ viewId, path }) {
                 ${usersButton}
                 ${eventsButton}
                 ${tagsButton}
+                ${filesButton}
                 ${rolesButton}
                 ${globalsButton}
             </div>

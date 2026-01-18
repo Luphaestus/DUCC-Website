@@ -3174,7 +3174,7 @@ table tbody tr:hover th, table tbody tr:hover td {
 #notification-container {
   position: fixed;
   top: var(--navbar-height);
-  z-index: 1000;
+  z-index: 10000;
   width: 100%;
   display: flex;
   justify-content: flex-start;
@@ -4448,7 +4448,9 @@ nav.small-container ul {
   padding: 0.3rem 0.8rem;
   font-size: 0.85rem;
   width: auto;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 0.5rem;
   margin-bottom: 0;
   background: rgba(255, 255, 255, 0.1);
@@ -4581,7 +4583,6 @@ nav.small-container ul {
   padding-right: 2.5rem !important;
   /* Space for icon */
   margin-bottom: 0;
-  height: 2.5rem;
 }
 .search-input-wrapper button {
   position: absolute;
@@ -4907,12 +4908,14 @@ nav.small-container ul {
     display: inline-block;
     margin: 0 !important;
   }
-  .admin-table td .tx-actions {
+  .admin-table td .tx-actions,
+  .admin-table td .admin-row-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem;
   }
-  .admin-table td .tx-actions button {
+  .admin-table td .tx-actions button,
+  .admin-table td .admin-row-actions button {
     padding: 0.2rem 0.5rem;
     font-size: 0.8rem;
   }
@@ -4931,6 +4934,44 @@ nav.small-container ul {
   .admin-table td::before {
     width: 100%;
   }
+}
+
+.admin-row-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.admin-row-actions .status-btn {
+  margin: 0 !important;
+  height: 2rem;
+  min-width: 2.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.admin-row-actions .status-btn svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  display: block;
+}
+
+.category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.category-item:last-child {
+  border-bottom: none;
+}
+
+.status-btn.error {
+  color: var(--del-color) !important;
+  border-color: var(--del-color) !important;
+}
+.status-btn.error:hover {
+  background: rgba(255, 0, 0, 0.1) !important;
 }
 
 /* Utilities */
@@ -5144,6 +5185,10 @@ button.contrast.delete {
   color: white !important;
 }
 
+#new-category-form {
+  margin-top: 1.5rem;
+}
+
 /* Footer */
 footer {
   width: 100%;
@@ -5261,6 +5306,166 @@ footer .footer-bottom p {
 }
 #no-connection-view .container p {
   color: rgba(255, 255, 255, 0.8);
+}
+
+#files-view {
+  width: 100%;
+  padding: 2rem;
+}
+#files-view .files-header {
+  margin-bottom: 2rem;
+}
+#files-view .files-header .files-title-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+#files-view .files-header .files-title-row h1 {
+  margin-bottom: 0;
+}
+#files-view .files-controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+#files-view .files-controls .search-box {
+  position: relative;
+  flex: 1 1 300px;
+  max-width: 500px;
+}
+#files-view .files-controls .search-box .icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+  display: flex;
+  z-index: 2;
+}
+#files-view .files-controls .search-box input {
+  padding-left: 2.5rem;
+  margin-bottom: 0;
+}
+#files-view .files-controls select {
+  width: auto;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+#files-view .files-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+#files-view .files-table {
+  width: 100%;
+  margin-bottom: 0;
+}
+#files-view .files-table th, #files-view .files-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+#files-view .files-table th {
+  background: rgba(255, 255, 255, 0.03);
+  font-weight: bold;
+  color: var(--pico-contrast);
+  white-space: nowrap;
+}
+#files-view .files-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+#files-view .files-table th.sortable:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+#files-view .files-table th.sortable svg {
+  width: 1rem;
+  height: 1rem;
+  vertical-align: middle;
+  opacity: 0.5;
+}
+#files-view .files-table .file-title {
+  display: flex;
+  flex-direction: column;
+}
+#files-view .files-table .file-title strong {
+  color: var(--pico-contrast);
+}
+#files-view .files-table .file-title .file-category {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+#files-view .files-table .download-btn {
+  display: inline-flex;
+  border-radius: 0.4rem;
+  background: rgba(var(--pico-primary-rgb), 0.1);
+  color: var(--pico-primary);
+  transition: all 0.2s;
+  padding-left: 0.5rem;
+}
+#files-view .files-table .download-btn:hover {
+  background: var(--pico-primary);
+  color: white;
+  transform: scale(1.1);
+  padding: 0.5rem;
+}
+#files-view .files-table .download-btn svg {
+  width: 2rem;
+  height: 2rem;
+}
+#files-view .pagination {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+#files-view .pagination .page-btn {
+  padding: 0.4rem 0.8rem;
+  min-width: 2.5rem;
+  margin-bottom: 0;
+}
+#files-view .pagination .page-btn.active {
+  background: var(--pico-primary);
+  border-color: var(--pico-primary);
+}
+@media (max-width: 768px) {
+  #files-view {
+    padding: 1rem;
+  }
+  #files-view .files-header .files-title-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  #files-view .files-table thead {
+    display: none;
+  }
+  #files-view .files-table tr {
+    display: block;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 0.5rem;
+  }
+  #files-view .files-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border: none;
+  }
+  #files-view .files-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    margin-right: 1rem;
+    opacity: 0.7;
+  }
 }
 
 /*# sourceMappingURL=styles.css.map */

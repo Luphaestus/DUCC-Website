@@ -81,6 +81,36 @@ Returns a list of users attending the event.
 
 ---
 
+## Files
+
+### List Files
+`GET /api/files`
+
+Returns a paginated list of files visible to the user.
+- Query Params: `page`, `limit`, `search`, `sort`, `order`, `categoryId`.
+
+### Download File
+`GET /api/files/:id/download`
+
+Downloads or views a specific file.
+
+### List Categories
+`GET /api/file-categories`
+
+Returns all available file categories.
+
+### Manage Files (Admin)
+- `POST /api/files`: Upload multiple files (form-data).
+- `PUT /api/files/:id`: Update file metadata.
+- `DELETE /api/files/:id`: Remove file and delete from disk.
+
+### Manage Categories (Admin)
+- `POST /api/file-categories`: Create category.
+- `PUT /api/file-categories/:id`: Update category.
+- `DELETE /api/file-categories/:id`: Remove category.
+
+---
+
 ## User Profile
 
 ### Get Profile Elements

@@ -59,6 +59,7 @@ export async function renderAdminNavBar(activeSection) {
     const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');
     const canManageTransactions = perms.includes('transaction.manage');
     const canManageRoles = perms.includes('role.manage');
+    const canManageFiles = perms.includes('document.write') || perms.includes('document.edit');
     const isExec = perms.length > 0;
 
     return /*html*/`
@@ -66,6 +67,7 @@ export async function renderAdminNavBar(activeSection) {
             ${(canManageUsers || canManageTransactions || isExec) ? `<button data-nav="/admin/users" ${activeSection === 'users' ? 'disabled' : ''}>Users</button>` : ''}
             ${canManageEvents ? `<button data-nav="/admin/events" ${activeSection === 'events' ? 'disabled' : ''}>Events</button>` : ''}
             ${canManageEvents ? `<button data-nav="/admin/tags" ${activeSection === 'tags' ? 'disabled' : ''}>Tags</button>` : ''}
+            ${canManageFiles ? `<button data-nav="/admin/files" ${activeSection === 'files' ? 'disabled' : ''}>Files</button>` : ''}
             ${canManageRoles ? `<button data-nav="/admin/roles" ${activeSection === 'roles' ? 'disabled' : ''}>Roles</button>` : ''}
             ${isPresident ? `<button data-nav="/admin/globals" ${activeSection === 'globals' ? 'disabled' : ''}>Globals</button>` : ''}
         </div>

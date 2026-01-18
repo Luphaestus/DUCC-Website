@@ -92,7 +92,6 @@
         padding-right: 2.5rem !important;
         /* Space for icon */
         margin-bottom: 0;
-        height: 2.5rem;
     }
 
     button {
@@ -444,7 +443,8 @@
                 margin: 0 !important;
             }
 
-            .tx-actions {
+            .tx-actions,
+            .admin-row-actions {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 0.25rem;
@@ -469,6 +469,48 @@
                 }
             }
         }
+    }
+}
+
+.admin-row-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+
+    .status-btn {
+        margin: 0 !important;
+        height: 2rem;
+        min-width: 2.5rem;
+        padding: 0 0.5rem;
+        font-size: 0.8rem;
+        line-height: 1;
+
+        svg {
+            width: 1.4rem;
+            height: 1.4rem;
+            display: block;
+        }
+    }
+}
+
+.category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.status-btn.error {
+    color: var(--del-color) !important;
+    border-color: var(--del-color) !important;
+
+    &:hover {
+        background: rgba(255, 0, 0, 0.1) !important;
     }
 }
 
@@ -688,4 +730,8 @@ button.contrast.delete {
     background-color: #d32f2f !important;
     border-color: #d32f2f !important;
     color: white !important;
+}
+
+#new-category-form {
+    margin-top: 1.5rem;
 }

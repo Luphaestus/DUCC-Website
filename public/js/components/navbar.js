@@ -9,6 +9,7 @@ import { BalanceChangedEvent } from '/js/utils/globals.js';
  */
 const navEntries = [
     { name: 'Events', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
+    { name: 'Files', type: 'text', classes: "contrast", action: { run: () => switchView('/files') } },
     { name: 'Balance: £0.00', id: 'balance-button', type: 'text', classes: "contrast", action: { run: () => switchView('/transactions') } },
     { name: 'Admin', id: 'admin-button', type: 'text', classes: "contrast", action: { run: () => switchView('/admin/') } },
     { name: 'Login', id: 'login-button', type: 'button', action: { run: () => switchView('/login') } },
