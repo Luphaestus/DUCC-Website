@@ -5311,6 +5311,7 @@ footer .footer-bottom p {
 #files-view {
   width: 100%;
   padding-top: 2rem;
+  padding-bottom: 2rem;
 }
 #files-view .files-header {
   margin-bottom: 2rem;
