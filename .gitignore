@@ -144,3 +144,4 @@ database.db
 **/.DS_Store
 .env.deploy
 data/
+.data/

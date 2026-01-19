@@ -116,9 +116,9 @@ class FilesAPI {
         this.app.delete('/api/files/:id', check('file.write'), async (req, res) => {
             const id = req.params.id;
             const fileStatus = await FilesDB.getFileById(this.db, id);
-            
+
             if (fileStatus.isError()) return fileStatus.getResponse(res);
-            
+
             const file = fileStatus.getData();
             const filePath = path.join(this.uploadDir, file.filename);
 
@@ -137,7 +137,7 @@ class FilesAPI {
             const id = req.params.id;
             const fileStatus = await FilesDB.getFileById(this.db, id);
             if (fileStatus.isError()) return fileStatus.getResponse(res);
-            
+
             const file = fileStatus.getData();
             const role = await this.getUserRole(req);
 
@@ -149,8 +149,26 @@ class FilesAPI {
             if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
 
             const ext = path.extname(file.filename);
-            const downloadName = file.title.toLowerCase().endsWith(ext.toLowerCase()) ? file.title : file.title + ext;
-            res.download(filePath, downloadName);
+
+
+            let downloadName = file.title;
+            if (!downloadName.toLowerCase().endsWith(ext.toLowerCase())) {
+                downloadName += ext;
+            }
+
+            if (req.query.view === 'true') {
+                return res.sendFile(filePath, (err) => {
+                    if (err && !res.headersSent) {
+                        res.status(500).json({ message: 'Error sending file' });
+                    }
+                });
+            }
+
+            return res.download(filePath, downloadName, (err) => {
+                if (err && !res.headersSent) {
+                    res.status(500).json({ message: 'Error downloading file' });
+                }
+            });
         });
 
         // --- Category Routes ---

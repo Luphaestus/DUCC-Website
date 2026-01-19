@@ -56,6 +56,12 @@ function formatSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+function isViewable(filename) {
+    const viewableExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'];
+    const ext = filename.split('.').pop().toLowerCase();
+    return viewableExtensions.includes(ext);
+}
+
 async function loadCategories() {
     const filter = document.getElementById('category-filter');
     if (!filter) return;
@@ -126,24 +132,30 @@ async function fetchFiles() {
             return;
         }
 
-        list.innerHTML = files.map(file => `
-            <tr>
-                <td data-label="Title">
-                    <div class="file-title">
-                        <strong>${file.title}</strong>
-                        <span class="file-category">${file.category_name || 'Uncategorized'}</span>
-                    </div>
-                </td>
-                <td data-label="Author">${file.author}</td>
-                <td data-label="Date">${new Date(file.date).toLocaleDateString('en-GB')}</td>
-                <td data-label="Size">${formatSize(file.size)}</td>
-                <td data-label="Action">
-                    <a href="/api/files/${file.id}/download" class="download-btn" title="Download">
-                        ${CLOUD_DOWNLOAD_SVG}
-                    </a>
-                </td>
-            </tr>
-        `).join('');
+        list.innerHTML = files.map(file => {
+            const viewable = isViewable(file.filename);
+            const downloadUrl = `/api/files/${file.id}/download${viewable ? '?view=true' : ''}`;
+            const target = viewable ? 'target="_blank"' : '';
+            
+            return `
+                <tr>
+                    <td data-label="Title">
+                        <div class="file-title">
+                            <strong>${file.title}</strong>
+                            <span class="file-category">${file.category_name || 'Uncategorized'}</span>
+                        </div>
+                    </td>
+                    <td data-label="Author">${file.author}</td>
+                    <td data-label="Date">${new Date(file.date).toLocaleDateString('en-GB')}</td>
+                    <td data-label="Size">${formatSize(file.size)}</td>
+                    <td data-label="Action">
+                        <a href="${downloadUrl}" class="download-btn" title="${viewable ? 'View' : 'Download'}" ${target}>
+                            ${CLOUD_DOWNLOAD_SVG}
+                        </a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
 
         renderPagination(totalPages);
     } catch (e) {

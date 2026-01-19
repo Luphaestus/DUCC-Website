@@ -22,15 +22,40 @@ const app = express();
 
 const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
 
-const liveReloadServer = livereload.createServer();
-liveReloadServer.watch(path.join(__dirname, '..', 'public'));
-app.use(connectLiveReload());
-
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
+if (isDev) {
+  const livereload = require("livereload");
+  const connectLiveReload = require("connect-livereload");
+  const liveReloadServer = livereload.createServer();
+  liveReloadServer.watch(path.join(__dirname, '..', 'public'));
+  app.use(connectLiveReload({
+    ignore: [
+      /^\/api\/.*/,
+      /\.js$/,
+      /\.css$/,
+      /\.svg$/,
+      /\.ico$/,
+      /\.jpg$/,
+      /\.jpeg$/,
+      /\.png$/,
+      /\.pdf$/,
+      /\.docx?$/,
+      /\.xlsx?$/,
+      /\.zip$/,
+      /\.mp4$/
+    ]
+  }));
+}
+
 // Security Headers (CSP)
 app.use((req, res, next) => {
+  // Skip security headers for file downloads to prevent interference with browser PDF viewers/plugins
+  if (req.path.startsWith('/api/files/') && req.path.endsWith('/download')) {
+    return next();
+  }
+
   let csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self' https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
   
   if (isDev) {
