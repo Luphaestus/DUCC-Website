@@ -5364,8 +5364,12 @@ footer .footer-bottom p {
   width: 100%;
   margin-bottom: 0;
 }
-#files-view .files-table th, #files-view .files-table td {
-  padding: 1rem;
+#files-view .files-table th,
+#files-view .files-table td {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 1vw;
+  padding-right: 1vw;
   text-align: left;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -5434,38 +5438,6 @@ footer .footer-bottom p {
 #files-view .pagination .page-btn.active {
   background: var(--pico-primary);
   border-color: var(--pico-primary);
-}
-@media (max-width: 768px) {
-  #files-view {
-    padding: 1rem;
-  }
-  #files-view .files-header .files-title-row {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  #files-view .files-table thead {
-    display: none;
-  }
-  #files-view .files-table tr {
-    display: block;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 0.5rem;
-  }
-  #files-view .files-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    border: none;
-  }
-  #files-view .files-table td::before {
-    content: attr(data-label);
-    font-weight: bold;
-    margin-right: 1rem;
-    opacity: 0.7;
-  }
 }
 
 /*# sourceMappingURL=styles.css.map */
