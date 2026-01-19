@@ -109,7 +109,7 @@
                 border-radius: 0 !important;
                 margin-bottom: 0 !important;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-                font-size: 0.8rem !important;
+                font-size: 0.8rem;
 
                 &::before {
                     display: none !important;
@@ -139,12 +139,18 @@
             font-size: 0.75rem;
         }
 
+        @media (max-width: 320px) {
+            padding-left: 1px;
+            padding-right: 1px;
+            font-size: 2.5vw;
+        }
+
         &[data-label="Date"],
         &[data-label="Size"],
         &[data-label="Action"],
         &[data-label="Visibility"] {
             white-space: nowrap;
-            width: 1%; // Force to minimum width
+            width: 1%;
         }
     }
 
@@ -156,6 +162,7 @@
         .full-date {
             display: none;
         }
+
         .short-date {
             display: inline-flex;
             gap: 0.25rem;
@@ -230,6 +237,16 @@
         svg {
             width: 2rem;
             height: 2rem;
+
+            @media (max-width: 320px) {
+                width: 6vw;
+                height: 6vw;
+            }
+        }
+
+        @media (max-width: 320px) {
+            padding-left: 0.1rem;
+            padding-right: 0.1rem;
         }
     }
 }
