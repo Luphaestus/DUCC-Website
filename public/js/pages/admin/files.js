@@ -207,7 +207,11 @@ async function loadAdminFiles() {
                 <td><span class="tag-badge">${file.visibility}</span></td>
                 <td>
                     <span class="full-date">${new Date(file.date).toLocaleDateString('en-GB')}</span>
-                    <span class="short-date">${new Date(file.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                    <span class="short-date">
+                        <span>${new Date(file.date).getDate().toString().padStart(2, '0')}</span>
+                        <span>${new Date(file.date).toLocaleString('en-GB', { month: 'short' })}</span>
+                        <span>${new Date(file.date).getFullYear().toString().slice(-2)}</span>
+                    </span>
                 </td>
                 <td>
                     <div class="admin-row-actions">

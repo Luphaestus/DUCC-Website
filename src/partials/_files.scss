@@ -157,7 +157,16 @@
             display: none;
         }
         .short-date {
-            display: inline;
+            display: inline-flex;
+            gap: 0.25rem;
+        }
+    }
+
+    @media (max-width: 340px) {
+        .short-date {
+            flex-direction: column;
+            gap: 0;
+            line-height: 1.1;
         }
     }
 
