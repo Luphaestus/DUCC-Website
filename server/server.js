@@ -57,7 +57,7 @@ app.use((req, res, next) => {
   }
 
   let csp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self' https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
-  
+
   if (isDev) {
     // Allow livereload in dev
     csp = csp.replace("script-src 'self'", "script-src 'self' 'unsafe-inline' http://localhost:35729");
@@ -161,59 +161,87 @@ const startServer = async () => {
 
     // Register remaining API modules dynamically
     const apiDir = path.join(__dirname, 'api');
-    
+
     const cliProgress = require('cli-progress');
     const colors = require('ansi-colors');
 
     const getAllApiFiles = (dir, fileList = []) => {
-        const files = fs.readdirSync(dir, { withFileTypes: true });
-        for (const dirent of files) {
-            const fullPath = path.join(dir, dirent.name);
-            if (dirent.isDirectory()) {
-                getAllApiFiles(fullPath, fileList);
-            } else if (dirent.isFile() && dirent.name.endsWith('.js') && dirent.name !== 'AuthAPI.js') {
-                fileList.push(fullPath);
-            }
+      const files = fs.readdirSync(dir, { withFileTypes: true });
+      for (const dirent of files) {
+        const fullPath = path.join(dir, dirent.name);
+        if (dirent.isDirectory()) {
+          getAllApiFiles(fullPath, fileList);
+        } else if (dirent.isFile() && dirent.name.endsWith('.js') && dirent.name !== 'AuthAPI.js') {
+          fileList.push(fullPath);
         }
-        return fileList;
+      }
+      return fileList;
     };
 
     const apiFiles = getAllApiFiles(apiDir);
-    
+
     if (process.env.NODE_ENV !== 'test' && apiFiles.length > 0) {
-        console.log(colors.cyan('Registering API modules...'));
-        const progressBar = new cliProgress.SingleBar({
-            format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
-            barCompleteChar: '\u2588',
-            barIncompleteChar: '\u2591',
-            hideCursor: true
-        });
+      console.log(colors.cyan('Registering API modules...'));
+      const progressBar = new cliProgress.SingleBar({
+        format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
+        barCompleteChar: '\u2588',
+        barIncompleteChar: '\u2591',
+        hideCursor: true
+      });
 
-        progressBar.start(apiFiles.length, 0, { file: 'Initializing...' });
+      progressBar.start(apiFiles.length, 0, { file: 'Initializing...' });
 
-        for (let i = 0; i < apiFiles.length; i++) {
-            const fullPath = apiFiles[i];
-            const fileName = path.basename(fullPath);
-            progressBar.update(i + 1, { file: fileName });
-            
-            const ApiClass = require(fullPath);
-            const apiInstance = new ApiClass(app, db, passport);
-            apiInstance.registerRoutes();
-        }
-        progressBar.stop();
+      for (let i = 0; i < apiFiles.length; i++) {
+        const fullPath = apiFiles[i];
+        const fileName = path.basename(fullPath);
+        progressBar.update(i + 1, { file: fileName });
+
+        const ApiClass = require(fullPath);
+        const apiInstance = new ApiClass(app, db, passport);
+        apiInstance.registerRoutes();
+      }
+      progressBar.stop();
     } else {
-        // Fallback for tests or no files
-        for (const fullPath of apiFiles) {
-            const ApiClass = require(fullPath);
-            const apiInstance = new ApiClass(app, db, passport);
-            apiInstance.registerRoutes();
-        }
+      // Fallback for tests or no files
+      for (const fullPath of apiFiles) {
+        const ApiClass = require(fullPath);
+        const apiInstance = new ApiClass(app, db, passport);
+        apiInstance.registerRoutes();
+      }
     }
 
-    // SPA catch-all route
-    app.get(/.*/, (req, res) => {
-      res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-    });
+    // SPA catch-all route with cache busting
+    const INDEX_PATH = path.join(__dirname, '..', 'public', 'index.html');
+    let cachedIndexHtml = null;
+    const SERVER_START_TIME = Date.now();
+
+    const serveIndex = async (req, res) => {
+      try {
+        if (!isDev && cachedIndexHtml) {
+          return res.send(cachedIndexHtml);
+        }
+
+        let html = await fs.promises.readFile(INDEX_PATH, 'utf8');
+
+        // Generate version string (timestamp in prod, random/current in dev to force refresh)
+        const version = isDev ? Date.now() : SERVER_START_TIME;
+
+        html = html.replace(/(href|src)=["']\/([^"']+\.(css|js))["']/g, (match, attr, path) => {
+          return `${attr}="/${path}?v=${version}"`;
+        });
+
+        if (!isDev) {
+          cachedIndexHtml = html;
+        }
+
+        res.send(html);
+      } catch (err) {
+        console.error('Error serving index.html:', err);
+        res.status(500).send('Internal Server Error');
+      }
+    };
+
+    app.get(/.*/, serveIndex);
 
     if (require.main === module) {
       app.listen(PORT, () => {
