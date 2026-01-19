@@ -146,7 +146,10 @@ async function fetchFiles() {
                         </div>
                     </td>
                     <td data-label="Author">${file.author}</td>
-                    <td data-label="Date">${new Date(file.date).toLocaleDateString('en-GB')}</td>
+                    <td data-label="Date">
+                        <span class="full-date">${new Date(file.date).toLocaleDateString('en-GB')}</span>
+                        <span class="short-date">${new Date(file.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                    </td>
                     <td data-label="Size">${formatSize(file.size)}</td>
                     <td data-label="Action">
                         <a href="${downloadUrl}" class="download-btn" title="${viewable ? 'View' : 'Download'}" ${target}>

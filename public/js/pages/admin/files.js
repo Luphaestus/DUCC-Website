@@ -205,7 +205,10 @@ async function loadAdminFiles() {
                 <td>${file.category_name || 'Uncategorized'}</td>
                 <td>${file.author}</td>
                 <td><span class="tag-badge">${file.visibility}</span></td>
-                <td>${new Date(file.date).toLocaleDateString('en-GB')}</td>
+                <td>
+                    <span class="full-date">${new Date(file.date).toLocaleDateString('en-GB')}</span>
+                    <span class="short-date">${new Date(file.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                </td>
                 <td>
                     <div class="admin-row-actions">
                         <button class="status-btn edit-file" data-id="${file.id}" title="Edit">Edit</button>
