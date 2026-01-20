@@ -15,6 +15,22 @@ class CollegesDB {
             return new statusObject(500, 'Database error');
         }
     }
+
+    /**
+     * Get college by name.
+     * @param {object} db 
+     * @param {string} name 
+     * @returns {Promise<object|null>} College object or null
+     */
+    static async getCollegeByName(db, name) {
+        try {
+            const college = await db.get('SELECT * FROM colleges WHERE name = ?', [name]);
+            return college;
+        } catch (e) {
+            console.error('Database error fetching college by name:', e);
+            return null;
+        }
+    }
 }
 
 module.exports = CollegesDB;

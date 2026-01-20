@@ -3,6 +3,7 @@ import { notify } from '/js/components/notification.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { Event } from "/js/utils/event.js";
 import { requireAuth } from '/js/utils/auth.js';
+import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from '/images/icons/outline/icons.js';
 
 /**
  * Legal & Medical information form management.
@@ -38,7 +39,10 @@ const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
                 <div id="grid-legal">
                     <article>
                         <form>
-                            <h3>Personal Information</h3>
+                            <header>
+                                ${ACCOUNT_BOX_SVG}
+                                <h3>Personal Information</h3>
+                            </header>
                             <label for="name">Name*</label>
                             <input type="text" id=${name_id} name="name" placeholder="e.g. John Doe">
                             <label for="phone-number">Phone Number*</label>
@@ -74,7 +78,10 @@ const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
 
                     <article>
                         <form>
-                            <h3> Emergency Contact</h3>
+                            <header>
+                                ${CALL_SVG}
+                                <h3>Emergency Contact</h3>
+                            </header>
                             <label for="emergency-contact-name">Name*</label>
                             <input type="text" id=${emergency_contact_name_id} name="emergency-contact-name"
                                 placeholder="e.g. Jane Doe">
@@ -86,44 +93,64 @@ const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
 
                     <article>
                         <form>
-                            <h3>Medical Information</h3>
+                            <header>
+                                ${MEDICAL_INFORMATION_SVG}
+                                <h3>Medical Information</h3>
+                            </header>
                             <fieldset>
-                                <label for="medical-condition">Do you have any medical condition or allergies?*</label>
-                                <label for="medical-yes"><input type="radio" id=${has_medical_conditions_id} name="medical-condition-radio" value="yes"> Yes</label>
-                                <label for="medical-no"><input type="radio" id=${has_medical_conditions_no_id} name="medical-condition-radio" value="no"> No</label>
-                                <input type="text" id=${medical_conditions_details_id} name="medical-condition" placeholder="e.g. Asthma, bee sting allergy">
+                                <legend>Medical Conditions & Allergies*</legend>
+                                <div class="radio-group">
+                                    <label for="medical-yes"><input type="radio" id=${has_medical_conditions_id} name="medical-condition-radio" value="yes"> Yes</label>
+                                    <label for="medical-no"><input type="radio" id=${has_medical_conditions_no_id} name="medical-condition-radio" value="no"> No</label>
+                                </div>
+                                <input type="text" id=${medical_conditions_details_id} name="medical-condition" placeholder="Please specify... (e.g. Asthma)">
                             </fieldset>
                             <fieldset>
-                                <label for="medication-condition">Do you take any medication?*</label>
-                                <label for="medication-yes"><input type="radio" id=${takes_medication_id} name="medication-radio" value="yes"> Yes</label>
-                                <label for="medication-no"><input type="radio" id=${takes_medication_no_id} name="medication-radio" value="no"> No</label>
-                                <input type="text" id=${medication_details_id} name="medication-condition" placeholder="e.g. Inhaler for asthma">
+                                <legend>Medication*</legend>
+                                <div class="radio-group">
+                                    <label for="medication-yes"><input type="radio" id=${takes_medication_id} name="medication-radio" value="yes"> Yes</label>
+                                    <label for="medication-no"><input type="radio" id=${takes_medication_no_id} name="medication-radio" value="no"> No</label>
+                                </div>
+                                <input type="text" id=${medication_details_id} name="medication-condition" placeholder="Please specify... (e.g. Inhaler)">
                             </fieldset>
                             <fieldset>
-                                <label for="no-incapacity-checkbox">I am not suffering from any medical condition or injury that prevents full participation.*</label>
-                                <input type="checkbox" id=${agrees_to_fitness_statement_id} name="no-incapacity-checkbox">
+                                <label for="no-incapacity-checkbox">
+                                    <input type="checkbox" id=${agrees_to_fitness_statement_id} name="no-incapacity-checkbox">
+                                    I am not suffering from any medical condition or injury that prevents full participation.*
+                                </label>
                             </fieldset>
                         </form>
                     </article>
                 </div>
                 <article>
                     <form>
-                        <h3>Terms and Conditions</h3>
+                        <header>
+                            ${CONTRACT_SVG}
+                            <h3>Terms and Conditions</h3>
+                        </header>
                         <fieldset>
-                            <label for="terms-checkbox">I agree to the club rules and safety policy.*</label>
-                            <input type="checkbox" id=${agrees_to_club_rules_id} name="terms-checkbox">
+                            <label for="terms-checkbox">
+                                <input type="checkbox" id=${agrees_to_club_rules_id} name="terms-checkbox">
+                                I agree to the club rules and safety policy.*
+                            </label>
                         </fieldset>
                         <fieldset>
-                            <label for="debts-checkbox">I agree to pay all outstanding debts.*</label>
-                            <input type="checkbox" id=${agrees_to_pay_debts_id} name="debts-checkbox">
+                            <label for="debts-checkbox">
+                                <input type="checkbox" id=${agrees_to_pay_debts_id} name="debts-checkbox">
+                                I agree to pay all outstanding debts.*
+                            </label>
                         </fieldset>
                         <fieldset>
-                            <label for="data-checkbox">I agree to encrypted storage of my data.*</label>
-                            <input type="checkbox" id=${agrees_to_data_storage_id} name="data-checkbox">
+                            <label for="data-checkbox">
+                                <input type="checkbox" id=${agrees_to_data_storage_id} name="data-checkbox">
+                                I agree to encrypted storage of my data.*
+                            </label>
                         </fieldset>
                         <fieldset>
-                            <label for="keep-health-checkbox">I would like my health form to be kept on the server beyond the end of the year.</label>
-                            <input type="checkbox" id=${agrees_to_keep_health_data_id} name="keep-health-checkbox">
+                            <label for="keep-health-checkbox">
+                                <input type="checkbox" id=${agrees_to_keep_health_data_id} name="keep-health-checkbox">
+                                I would like my health form to be kept on the server beyond the end of the year.
+                            </label>
                         </fieldset>
                         <button type="submit" id=${submitButton_id}>Submit</button>
                     </form>
@@ -152,52 +179,70 @@ const FIELD_MAP = {
     agrees_to_keep_health_data: agrees_to_keep_health_data_id
 };
 
-const LegalEvent = new Event();
-const inputStatus = {};
-let minWarning = "none";
-let notification = null;
-
 /**
- * Sync input validity to aria-invalid.
- * @param {HTMLElement} input
- * @param {string} id
- * @param {boolean} isValid
+ * Human-readable labels for fields.
  */
-function setValidationState(input, id, isValid) {
-    if (isValid) {
-        input.ariaInvalid = 'false';
-        inputStatus[id] = true;
-    } else {
-        input.ariaInvalid = input.value === '' ? minWarning : 'true';
-        inputStatus[id] = false;
-    }
-}
+const ID_TO_LABEL = {
+    [name_id]: "Personal Name",
+    [phone_number_id]: "Personal Phone Number",
+    [date_of_birth_id]: "Date of Birth",
+    [home_address_id]: "Home Address",
+    [college_id]: "College",
+    [emergency_contact_name_id]: "Emergency Contact Name",
+    [emergency_contact_phone_id]: "Emergency Contact Phone",
+    [has_medical_conditions_id]: "Medical Conditions (Yes/No)",
+    [takes_medication_id]: "Medication (Yes/No)",
+    [medical_conditions_details_id]: "Medical Condition Details",
+    [medication_details_id]: "Medication Details",
+    [agrees_to_fitness_statement_id]: "Fitness Statement",
+    [agrees_to_club_rules_id]: "Club Rules Agreement",
+    [agrees_to_pay_debts_id]: "Debt Agreement",
+    [agrees_to_data_storage_id]: "Data Storage Agreement"
+};
+
+const LegalEvent = new Event();
+let notification = null;
+let validationMessages = {};
 
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
-/**
- * Validate required field.
- */
-function presence(id, watch = true) {
-    const input = document.getElementById(id);
-    if (!input) return false;
-    const validate = () => setValidationState(input, id, input.value.trim() !== '');
-    if (watch) input.addEventListener('input', validate);
-    validate();
+function displayValidationMessage(inputElement, message) {
+    let messageId = `validation-message-${inputElement.id}`;
+    let existingMessage = document.getElementById(messageId);
+    
+    if (!existingMessage) {
+        existingMessage = document.createElement('p');
+        existingMessage.id = messageId;
+        existingMessage.classList.add('validation-message');
+        
+        if (inputElement.type === 'radio') {
+            const fieldset = inputElement.closest('fieldset');
+            if (fieldset) {
+                fieldset.appendChild(existingMessage);
+            } else {
+                inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
+            }
+        } else {
+            inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
+        }
+    }
+    existingMessage.textContent = message;
+    existingMessage.style.color = '#FF6961';
+    existingMessage.style.fontSize = '0.8em';
+    existingMessage.style.marginTop = '0.2em';
+    validationMessages[inputElement.id] = existingMessage;
+    inputElement.ariaInvalid = 'true';
 }
 
-/**
- * Validate against regex.
- */
-function regexInput(id, pattern, watch = true) {
-    const input = document.getElementById(id);
-    if (!input) return false;
-    const validate = () => setValidationState(input, id, pattern.test(input.value));
-    if (watch) input.addEventListener('input', validate);
-    validate();
+function clearInputError(inputElement) {
+    if (validationMessages[inputElement.id]) {
+        validationMessages[inputElement.id].remove();
+        delete validationMessages[inputElement.id];
+    }
+    inputElement.removeAttribute('aria-invalid');
 }
 
 /**
@@ -206,12 +251,7 @@ function regexInput(id, pattern, watch = true) {
 function validateCheckbox(id, watch = true) {
     const input = document.getElementById(id);
     if (!input) return false;
-    const validate = () => {
-        inputStatus[id] = input.checked;
-        input.ariaInvalid = input.checked ? 'false' : minWarning;
-    };
-    if (watch) input.addEventListener('input', validate);
-    validate();
+    if (watch) input.addEventListener('input', () => clearInputError(input));
 }
 
 /**
@@ -221,54 +261,32 @@ function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
     const inputYes = document.getElementById(idYes);
     const inputNo = document.getElementById(idNo);
     const detailInput = detailId ? document.getElementById(detailId) : null;
-    let detailRequired = false;
 
     if (!inputYes || !inputNo) return false;
 
-    const validate = () => {
-        if (inputYes.checked || inputNo.checked) {
-            inputYes.ariaInvalid = 'false';
-            inputNo.ariaInvalid = 'false';
-            inputStatus[idYes] = true;
-            inputStatus[idNo] = true
-            if (detailInput) {
-                if (inputYes.checked) {
-                    detailInput.classList.remove('hidden');
-                    presence(detailId, false);
-                    detailRequired = true;
-                } else {
-                    detailInput.classList.add('hidden');
-                    inputStatus[detailId] = true;
-                    detailRequired = false;
-                }
-            }
-        } else {
-            inputYes.ariaInvalid = minWarning;
-            inputNo.ariaInvalid = minWarning;
-            inputStatus[idYes] = false;
-            inputStatus[idNo] = false;
-            if (detailInput) {
+    const toggle = () => {
+        clearInputError(inputYes);
+        clearInputError(inputNo);
+        if (detailInput) {
+            if (inputYes.checked) {
+                detailInput.classList.remove('hidden');
+            } else {
                 detailInput.classList.add('hidden');
-                detailRequired = false;
+                clearInputError(detailInput);
             }
         }
     };
 
     if (watch) {
-        inputYes.addEventListener('input', validate);
-        inputNo.addEventListener('input', validate);
+        inputYes.addEventListener('input', toggle);
+        inputNo.addEventListener('input', toggle);
+        if (detailInput) detailInput.addEventListener('input', () => clearInputError(detailInput));
     }
 
-    const lpresence = (id, watch = true) => {
-        const input = document.getElementById(id);
-        if (!input) return false;
-        const v = () => { if (detailRequired) setValidationState(input, id, input.value.trim() !== ''); };
-        if (watch) input.addEventListener('input', v);
-        v();
-    };
-
-    validate();
-    if (detailInput) lpresence(detailId, watch);
+    if (detailInput) {
+        if (inputYes.checked) detailInput.classList.remove('hidden');
+        else detailInput.classList.add('hidden');
+    }
 }
 
 /**
@@ -282,6 +300,24 @@ function getFormData() {
         if (el.type === 'checkbox' || el.type === 'radio') data[apiKey] = el.checked;
         else data[apiKey] = el.value;
     }
+
+    // Explicitly handle radio groups to distinguish false vs null (unselected)
+    const medicalYes = document.getElementById(has_medical_conditions_id);
+    const medicalNo = document.getElementById(has_medical_conditions_no_id);
+    if (medicalYes && medicalNo) {
+        if (medicalYes.checked) data['has_medical_conditions'] = true;
+        else if (medicalNo.checked) data['has_medical_conditions'] = false;
+        else data['has_medical_conditions'] = null;
+    }
+
+    const medYes = document.getElementById(takes_medication_id);
+    const medNo = document.getElementById(takes_medication_no_id);
+    if (medYes && medNo) {
+        if (medYes.checked) data['takes_medication'] = true;
+        else if (medNo.checked) data['takes_medication'] = false;
+        else data['takes_medication'] = null;
+    }
+
     return data;
 }
 
@@ -301,20 +337,21 @@ function populateForm(data) {
  * Run all form validations.
  */
 async function validateForm(watch = true) {
-    const namePattern = /^[a-zA-Z\s ,.'-]+$/;
     const name = await ajaxGet('/api/user/elements/first_name,last_name').then((d) => `${d.first_name} ${d.last_name}`).catch(() => null);
     const nameInput = document.getElementById(name_id);
-    if (nameInput && name) {
+    if (nameInput && name && name.trim() !== '' && name.trim() !== 'undefined undefined') {
         nameInput.value = name
         nameInput.disabled = true;
-        nameInput.ariaInvalid = 'false';
-        inputStatus[name_id] = true;
-    } else regexInput(name_id, namePattern, watch);
+    } else if (watch && nameInput) {
+        nameInput.addEventListener('input', () => clearInputError(nameInput));
+    }
 
-    regexInput(emergency_contact_name_id, namePattern, watch);
-    const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
-    regexInput(phone_number_id, phonePattern, watch);
-    regexInput(emergency_contact_phone_id, phonePattern, watch);
+    [emergency_contact_name_id, phone_number_id, emergency_contact_phone_id, home_address_id].forEach(id => {
+        if (watch) {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => clearInputError(el));
+        }
+    });
 
     const dobInput = document.getElementById(date_of_birth_id);
     if (dobInput) {
@@ -323,33 +360,17 @@ async function validateForm(watch = true) {
         const min = new Date(today.getFullYear() - 90, today.getMonth(), today.getDate());
         dobInput.max = max.toISOString().split('T')[0];
         dobInput.min = min.toISOString().split('T')[0];
-        const v = () => {
-            if (dobInput.value === '') { dobInput.ariaInvalid = minWarning; return; }
-            const val = new Date(dobInput.value);
-            setValidationState(dobInput, date_of_birth_id, val >= min && val <= max);
-        };
-        if (watch) dobInput.addEventListener('input', v);
-        v();
+        if (watch) dobInput.addEventListener('input', () => clearInputError(dobInput));
     }
 
-    presence(home_address_id, watch);
     const collegeSelect = document.getElementById(college_id);
-    if (collegeSelect) {
-        const v = () => setValidationState(collegeSelect, college_id, collegeSelect.value && collegeSelect.value !== 'Select');
-        if (watch) collegeSelect.addEventListener('input', v);
-        v();
+    if (collegeSelect && watch) {
+        collegeSelect.addEventListener('input', () => clearInputError(collegeSelect));
     }
 
     validateYeseNo(has_medical_conditions_id, has_medical_conditions_no_id, medical_conditions_details_id, watch);
     validateYeseNo(takes_medication_id, takes_medication_no_id, medication_details_id, watch);
     [agrees_to_fitness_statement_id, agrees_to_club_rules_id, agrees_to_pay_debts_id, agrees_to_data_storage_id].forEach(id => validateCheckbox(id, watch));
-}
-
-/**
- * Check if all fields are valid.
- */
-function allInputsValid() {
-    return Object.values(inputStatus).every(s => s === true);
 }
 
 /**
@@ -372,15 +393,37 @@ function bindStaticEvents() {
     if (!btn) return;
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
-        if (!allInputsValid()) {
-            minWarning = 'true';
-            displayNotification('Missing fields', 'Please fill out all required fields correctly.', 'error');
-            await validateForm(false);
-            return;
+        
+        try {
+            await ajaxPost('/api/user/elements', getFormData());
+            displayNotification('Information Saved', 'Saved successfully.', 'success');
+            LegalEvent.notify();
+
+            Object.keys(validationMessages).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) clearInputError(el);
+            });
+        } catch (error) {
+            if (error.errors) {
+                let displayedError = false;
+                for (const [key, msg] of Object.entries(error.errors)) {
+                    if (FIELD_MAP[key]) {
+                        displayValidationMessage(document.getElementById(FIELD_MAP[key]), msg);
+                        displayedError = true;
+                    } else if (key === 'first_name' || key === 'last_name') {
+                        const nameInput = document.getElementById(name_id);
+                        if (nameInput && !nameInput.disabled) {
+                            displayValidationMessage(nameInput, msg);
+                            displayedError = true;
+                        }
+                    }
+                }
+                if (displayedError) {
+                    displayNotification('Validation Error', 'Please check the highlighted fields.', 'error');
+                    return;
+                }
+            }
         }
-        await ajaxPost('/api/user/elements', getFormData());
-        displayNotification('Information Saved', 'Saved successfully.', 'success');
-        LegalEvent.notify();
     });
 }
 

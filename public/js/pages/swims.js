@@ -14,8 +14,8 @@ const HTML_TEMPLATE = /*html*/`
         <h1>Swims</h1>
         <article class="form-box">
             <div class="swims-tab-group admin-nav-group">
-                <button class="tab-btn active" id="swims-yearly-tab">Current Year</button>
-                <button class="tab-btn" id="swims-alltime-tab">All-time</button>
+                <button id="swims-yearly-tab" disabled>Current Year</button>
+                <button id="swims-alltime-tab">All-time</button>
             </div>
             <div id="leaderboard-container" class="table-responsive">
                 <table role="grid">
@@ -76,12 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const alltimeBtn = document.getElementById('swims-alltime-tab');
 
         if (e.target.id === 'swims-yearly-tab') {
-            alltimeBtn.classList.remove('active');
-            e.target.classList.add('active');
+            alltimeBtn.disabled = false;
+            e.target.disabled = true;
             populateLeaderboard(true);
         } else if (e.target.id === 'swims-alltime-tab') {
-            yearlyBtn.classList.remove('active');
-            e.target.classList.add('active');
+            yearlyBtn.disabled = false;
+            e.target.disabled = true;
             populateLeaderboard(false);
         }
     });

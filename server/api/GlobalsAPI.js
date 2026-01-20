@@ -25,12 +25,14 @@ class GlobalsAPI {
         /**
          * Get President status.
          */
-        this.app.get('/api/globals/status', check("role:President"))
+        this.app.get('/api/globals/status', check("perm:globals.manage"), (req, res) => {
+            res.json({ isPresident: true });
+        });
 
         /**
          * Fetch paginated users list for global settings.
          */
-        this.app.get('/api/globals/users', check('role:President'), async (req, res) => {
+        this.app.get('/api/globals/users', check('perm:globals.manage'), async (req, res) => {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             const search = req.query.search || '';
@@ -56,7 +58,7 @@ class GlobalsAPI {
         /**
          * Fetch all global settings.
          */
-        this.app.get('/api/globals', check('role:President'), async (req, res) => {
+        this.app.get('/api/globals', check('perm:globals.manage'), async (req, res) => {
             const globals = new Globals().getAll();
 
             // Inject current President ID
@@ -76,7 +78,7 @@ class GlobalsAPI {
             let permission = 'Guest';
 
             if (req.user !== undefined) {
-                if (await Permissions.hasRole(this.db, req.user.id, 'President')) {
+                if (await Permissions.hasPermission(this.db, req.user.id, 'globals.manage')) {
                     permission = 'President';
                 } else {
                     permission = 'Authenticated';
@@ -89,7 +91,7 @@ class GlobalsAPI {
         /**
          * Update global settings.
          */
-        this.app.post('/api/globals/:key', check('role:President'), async (req, res) => {
+        this.app.post('/api/globals/:key', check('perm:globals.manage'), async (req, res) => {
             const key = req.params.key;
             const globals = new Globals();
             try {

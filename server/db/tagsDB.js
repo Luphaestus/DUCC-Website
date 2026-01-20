@@ -142,6 +142,21 @@ class TagsDB {
     }
 
     /**
+     * Check if a user is whitelisted for a tag.
+     * @param {object} db 
+     * @param {number} tagId 
+     * @param {number} userId 
+     * @returns {Promise<boolean>}
+     */
+    static async isWhitelisted(db, tagId, userId) {
+        const whitelisted = await db.get(
+            'SELECT 1 FROM tag_whitelists WHERE tag_id = ? AND user_id = ?',
+            [tagId, userId]
+        );
+        return !!whitelisted;
+    }
+
+    /**
      * Fetch managers for a tag.
      * @param {object} db
      * @param {number} tagId

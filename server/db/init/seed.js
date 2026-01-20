@@ -52,7 +52,8 @@ async function seedData(db, env) {
         { slug: 'file.read', desc: 'View and download files' },
         { slug: 'file.write', desc: 'Upload and delete files' },
         { slug: 'file.edit', desc: 'Edit file metadata' },
-        { slug: 'file.category.manage', desc: 'Manage file categories' }
+        { slug: 'file.category.manage', desc: 'Manage file categories' },
+        { slug: 'globals.manage', desc: 'Manage global system settings' }
     ];
 
     const permIds = {};
@@ -63,7 +64,7 @@ async function seedData(db, env) {
     }
 
     // Always seed President role
-    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage'];
+    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage'];
     await db.run('INSERT OR IGNORE INTO roles (name, description) VALUES (?, ?)', ['President', 'The Club President with full administrative access.']);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
     for (const permSlug of presidentPerms) {

@@ -2902,7 +2902,7 @@ p > svg {
 }
 
 /* Form Elements */
-input,
+input:not([type=checkbox]):not([type=radio]),
 select,
 textarea {
   height: 2.75rem !important;
@@ -2915,7 +2915,7 @@ textarea {
   line-height: 1;
 }
 @media (max-width: 1200px) {
-  input,
+  input:not([type=checkbox]):not([type=radio]),
   select,
   textarea {
     height: 2.5rem !important;
@@ -2924,15 +2924,15 @@ textarea {
   }
 }
 @media (max-width: 768px) {
-  input,
+  input:not([type=checkbox]):not([type=radio]),
   select,
   textarea {
     height: 2.25rem !important;
     padding: 0 0.75rem;
     font-size: 0.7rem !important;
   }
-  input svg,
-  input img,
+  input:not([type=checkbox]):not([type=radio]) svg,
+  input:not([type=checkbox]):not([type=radio]) img,
   select svg,
   select img,
   textarea svg,
@@ -2942,15 +2942,15 @@ textarea {
   }
 }
 @media (max-width: 480px) {
-  input,
+  input:not([type=checkbox]):not([type=radio]),
   select,
   textarea {
     height: 1.6rem !important;
     padding: 0 0.5rem;
     font-size: 0.5rem !important;
   }
-  input svg,
-  input img,
+  input:not([type=checkbox]):not([type=radio]) svg,
+  input:not([type=checkbox]):not([type=radio]) img,
   select svg,
   select img,
   textarea svg,
@@ -2959,7 +2959,7 @@ textarea {
     height: 1rem !important;
   }
 }
-input,
+input:not([type=checkbox]):not([type=radio]),
 select,
 textarea {
   background: rgba(255, 255, 255, 0.28);
@@ -2970,7 +2970,7 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 @media (prefers-color-scheme: dark) {
-  input,
+  input:not([type=checkbox]):not([type=radio]),
   select,
   textarea {
     background: rgba(255, 255, 255, 0.1);
@@ -2978,7 +2978,7 @@ textarea {
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
 }
-input[aria-invalid=true],
+input:not([type=checkbox]):not([type=radio])[aria-invalid=true],
 select[aria-invalid=true],
 textarea[aria-invalid=true] {
   border-color: rgba(224, 93, 111, 0.3);
@@ -2986,13 +2986,13 @@ textarea[aria-invalid=true] {
   background: rgba(239, 165, 165, 0.1);
 }
 @media (prefers-color-scheme: dark) {
-  input[aria-invalid=true],
+  input:not([type=checkbox]):not([type=radio])[aria-invalid=true],
   select[aria-invalid=true],
   textarea[aria-invalid=true] {
     background: rgba(224, 93, 111, 0.1);
   }
 }
-input[aria-invalid=false],
+input:not([type=checkbox]):not([type=radio])[aria-invalid=false],
 select[aria-invalid=false],
 textarea[aria-invalid=false] {
   border-color: rgba(93, 224, 111, 0.3);
@@ -3000,7 +3000,7 @@ textarea[aria-invalid=false] {
   background: rgba(165, 239, 165, 0.1);
 }
 @media (prefers-color-scheme: dark) {
-  input[aria-invalid=false],
+  input:not([type=checkbox]):not([type=radio])[aria-invalid=false],
   select[aria-invalid=false],
   textarea[aria-invalid=false] {
     background: rgba(93, 224, 111, 0.1);
@@ -3524,8 +3524,10 @@ nav.small-container ul {
     padding: 0.75rem;
     /* Larger touch target */
   }
-  nav.small-container ~ * {
-    transition: filter 0.3s ease-in-out;
+  nav.small-container.mobile-open ~ * {
+    /* filter: blur(4px); */
+    /* pointer-events: none; */
+    /* user-select: none; */
   }
   nav.small-container.mobile-open .navbar-items {
     opacity: 1;
@@ -3533,11 +3535,16 @@ nav.small-container ul {
     pointer-events: auto;
     transform: translateX(0);
   }
-  nav.small-container.mobile-open ~ * {
-    filter: blur(4px);
-    pointer-events: none;
-    user-select: none;
-  }
+}
+
+.navbar-items li a.active,
+.navbar-items li button.active {
+  font-weight: bold;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  opacity: 0.8;
+  pointer-events: none;
+  cursor: default;
 }
 
 @keyframes slideInRight {
@@ -3682,26 +3689,6 @@ nav.small-container ul {
   border-radius: 4px;
   font-size: 0.85em;
   display: inline-block;
-}
-
-.tab-btn {
-  background: transparent;
-  border: 1px solid var(--muted-border-color);
-  color: var(--text-color);
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  border-radius: 50px;
-  margin-bottom: 0;
-  transition: all 0.2s ease;
-}
-.tab-btn:hover {
-  background: var(--secondary-focus);
-}
-.tab-btn.active {
-  background: var(--primary);
-  color: var(--primary-inverse);
-  border-color: var(--primary);
-  font-weight: bold;
 }
 
 /* Card Highlights Mixin */
@@ -4435,6 +4422,58 @@ nav.small-container ul {
   text-align: center;
   margin-bottom: 2rem;
 }
+#legal-view #legal-container header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+#legal-view #legal-container header svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+#legal-view #legal-container header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+#legal-view #legal-container textarea#address {
+  min-height: 150px;
+  padding: 1rem;
+  line-height: 1.5;
+}
+#legal-view #legal-container .radio-group {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+#legal-view #legal-container .radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  cursor: pointer;
+}
+#legal-view #legal-container .radio-group label input[type=radio] {
+  margin: 0;
+}
+#legal-view #legal-container fieldset {
+  margin-bottom: 1.5rem;
+}
+#legal-view #legal-container fieldset legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+#legal-view #legal-container fieldset label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+#legal-view #legal-container fieldset label input[type=checkbox] {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
 #legal-view #legal-container > article {
   border-left: 4px solid var(--highlight);
 }
@@ -4715,12 +4754,13 @@ nav.small-container ul {
 .admin-nav-row {
   width: 100%;
 }
-.admin-nav-row .admin-nav-group {
+
+.admin-nav-group {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-.admin-nav-row .admin-nav-group button {
+.admin-nav-group button {
   height: 2.75rem !important;
   padding: 0 1rem;
   font-size: 1rem;
@@ -4731,37 +4771,37 @@ nav.small-container ul {
   line-height: 1;
 }
 @media (max-width: 1200px) {
-  .admin-nav-row .admin-nav-group button {
+  .admin-nav-group button {
     height: 2.5rem !important;
     padding: 0 0.8rem;
     font-size: 0.95rem !important;
   }
 }
 @media (max-width: 768px) {
-  .admin-nav-row .admin-nav-group button {
+  .admin-nav-group button {
     height: 2.25rem !important;
     padding: 0 0.75rem;
     font-size: 0.7rem !important;
   }
-  .admin-nav-row .admin-nav-group button svg,
-  .admin-nav-row .admin-nav-group button img {
+  .admin-nav-group button svg,
+  .admin-nav-group button img {
     width: 1.2rem !important;
     height: 1.2rem !important;
   }
 }
 @media (max-width: 480px) {
-  .admin-nav-row .admin-nav-group button {
+  .admin-nav-group button {
     height: 1.6rem !important;
     padding: 0 0.5rem;
     font-size: 0.5rem !important;
   }
-  .admin-nav-row .admin-nav-group button svg,
-  .admin-nav-row .admin-nav-group button img {
+  .admin-nav-group button svg,
+  .admin-nav-group button img {
     width: 1rem !important;
     height: 1rem !important;
   }
 }
-.admin-nav-row .admin-nav-group button {
+.admin-nav-group button {
   margin-bottom: 0;
   white-space: nowrap;
 }
@@ -4879,7 +4919,7 @@ nav.small-container ul {
 }
 .search-input-wrapper {
   padding: 0 !important;
-  flex: 1 1 200px;
+  flex: 1 1 100px;
   position: relative;
   display: flex;
   align-items: center;
@@ -4959,14 +4999,6 @@ nav.small-container ul {
 
 #admin-user-difficulty {
   height: 2rem !important;
-}
-
-#admin-user-tabs {
-  height: 70%;
-  margin-left: 0;
-}
-#admin-user-tabs > button {
-  padding: 8px;
 }
 
 #admin-user-legal-container,
@@ -5649,7 +5681,7 @@ footer .footer-bottom p {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem !important;
 }
 
 #no-connection-view {
@@ -5923,6 +5955,12 @@ footer .footer-bottom p {
     display: inline-flex;
     gap: 0.25rem;
   }
+  .files-table th[data-label=Author],
+  .files-table td[data-label=Author],
+  .files-table th[data-label=Size],
+  .files-table td[data-label=Size] {
+    display: none;
+  }
 }
 @media (max-width: 340px) {
   .files-table .short-date {
@@ -5984,7 +6022,7 @@ footer .footer-bottom p {
   width: 2rem;
   height: 2rem;
 }
-@media (max-width: 320px) {
+@media (max-width: 418px) {
   .files-table .download-btn svg {
     width: 6vw;
     height: 6vw;

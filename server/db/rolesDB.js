@@ -52,6 +52,41 @@ class RolesDB {
         }
     }
 
+    /**
+     * Get all unique permission slugs for a user (Role-based + Direct).
+     * @param {object} db 
+     * @param {number} userId 
+     * @returns {Promise<statusObject>} Data is array of strings.
+     */
+    static async getAllUserPermissions(db, userId) {
+        try {
+            const rolePerms = await db.all(`
+                SELECT DISTINCT p.slug 
+                FROM permissions p
+                JOIN role_permissions rp ON p.id = rp.permission_id
+                JOIN user_roles ur ON rp.role_id = ur.role_id
+                WHERE ur.user_id = ?
+            `, [userId]);
+            
+            const directPerms = await db.all(`
+                SELECT DISTINCT p.slug 
+                FROM permissions p
+                JOIN user_permissions up ON p.id = up.permission_id
+                WHERE up.user_id = ?
+            `, [userId]);
+
+            const allSlugs = new Set([
+                ...rolePerms.map(p => p.slug), 
+                ...directPerms.map(p => p.slug)
+            ]);
+            
+            return new statusObject(200, 'Success', Array.from(allSlugs));
+        } catch (e) {
+            console.error('Database error fetching all user permissions:', e);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
     static async addUserPermission(db, userId, permissionId) {
         try {
             const perm = await db.get('SELECT slug FROM permissions WHERE id = ?', [permissionId]);
@@ -113,6 +148,23 @@ class RolesDB {
             console.error('Database error removing managed tag:', e);
             return new statusObject(500, 'Database error');
         }
+    }
+
+    /**
+     * Check if a user has a role that manages a specific tag.
+     * @param {object} db 
+     * @param {number} userId 
+     * @param {number} tagId 
+     * @returns {Promise<boolean>}
+     */
+    static async hasRoleForTag(db, userId, tagId) {
+        const hasRole = await db.get(
+            `SELECT 1 FROM user_roles ur
+             JOIN role_managed_tags rmt ON ur.role_id = rmt.role_id
+             WHERE ur.user_id = ? AND rmt.tag_id = ?`,
+            [userId, tagId]
+        );
+        return !!hasRole;
     }
 
     static async getAllPermissions(db) {

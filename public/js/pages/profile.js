@@ -101,6 +101,7 @@ const HTML_TEMPLATE = /*html*/`
 
 // --- State ---
 let notification = null;
+let validationMessages = {};
 
 // --- Helper Functions ---
 
@@ -152,6 +153,31 @@ function updateStatusUI(elementId, text, icon, color) {
         svg.style.setProperty('fill', color, 'important');
         svg.style.setProperty('color', color, 'important');
     });
+}
+
+function displayValidationMessage(inputElement, message) {
+    let messageId = `validation-message-${inputElement.id}`;
+    let existingMessage = document.getElementById(messageId);
+    if (!existingMessage) {
+        existingMessage = document.createElement('p');
+        existingMessage.id = messageId;
+        existingMessage.classList.add('validation-message');
+        inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
+    }
+    existingMessage.textContent = message;
+    existingMessage.style.color = '#FF6961';
+    existingMessage.style.fontSize = '0.8em';
+    existingMessage.style.marginTop = '0.2em';
+    validationMessages[inputElement.id] = existingMessage;
+    inputElement.ariaInvalid = 'true';
+}
+
+function clearInputError(inputElement) {
+    if (validationMessages[inputElement.id]) {
+        validationMessages[inputElement.id].remove();
+        delete validationMessages[inputElement.id];
+    }
+    inputElement.removeAttribute('aria-invalid');
 }
 
 // --- Render Functions ---
@@ -305,9 +331,14 @@ async function bindStaticEvents() {
         if (submitButton) submitButton.disabled = firstname.value.trim() === '' && lastname.value.trim() === '' && email.value.trim() === '';
     }
 
-    if (firstname) firstname.addEventListener('input', updateSubmitButtonState);
-    if (lastname) lastname.addEventListener('input', updateSubmitButtonState);
-    if (email) email.addEventListener('input', updateSubmitButtonState);
+    [firstname, lastname, email].forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => {
+                updateSubmitButtonState();
+                clearInputError(input);
+            });
+        }
+    });
     updateSubmitButtonState();
 
     if (submitButton) {
@@ -315,23 +346,27 @@ async function bindStaticEvents() {
             event.preventDefault();
             if (submitButton.disabled) return;
 
-            const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
-            if (email.value.trim() !== '' && !emailRegex.test(email.value.trim())) {
-                email.setCustomValidity('Email must be a @durham.ac.uk address.');
-                email.reportValidity();
-                return;
-            }
-
             const updateData = {};
             if (firstname.value.trim() !== '') updateData.first_name = firstname.value.trim();
             if (lastname.value.trim() !== '') updateData.last_name = lastname.value.trim();
             if (email.value.trim() !== '') updateData.email = email.value.trim();
 
-            await ajaxPost('/api/user/elements', updateData);
-            displayNotification('Profile updated.', "Successfully updated.", 'success');
-            FirstNameChangedEvent.notify();
-            firstname.value = ''; lastname.value = ''; email.value = '';
-            updateProfilePage();
+            try {
+                await ajaxPost('/api/user/elements', updateData);
+                displayNotification('Profile updated.', "Successfully updated.", 'success');
+                FirstNameChangedEvent.notify();
+                firstname.value = ''; lastname.value = ''; email.value = '';
+                updateProfilePage();
+            } catch (error) {
+                const msg = error.message || error;
+                if (msg.includes('email')) displayValidationMessage(email, msg);
+                else if (msg.includes('name')) {
+                    if (firstname.value) displayValidationMessage(firstname, msg);
+                    if (lastname.value) displayValidationMessage(lastname, msg);
+                } else {
+                    displayNotification('Error', msg, 'error');
+                }
+            }
         });
     }
 
@@ -344,8 +379,14 @@ async function bindStaticEvents() {
         if (aidSubmitButton) aidSubmitButton.disabled = contactNumberInput.value.trim() === '' && firstAidExpiryInput.value.trim() === '';
     }
 
-    if (contactNumberInput) contactNumberInput.addEventListener('input', updateAidSubmitButtonState);
-    if (firstAidExpiryInput) firstAidExpiryInput.addEventListener('input', updateAidSubmitButtonState);
+    [contactNumberInput, firstAidExpiryInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => {
+                updateAidSubmitButtonState();
+                clearInputError(input);
+            });
+        }
+    });
     updateAidSubmitButtonState();
 
     if (aidSubmitButton) {
@@ -353,21 +394,20 @@ async function bindStaticEvents() {
             event.preventDefault();
             if (aidSubmitButton.disabled) return;
 
-            const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
-            if (contactNumberInput.value.trim() !== '' && !phonePattern.test(contactNumberInput.value.trim())) {
-                contactNumberInput.setCustomValidity('Invalid phone number.');
-                contactNumberInput.reportValidity();
-                return;
-            }
-
             const updateData = {};
             if (contactNumberInput.value.trim() !== '') updateData.phone_number = contactNumberInput.value.trim();
             if (firstAidExpiryInput.value.trim() !== '') updateData.first_aid_expiry = firstAidExpiryInput.value.trim();
 
-            await ajaxPost('/api/user/elements', updateData);
-            displayNotification('Aid details updated.', "Successfully updated.", 'success');
-            contactNumberInput.value = ''; firstAidExpiryInput.value = '';
-            updateProfilePage();
+            try {
+                await ajaxPost('/api/user/elements', updateData);
+                displayNotification('Aid details updated.', "Successfully updated.", 'success');
+                contactNumberInput.value = ''; firstAidExpiryInput.value = '';
+                updateProfilePage();
+            } catch (error) {
+                const msg = error.message || error;
+                if (msg.includes('phone')) displayValidationMessage(contactNumberInput, msg);
+                else displayNotification('Error', msg, 'error');
+            }
         });
     }
 

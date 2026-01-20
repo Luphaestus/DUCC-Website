@@ -1,6 +1,9 @@
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const checkAuthentication = require('../misc/authentication.js');
+const Utils = require('../misc/utils.js');
+const Rules = require('../misc/rules.js');
 
 //todo fix
 
@@ -69,14 +72,18 @@ class Auth {
 
             email = email.replace(/\s/g, '').toLowerCase();
 
-            const nameRegex = /^[a-zA-Z'-]{1,50}$/;
-            if (!nameRegex.test(first_name) || !nameRegex.test(last_name)) {
-                return res.status(400).json({ message: 'Invalid name format.' });
-            }
+            const errors = {};
+            const emailError = Rules.validate('email', email);
+            if (emailError) errors.email = emailError;
 
-            const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
-            if (!emailRegex.test(email)) {
-                return res.status(400).json({ message: 'Invalid email format (must be first.last@durham.ac.uk).' });
+            const firstNameError = Rules.validate('name', first_name);
+            if (firstNameError) errors.first_name = firstNameError;
+
+            const lastNameError = Rules.validate('name', last_name);
+            if (lastNameError) errors.last_name = lastNameError;
+
+            if (Object.keys(errors).length > 0) {
+                return res.status(400).json({ message: 'Validation failed', errors });
             }
 
             try {
@@ -106,7 +113,10 @@ class Auth {
                 }
             } catch (err) {
                 console.error(err);
-                res.status(500).json({ message: 'Registration failed. Email may be taken.' });
+                if (err.message && err.message.includes('UNIQUE constraint failed')) {
+                     return res.status(400).json({ message: 'Registration failed', errors: { email: 'Email is already taken.' } });
+                }
+                res.status(500).json({ message: 'Registration failed.' });
             }
         });
 
@@ -144,6 +154,69 @@ class Auth {
          */
         this.app.get('/api/auth/status', (req, res) => {
             res.json({ authenticated: req.isAuthenticated() });
+        });
+
+        /**
+         * Request password reset.
+         */
+        this.app.post('/api/auth/reset-password-request', async (req, res) => {
+            const { email } = req.body;
+            if (!email) return res.status(400).json({ message: 'Email is required.' });
+
+            try {
+                const user = await this.db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+                if (!user) {
+                    return res.json({ message: 'If an account exists, a reset link has been sent.' });
+                }
+
+                const token = crypto.randomBytes(32).toString('hex');
+                const expiresAt = new Date(Date.now() + 3600000).toISOString(); 
+
+                await this.db.run('DELETE FROM password_resets WHERE user_id = ?', [user.id]);
+
+                await this.db.run(
+                    'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+                    [user.id, token, expiresAt]
+                );
+
+                const baseUrl = Utils.getBaseUrl(req);
+
+                console.log(`[RESET] Password reset url for ${email}: ${baseUrl}/set-password?token=${token}`);
+
+                res.json({ message: 'If an account exists, a reset link has been sent.' });
+            } catch (e) {
+                console.error(e);
+                res.status(500).json({ message: 'Server error.' });
+            }
+        });
+
+        /**
+         * Reset password with token.
+         */
+        this.app.post('/api/auth/reset-password', async (req, res) => {
+            const { token, newPassword } = req.body;
+            if (!token || !newPassword) return res.status(400).json({ message: 'Token and new password required.' });
+
+            try {
+                const resetRecord = await this.db.get(
+                    'SELECT * FROM password_resets WHERE token = ? AND expires_at > CURRENT_TIMESTAMP',
+                    [token]
+                );
+
+                if (!resetRecord) {
+                    return res.status(400).json({ message: 'Invalid or expired token.' });
+                }
+
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+                await this.db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, resetRecord.user_id]);
+                await this.db.run('DELETE FROM password_resets WHERE user_id = ?', [resetRecord.user_id]);
+
+                res.json({ message: 'Password updated successfully.' });
+            } catch (e) {
+                console.error(e);
+                res.status(500).json({ message: 'Server error.' });
+            }
         });
     }
 

@@ -43,7 +43,7 @@ p>svg {
 }
 
 /* Form Elements */
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
     @include common-element-size;

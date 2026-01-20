@@ -32,16 +32,16 @@ export async function renderUserDetail(userId) {
         const canManageTransactions = userPerms.includes('transaction.manage');
         const isExec = userPerms.length > 0;
 
-        let tabsHtml = '<button class="tab-btn" data-tab="profile">Profile</button>';
+        let tabsHtml = '<button data-tab="profile">Profile</button>';
         if (canManageUsers) {
             tabsHtml += `
-                <button class="tab-btn" data-tab="legal">Legal</button>
-                <button class="tab-btn" data-tab="tags">Tags</button>
+                <button data-tab="legal">Legal</button>
+                <button data-tab="tags">Tags</button>
             `;
         }
         if (canManageTransactions) {
             tabsHtml += `
-                <button class="tab-btn" data-tab="transactions">Transactions</button>
+                <button data-tab="transactions">Transactions</button>
             `;
         }
 
@@ -60,13 +60,11 @@ export async function renderUserDetail(userId) {
         `;
 
 
-        const tabs = adminContent.querySelectorAll('.tab-btn');
+        const tabs = adminContent.querySelectorAll('#admin-user-tabs button');
         const updateActiveTab = (activeBtn) => {
             tabs.forEach(t => {
-                t.classList.remove('active');
                 t.disabled = false;
             });
-            activeBtn.classList.add('active');
             activeBtn.disabled = true;
         };
 

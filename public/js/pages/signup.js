@@ -109,6 +109,7 @@ function displayValidationMessage(inputElement, message) {
     existingMessage.style.fontSize = '0.8em';
     existingMessage.style.marginTop = '0.2em';
     validationMessages[inputElement.id] = existingMessage;
+    inputElement.ariaInvalid = 'true';
 }
 
 /**
@@ -117,30 +118,21 @@ function displayValidationMessage(inputElement, message) {
 function clearValidationMessages() {
     for (const inputId in validationMessages) {
         if (validationMessages[inputId]) validationMessages[inputId].remove();
+        const input = document.getElementById(inputId);
+        if (input) input.removeAttribute('aria-invalid');
     }
     validationMessages = {};
 }
 
 /**
- * Validate input against pattern.
- * @param {HTMLElement} inputElement
- * @param {RegExp} pattern
- * @param {string} errorMessage
- * @returns {boolean}
+ * Clear validation message for a single input.
  */
-function validateInput(inputElement, pattern, errorMessage) {
-    if (!pattern.test(inputElement.value)) {
-        inputElement.ariaInvalid = 'true';
-        displayValidationMessage(inputElement, errorMessage);
-        return false;
-    } else {
-        inputElement.ariaInvalid = 'false';
-        if (validationMessages[inputElement.id]) {
-            validationMessages[inputElement.id].remove();
-            delete validationMessages[inputElement.id];
-        }
-        return true;
+function clearInputError(inputElement) {
+    if (validationMessages[inputElement.id]) {
+        validationMessages[inputElement.id].remove();
+        delete validationMessages[inputElement.id];
     }
+    inputElement.removeAttribute('aria-invalid');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -155,35 +147,32 @@ document.addEventListener('DOMContentLoaded', () => {
     messageElement.style.marginBottom = '0';
     signupFooter.appendChild(messageElement);
 
+    // Inputs
+    firstName = document.getElementById('signup-first-name');
+    lastName = document.getElementById('signup-last-name');
+    email = document.getElementById('signup-email');
+    password = document.getElementById('signup-password');
+    confirmPassword = document.getElementById('signup-confirm-password');
+
+    // Attach input listeners to clear errors
+    [firstName, lastName, email, password, confirmPassword].forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => {
+                clearInputError(input);
+                if (messageElement) messageElement.classList.add('hidden');
+            });
+        }
+    });
+
     signupForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         messageElement.classList.add('hidden');
         clearValidationMessages();
 
-        firstName = document.getElementById('signup-first-name');
-        lastName = document.getElementById('signup-last-name');
-        email = document.getElementById('signup-email');
-        password = document.getElementById('signup-password');
-        confirmPassword = document.getElementById('signup-confirm-password');
-
-        const nameRegex = /^[a-zA-Z'-]{1,50}$/;
-        const emailRegex = /^[^@]+\.[^@]+@durham\.ac\.uk$/i;
-
-        const isFirstNameValid = validateInput(firstName, nameRegex, 'Invalid first name.');
-        const isLastNameValid = validateInput(lastName, nameRegex, 'Invalid last name.');
-        const isEmailValid = validateInput(email, emailRegex, 'Invalid email format (must be first.last@durham.ac.uk).');
-
-        if (password.value === "") {
-            displayValidationMessage(password, 'Password required.');
-            password.ariaInvalid = 'true';
-        }
-
         if (password.value !== confirmPassword.value) {
             displayValidationMessage(confirmPassword, 'Passwords do not match.');
-            confirmPassword.ariaInvalid = 'true';
+            return;
         }
-
-        if (!isFirstNameValid || !isLastNameValid || !isEmailValid || password.value === "" || password.value !== confirmPassword.value) return;
 
         try {
             await ajaxPost('/api/auth/signup', { first_name: firstName.value, last_name: lastName.value, email: email.value, password: password.value });
@@ -192,7 +181,13 @@ document.addEventListener('DOMContentLoaded', () => {
             messageElement.classList.remove('hidden');
             setTimeout(() => switchView('/login'), 1000);
         } catch (error) {
-            displayError(error || 'Sign up failed.');
+            if (error.errors) {
+                if (error.errors.email) displayValidationMessage(email, error.errors.email);
+                if (error.errors.first_name) displayValidationMessage(firstName, error.errors.first_name);
+                if (error.errors.last_name) displayValidationMessage(lastName, error.errors.last_name);
+                if (error.errors.password) displayValidationMessage(password, error.errors.password);
+            }
+            displayError(error.message || error || 'Sign up failed.');
         }
     });
 

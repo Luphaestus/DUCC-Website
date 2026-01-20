@@ -239,6 +239,17 @@ async function createTables(db) {
         visibility TEXT CHECK(visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members',
         FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL
       `
+    },
+    {
+      name: 'password_resets',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        token TEXT NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
     }
   ];
 

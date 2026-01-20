@@ -241,8 +241,11 @@ nav.small-container {
             }
         }
 
-        &~* {
-            transition: filter 0.3s ease-in-out;
+        //todo items behind blur when menu open disabear
+        &.mobile-open~* {
+            /* filter: blur(4px); */
+            /* pointer-events: none; */
+            /* user-select: none; */
         }
 
         &.mobile-open .navbar-items {
@@ -251,13 +254,17 @@ nav.small-container {
             pointer-events: auto;
             transform: translateX(0);
         }
-
-        &.mobile-open~* {
-            filter: blur(4px);
-            pointer-events: none;
-            user-select: none;
-        }
     }
+}
+
+.navbar-items li a.active,
+.navbar-items li button.active {
+    font-weight: bold;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    opacity: 0.8;
+    pointer-events: none; 
+    cursor: default;
 }
 
 @keyframes slideInRight {
@@ -395,28 +402,6 @@ nav.small-container {
     border-radius: 4px;
     font-size: 0.85em;
     display: inline-block;
-}
-
-.tab-btn {
-    background: transparent;
-    border: 1px solid var(--muted-border-color);
-    color: var(--text-color);
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    border-radius: 50px;
-    margin-bottom: 0;
-    transition: all 0.2s ease;
-
-    &:hover {
-        background: var(--secondary-focus);
-    }
-
-    &.active {
-        background: var(--primary);
-        color: var(--primary-inverse);
-        border-color: var(--primary);
-        font-weight: bold;
-    }
 }
 
 /* Card Highlights Mixin */

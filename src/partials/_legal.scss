@@ -16,6 +16,69 @@
             margin-bottom: 2rem;
         }
 
+        header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+
+            svg {
+                width: 28px;
+                height: 28px;
+                flex-shrink: 0;
+            }
+
+            h3 {
+                margin: 0;
+                font-size: 1.25rem;
+            }
+        }
+
+        textarea#address {
+            min-height: 150px;
+            padding: 1rem;
+            line-height: 1.5;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1rem;
+
+            label {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin: 0;
+                cursor: pointer;
+
+                input[type="radio"] {
+                    margin: 0;
+                }
+            }
+        }
+
+        fieldset {
+            margin-bottom: 1.5rem;
+
+            legend {
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+            }
+
+            label {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.75rem;
+                cursor: pointer;
+
+                input[type="checkbox"] {
+                    margin-top: 0.25rem;
+                    flex-shrink: 0;
+                }
+            }
+        }
+
         >article {
             @include card-highlights;
             --highlight: color-mix(in srgb, red 70%, var(--theme-opposite) 20%) !important;

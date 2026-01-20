@@ -104,10 +104,10 @@ async function fetchFiles() {
     ];
 
     thead.innerHTML = `<tr>${columns.map(c => `
-        <th class="sortable" data-sort="${c.sort}">
+        <th class="sortable" data-sort="${c.sort}" data-label="${c.label}">
             ${c.label} ${currentOptions.sort === c.sort ? (currentOptions.order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
         </th>
-    `).join('')}<th>Action</th></tr>`;
+    `).join('')}<th data-label="Action">Action</th></tr>`;
 
     thead.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {

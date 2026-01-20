@@ -171,10 +171,10 @@ async function loadAdminFiles() {
     ];
 
     thead.innerHTML = `<tr>${columns.map(c => `
-        <th class="sortable" data-sort="${c.sort}">
+        <th class="sortable" data-sort="${c.sort}" data-label="${c.label}">
             ${c.label} ${currentOptions.sort === c.sort ? (currentOptions.order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
         </th>
-    `).join('')}<th>Actions</th></tr>`;
+    `).join('')}<th data-label="Actions">Actions</th></tr>`;
 
     thead.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {
@@ -201,11 +201,11 @@ async function loadAdminFiles() {
 
         list.innerHTML = files.map(file => `
             <tr>
-                <td><strong>${file.title}</strong></td>
-                <td>${file.category_name || 'Uncategorized'}</td>
-                <td>${file.author}</td>
-                <td><span class="tag-badge">${file.visibility}</span></td>
-                <td>
+                <td data-label="Title"><strong>${file.title}</strong></td>
+                <td data-label="Category">${file.category_name || 'Uncategorized'}</td>
+                <td data-label="Author">${file.author}</td>
+                <td data-label="Visibility"><span class="tag-badge">${file.visibility}</span></td>
+                <td data-label="Date">
                     <span class="full-date">${new Date(file.date).toLocaleDateString('en-GB')}</span>
                     <span class="short-date">
                         <span>${new Date(file.date).getDate().toString().padStart(2, '0')}</span>
@@ -213,7 +213,7 @@ async function loadAdminFiles() {
                         <span>${new Date(file.date).getFullYear().toString().slice(-2)}</span>
                     </span>
                 </td>
-                <td>
+                <td data-label="Actions">
                     <div class="admin-row-actions">
                         <button class="status-btn edit-file" data-id="${file.id}" title="Edit">Edit</button>
                         <button class="status-btn error delete-file" data-id="${file.id}" title="Delete">${CLOSE_SVG}</button>

@@ -12,8 +12,8 @@ const navEntries = [
     { name: 'Files', type: 'text', classes: "contrast", action: { run: () => switchView('/files') } },
     { name: 'Balance: £0.00', id: 'balance-button', type: 'text', classes: "contrast", action: { run: () => switchView('/transactions') } },
     { name: 'Admin', id: 'admin-button', type: 'text', classes: "contrast", action: { run: () => switchView('/admin/') } },
-    { name: 'Login', id: 'login-button', type: 'button', action: { run: () => switchView('/login') } },
-    { name: 'Profile', id: 'profile-button', type: 'button', action: { run: () => switchView('/profile') } }
+    { name: 'Login', id: 'login-button', type: 'text', classes: "contrast", action: { run: () => switchView('/login') } },
+    { name: 'Profile', id: 'profile-button', type: 'text', classes: "contrast", action: { run: () => switchView('/profile') } }
 ];
 
 // Fired on profile name change
@@ -34,6 +34,55 @@ async function updateBalanceInNav() {
             else balanceButton.style.color = '';
         }
     }
+}
+
+/**
+ * Update active navigation item.
+ * @param {string} path 
+ */
+function updateActiveNav(path) {
+    const navItems = document.querySelectorAll('.navbar-items li a, .navbar-items li button');
+    navItems.forEach(item => {
+        // Remove active state
+        item.classList.remove('active');
+        item.style.pointerEvents = '';
+        item.style.cursor = 'pointer';
+        item.removeAttribute('aria-current');
+
+        // Check for match
+        // We check if the click listener would call switchView with the current path
+        // Since we can't easily inspect the listener, we rely on the ID or manual mapping
+        // Or we can check if the item's text matches the path concept
+        
+        // Let's use the ID to map back to navEntries or just simple string matching if possible
+        // But the navEntries don't store the path directly in a property accessible here easily
+        // except in the closure of the click handler.
+        
+        // However, we know the IDs:
+        // nav-events -> /events
+        // nav-files -> /files
+        // balance-button -> /transactions
+        // admin-button -> /admin/
+        // login-button -> /login
+        // profile-button -> /profile
+
+        let match = false;
+        if (item.id === 'nav-events' && path.startsWith('/events')) match = true;
+        else if (item.id === 'nav-files' && path.startsWith('/files')) match = true;
+        else if (item.id === 'balance-button' && path.startsWith('/transactions')) match = true;
+        else if (item.id === 'admin-button' && path.startsWith('/admin')) match = true;
+        else if (item.id === 'login-button' && path.startsWith('/login')) match = true;
+        else if (item.id === 'profile-button' && path.startsWith('/profile')) match = true;
+        
+        // Also handle 'Home' if it existed, but it's not in navEntries list above.
+
+        if (match) {
+            item.classList.add('active');
+            item.style.pointerEvents = 'none';
+            item.style.cursor = 'default';
+            item.setAttribute('aria-current', 'page');
+        }
+    });
 }
 
 /**
@@ -182,9 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
     BalanceChangedEvent.subscribe(updateBalanceInNav);
 
     // Close mobile menu on navigation
-    ViewChangedEvent.subscribe(() => {
+    ViewChangedEvent.subscribe(({ resolvedPath }) => {
         toggleMobileMenu(false);
+        updateActiveNav(resolvedPath || window.location.pathname);
     });
+
+    // Initial check
+    updateActiveNav(window.location.pathname);
 });
 
 export { FirstNameChangedEvent, updateBalanceInNav };

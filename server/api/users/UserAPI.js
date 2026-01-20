@@ -2,9 +2,12 @@ const { statusObject } = require('../../misc/status.js');
 const UserDB = require('../../db/userDB.js');
 const SwimsDB = require('../../db/swimsDB.js');
 const transactionsDB = require('../../db/transactionDB.js');
+const RolesDB = require('../../db/rolesDB.js');
+const CollegesDB = require('../../db/collegesDB.js');
 const Globals = require('../../misc/globals.js');
 const check = require('../../misc/authentication.js');
 const bcrypt = require('bcrypt');
+const Rules = require('../../misc/rules.js');
 
 /**
  * API for user profiles, validation, membership, and account management.
@@ -101,33 +104,16 @@ class User {
             }
 
             if (needsPerms || needsRoles) {
-                // Fetch roles
-                const roles = await db.all('SELECT r.id, r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?', [req.user.id]);
-                if (needsRoles) userResultData.roles = roles;
+                if (needsRoles) {
+                    const rolesRes = await RolesDB.getUserRoles(db, req.user.id);
+                    if (rolesRes.isError()) return rolesRes;
+                    userResultData.roles = rolesRes.getData();
+                }
                 
                 if (needsPerms) {
-                    const Permissions = require('../../misc/permissions.js');
-                    
-                    const rolePerms = await db.all(`
-                        SELECT DISTINCT p.slug 
-                        FROM permissions p
-                        JOIN role_permissions rp ON p.id = rp.permission_id
-                        JOIN user_roles ur ON rp.role_id = ur.role_id
-                        WHERE ur.user_id = ?
-                    `, [req.user.id]);
-                    
-                    const directPerms = await db.all(`
-                        SELECT DISTINCT p.slug 
-                        FROM permissions p
-                        JOIN user_permissions up ON p.id = up.permission_id
-                        WHERE up.user_id = ?
-                    `, [req.user.id]);
-
-                    const allSlugs = new Set([
-                        ...rolePerms.map(p => p.slug), 
-                        ...directPerms.map(p => p.slug)
-                    ]);
-                    userResultData.permissions = Array.from(allSlugs);
+                    const permsRes = await RolesDB.getAllUserPermissions(db, req.user.id);
+                    if (permsRes.isError()) return permsRes;
+                    userResultData.permissions = permsRes.getData();
                 }
             }
         }
@@ -150,110 +136,88 @@ class User {
      * @returns {Promise<statusObject>}
      */
     static async writeNormalElements(req, db, data) {
-        /**
-         * Internal validation for profile fields.
-         */
-        async function isNormalWritableElement(element, data, db) {
-            async function getElement(element, data, db) {
-                if (element in data) return new statusObject(200, null, data[element]);
-                return await User.getAccessibleElements(req, db, element);
-            }
-
-            const phonePattern = /^\+?[0-9\s\-()]{7,15}$/;
-            const namePattern = /^[a-zA-Z\s ,.'-]+$/;
-            const value = data[element];
-            let validated = false;
-            let errorMessage = "";
-
-            switch (element) {
-                case "email":
-                    validated = /^[^@]+\.[^@]+@durham\.ac\.uk$/i.test(value);
-                    errorMessage = "Invalid email format (must be first.last@durham.ac.uk)."
-                    break;
-                case "first_name":
-                case "last_name":
-                case "emergency_contact_name":
-                    validated = namePattern.test(value);
-                    errorMessage = "Invalid name format.";
-                    break;
-                case "date_of_birth":
-                    const dob = new Date(value);
-                    const today = new Date();
-                    const maxDate = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate());
-                    const minDate = new Date(today.getFullYear() - 90, today.getMonth(), today.getDate());
-                    validated = dob >= minDate && dob <= maxDate;
-                    errorMessage = "Age must be between 17 and 90.";
-                    break;
-                case "college_id":
-                    const row = await db.get('SELECT id FROM colleges WHERE name = ?', [value]);
-                    validated = !!row;
-                    errorMessage = "Invalid college.";
-                    break;
-                case "emergency_contact_phone":
-                case "phone_number":
-                    validated = phonePattern.test(value);
-                    errorMessage = "Invalid phone format.";
-                    break;
-                case "home_address":
-                    validated = value.trim() !== '';
-                    errorMessage = "Address required.";
-                    break;
-                case "has_medical_conditions":
-                case "takes_medication":
-                case "agrees_to_keep_health_data":
-                case "is_instructor":
-                    validated = typeof value === 'boolean';
-                    errorMessage = "Invalid boolean value.";
-                    break;
-                case "medical_conditions_details":
-                    if ((await getElement("has_medical_conditions", data, db)).getData()) {
-                        validated = value.trim() !== '';
-                        errorMessage = "Description required if conditions exist.";
-                        break;
-                    }
-                    validated = true;
-                    break;
-                case "medication_details":
-                    if ((await getElement("takes_medication", data, db)).getData()) {
-                        validated = value.trim() !== '';
-                        errorMessage = "Description required if taking medication.";
-                        break;
-                    }
-                    validated = true;
-                    break;
-                case "agrees_to_fitness_statement":
-                case "agrees_to_club_rules":
-                case "agrees_to_pay_debts":
-                case "agrees_to_data_storage":
-                    validated = value === true;
-                    errorMessage = "Agreement required.";
-                    break;
-                case "first_aid_expiry":
-                    if (value === null) { validated = true; break; }
-                    const expiry = new Date(value);
-                    const now = new Date();
-                    const limit = new Date(); limit.setFullYear(now.getFullYear() + 20);
-                    validated = expiry > now && expiry <= limit;
-                    errorMessage = "Expiry must be in the future (max 20 years).";
-                    break;
-                default:
-                    return undefined;
-            }
-
-            if (!validated) return new statusObject(400, errorMessage);
-            return new statusObject(200, User.legalElements.includes(element));
-        }
-
         async function getElement(element, data, db) {
             if (element in data) return new statusObject(200, null, data[element]);
             return await User.getAccessibleElements(req, db, element);
         }
 
+        const errors = {};
         let legalUpdateNeeded = false;
+
         for (const element in data) {
-            const status = await isNormalWritableElement(element, data, db);
-            if (status.isError()) return status;
-            if (status.getMessage()) legalUpdateNeeded = true;
+            const value = data[element];
+            let error = null;
+
+            switch (element) {
+                case "email":
+                    error = Rules.validate('email', value);
+                    break;
+                case "first_name":
+                case "last_name":
+                case "emergency_contact_name":
+                    error = Rules.validate('name', value);
+                    break;
+                case "date_of_birth":
+                    error = Rules.validate('date_of_birth', value);
+                    break;
+                case "college_id":
+                    error = Rules.validate('presence', value);
+                    if (!error) {
+                        const college = await CollegesDB.getCollegeByName(db, value);
+                        if (!college) error = "Invalid college.";
+                    }
+                    break;
+                case "emergency_contact_phone":
+                case "phone_number":
+                    error = Rules.validate('phone', value);
+                    break;
+                case "home_address":
+                    error = Rules.validate('presence', value);
+                    break;
+                case "has_medical_conditions":
+                case "takes_medication":
+                case "agrees_to_keep_health_data":
+                case "is_instructor":
+                    error = Rules.validate('boolean', value);
+                    break;
+                case "medical_conditions_details":
+                    if ((await getElement("has_medical_conditions", data, db)).getData()) {
+                        error = Rules.validate('presence', value);
+                        if (error) error = "Description required if conditions exist.";
+                    }
+                    break;
+                case "medication_details":
+                    if ((await getElement("takes_medication", data, db)).getData()) {
+                        error = Rules.validate('presence', value);
+                        if (error) error = "Description required if taking medication.";
+                    }
+                    break;
+                case "agrees_to_fitness_statement":
+                case "agrees_to_club_rules":
+                case "agrees_to_pay_debts":
+                case "agrees_to_data_storage":
+                    if (value !== true) error = "Agreement required.";
+                    break;
+                case "first_aid_expiry":
+                    if (value === null) break;
+                    const expiry = new Date(value);
+                    const now = new Date();
+                    const limit = new Date(); limit.setFullYear(now.getFullYear() + 20);
+                    if (expiry <= now || expiry > limit) error = "Expiry must be in the future (max 20 years).";
+                    break;
+            }
+
+            if (error) {
+                errors[element] = error;
+            }
+
+            if (User.legalElements.includes(element)) {
+                legalUpdateNeeded = true;
+            }
+        }
+
+        if (Object.keys(errors).length > 0) {
+            return new statusObject(400, 'Validation failed', { errors });
         }
 
         if (legalUpdateNeeded) {
@@ -303,7 +267,12 @@ class User {
         this.app.post('/api/user/elements', check(), async (req, res) => {
             User.preprocessData(req.body);
             const status = await User.writeNormalElements(req, this.db, req.body);
-            if (status.isError()) return status.getResponse(res);
+            if (status.isError()) {
+                if (status.status === 400 && status.data && status.data.errors) {
+                    return res.status(400).json({ message: status.message, errors: status.data.errors });
+                }
+                return status.getResponse(res);
+            }
             res.json({ success: true });
         });
 

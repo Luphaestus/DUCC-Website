@@ -18,24 +18,24 @@ async function ajaxGet(url) {
             if (xhr.readyState === 4) {
                 if (xhr.status === 0) {
                     reportConnectionFailure();
-                    reject('Network error');
+                    reject({ message: 'Network error' });
                 } else if (xhr.status >= 200 && xhr.status < 300) {
                     reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
-                        reject('Failed to parse response: ' + e.message);
+                        reject({ message: 'Failed to parse response: ' + e.message });
                     }
                 } else {
-                    reject('Request failed with status: ' + xhr.status);
+                    reject({ message: 'Request failed with status: ' + xhr.status });
                 }
             }
         };
 
         xhr.onerror = function () {
             reportConnectionFailure();
-            reject('Network error');
+            reject({ message: 'Network error' });
         };
 
         xhr.open('GET', url, true);
@@ -57,21 +57,21 @@ async function ajaxPost(url, data) {
             if (xhr.readyState === 4) {
                 if (xhr.status === 0) {
                     reportConnectionFailure();
-                    reject('Network error');
+                    reject({ message: 'Network error' });
                 } else if (xhr.status >= 200 && xhr.status < 300) {
                     reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
-                        reject('Failed to parse response: ' + e.message);
+                        reject({ message: 'Failed to parse response: ' + e.message });
                     }
                 } else {
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
-                        reject(errorResponse.message || 'Request failed');
+                        reject(errorResponse);
                     } catch (e) {
-                        reject('Request failed with status: ' + xhr.status);
+                        reject({ message: 'Request failed with status: ' + xhr.status });
                     }
                 }
             }
@@ -79,7 +79,7 @@ async function ajaxPost(url, data) {
 
         xhr.onerror = function () {
             reportConnectionFailure();
-            reject('Network error');
+            reject({ message: 'Network error' });
         };
 
         xhr.open('POST', url, true);
@@ -101,21 +101,21 @@ async function ajaxDelete(url) {
             if (xhr.readyState === 4) {
                 if (xhr.status === 0) {
                     reportConnectionFailure();
-                    reject('Network error');
+                    reject({ message: 'Network error' });
                 } else if (xhr.status >= 200 && xhr.status < 300) {
                     reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
-                        reject('Failed to parse response: ' + e.message);
+                        reject({ message: 'Failed to parse response: ' + e.message });
                     }
                 } else {
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
-                        reject(errorResponse.message || 'Request failed');
+                        reject(errorResponse);
                     } catch (e) {
-                        reject('Request failed with status: ' + xhr.status);
+                        reject({ message: 'Request failed with status: ' + xhr.status });
                     }
                 }
             }
@@ -123,7 +123,7 @@ async function ajaxDelete(url) {
 
         xhr.onerror = function () {
             reportConnectionFailure();
-            reject('Network error');
+            reject({ message: 'Network error' });
         };
 
         xhr.open('DELETE', url, true);
@@ -145,21 +145,21 @@ async function ajaxPut(url, data) {
             if (xhr.readyState === 4) {
                 if (xhr.status === 0) {
                     reportConnectionFailure();
-                    reject('Network error');
+                    reject({ message: 'Network error' });
                 } else if (xhr.status >= 200 && xhr.status < 300) {
                     reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
-                        reject('Failed to parse response: ' + e.message);
+                        reject({ message: 'Failed to parse response: ' + e.message });
                     }
                 } else {
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
-                        reject(errorResponse.message || 'Request failed');
+                        reject(errorResponse);
                     } catch (e) {
-                        reject('Request failed with status: ' + xhr.status);
+                        reject({ message: 'Request failed with status: ' + xhr.status });
                     }
                 }
             }
@@ -167,7 +167,7 @@ async function ajaxPut(url, data) {
 
         xhr.onerror = function () {
             reportConnectionFailure();
-            reject('Network error');
+            reject({ message: 'Network error' });
         };
 
         xhr.open('PUT', url, true);

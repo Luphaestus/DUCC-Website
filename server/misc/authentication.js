@@ -35,7 +35,6 @@ const checkAuthentication = (...requirements) => {
             let hasPermission = false;
 
             for (const permDetails of requirement.split('|').map(p => p.trim())) {
-                const permType = getPermissionType(permDetails);
                 const perm = getPermissionName(permDetails);
 
                 // Special case: is_exec checks if user has ANY permission
@@ -46,15 +45,6 @@ const checkAuthentication = (...requirements) => {
                     }
                     continue;
                 }
-
-                if (permType === 'role') {
-                    if (await Permissions.hasRole(req.db, req.user.id, perm)) {
-                        hasPermission = true;
-                        break;
-                    }
-                    continue;
-                }
-
 
                 if (await Permissions.hasPermission(req.db, req.user.id, perm)) {
                     hasPermission = true;

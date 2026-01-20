@@ -35,7 +35,8 @@ const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
                                 <button class="nobottommargin" type="submit">Login</button>
                             </div>
                         </form>
-                        <p class="nobottommargin">Don't have an account? <a data-nav="signup" style="cursor: pointer;">Sign Up</a></p>
+                        <p class="nobottommargin" style="font-size: 0.9em; margin-top: 0.5rem;"><a data-nav="/reset-password" style="cursor: pointer;">Forgot Password?</a></p>
+                        <p class="nobottommargin">Don't have an account? <a data-nav="/signup" style="cursor: pointer;">Sign Up</a></p>
                     </article>
                 </div>
             </div>
@@ -97,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
             else switchView(prev);
         } catch (error) {
-            messageElement.textContent = error || 'Login failed.';
+            messageElement.textContent = error.message || error || 'Login failed.';
             messageElement.style.color = '#FF6961';
         }
     });

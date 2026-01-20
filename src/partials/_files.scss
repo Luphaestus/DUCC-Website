@@ -118,6 +118,13 @@
             display: inline-flex;
             gap: 0.25rem;
         }
+
+        th[data-label="Author"],
+        td[data-label="Author"],
+        th[data-label="Size"],
+        td[data-label="Size"] {
+            display: none;
+        }
     }
 
     @media (max-width: 340px) {
@@ -190,7 +197,7 @@
             width: 2rem;
             height: 2rem;
 
-            @media (max-width: 320px) {
+            @media (max-width: 418px) {
                 width: 6vw;
                 height: 6vw;
             }
