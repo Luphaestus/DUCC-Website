@@ -182,7 +182,6 @@
 .event-warning-banner {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
     gap: 1rem;
     padding: 1rem 1.5rem;
@@ -318,7 +317,7 @@
         background: rgba(255, 255, 255, 0.03);
         padding: 1.5rem;
         border-radius: 0.75rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         display: flex;
         flex-direction: column;
@@ -348,43 +347,51 @@
                 height: 1.2rem;
             }
         }
+    }
 
-        ul.attendees-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+    ul.attendees-list {
+        list-style: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    ol.waitlist-names-list {
+        list-style-position: inside;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    ul.attendees-list li,
+    ol.waitlist-names-list li {
+        // padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 0.4rem;
+        vertical-align: middle;
+        text-align: center;
+        margin-bottom: 0;
+        font-size: 0.95rem;
+        transition: background 0.2s ease;
+        display: list-item;
+        text-align: center;
+        display: flex;
+        
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        ol.waitlist-names-list {
-            list-style-position: inside;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+        &.attendee-left {
+            text-decoration: line-through;
+            opacity: 0.6;
         }
 
-        ul.attendees-list li,
-        ol.waitlist-names-list li {
-            padding: 0.5rem 0.75rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 0.4rem;
-            font-size: 0.95rem;
-            transition: background 0.2s ease;
-            display: list-item;
-            /* Ensure it behaves like a list item for numbering */
-
-            &:hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-
-            &.attendee-left {
-                text-decoration: line-through;
-                opacity: 0.6;
-            }
+        &[role="button"] {
+            cursor: pointer;
         }
     }
 }
@@ -441,8 +448,14 @@
 }
 
 #event-attendees-container {
+    flex: 1 0 100%;
+
     @media (min-width: 55em) {
         display: none;
+    }
+
+    li {
+        margin-right: 1rem;
     }
 }
 

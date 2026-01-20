@@ -41,11 +41,14 @@ async function fillAttendeesList(eventId) {
         const response = await ajaxGet(`/api/event/${eventId}/attendees`);
         const attendees = response.attendees || [];
 
+        const canManageUsers = attendees.length > 0 && attendees[0].is_attending !== undefined;
         const attendeesListHtml = attendees.length > 0 ? attendees.map(u => {
+            const attr = canManageUsers ? ` data-user-id="${u.id}" role="button"` : '';
             if (u.is_attending === 0) {
-                return `<li class="attendee-left">${u.first_name} ${u.last_name} (Left)</li>`;
+                return `<li class="attendee-left"${attr}>${u.first_name} ${u.last_name} (Left)</li>`;
             }
-            return `<li>${u.first_name} ${u.last_name}</li>`;
+
+            return `<li${attr}>${u.first_name} ${u.last_name}</li>`;
         }).join('') : '<li>No attendees yet.</li>';
 
         document.querySelectorAll('.attendees-list').forEach(el => {
@@ -90,7 +93,7 @@ async function fillWaitlist(eventId, isFull) {
         if (data.waitlist && data.waitlist.length > 0) {
             adminSections.forEach(s => s.classList.remove('hidden'));
             if (adminLists.length > 0) {
-                const listHtml = data.waitlist.map(u => `<li>${u.first_name} ${u.last_name}</li>`).join('');
+                const listHtml = data.waitlist.map(u => `<li data-user-id="${u.id}" role="button">${u.first_name} ${u.last_name}</li>`).join('');
                 adminLists.forEach(l => l.innerHTML = listHtml);
             }
         } else {
@@ -148,7 +151,7 @@ async function setupEventButtons(eventId, path, resolvedPath) {
         const { event } = eventResponse;
         const isInstructor = userRes.is_instructor;
         const coachCount = coachCountRes.count;
-        
+
         if (!event.signup_required) {
             buttonContainer?.classList.add('hidden');
             attendeeContainers.forEach(c => c?.classList.add('hidden'));
@@ -159,7 +162,7 @@ async function setupEventButtons(eventId, path, resolvedPath) {
 
         const isAttending = isAttendingRes?.isAttending || false;
         const isOnWaitlist = isOnWaitlistRes?.isOnWaitlist || false;
-        
+
         const attendees = attendeesResponse?.attendees || [];
         const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
         const attendeeCount = activeAttendees.length;
@@ -182,20 +185,20 @@ async function setupEventButtons(eventId, path, resolvedPath) {
             if (!canJoinRes.canJoin) {
                 canAttend = false;
                 let actionBtn = '';
-                
+
                 if (canJoinRes.reason.includes('Legal info')) {
                     actionBtn = `<button class="banner-btn" data-nav="/legal">Complete Form</button>`;
                 } else if (canJoinRes.reason.includes('free sessions')) {
                     actionBtn = `<button class="banner-btn" data-nav="/profile">Join Club</button>`;
                 } else if (canJoinRes.reason.includes('debts')) {
                     actionBtn = `<button class="banner-btn" data-nav="/transactions">View Balance</button>`;
-                } 
+                }
 
                 if (isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full') {
-                     warningHtml = `<div class="event-warning-banner warning">${CHECK_INDETERMINATE_SMALL_SVG} This event is full. You can join the waiting list.</div>`;
-                     canAttend = false; // Main button becomes Join Waitlist
+                    warningHtml = `<div class="event-warning-banner warning">${CHECK_INDETERMINATE_SMALL_SVG} This event is full. You can join the waiting list.</div>`;
+                    canAttend = false; 
                 } else {
-                     warningHtml = `<div class="event-warning-banner error"><span>${CLOSE_SVG} ${canJoinRes.reason}</span> ${actionBtn}</div>`;
+                    warningHtml = `<div class="event-warning-banner error"><span>${CLOSE_SVG} ${canJoinRes.reason}</span> ${actionBtn}</div>`;
                 }
             }
         }
@@ -215,10 +218,10 @@ async function setupEventButtons(eventId, path, resolvedPath) {
             else if (isFull && event.enable_waitlist) attendButton.textContent = 'Join Waiting List';
             else attendButton.textContent = 'Attend Event';
 
-            const canJoinWaitlist = isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full'; 
-            
+            const canJoinWaitlist = isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full';
+
             const shouldDisable = !canAttend && !isAttending && !isOnWaitlist && !canJoinWaitlist;
-            
+
             attendButton.disabled = shouldDisable;
             attendButton.style.opacity = shouldDisable ? '0.5' : '1';
             attendButton.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
@@ -228,7 +231,7 @@ async function setupEventButtons(eventId, path, resolvedPath) {
 
             newBtn.addEventListener('click', async () => {
                 if (shouldDisable) return;
-                
+
                 if (isAttending) {
                     const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
                     if (isInstructor && coachCount === 1 && activeAttendees.length > 1) {
@@ -372,7 +375,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
                 editBtn?.classList.remove('hidden');
                 editBtn.onclick = () => switchView(`/admin/event/${event.id}`);
             }
-        }).catch(() => {});
+        }).catch(() => { });
 
         const eventId = event.id;
         await Promise.all([
@@ -413,3 +416,11 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
 
 ViewChangedEvent.subscribe(NavigationEventListner);
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
+
+document.querySelector('main').addEventListener('click', (e) => {
+    const target = e.target.closest('li[data-user-id]');
+    if (target && document.getElementById('event-view').contains(target)) {
+        const userId = target.dataset.userId;
+        if (userId) switchView(`/admin/user/${userId}`);
+    }
+});

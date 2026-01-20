@@ -4103,7 +4103,6 @@ nav.small-container ul {
 .event-warning-banner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem 1.5rem;
@@ -4226,7 +4225,7 @@ nav.small-container ul {
   background: rgba(255, 255, 255, 0.03);
   padding: 1.5rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
@@ -4257,15 +4256,14 @@ nav.small-container ul {
   width: 1.2rem;
   height: 1.2rem;
 }
-.event-content-split .event-attendees-section ul.attendees-list {
+.event-content-split ul.attendees-list {
   list-style: none;
   padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-.event-content-split .event-attendees-section ol.waitlist-names-list {
+.event-content-split ol.waitlist-names-list {
   list-style-position: inside;
   padding: 0;
   margin: 0;
@@ -4273,24 +4271,31 @@ nav.small-container ul {
   flex-direction: column;
   gap: 0.5rem;
 }
-.event-content-split .event-attendees-section ul.attendees-list li,
-.event-content-split .event-attendees-section ol.waitlist-names-list li {
-  padding: 0.5rem 0.75rem;
+.event-content-split ul.attendees-list li,
+.event-content-split ol.waitlist-names-list li {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0.4rem;
+  vertical-align: middle;
+  text-align: center;
+  margin-bottom: 0;
   font-size: 0.95rem;
   transition: background 0.2s ease;
   display: list-item;
-  /* Ensure it behaves like a list item for numbering */
+  text-align: center;
+  display: flex;
 }
-.event-content-split .event-attendees-section ul.attendees-list li:hover,
-.event-content-split .event-attendees-section ol.waitlist-names-list li:hover {
+.event-content-split ul.attendees-list li:hover,
+.event-content-split ol.waitlist-names-list li:hover {
   background: rgba(255, 255, 255, 0.1);
 }
-.event-content-split .event-attendees-section ul.attendees-list li.attendee-left,
-.event-content-split .event-attendees-section ol.waitlist-names-list li.attendee-left {
+.event-content-split ul.attendees-list li.attendee-left,
+.event-content-split ol.waitlist-names-list li.attendee-left {
   text-decoration: line-through;
   opacity: 0.6;
+}
+.event-content-split ul.attendees-list li[role=button],
+.event-content-split ol.waitlist-names-list li[role=button] {
+  cursor: pointer;
 }
 
 .event-buttons {
@@ -4340,10 +4345,16 @@ nav.small-container ul {
   }
 }
 
+#event-attendees-container {
+  flex: 1 0 100%;
+}
 @media (min-width: 55em) {
   #event-attendees-container {
     display: none;
   }
+}
+#event-attendees-container li {
+  margin-right: 1rem;
 }
 
 .event-error-state {
