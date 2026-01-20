@@ -1,6 +1,6 @@
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { ajaxGet } from '/js/utils/ajax.js';
-import { DESCRIPTION_SVG, CLOUD_DOWNLOAD_SVG, SEARCH_SVG, CALENDAR_TODAY_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG } from '../../images/icons/outline/icons.js';
+import { DESCRIPTION_SVG, CLOUD_DOWNLOAD_SVG, SEARCH_SVG, CALENDAR_TODAY_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
 
 /**
  * View for club files.
@@ -174,10 +174,37 @@ function renderPagination(totalPages) {
     const container = document.getElementById('files-pagination');
     if (!container) return;
 
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let startPage = currentOptions.page - 1;
+    if (startPage < 1) startPage = 1;
+    let endPage = startPage + 2;
+    if (endPage > totalPages) {
+        endPage = totalPages;
+        startPage = Math.max(1, endPage - 2);
+    }
+
     let html = '';
-    for (let i = 1; i <= totalPages; i++) {
+
+    // Prev Button
+    const prevDisabled = currentOptions.page === 1;
+    html += `<button class="page-btn" ${prevDisabled ? 'disabled' : ''} data-page="${currentOptions.page - 1}">
+        ${ARROW_BACK_IOS_NEW_SVG}
+    </button>`;
+
+    for (let i = startPage; i <= endPage; i++) {
         html += `<button class="page-btn ${i === currentOptions.page ? 'active' : ''}" data-page="${i}">${i}</button>`;
     }
+
+    // Next Button
+    const nextDisabled = currentOptions.page === totalPages;
+    html += `<button class="page-btn" ${nextDisabled ? 'disabled' : ''} data-page="${currentOptions.page + 1}">
+        ${ARROW_FORWARD_IOS_SVG}
+    </button>`;
+
     container.innerHTML = html;
 }
 

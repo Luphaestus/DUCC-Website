@@ -90,6 +90,12 @@ nav.small-container {
     justify-content: space-between;
     align-items: center;
 
+    button {                                                                                                                                                           
+       padding: 0.5rem 1rem;                                                                                                                                          
+       font-size: 1rem;                                                                                                                                               
+    }                                                                                                                                                                  
+              
+
     @media (prefers-color-scheme: dark) {
         box-shadow: 0 2px 8px rgba(100, 100, 100, .5);
     }

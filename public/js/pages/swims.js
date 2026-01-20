@@ -60,6 +60,7 @@ async function populateLeaderboard(yearly = true) {
                 <td>${user.swims}</td>
             </tr>
         `).join('');
+        
     } catch (error) {
         body.innerHTML = '<tr><td colspan="3" class="leaderboard-error">Failed to load leaderboard.</td></tr>';
     }

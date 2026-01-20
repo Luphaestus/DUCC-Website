@@ -1,3 +1,5 @@
+@use "mixins" as *;
+
 /* Admin View */
 #admin-view {
     width: 100%;
@@ -5,7 +7,11 @@
     overflow-x: hidden;
 
     @media (max-width: 576px) {
-        padding: 0.5rem;
+        padding: 2rem 0.5rem 0.5rem 0.5rem;
+    }
+
+    @media (max-width: 466px) {
+        padding: 2rem .4rem;
     }
 
     h1 {
@@ -44,6 +50,7 @@
         flex-wrap: wrap;
 
         button {
+            @include common-element-size;
             margin-bottom: 0;
             white-space: nowrap;
         }
@@ -70,6 +77,7 @@
     gap: 0.5rem;
 
     button {
+        @include common-element-size;
         margin-bottom: 0;
         white-space: nowrap;
     }
@@ -82,6 +90,8 @@
 
 /* Updated Search Input with Icon */
 .search-input-wrapper {
+    @include common-element-size;
+    padding: 0 !important;
     flex: 1 1 200px;
     position: relative;
     display: flex;
@@ -89,14 +99,14 @@
 
     input {
         width: 100%;
-        padding-right: 2.5rem !important;
+        padding-right: 2.8em !important;
         /* Space for icon */
         margin-bottom: 0;
     }
 
     button {
         position: absolute;
-        right: 0.25rem;
+        right: 0.55rem;
         top: 50%;
         transform: translateY(-50%);
         background: transparent !important;
@@ -109,6 +119,8 @@
         justify-content: center;
         opacity: 0.5;
         transition: opacity 0.2s;
+        width: 1.7em !important;
+        height: 1.7em !important;
 
         &:hover {
             opacity: 1;
@@ -117,8 +129,8 @@
         }
 
         svg {
-            width: 1.25rem;
-            height: 1.25rem;
+            width: 1.3em !important;
+            height: 1.3em !important;
             fill: var(--theme-opposite);
         }
     }
@@ -359,6 +371,8 @@
 
 /* Admin Table */
 .admin-table {
+    @include scaling-table(1200px, 992px, 800px);
+
     tbody {
         cursor: pointer;
     }
@@ -384,89 +398,33 @@
         }
     }
 
-    @media (max-width: 680px) {
-        border: 0;
+    td {
 
-        thead {
-            display: none;
-        }
-
-        tr {
-            display: block;
-            margin-bottom: 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 1rem;
-            border-radius: 0.75rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-
-            @media (prefers-color-scheme: dark) {
-                background: rgba(255, 255, 255, 0.05);
-                border-color: rgba(255, 255, 255, 0.05);
-            }
-        }
-
-        td {
+        /* Actions container within table cell */
+        .tx-actions,
+        .admin-row-actions {
             display: flex;
-            flex-direction: row;
             flex-wrap: wrap;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 0.1rem 0.25rem;
-            padding: 0.5rem 0.75rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 0.4rem;
-            margin-bottom: 0.5rem;
-            border: none;
-            text-align: left;
-            min-height: auto;
+            gap: 0.25rem;
 
-            &:last-child {
-                border-bottom: 0;
+            button {
+                padding: 0.2rem 0.5rem;
+                font-size: 0.8rem;
                 margin-bottom: 0;
             }
+        }
+    }
 
-            &::before {
-                content: attr(data-label) ": ";
-                font-weight: bold;
-                color: var(--pico-contrast);
-                flex: 0 0 auto;
-            }
+    @media (max-width: 466px) {
 
-            /* Adjust content inside stacked table cells */
-            input,
-            select,
-            .tx-actions,
-            .tag-color-badge {
-                width: auto !important;
-                display: inline-block;
-                margin: 0 !important;
-            }
+        th,
+        td {
 
-            .tx-actions,
-            .admin-row-actions {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.25rem;
-
-                button {
-                    padding: 0.2rem 0.5rem;
-                    font-size: 0.8rem;
-                }
-            }
-
-            @media (max-width: 450px) {
-                gap: 0.25rem 0.5rem;
-            }
-
-            @media (max-width: 350px) {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.1rem;
-
-                &::before {
-                    width: 100%;
-                }
+            &[data-label="First Aid"],
+            &[data-label="Difficulty"],
+            &[data-sort="first_aid_expiry"],
+            &[data-sort="difficulty_level"] {
+                display: none;
             }
         }
     }

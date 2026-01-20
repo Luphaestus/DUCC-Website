@@ -1,3 +1,5 @@
+@use "mixins" as *;
+
 #files-view {
     width: 100%;
     padding-top: 2rem;
@@ -28,6 +30,8 @@
         justify-content: center;
 
         .search-box {
+            @include common-element-size;
+            padding: 0 !important;
             position: relative;
             flex: 1 1 300px;
             max-width: 500px;
@@ -40,10 +44,15 @@
                 opacity: 0.5;
                 display: flex;
                 z-index: 2;
+                
+                svg {
+                    width: 1.5em;
+                    height: 1.5em;
+                }
             }
 
             input {
-                padding-left: 2.5rem;
+                padding-left: 2.8em;
                 margin-bottom: 0;
             }
         }
@@ -67,9 +76,12 @@
         margin-top: 2rem;
 
         .page-btn {
-            padding: 0.4rem 0.8rem;
+            @include common-element-size;
             min-width: 2.5rem;
             margin-bottom: 0;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
 
             &.active {
                 background: var(--pico-primary);
@@ -80,72 +92,10 @@
 }
 
 .files-table {
-    width: 100%;
-    margin-bottom: 0;
-    table-layout: auto;
-
-    // Override admin-table stacking if applied
-    &.admin-table {
-        @media (max-width: 680px) {
-            display: table !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-
-            thead {
-                display: table-header-group !important;
-            }
-
-            tr {
-                display: table-row !important;
-                margin-bottom: 0 !important;
-                background: transparent !important;
-                padding: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-
-            td {
-                display: table-cell !important;
-                padding: 0.5rem 0.25rem !important;
-                background: transparent !important;
-                border-radius: 0 !important;
-                margin-bottom: 0 !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-                font-size: 0.8rem;
-
-                &::before {
-                    display: none !important;
-                }
-            }
-        }
-    }
+    @include scaling-table;
 
     th,
     td {
-        padding-top: .5rem;
-        padding-bottom: 0.5rem;
-        padding-left: 1vw;
-        padding-right: 1vw;
-        text-align: left;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-
-        @media (max-width: 768px) {
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 480px) {
-            padding-left: 0.2rem;
-            padding-right: 0.2rem;
-            font-size: 0.75rem;
-        }
-
-        @media (max-width: 320px) {
-            padding-left: 1px;
-            padding-right: 1px;
-            font-size: 2.5vw;
-        }
-
         &[data-label="Date"],
         &[data-label="Size"],
         &[data-label="Action"],
@@ -202,6 +152,7 @@
         }
     }
 
+
     .file-title {
         display: flex;
         flex-direction: column;
@@ -213,7 +164,7 @@
         }
 
         .file-category {
-            font-size: 0.75rem;
+            font-size: 0.8em;
             opacity: 0.6;
             text-transform: uppercase;
             letter-spacing: 0.5px;

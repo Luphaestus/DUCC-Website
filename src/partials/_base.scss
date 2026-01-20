@@ -1,3 +1,5 @@
+@use "mixins" as *;
+
 /* Base Layout */
 html,
 body {
@@ -44,6 +46,7 @@ p>svg {
 input,
 select,
 textarea {
+    @include common-element-size;
     background: rgba(255, 255, 255, 0.28);
     border-radius: 6px;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
@@ -77,13 +80,21 @@ button,
 [type="button"],
 [type="submit"],
 [type="reset"],
-[role="button"] {
+[role="button"],
+.button,
+a[role="button"] {
+    @include common-element-size;
     background: color-mix(in srgb, var(--pico-primary) 55%, transparent);
     border-radius: 6px;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
     backdrop-filter: blur(7.2px);
     -webkit-backdrop-filter: blur(7.2px);
     border: 1px solid color-mix(in srgb, var(--pico-primary) 90%, transparent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
 
     @media (prefers-color-scheme: dark) {
         box-shadow: 0 2px 15px rgba(255, 255, 255, 0.08);

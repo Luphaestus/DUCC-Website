@@ -1,3 +1,5 @@
+@use "mixins" as *;
+
 /* Swims View */
 #leaderboard-body {
     .leaderboard-status {
@@ -7,6 +9,12 @@
     .leaderboard-error {
         color: var(--del-color);
         text-align: center;
+    }
+}
+
+#swims-view {
+    table {
+        @include scaling-table;
     }
 }
 
