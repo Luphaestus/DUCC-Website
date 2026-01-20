@@ -160,7 +160,6 @@ class eventsDB {
         event.tags = tags;
 
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
-
         if (!Rules.canViewEvent(event, user)) {
             return new statusObject(401, 'User not authorized');
         }

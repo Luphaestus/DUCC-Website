@@ -1,7 +1,6 @@
 const { statusObject } = require('../misc/status.js');
 const TransactionsDB = require('./transactionDB.js');
 const UserDB = require('./userDB.js');
-const EventsDB = require('./eventsDB.js');
 
 class AttendanceDB {
     static async is_user_attending_event(db, userId, eventId) {
@@ -133,6 +132,7 @@ class AttendanceDB {
     }
 
     static async refundEvent(db, eventId, user_id) {
+        const EventsDB = require('./eventsDB.js');
         const eventRes = await EventsDB.getEventByIdAdmin(db, eventId);
         if (eventRes.isError()) return eventRes;
         const event = eventRes.getData();

@@ -218,6 +218,30 @@ class Auth {
                 res.status(500).json({ message: 'Server error.' });
             }
         });
+
+        /**
+         * Change password for logged in user.
+         */
+        this.app.post('/api/auth/change-password', this.check(), async (req, res) => {
+            const { currentPassword, newPassword } = req.body;
+            if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Current and new password required.' });
+
+            try {
+                const user = await this.db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
+                if (!user) return res.status(404).json({ message: 'User not found.' });
+
+                const isMatch = await bcrypt.compare(currentPassword, user.hashed_password);
+                if (!isMatch) return res.status(403).json({ message: 'Incorrect current password.' });
+
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                await this.db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+
+                res.json({ message: 'Password changed successfully.' });
+            } catch (e) {
+                console.error(e);
+                res.status(500).json({ message: 'Server error.' });
+            }
+        });
     }
 
     /**
