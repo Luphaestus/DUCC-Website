@@ -58,7 +58,7 @@ class User {
                 "phone_number", "has_medical_conditions", "medical_conditions_details",
                 "takes_medication", "medication_details", "free_sessions", "is_member",
                 "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts",
-                "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info",
+                "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
                 "is_instructor", "first_aid_expiry", "profile_picture_path",
                 "created_at", "swims", "swimmer_rank", "permissions", "roles"
             ];
@@ -97,7 +97,8 @@ class User {
                     SwimsDB.getUserSwimmerRank(db, req.user.id, false),
                     SwimsDB.getUserSwimmerRank(db, req.user.id, true)
                 ]);
-                const allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
+                let allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
+                allTimeData.rank = allTimeRes.getData().swims === 0 ? -1 : allTimeData.rank;
                 const yearlyData = yearlyRes.getData() || { rank: -1, swims: 0 };
                 userResultData.swimmer_stats = { allTime: allTimeData, yearly: yearlyData };
                 userResultData.swimmer_rank = allTimeData.rank;
@@ -109,7 +110,7 @@ class User {
                     if (rolesRes.isError()) return rolesRes;
                     userResultData.roles = rolesRes.getData();
                 }
-                
+
                 if (needsPerms) {
                     const permsRes = await RolesDB.getAllUserPermissions(db, req.user.id);
                     if (permsRes.isError()) return permsRes;
@@ -229,7 +230,10 @@ class User {
                     break;
                 }
             }
-            if (allFilled) data["filled_legal_info"] = 1;
+            if (allFilled) {
+                data["filled_legal_info"] = 1;
+                data["legal_filled_at"] = new Date().toISOString();
+            }
         }
 
         if (data.email) data.email = data.email.replace(/\s/g, '').toLowerCase();
@@ -285,13 +289,17 @@ class User {
                 if (status.isError()) return status.getResponse(res);
                 if (status.getData().is_member) return res.status(400).json({ message: 'Already a member.' });
 
-                const tx = await transactionsDB.add_transaction(this.db, User.getID(req), - new Globals().getFloat('MembershipCost'), 'Membership Fee');
+                const globals = new Globals();
+                const cost = globals.getFloat('MembershipCost') || 50;
+
+                const tx = await transactionsDB.add_transaction(this.db, User.getID(req), -cost, 'Membership Fee');
                 if (typeof tx === 'number' && tx >= 400) return res.status(tx).json({ message: 'Transaction failed' });
 
                 const update = await UserDB.setMembershipStatus(this.db, req.user.id, true);
                 if (update.isError()) return update.getResponse(res);
                 res.json({ success: true });
             } catch (err) {
+                console.error(err);
                 res.status(500).json({ message: 'Internal error' });
             }
         });

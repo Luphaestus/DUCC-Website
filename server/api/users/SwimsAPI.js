@@ -13,7 +13,7 @@ class SwimsAPI {
          */
         this.app.get('/api/user/swims/leaderboard', check(), async (req, res) => {
             const yearly = req.query.yearly === 'true';
-            const status = await SwimsDB.getSwimsLeaderboard(this.db, yearly);
+            const status = await SwimsDB.getSwimsLeaderboard(this.db, yearly, req.user.id);
             return status.getResponse(res);
         });
 

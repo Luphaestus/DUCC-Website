@@ -41,6 +41,7 @@ async function createTables(db) {
         agrees_to_data_storage BOOLEAN,
         agrees_to_keep_health_data BOOLEAN,
         filled_legal_info BOOLEAN NOT NULL DEFAULT 0,
+        legal_filled_at DATETIME,
         difficulty_level INTEGER not NULL DEFAULT 1,
         is_instructor BOOLEAN NOT NULL DEFAULT 0,
         first_aid_expiry DATE,

@@ -590,7 +590,7 @@
     .box-value { font-size: 1rem; font-weight: 600; color: var(--glass-text-color); }
 }
 
-.difficulty-container { display: flex; gap: 4px; align-items: center; height: 100%; }
+.difficulty-container { display: flex; gap: 4px; padding-top: .5rem; height: 100%; }
 
 .difficulty-bar {
     flex: 1;
@@ -609,7 +609,10 @@
     margin-bottom: 0;
 
     .description-section, .attendees-section { padding: 1.5rem; }
-    .description-section { border-bottom: 1px solid var(--glass-highlight); }
+    .description-section { 
+        border-bottom: 1px solid var(--glass-highlight);
+        padding-top: 0;
+     }
 }
 
 .section-title {

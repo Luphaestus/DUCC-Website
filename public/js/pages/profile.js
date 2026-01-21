@@ -3,516 +3,561 @@ import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { LegalEvent } from './legal.js';
 import { notify } from '/js/components/notification.js';
 import { FirstNameChangedEvent } from '/js/components/navbar.js';
-import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
+import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import { requireAuth } from '/js/utils/auth.js';
 import { BalanceChangedEvent } from '/js/utils/globals.js';
-import { switchView } from '/js/utils/view.js';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from '/js/utils/modal.js';
-import { CHECK_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, AR_ON_YOU_SVG, TRIP_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG } from '../../images/icons/outline/icons.js';
+import {
+    CHECK_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, AR_ON_YOU_SVG,
+    TRIP_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
+    SETTINGS_SVG, LOGOUT_SVG, EDIT_SVG, SAVE_SVG, ADD_SVG, REMOVE_SVG,
+    CONTRACT_SVG, MEDICAL_INFORMATION_SVG, GROUP_SVG, BOLT_SVG
+} from '../../images/icons/outline/icons.js';
 
 /**
- * Profile view management.
+ * Consolidated Dashboard View (Profile + Transactions).
  * @module Profile
  */
 
 addRoute('/profile', 'profile');
+addRoute('/transactions', 'profile'); // Redirects effectively handled by tab logic if needed, or we just rely on profile.
 
-// --- Constants ---
-const STATUS_SUCCESS = 'status-success';
-const STATUS_WARNING = 'status-warning';
-const STATUS_ERROR = 'status-error';
-const STATUS_INFO = 'status-info';
-
-/**
- * Main profile view template.
- */
 const HTML_TEMPLATE = /*html*/`
 <div id="profile-view" class="view hidden">
-    <div class="small-container">
-        <h1>My Profile</h1>
-        <div class="form-info" id="profile-info">
-            <article class="form-box profile-card">
-                <header>
-                    ${ID_CARD_SVG}
-                    <h3>Club Membership</h3>
-                </header>
-                <form>
-                    <div id="profile-membership" class="sub-container status-container modern-status-grid">
-                        <div id="membership-info-status" class="status-card"></div>
-                        <div id="legal-form-status" class="status-card"></div>
-                        <div id="debt-status" class="status-card"></div>
-                    </div>
-                    <div id="instructor-status" class="status-card full-width-status"></div>
-                </form>
-            </article>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <nav class="dashboard-sidebar glass-panel">
+            <button class="nav-item active" data-tab="overview">
+                ${DASHBOARD_SVG} Overview
+            </button>
+            <button class="nav-item" data-tab="balance">
+                ${WALLET_SVG} Balance & History
+            </button>
+            <button class="nav-item" data-tab="settings">
+                ${SETTINGS_SVG} Account Settings
+            </button>
+            <button class="nav-item" id="sidebar-logout-btn">
+                ${LOGOUT_SVG} Sign Out
+            </button>
+        </nav>
 
-            <article class="form-box profile-card">
-                <header>
-                    ${AR_ON_YOU_SVG}
-                    <h3>Your Stats</h3>
-                </header>
-                <div class="sub-container status-container status-info" id="swim-stats-container">
-                    <div id="recognition-stats-info" class="stats-grid"></div>
-                    <div class="action-wrapper center-action">
-                        <button class="primary" data-nav="/swims">View Detailed Swims</button>
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            
+            <!-- 1. Overview Tab -->
+            <section id="tab-overview" class="dashboard-section active">
+                <!-- Membership Banner -->
+                <div id="membership-banner-container"></div>
+
+                <!-- Swim Stats -->
+                <div class="glass-panel">
+                    <div class="box-header">
+                        <h3>${POOL_SVG} Swimming Stats</h3>
+                        <button class="small-btn secondary" data-nav="/swims">
+                            ${SOCIAL_LEADERBOARD_SVG} View Leaderboard
+                        </button>
+                    </div>
+                    <div id="swim-stats-grid" class="stats-grid">
+                        <p>Loading stats...</p>
                     </div>
                 </div>
-                <div id="profile-tags-container" class="tags-container">
-                    <p>Loading tags...</p>
-                </div>
-            </article>
 
-            <article class="form-box profile-card">
-                <header>
-                    ${TRIP_SVG}
-                    <h3>Trip Information</h3>
-                </header>
-                <p class="form-description">Emergency contact and first aid details for club trips.</p>
-                <form class="modern-form">
-                    <div class="grid-2-col">
-                        <label for="profile-contact-number">Contact Number
-                            <input type="tel" id="profile-contact-number" placeholder="e.g., 07700 900333">
-                        </label>
-                        <label for="profile-first-aid-expires">First Aid Expiry
-                            <input type="date" id="profile-first-aid-expires">
-                        </label>
+                <!-- Legal & Safety Row -->
+                <div class="dual-grid">
+                    <!-- Legal Waiver -->
+                    <div class="glass-panel">
+                        <div class="box-header">
+                            <h3>${CONTRACT_SVG} Legal Waiver</h3>
+                        </div>
+                        <div id="legal-status-content">
+                            <p>Loading...</p>
+                        </div>
                     </div>
-                    <div id="profile-aid-buttons" class="form-actions">
-                        <button type="submit" id="profile-aid-submit-button">Save Details</button>
-                        <button type="button" id="profile-aid-remove-button" class="secondary">Clear Details</button>
-                    </div>
-                </form>
-            </article>
 
-            <article class="form-box profile-card danger-zone">
-                <header>
-                    ${BRIGHTNESS_ALERT_SVG}
-                    <h3>Account Actions</h3>
-                </header>
-                <div class="danger-zone-actions">
-                    <button id="profile-logout-button" class="outline">Logout</button>
-                    <button id="profile-change-password-button" class="outline">Change Password</button>
-                    <button id="profile-delete-account-button" class="delete outline">Delete Account</button>
-                    <button id="admin-panel-button" class="secondary hidden">Admin Dashboard</button>
+                    <!-- Safety Info -->
+                    <div class="glass-panel">
+                        <div class="box-header">
+                            <h3>${MEDICAL_INFORMATION_SVG} Safety Info</h3>
+                            <button id="edit-safety-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>
+                        </div>
+                        <div id="safety-info-display">
+                            <div class="info-rows">
+                                <div class="info-row">
+                                    <span>First Aid Expiry</span>
+                                    <span id="display-first-aid">Not Set</span>
+                                </div>
+                                <div class="info-row">
+                                    <span>Emergency Contact</span>
+                                    <span id="display-emergency">Not Set</span>
+                                </div>
+                            </div>
+                        </div>
+                        <form id="safety-info-form" class="hidden modern-form">
+                            <div class="grid-2-col">
+                                <label>First Aid Expiry <input type="date" id="input-first-aid"></label>
+                                <label>Emergency Contact <input type="tel" id="input-emergency" placeholder="07700 900000"></label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="cancel-safety-btn" class="secondary">${CLOSE_SVG} Cancel</button>
+                                <button type="submit">${SAVE_SVG} Save</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </article>
-        </div>
+
+                <!-- Groups & Teams -->
+                <div id="groups-teams-panel" class="glass-panel">
+                    <div class="box-header">
+                        <h3>${GROUP_SVG} Groups & Teams</h3>
+                    </div>
+                    <div id="tags-list-container" class="tags-list">
+                        <p>Loading tags...</p>
+                    </div>
+                </div>
+
+                <!-- Instructor Status -->
+                <div class="glass-panel">
+                    <div class="role-toggle">
+                        <div class="role-info">
+                            <h4>${BOLT_SVG} Instructor Status</h4>
+                            <p id="instructor-status-text">Not an instructor</p>
+                        </div>
+                        <button id="toggle-instructor-btn" class="small-btn secondary">Apply</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Balance & History Tab -->
+            <section id="tab-balance" class="dashboard-section">
+                <!-- Balance Header -->
+                <div class="balance-header">
+                    <div class="balance-info">
+                        <span class="label">Current Balance</span>
+                        <span class="amount" id="balance-amount">£0.00</span>
+                    </div>
+                    <div class="balance-actions">
+                        <button id="top-up-btn" class="primary">Top Up Balance</button>
+                    </div>
+                </div>
+
+                <!-- Transaction History -->
+                <div class="glass-panel">
+                    <div class="box-header">
+                        <h3>Transaction History</h3>
+                    </div>
+                    <div id="transactions-list-container" class="transaction-list">
+                        <p>Loading history...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Account Settings Tab -->
+            <section id="tab-settings" class="dashboard-section">
+                <div class="settings-grid">
+                    <!-- Security -->
+                    <div class="glass-panel">
+                        <div class="box-header">
+                            <h3>${ID_CARD_SVG} Security</h3>
+                        </div>
+                        <button id="change-password-btn" class="outline">Change Password</button>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="glass-panel danger-zone">
+                        <div class="box-header">
+                            <h3>${BRIGHTNESS_ALERT_SVG} Danger Zone</h3>
+                        </div>
+                        <button id="delete-account-btn" class="delete outline">Delete Account</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
     </div>
 </div>`;
 
-// --- State ---
 let notification = null;
-let validationMessages = {};
+let currentUser = null;
 
 // --- Helper Functions ---
 
-/**
- * Get current academic year (e.g. 2025/2026).
- * @returns {string}
- */
-function getAcademicYear() {
-    const date = new Date();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-    const startYear = month < 9 ? year - 1 : year;
-    return `${startYear}/${startYear + 1}`;
-}
-
-/**
- * Show persistent notification.
- */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
-/**
- * Update status UI with icon and color class.
- * Splits content into Title (main text) and Description/Action.
- */
-function updateStatusUI(elementId, title, content, statusClass, baseClass = 'status-card') {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    el.className = baseClass;
-    if (statusClass) el.classList.add(statusClass);
-
-    el.innerHTML = `
-        <div class="status-header">
-            <span class="status-indicator"></span>
-            <span class="status-title">${title}</span>
-        </div>
-        <div class="status-body">
-            <div class="status-description">${content}</div>
-        </div>
-    `;
-}
-
-function displayValidationMessage(inputElement, message) {
-    let messageId = `validation-message-${inputElement.id}`;
-    let existingMessage = document.getElementById(messageId);
-    if (!existingMessage) {
-        existingMessage = document.createElement('p');
-        existingMessage.id = messageId;
-        existingMessage.classList.add('validation-message');
-        inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
-    }
-    existingMessage.textContent = message;
-    existingMessage.classList.add('error-text');
-    validationMessages[inputElement.id] = existingMessage;
-    inputElement.ariaInvalid = 'true';
-}
-
-function clearInputError(inputElement) {
-    if (validationMessages[inputElement.id]) {
-        validationMessages[inputElement.id].remove();
-        delete validationMessages[inputElement.id];
-    }
-    inputElement.removeAttribute('aria-invalid');
+function getOrdinal(n) {
+    if (n === undefined || n === null || n === '-' || n < 1) return '-';
+    const s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 // --- Render Functions ---
 
-/**
- * Determine parent container color based on children status.
- */
-function updateMembershipContainerColor(statuses) {
-    // Only used for visual hints if needed, logic moved to individual cards
-}
+function renderMembershipBanner(profile, globals) {
+    const container = document.getElementById('membership-banner-container');
+    if (!container) return;
+    const isMember = profile.is_member;
+    const freeSessions = profile.free_sessions || 0;
+    const cost = Number(globals.MembershipCost) || 50;
 
-/**
- * Render membership, legal, and balance status.
- */
-function renderEventStatus(profile) {
-    const academicYear = getAcademicYear();
-    const balance = Number(profile.balance);
-    const isLegalComplete = !!profile.filled_legal_info;
+    if (!isMember) {
+        container.classList.remove('hidden');
+        container.innerHTML = `
+            <div class="membership-banner">
+                <div class="banner-content">
+                    <h2>You aren't a member yet</h2>
+                    <p>You have <strong>${freeSessions}</strong> free trial event${freeSessions !== 1 ? 's' : ''} remaining before membership is required.</p>
+                </div>
+                <div class="banner-action">
+                    <button id="join-membership-btn">Become a Member</button>
+                </div>
+            </div>`;
 
-    ajaxGet('/api/globals/MembershipCost,MinMoney').then(globals => {
-        const membershipCost = globals.res?.MembershipCost || 50;
-        const minMoney = globals.res?.MinMoney || -20;
-        const hasDebt = balance < minMoney;
-        const closeToLimit = !hasDebt && balance < (minMoney + 5);
-
-        // Membership Content
-        if (profile.is_member) {
-            let title = "Membership Active";
-            let statusClass = STATUS_SUCCESS;
-            let desc = `Valid for ${academicYear}.`;
-
-            if (hasDebt) {
-                title = "Membership Restricted";
-                statusClass = STATUS_ERROR;
-                desc = "Debt prevents event signups.";
-            } else if (closeToLimit) {
-                statusClass = STATUS_WARNING;
-                desc += " <br><strong>Warning:</strong> Near debt limit.";
-            }
-
-            updateStatusUI(
-                "membership-info-status",
-                title,
-                desc,
-                statusClass
-            );
-        } else {
-            let statusClass = STATUS_ERROR;
-            if (profile.free_sessions > 0) {
-                const desc = `${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} left.
-                             <div class="action-wrapper"><button id="become-member-button" class="small-btn">Join Now</button></div>`;
-                updateStatusUI(
-                    "membership-info-status",
-                    "Trial Active",
-                    desc,
-                    STATUS_WARNING
-                );
-            } else {
-                const desc = `Membership required.
-                             ${hasDebt ? '<br><strong>Outstanding Debt.</strong>' : ''}
-                             <div class="action-wrapper"><button id="become-member-button" class="small-btn primary">Join Now</button></div>`;
-                updateStatusUI(
-                    "membership-info-status",
-                    "Inactive",
-                    desc,
-                    statusClass
-                );
-            }
-        }
-
-        // Legal Status
-        const legalStatusClass = isLegalComplete ? STATUS_SUCCESS : STATUS_ERROR;
-        const legalTitle = isLegalComplete ? 'Legal Info' : 'Incomplete Legal Info';
-        const legalDesc = isLegalComplete
-            ? `Up to date. <div class="action-wrapper"><button class="small-btn secondary" data-nav="/legal">Edit</button></div>`
-            : `Required for insurance. <div class="action-wrapper"><button class="small-btn primary" data-nav="/legal">Complete</button></div>`;
-
-        updateStatusUI(
-            'legal-form-status',
-            legalTitle,
-            legalDesc,
-            legalStatusClass
-        );
-
-        // Debt Status
-        const debtStatusClass = hasDebt ? STATUS_ERROR : STATUS_SUCCESS;
-        const debtTitle = `Balance: £${balance.toFixed(2)}`;
-
-        const debtDesc = hasDebt
-            ? `Please clear debt. <div class="action-wrapper"><button class="small-btn delete" data-nav="/transactions">Pay</button></div>`
-            : `Account healthy. <div class="action-wrapper"><button class="small-btn secondary" data-nav="/transactions">History</button></div>`;
-
-        updateStatusUI(
-            'debt-status',
-            debtTitle,
-            debtDesc,
-            debtStatusClass
-        );
-
-        // Bind Membership Button
-        document.getElementById('become-member-button')?.addEventListener('click', async (event) => {
-            event.preventDefault();
+        document.getElementById('join-membership-btn').onclick = async () => {
             const confirmed = await showConfirmModal(
                 "Confirm Membership",
-                `Annual membership costs <strong>£${membershipCost.toFixed(2)}</strong>. This will be added to your account balance. <br><br> <strong>Important:</strong> If this causes your debt to exceed £${Math.abs(minMoney).toFixed(2)}, you will be unable to sign up for new events until the balance is cleared.`
+                `Becoming a member costs <strong>£${cost.toFixed(2)}</strong>. This will be added to your account balance. Are you sure?`
             );
-
             if (confirmed) {
-                await ajaxPost('/api/user/join');
-                BalanceChangedEvent.notify();
-                updateProfilePage();
+                try {
+                    await ajaxPost('/api/user/join');
+                    displayNotification('Welcome!', 'You are now a club member.', 'success');
+                    updateDashboard();
+                } catch (err) {
+                    displayNotification('Error', err.message || 'Failed to join.', 'error');
+                }
             }
-        });
-    });
+        };
+    } else {
+        container.classList.add('hidden');
+        container.innerHTML = ``;
+    }
 }
 
-/**
- * Render instructor status and controls.
- */
-function renderInstructorStatus(profile) {
+function renderSwimStats(stats) {
+    const grid = document.getElementById('swim-stats-grid');
+    const s = stats || { allTime: { swims: 0, rank: '-' }, yearly: { swims: 0, rank: '-' } };
+
+    grid.innerHTML = `
+        <div class="stat-item">
+            <span class="stat-value">${s.yearly.swims}</span>
+            <span class="stat-label">Yearly Swims</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">${getOrdinal(s.yearly.rank)}</span>
+            <span class="stat-label">Yearly Rank</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">${s.allTime.swims}</span>
+            <span class="stat-label">Total Swims</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">${getOrdinal(s.allTime.rank)}</span>
+            <span class="stat-label">All Time Rank</span>
+        </div>
+    `;
+}
+
+function renderLegalStatus(profile) {
+    const container = document.getElementById('legal-status-content');
+    const isComplete = !!profile.filled_legal_info;
+    const lastFilled = profile.legal_filled_at ? new Date(profile.legal_filled_at).toLocaleDateString('en-GB') : null;
+
+    // Update Header Button
+    const header = container.parentElement.querySelector('.box-header');
+    let updateBtn = header.querySelector('.small-btn');
+    if (!updateBtn) {
+        updateBtn = document.createElement('button');
+        updateBtn.className = 'small-btn secondary';
+        updateBtn.setAttribute('data-nav', '/legal');
+        header.appendChild(updateBtn);
+    }
+    updateBtn.innerHTML = `${EDIT_SVG} Update`;
+
+    if (isComplete) {
+        container.innerHTML = `
+            <div class="status-indicator-box status-green">
+                <div class="indicator-header">
+                    ${CHECK_SVG} <span>Active</span>
+                </div>
+                <div class="indicator-body">
+                    <p>Your legal waiver is up to date.</p>
+                    ${lastFilled ? `<p class="last-filled">Last filled out: ${lastFilled}</p>` : ''}
+                </div>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="status-indicator-box status-red">
+                <div class="indicator-header">
+                    ${BRIGHTNESS_ALERT_SVG} <span>Action Required</span>
+                </div>
+                <div class="indicator-body">
+                    <p>You must complete the legal waiver to participate in events.</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function renderSafetyInfo(profile) {
+    document.getElementById('display-first-aid').textContent = profile.first_aid_expiry || 'Not Set';
+    document.getElementById('display-emergency').textContent = profile.phone_number || 'Not Set';
+
+    document.getElementById('input-first-aid').value = profile.first_aid_expiry || '';
+    document.getElementById('input-emergency').value = profile.phone_number || '';
+}
+
+function renderTags(tags) {
+    const container = document.getElementById('tags-list-container');
+    if (tags && tags.length > 0) {
+        container.innerHTML = tags.map(tag =>
+            `<span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>`
+        ).join('');
+    } else {
+        const pannel = document.getElementById('groups-teams-panel');
+        if (pannel) pannel.classList.add('hidden');
+    }
+}
+
+function renderInstructor(profile) {
     const isInstructor = profile.is_instructor;
+    const text = document.getElementById('instructor-status-text');
+    const btn = document.getElementById('toggle-instructor-btn');
 
-    const title = "Instructor Status";
-    const desc = isInstructor
-        ? `Active Instructor. <div class="action-wrapper"><button id="instructor-leave-btn" class="small-btn secondary" type="button">Resign</button></div>`
-        : `Not an instructor. <div class="action-wrapper"><button id="instructor-signup-btn" class="small-btn secondary" type="button">Apply</button></div>`;
-
-    updateStatusUI(
-        'instructor-status',
-        title,
-        desc,
-        isInstructor ? STATUS_SUCCESS : STATUS_INFO,
-        'status-card full-width-status'
-    );
-
-    document.getElementById('instructor-signup-btn')?.addEventListener('click', async () => {
-        await ajaxPost('/api/user/elements', { is_instructor: true });
-        updateProfilePage();
-    });
-
-    document.getElementById('instructor-leave-btn')?.addEventListener('click', async () => {
-        await ajaxPost('/api/user/elements', { is_instructor: false });
-        updateProfilePage();
-    });
-}
-
-/**
- * Render first aid and contact info.
- */
-function renderAidDetails(profile) {
-    const contactNumberInput = document.getElementById('profile-contact-number');
-    const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
-    const removeAidButton = document.getElementById('profile-aid-remove-button');
-
-    if (contactNumberInput) contactNumberInput.value = profile.phone_number || '';
-    if (firstAidExpiryInput) firstAidExpiryInput.value = profile.first_aid_expiry || '';
-
-    if (removeAidButton) {
-        if (!profile.first_aid_expiry) {
-            removeAidButton.classList.add('hidden');
-        } else {
-            removeAidButton.classList.remove('hidden');
-        }
-    }
-}
-
-/**
- * Initialize static event listeners.
- */
-async function bindStaticEvents() {
-    const contactNumberInput = document.getElementById('profile-contact-number');
-    const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
-    const aidSubmitButton = document.getElementById('profile-aid-submit-button');
-    const removeAidButton = document.getElementById('profile-aid-remove-button');
-
-    function updateAidSubmitButtonState() {
-        // Optional: enable/disable logic
-    }
-
-    [contactNumberInput, firstAidExpiryInput].forEach(input => {
-        if (input) {
-            input.addEventListener('input', () => {
-                updateAidSubmitButtonState();
-                clearInputError(input);
-            });
-        }
-    });
-
-    if (aidSubmitButton) {
-        aidSubmitButton.addEventListener('click', async (event) => {
-            event.preventDefault();
-            
-            const updateData = {};
-            if (contactNumberInput.value.trim() !== '') updateData.phone_number = contactNumberInput.value.trim();
-            if (firstAidExpiryInput.value.trim() !== '') updateData.first_aid_expiry = firstAidExpiryInput.value.trim();
-
-            try {
-                await ajaxPost('/api/user/elements', updateData);
-                displayNotification('Success', "Details updated.", 'success');
-                updateProfilePage();
-            } catch (error) {
-                const msg = error.message || error;
-                if (msg.includes('phone')) displayValidationMessage(contactNumberInput, msg);
-                else displayNotification('Error', msg, 'error');
+    if (isInstructor) {
+        text.textContent = 'Active Instructor';
+        text.style.color = '#2ecc71';
+        text.style.fontWeight = 'bold';
+        btn.textContent = 'Resign';
+        btn.className = 'small-btn outline delete';
+        btn.onclick = async () => {
+            if (await showConfirmModal('Resign?', 'Are you sure you want to resign as an instructor?')) {
+                await ajaxPost('/api/user/elements', { is_instructor: false });
+                updateDashboard();
             }
-        });
+        };
+    } else {
+        text.textContent = 'Not an instructor';
+        text.style.color = '';
+        text.style.fontWeight = 'normal';
+        btn.textContent = 'Apply';
+        btn.className = 'small-btn secondary';
+        btn.onclick = async () => {
+            await ajaxPost('/api/user/elements', { is_instructor: true });
+            updateDashboard();
+        };
     }
+}
 
-    if (removeAidButton) {
-        removeAidButton.addEventListener('click', async (event) => {
-            event.preventDefault();
-            await ajaxPost('/api/user/elements', { first_aid_expiry: null });
-            displayNotification('Success', "Details removed.", 'success');
-            updateProfilePage();
-        });
+function renderBalance(profile) {
+    const bal = Number(profile.balance);
+    const el = document.getElementById('balance-amount');
+    el.textContent = `£${bal.toFixed(2)}`;
+    el.style.color = bal < 0 ? '#e74c3c' : (bal > 0 ? '#2ecc71' : 'var(--pico-color)');
+}
+
+async function renderTransactions() {
+    const container = document.getElementById('transactions-list-container');
+    try {
+        const res = await ajaxGet('/api/user/elements/transactions');
+        const txs = res.transactions || [];
+
+        if (txs.length === 0) {
+            container.innerHTML = '<p class="text-muted" style="padding:1rem;">No transactions found.</p>';
+            return;
+        }
+
+        container.innerHTML = txs.map(tx => {
+            const isNegative = tx.amount < 0;
+            const icon = isNegative ? REMOVE_SVG : ADD_SVG; // Or specific icons if available
+            const iconClass = isNegative ? 'negative' : 'positive';
+            const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            return `
+                <div class="transaction-item glass-panel">
+                    <div class="tx-icon ${iconClass}">${icon}</div>
+                    <div class="tx-details">
+                        <span class="tx-title">${tx.description}</span>
+                        <span class="tx-date">${dateStr}</span>
+                    </div>
+                    <div class="tx-amount-group">
+                        <span class="tx-amount ${iconClass}">${isNegative ? '' : '+'}${tx.amount.toFixed(2)}</span>
+                        <span class="tx-balance-after">£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (e) {
+        container.innerHTML = '<p class="error-text">Failed to load transactions.</p>';
     }
+}
 
-    const logoutBtn = document.getElementById('profile-logout-button');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (event) => {
-            event.preventDefault();
-            await ajaxGet('/api/auth/logout');
-            LoginEvent.notify({ authenticated: false });
-            switchView('/home');
-        });
+// --- Main Update Logic ---
+
+async function updateDashboard() {
+    if (!await requireAuth()) return;
+
+    try {
+        const [profile, globals, tags] = await Promise.all([
+            ajaxGet('/api/user/elements/email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank'),
+            ajaxGet('/api/globals/MembershipCost'),
+            ajaxGet('/api/user/tags').catch(() => [])
+        ]);
+
+        currentUser = profile;
+
+        if (currentUser) {
+            renderMembershipBanner(profile, globals.res || {});
+            renderSwimStats(profile.swimmer_stats);
+            renderLegalStatus(profile);
+            renderSafetyInfo(profile);
+            renderTags(tags);
+            renderInstructor(profile);
+        }
+        renderBalance(profile);
+        renderTransactions();
+
+    } catch (error) {
+        console.error("Dashboard update failed", error);
+        displayNotification('Error', 'Failed to load profile data.', 'error');
     }
+}
 
-    const changePassBtn = document.getElementById('profile-change-password-button');
-    if (changePassBtn) {
-        changePassBtn.addEventListener('click', async (event) => {
-            event.preventDefault();
-            const passwords = await showChangePasswordModal();
-            if (!passwords) return;
+// --- Event Listeners ---
 
+function bindEvents() {
+    // Sidebar Navigation
+    document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.dataset.tab;
+            // Update URL
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabName);
+            window.history.pushState({}, '', url);
+
+            // Update UI
+            setActiveTab(tabName);
+        });
+    });
+
+    // Safety Info Toggle
+    const displayDiv = document.getElementById('safety-info-display');
+    const formDiv = document.getElementById('safety-info-form');
+    const editBtn = document.getElementById('edit-safety-btn');
+    const cancelBtn = document.getElementById('cancel-safety-btn');
+
+    editBtn.onclick = () => {
+        displayDiv.classList.add('hidden');
+        formDiv.classList.remove('hidden');
+        editBtn.classList.add('hidden');
+    };
+
+    const closeSafetyEdit = () => {
+        displayDiv.classList.remove('hidden');
+        formDiv.classList.add('hidden');
+        editBtn.classList.remove('hidden');
+    };
+
+    cancelBtn.onclick = closeSafetyEdit;
+
+    formDiv.onsubmit = async (e) => {
+        e.preventDefault();
+        const updateData = {
+            first_aid_expiry: document.getElementById('input-first-aid').value,
+            phone_number: document.getElementById('input-emergency').value
+        };
+        try {
+            await ajaxPost('/api/user/elements', updateData);
+            displayNotification('Success', 'Safety info updated.', 'success');
+            await updateDashboard();
+            closeSafetyEdit();
+        } catch (err) {
+            displayNotification('Error', err.message, 'error');
+        }
+    };
+
+    // Balance Top Up
+    document.getElementById('top-up-btn').onclick = () => {
+        const refrense = currentUser.first_name.charAt(0).toUpperCase() + currentUser.last_name.toUpperCase() + "WEBSITE";
+        
+
+        showConfirmModal(
+            "Top Up Balance",
+            `Please transfer the desired amount to:<br><br>
+            <strong>Bank:</strong> Durham University<br>
+            <strong>Sort Code:</strong> 20-27-66<br>
+            <strong>Account:</strong> 53770109<br>
+            <strong>Reference:</strong> ${refrense}<br><br>
+            <p>Pressing the confirm button will notify the finace team to credit your account once the transfer is verified. Please press cancel if you have not made a transfer.</p>`
+        );
+    };
+
+    // Settings
+    document.getElementById('change-password-btn').onclick = async () => {
+        const passwords = await showChangePasswordModal();
+        if (passwords) {
             try {
                 await ajaxPost('/api/auth/change-password', passwords);
-                displayNotification('Success', 'Password changed successfully.', 'success');
-            } catch (error) {
-                const msg = error.message || "Failed to change password.";
-                displayNotification('Failed', msg, 'error');
+                displayNotification('Success', 'Password changed.', 'success');
+            } catch (err) {
+                displayNotification('Error', 'Failed to change password.', 'error');
             }
-        });
-    }
+        }
+    };
 
-    const deleteBtn = document.getElementById('profile-delete-account-button');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async (event) => {
-            event.preventDefault();
-            const password = await showPasswordModal("Delete Account", "This action cannot be undone. Please enter your password to confirm.");
-            if (!password) return;
-
+    document.getElementById('delete-account-btn').onclick = async () => {
+        const password = await showPasswordModal("Delete Account", "This cannot be undone. Enter password to confirm.");
+        if (password) {
             try {
                 await ajaxPost('/api/user/deleteAccount', { password });
                 LoginEvent.notify({ authenticated: false });
                 switchView('/home');
-            } catch (error) {
-                const msg = error.message || "Could not delete account. Check your password.";
-                displayNotification('Failed', msg, 'error');
+            } catch (err) {
+                displayNotification('Error', 'Delete failed. Check password.', 'error');
             }
-        });
-    }
-
-    const admin = document.getElementById('admin-panel-button');
-    if (admin) {
-        const userData = await ajaxGet('/api/user/elements/permissions').catch(() => null);
-        const perms = userData ? userData.permissions || [] : [];
-        if (perms.length > 0) {
-            admin.classList.remove('hidden');
         }
-        admin.addEventListener('click', (e) => { e.preventDefault(); switchView('/admin/'); });
-    }
+    };
+
+    document.getElementById('sidebar-logout-btn').onclick = async () => {
+        await ajaxGet('/api/auth/logout');
+        LoginEvent.notify({ authenticated: false });
+        switchView('/home');
+    };
 }
 
-/**
- * Refresh profile data and UI.
- */
-async function updateProfilePage() {
-    if (!await requireAuth()) return;
-    try {
-        const profile = await ajaxGet('/api/user/elements/email,first_name,last_name,is_member,is_instructor,filled_legal_info,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank');
-        if (profile) {
-            renderEventStatus(profile);
-            renderInstructorStatus(profile);
-            renderAidDetails(profile);
-            renderRecognition(profile);
-        }
-    } catch (error) {
-        console.error(error);
-    }
+function setActiveTab(tabName) {
+    // Default to overview if invalid
+    if (!['overview', 'balance', 'settings'].includes(tabName)) tabName = 'overview';
+
+    // Update active button
+    document.querySelectorAll('.nav-item').forEach(b => {
+        if (b.dataset.tab === tabName) b.classList.add('active');
+        else b.classList.remove('active');
+    });
+
+    // Show active section
+    document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
+    const tabId = `tab-${tabName}`;
+    const section = document.getElementById(tabId);
+    if (section) section.classList.add('active');
 }
 
-/**
- * Render swim stats and tags.
- */
-async function renderRecognition(profile) {
-    const info = document.getElementById('recognition-stats-info');
-    const tagsContainer = document.getElementById('profile-tags-container');
+document.addEventListener('DOMContentLoaded', () => {
+    bindEvents();
+    LoginEvent.subscribe(() => updateDashboard());
+    LegalEvent.subscribe(() => updateDashboard());
+    BalanceChangedEvent.subscribe(() => updateDashboard());
 
-    if (info) {
-        const stats = profile.swimmer_stats || { allTime: { swims: 0, rank: '-' }, yearly: { swims: 0, rank: '-' } };
-
-        function getOrdinal(n) {
-            if (n === undefined || n === null || n === '-' || n < 1) return '-';
-            const s = ["th", "st", "nd", "rd"],
-                v = n % 100;
-            return n + (s[(v - 20) % 10] || s[v] || s[0]);
-        }
-
-        info.innerHTML = `
-            <div class="stat-box">
-                <span class="stat-value">${stats.yearly.swims}</span>
-                <span class="stat-label">Yearly Swims</span>
-                <span class="stat-rank">Rank: ${getOrdinal(stats.yearly.rank)}</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-value">${stats.allTime.swims}</span>
-                <span class="stat-label">All-time Swims</span>
-                <span class="stat-rank">Rank: ${getOrdinal(stats.allTime.rank)}</span>
-            </div>
-        `;
-    }
-
-    if (tagsContainer) {
-        try {
-            const tags = await ajaxGet(`/api/user/tags`);
-            if (tags && tags.length > 0) {
-                tagsContainer.innerHTML = tags.map(tag =>
-                    `<span class="tag-badge" style="background-color: ${tag.color}; box-shadow: 0 2px 5px ${tag.color}40;">${tag.name}</span>`
-                ).join('');
-            } else {
-                tagsContainer.innerHTML = '<p class="no-tags">No tags assigned.</p>';
-            }
-        } catch (e) {
-            tagsContainer.innerHTML = '<p class="error-text">Failed to load tags.</p>';
-        }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    bindStaticEvents();
-    LoginEvent.subscribe(() => updateProfilePage());
-    LegalEvent.subscribe(() => updateProfilePage());
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
-        if (resolvedPath === '/profile') updateProfilePage();
+        if (resolvedPath === '/profile') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab') || 'overview';
+            setActiveTab(tab);
+            updateDashboard();
+        }
     });
 });
 

@@ -29,9 +29,10 @@ class SwimsDB {
      * Fetch swim leaderboard (all-time or yearly).
      * @param {object} db
      * @param {boolean} yearly
+     * @param {number} currentUserId
      * @returns {Promise<statusObject>}
      */
-    static async getSwimsLeaderboard(db, yearly = false) {
+    static async getSwimsLeaderboard(db, yearly = false, currentUserId) {
         try {
             let query;
             let params = [];
@@ -39,7 +40,7 @@ class SwimsDB {
             if (yearly) {
                 const start = Utils.getAcademicYearStart();
                 query = `
-                    SELECT u.first_name, u.last_name, SUM(sh.count) as swims
+                    SELECT u.id, u.first_name, u.last_name, SUM(sh.count) as swims
                     FROM users u
                     JOIN swim_history sh ON u.id = sh.user_id
                     WHERE sh.created_at >= ?
@@ -49,7 +50,7 @@ class SwimsDB {
                 `;
                 params.push(start);
             } else {
-                query = 'SELECT first_name, last_name, swims FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC';
+                query = 'SELECT id, first_name, last_name, swims FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC';
             }
 
             const users = await db.all(query, params);
@@ -61,7 +62,9 @@ class SwimsDB {
                     rank++;
                     lastSwims = user.swims;
                 }
-                return { ...user, rank };
+                const is_me = user.id === currentUserId;
+                const { id, ...rest } = user;
+                return { ...rest, rank, is_me };
             });
 
             return new statusObject(200, null, leaderboard);

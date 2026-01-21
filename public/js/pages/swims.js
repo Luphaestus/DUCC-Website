@@ -1,8 +1,9 @@
 import { ajaxGet } from '/js/utils/ajax.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
+import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG } from '../../images/icons/outline/icons.js';
 
 /**
- * Ranked list of users by swim count.
+ * Ranked list of users by swim count with podium.
  * @module Swims
  */
 
@@ -11,80 +12,132 @@ addRoute('/swims', 'swims');
 const HTML_TEMPLATE = /*html*/`
 <div id="swims-view" class="view hidden">
     <div class="small-container">
-        <h1>Swims</h1>
-        <article class="form-box">
-            <div class="swims-tab-group admin-nav-group">
-                <button id="swims-yearly-tab" disabled>Current Year</button>
-                <button id="swims-alltime-tab">All-time</button>
+        <h1>Leaderboard</h1>
+        
+        <div class="swims-toggle-container">
+            <div class="toggle-wrapper" id="swims-toggle-wrapper">
+                <div class="toggle-bg"></div>
+                <button id="swims-yearly-btn" class="active">This Year</button>
+                <button id="swims-alltime-btn">All Time</button>
             </div>
-            <div id="leaderboard-container" class="table-responsive">
-                <table role="grid">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Name</th>
-                            <th>Swims</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-body">
-                        <tr><td colspan="3" class="leaderboard-status" aria-busy="true">Loading leaderboard...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </article>
+        </div>
+
+        <div id="leaderboard-content">
+            <p class="leaderboard-status" aria-busy="true">Loading leaderboard...</p>
+        </div>
     </div>
 </div>`;
 
-/**
- * Fetch and render the leaderboard.
- * @param {boolean} yearly
- */
-async function populateLeaderboard(yearly = true) {
-    const body = document.getElementById('leaderboard-body');
-    if (!body) return;
+let currentMode = 'yearly'; 
 
-    body.innerHTML = '<tr><td colspan="3" class="leaderboard-status" aria-busy="true">Loading leaderboard...</td></tr>';
+async function populateLeaderboard() {
+    const content = document.getElementById('leaderboard-content');
+    if (!content) return;
+
+    content.innerHTML = '<p class="leaderboard-status" aria-busy="true">Loading...</p>';
 
     try {
-        const leaderboard = (await ajaxGet(`/api/user/swims/leaderboard?yearly=${yearly}`)).data;
+        const isYearly = currentMode === 'yearly';
+        const leaderboardData = (await ajaxGet(`/api/user/swims/leaderboard?yearly=${isYearly}`)).data;
 
-        if (!leaderboard || leaderboard.length === 0) {
-            body.innerHTML = '<tr><td colspan="3" class="leaderboard-status">No swimmers yet!</td></tr>';
+        if (!leaderboardData || leaderboardData.length === 0) {
+            content.innerHTML = '<p class="leaderboard-status">No swims recorded yet!</p>';
             return;
         }
 
-        body.innerHTML = leaderboard.map(user => `
-            <tr>
-                <td><strong>${user.rank}</strong></td>
-                <td>${user.first_name} ${user.last_name}</td>
-                <td>${user.swims}</td>
-            </tr>
-        `).join('');
+        const top3 = leaderboardData.slice(0, 3);
+        const rest = leaderboardData.slice(3);
+
+        let podiumHtml = '<div class="podium-container">';
         
+        const podiumOrder = [1, 0, 2]; 
+        const styles = ['gold', 'silver', 'bronze']; 
+
+        podiumOrder.forEach(idx => {
+            if (top3[idx]) {
+                const user = top3[idx];
+                const style = styles[idx];
+                const rank = idx + 1;
+                const icon = rank === 1 ? TROPHY_SVG : SOCIAL_LEADERBOARD_SVG;
+                const isMe = user.is_me;
+
+                podiumHtml += `
+                    <div class="podium-place ${style}">
+                        ${rank === 1 ? `<div class="crown-icon">${CROWN_SVG}</div>` : ''}
+                        <div class="swimmer-name">${user.first_name} ${isMe ? '(You)' : ''}</div>
+                        <div class="swim-count">${user.swims} Swims</div>
+                        <div class="podium-step">
+                            <div class="rank-circle">${rank}</div>
+                            <div class="medal-icon">${icon}</div>
+                        </div>
+                    </div>`;
+            }
+        });
+        podiumHtml += '</div>';
+
+        let listHtml = '<div class="leaderboard-list glass-panel">';
+        rest.forEach(user => {
+            const isMe = user.is_me;
+            listHtml += `
+                <div class="leaderboard-row ${isMe ? 'highlight' : ''}">
+                    <div class="rank-box">${user.rank}</div>
+                    <div class="swimmer-info">
+                        ${user.first_name} ${user.last_name}
+                        ${isMe ? '<span class="you-tag">YOU</span>' : ''}
+                    </div>
+                    <div class="swims-count">${user.swims} <span>swims</span></div>
+                </div>`;
+        });
+        listHtml += '</div>';
+
+        content.innerHTML = podiumHtml + listHtml;
+
     } catch (error) {
-        body.innerHTML = '<tr><td colspan="3" class="leaderboard-error">Failed to load leaderboard.</td></tr>';
+        console.error(error);
+        content.innerHTML = '<p class="leaderboard-error">Failed to load leaderboard.</p>';
     }
+}
+
+function updateToggleState() {
+    const wrapper = document.getElementById('swims-toggle-wrapper');
+    const yearlyBtn = document.getElementById('swims-yearly-btn');
+    const alltimeBtn = document.getElementById('swims-alltime-btn');
+
+    if (currentMode === 'yearly') {
+        wrapper.removeAttribute('data-state'); 
+        yearlyBtn.classList.add('active');
+        alltimeBtn.classList.remove('active');
+    } else {
+        wrapper.setAttribute('data-state', 'alltime');
+        yearlyBtn.classList.remove('active');
+        alltimeBtn.classList.add('active');
+    }
+    populateLeaderboard();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
-        if (resolvedPath === '/swims') populateLeaderboard(true);
+        if (resolvedPath === '/swims') populateLeaderboard();
     });
 
-    document.body.addEventListener('click', (e) => {
-        const yearlyBtn = document.getElementById('swims-yearly-tab');
-        const alltimeBtn = document.getElementById('swims-alltime-tab');
+    const yearlyBtn = document.getElementById('swims-yearly-btn');
+    const alltimeBtn = document.getElementById('swims-alltime-btn');
 
-        if (e.target.id === 'swims-yearly-tab') {
-            alltimeBtn.disabled = false;
-            e.target.disabled = true;
-            populateLeaderboard(true);
-        } else if (e.target.id === 'swims-alltime-tab') {
-            yearlyBtn.disabled = false;
-            e.target.disabled = true;
-            populateLeaderboard(false);
-        }
-    });
+    if (yearlyBtn && alltimeBtn) {
+        yearlyBtn.addEventListener('click', () => {
+            if (currentMode !== 'yearly') {
+                currentMode = 'yearly';
+                updateToggleState();
+            }
+        });
+
+        alltimeBtn.addEventListener('click', () => {
+            if (currentMode !== 'alltime') {
+                currentMode = 'alltime';
+                updateToggleState();
+            }
+        });
+    }
 });
 
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

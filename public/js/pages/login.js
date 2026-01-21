@@ -94,9 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
             await ajaxPost('/api/auth/login', { email: formData.get('email'), password: formData.get('password') });
             LoginEvent.notify({ authenticated: true });
 
-            const prev = getPreviousPath();
-            if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
-            else switchView(prev);
+            const redirect = sessionStorage.getItem('redirect_after_login');
+            sessionStorage.removeItem('redirect_after_login');
+
+            if (redirect) {
+                switchView(redirect);
+            } else {
+                const prev = getPreviousPath();
+                if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
+                else switchView(prev);
+            }
         } catch (error) {
             messageElement.textContent = error.message || error || 'Login failed.';
             messageElement.style.color = '#FF6961';

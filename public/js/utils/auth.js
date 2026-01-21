@@ -14,6 +14,7 @@ export async function requireAuth() {
     try {
         const data = await ajaxGet('/api/auth/status');
         if (!data.authenticated) {
+            sessionStorage.setItem('redirect_after_login', window.location.pathname + window.location.search);
             switchView('/unauthorized');
             return false;
         }
