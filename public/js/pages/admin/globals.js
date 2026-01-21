@@ -1,6 +1,7 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { adminContentID, renderAdminNavBar } from './common.js';
 import { notify } from '/js/components/notification.js';
+import { SAVE_SVG } from '../../../images/icons/outline/icons.js';
 
 /**
  * Admin interface for managing system-wide settings.
@@ -17,24 +18,27 @@ export async function renderManageGlobals() {
 
     adminContent.innerHTML = /*html*/`
         <div class="form-info">
-            <article class="form-box">
+            <article class="form-box admin-card">
                 <div class="admin-controls-container">
                     <div class="admin-nav-row" style="margin-bottom: 1em !important;">
                          ${await renderAdminNavBar('globals')}
                     </div>
-                   <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Description</th>
-                                <th>Value</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="globals-table-body">
-                            <tr><td colspan="4">Loading...</td></tr>
-                        </tbody>
-                    </table>
+                   
+                   <div class="table-responsive">
+                        <table class="admin-table modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Setting</th>
+                                    <th>Description</th>
+                                    <th>Value</th>
+                                    <th class="action-col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="globals-table-body">
+                                <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                   </div>
                 </div>
             </article>
         </div>
@@ -54,7 +58,7 @@ async function fetchAndRenderGlobals() {
         const globals = await ajaxGet('/api/globals').then(res => res.res || []).catch(() => []);
 
         if (Object.keys(globals).length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4">No settings found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No settings found.</td></tr>';
             return;
         }
 
@@ -63,16 +67,14 @@ async function fetchAndRenderGlobals() {
             const description = value?.description || '';
             const type = value?.type || "text";
 
-            let inputHtml = '';
-
-            inputHtml = `<input type="${type}" class="global-input" data-key="${key}" value="${value?.data}">`;
+            let inputHtml = `<input type="${type}" class="global-input modern-input" data-key="${key}" value="${value?.data}">`;
 
             return `
                     <tr class="global-row" data-key="${key}">
-                        <td data-label="Key">${displayName}</td>
-                        <td data-label="Description">${description}</td>
+                        <td data-label="Setting" class="primary-text"><strong>${displayName}</strong></td>
+                        <td data-label="Description" class="description-cell">${description}</td>
                         <td data-label="Value">${inputHtml}</td>
-                        <td data-label="Actions"><button class="save-global-btn" data-key="${key}">Save</button></td>
+                        <td data-label="Actions"><button class="save-global-btn icon-btn primary" data-key="${key}" title="Save">${SAVE_SVG}</button></td>
                     </tr>`;
         }).join('');
 
@@ -87,7 +89,7 @@ async function fetchAndRenderGlobals() {
             });
         }
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="4">Error loading globals.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="error-cell">Error loading globals.</td></tr>';
     }
 }
 

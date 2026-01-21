@@ -2,11 +2,11 @@
  * Weekly calendar view for events.
  */
 
-import { ajaxGet } from '/js/utils/ajax.js';
+import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { LoginEvent } from './login.js';
-import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
+import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import './event.js';
-import { CALENDAR_TODAY_SVG, CHECK_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
+import { CALENDAR_TODAY_SVG, CHECK_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, REFRESH_SVG, SCHEDULE_SVG, CALENDAR_MONTH_SVG, GROUP_SVG, SETTINGS_SVG, ALL_INCLUSIVE_SVG, CURRENCY_POUND_SVG, CLOSE_SVG } from '../../images/icons/outline/icons.js';
 
 addRoute('/events', 'events');
 
@@ -15,19 +15,30 @@ addRoute('/events', 'events');
  */
 const HTML_TEMPLATE = /*html*/`
         <div id="events-view" class="view hidden small-container">
-            <div class="events-controls">
-                <div class="week-nav-icons">
-                    <span class="prev-week nav-icon" title="Previous Week">${ARROW_BACK_IOS_NEW_SVG}</span>
-                    <span class="next-week nav-icon" title="Next Week">${ARROW_FORWARD_IOS_SVG}</span>
+            <div class="events-controls-modern">
+                <button id="admin-events-link" class="admin-link-btn glass-panel hidden" title="Event Admin">
+                    ${SETTINGS_SVG}
+                    <span>Admin</span>
+                </button>
+
+                <div class="week-navigator glass-panel">
+                    <button class="nav-btn prev-week" title="Previous Week">${ARROW_BACK_IOS_NEW_SVG}</button>
+                    <div class="current-week-display">
+                        <span id="week-range-text">Loading...</span>
+                    </div>
+                    <button class="nav-btn next-week" title="Next Week">${ARROW_FORWARD_IOS_SVG}</button>
                 </div>
-                <h1 id="events-controls-title">Loading Week...</h1>
-                <button class="this-week-button secondary">Today ${CALENDAR_TODAY_SVG}</button>
+                
+                <button class="today-btn glass-panel" title="Back to Today">
+                    ${REFRESH_SVG}
+                    <span>Today</span>
+                </button>
             </div>
 
             <div id="events-list">
                 <div id="events-slider">
                     <div class="events-page" id="events-page-current">
-                        <p aria-busy="true" style="text-align: center; margin-top: 2rem;">Loading events...</p>
+                        <p class="loading-text">Loading events...</p>
                     </div>
                 </div>
             </div>
@@ -36,67 +47,111 @@ const HTML_TEMPLATE = /*html*/`
 
 let relativeWeekOffset = 0;
 let isAnimating = false;
+let isAdmin = false;
 
-function getHueFromHex(hex) {
-    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-    hex = hex.replace(shorthandRegex, function (m, r, g, b) {
-        return r + r + g + g + b + b;
-    });
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return 0;
-    var r = parseInt(result[1], 16) / 255;
-    var g = parseInt(result[2], 16) / 255;
-    var b = parseInt(result[3], 16) / 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h, s, l = (max + min) / 2;
-    if (max == min) {
-        h = s = 0;
+
+function getRangeText(startDateStr, endDateStr) {
+    const formatDate = (d) => new Date(d).toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+    
+    const isStartToday = start.getTime() === today.getTime();
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const isEndYesterday = end.getTime() === yesterday.getTime();
+
+    if (isStartToday) {
+        return `Today - ${formatDate(end)}`;
+    } else if (isEndYesterday) {
+        return `${formatDate(start)} - Yesterday`;
     } else {
-        var d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
+        return `${formatDate(start)} - ${formatDate(end)}`;
     }
-    return Math.round(h * 360);
 }
 
 function formatEvent(event) {
     const startDate = new Date(event.start);
     const endDate = new Date(event.end);
+    const isPast = endDate < new Date();
+    const isCanceled = event.status === 'canceled';
+    
     const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
     const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
     const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
-    const tagsHtml = (event.tags || []).map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 4px;">${tag.name}</span>`).join('');
-    let hue = 0;
-    let hasTags = false;
-    if (event.tags && event.tags.length > 0) {
-        hasTags = true;
-        const highestPriorityTag = event.tags.reduce((prev, current) => {
-            return ((prev.priority || 0) > (current.priority || 0)) ? prev : current;
-        });
-        hue = getHueFromHex(highestPriorityTag.color || '#808080');
+    
+    const tagsHtml = (event.tags || []).map(tag => 
+        `<span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>`
+    ).join('');
+    
+    const imageUrl = event.image_url || '/images/misc/ducc.png';
+    const imageHtml = `<div class="event-image-container">
+        <div class="event-image" style="background-image: url('${imageUrl}');"></div>
+        <div class="image-overlay"></div>
+    </div>`;
+
+    // Attendance Count Logic
+    const count = event.attendee_count !== undefined ? event.attendee_count : '0';
+    let attendanceDisplay = '';
+    
+    if (event.max_attendees > 0) {
+        attendanceDisplay = `${count}/${event.max_attendees}`;
+    } else {
+        attendanceDisplay = `<span class="icon-limit">${ALL_INCLUSIVE_SVG}</span>`;
     }
-    let classes = 'event-item';
-    if (startDate < new Date()) classes += ' past-event';
-    if (!hasTags) classes += ' glassy';
-    let style = hasTags ? `--event-bg-light: hsl(${hue}, 70%, 85%); --event-bg-dark: hsl(${hue}, 50%, 30%);` : '';
-    return /*html*/`<div class="${classes}" style="${style}" data-nav="event/${event.id}">
-            <div class="event-top">
-                <span>${startTime} - ${endTime}</span>
-                ${event.is_attending ? /*html*/`<span class="attending-badge" style="background: #2ecc71; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: auto;">${CHECK_SVG} Attending</span>` : ''}
-            </div>
-            <div class="event-middle">
-                <h3>${event.title || 'No Title'}</h3>
-            </div>
-            <div class="event-bottom">
-                <div class="event-location">
-                    <span>${LOCATION_ON_SVG} ${event.location || 'No Location'}</span>
+
+    let attendanceHtml = `<div class="attendance-count" title="${event.max_attendees > 0 ? (count + '/' + event.max_attendees) : (count + ' / Unlimited')} Attending">
+        ${GROUP_SVG} <span>${attendanceDisplay}</span>
+    </div>`;
+
+    // Cost Logic
+    let costHtml = '';
+    if (event.upfront_cost > 0) {
+        costHtml = `<div class="info-item cost" title="Upfront Cost">
+            ${CURRENCY_POUND_SVG}
+            <span>£${event.upfront_cost.toFixed(2)}</span>
+        </div>`;
+    }
+
+    // Status label logic
+    let statusLabel = '';
+    if (isCanceled) statusLabel = '<span class="status-badge error">Canceled</span>';
+    else if (isPast) statusLabel = '<span class="status-badge neutral">Unavailable</span>';
+
+
+    return /*html*/`
+        <div class="event-card glass-panel ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" data-nav="event/${event.id}" role="button" tabindex="0">
+            ${imageHtml}
+            <div class="event-card-content">
+                <div class="event-header-row">
+                    <div class="event-tags">${tagsHtml}</div>
                 </div>
-                <div class="event-tags" style="margin-left: auto;">${tagsHtml}</div>
+                
+                <h3 class="event-title-bold ${isCanceled ? 'strikethrough' : ''}">${event.title || 'Untitled Event'}</h3>
+                
+                <div class="event-info-block">
+                    <div class="info-item time">
+                        ${SCHEDULE_SVG}
+                        <span>${startTime} - ${endTime}</span>
+                    </div>
+                    <div class="info-item location">
+                        ${LOCATION_ON_SVG}
+                        <span>${event.location || 'Location TBD'}</span>
+                    </div>
+                    ${costHtml}
+                </div>
+
+                <div class="card-footer">
+                    <div class="footer-left">
+                        ${attendanceHtml}
+                        ${event.is_attending ? `<div class="attendance-status">${CHECK_SVG} Going</div>` : ''}
+                    </div>
+                    <div class="footer-right">
+                        ${statusLabel}
+                    </div>
+                </div>
             </div>
         </div>`;
 }
@@ -108,43 +163,96 @@ function updateUrlParams() {
     window.history.pushState({}, '', url);
 }
 
+async function checkAdminAccess() {
+    try {
+        const data = await ajaxGet('/api/user/elements/permissions');
+        const perms = data.permissions || [];
+        const btn = document.querySelector('.admin-link-btn');
+        
+        isAdmin = perms.includes('event.manage.all') || perms.includes('event.manage.scoped') || perms.includes('user.manage') || perms.length > 0;
+
+        if (btn) {
+            if (isAdmin) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+        // Re-render to show/hide admin controls on cards if permissions loaded late
+        const currentView = document.getElementById('events-page-current');
+        if (currentView && !currentView.querySelector('.loading-text') && !currentView.querySelector('.error-text')) {
+             // Ideally we'd re-render, but for now we rely on the initial load or week change.
+             // If we really need to update existing cards, we'd call renderWeekContent again.
+             // Let's force a refresh if the week is already loaded to show buttons.
+             if (relativeWeekOffset !== undefined) changeWeek(0, false);
+        }
+
+    } catch (e) {
+        isAdmin = false;
+        const btn = document.querySelector('.admin-link-btn');
+        if (btn) btn.classList.add('hidden');
+    }
+}
+
 async function renderWeekContent(offset, targetElement) {
     try {
-        const data = await ajaxGet("/api/events/rweek/" + offset);
-        const events = data.events;
-        if (!events || events.length === 0) {
-            targetElement.innerHTML = /*html*/`<p style="text-align: center; margin-top: 2rem;">No events scheduled for this week.</p>`;
+        const data = await ajaxGet(`/api/events/paged/${offset}`);
+        const events = data.events || [];
+        const { startDate, endDate } = data;
+
+        // Update Range Text
+        const rangeText = document.getElementById('week-range-text');
+        if (rangeText && startDate && endDate) {
+            rangeText.textContent = getRangeText(startDate, endDate);
+        }
+
+        // Toggle Today Button
+        const todayBtn = document.querySelector('.today-btn');
+        if (todayBtn) {
+            if (offset === 0) todayBtn.classList.add('disabled');
+            else todayBtn.classList.remove('disabled');
+        }
+
+        if (events.length === 0) {
+            targetElement.innerHTML = /*html*/`
+                <div class="empty-week-state">
+                    <p>No events found for this period.</p>
+                </div>`;
             return;
         }
+
         let html = '';
         let last_day = null;
         for (const event of events) {
             const eventDate = new Date(event.start).getDate();
             if (last_day !== eventDate) {
-                if (last_day !== null) html += '</div>';
+                if (last_day !== null) html += '</div></div>';
                 last_day = eventDate;
-                html += /*html*/`<h2 class="event-day-header">${new Date(event.start).toLocaleDateString('en-UK', { weekday: 'long', month: 'short', day: 'numeric' })}</h2><div class="day-events-container">`;
+                const dateObj = new Date(event.start);
+                const dayName = dateObj.toLocaleDateString('en-UK', { weekday: 'long' });
+                const dateNum = dateObj.getDate();
+                const monthName = dateObj.toLocaleDateString('en-UK', { month: 'short' });
+                
+                html += /*html*/`
+                    <div class="day-group">
+                        <div class="date-strip">
+                            <span class="date-num">${dateNum}</span>
+                            <div class="date-text-group">
+                                <span class="day-name">${dayName}</span>
+                                <div class="date-line"></div>
+                                <span class="month-name">${monthName}</span>
+                            </div>
+                        </div>
+                        <div class="day-events-grid">`;
             }
             html += formatEvent(event);
         }
-        if (events.length > 0) html += '</div>';
+        if (events.length > 0) html += '</div></div>'; // Close grid and day-group
         targetElement.innerHTML = html;
     } catch (error) {
-        targetElement.innerHTML = /*html*/`<p class="error-message">Failed to load events.</p>`;
+        console.error(error);
+        targetElement.innerHTML = /*html*/`<p class="error-text">Failed to load events.</p>`;
     }
-}
-
-function updateControls() {
-    const title = document.getElementById('events-controls-title');
-    if (!title) return;
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) + relativeWeekOffset * 7);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    title.textContent = startOfWeek.toLocaleDateString('en-UK', { month: 'short', day: 'numeric' }) + ' - ' + endOfWeek.toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
-    const thisWeekButton = document.querySelector('.this-week-button');
-    if (thisWeekButton) thisWeekButton.disabled = relativeWeekOffset === 0;
 }
 
 async function changeWeek(delta, animated = true) {
@@ -164,7 +272,6 @@ async function changeWeek(delta, animated = true) {
     isAnimating = true;
     relativeWeekOffset = newOffset;
     updateUrlParams();
-    updateControls();
 
     if (!animated) {
         await renderWeekContent(relativeWeekOffset, currentView);
@@ -177,14 +284,11 @@ async function changeWeek(delta, animated = true) {
     let direction = delta;
     if (delta === 0) direction = (oldOffset > 0) ? -1 : 1;
     if (delta === null || delta === undefined) direction = 1;
-
-    relativeWeekOffset = newOffset;
-    updateUrlParams();
-    updateControls();
-
+    
     const nextView = document.createElement('div');
     nextView.className = 'events-page';
-    nextView.innerHTML = '<p aria-busy="true" style="text-align: center; margin-top: 2rem;">Loading events...</p>';
+    nextView.innerHTML = '<div class="loading-container"><div class="spinner"></div></div>'; 
+    
     const loadPromise = renderWeekContent(relativeWeekOffset, nextView);
 
     slider.style.transition = 'none';
@@ -198,20 +302,19 @@ async function changeWeek(delta, animated = true) {
 
     slider.offsetHeight; // force reflow
 
-    slider.style.transition = 'transform 0.3s ease-out';
+    slider.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
     if (direction > 0) {
         slider.style.transform = 'translateX(-100%)';
     } else {
         slider.style.transform = 'translateX(0%)';
     }
 
-    // Wait for animation duration
     await new Promise(resolve => setTimeout(resolve, 310));
 
     try {
         await loadPromise;
     } catch (e) {
-        console.error("Failed to load week content during animation", e);
+        console.error("Failed to load week content", e);
     } finally {
         currentView.innerHTML = nextView.innerHTML;
         slider.style.transition = 'none';
@@ -222,11 +325,41 @@ async function changeWeek(delta, animated = true) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Events view initialization
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('.prev-week')) changeWeek(-1);
-        else if (e.target.closest('.next-week')) changeWeek(1);
-        else if (e.target.closest('.this-week-button')) changeWeek(0);
+    // Permission check
+    checkAdminAccess();
+    LoginEvent.subscribe(() => checkAdminAccess());
+
+    document.addEventListener('click', async (e) => {
+        const target = e.target.closest('.nav-btn, .today-btn, .admin-link-btn');
+        if (target) {
+            target.classList.add('click-animate');
+            target.addEventListener('animationend', () => target.classList.remove('click-animate'), { once: true });
+        }
+
+        const todayBtn = e.target.closest('.today-btn');
+        if (todayBtn) {
+            todayBtn.classList.add('spin-active');
+            todayBtn.addEventListener('animationend', () => todayBtn.classList.remove('spin-active'), { once: true });
+            changeWeek(0);
+        } else if (e.target.closest('.prev-week')) {
+            changeWeek(-1);
+        } else if (e.target.closest('.next-week')) {
+            changeWeek(1);
+        } else if (e.target.closest('.admin-link-btn')) {
+            switchView('/admin/events');
+        } else if (e.target.closest('.cancel-event-btn')) {
+            e.stopPropagation(); // Prevent card click
+            const btn = e.target.closest('.cancel-event-btn');
+            const id = btn.dataset.id;
+            if (confirm('Are you sure you want to cancel this event?')) {
+                try {
+                    await ajaxPost(`/api/admin/event/${id}/cancel`);
+                    changeWeek(null, false); // Reload current week
+                } catch (err) {
+                    alert('Failed to cancel event.');
+                }
+            }
+        }
     });
 
     document.addEventListener('keydown', (e) => {
@@ -240,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     LoginEvent.subscribe(() => changeWeek(0, false));
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/events') {
+            checkAdminAccess(); 
             const urlParams = new URLSearchParams(window.location.search);
             const weekParam = parseInt(urlParams.get('week'));
             relativeWeekOffset = isNaN(weekParam) ? 0 : weekParam;

@@ -2,7 +2,7 @@ import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
-import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG } from "../../../../images/icons/outline/icons.js"
+import { ARROW_BACK_IOS_NEW_SVG, DELETE_SVG } from "../../../../images/icons/outline/icons.js"
 
 /**
  * Admin role creation and editing form.
@@ -18,7 +18,7 @@ export async function renderRoleDetail(id) {
     if (!adminContent) return;
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = `<button data-nav="/admin/roles">${ARROW_BACK_IOS_NEW_SVG} Back to Roles</button>`;
+    if (actionsEl) actionsEl.innerHTML = `<button data-nav="/admin/roles" class="icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Roles</button>`;
 
     const isNew = id === 'new';
     let role = { name: '', description: '', permissions: [] };
@@ -37,25 +37,30 @@ export async function renderRoleDetail(id) {
 
     adminContent.innerHTML = /*html*/`
         <div class="form-info">
-            <article class="form-box">
-                <h2>${isNew ? 'Create New Role' : 'Edit Role'}</h2>
-                <form id="role-form">
-                    <label>Name <input type="text" name="name" value="${role.name}" required></label>
-                    <label>Description <textarea name="description">${role.description || ''}</textarea></label>
+            <article class="form-box admin-card">
+                <header class="card-header-flex">
+                    <h2>${isNew ? 'Create New Role' : 'Edit Role'}</h2>
+                    ${!isNew ? `<button type="button" id="delete-role-btn" class="delete-icon-btn outline" title="Delete">${DELETE_SVG}</button>` : ''}
+                </header>
+                
+                <form id="role-form" class="modern-form">
+                    <label>Name <input type="text" name="name" value="${role.name}" required placeholder="Role Name"></label>
+                    <label>Description <textarea name="description" rows="3">${role.description || ''}</textarea></label>
+                    
+                    <div class="form-divider"></div>
                     
                     <h3>Permissions</h3>
-                    <div class="permissions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.5rem;">
+                    <div class="permissions-grid">
                         ${allPermissions.map(p => `
-                            <label>
+                            <label class="permission-item">
                                 <input type="checkbox" name="permissions" value="${p.slug}" ${role.permissions && role.permissions.includes(p.slug) ? 'checked' : ''}>
-                                ${p.slug}
+                                <span class="perm-label">${p.slug}</span>
                             </label>
                         `).join('')}
                     </div>
 
-                    <div class="tag-detail-actions" style="margin-top: 1rem;">
-                        <button type="submit" class="primary">${isNew ? 'Create' : 'Save'}</button>
-                        ${!isNew ? `<button type="button" id="delete-role-btn" class="contrast delete">Delete Role</button>` : ''}
+                    <div class="form-actions-footer">
+                        <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                     </div>
                 </form>
             </article>

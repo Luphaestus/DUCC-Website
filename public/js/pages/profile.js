@@ -29,32 +29,32 @@ const STATUS_INFO = 'status-info';
 const HTML_TEMPLATE = /*html*/`
 <div id="profile-view" class="view hidden">
     <div class="small-container">
-        <h1>Profile</h1>
+        <h1>My Profile</h1>
         <div class="form-info" id="profile-info">
-            <article class="form-box">
+            <article class="form-box profile-card">
                 <header>
                     ${ID_CARD_SVG}
                     <h3>Club Membership</h3>
                 </header>
                 <form>
-                    <div id="profile-membership" class="sub-container status-container">
-                        <div id="membership-info-status" class="status-container"></div>
-                        <div id="legal-form-status" class="status-container"></div>
-                        <div id="debt-status" class="status-container"></div>
+                    <div id="profile-membership" class="sub-container status-container modern-status-grid">
+                        <div id="membership-info-status" class="status-card"></div>
+                        <div id="legal-form-status" class="status-card"></div>
+                        <div id="debt-status" class="status-card"></div>
                     </div>
-                    <div id="instructor-status" class="status-item"></div>
+                    <div id="instructor-status" class="status-card full-width-status"></div>
                 </form>
             </article>
 
-            <article class="form-box">
+            <article class="form-box profile-card">
                 <header>
                     ${AR_ON_YOU_SVG}
-                    <h3>Your Info</h3>
+                    <h3>Your Stats</h3>
                 </header>
                 <div class="sub-container status-container status-info" id="swim-stats-container">
-                    <div id="recognition-stats-info"></div>
-                    <div class="action-wrapper">
-                        <button class="status-btn" data-nav="/swims">View Swims</button>
+                    <div id="recognition-stats-info" class="stats-grid"></div>
+                    <div class="action-wrapper center-action">
+                        <button class="primary" data-nav="/swims">View Detailed Swims</button>
                     </div>
                 </div>
                 <div id="profile-tags-container" class="tags-container">
@@ -62,34 +62,38 @@ const HTML_TEMPLATE = /*html*/`
                 </div>
             </article>
 
-            <article class="form-box">
+            <article class="form-box profile-card">
                 <header>
                     ${TRIP_SVG}
-                    <h3>Trip Form Info</h3>
+                    <h3>Trip Information</h3>
                 </header>
-                <p class="form-description">If you are willing to be an emergency contact or first aider for a trip, please enter your details here.</p>
-                <form>
-                    <div>
-                        <div><label for="profile-contact-number">Contact Number:</label><input type="tel" id="profile-contact-number" placeholder="e.g., 07700 900333"></div>
-                        <div><label for="profile-first-aid-expires">First Aid Expires:</label><input type="date" id="profile-first-aid-expires"></div>
+                <p class="form-description">Emergency contact and first aid details for club trips.</p>
+                <form class="modern-form">
+                    <div class="grid-2-col">
+                        <label for="profile-contact-number">Contact Number
+                            <input type="tel" id="profile-contact-number" placeholder="e.g., 07700 900333">
+                        </label>
+                        <label for="profile-first-aid-expires">First Aid Expiry
+                            <input type="date" id="profile-first-aid-expires">
+                        </label>
                     </div>
-                    <div id="profile-aid-buttons">
-                        <button type="submit" id="profile-aid-submit-button">Submit Aid Details</button>
-                        <button type="button" id="profile-aid-remove-button" class="secondary">Remove Aid Details</button>
+                    <div id="profile-aid-buttons" class="form-actions">
+                        <button type="submit" id="profile-aid-submit-button">Save Details</button>
+                        <button type="button" id="profile-aid-remove-button" class="secondary">Clear Details</button>
                     </div>
                 </form>
             </article>
 
-            <article class="form-box">
+            <article class="form-box profile-card danger-zone">
                 <header>
                     ${BRIGHTNESS_ALERT_SVG}
-                    <h3>Danger Zone</h3>
+                    <h3>Account Actions</h3>
                 </header>
                 <div class="danger-zone-actions">
-                    <button id="profile-logout-button">Logout</button>
-                    <button id="profile-change-password-button" class="secondary">Change Password</button>
-                    <button id="profile-delete-account-button" class="secondary">Delete Account</button>
-                    <button id="admin-panel-button" class="secondary hidden">Go to Admin Panel</button>
+                    <button id="profile-logout-button" class="outline">Logout</button>
+                    <button id="profile-change-password-button" class="outline">Change Password</button>
+                    <button id="profile-delete-account-button" class="delete outline">Delete Account</button>
+                    <button id="admin-panel-button" class="secondary hidden">Admin Dashboard</button>
                 </div>
             </article>
         </div>
@@ -126,16 +130,16 @@ function displayNotification(title, message, type) {
  * Update status UI with icon and color class.
  * Splits content into Title (main text) and Description/Action.
  */
-function updateStatusUI(elementId, title, content, statusClass, baseClass = 'status-item') {
+function updateStatusUI(elementId, title, content, statusClass, baseClass = 'status-card') {
     const el = document.getElementById(elementId);
     if (!el) return;
 
     el.className = baseClass;
-    console.log(statusClass);
     if (statusClass) el.classList.add(statusClass);
 
     el.innerHTML = `
         <div class="status-header">
+            <span class="status-indicator"></span>
             <span class="status-title">${title}</span>
         </div>
         <div class="status-body">
@@ -173,20 +177,7 @@ function clearInputError(inputElement) {
  * Determine parent container color based on children status.
  */
 function updateMembershipContainerColor(statuses) {
-    const container = document.getElementById('profile-membership');
-    if (!container) return;
-
-    // Remove existing status classes
-    container.classList.remove(STATUS_SUCCESS, STATUS_WARNING, STATUS_ERROR, STATUS_INFO);
-
-    // Hierarchy: Error > Warning > Success
-    if (statuses.includes(STATUS_ERROR)) {
-        container.classList.add(STATUS_ERROR);
-    } else if (statuses.includes(STATUS_WARNING)) {
-        container.classList.add(STATUS_WARNING);
-    } else {
-        container.classList.add(STATUS_SUCCESS);
-    }
+    // Only used for visual hints if needed, logic moved to individual cards
 }
 
 /**
@@ -203,107 +194,79 @@ function renderEventStatus(profile) {
         const hasDebt = balance < minMoney;
         const closeToLimit = !hasDebt && balance < (minMoney + 5);
 
-        const currentStatuses = [];
-
-        let memberStatusClass = STATUS_SUCCESS;
-
-        if (hasDebt) {
-            memberStatusClass = STATUS_ERROR;
-        } else if (closeToLimit) {
-            memberStatusClass = STATUS_WARNING;
-        } else if (!profile.is_member) {
-            if (profile.free_sessions > 0) {
-                memberStatusClass = STATUS_WARNING;
-            } else {
-                memberStatusClass = STATUS_ERROR;
-            }
-        }
-        currentStatuses.push(memberStatusClass);
-
         // Membership Content
         if (profile.is_member) {
             let title = "Membership Active";
-            let desc = `Your membership is active for the ${academicYear} academic year.`;
+            let statusClass = STATUS_SUCCESS;
+            let desc = `Valid for ${academicYear}.`;
 
             if (hasDebt) {
                 title = "Membership Restricted";
-                desc = "Your membership is active, but outstanding debt prevents you from joining events.";
+                statusClass = STATUS_ERROR;
+                desc = "Debt prevents event signups.";
             } else if (closeToLimit) {
-                desc += " <br><strong>Warning:</strong> You are close to your debt limit.";
+                statusClass = STATUS_WARNING;
+                desc += " <br><strong>Warning:</strong> Near debt limit.";
             }
 
             updateStatusUI(
                 "membership-info-status",
                 title,
                 desc,
-                memberStatusClass,
-                'status-container'
+                statusClass
             );
         } else {
+            let statusClass = STATUS_ERROR;
             if (profile.free_sessions > 0) {
-                const desc = `You have ${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} remaining. Become a full member to enjoy unlimited sessions!
-                             ${closeToLimit ? '<br><strong>Warning:</strong> You are close to your debt limit.' : ''}
-                             <div class="action-wrapper"><button id="become-member-button" class="status-btn">Become a Member</button></div>`;
+                const desc = `${profile.free_sessions} free session${profile.free_sessions > 1 ? 's' : ''} left.
+                             <div class="action-wrapper"><button id="become-member-button" class="small-btn">Join Now</button></div>`;
                 updateStatusUI(
                     "membership-info-status",
-                    "Membership Inactive",
+                    "Trial Active",
                     desc,
-                    memberStatusClass,
-                    'status-container'
+                    STATUS_WARNING
                 );
             } else {
-                const desc = `Your membership is inactive for ${academicYear}. Please become a member to continue attending sessions.
-                             ${hasDebt ? '<br><strong>Outstanding debt prevents event signups.</strong>' : ''}
-                             <div class="action-wrapper"><button id="become-member-button" class="status-btn">Become a Member</button></div>`;
+                const desc = `Membership required.
+                             ${hasDebt ? '<br><strong>Outstanding Debt.</strong>' : ''}
+                             <div class="action-wrapper"><button id="become-member-button" class="small-btn primary">Join Now</button></div>`;
                 updateStatusUI(
                     "membership-info-status",
-                    "Membership Inactive",
+                    "Inactive",
                     desc,
-                    memberStatusClass,
-                    'status-container'
+                    statusClass
                 );
             }
         }
 
         // Legal Status
         const legalStatusClass = isLegalComplete ? STATUS_SUCCESS : STATUS_ERROR;
-        currentStatuses.push(legalStatusClass);
-
-        const legalTitle = isLegalComplete ? 'Legal Information' : 'Legal Information Incomplete';
+        const legalTitle = isLegalComplete ? 'Legal Info' : 'Incomplete Legal Info';
         const legalDesc = isLegalComplete
-            ? `Your medical and contact details are up to date. <div class="action-wrapper"><button class="status-btn" data-nav="/legal">Update Info</button></div>`
-            : `Ensure your medical and contact details are up to date. <div class="action-wrapper"><button class="status-btn" data-nav="/legal">Complete Form</button></div>`;
+            ? `Up to date. <div class="action-wrapper"><button class="small-btn secondary" data-nav="/legal">Edit</button></div>`
+            : `Required for insurance. <div class="action-wrapper"><button class="small-btn primary" data-nav="/legal">Complete</button></div>`;
 
         updateStatusUI(
             'legal-form-status',
             legalTitle,
             legalDesc,
-            legalStatusClass,
-            'status-container'
+            legalStatusClass
         );
 
         // Debt Status
         const debtStatusClass = hasDebt ? STATUS_ERROR : STATUS_SUCCESS;
-        currentStatuses.push(debtStatusClass);
-
-        const debtTitle = hasDebt
-            ? `Outstanding Debt: £${balance.toFixed(2)}`
-            : `Account Balance: £${balance.toFixed(2)}`;
+        const debtTitle = `Balance: £${balance.toFixed(2)}`;
 
         const debtDesc = hasDebt
-            ? `You have outstanding debts. Please clear your balance. <div class="action-wrapper"><button class="status-btn" data-nav="/transactions">Pay Now</button></div>`
-            : `You have no significant outstanding debts. <div class="action-wrapper"><button class="status-btn" data-nav="/transactions">Account Statement</button></div>`;
+            ? `Please clear debt. <div class="action-wrapper"><button class="small-btn delete" data-nav="/transactions">Pay</button></div>`
+            : `Account healthy. <div class="action-wrapper"><button class="small-btn secondary" data-nav="/transactions">History</button></div>`;
 
         updateStatusUI(
             'debt-status',
             debtTitle,
             debtDesc,
-            debtStatusClass,
-            'status-container'
+            debtStatusClass
         );
-
-        // Update Parent Container Color
-        updateMembershipContainerColor(currentStatuses);
 
         // Bind Membership Button
         document.getElementById('become-member-button')?.addEventListener('click', async (event) => {
@@ -328,17 +291,17 @@ function renderEventStatus(profile) {
 function renderInstructorStatus(profile) {
     const isInstructor = profile.is_instructor;
 
-    const title = isInstructor ? "Instructor Status" : "Instructor Status";
+    const title = "Instructor Status";
     const desc = isInstructor
-        ? `You are an active instructor. <div class="action-wrapper"><button id="instructor-leave-btn" class="status-btn" type="button">Remove Status</button></div>`
-        : `You are not currently an instructor. <div class="action-wrapper"><button id="instructor-signup-btn" class="status-btn" type="button">Become a Coach</button></div>`;
+        ? `Active Instructor. <div class="action-wrapper"><button id="instructor-leave-btn" class="small-btn secondary" type="button">Resign</button></div>`
+        : `Not an instructor. <div class="action-wrapper"><button id="instructor-signup-btn" class="small-btn secondary" type="button">Apply</button></div>`;
 
     updateStatusUI(
         'instructor-status',
         title,
         desc,
-        isInstructor ? STATUS_SUCCESS : STATUS_ERROR,
-        'status-item'
+        isInstructor ? STATUS_SUCCESS : STATUS_INFO,
+        'status-card full-width-status'
     );
 
     document.getElementById('instructor-signup-btn')?.addEventListener('click', async () => {
@@ -360,7 +323,7 @@ function renderAidDetails(profile) {
     const firstAidExpiryInput = document.getElementById('profile-first-aid-expires');
     const removeAidButton = document.getElementById('profile-aid-remove-button');
 
-    if (contactNumberInput) contactNumberInput.placeholder = profile.phone_number || 'e.g., 07700 900333';
+    if (contactNumberInput) contactNumberInput.value = profile.phone_number || '';
     if (firstAidExpiryInput) firstAidExpiryInput.value = profile.first_aid_expiry || '';
 
     if (removeAidButton) {
@@ -382,7 +345,7 @@ async function bindStaticEvents() {
     const removeAidButton = document.getElementById('profile-aid-remove-button');
 
     function updateAidSubmitButtonState() {
-        if (aidSubmitButton) aidSubmitButton.disabled = contactNumberInput.value.trim() === '' && firstAidExpiryInput.value.trim() === '';
+        // Optional: enable/disable logic
     }
 
     [contactNumberInput, firstAidExpiryInput].forEach(input => {
@@ -393,21 +356,18 @@ async function bindStaticEvents() {
             });
         }
     });
-    if (aidSubmitButton) updateAidSubmitButtonState();
 
     if (aidSubmitButton) {
         aidSubmitButton.addEventListener('click', async (event) => {
             event.preventDefault();
-            if (aidSubmitButton.disabled) return;
-
+            
             const updateData = {};
             if (contactNumberInput.value.trim() !== '') updateData.phone_number = contactNumberInput.value.trim();
             if (firstAidExpiryInput.value.trim() !== '') updateData.first_aid_expiry = firstAidExpiryInput.value.trim();
 
             try {
                 await ajaxPost('/api/user/elements', updateData);
-                displayNotification('Aid details updated.', "Successfully updated.", 'success');
-                contactNumberInput.value = ''; firstAidExpiryInput.value = '';
+                displayNotification('Success', "Details updated.", 'success');
                 updateProfilePage();
             } catch (error) {
                 const msg = error.message || error;
@@ -421,7 +381,7 @@ async function bindStaticEvents() {
         removeAidButton.addEventListener('click', async (event) => {
             event.preventDefault();
             await ajaxPost('/api/user/elements', { first_aid_expiry: null });
-            displayNotification('Removed.', "First aid expiry removed.", 'success');
+            displayNotification('Success', "Details removed.", 'success');
             updateProfilePage();
         });
     }
@@ -518,23 +478,17 @@ async function renderRecognition(profile) {
         }
 
         info.innerHTML = `
-            <div id="yearly-swims-status" class="status-item"></div>
-            <div id="alltime-swims-status" class="status-item"></div>
+            <div class="stat-box">
+                <span class="stat-value">${stats.yearly.swims}</span>
+                <span class="stat-label">Yearly Swims</span>
+                <span class="stat-rank">Rank: ${getOrdinal(stats.yearly.rank)}</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value">${stats.allTime.swims}</span>
+                <span class="stat-label">All-time Swims</span>
+                <span class="stat-rank">Rank: ${getOrdinal(stats.allTime.rank)}</span>
+            </div>
         `;
-
-        updateStatusUI(
-            'yearly-swims-status',
-            `Yearly Swims: ${stats.yearly.swims}`,
-            `Rank: ${getOrdinal(stats.yearly.rank)}`,
-            STATUS_INFO
-        );
-
-        updateStatusUI(
-            'alltime-swims-status',
-            `All-time Swims: ${stats.allTime.swims}`,
-            `Rank: ${getOrdinal(stats.allTime.rank)}`,
-            STATUS_INFO
-        );
     }
 
     if (tagsContainer) {
@@ -542,7 +496,7 @@ async function renderRecognition(profile) {
             const tags = await ajaxGet(`/api/user/tags`);
             if (tags && tags.length > 0) {
                 tagsContainer.innerHTML = tags.map(tag =>
-                    `<span class="profile-tag" style="background-color: ${tag.color};">${tag.name}</span>`
+                    `<span class="tag-badge" style="background-color: ${tag.color}; box-shadow: 0 2px 5px ${tag.color}40;">${tag.name}</span>`
                 ).join('');
             } else {
                 tagsContainer.innerHTML = '<p class="no-tags">No tags assigned.</p>';

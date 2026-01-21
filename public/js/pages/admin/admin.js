@@ -13,6 +13,7 @@ import { renderManageGlobals } from './globals.js';
 import { renderUserAdvanced } from './user/advanced.js';
 import { renderAdminFiles } from './files.js';
 import { requireAuth } from '/js/utils/auth.js';
+import { GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG, ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG } from '../../../images/icons/outline/icons.js';
 
 /**
  * Nested router for administrative modules.
@@ -26,14 +27,12 @@ addRoute('/admin/*', 'admin');
  */
 const HTML_TEMPLATE = /*html*/`
 <div id="admin-view" class="view hidden small-container">
-    <div class="admin-header">
-        <div id="admin-header-actions"></div>
+    <div class="admin-header-modern">
         <h1 id="admin-dashboard-title">Admin Dashboard</h1>
-        <div id="admin-header-extra"></div>
+        <div id="admin-header-actions" class="header-actions"></div>
     </div>
-    <div id="${adminContentID}">
-        <p>Select an option to manage.</p>
-    
+    <div id="${adminContentID}" class="admin-content-wrapper">
+        <p class="loading-text">Loading...</p>
     </div>
 </div>`;
 
@@ -45,9 +44,9 @@ function updateAdminTitle(section) {
     const titleEl = document.getElementById('admin-dashboard-title');
     if (!titleEl) return;
     if (section) {
-        titleEl.innerHTML = `<span class="admin-title-prefix">Admin Dashboard - </span><span class="admin-title-section">${section}</span>`;
+        titleEl.innerHTML = `<span class="admin-title-section">${section}</span>`;
     } else {
-        titleEl.innerHTML = `<span class="admin-title-section">Admin Dashboard</span>`;
+        titleEl.innerHTML = `<span class="admin-title-section">Dashboard</span>`;
     }
 }
 
@@ -134,27 +133,33 @@ async function AdminNavigationListener({ viewId, path }) {
 
     } else if (cleanPath === '/admin' || cleanPath === '/admin/') {
         // Main Dashboard Home
-        console.log('Admin Dashboard Permissions:', { canManageUsers, canManageEvents, canManageTransactions, canManageRoles, isExec });
-
-        let usersButton = canAccessUsers ? `<button data-nav="/admin/users">Manage Users</button>` : '';
-        let eventsButton = canAccessEvents ? `<button data-nav="/admin/events">Manage Events</button>` : '';
-        let tagsButton = canAccessTags ? `<button data-nav="/admin/tags">Manage Tags</button>` : '';
-        let filesButton = canAccessDocs ? `<button data-nav="/admin/files">Manage Files</button>` : '';
-        let rolesButton = canAccessRoles ? `<button data-nav="/admin/roles">Manage Roles</button>` : '';
-        let globalsButton = canAccessGlobals ? `<button data-nav="/admin/globals">Manage Globals</button>` : '';
+        let cardsHtml = '';
+        
+        if (canAccessUsers) cardsHtml += createDashboardCard('Users', 'Manage members & permissions', GROUP_SVG, '/admin/users');
+        if (canAccessEvents) cardsHtml += createDashboardCard('Events', 'Schedule & attendance', CALENDAR_TODAY_SVG, '/admin/events');
+        if (canAccessTags) cardsHtml += createDashboardCard('Tags', 'Event categories & styles', LOCAL_ACTIVITY_SVG, '/admin/tags');
+        if (canAccessDocs) cardsHtml += createDashboardCard('Files', 'Documents & resources', FOLDER_SVG, '/admin/files');
+        if (canAccessRoles) cardsHtml += createDashboardCard('Roles', 'User roles & access', ID_CARD_SVG, '/admin/roles');
+        if (canAccessGlobals) cardsHtml += createDashboardCard('Globals', 'System configuration', SETTINGS_SVG, '/admin/globals');
 
         adminContent.innerHTML = `
-            <div class="admin-controls-center">
-                ${usersButton}
-                ${eventsButton}
-                ${tagsButton}
-                ${filesButton}
-                ${rolesButton}
-                ${globalsButton}
+            <div class="dashboard-grid">
+                ${cardsHtml}
             </div>
-            <p class="text-center margin-top">Select an option to manage.</p>
         `;
     }
+}
+
+function createDashboardCard(title, desc, icon, link) {
+    return `
+        <button class="dashboard-card" data-nav="${link}">
+            <div class="card-icon">${icon}</div>
+            <div class="card-content">
+                <h3>${title}</h3>
+                <p>${desc}</p>
+            </div>
+        </button>
+    `;
 }
 
 ViewChangedEvent.subscribe(AdminNavigationListener);

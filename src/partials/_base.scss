@@ -1,21 +1,32 @@
 @use "mixins" as *;
 
 /* Base Layout */
-html,
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     overflow-x: hidden;
+    font-family: var(--font-family-sans);
+    letter-spacing: -0.01em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family-display);
+    font-weight: 700;
+    letter-spacing: -0.025em;
 }
 
 main.container {
     display: block;
     margin: 0;
     padding: 0;
-    padding-top: 4rem;
+    padding-top: 5rem; /* Increased for floating navbar */
     padding-inline: 0;
-    padding-block-end: 0;
+    padding-block-end: 2rem;
     width: 100%;
     max-width: none;
     flex: 1;
@@ -47,31 +58,35 @@ input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
     @include common-element-size;
-    background: rgba(255, 255, 255, 0.28);
-    border-radius: 6px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(7.2px);
-    -webkit-backdrop-filter: blur(7.2px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: var(--border-radius-sm);
+    box-shadow: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
 
     @media (prefers-color-scheme: dark) {
-        background: rgba(255, 255, 255, 0.1);
-        box-shadow: 0 4px 30px rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    &:focus {
+        background: rgba(255, 255, 255, 0.8);
+        border-color: var(--pico-primary);
+        box-shadow: 0 0 0 3px rgba(var(--pico-primary-rgb), 0.1);
+        @media (prefers-color-scheme: dark) { background: rgba(0, 0, 0, 0.5); }
     }
 
     &[aria-invalid="true"] {
-        border-color: rgba(224, 93, 111, 0.3);
-        box-shadow: 0 0 0 2px rgba(224, 93, 111, 0.3);
-        background: rgba(239, 165, 165, 0.1);
-        @media (prefers-color-scheme: dark) { background: rgba(224, 93, 111, 0.1); }
+        border-color: var(--colour-bad);
+        box-shadow: 0 0 0 1px var(--colour-bad);
+        background: rgba(231, 76, 60, 0.05);
     }
 
     &[aria-invalid="false"] {
-        border-color: rgba(93, 224, 111, 0.3);
-        box-shadow: 0 4px 15px rgba(93, 224, 111, 0.3);
-        background: rgba(165, 239, 165, 0.1);
-        @media (prefers-color-scheme: dark) { background: rgba(93, 224, 111, 0.1); }
+        border-color: var(--colour-good);
+        background: rgba(46, 204, 113, 0.05);
     }
 }
 
@@ -84,36 +99,52 @@ button,
 .button,
 a[role="button"] {
     @include common-element-size;
-    background: color-mix(in srgb, var(--pico-primary) 55%, transparent);
-    border-radius: 6px;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(7.2px);
-    -webkit-backdrop-filter: blur(7.2px);
-    border: 1px solid color-mix(in srgb, var(--pico-primary) 90%, transparent);
+    background: var(--pico-primary);
+    border-radius: var(--border-radius-pill);
+    box-shadow: var(--shadow-soft);
+    border: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--pico-primary-inverse);
 
-    @media (prefers-color-scheme: dark) {
-        box-shadow: 0 2px 15px rgba(255, 255, 255, 0.08);
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+        filter: brightness(1.1);
+    }
+
+    &:active {
+        transform: translateY(0);
     }
 
     &.secondary {
-        background: color-mix(in srgb, var(--pico-secondary) 55%, transparent);
-        border: 1px solid color-mix(in srgb, var(--pico-secondary) 90%, transparent);
+        background: transparent;
+        border: 1px solid var(--pico-muted-border-color);
+        color: var(--pico-muted-color);
+        box-shadow: none;
+
+        &:hover {
+            border-color: var(--pico-primary);
+            color: var(--pico-primary);
+            background: rgba(var(--pico-primary-rgb), 0.05);
+        }
     }
 
     &.delete {
-        background: color-mix(in srgb, rgb(249, 95, 95) 55%, transparent);
-        border: 1px solid color-mix(in srgb, rgb(96, 41, 41) 90%, transparent);
-        color: rgb(254, 204, 204);
+        background: rgba(231, 76, 60, 0.1);
+        border: 1px solid rgba(231, 76, 60, 0.2);
+        color: #e74c3c;
+        box-shadow: none;
 
-        @media (prefers-color-scheme: light) {
-            background: color-mix(in srgb, rgb(249, 95, 95) 65%, transparent);
-            border: 1px solid color-mix(in srgb, rgb(96, 41, 41) 90%, transparent);
-            color: rgb(96, 41, 41);
+        &:hover {
+            background: #e74c3c;
+            color: white;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
         }
     }
 }
@@ -126,63 +157,37 @@ table {
     margin-bottom: 1.5rem;
 
     th, td {
-        padding: 0.75rem;
+        padding: 1rem;
         text-align: left;
         border-bottom: var(--table-border);
     }
 
     thead {
-        &::after { content: ""; display: table-row; height: 0.5rem; }
         tr {
-            border-bottom: none !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            @media (prefers-color-scheme: dark) { box-shadow: 0 4px 30px rgba(255, 255, 255, 0.1); }
-
             th {
                 border-bottom: var(--table-border) !important;
-                border-top: var(--table-border) !important;
-                background-color: var(--table-bg-head) !important;
-                backdrop-filter: blur(10px) !important;
-            }
-
-            th:first-child {
-                border-left: var(--table-border) !important;
-                border-top-left-radius: 0.3rem;
-                border-bottom-left-radius: 0.3rem;
-            }
-
-            th:last-child {
-                border-right: var(--table-border) !important;
-                border-top-right-radius: 0.3rem;
-                border-bottom-right-radius: 0.3rem;
+                background-color: transparent !important;
+                font-family: var(--font-family-display);
+                font-weight: 700;
+                text-transform: uppercase;
+                font-size: 0.85rem;
+                letter-spacing: 0.05em;
+                color: var(--pico-muted-color);
             }
         }
-        tr:hover { th { background-color: var(--table-bg-hover-head) !important; } }
     }
 
     tbody {
-        &::after { content: ""; display: table-row; height: 0.5rem; }
-        tr:first-child {
-            th, td { border-top: var(--table-border) !important; }
-            th:first-child, td:first-child { border-left: var(--table-border) !important; border-top-left-radius: 0.3rem; }
-            th:last-child, td:last-child { border-right: var(--table-border) !important; border-top-right-radius: 0.3rem; }
+        tr {
+            transition: background-color 0.2s ease;
+            
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+            }
         }
-        tr:last-child {
-            th, td { border-bottom: var(--table-border) !important; }
-            th:first-child, td:first-child { border-left: var(--table-border) !important; border-bottom-left-radius: 0.3rem; }
-            th:last-child, td:last-child { border-right: var(--table-border) !important; border-bottom-right-radius: 0.3rem; }
+        
+        td {
+            font-size: 0.95rem;
         }
-        th:first-child, td:first-child {
-            border-left: var(--table-border) !important;
-            background-color: var(--table-bg-body) !important;
-            backdrop-filter: blur(10px) !important;
-        }
-        th:last-child, td:last-child { border-right: var(--table-border) !important; }
-        th, td {
-            background-color: var(--table-bg-body) !important;
-            backdrop-filter: blur(10px) !important;
-        }
-        tr:hover { th, td { background-color: var(--table-bg-hover-body) !important; } }
     }
 }

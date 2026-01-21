@@ -148,6 +148,8 @@ class AttendanceAPI {
             if (eventRes.isError()) return res.status(404).json({ message: 'Event not found' });
             const event = eventRes.getData();
 
+            if (event.status === 'canceled') return res.status(400).json({ message: 'Event is canceled' });
+
             const userStatus = await UserDB.getElementsById(this.db, req.user.id, ['is_instructor']);
             if (!!userStatus.getData().is_instructor) {
                 const coachCount = await AttendanceDB.getCoachesAttendingCount(this.db, eventId);

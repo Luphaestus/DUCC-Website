@@ -2,7 +2,7 @@ import { adminContentID, renderAdminNavBar } from './common.js';
 import { ajaxGet, ajaxPost, ajaxDelete, ajaxPut } from '../../utils/ajax.js';
 import { switchView } from '../../utils/view.js';
 import { notify, NotificationTypes } from '../../components/notification.js';
-import { BACKUP_SVG, CLOUD_DOWNLOAD_SVG, CLOSE_SVG, SEARCH_SVG, INFO_SVG, CALENDAR_TODAY_SVG, PERSON_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG } from '../../../images/icons/outline/icons.js';
+import { SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
 
 /**
  * Admin interface for managing files and categories.
@@ -28,28 +28,28 @@ export async function renderAdminFiles() {
                 ${await renderAdminNavBar('files')}
             </div>
             
-            <div class="admin-tools-row">
-                <div class="search-input-wrapper">
+            <div class="admin-tools-wrapper">
+                <div class="search-bar">
                     <input type="text" id="admin-file-search-input" placeholder="Search files..." value="${currentOptions.search}">
-                    <button id="admin-file-search-btn" title="Search">
+                    <button id="admin-file-search-btn" class="icon-only" title="Search">
                         ${SEARCH_SVG}
                     </button>
                 </div>
-                <div class="admin-actions">
-                    <select id="admin-category-filter" style="margin-bottom: 0; width: auto; min-width: 150px;">
+                <div class="tool-actions">
+                    <select id="admin-category-filter" class="modern-select compact">
                         <option value="">All Categories</option>
                     </select>
-                    <button id="manage-categories-btn" class="secondary">Categories</button>
-                    <button id="upload-files-btn" class="primary">Upload Files</button>
+                    <button id="manage-categories-btn" class="secondary outline icon-text-btn">${FOLDER_SVG} Categories</button>
+                    <button id="upload-files-btn" class="primary icon-text-btn">${UPLOAD_SVG} Upload</button>
                 </div>
             </div>
 
             <div id="files-admin-content">
-                <div class="files-table-wrapper">
-                    <table class="admin-table files-table">
+                <div class="table-responsive">
+                    <table class="admin-table modern-table files-table">
                         <thead id="files-table-head"></thead>
                         <tbody id="admin-files-list">
-                            <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -59,22 +59,23 @@ export async function renderAdminFiles() {
         </div>
 
         <!-- Multi-Upload Modal -->
-        <dialog id="upload-files-modal">
-            <article>
+        <dialog id="upload-files-modal" class="modern-modal">
+            <article class="modal-content glass-panel">
                 <header>
-                    <a href="#close" aria-label="Close" class="close" id="close-upload-modal"></a>
+                    <a href="#close" aria-label="Close" class="close-modal" id="close-upload-modal">${CLOSE_SVG}</a>
                     <h3>Upload Files</h3>
                 </header>
-                <form id="multi-upload-form">
-                    <label>Select Files
-                        <input type="file" id="upload-files" name="files" multiple required>
+                <form id="multi-upload-form" class="modern-form">
+                    <label class="file-drop-area">
+                        <span class="file-msg">Drag and drop files here or click to select</span>
+                        <input type="file" id="upload-files" name="files" multiple required class="file-input">
                     </label>
-                    <div class="grid">
+                    <div class="grid-2-col">
                         <label>Category
-                            <select class="category-select" name="categoryId" required></select>
+                            <select class="category-select modern-select" name="categoryId" required></select>
                         </label>
                         <label>Visibility
-                            <select name="visibility">
+                            <select name="visibility" class="modern-select">
                                 <option value="members">Members</option>
                                 <option value="public">Public</option>
                                 <option value="execs">Execs Only</option>
@@ -82,25 +83,25 @@ export async function renderAdminFiles() {
                         </label>
                     </div>
                     <footer>
-                        <button type="submit">Upload All</button>
+                        <button type="submit" class="primary-btn wide-btn">Upload All</button>
                     </footer>
                 </form>
             </article>
         </dialog>
 
         <!-- Edit File Modal -->
-        <dialog id="edit-file-modal">
-            <article>
+        <dialog id="edit-file-modal" class="modern-modal">
+            <article class="modal-content glass-panel">
                 <header>
-                    <a href="#close" aria-label="Close" class="close" id="close-edit-modal"></a>
+                    <a href="#close" aria-label="Close" class="close-modal" id="close-edit-modal">${CLOSE_SVG}</a>
                     <h3>Edit File</h3>
                 </header>
-                <form id="edit-file-form">
+                <form id="edit-file-form" class="modern-form">
                     <input type="hidden" name="id">
                     <label>Title
                         <input type="text" name="title" required>
                     </label>
-                    <div class="grid">
+                    <div class="grid-2-col">
                         <label>Author
                             <input type="text" name="author" required>
                         </label>
@@ -108,12 +109,12 @@ export async function renderAdminFiles() {
                             <input type="date" name="date" required>
                         </label>
                     </div>
-                    <div class="grid">
+                    <div class="grid-2-col">
                         <label>Category
-                            <select class="category-select" name="categoryId" required></select>
+                            <select class="category-select modern-select" name="categoryId" required></select>
                         </label>
                         <label>Visibility
-                            <select name="visibility">
+                            <select name="visibility" class="modern-select">
                                 <option value="members">Members</option>
                                 <option value="public">Public</option>
                                 <option value="execs">Execs Only</option>
@@ -121,30 +122,28 @@ export async function renderAdminFiles() {
                         </label>
                     </div>
                     <footer>
-                        <button type="submit">Save Changes</button>
+                        <button type="submit" class="primary-btn wide-btn">Save Changes</button>
                     </footer>
                 </form>
             </article>
         </dialog>
 
         <!-- Category Management Modal -->
-        <dialog id="categories-modal">
-            <article style="max-width: 600px; width: 100%;">
+        <dialog id="categories-modal" class="modern-modal">
+            <article class="modal-content glass-panel" style="max-width: 600px;">
                 <header>
-                    <a href="#close" aria-label="Close" class="close" id="close-categories-modal"></a>
-                    <h3>File Categories</h3>
+                    <a href="#close" aria-label="Close" class="close-modal" id="close-categories-modal">${CLOSE_SVG}</a>
+                    <h3>Manage Categories</h3>
                 </header>
-                <div id="categories-list-container"></div>
-                <form id="new-category-form">
-                    <div class="grid">
-                        <input type="text" name="name" placeholder="New Category Name" required>
-                        <select name="default_visibility">
-                            <option value="members">Default: Members</option>
-                            <option value="public">Default: Public</option>
-                            <option value="execs">Default: Execs</option>
-                        </select>
-                        <button type="submit">Add</button>
-                    </div>
+                <div id="categories-list-container" class="categories-list"></div>
+                <form id="new-category-form" class="inline-add-form">
+                    <input type="text" name="name" placeholder="New Category Name" required class="flex-grow">
+                    <select name="default_visibility" class="modern-select compact">
+                        <option value="members">Members</option>
+                        <option value="public">Public</option>
+                        <option value="execs">Execs</option>
+                    </select>
+                    <button type="submit" class="icon-btn primary">${UPLOAD_SVG}</button> <!-- Using Upload icon as 'Add' metaphor here or ADD_SVG if available -->
                 </form>
             </article>
         </dialog>
@@ -174,7 +173,7 @@ async function loadAdminFiles() {
         <th class="sortable" data-sort="${c.sort}" data-label="${c.label}">
             ${c.label} ${currentOptions.sort === c.sort ? (currentOptions.order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
         </th>
-    `).join('')}<th data-label="Actions">Actions</th></tr>`;
+    `).join('')}<th data-label="Actions" class="action-col">Actions</th></tr>`;
 
     thead.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {
@@ -195,28 +194,23 @@ async function loadAdminFiles() {
         const { files, totalPages } = res.data;
         
         if (files.length === 0) {
-            list.innerHTML = '<tr><td colspan="6" class="text-center">No files found.</td></tr>';
+            list.innerHTML = '<tr><td colspan="6" class="empty-cell">No files found.</td></tr>';
             return;
         }
 
         list.innerHTML = files.map(file => `
             <tr>
-                <td data-label="Title"><strong>${file.title}</strong></td>
-                <td data-label="Category">${file.category_name || 'Uncategorized'}</td>
+                <td data-label="Title" class="primary-text"><strong>${file.title}</strong></td>
+                <td data-label="Category"><span class="badge neutral">${file.category_name || 'Uncategorized'}</span></td>
                 <td data-label="Author">${file.author}</td>
-                <td data-label="Visibility"><span class="tag-badge">${file.visibility}</span></td>
+                <td data-label="Visibility"><span class="tag-badge ${file.visibility}">${file.visibility}</span></td>
                 <td data-label="Date">
                     <span class="full-date">${new Date(file.date).toLocaleDateString('en-GB')}</span>
-                    <span class="short-date">
-                        <span>${new Date(file.date).getDate().toString().padStart(2, '0')}</span>
-                        <span>${new Date(file.date).toLocaleString('en-GB', { month: 'short' })}</span>
-                        <span>${new Date(file.date).getFullYear().toString().slice(-2)}</span>
-                    </span>
                 </td>
                 <td data-label="Actions">
-                    <div class="admin-row-actions">
-                        <button class="status-btn edit-file" data-id="${file.id}" title="Edit">Edit</button>
-                        <button class="status-btn error delete-file" data-id="${file.id}" title="Delete">${CLOSE_SVG}</button>
+                    <div class="row-actions">
+                        <button class="icon-btn edit-file" data-id="${file.id}" title="Edit">${EDIT_SVG}</button>
+                        <button class="icon-btn delete-file delete" data-id="${file.id}" title="Delete">${DELETE_SVG}</button>
                     </div>
                 </td>
             </tr>
@@ -224,7 +218,7 @@ async function loadAdminFiles() {
 
         renderAdminPagination(totalPages);
     } catch (e) {
-        list.innerHTML = '<tr><td colspan="6" class="text-center error">Error loading files.</td></tr>';
+        list.innerHTML = '<tr><td colspan="6" class="error-cell">Error loading files.</td></tr>';
     }
 }
 
@@ -272,15 +266,13 @@ async function loadCategoriesList() {
         const cats = res.data || [];
         container.innerHTML = cats.map(c => `
             <div class="category-item">
-                <input type="text" class="cat-name-input" value="${c.name}" data-id="${c.id}" style="margin: 0; flex: 1; min-width: 100px;">
-                <select class="cat-visibility-select" data-id="${c.id}" style="margin: 0; width: auto; margin-left: 0.5rem;">
+                <input type="text" class="cat-name-input compact-input" value="${c.name}" data-id="${c.id}">
+                <select class="cat-visibility-select modern-select compact" data-id="${c.id}">
                     <option value="members" ${c.default_visibility === 'members' ? 'selected' : ''}>Members</option>
                     <option value="public" ${c.default_visibility === 'public' ? 'selected' : ''}>Public</option>
                     <option value="execs" ${c.default_visibility === 'execs' ? 'selected' : ''}>Execs</option>
                 </select>
-                <div class="admin-row-actions" style="margin-left: 0.5rem;">
-                    <button class="status-btn error delete-cat" data-id="${c.id}" title="Delete">${CLOSE_SVG}</button>
-                </div>
+                <button class="icon-btn delete-cat delete" data-id="${c.id}" title="Delete">${DELETE_SVG}</button>
             </div>
         `).join('');
     } catch (e) {}

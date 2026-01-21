@@ -45,10 +45,17 @@ async function fillAttendeesList(eventId) {
         const attendeesListHtml = attendees.length > 0 ? attendees.map(u => {
             const attr = canManageUsers ? ` data-user-id="${u.id}" role="button"` : '';
             if (u.is_attending === 0) {
-                return `<li class="attendee-left"${attr}>${u.first_name} ${u.last_name} (Left)</li>`;
+                return `<li class="attendee-left"${attr}>
+                    <span class="attendee-avatar">${u.first_name[0]}${u.last_name[0]}</span>
+                    <span class="attendee-name">${u.first_name} ${u.last_name}</span> 
+                    <span class="attendee-status">(Left)</span>
+                </li>`;
             }
 
-            return `<li${attr}>${u.first_name} ${u.last_name}</li>`;
+            return `<li${attr}>
+                <span class="attendee-avatar">${u.first_name[0]}${u.last_name[0]}</span>
+                <span class="attendee-name">${u.first_name} ${u.last_name}</span>
+            </li>`;
         }).join('') : '<li>No attendees yet.</li>';
 
         document.querySelectorAll('.attendees-list').forEach(el => {
@@ -79,10 +86,10 @@ async function fillWaitlist(eventId, isFull) {
             if (summaryValue) {
                 if (data.position) {
                     // User is on waitlist: hide total count, show people in front
-                    summaryValue.innerHTML = `<strong>${data.position - 1}</strong> people in front of you`;
+                    summaryValue.innerHTML = `<span class="highlight-text">${data.position - 1}</span> people in front of you`;
                 } else {
                     // User not on waitlist: show total count
-                    summaryValue.innerHTML = `<strong>${data.count || 0}</strong> people waiting`;
+                    summaryValue.innerHTML = `<span class="highlight-text">${data.count || 0}</span> people waiting`;
                 }
             }
         } else {
@@ -213,19 +220,26 @@ async function setupEventButtons(eventId, path, resolvedPath) {
             attendButton.classList.remove('hidden');
             buttonContainer?.classList.remove('hidden');
 
-            if (isAttending) attendButton.textContent = 'Leave Event';
-            else if (isOnWaitlist) attendButton.textContent = 'Leave Waiting List';
-            else if (isFull && event.enable_waitlist) attendButton.textContent = 'Join Waiting List';
-            else attendButton.textContent = 'Attend Event';
+            if (isAttending) {
+                attendButton.textContent = 'Leave Event';
+                attendButton.classList.add('delete'); // Use delete style for leaving
+            } else if (isOnWaitlist) {
+                attendButton.textContent = 'Leave Waiting List';
+                attendButton.classList.add('delete');
+            } else if (isFull && event.enable_waitlist) {
+                attendButton.textContent = 'Join Waiting List';
+                attendButton.classList.remove('delete');
+            } else {
+                attendButton.textContent = 'Attend Event';
+                attendButton.classList.remove('delete');
+            }
 
             const canJoinWaitlist = isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full';
 
             const shouldDisable = !canAttend && !isAttending && !isOnWaitlist && !canJoinWaitlist;
 
             attendButton.disabled = shouldDisable;
-            attendButton.style.opacity = shouldDisable ? '0.5' : '1';
-            attendButton.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
-
+            
             const newBtn = attendButton.cloneNode(true);
             attendButton.parentNode.replaceChild(newBtn, attendButton);
 
@@ -282,7 +296,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         const refundCutOffPassed = event.upfront_refund_cutoff ? (now > new Date(event.upfront_refund_cutoff)) : false;
         const refundCutOffDateStr = event.upfront_refund_cutoff ? new Date(event.upfront_refund_cutoff).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'N/A';
         const refundToolTip = `<span class="info-tooltip-wrapper">${INFO_SVG}<span class="tooltip-text">The upfront cost is non-refundable as it covers pre-booked expenses. Refunds are only possible if someone else takes your place after the cutoff.</span></span>`
-        const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>`).join('');
+        const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="background-color: ${tag.color}; box-shadow: 0 2px 5px ${tag.color}40;">${tag.name}</span>`).join('');
 
         // Format duration
         const durationMs = new Date(event.end) - new Date(event.start);
@@ -309,49 +323,60 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
             <div class="form-info" id="event-info-container">
                 <article class="form-box">
                     <div class="event-header">
-                        <h2 class="event-title-large">${event.title}</h2>
-                        <div class="event-title-tags">${tagsHtml}</div>
+                        <div class="header-main">
+                            <h2 class="event-title-large">${event.title}</h2>
+                            <div class="event-title-tags">${tagsHtml}</div>
+                        </div>
                     </div>
                     <div class="event-content-split">
                         <div class="event-details-section">
-                            <p class="detail-field">
-                                <span class="label">${CALENDAR_TODAY_SVG} <strong>Date:</strong></span>
-                                <span class="value">${dateTimeStr}</span>
-                            </p>
-                            <p class="detail-field">
-                                <span class="label">${AVG_PACE_SVG} <strong>Length:</strong></span>
-                                <span class="value">${durationStr}</span>
-                            </p>
-                            <p class="detail-field">
-                                <span class="label">${DESCRIPTION_SVG} <strong>Description:</strong></span>
-                                <span class="value">${event.description || 'No description provided.'}</span>
-                            </p>
-                            <p class="detail-field">
-                                <span class="label">${BOLT_SVG} <strong>Difficulty:</strong></span>
-                                <span class="value">${event.difficulty_level}</span>
-                            </p>
-                            <p class="detail-field">
-                                <span class="label">${GROUP_SVG} <strong>Max Attendees:</strong></span>
-                                <span class="value">${event.max_attendees || 'Unlimited'}</span>
-                            </p>
+                            <div class="details-grid">
+                                <p class="detail-field">
+                                    <span class="label">${CALENDAR_TODAY_SVG} <strong>Date</strong></span>
+                                    <span class="value">${dateTimeStr}</span>
+                                </p>
+                                <p class="detail-field">
+                                    <span class="label">${AVG_PACE_SVG} <strong>Duration</strong></span>
+                                    <span class="value">${durationStr}</span>
+                                </p>
+                                <p class="detail-field">
+                                    <span class="label">${BOLT_SVG} <strong>Difficulty</strong></span>
+                                    <span class="value">${event.difficulty_level}</span>
+                                </p>
+                                <p class="detail-field">
+                                    <span class="label">${GROUP_SVG} <strong>Max Attendees</strong></span>
+                                    <span class="value">${event.max_attendees || 'Unlimited'}</span>
+                                </p>
+                                ${event.upfront_cost ? `
+                                <p class="detail-field">
+                                    <span class="label">${CURRENCY_POUND_SVG} <strong>Cost</strong></span>
+                                    <span class="value">£${event.upfront_cost.toFixed(2)} ${event.upfront_cost > 0 && event.upfront_refund_cutoff ? (refundCutOffPassed ? `- no refunds ${refundToolTip}` : `- refunds until ${refundCutOffDateStr} ${refundToolTip}`) : ''}</span>
+                                </p>` : ''}
+                            </div>
+                            
+                            <div class="description-block">
+                                <p class="detail-field block">
+                                    <span class="label">${DESCRIPTION_SVG} <strong>Description</strong></span>
+                                    <span class="value description-text">${event.description || 'No description provided.'}</span>
+                                </p>
+                            </div>
+
                             <p class="detail-field hidden" id="waitlist-summary-field">
                                 <span class="label">${HOURGLASS_TOP_SVG} <strong>Waitlist:</strong></span>
                                 <span class="value" id="waitlist-summary-value"></span>
                             </p>
-                            ${event.upfront_cost ? `
-                            <p class="detail-field">
-                                <span class="label">${CURRENCY_POUND_SVG} <strong>Upfront Cost:</strong></span>
-                                <span class="value">£${event.upfront_cost.toFixed(2)} ${event.upfront_cost > 0 && event.upfront_refund_cutoff ? (refundCutOffPassed ? `- no refunds ${refundToolTip}` : `- refunds available until ${refundCutOffDateStr} ${refundToolTip}`) : ''}</span>
-                            </p>` : ''}
+                            
                             <div class="event-buttons">
                                 <button id="attend-event-button" class="hidden">Attend Event</button>
-                                <button id="edit-event-button" class="hidden">Edit Event</button>
+                                <button id="edit-event-button" class="hidden secondary">Edit Event</button>
                             </div>
                         </div>
+                        
                         <div class="event-attendees-section hidden">
                             <h3>${GROUP_SVG} Attendees</h3>
                             <ul class="attendees-list"></ul>
                         </div>
+                        
                         <div class="waitlist-admin-section event-attendees-section hidden">
                             <h3>${HOURGLASS_TOP_SVG} Waiting List (Admin)</h3>
                             <ol class="waitlist-admin-list waitlist-names-list"></ol>

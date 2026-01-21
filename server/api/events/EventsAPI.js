@@ -51,6 +51,88 @@ class EventsAPI {
         });
 
         /**
+         * Fetch events paged by logic: 0=Today-Sun, -1=Mon-Yest, others=Full Weeks.
+         */
+        this.app.get('/api/events/paged/:page', async (req, res) => {
+            const userId = req.user ? req.user.id : null;
+            let max_difficulty_val;
+            
+            if (userId) {
+                const max_difficulty = await UserDB.getElementsById(this.db, userId, "difficulty_level");
+                if (max_difficulty.isError()) return max_difficulty.getResponse(res);
+                max_difficulty_val = max_difficulty.getData().difficulty_level;
+            } else {
+                max_difficulty_val = new Globals().getInt("Unauthorized_max_difficulty");
+            }
+
+            const page = parseInt(req.params.page, 10);
+            if (Number.isNaN(page)) return res.status(400).json({ message: 'Page must be an integer' });
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
+            const isMonday = dayOfWeek === 1;
+            const isSunday = dayOfWeek === 0;
+
+            let startDate = new Date(today);
+            let endDate = new Date(today);
+
+            // Calculate "This Monday"
+            const currentMonday = new Date(today);
+            currentMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            
+            if (page === 0) {
+                // Today -> Sunday (or Next Sunday if today is Sunday)
+                startDate = new Date(today);
+                if (isSunday) {
+                    // Show Today (Sunday) -> Next Sunday
+                    endDate.setDate(today.getDate() + 7);
+                } else {
+                    // Show Today -> This Sunday
+                    endDate.setDate(currentMonday.getDate() + 6);
+                }
+            } else if (page === -1) {
+                if (isMonday) {
+                    // Today is Monday, so "Mon-Yest" is empty/invalid. 
+                    // Logic: -1 becomes Last Week.
+                    startDate = new Date(currentMonday);
+                    startDate.setDate(currentMonday.getDate() - 7);
+                    endDate = new Date(startDate);
+                    endDate.setDate(startDate.getDate() + 6);
+                } else {
+                    // Monday -> Yesterday
+                    startDate = new Date(currentMonday);
+                    endDate = new Date(today);
+                    endDate.setDate(today.getDate() - 1);
+                }
+            } else {
+                // Other pages are full weeks
+                // Logic shift based on whether we had a partial -1 page
+                // If isMonday: Page -1 was Week -1. Page -2 is Week -2.
+                // If !isMonday: Page -1 was Partial. Page -2 is Week -1.
+                
+                let weekOffset = page;
+                if (!isMonday && page < 0) {
+                    weekOffset = page + 1; // Shift back: -2 becomes -1 (Last Week)
+                }
+
+                startDate = new Date(currentMonday);
+                startDate.setDate(currentMonday.getDate() + (weekOffset * 7));
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+            }
+
+            // Set times
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+
+            const events = await EventsDB.get_events_in_range(this.db, max_difficulty_val, startDate, endDate, userId);
+            if (events.isError()) return events.getResponse(res);
+
+            res.json({ events: events.getData(), startDate, endDate });
+        });
+
+        /**
          * Fetch event details by ID.
          */
         this.app.get('/api/event/:id', async (req, res) => {

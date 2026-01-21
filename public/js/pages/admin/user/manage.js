@@ -1,7 +1,7 @@
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderPaginationControls, renderAdminNavBar } from '../common.js';
-import { UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, SEARCH_SVG } from '../../../../images/icons/outline/icons.js'
+import { UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, SEARCH_SVG, FILTER_LIST_SVG } from '../../../../images/icons/outline/icons.js'
 
 /**
  * Paginated and searchable user management table.
@@ -26,52 +26,58 @@ export async function renderManageUsers() {
 
     adminContent.innerHTML = /*html*/`
         <div class="form-info">
-            <article class="form-box">
+            <article class="form-box admin-card">
                 <div class="admin-controls-container">
                     <div class="admin-nav-row">
                         ${await renderAdminNavBar('users')}
                     </div>
-                    <div class="admin-tools-row">
-                        <div class="search-input-wrapper">
+                    
+                    <div class="admin-tools-wrapper">
+                        <div class="search-bar">
                             <input type="text" id="user-search-input" placeholder="Search by name..." value="${search}">
-                            <button id="user-search-btn" title="Search">${SEARCH_SVG}</button>
+                            <button id="user-search-btn" class="icon-only" title="Search">${SEARCH_SVG}</button>
                         </div>
-                        <div class="admin-actions">
-                            <button id="toggle-user-filters-btn" class="contrast outline">Filters ${UNFOLD_MORE_SVG}</button>
-                            <div id="advanced-user-filters-panel" class="filter-panel hidden">
-                                <div class="grid">
-                                    <label>
-                                        In Debt
-                                        <select id="filter-in-debt">
-                                            <option value="">All</option>
-                                            <option value="true" ${inDebt === 'true' ? 'selected' : ''}>In Debt</option>
-                                            <option value="false" ${inDebt === 'false' ? 'selected' : ''}>Not In Debt</option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        Membership
-                                        <select id="filter-is-member">
-                                            <option value="">All</option>
-                                            <option value="true" ${isMember === 'true' ? 'selected' : ''}>Members</option>
-                                            <option value="false" ${isMember === 'false' ? 'selected' : ''}>Non-Members</option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        Difficulty
-                                        <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
-                                    </label>
-                                </div>
-                                <button id="apply-user-filters-btn" class="small-btn">Apply Filters</button>
-                            </div>
+                        <div class="tool-actions">
+                            <button id="toggle-user-filters-btn" class="secondary outline icon-text-btn">
+                                ${FILTER_LIST_SVG} Filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="advanced-user-filters-panel" class="filter-panel hidden modern-panel">
+                        <div class="filter-grid">
+                            <label>
+                                In Debt
+                                <select id="filter-in-debt">
+                                    <option value="">All</option>
+                                    <option value="true" ${inDebt === 'true' ? 'selected' : ''}>Yes</option>
+                                    <option value="false" ${inDebt === 'false' ? 'selected' : ''}>No</option>
+                                </select>
+                            </label>
+                            <label>
+                                Membership
+                                <select id="filter-is-member">
+                                    <option value="">All</option>
+                                    <option value="true" ${isMember === 'true' ? 'selected' : ''}>Members</option>
+                                    <option value="false" ${isMember === 'false' ? 'selected' : ''}>Non-Members</option>
+                                </select>
+                            </label>
+                            <label>
+                                Difficulty
+                                <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
+                            </label>
+                        </div>
+                        <div class="filter-actions">
+                            <button id="apply-user-filters-btn" class="small-btn primary">Apply</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="users-table-container" class="table-responsive">
-                    <table class="admin-table">
+                    <table class="admin-table modern-table">
                         <thead id="users-table-head"></thead>
                         <tbody id="users-table-body">
-                            <tr><td colspan="5">Loading...</td></tr>
+                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -146,7 +152,7 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
         const users = data.users || [];
 
         if (users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No users found.</td></tr>';
             pagination.innerHTML = '';
             return;
         }
@@ -156,18 +162,24 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
         if (sample.balance !== undefined) columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
         if (sample.first_aid_expiry !== undefined) columns.push({ key: 'first_aid', label: 'First Aid', sort: 'first_aid_expiry' });
         if (sample.difficulty_level !== undefined) columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });
-        if (sample.is_member !== undefined) columns.push({ key: 'member', label: 'Member', sort: 'is_member' });
+        if (sample.is_member !== undefined) columns.push({ key: 'member', label: 'Status', sort: 'is_member' });
 
         thead.innerHTML = `<tr>${columns.map(c => `<th class="sortable" data-sort="${c.sort}">${c.label} ${sort === c.sort ? (order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}</th>`).join('')}</tr>`;
 
         tbody.innerHTML = users.map(user => `
-            <tr class="user-row" data-id="${user.id}">
+            <tr class="user-row clickable-row" data-id="${user.id}">
                 ${columns.map(col => {
-            if (col.key === 'name') return `<td data-label="Name">${user.first_name} ${user.last_name}</td>`;
-            if (col.key === 'balance') return `<td data-label="Balance">£${Number(user.balance).toFixed(2)}</td>`;
-            if (col.key === 'first_aid') return `<td data-label="First Aid">${user.first_aid_expiry ? (new Date(user.first_aid_expiry) > new Date() ? 'Valid' : 'Expired') : 'N/A'}</td>`;
-            if (col.key === 'difficulty') return `<td data-label="Difficulty">${user.difficulty_level || 'N/A'}</td>`;
-            if (col.key === 'member') return `<td data-label="Member">${user.is_member ? 'Member' : 'Non-Member'}</td>`;
+            if (col.key === 'name') return `<td data-label="Name" class="primary-text">${user.first_name} ${user.last_name}</td>`;
+            if (col.key === 'balance') {
+                const isNegative = Number(user.balance) < 0;
+                return `<td data-label="Balance" class="${isNegative ? 'text-danger' : 'text-success'}">£${Number(user.balance).toFixed(2)}</td>`;
+            }
+            if (col.key === 'first_aid') {
+                const valid = user.first_aid_expiry && new Date(user.first_aid_expiry) > new Date();
+                return `<td data-label="First Aid"><span class="badge ${valid ? 'success' : 'neutral'}">${valid ? 'Valid' : 'Expired/None'}</span></td>`;
+            }
+            if (col.key === 'difficulty') return `<td data-label="Difficulty"><span class="badge difficulty-${user.difficulty_level}">${user.difficulty_level || '-'}</span></td>`;
+            if (col.key === 'member') return `<td data-label="Status"><span class="badge ${user.is_member ? 'success' : 'warning'}">${user.is_member ? 'Member' : 'Guest'}</span></td>`;
             return '<td data-label="-">-</td>';
         }).join('')}
             </tr>
@@ -189,6 +201,6 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
 
         renderPaginationControls(pagination, page, data.totalPages || 1, (newPage) => updateUserParams({ page: newPage }));
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="5">Error loading users.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="error-cell">Error loading users.</td></tr>';
     }
 }

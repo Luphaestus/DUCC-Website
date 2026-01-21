@@ -55,7 +55,7 @@ class eventsDB {
     }
 
     /**
-     * Fetch events for a relative week offset.
+     * Fetch events for a specific relative week offset.
      * @param {object} db
      * @param {number} max_difficulty
      * @param {number} offset
@@ -66,6 +66,42 @@ class eventsDB {
         const targetDate = new Date();
         targetDate.setDate(targetDate.getDate() + offset * 7);
         return this.get_events_for_week(db, max_difficulty, targetDate, userId);
+    }
+
+    /**
+     * Fetch events within a specific date range.
+     * @param {object} db
+     * @param {number} max_difficulty
+     * @param {Date} startDate
+     * @param {Date} endDate
+     * @param {number} userId
+     * @returns {Promise<statusObject>}
+     */
+    static async get_events_in_range(db, max_difficulty, startDate, endDate, userId = null) {
+        const events = await db.all(
+            `SELECT e.*,
+             (SELECT COUNT(*) FROM event_attendees ea WHERE ea.event_id = e.id AND ea.is_attending = 1) as attendee_count,
+             EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
+             FROM events e 
+             WHERE e.start >= ? AND e.start <= ? AND e.status = 'active'
+             ORDER BY e.start ASC`,
+            [userId, startDate.toISOString(), endDate.toISOString()]
+        );
+
+        const visibleEvents = [];
+        const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
+
+        for (const event of events) {
+            const tags = await TagsDB.getTagsForEvent(db, event.id);
+            event.tags = tags;
+
+            if (Rules.canViewEvent(event, user)) {
+                visibleEvents.push(event);
+            }
+        }
+
+        visibleEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+        return new statusObject(200, null, visibleEvents);
     }
 
     /**

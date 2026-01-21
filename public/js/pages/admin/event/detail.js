@@ -35,44 +35,66 @@ export async function renderEventDetail(id) {
     }
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = ` <button data-nav="/admin/events">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
+    if (actionsEl) actionsEl.innerHTML = ` <button data-nav="/admin/events" class="icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
 
     adminContent.innerHTML = /*html*/`
         <form id="event-form" class="form-info">
-            <article class="form-box">
-                <h2>${isNew ? 'Create Event' : 'Edit Event'}</h2>
-                <input type="text" name="title" value="${event.title}" required class="event-title-input" placeholder="Event Title">
+            <article class="form-box admin-card">
+                <header class="card-header-flex">
+                    <h2>${isNew ? 'Create Event' : 'Edit Event'}</h2>
+                    ${!isNew ? `<button type="button" id="delete-event-btn" class="delete-icon-btn outline" title="Delete">${DELETE_HISTORY_SVG}</button>` : ''}
+                </header>
+                
+                <div class="modern-form-group">
+                    <label class="form-label-top">Title
+                        <input type="text" name="title" value="${event.title}" required class="full-width-input title-input" placeholder="Event Title">
+                    </label>
+                </div>
+
                 <div class="event-content-split">
                     <div class="event-details-section">
-                        <h3>${INFO_SVG} Event Details</h3>
-                        <p>${CALENDAR_TODAY_SVG} <strong>Start:</strong> <input class="nomargin" type="datetime-local" name="start" value="${event.start}" required></p>
-                        <p>${CALENDAR_TODAY_SVG} <strong>End:</strong> <input class="nomargin" type="datetime-local" name="end" value="${event.end}" required></p>
-                        <p>${LOCATION_ON_SVG} <strong>Location:</strong> <input class="nomargin event-location-input" type="text" name="location" value="${event.location}"></p>
-                        <p>${DESCRIPTION_SVG} <strong>Description:</strong> <textarea class="nomargin event-description-textarea" name="description" rows="5">${event.description}</textarea></p>
-                        <p>${BOLT_SVG} <strong>Difficulty (1-5):</strong> <input class="nomargin" type="number" name="difficulty_level" min="1" max="5" value="${event.difficulty_level}" required></p>
-                        <p>${GROUP_SVG} <strong>Max Attendees:</strong> <input class="nomargin" type="number" name="max_attendees" value="${event.max_attendees}" placeholder="0 for unlimited"></p>
-                        <p>${CURRENCY_POUND_SVG} <strong>Upfront Cost (£):</strong> <input class="nomargin" type="number" step="0.01" name="upfront_cost" value="${event.upfront_cost}"></p>
-                        <p class="refund-cutoff-p">
-                            ${DELETE_HISTORY_SVG} <strong>Refund Cutoff:</strong>
-                            <label class="nomargin refund-cutoff-label"><input class="nomargin" type="checkbox" id="has-refund-cutoff" ${event.upfront_refund_cutoff ? 'checked' : ''}> Enable</label>
-                            <div id="refund-cutoff-wrapper" style="display: ${event.upfront_refund_cutoff ? 'block' : 'none'};">
+                        <h3>${INFO_SVG} Basic Details</h3>
+                        <div class="grid-2-col">
+                            <label>Start Time <input type="datetime-local" name="start" value="${event.start}" required></label>
+                            <label>End Time <input type="datetime-local" name="end" value="${event.end}" required></label>
+                        </div>
+                        
+                        <label>Location <input type="text" name="location" value="${event.location}" placeholder="Where is it happening?"></label>
+                        
+                        <label>Description <textarea name="description" rows="5" placeholder="What's the plan?">${event.description}</textarea></label>
+                        
+                        <div class="grid-3-col">
+                            <label>Difficulty (1-5) <input type="number" name="difficulty_level" min="1" max="5" value="${event.difficulty_level}" required></label>
+                            <label>Max Attendees <input type="number" name="max_attendees" value="${event.max_attendees}" placeholder="0 = Unlimited"></label>
+                            <label>Cost (£) <input type="number" step="0.01" name="upfront_cost" value="${event.upfront_cost}"></label>
+                        </div>
+
+                        <div class="form-divider"></div>
+
+                        <div class="refund-section">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="has-refund-cutoff" ${event.upfront_refund_cutoff ? 'checked' : ''}> 
+                                Enable Refund Cutoff Date
+                            </label>
+                            <div id="refund-cutoff-wrapper" class="conditional-input ${event.upfront_refund_cutoff ? '' : 'hidden'}">
                                 <input type="datetime-local" name="upfront_refund_cutoff" value="${event.upfront_refund_cutoff || ''}">
                             </div>
-                        </p>
+                        </div>
+
                         <h3>Tags</h3>
-                        <div class="nomargin event-tags-list">
+                        <div class="tags-selection-grid">
                             ${allTags.map(tag => `
-                                <label class="event-tag-badge">
+                                <label class="tag-checkbox">
                                     <input type="checkbox" name="tags" value="${tag.id}" ${event.tags?.find(t => t.id === tag.id) ? 'checked' : ''}>
-                                    <span class="event-tag-dot" style="background-color: ${tag.color};"></span> ${tag.name}
+                                    <span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>
                                 </label>
                             `).join('')}
                         </div>
                     </div>
                 </div>
-                <div class="event-detail-actions">
-                    <button type="submit" class="primary-btn">${isNew ? 'Create Event' : 'Save Changes'}</button>
-                    ${!isNew ? `<button type="button" id="delete-event-btn">Delete Event</button>` : ''}
+                
+                <div class="form-actions-footer">
+                    <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create Event' : 'Save Changes'}</button>
                 </div>
             </article>
         </form>`;
@@ -80,8 +102,12 @@ export async function renderEventDetail(id) {
     const cutoffCheckbox = document.getElementById('has-refund-cutoff');
     const cutoffWrapper = document.getElementById('refund-cutoff-wrapper');
     cutoffCheckbox.onchange = () => {
-        cutoffWrapper.style.display = cutoffCheckbox.checked ? 'block' : 'none';
-        if (!cutoffCheckbox.checked) cutoffWrapper.querySelector('input').value = '';
+        if (cutoffCheckbox.checked) {
+            cutoffWrapper.classList.remove('hidden');
+        } else {
+            cutoffWrapper.classList.add('hidden');
+            cutoffWrapper.querySelector('input').value = '';
+        }
     };
 
     document.getElementById('event-form').onsubmit = async (e) => {

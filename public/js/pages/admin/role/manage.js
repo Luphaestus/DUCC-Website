@@ -16,27 +16,31 @@ export async function renderManageRoles() {
 
     adminContent.innerHTML = /*html*/`
         <div class="form-info">
-            <article class="form-box">
-                <div class="admin-nav-row">
-                    ${await renderAdminNavBar('roles')}
-                </div>
-                <div class="admin-tools-row">
-                    <div class="admin-actions">
-                        <button data-nav="/admin/role/new" class="primary">Create New Role</button>
+            <article class="form-box admin-card">
+                <div class="admin-controls-container">
+                    <div class="admin-nav-row">
+                        ${await renderAdminNavBar('roles')}
+                    </div>
+                    <div class="admin-tools-wrapper">
+                        <div class="tool-actions full-width-actions">
+                            <button data-nav="/admin/role/new" class="primary">Create New Role</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="admin-table modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Permissions Count</th>
+                                </tr>
+                            </thead>
+                            <tbody id="roles-table-body">
+                                <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Permissions Count</th>
-                        </tr>
-                    </thead>
-                    <tbody id="roles-table-body">
-                        <tr><td colspan="3">Loading...</td></tr>
-                    </tbody>
-                </table>
             </article>
         </div>
     `;
@@ -53,13 +57,13 @@ async function fetchAndRenderRoles() {
         const tbody = document.getElementById('roles-table-body');
 
         if (!roles || roles.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3">No roles found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="empty-cell">No roles found.</td></tr>';
         } else {
             tbody.innerHTML = roles.map(role => `
-                <tr class="role-row" data-id="${role.id}">
-                    <td data-label="Name">${role.name}</td>
-                    <td data-label="Description">${role.description || '-'}</td>
-                    <td data-label="Permissions">${(role.permissions || []).length}</td>
+                <tr class="role-row clickable-row" data-id="${role.id}">
+                    <td data-label="Name" class="primary-text">${role.name}</td>
+                    <td data-label="Description" class="description-cell">${role.description || '-'}</td>
+                    <td data-label="Permissions"><span class="badge neutral">${(role.permissions || []).length}</span></td>
                 </tr>
             `).join('');
 
@@ -69,6 +73,6 @@ async function fetchAndRenderRoles() {
         }
     } catch (e) {
         const tbody = document.getElementById('roles-table-body');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="3">Error loading roles.</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="error-cell">Error loading roles.</td></tr>';
     }
 }

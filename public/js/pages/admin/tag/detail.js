@@ -2,7 +2,7 @@ import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
-import { ARROW_FORWARD_IOS_SVG, CLOSE_SVG } from "../../../../images/icons/outline/icons.js"
+import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG } from "../../../../images/icons/outline/icons.js"
 
 /**
  * Admin tag creation and editing form.
@@ -18,7 +18,7 @@ export async function renderTagDetail(id) {
     if (!adminContent) return;
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn">${ARROW_FORWARD_IOS_SVG} Back to Tags</button>`;
+    if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn" class="icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
@@ -43,48 +43,71 @@ export async function renderTagDetail(id) {
 
     adminContent.innerHTML = /*html*/`
         <div class="form-info">
-            <article class="form-box">
-                <h2>${isNew ? 'Create New Tag' : 'Edit Tag'}</h2>
-                <form id="tag-form">
-                    <label>Name <input type="text" name="name" value="${tag.name}" required></label>
-                    <label>Color <input type="color" name="color" value="${tag.color}" required></label>
-                    <label>Min Difficulty <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5"></label>
-                    <label>Description <textarea name="description">${tag.description || ''}</textarea></label>
-                    <div class="tag-detail-actions">
-                        <button type="submit" class="primary">${isNew ? 'Create' : 'Save'}</button>
-                        ${!isNew ? `<button type="button" id="delete-tag-btn" class="contrast">Delete Tag</button>` : ''}
+            <article class="form-box admin-card">
+                <header class="card-header-flex">
+                    <h2>${isNew ? 'Create New Tag' : 'Edit Tag'}</h2>
+                    ${!isNew ? `<button type="button" id="delete-tag-btn" class="delete-icon-btn outline" title="Delete">${DELETE_SVG}</button>` : ''}
+                </header>
+                
+                <form id="tag-form" class="modern-form">
+                    <div class="grid-2-col">
+                        <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
+                        <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input"></label>
+                    </div>
+                    
+                    <label>Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
+                    
+                    <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
+                    
+                    <div class="form-actions-footer">
+                        <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                     </div>
                 </form>
+
                 ${!isNew && userPerms ? `
-                    <hr>
-                    <h3>Designated Managers</h3>
-                    <p class="helper-text">Users allowed to manage (create/edit/read) events with this tag in the admin panel.</p>
-                    <form id="managers-form" class="whitelist-form">
-                        <label class="whitelist-form-label">
+                    <div class="divider"></div>
+                    
+                    <div class="permission-section">
+                        <div class="section-header">
+                            <h3>${SHIELD_SVG} Designated Managers</h3>
+                            <p class="helper-text">Users allowed to manage (create/edit/read) events with this tag.</p>
+                        </div>
+                        
+                        <form id="managers-form" class="inline-add-form">
                             <input list="managers-datalist" id="managers-user-input" placeholder="Search by name or email..." autocomplete="off">
                             <datalist id="managers-datalist"></datalist>
-                            <button type="submit" class="whitelist-form-submit">Add Manager</button>
-                        </label>
-                    </form>
-                    <table class="admin-table">
-                        <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
-                        <tbody id="managers-table-body">${renderUserRows(managers, id, 'remove-manager-btn')}</tbody>
-                    </table>
+                            <button type="submit" class="icon-btn primary" title="Add Manager">${ADD_SVG}</button>
+                        </form>
+                        
+                        <div class="table-responsive">
+                            <table class="admin-table modern-table">
+                                <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
+                                <tbody id="managers-table-body">${renderUserRows(managers, id, 'remove-manager-btn')}</tbody>
+                            </table>
+                        </div>
+                    </div>
 
-                    <hr>
-                    <h3>Whitelist (Restricted Access)</h3>
-                    <p class="helper-text">If used, only these users will be able to see or join events with this tag.</p>
-                    <form id="whitelist-form" class="whitelist-form">
-                        <label class="whitelist-form-label">
+                    <div class="divider"></div>
+
+                    <div class="permission-section">
+                        <div class="section-header">
+                            <h3>${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
+                            <p class="helper-text">Restricts event visibility/joining to specific users.</p>
+                        </div>
+                        
+                        <form id="whitelist-form" class="inline-add-form">
                             <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
                             <datalist id="users-datalist"></datalist>
-                            <button type="submit" class="whitelist-form-submit">Add User</button>
-                        </label>
-                    </form>
-                    <table class="admin-table">
-                        <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
-                        <tbody id="whitelist-table-body">${renderUserRows(whitelist, id, 'remove-whitelist-btn')}</tbody>
-                    </table>
+                            <button type="submit" class="icon-btn primary" title="Add User">${ADD_SVG}</button>
+                        </form>
+                        
+                        <div class="table-responsive">
+                            <table class="admin-table modern-table">
+                                <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
+                                <tbody id="whitelist-table-body">${renderUserRows(whitelist, id, 'remove-whitelist-btn')}</tbody>
+                            </table>
+                        </div>
+                    </div>
                 ` : ''}
             </article>
         </div>`;
@@ -168,28 +191,20 @@ export async function renderTagDetail(id) {
 
 /**
  * Format table rows for users (managers or whitelist).
- * @param {Array} users
- * @param {number} tagId
- * @param {string} btnClass
- * @returns {string}
  */
 function renderUserRows(users, tagId, btnClass) {
-    if (!users || users.length === 0) return '<tr><td colspan="3">None.</td></tr>';
+    if (!users || users.length === 0) return '<tr><td colspan="3" class="empty-cell">None.</td></tr>';
     return users.map(user => `
         <tr>
-            <td data-label="Name">${user.first_name} ${user.last_name}</td>
+            <td data-label="Name" class="primary-text">${user.first_name} ${user.last_name}</td>
             <td data-label="Email">${user.email}</td>
-            <td data-label="Action"><button class="${btnClass} outline contrast" data-user-id="${user.id}">${CLOSE_SVG}</button></td>
+            <td data-label="Action" class="action-cell"><button class="${btnClass} delete-icon-btn outline" data-user-id="${user.id}">${DELETE_SVG}</button></td>
         </tr>
     `).join('');
 }
 
 /**
  * Initialize action buttons (remove manager or whitelist).
- * @param {number} tagId
- * @param {string} tableId
- * @param {string} btnClass
- * @param {string} endpoint - 'managers' or 'whitelist'
  */
 function setupActionButtons(tagId, tableId, btnClass, endpoint) {
     const tbody = document.getElementById(tableId);

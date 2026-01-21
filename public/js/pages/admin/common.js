@@ -17,31 +17,39 @@ export const adminContentID = 'admin-content';
  */
 export function renderPaginationControls(container, currentPage, totalPages, onPageChange) {
     container.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+
+    const nav = document.createElement('nav');
+    nav.className = 'pagination-nav';
 
     const prevBtn = document.createElement('button');
-    prevBtn.textContent = 'Prev';
+    prevBtn.innerHTML = '&lsaquo;'; // Arrow
     prevBtn.disabled = currentPage <= 1;
-    prevBtn.classList.add('pagination-btn');
+    prevBtn.classList.add('page-btn', 'prev');
     prevBtn.onclick = (e) => {
         e.preventDefault();
         if (currentPage > 1) onPageChange(currentPage - 1);
     };
 
     const nextBtn = document.createElement('button');
-    nextBtn.textContent = 'Next';
+    nextBtn.innerHTML = '&rsaquo;'; // Arrow
     nextBtn.disabled = currentPage >= totalPages;
-    nextBtn.classList.add('pagination-btn');
+    nextBtn.classList.add('page-btn', 'next');
     nextBtn.onclick = (e) => {
         e.preventDefault();
         if (currentPage < totalPages) onPageChange(currentPage + 1);
     };
 
     const info = document.createElement('span');
+    info.className = 'pagination-info';
     info.textContent = `Page ${currentPage} of ${totalPages}`;
 
-    container.appendChild(prevBtn);
-    container.appendChild(info);
-    container.appendChild(nextBtn);
+    nav.appendChild(prevBtn);
+    nav.appendChild(info);
+    nav.appendChild(nextBtn);
+    
+    container.appendChild(nav);
 }
 
 /**
@@ -62,14 +70,20 @@ export async function renderAdminNavBar(activeSection) {
     const canManageFiles = perms.includes('document.write') || perms.includes('document.edit');
     const isExec = perms.length > 0;
 
+    const navItem = (link, label, key) => `
+        <button data-nav="${link}" class="admin-nav-pill ${activeSection === key ? 'active' : ''}">
+            ${label}
+        </button>
+    `;
+
     return /*html*/`
-        <div class="admin-nav-group">
-            ${(canManageUsers || canManageTransactions || isExec) ? `<button data-nav="/admin/users" ${activeSection === 'users' ? 'disabled' : ''}>Users</button>` : ''}
-            ${canManageEvents ? `<button data-nav="/admin/events" ${activeSection === 'events' ? 'disabled' : ''}>Events</button>` : ''}
-            ${canManageEvents ? `<button data-nav="/admin/tags" ${activeSection === 'tags' ? 'disabled' : ''}>Tags</button>` : ''}
-            ${canManageFiles ? `<button data-nav="/admin/files" ${activeSection === 'files' ? 'disabled' : ''}>Files</button>` : ''}
-            ${canManageRoles ? `<button data-nav="/admin/roles" ${activeSection === 'roles' ? 'disabled' : ''}>Roles</button>` : ''}
-            ${isPresident ? `<button data-nav="/admin/globals" ${activeSection === 'globals' ? 'disabled' : ''}>Globals</button>` : ''}
+        <div class="admin-nav-group modern-pills">
+            ${(canManageUsers || canManageTransactions || isExec) ? navItem('/admin/users', 'Users', 'users') : ''}
+            ${canManageEvents ? navItem('/admin/events', 'Events', 'events') : ''}
+            ${canManageEvents ? navItem('/admin/tags', 'Tags', 'tags') : ''}
+            ${canManageFiles ? navItem('/admin/files', 'Files', 'files') : ''}
+            ${canManageRoles ? navItem('/admin/roles', 'Roles', 'roles') : ''}
+            ${isPresident ? navItem('/admin/globals', 'Globals', 'globals') : ''}
         </div>
     `;
 }

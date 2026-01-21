@@ -1,7 +1,7 @@
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
-import { adminContentID, renderAdminNavBar } from '../common.js';
-import { UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG } from '../../../../images/icons/outline/icons.js'
+import { adminContentID, renderAdminNavBar, renderPaginationControls } from '../common.js';
+import { UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG } from '../../../../images/icons/outline/icons.js'
 
 
 /**
@@ -29,58 +29,65 @@ export async function renderManageEvents() {
 
     adminContent.innerHTML = /*html*/`
         <div class="form-info">
-            <article class="form-box">
+            <article class="form-box admin-card">
                 <div class="admin-controls-container">
                     <div class="admin-nav-row">
                          ${await renderAdminNavBar('events')}
                     </div>
-                    <div class="admin-tools-row">
-                        <div class="search-input-wrapper">
+                    
+                    <div class="admin-tools-wrapper">
+                        <div class="search-bar">
                             <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
-                                <button id="event-search-btn" title="Search">
-                                    ${SEARCH_SVG}
-                                </button>
+                            <button id="event-search-btn" class="icon-only" title="Search">
+                                ${SEARCH_SVG}
+                            </button>
                         </div>
-                        <div class="admin-actions">
-                             <button id="toggle-filters-btn" class="contrast outline">Filters ${UNFOLD_MORE_SVG}</button>
-                             <div id="advanced-filters-panel" class="filter-panel hidden">
-                                <div class="grid">
-                                     <label>
-                                        Events Display
-                                        <select id="filter-show-past">
-                                            <option value="false" ${!showPast ? 'selected' : ''}>Upcoming Only</option>
-                                            <option value="true" ${showPast ? 'selected' : ''}>All Events</option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        Difficulty
-                                        <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
-                                    </label>
-                                    <label>
-                                        Min Cost
-                                        <input type="number" id="filter-min-cost" value="${minCost}" step="0.01">
-                                    </label>
-                                     <label>
-                                        Max Cost
-                                        <input type="number" id="filter-max-cost" value="${maxCost}" step="0.01">
-                                    </label>
-                                    <label>
-                                        Location
-                                        <input type="text" id="filter-location" value="${location}" placeholder="Contains...">
-                                    </label>
-                                </div>
-                                <button id="apply-filters-btn" class="small-btn">Apply Filters</button>
-                            </div>
-                            <button data-nav="/admin/event/new" class="primary">Create New Event</button>
+                        
+                        <div class="tool-actions">
+                             <button id="toggle-filters-btn" class="secondary outline icon-text-btn">
+                                ${FILTER_LIST_SVG} Filters
+                             </button>
+                             <button data-nav="/admin/event/new" class="primary">Create Event</button>
+                        </div>
+                    </div>
+
+                    <div id="advanced-filters-panel" class="filter-panel hidden modern-panel">
+                        <div class="filter-grid">
+                                <label>
+                                Events Display
+                                <select id="filter-show-past">
+                                    <option value="false" ${!showPast ? 'selected' : ''}>Upcoming Only</option>
+                                    <option value="true" ${showPast ? 'selected' : ''}>All Events</option>
+                                </select>
+                            </label>
+                            <label>
+                                Difficulty
+                                <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
+                            </label>
+                            <label>
+                                Min Cost
+                                <input type="number" id="filter-min-cost" value="${minCost}" step="0.01">
+                            </label>
+                                <label>
+                                Max Cost
+                                <input type="number" id="filter-max-cost" value="${maxCost}" step="0.01">
+                            </label>
+                            <label>
+                                Location
+                                <input type="text" id="filter-location" value="${location}" placeholder="Contains...">
+                            </label>
+                        </div>
+                        <div class="filter-actions">
+                            <button id="apply-filters-btn" class="small-btn primary">Apply</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="admin-table">
+                    <table class="admin-table modern-table">
                         <thead id="events-table-head"></thead>
                         <tbody id="events-table-body">
-                            <tr><td colspan="5">Loading...</td></tr>
+                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -179,14 +186,14 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
         });
 
         if (events.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">No events found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No events found.</td></tr>';
         } else {
             tbody.innerHTML = events.map(event => `
-                <tr class="event-row" data-id="${event.id}">
-                    <td data-label="Title">${event.title}</td>
+                <tr class="event-row clickable-row" data-id="${event.id}">
+                    <td data-label="Title" class="primary-text">${event.title}</td>
                     <td data-label="Date">${new Date(event.start).toLocaleString()}</td>
                     <td data-label="Location">${event.location}</td>
-                    <td data-label="Difficulty">${event.difficulty_level}</td>
+                    <td data-label="Difficulty"><span class="badge difficulty-${event.difficulty_level}">${event.difficulty_level}</span></td>
                     <td data-label="Cost">£${event.upfront_cost.toFixed(2)}</td>
                 </tr>
             `).join('');
@@ -197,19 +204,9 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
         }
 
         const pagination = document.getElementById('events-pagination');
-        pagination.innerHTML = '';
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = 'Prev';
-        prevBtn.disabled = page <= 1;
-        prevBtn.onclick = (e) => { e.preventDefault(); updateEventParams({ page: page - 1 }); };
+        renderPaginationControls(pagination, page, totalPages, (newPage) => updateEventParams({ page: newPage }));
 
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = 'Next';
-        nextBtn.disabled = page >= totalPages;
-        nextBtn.onclick = (e) => { e.preventDefault(); updateEventParams({ page: page + 1 }); };
-
-        pagination.append(prevBtn, ` Page ${page} of ${totalPages} `, nextBtn);
     } catch (e) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="5">Error loading events.</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="error-cell">Error loading events.</td></tr>';
     }
 }
