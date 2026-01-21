@@ -3,7 +3,7 @@
  */
 
 let previousPath = [];
-let currentPath = window.location.pathname;
+let currentPath = window.location.pathname + window.location.search;
 
 /**
  * Pushes current path to history stack and updates current path.
@@ -21,6 +21,12 @@ export { updateHistory };
  * @returns {string|undefined}
  */
 export const getPreviousPath = () => previousPath.pop();
+
+/**
+ * Check if there is any previous path in the stack.
+ * @returns {boolean}
+ */
+export const hasHistory = () => previousPath.length > 0;
 
 /**
  * Return the current path.

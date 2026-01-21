@@ -1,82 +1,21 @@
 /* Footer */
 footer {
-    width: 100%;
-    background-color: var(--translucent-bg);
-    backdrop-filter: blur(10px);
-    border-top: .5px solid color-mix(in srgb, var(--pico-color) 45%, transparent);
-    padding: 2rem 0;
-    margin-top: auto;
-    z-index: 10;
+    width: 100%; background-color: var(--translucent-bg); backdrop-filter: blur(10px); z-index: 10;
+    border-top: .5px solid color-mix(in srgb, var(--pico-color) 45%, transparent); padding: 2rem 0; margin-top: auto;
+    @media (max-width: 768px) { padding-top: 5rem; }
 
-    @media (max-width: 768px) {
-        padding-top: 5rem;
-    }
+    .small-container { max-width: 1000px; padding: 0 2rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
 
-    .small-container {
-        max-width: 1000px;
-        padding: 0 2rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.5rem;
-    }
-
-    .footer-content {
-        .social-links {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-
-            a {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 2.5rem;
-                height: 2.5rem;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.05);
-                color: var(--pico-color);
-                transition: all 0.3s ease;
-                border: 1px solid transparent;
-
-                &:hover {
-                    background: var(--pico-primary);
-                    color: white;
-                    transform: translateY(-2px);
-                }
-
-                svg {
-                    color: var(--theme-opposite);
-                }
-
-                &:hover svg {
-                    color: var(--theme-colour);
-                }
-
-                img {
-                    width: 1.2rem;
-                    height: 1.2rem;
-                    filter: invert(1);
-
-                    @media (prefers-color-scheme: light) {
-                        filter: invert(0);
-                    }
-                }
-
-                &:hover img {
-                    filter: invert(0) !important;
-                }
-            }
+    .footer-content .social-links {
+        display: flex; gap: 1rem; justify-content: center;
+        a {
+            display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 50%;
+            background: color-mix(in srgb, var(--theme-opposite), transparent 50%); color: var(--theme); transition: all 0.3s ease; border: 1px solid transparent;
+            &:hover { background: var(--pico-primary); color: white; transform: translateY(-2px); }
+            svg { color: var(--theme); }
+            img { width: 1.2rem; height: 1.2rem; filter: invert(0); @media (prefers-color-scheme: light) { filter: invert(1); } }
         }
     }
 
-    .footer-bottom {
-        text-align: center;
-
-        p {
-            margin-bottom: 0;
-            font-size: 0.85rem;
-            color: var(--pico-muted-color);
-        }
-    }
+    .footer-bottom { text-align: center; p { margin-bottom: 0; font-size: 0.85rem; color: var(--pico-muted-color); } }
 }

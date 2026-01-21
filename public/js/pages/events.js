@@ -1,7 +1,3 @@
-/**
- * Weekly calendar view for events.
- */
-
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { LoginEvent } from './login.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
@@ -10,9 +6,6 @@ import { CALENDAR_TODAY_SVG, CHECK_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG,
 
 addRoute('/events', 'events');
 
-/**
- * Main events view template.
- */
 const HTML_TEMPLATE = /*html*/`
         <div id="events-view" class="view hidden small-container">
             <div class="events-controls-modern">
@@ -49,77 +42,68 @@ let relativeWeekOffset = 0;
 let isAnimating = false;
 let isAdmin = false;
 
-
+/**
+ * Format date range for the week navigator.
+ * @param {string} startDateStr
+ * @param {string} endDateStr
+ * @returns {string}
+ */
 function getRangeText(startDateStr, endDateStr) {
     const formatDate = (d) => new Date(d).toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
-    
-    const isStartToday = start.getTime() === today.getTime();
-    
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const isEndYesterday = end.getTime() === yesterday.getTime();
 
-    if (isStartToday) {
+    if (start.getTime() === today.getTime()) {
         return `Today - ${formatDate(end)}`;
-    } else if (isEndYesterday) {
+    } else if (end.getTime() === new Date(today).setDate(today.getDate() - 1)) {
         return `${formatDate(start)} - Yesterday`;
     } else {
         return `${formatDate(start)} - ${formatDate(end)}`;
     }
 }
 
+/**
+ * Render HTML for a single event card.
+ * @param {object} event
+ * @returns {string}
+ */
 function formatEvent(event) {
     const startDate = new Date(event.start);
     const endDate = new Date(event.end);
     const isPast = endDate < new Date();
     const isCanceled = event.status === 'canceled';
-    
+
     const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
     const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
     const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
-    
-    const tagsHtml = (event.tags || []).map(tag => 
+
+    const tagsHtml = (event.tags || []).map(tag =>
         `<span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>`
     ).join('');
-    
+
     const imageUrl = event.image_url || '/images/misc/ducc.png';
     const imageHtml = `<div class="event-image-container">
         <div class="event-image" style="background-image: url('${imageUrl}');"></div>
         <div class="image-overlay"></div>
     </div>`;
 
-    // Attendance Count Logic
     const count = event.attendee_count !== undefined ? event.attendee_count : '0';
-    let attendanceDisplay = '';
-    
-    if (event.max_attendees > 0) {
-        attendanceDisplay = `${count}/${event.max_attendees}`;
-    } else {
-        attendanceDisplay = `<span class="icon-limit">${ALL_INCLUSIVE_SVG}</span>`;
-    }
+    let attendanceDisplay = event.max_attendees > 0 ? `${count}/${event.max_attendees}` : `${count}/∞`;
 
     let attendanceHtml = `<div class="attendance-count" title="${event.max_attendees > 0 ? (count + '/' + event.max_attendees) : (count + ' / Unlimited')} Attending">
         ${GROUP_SVG} <span>${attendanceDisplay}</span>
     </div>`;
 
-    // Cost Logic
-    let costHtml = '';
-    if (event.upfront_cost > 0) {
-        costHtml = `<div class="info-item cost" title="Upfront Cost">
-            ${CURRENCY_POUND_SVG}
-            <span>£${event.upfront_cost.toFixed(2)}</span>
-        </div>`;
-    }
+    let costHtml = event.upfront_cost > 0 ? `<div class="info-item cost" title="Upfront Cost">
+        ${CURRENCY_POUND_SVG}
+        <span>£${event.upfront_cost.toFixed(2)}</span>
+    </div>` : '';
 
-    // Status label logic
     let statusLabel = '';
     if (isCanceled) statusLabel = '<span class="status-badge error">Canceled</span>';
     else if (isPast) statusLabel = '<span class="status-badge neutral">Unavailable</span>';
-
 
     return /*html*/`
         <div class="event-card glass-panel ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" data-nav="event/${event.id}" role="button" tabindex="0">
@@ -146,7 +130,7 @@ function formatEvent(event) {
                 <div class="card-footer">
                     <div class="footer-left">
                         ${attendanceHtml}
-                        ${event.is_attending ? `<div class="attendance-status">${CHECK_SVG} Going</div>` : ''}
+                        ${event.is_attending ? `<div class="attendance-status">${CHECK_SVG} Attending</div>` : ''}
                     </div>
                     <div class="footer-right">
                         ${statusLabel}
@@ -156,6 +140,7 @@ function formatEvent(event) {
         </div>`;
 }
 
+/** Sync week offset with URL query parameters. */
 function updateUrlParams() {
     const url = new URL(window.location);
     if (relativeWeekOffset === 0) url.searchParams.delete('week');
@@ -163,30 +148,21 @@ function updateUrlParams() {
     window.history.pushState({}, '', url);
 }
 
+/** Toggle admin link visibility based on user permissions. */
 async function checkAdminAccess() {
     try {
         const data = await ajaxGet('/api/user/elements/permissions');
         const perms = data.permissions || [];
         const btn = document.querySelector('.admin-link-btn');
-        
+
         isAdmin = perms.includes('event.manage.all') || perms.includes('event.manage.scoped') || perms.includes('user.manage') || perms.length > 0;
 
         if (btn) {
-            if (isAdmin) {
-                btn.classList.remove('hidden');
-            } else {
-                btn.classList.add('hidden');
-            }
+            if (isAdmin) btn.classList.remove('hidden');
+            else btn.classList.add('hidden');
         }
-        // Re-render to show/hide admin controls on cards if permissions loaded late
-        const currentView = document.getElementById('events-page-current');
-        if (currentView && !currentView.querySelector('.loading-text') && !currentView.querySelector('.error-text')) {
-             // Ideally we'd re-render, but for now we rely on the initial load or week change.
-             // If we really need to update existing cards, we'd call renderWeekContent again.
-             // Let's force a refresh if the week is already loaded to show buttons.
-             if (relativeWeekOffset !== undefined) changeWeek(0, false);
-        }
-
+        
+        if (relativeWeekOffset !== undefined) changeWeek(0, false);
     } catch (e) {
         isAdmin = false;
         const btn = document.querySelector('.admin-link-btn');
@@ -194,19 +170,22 @@ async function checkAdminAccess() {
     }
 }
 
+/**
+ * Fetch and render events for a specific week.
+ * @param {number} offset
+ * @param {HTMLElement} targetElement
+ */
 async function renderWeekContent(offset, targetElement) {
     try {
         const data = await ajaxGet(`/api/events/paged/${offset}`);
         const events = data.events || [];
         const { startDate, endDate } = data;
 
-        // Update Range Text
         const rangeText = document.getElementById('week-range-text');
         if (rangeText && startDate && endDate) {
             rangeText.textContent = getRangeText(startDate, endDate);
         }
 
-        // Toggle Today Button
         const todayBtn = document.querySelector('.today-btn');
         if (todayBtn) {
             if (offset === 0) todayBtn.classList.add('disabled');
@@ -232,7 +211,7 @@ async function renderWeekContent(offset, targetElement) {
                 const dayName = dateObj.toLocaleDateString('en-UK', { weekday: 'long' });
                 const dateNum = dateObj.getDate();
                 const monthName = dateObj.toLocaleDateString('en-UK', { month: 'short' });
-                
+
                 html += /*html*/`
                     <div class="day-group">
                         <div class="date-strip">
@@ -247,7 +226,7 @@ async function renderWeekContent(offset, targetElement) {
             }
             html += formatEvent(event);
         }
-        if (events.length > 0) html += '</div></div>'; // Close grid and day-group
+        if (events.length > 0) html += '</div></div>';
         targetElement.innerHTML = html;
     } catch (error) {
         console.error(error);
@@ -255,6 +234,11 @@ async function renderWeekContent(offset, targetElement) {
     }
 }
 
+/**
+ * Navigate between weeks with animation.
+ * @param {number} delta
+ * @param {boolean} animated
+ */
 async function changeWeek(delta, animated = true) {
     if (isAnimating) return;
     const slider = document.getElementById('events-slider');
@@ -284,11 +268,11 @@ async function changeWeek(delta, animated = true) {
     let direction = delta;
     if (delta === 0) direction = (oldOffset > 0) ? -1 : 1;
     if (delta === null || delta === undefined) direction = 1;
-    
+
     const nextView = document.createElement('div');
     nextView.className = 'events-page';
-    nextView.innerHTML = '<div class="loading-container"><div class="spinner"></div></div>'; 
-    
+    nextView.innerHTML = '<div class="loading-container"><div class="spinner"></div></div>';
+
     const loadPromise = renderWeekContent(relativeWeekOffset, nextView);
 
     slider.style.transition = 'none';
@@ -300,14 +284,11 @@ async function changeWeek(delta, animated = true) {
         slider.style.transform = `translateX(-100%)`;
     }
 
-    slider.offsetHeight; // force reflow
+    slider.offsetHeight;
 
     slider.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
-    if (direction > 0) {
-        slider.style.transform = 'translateX(-100%)';
-    } else {
-        slider.style.transform = 'translateX(0%)';
-    }
+    if (direction > 0) slider.style.transform = 'translateX(-100%)';
+    else slider.style.transform = 'translateX(0%)';
 
     await new Promise(resolve => setTimeout(resolve, 310));
 
@@ -325,7 +306,6 @@ async function changeWeek(delta, animated = true) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Permission check
     checkAdminAccess();
     LoginEvent.subscribe(() => checkAdminAccess());
 
@@ -348,13 +328,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.target.closest('.admin-link-btn')) {
             switchView('/admin/events');
         } else if (e.target.closest('.cancel-event-btn')) {
-            e.stopPropagation(); // Prevent card click
+            e.stopPropagation();
             const btn = e.target.closest('.cancel-event-btn');
             const id = btn.dataset.id;
             if (confirm('Are you sure you want to cancel this event?')) {
                 try {
                     await ajaxPost(`/api/admin/event/${id}/cancel`);
-                    changeWeek(null, false); // Reload current week
+                    changeWeek(null, false);
                 } catch (err) {
                     alert('Failed to cancel event.');
                 }
@@ -373,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     LoginEvent.subscribe(() => changeWeek(0, false));
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/events') {
-            checkAdminAccess(); 
+            checkAdminAccess();
             const urlParams = new URLSearchParams(window.location.search);
             const weekParam = parseInt(urlParams.get('week'));
             relativeWeekOffset = isNaN(weekParam) ? 0 : weekParam;

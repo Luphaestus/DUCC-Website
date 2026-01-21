@@ -1,27 +1,16 @@
 @use "mixins" as *;
 
-/* Swims View */
+/* Leaderboard Content */
 #leaderboard-body {
-    .leaderboard-status {
-        text-align: center;
-    }
-
-    .leaderboard-error {
-        color: var(--del-color);
-        text-align: center;
-    }
+    .leaderboard-status { text-align: center; }
+    .leaderboard-error { color: var(--del-color); text-align: center; }
 }
 
+/* Swims Layout */
 #swims-view {
-    table {
-        @include scaling-table;
-    }
+    table { @include scaling-table; }
 }
 
 .swims-tab-group {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem !important;
+    display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1rem !important;
 }
-

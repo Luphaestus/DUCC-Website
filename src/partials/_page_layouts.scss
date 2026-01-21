@@ -1,21 +1,7 @@
-#transactions-view,
-#signup-view,
-#login-view,
-#\/error-view,
-#swims-view {
-    width: 100%;
-    padding: 2rem;
-
-    @media (max-width: 576px) {
-        padding: 0.5rem;
-    }
-
-    h1 {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    &>div {
-        width: 100%;
-    }
+/* Standard View Layouts */
+#transactions-view, #signup-view, #login-view, #\/error-view, #swims-view {
+    width: 100%; padding: 2rem;
+    @media (max-width: 576px) { padding: 0.5rem; }
+    h1 { text-align: center; margin-bottom: 2rem; }
+    &>div { width: 100%; }
 }

@@ -3,30 +3,29 @@ import { ajaxGet, ajaxPost } from "/js/utils/ajax.js";
 import { notify } from '/js/components/notification.js';
 import { BalanceChangedEvent } from '/js/utils/globals.js';
 import { showConfirmModal } from '/js/utils/modal.js';
-import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, AVG_PACE_SVG, BRIGHTNESS_ALERT_SVG } from '../../images/icons/outline/icons.js';
+import { hasHistory } from '/js/utils/history.js';
+import { BRIGHTNESS_ALERT_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, ALL_INCLUSIVE_SVG, WALLET_SVG, SCHEDULE_SVG } from '../../images/icons/outline/icons.js';
 
 /**
  * View details for a single event and manage sign-ups.
  * @module EventDetail
  */
 
+addRoute('/event/:id', 'event', { isOverlay: true });
 
-addRoute('/event/:id', 'event');
-
-/**
- * Base template for event detail view.
- */
-const HTML_TEMPLATE = /*html*/`<div id="event-view" class="view hidden small-container">
-            <div id="event-detail">
-                <p aria-busy="true">Loading event...</p>
-            </div>
-        </div>`;
+const HTML_TEMPLATE = /*html*/`
+<div id="event-view" class="view hidden event-modal-overlay">
+    <div class="event-modal-content glass-panel">
+        <button class="modal-close-btn" id="event-modal-close">${CLOSE_SVG}</button>
+        <div id="event-detail">
+            <p aria-busy="true">Loading event...</p>
+        </div>
+    </div>
+</div>`;
 
 let notification = null;
 
-/**
- * Show notification for this view.
- */
+/** Show notification for this view. */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
@@ -35,31 +34,32 @@ function displayNotification(title, message, type) {
 /**
  * Fill the attendees list in the UI.
  * @param {number} eventId 
+ * @param {boolean} canManage
  */
-async function fillAttendeesList(eventId) {
+async function fillAttendeesList(eventId, canManage) {
     try {
         const response = await ajaxGet(`/api/event/${eventId}/attendees`);
         const attendees = response.attendees || [];
 
-        const canManageUsers = attendees.length > 0 && attendees[0].is_attending !== undefined;
         const attendeesListHtml = attendees.length > 0 ? attendees.map(u => {
-            const attr = canManageUsers ? ` data-user-id="${u.id}" role="button"` : '';
-            if (u.is_attending === 0) {
-                return `<li class="attendee-left"${attr}>
-                    <span class="attendee-avatar">${u.first_name[0]}${u.last_name[0]}</span>
-                    <span class="attendee-name">${u.first_name} ${u.last_name}</span> 
-                    <span class="attendee-status">(Left)</span>
-                </li>`;
-            }
+            const initials = `${u.first_name[0]}${u.last_name[0]}`;
+            const fullName = `${u.first_name} ${u.last_name}`;
+            const isLeft = u.is_attending === 0;
 
-            return `<li${attr}>
-                <span class="attendee-avatar">${u.first_name[0]}${u.last_name[0]}</span>
-                <span class="attendee-name">${u.first_name} ${u.last_name}</span>
-            </li>`;
-        }).join('') : '<li>No attendees yet.</li>';
+            return `<div class="attendee-bubble ${isLeft ? 'left' : ''}" title="${fullName}" data-name="${fullName}" ${canManage ? `data-user-id="${u.id}"` : ''}>
+                ${initials}
+            </div>`;
+        }).join('') : '<p class="no-attendees">No attendees yet.</p>';
 
-        document.querySelectorAll('.attendees-list').forEach(el => {
-            el.innerHTML = attendeesListHtml;
+        const container = document.getElementById('attendees-list-container');
+        if (container) container.innerHTML = attendeesListHtml;
+
+        document.querySelectorAll('.attendee-bubble').forEach(bubble => {
+            bubble.onclick = (e) => {
+                if (window.innerWidth <= 768 && !bubble.dataset.userId) {
+                    alert(bubble.dataset.name);
+                }
+            };
         });
     } catch (e) {
         console.error("Failed to fill attendees list", e);
@@ -70,41 +70,35 @@ async function fillAttendeesList(eventId) {
  * Fill the waiting list information in the UI.
  * @param {number} eventId 
  * @param {boolean} isFull
+ * @param {boolean} canManage
  */
-async function fillWaitlist(eventId, isFull) {
+async function fillWaitlist(eventId, isFull, canManage) {
     try {
         const data = await ajaxGet(`/api/event/${eventId}/waitlist`);
+        const summaryField = document.getElementById('waitlist-summary-container');
 
-        const summaryField = document.getElementById('waitlist-summary-field');
-        const summaryValue = document.getElementById('waitlist-summary-value');
-        const adminSections = document.querySelectorAll('.waitlist-admin-section');
-        const adminLists = document.querySelectorAll('.waitlist-admin-list');
-
-        // Only show waitlist summary if event is full
-        if (isFull && (data.count > 0 || data.position)) {
-            summaryField?.classList.remove('hidden');
-            if (summaryValue) {
+        if (summaryField) {
+            if (isFull && (data.count > 0 || data.position)) {
+                summaryField.classList.remove('hidden');
+                let html = '';
                 if (data.position) {
-                    // User is on waitlist: hide total count, show people in front
-                    summaryValue.innerHTML = `<span class="highlight-text">${data.position - 1}</span> people in front of you`;
+                    html = `<p>${HOURGLASS_TOP_SVG} <strong>Waitlist:</strong> <span class="highlight-text">${data.position - 1}</span> people in front of you</p>`;
                 } else {
-                    // User not on waitlist: show total count
-                    summaryValue.innerHTML = `<span class="highlight-text">${data.count || 0}</span> people waiting`;
+                    html = `<p>${HOURGLASS_TOP_SVG} <strong>Waitlist:</strong> <span class="highlight-text">${data.count || 0}</span> people waiting</p>`;
                 }
-            }
-        } else {
-            summaryField?.classList.add('hidden');
-        }
 
-        // Always show full list for execs if anyone is on it
-        if (data.waitlist && data.waitlist.length > 0) {
-            adminSections.forEach(s => s.classList.remove('hidden'));
-            if (adminLists.length > 0) {
-                const listHtml = data.waitlist.map(u => `<li data-user-id="${u.id}" role="button">${u.first_name} ${u.last_name}</li>`).join('');
-                adminLists.forEach(l => l.innerHTML = listHtml);
+                if (canManage && data.waitlist && data.waitlist.length > 0) {
+                    const bubblesHtml = data.waitlist.map(u => {
+                        const initials = `${u.first_name[0]}${u.last_name[0]}`;
+                        const fullName = `${u.first_name} ${u.last_name}`;
+                        return `<div class="attendee-bubble" title="${fullName}" data-name="${fullName}" data-user-id="${u.id}">${initials}</div>`;
+                    }).join('');
+                    html += `<div class="attendee-bubbles waitlist-members mt-2">${bubblesHtml}</div>`;
+                }
+                summaryField.innerHTML = html;
+            } else {
+                summaryField.classList.add('hidden');
             }
-        } else {
-            adminSections.forEach(s => s.classList.add('hidden'));
         }
     } catch (e) {
         console.error("Failed to fill waitlist", e);
@@ -113,57 +107,53 @@ async function fillWaitlist(eventId, isFull) {
 
 /**
  * Setup and update the attend/leave/waitlist button.
+ * @param {number} eventId
+ * @param {string} path
+ * @param {string} resolvedPath
+ * @param {boolean} canManage
  */
-async function setupEventButtons(eventId, path, resolvedPath) {
+async function setupEventButtons(eventId, path, resolvedPath, canManage) {
     try {
-        const loggedIn = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
+        const loggedInRes = await ajaxGet('/api/auth/status').catch(() => ({ authenticated: false }));
+        const loggedIn = loggedInRes.authenticated;
         const attendButton = document.getElementById('attend-event-button');
-        const buttonContainer = attendButton?.parentElement;
         const warningContainer = document.getElementById('event-warning-container');
-        const attendeeContainers = [document.querySelector('.event-attendees-section'), document.getElementById('event-attendees-container')];
-        const waitlistCountField = document.getElementById('waitlist-count-field');
 
         if (!loggedIn) {
-            buttonContainer?.classList.add('hidden');
-            attendeeContainers.forEach(c => c?.classList.add('hidden'));
-            waitlistCountField?.classList.add('hidden');
+            if (attendButton) {
+                attendButton.textContent = 'Login to Join';
+                attendButton.onclick = () => switchView('/login');
+                attendButton.classList.remove('hidden');
+            }
             if (warningContainer) {
-                warningContainer.innerHTML = /*html*/`
-                    <div class="event-warning-banner info">
-                        <span>${INFO_SVG} Please log in to sign up for this event.</span>
-                        <div class="banner-actions">
-                            <button class="banner-btn" data-nav="/login">Login</button>
-                            <button class="banner-btn secondary" data-nav="/signup">Sign Up</button>
-                        </div>
-                    </div>`;
-                const infoContainer = document.getElementById('event-info-container');
-                if (infoContainer) infoContainer.style.marginTop = '1rem';
+                warningContainer.innerHTML = '';
+                warningContainer.classList.add('hidden');
             }
             return;
         }
 
-        attendeeContainers.forEach(c => c?.classList.remove('hidden'));
-        waitlistCountField?.classList.remove('hidden');
-
-        const [isAttendingRes, isOnWaitlistRes, attendeesResponse, eventResponse, canJoinRes, userRes, coachCountRes] = await Promise.all([
+        const [isAttendingRes, isOnWaitlistRes, attendeesResponse, eventResponse, canJoinRes, coachCountRes] = await Promise.all([
             ajaxGet(`/api/event/${eventId}/isAttending`),
             ajaxGet(`/api/event/${eventId}/isOnWaitlist`).catch(() => ({ isOnWaitlist: false })),
             ajaxGet(`/api/event/${eventId}/attendees`).catch(() => ({ attendees: [] })),
             ajaxGet(`/api/event/${eventId}`),
             ajaxGet(`/api/event/${eventId}/canJoin`).catch(e => ({ canJoin: false, reason: e.message || 'Error' })),
-            ajaxGet('/api/user/elements/is_instructor').catch(() => ({ is_instructor: false })),
             ajaxGet(`/api/event/${eventId}/coachCount`).catch(() => ({ count: 0 }))
         ]);
 
         const { event } = eventResponse;
-        const isInstructor = userRes.is_instructor;
         const coachCount = coachCountRes.count;
 
         if (!event.signup_required) {
-            buttonContainer?.classList.add('hidden');
-            attendeeContainers.forEach(c => c?.classList.add('hidden'));
-            waitlistCountField?.classList.add('hidden');
-            if (warningContainer) warningContainer.innerHTML = `<div class="event-warning-banner info">${INFO_SVG} No sign-up required for this event.</div>`;
+            if (attendButton) {
+                attendButton.textContent = 'No Sign-up Required';
+                attendButton.disabled = true;
+                attendButton.classList.remove('hidden');
+            }
+            if (warningContainer) {
+                warningContainer.innerHTML = '';
+                warningContainer.classList.add('hidden');
+            }
             return;
         }
 
@@ -175,99 +165,109 @@ async function setupEventButtons(eventId, path, resolvedPath) {
         const attendeeCount = activeAttendees.length;
         const isFull = event.max_attendees > 0 && attendeeCount >= event.max_attendees;
 
-        // Refresh waitlist info
         if (event.enable_waitlist) {
-            await fillWaitlist(eventId, isFull);
-        } else {
-            waitlistCountField?.classList.add('hidden');
+            await fillWaitlist(eventId, isFull, canManage);
         }
 
-        let canAttend = true;
         let warningHtml = '';
+        let buttonText = 'Attend Event';
+        let buttonAction = null;
+        let isDisabled = false;
+        let isDeleteStyle = false;
 
         if (event.status === 'canceled') {
-            canAttend = false;
-            warningHtml = `<div class="event-warning-banner error">${CLOSE_SVG} This event has been canceled.</div>`;
-        } else if (!isAttending) {
-            if (!canJoinRes.canJoin) {
-                canAttend = false;
-                let actionBtn = '';
+            buttonText = 'Event Canceled';
+            isDisabled = true;
+        } else if (isAttending) {
+            buttonText = 'Leave Event';
+            isDeleteStyle = true;
+            buttonAction = 'leave';
 
-                if (canJoinRes.reason.includes('Legal info')) {
-                    actionBtn = `<button class="banner-btn" data-nav="/legal">Complete Form</button>`;
-                } else if (canJoinRes.reason.includes('free sessions')) {
-                    actionBtn = `<button class="banner-btn" data-nav="/profile">Join Club</button>`;
-                } else if (canJoinRes.reason.includes('debts')) {
-                    actionBtn = `<button class="banner-btn" data-nav="/transactions">View Balance</button>`;
-                }
-
-                if (isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full') {
-                    warningHtml = `<div class="event-warning-banner warning">${CHECK_INDETERMINATE_SMALL_SVG} This event is full. You can join the waiting list.</div>`;
-                    canAttend = false; 
-                } else {
-                    warningHtml = `<div class="event-warning-banner error"><span>${CLOSE_SVG} ${canJoinRes.reason}</span> ${actionBtn}</div>`;
-                }
+            const now = new Date();
+            const cutoff = event.upfront_refund_cutoff ? new Date(event.upfront_refund_cutoff) : null;
+            if (event.upfront_cost > 0 && cutoff && now > cutoff) {
+                warningHtml = `<div class="glass-warning">${SCHEDULE_SVG} Refund period has passed. Leaving now will not trigger a refund.</div>`;
             }
+        } else if (isOnWaitlist) {
+            buttonText = 'Leave Waiting List';
+            isDeleteStyle = true;
+            buttonAction = 'waitlist_leave';
+        } else if (!canJoinRes.canJoin) {
+            isDisabled = false; 
+            if (canJoinRes.reason.includes('Legal info')) {
+                buttonText = 'Complete Legal Form';
+                warningHtml = `<div class="glass-warning">${INFO_SVG} You must fill out the legal form before joining.</div>`;
+                buttonAction = () => switchView('/legal');
+            } else if (canJoinRes.reason.includes('free sessions')) {
+                buttonText = 'Join Club';
+                warningHtml = `<div class="glass-warning">${INFO_SVG} You have used all your free sessions. Please join the club to continue.</div>`;
+                buttonAction = () => switchView('/profile');
+            } else if (canJoinRes.reason.includes('debts')) {
+                buttonText = 'View Balance';
+                warningHtml = `<div class="glass-warning">${INFO_SVG} You have outstanding debts. Please clear them before joining.</div>`;
+                buttonAction = () => switchView('/transactions');
+            } else if (isFull && event.enable_waitlist && canJoinRes.reason === 'Event is full') {
+                buttonText = 'Join Waiting List';
+                warningHtml = `<div class="glass-warning">${INFO_SVG} This event is full. You can join the waiting list.</div>`;
+                buttonAction = 'waitlist_join';
+            } else {
+                buttonText = 'Cannot Join';
+                warningHtml = `<div class="glass-warning">${CLOSE_SVG} ${canJoinRes.reason}</div>`;
+                isDisabled = true;
+            }
+        } else if (isFull && event.enable_waitlist) {
+            buttonText = 'Join Waiting List';
+            buttonAction = 'waitlist_join';
         }
 
         if (warningContainer) {
             warningContainer.innerHTML = warningHtml;
-            const infoContainer = document.getElementById('event-info-container');
-            if (infoContainer) infoContainer.style.marginTop = warningHtml ? '1rem' : '2rem';
+            if (warningHtml) warningContainer.classList.remove('hidden');
+            else warningContainer.classList.add('hidden');
         }
 
         if (attendButton) {
+            attendButton.textContent = buttonText;
+            attendButton.disabled = isDisabled;
             attendButton.classList.remove('hidden');
-            buttonContainer?.classList.remove('hidden');
+            if (isDeleteStyle) attendButton.classList.add('delete');
+            else attendButton.classList.remove('delete');
 
-            if (isAttending) {
-                attendButton.textContent = 'Leave Event';
-                attendButton.classList.add('delete'); // Use delete style for leaving
-            } else if (isOnWaitlist) {
-                attendButton.textContent = 'Leave Waiting List';
-                attendButton.classList.add('delete');
-            } else if (isFull && event.enable_waitlist) {
-                attendButton.textContent = 'Join Waiting List';
-                attendButton.classList.remove('delete');
-            } else {
-                attendButton.textContent = 'Attend Event';
-                attendButton.classList.remove('delete');
-            }
-
-            const canJoinWaitlist = isFull && event.enable_waitlist && !isOnWaitlist && canJoinRes.reason === 'Event is full';
-
-            const shouldDisable = !canAttend && !isAttending && !isOnWaitlist && !canJoinWaitlist;
-
-            attendButton.disabled = shouldDisable;
-            
             const newBtn = attendButton.cloneNode(true);
             attendButton.parentNode.replaceChild(newBtn, attendButton);
 
             newBtn.addEventListener('click', async () => {
-                if (shouldDisable) return;
+                if (isDisabled) return;
+
+                if (typeof buttonAction === 'function') {
+                    buttonAction();
+                    return;
+                }
 
                 if (isAttending) {
                     const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
-                    if (isInstructor && coachCount === 1 && activeAttendees.length > 1) {
-                        const confirmed = await showConfirmModal(
-                            "Cancel Event?",
-                            "You are the only instructor attending. If you leave, the event will be <strong>canceled</strong> and all other attendees will be notified. Are you sure?"
-                        );
-                        if (!confirmed) return;
-                    }
+                    try {
+                        const userRes = await ajaxGet('/api/user/elements/is_instructor');
+                        if (userRes.is_instructor && coachCount === 1 && activeAttendees.length > 1) {
+                            const confirmed = await showConfirmModal(
+                                "Cancel Event?",
+                                "You are the only instructor attending. If you leave, the event will be <strong>canceled</strong> and all other attendees will be notified. Are you sure?"
+                            );
+                            if (!confirmed) return;
+                        }
+                    } catch (e) { }
                 }
 
                 try {
                     let url = `/api/event/${event.id}/attend`;
-                    if (isAttending) url = `/api/event/${event.id}/leave`;
-                    else if (isOnWaitlist) url = `/api/event/${event.id}/waitlist/leave`;
-                    else if (isFull) url = `/api/event/${event.id}/waitlist/join`;
+                    if (buttonAction === 'leave') url = `/api/event/${event.id}/leave`;
+                    else if (buttonAction === 'waitlist_leave') url = `/api/event/${event.id}/waitlist/leave`;
+                    else if (buttonAction === 'waitlist_join') url = `/api/event/${event.id}/waitlist/join`;
 
                     await ajaxPost(url, {});
                     BalanceChangedEvent.notify();
-                    await fillAttendeesList(eventId);
-                    await fillWaitlist(eventId);
-                    await setupEventButtons(eventId, path, resolvedPath);
+                    await fillAttendeesList(eventId, canManage);
+                    await setupEventButtons(eventId, path, resolvedPath, canManage);
                 } catch (error) {
                     displayNotification('Action Failed', error, 'error');
                 }
@@ -283,7 +283,10 @@ async function setupEventButtons(eventId, path, resolvedPath) {
  * @param {object} params
  */
 async function NavigationEventListner({ viewId, path, resolvedPath }) {
-    if (viewId !== "event") return;
+    if (viewId !== "event") {
+        document.getElementById('event-view').classList.add('hidden');
+        return;
+    }
 
     const navContainer = document.getElementById('event-detail');
     if (!navContainer) return;
@@ -292,13 +295,8 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         const eventResponse = await ajaxGet("/api" + path);
         const { event } = eventResponse;
 
-        const now = new Date();
-        const refundCutOffPassed = event.upfront_refund_cutoff ? (now > new Date(event.upfront_refund_cutoff)) : false;
-        const refundCutOffDateStr = event.upfront_refund_cutoff ? new Date(event.upfront_refund_cutoff).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'N/A';
-        const refundToolTip = `<span class="info-tooltip-wrapper">${INFO_SVG}<span class="tooltip-text">The upfront cost is non-refundable as it covers pre-booked expenses. Refunds are only possible if someone else takes your place after the cutoff.</span></span>`
-        const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="background-color: ${tag.color}; box-shadow: 0 2px 5px ${tag.color}40;">${tag.name}</span>`).join('');
+        const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="background-color: ${tag.color}65;">${tag.name}</span>`).join('');
 
-        // Format duration
         const durationMs = new Date(event.end) - new Date(event.start);
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
         const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -307,143 +305,159 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         if (minutes > 0) durationParts.push(`${minutes}m`);
         const durationStr = durationParts.length > 0 ? durationParts.join(' ') : '0m';
 
-        // Format start date and time
         const start = new Date(event.start);
-        const month = start.toLocaleDateString('en-GB', { month: 'short' });
-        const day = start.getDate();
+        const dateStr = start.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-        const mins = start.getMinutes();
-        const hour = start.getHours();
-        const timeStr = `${hour % 12 || 12}${mins ? ':' + mins.toString().padStart(2, '0') : ''}${hour >= 12 ? 'pm' : 'am'}`;
+        let difficultyBars = '';
+        const level = event.difficulty_level || 1;
+        for (let i = 1; i <= 5; i++) {
+            difficultyBars += `<div class="difficulty-bar ${i <= level ? 'active' : ''}"></div>`;
+        }
 
-        const dateTimeStr = `${month} ${day}, ${timeStr}`;
+        const imageUrl = event.image_url || '/images/misc/ducc.png';
 
-        navContainer.innerHTML = /*html*/`
-            <div id="event-warning-container"></div>
-            <div class="form-info" id="event-info-container">
-                <article class="form-box">
-                    <div class="event-header">
-                        <div class="header-main">
-                            <h2 class="event-title-large">${event.title}</h2>
-                            <div class="event-title-tags">${tagsHtml}</div>
-                        </div>
-                    </div>
-                    <div class="event-content-split">
-                        <div class="event-details-section">
-                            <div class="details-grid">
-                                <p class="detail-field">
-                                    <span class="label">${CALENDAR_TODAY_SVG} <strong>Date</strong></span>
-                                    <span class="value">${dateTimeStr}</span>
-                                </p>
-                                <p class="detail-field">
-                                    <span class="label">${AVG_PACE_SVG} <strong>Duration</strong></span>
-                                    <span class="value">${durationStr}</span>
-                                </p>
-                                <p class="detail-field">
-                                    <span class="label">${BOLT_SVG} <strong>Difficulty</strong></span>
-                                    <span class="value">${event.difficulty_level}</span>
-                                </p>
-                                <p class="detail-field">
-                                    <span class="label">${GROUP_SVG} <strong>Max Attendees</strong></span>
-                                    <span class="value">${event.max_attendees || 'Unlimited'}</span>
-                                </p>
-                                ${event.upfront_cost ? `
-                                <p class="detail-field">
-                                    <span class="label">${CURRENCY_POUND_SVG} <strong>Cost</strong></span>
-                                    <span class="value">£${event.upfront_cost.toFixed(2)} ${event.upfront_cost > 0 && event.upfront_refund_cutoff ? (refundCutOffPassed ? `- no refunds ${refundToolTip}` : `- refunds until ${refundCutOffDateStr} ${refundToolTip}`) : ''}</span>
-                                </p>` : ''}
-                            </div>
-                            
-                            <div class="description-block">
-                                <p class="detail-field block">
-                                    <span class="label">${DESCRIPTION_SVG} <strong>Description</strong></span>
-                                    <span class="value description-text">${event.description || 'No description provided.'}</span>
-                                </p>
-                            </div>
+        let priceBoxHtml = '';
+        if (event.upfront_cost > 0) {
+            const now = new Date();
+            const cutoff = event.upfront_refund_cutoff ? new Date(event.upfront_refund_cutoff) : null;
+            const hasPassed = cutoff ? now > cutoff : false;
+            const formatOptions = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true };
+            const cutoffStr = cutoff ? cutoff.toLocaleString('en-UK', formatOptions).replace(',', '.') : '';
 
-                            <p class="detail-field hidden" id="waitlist-summary-field">
-                                <span class="label">${HOURGLASS_TOP_SVG} <strong>Waitlist:</strong></span>
-                                <span class="value" id="waitlist-summary-value"></span>
-                            </p>
-                            
-                            <div class="event-buttons">
-                                <button id="attend-event-button" class="hidden">Attend Event</button>
-                                <button id="edit-event-button" class="hidden secondary">Edit Event</button>
-                            </div>
-                        </div>
-                        
-                        <div class="event-attendees-section hidden">
-                            <h3>${GROUP_SVG} Attendees</h3>
-                            <ul class="attendees-list"></ul>
-                        </div>
-                        
-                        <div class="waitlist-admin-section event-attendees-section hidden">
-                            <h3>${HOURGLASS_TOP_SVG} Waiting List (Admin)</h3>
-                            <ol class="waitlist-admin-list waitlist-names-list"></ol>
-                        </div>
-                    </div>
-                </article>
-                <article class="form-box" id="event-attendees-container">
-                    <h3>${GROUP_SVG} Attendees</h3>
-                    <ul class="attendees-list"></ul>
-                    <div class="waitlist-admin-section hidden">
-                        <h3>${HOURGLASS_TOP_SVG} Waiting List (Admin)</h3>
-                        <ol class="waitlist-admin-list waitlist-names-list"></ol>
-                    </div>
-                </article>
-            </div>`;
-
-        // Check manage perms
-        ajaxGet(`/api/event/${event.id}/canManage`).then(res => {
-            if (res.canManage) {
-                const editBtn = document.getElementById('edit-event-button');
-                editBtn?.classList.remove('hidden');
-                editBtn.onclick = () => switchView(`/admin/event/${event.id}`);
+            let refundMsg = '';
+            if (cutoff) {
+                if (hasPassed) {
+                    refundMsg = `<p class="price-detail expired">${cutoffStr ? 'Refund period ended on ' + cutoffStr : 'No refunds available'}</p>`;
+                } else {
+                    refundMsg = `<p class="price-detail">Full refund available until ${cutoffStr}</p>`;
+                }
             }
-        }).catch(() => { });
 
-        const eventId = event.id;
-        await Promise.all([
-            fillAttendeesList(eventId),
-            setupEventButtons(eventId, path, resolvedPath)
-        ]);
-
-    } catch (error) {
-        console.error("Failed to load event details", error);
-        const loggedIn = await ajaxGet('/api/auth/status').then((data) => data.authenticated).catch(() => false);
-
-        if (!loggedIn) {
-            navContainer.innerHTML = /*html*/`
-                <div class="event-error-state warning">
-                    <div class="error-icon">${BRIGHTNESS_ALERT_SVG}</div>
-                    <h2>Event Unavailable</h2>
-                    <p>This event may not exist, or you may need to log in to view it.</p>
-                    <div class="error-actions">
-                        <button data-nav="/login">Login</button>
-                        <button class="secondary" data-nav="/signup">Sign Up</button>
+            priceBoxHtml = `
+                <div class="event-price-box">
+                    <div class="price-header">
+                        <div class="price-title-group">
+                            <div class="pound-icon-box">${CURRENCY_POUND_SVG}</div>
+                            <span class="price-label">Event Price</span>
+                        </div>
+                        <span class="price-value">£${event.upfront_cost.toFixed(2)}</span>
                     </div>
-                </div>
-            `;
-        } else {
-            navContainer.innerHTML = /*html*/`
-                <div class="event-error-state denied">
-                    <div class="error-icon">${CLOSE_SVG}</div>
-                    <h2>Access Denied</h2>
-                    <p>This event may not exist, or you may not have permission to view it.</p>
-                    <div class="error-actions">
-                        <button data-nav="/events">Back to Events</button>
+                    <div class="price-body">
+                        <div class="price-detail-row">
+                            <span class="detail-icon">${WALLET_SVG}</span>
+                            <p class="price-detail">Payment required upon joining</p>
+                        </div>
+                        ${refundMsg ? `
+                        <div class="price-detail-row">
+                            ${hasPassed ? `<span class="detail-icon expired">${BRIGHTNESS_ALERT_SVG}</span>` : `<span class="detail-icon">${INFO_SVG}</span>`}
+                            ${refundMsg}
+                        </div>` : ''}
                     </div>
                 </div>
             `;
         }
+
+        const isPast = new Date(event.end) < new Date();
+
+        navContainer.innerHTML = /*html*/`
+            <div class="event-modal-header ${isPast ? 'past-event' : ''}" style="background-image: url('${imageUrl}');">
+                <div class="header-content">
+                    <div class="event-tags">${tagsHtml}</div>
+                    <h2 class="event-title">${event.title}</h2>
+                    <p class="event-location">${LOCATION_ON_SVG} ${event.location || 'Location TBD'}</p>
+                </div>
+            </div>
+            
+            <div class="event-modal-body">
+                <div class="event-info-boxes">
+                    <div class="info-box">
+                        <span class="box-title">${CALENDAR_MONTH_SVG} DATE</span>
+                        <span class="box-value">${dateStr}</span>
+                    </div>
+                    <div class="info-box">
+                        <span class="box-title">${AVG_PACE_SVG} DURATION</span>
+                        <span class="box-value">${durationStr}</span>
+                    </div>
+                    <div class="info-box">
+                        <span class="box-title">${BOLT_SVG} DIFFICULTY</span>
+                        <div class="difficulty-container">
+                            ${difficultyBars}
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        <span class="box-title">${GROUP_SVG} CAPACITY</span>
+                        <span class="box-value">${event.attendee_count || 0}/${event.max_attendees || '∞'}</span>
+                    </div>
+                </div>
+
+                ${priceBoxHtml}
+
+                <div class="glass-panel event-details-content">
+                    <div class="description-section">
+                        <h3 class="section-title">Description</h3>
+                        <p class="description-text">${event.description || 'No description provided.'}</p>
+                    </div>
+
+                    <div class="attendees-section">
+                        <h3 class="section-title">Attendees</h3>
+                        <div id="attendees-list-container" class="attendee-bubbles"></div>
+                        <div id="waitlist-summary-container" class="waitlist-info hidden"></div>
+                    </div>
+                </div>
+
+                <div id="event-warning-container" class="hidden"></div>
+
+                <div class="event-actions">
+                    <button id="attend-event-button" class="join-btn hidden">Attend Event</button>
+                    <button id="edit-event-button" class="hidden secondary">Edit Event</button>
+                </div>
+            </div>`;
+
+        const manageRes = await ajaxGet(`/api/event/${event.id}/canManage`).catch(() => ({ canManage: false }));
+        const canManage = manageRes.canManage;
+
+        if (canManage) {
+            const editBtn = document.getElementById('edit-event-button');
+            editBtn?.classList.remove('hidden');
+            editBtn.onclick = () => switchView(`/admin/event/${event.id}`);
+        }
+
+        const eventId = event.id;
+        await Promise.all([
+            fillAttendeesList(eventId, canManage),
+            setupEventButtons(eventId, path, resolvedPath, canManage)
+        ]);
+
+    } catch (error) {
+        console.error("Failed to load event details", error);
+        navContainer.innerHTML = `<p class="error-text">Failed to load event details. Please try again.</p>`;
     }
 }
 
 ViewChangedEvent.subscribe(NavigationEventListner);
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
+/** Handle modal close: go back or default to /events */
+function handleClose() {
+    if (hasHistory()) {
+        window.history.back();
+    } else {
+        switchView('/events');
+    }
+}
+
+document.getElementById('event-view').onclick = (e) => {
+    if (e.target.id === 'event-view') {
+        handleClose();
+    }
+};
+
+document.getElementById('event-modal-close').onclick = () => {
+    handleClose();
+};
+
 document.querySelector('main').addEventListener('click', (e) => {
-    const target = e.target.closest('li[data-user-id]');
+    const target = e.target.closest('.attendee-bubble[data-user-id]');
     if (target && document.getElementById('event-view').contains(target)) {
         const userId = target.dataset.userId;
         if (userId) switchView(`/admin/user/${userId}`);

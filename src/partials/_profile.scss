@@ -1,293 +1,97 @@
 @use "mixins" as *;
 
-/* Profile View */
+/* Profile Header */
 #profile-view {
-    h1 {
-        margin: 2rem;
-        text-align: center;
-    }
-
+    h1 { margin: 2rem; text-align: center; }
     .form-box {
         @include card-highlights;
-        
         header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: none;
-            border-bottom: none;
-            margin-bottom: 0rem;
-
-            svg {
-                width: 28px;
-                height: 28px;
-                flex-shrink: 0;
-                color: var(--highlight); 
-            }
-
-            h3 {
-                margin: 0;
-                font-size: 1.25rem;
-                background: none; 
-            }
+            display: flex; align-items: center; gap: 0.75rem; background: none; border-bottom: none; margin-bottom: 0rem;
+            svg { width: 28px; height: 28px; flex-shrink: 0; color: var(--highlight); }
+            h3 { margin: 0; font-size: 1.25rem; background: none; }
         }
     }
 }
 
+/* User Actions */
 #profile-aid-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.5rem;
-
-    @media (max-width: 400px) {
-        flex-direction: column;
-    }
-
-    button {
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 0.5rem;
-        height: 3rem;
-    }
+    display: flex; gap: 1rem; margin-top: 1.5rem;
+    @media (max-width: 400px) { flex-direction: column; }
+    button { flex: 1; display: flex; justify-content: center; align-items: center; padding: 0.5rem; height: 3rem; }
 }
 
 .danger-zone-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-
-    @media (max-width: 400px) {
-        flex-direction: column;
-    }
-
-    button {
-        margin-bottom: 0;
-        flex: 1 1 auto;
-    }
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    @media (max-width: 400px) { flex-direction: column; }
+    button { margin-bottom: 0; flex: 1 1 auto; }
 }
 
-/* Status Colors & Logic */
+/* Status Cards */
 .status-success { --status-color: #2ecc71; --status-contrast-color: #ffffff; }
 .status-warning { --status-color: #f39c12; --status-contrast-color: #000000; }
 .status-error { --status-color: #e74c3c; --status-contrast-color: #ffffff; }
 .status-info { --status-color: #3498db; --status-contrast-color: #ffffff; }
 
 %status-card-base {
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    
+    padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; transition: all 0.2s ease;
     background: color-mix(in srgb, var(--status-color, var(--pico-card-background-color)) 15%, var(--pico-card-background-color));
     border: 1px solid color-mix(in srgb, var(--status-color, var(--pico-color)) 40%, transparent);
-    transition: all 0.2s ease;
-
-    &:hover {
-        border-color: var(--status-color, var(--pico-primary));
-    }
+    &:hover { border-color: var(--status-color, var(--pico-primary)); }
 }
 
-/* Container for grouped status items (e.g. Membership) */
 .status-container {
-    @extend %status-card-base;
-    padding-bottom: .725rem;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-
+    @extend %status-card-base; padding-bottom: .725rem; display: flex; flex-direction: column; width: 100%;
     &:last-child { margin-bottom: 0; }
-
     .status-container {
-        width: 100%;
-        margin-bottom: 0; 
+        width: 100%; margin-bottom: 0; 
         background: color-mix(in srgb, var(--status-color, var(--pico-card-background-color)) 15%, var(--pico-card-background-color));
         border: 1px solid color-mix(in srgb, var(--status-color, var(--pico-color)) 40%, transparent);
     }
 }
 
-#instructor-signup-btn {
-    margin: 0;
-}
-
-
-#instructor-status {
-    width: 100%;
-}
-
 /* Individual Status Item */
 .status-item {
-    &:not(.status-container .status-item) {
-        @extend %status-card-base;
-        
-        &:last-child { margin-bottom: 0; }
-    }
-
+    &:not(.status-container .status-item) { @extend %status-card-base; &:last-child { margin-bottom: 0; } }
     .status-container & {
-        padding: 1rem 0;
-        margin-bottom: 0;
-        background: transparent;
-        border: none;
-        border-radius: 0;
+        padding: 1rem 0; margin-bottom: 0; background: transparent; border: none; border-radius: 0;
         border-bottom: 1px solid color-mix(in srgb, var(--pico-color) 10%, transparent);
-
         &:first-child { padding-top: 0; }
-        &:last-child { 
-            padding-bottom: 0; 
-            border-bottom: none; 
-        }
-
-        &:hover {
-            border-color: transparent; 
-        }
-    }
-
-    // Header Layout
-    .status-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between; 
-        gap: 0.75rem;
-        margin-bottom: 0.5rem;
-        border-bottom: none; 
-        padding-bottom: 0;
-    }
-
-    // Body Layout
-    .status-body {
-        .status-description {
-            font-size: 0.95rem;
-            opacity: 0.9;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .action-wrapper {
-            display: flex;
-            justify-content: flex-end; 
-            width: 100%;
-        }
+        &:last-child { padding-bottom: 0; border-bottom: none; }
+        &:hover { border-color: transparent; }
     }
 }
 
-// Rules for .status-header and .status-body that apply to BOTH .status-item AND .status-container
+/* Shared Header & Body */
 .status-item, .status-container {
     .status-header {
-        display: flex;
-        align-items: center;
-        justify-content: center; 
-        gap: 0.75rem;
-        margin-bottom: 0.5rem;
-        border-bottom: none; 
-        padding-bottom: 0;
-
-        .status-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-            text-align: center; 
-        }
-
+        display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0;
+        .status-title { font-weight: 700; font-size: 1.1rem; text-align: center; }
         .status-icon {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.75rem;
-            height: 1.75rem;
-            color: var(--status-color) !important; 
-            
-            svg {
-                width: 100%;
-                height: 100%;
-                fill: currentColor;
-            }
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; color: var(--status-color) !important; 
+            svg { width: 100%; height: 100%; fill: currentColor; }
         }
     }
-
     .status-body {
         text-align: center;
-        .status-description {
-            font-size: 0.95rem;
-            opacity: 0.9;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .action-wrapper {
-            display: flex;
-            justify-content: center; 
-            width: 100%;
-        }
+        .status-description { font-size: 0.95rem; opacity: 0.9; line-height: 1.6; margin-bottom: 1rem; }
+        .action-wrapper { display: flex; justify-content: center; width: 100%; }
     }
 }
 
-
-/* Button Styling */
+/* Status Action Buttons */
 .status-btn {
-    padding: 0.5rem 1.5rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-    width: 100%;
-    min-width: 140px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    
-    background: transparent;
-    border: 2px solid var(--status-color, var(--pico-primary));
-    color: var(--pico-color) !important; 
-    
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    text-decoration: none;
-
-    &:hover {
-        background: var(--status-color, var(--pico-primary));
-        color: var(--status-contrast-color, var(--pico-background-color)) !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px color-mix(in srgb, var(--status-color) 30%, transparent);
-        
-        svg { fill: currentColor; }
-    }
+    padding: 0.5rem 1.5rem; font-size: 0.95rem; font-weight: 700; width: 100%; min-width: 140px; display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: 2px solid var(--status-color, var(--pico-primary)); color: var(--pico-color) !important; border-radius: 8px; transition: all 0.2s ease; cursor: pointer; text-decoration: none;
+    &:hover { background: var(--status-color, var(--pico-primary)); color: var(--status-contrast-color, var(--pico-background-color)) !important; transform: translateY(-1px); box-shadow: 0 4px 8px color-mix(in srgb, var(--status-color) 30%, transparent); svg { fill: currentColor; } }
 }
 
-/* Tags Container */
+/* Tags & Misc */
 .tags-container {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    width: 100%;
-    
-    background-color: color-mix(in srgb, var(--pico-card-background-color) 90%, var(--pico-contrast)); 
-    border: 1px solid var(--pico-muted-border-color);
-
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; width: 100%;
+    background-color: color-mix(in srgb, var(--pico-card-background-color) 90%, var(--pico-contrast)); border: 1px solid var(--pico-muted-border-color);
     &:last-child { margin-bottom: 0; }
 }
 
-.profile-tag {
-    color: white;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.form-description {
-    margin-bottom: 1.5rem;
-    color: color-mix(in srgb, var(--pico-color) 75%, transparent);
-    font-size: 0.95rem;
-    line-height: 1.5;
-}
-
-.no-tags, .error-text {
-    text-align: center;
-    width: 100%;
-    color: color-mix(in srgb, var(--pico-color) 60%, transparent);
-    font-style: italic;
-}
+.profile-tag { color: white; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.form-description { margin-bottom: 1.5rem; color: color-mix(in srgb, var(--pico-color) 75%, transparent); font-size: 0.95rem; line-height: 1.5; }
+.no-tags, .error-text { text-align: center; width: 100%; color: color-mix(in srgb, var(--pico-color) 60%, transparent); font-style: italic; }

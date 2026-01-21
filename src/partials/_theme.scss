@@ -1,89 +1,51 @@
-/* Global Theme */
+/* Global Dark/Light Theme Settings */
 
 @mixin dark-mode-vars {
-    --theme: black;
-    --theme-opposite: white;
-    
+    --theme: black; --theme-opposite: white;
     --translucent-bg: rgba(20, 20, 25, 0.65);
     --glass-bg: rgba(30, 30, 35, 0.6);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.1);
+    --glass-border: 1px solid var(--glass-highlight);
     --nav-bg: rgba(20, 20, 25, 0.85);
     --glass-text-color: #ffffff;
-
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
     --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.5);
-    
     --table-border: 1px solid rgba(255, 255, 255, 0.05);
     --table-bg-body: rgba(30, 30, 35, 0.4);
     --table-bg-hover-body: rgba(40, 40, 45, 0.6);
-    
     #animated-background { opacity: 0.4; }
     .bg-icon { opacity: 0.06; }
 }
 
 body {
-    --font-family-sans: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-family-display: 'Outfit', var(--font-family-sans);
-    
-    --border-radius-sm: 0.5rem;
-    --border-radius-md: 1rem;
-    --border-radius-lg: 1.5rem;
-    --border-radius-pill: 9999px;
-
-    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
+    --border-radius-sm: 0.5rem; --border-radius-md: 1rem; --border-radius-lg: 1.5rem; --border-radius-pill: 9999px;
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05); --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
     --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 
-    /* Light Mode Defaults */
+    /* Light Mode */
     --translucent-bg: rgba(255, 255, 255, 0.65);
     --glass-bg: rgba(255, 255, 255, 0.6);
-    --glass-border: 1px solid rgba(0, 0, 0, 0.1);
+    --glass-highlight: rgba(0, 0, 0, 0.1);
+    --glass-border: 1px solid var(--glass-highlight);
     --nav-bg: rgba(255, 255, 255, 0.85);
     --glass-text-color: #373c44;
-    
-    --theme: white;
-    --theme-opposite: black;
-    --colour-good: #2ecc71;
-    --colour-warning: #f39c12;
-    --colour-bad: #e74c3c;
-
+    --theme: white; --theme-opposite: black;
+    --colour-good: #2ecc71; --colour-warning: #f39c12; --colour-bad: #e74c3c;
     --table-border: 1px solid rgba(0, 0, 0, 0.05);
-
     --table-bg-head: rgba(var(--pico-primary-rgb), 0.05);
     --table-bg-hover-head: rgba(var(--pico-primary-rgb), 0.1);
     --table-bg-body: rgba(255, 255, 255, 0.4);
     --table-bg-hover-body: rgba(255, 255, 255, 0.6);
 
-    color: reverse-color(var(--pico-color)); /* Fallback or reset if needed, mostly redundant */
+    color: reverse-color(var(--pico-color));
     background-color: reverse-color(var(--pico-background-color));
 
-    #animated-background {
-        opacity: 0.6;
-    }
-
-    .bg-blob {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(80px);
-    }
-
-    .bg-icon {
-        position: absolute;
-        opacity: 0.12;
-        color: var(--pico-color);
-        pointer-events: none;
-        z-index: 1;
-    }
+    #animated-background { opacity: 0.6; }
+    .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); }
+    .bg-icon { position: absolute; opacity: 0.12; color: var(--pico-color); pointer-events: none; z-index: 1; }
 }
 
-/* Dark Mode Overrides - OS Preference */
-@media (prefers-color-scheme: dark) {
-    body:not([data-theme="light"]) {
-        @include dark-mode-vars;
-    }
-}
-
-/* Dark Mode Overrides - Explicit Switch */
-body[data-theme="dark"] {
-    @include dark-mode-vars;
-}
+@media (prefers-color-scheme: dark) { body:not([data-theme="light"]) { @include dark-mode-vars; } }
+body[data-theme="dark"] { @include dark-mode-vars; }

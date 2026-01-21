@@ -1,141 +1,37 @@
-/* Translucent Card Mixin */
+/* UI Components */
 @mixin translucent-card {
-    background: var(--translucent-bg);
-    border: var(--glass-border);
-    box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: var(--border-radius-lg);
+    background: var(--translucent-bg); border: var(--glass-border); box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--border-radius-lg);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
-    
-    &:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-hover);
-    }
+    &:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
 }
 
-/* Card Highlights Mixin */
 @mixin card-highlights {
-    position: relative;
-    overflow: hidden;
-    
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: var(--highlight);
-        border-radius: 4px;
-    }
-
-    svg {
-        color: var(--highlight);
-    }
-
-    &:nth-child(1) {
-        --highlight: #9b59b6;
-    }
-
-    &:nth-child(2) {
-        --highlight: #f39c12;
-    }
-
-    &:nth-child(3) {
-        --highlight: #2ecc71;
-    }
-
-    &:nth-child(4) {
-        --highlight: #3498db;
-    }
+    position: relative; overflow: hidden;
+    &::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--highlight); border-radius: 4px; }
+    svg { color: var(--highlight); }
+    &:nth-child(1) { --highlight: #9b59b6; }
+    &:nth-child(2) { --highlight: #f39c12; }
+    &:nth-child(3) { --highlight: #2ecc71; }
+    &:nth-child(4) { --highlight: #3498db; }
 }
 
-/* Common Element Size Mixin */
+/* Responsive Scaling */
 @mixin common-element-size($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
-    height: 3rem !important; /* Larger hit area */
-    padding: 0 1.5rem;
-    font-size: 1rem;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    
-    @media (max-width: $bp1) {
-        height: 2.75rem !important;
-        padding: 0 1.25rem;
-    }
-
-    @media (max-width: $bp2) {
-        height: 2.5rem !important;
-        padding: 0 1rem;
-        font-size: 0.9rem !important;
-
-        svg,
-        img {
-            width: 1.25rem !important;
-            height: 1.25rem !important;
-        }
-    }
-
-    @media (max-width: $bp3) {
-        height: 2.25rem !important;
-        padding: 0 0.75rem;
-        font-size: 0.8rem !important;
-    }
+    height: 3rem !important; padding: 0 1.5rem; font-size: 1rem; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+    @media (max-width: $bp1) { height: 2.75rem !important; padding: 0 1.25rem; }
+    @media (max-width: $bp2) { height: 2.5rem !important; padding: 0 1rem; font-size: 0.9rem !important; svg, img { width: 1.25rem !important; height: 1.25rem !important; } }
+    @media (max-width: $bp3) { height: 2.25rem !important; padding: 0 0.75rem; font-size: 0.8rem !important; }
 }
 
-/* Scaling Element Mixin */
 @mixin scaling-element($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
     padding: 0.75rem 1rem;
-
-    @media (max-width: $bp1) {
-        padding: 0.6rem 0.9rem;
-        font-size: 0.95em;
-    }
-
-    @media (max-width: $bp2) {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9em;
-
-        svg,
-        img {
-            width: 1.5rem;
-            height: 1.5rem;
-        }
-    }
-
-    @media (max-width: $bp3) {
-        padding: 0.4rem 0.5rem;
-        
-        svg,
-        img {
-            width: 1.2rem;
-            height: 1.2rem;
-        }
-    }
+    @media (max-width: $bp1) { padding: 0.6rem 0.9rem; font-size: 0.95em; }
+    @media (max-width: $bp2) { padding: 0.5rem 0.75rem; font-size: 0.9em; svg, img { width: 1.5rem; height: 1.5rem; } }
+    @media (max-width: $bp3) { padding: 0.4rem 0.5rem; svg, img { width: 1.2rem; height: 1.2rem; } }
 }
 
-/* Scaling Table Mixin */
 @mixin scaling-table($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
-    width: 100%;
-    margin-bottom: 0;
-    table-layout: auto;
-
-    th,
-    td {
-        text-align: left;
-        border-bottom: var(--table-border);
-
-        @include scaling-element($bp1, $bp2, $bp3);
-
-        @media (max-width: $bp2) {
-            td>svg,
-            td>img {
-                width: 1.5rem !important;
-                height: 1.5rem !important;
-            }
-        }
-    }
+    width: 100%; margin-bottom: 0; table-layout: auto;
+    th, td { text-align: left; border-bottom: var(--table-border); @include scaling-element($bp1, $bp2, $bp3); @media (max-width: $bp2) { td>svg, td>img { width: 1.5rem !important; height: 1.5rem !important; } } }
 }

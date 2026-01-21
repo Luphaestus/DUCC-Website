@@ -14,8 +14,9 @@ const Routes = [];
  * Register a route explicitly.
  * @param {string} pattern - URL pattern (e.g. '/events', '/admin/*', '/user/:id')
  * @param {string} viewId - ID of the view element (without '-view' suffix)
+ * @param {Object} options - Additional options for the route
  */
-export function addRoute(pattern, viewId) {
+export function addRoute(pattern, viewId, options = {}) {
     const regexString = '^' + pattern
         .replace(/\//g, '\\/') // Escape slashes
         .replace(/:(\w+)/g, '([^/]+)') // Named parameters
@@ -24,7 +25,8 @@ export function addRoute(pattern, viewId) {
     Routes.push({
         pattern,
         regex: new RegExp(regexString),
-        viewId
+        viewId,
+        isOverlay: options.isOverlay || false
     });
 }
 
@@ -34,7 +36,8 @@ export function addRoute(pattern, viewId) {
  * @returns {Object|null} Route object or null
  */
 function matchRoute(path) {
-    return Routes.find(route => route.regex.test(path)) || null;
+    const pathOnly = path.split('?')[0];
+    return Routes.find(route => route.regex.test(pathOnly)) || null;
 }
 
 /**
@@ -43,7 +46,7 @@ function matchRoute(path) {
  * @returns {boolean}
  */
 function isCurrentPath(path) {
-    return String(window.location.pathname) === path
+    return (window.location.pathname + window.location.search) === path
 }
 
 /**
@@ -80,7 +83,10 @@ function switchView(path, force = false) {
         if (el.id === route.viewId + '-view') {
             el.classList.remove('hidden');
         } else {
-            el.classList.add('hidden');
+            // Don't hide views if the new route is an overlay
+            if (!route.isOverlay) {
+                el.classList.add('hidden');
+            }
         }
     });
 
@@ -89,7 +95,9 @@ function switchView(path, force = false) {
         viewId: route.viewId, 
         path 
     });
-    document.title = `DUCC - ${path.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`
+    
+    const titlePath = path.split('?')[0];
+    document.title = `DUCC - ${titlePath.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`
 
     return true
 }
@@ -98,7 +106,7 @@ function switchView(path, force = false) {
  * Update view from current URL.
  */
 function updateContent() {
-    switchView(String(window.location.pathname), true);
+    switchView(window.location.pathname + window.location.search, true);
 }
 
 window.onpopstate = updateContent;
