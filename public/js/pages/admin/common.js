@@ -56,15 +56,20 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
  * @returns {Promise<string>} HTML string.
  */
 export async function renderAdminNavBar(activeSection) {
-
+    // Save current position of existing nav if it exists, to allow for animation
     const existingNav = document.getElementById('admin-main-nav');
     if (existingNav && existingNav._syncToggleGroup) {
         existingNav._syncToggleGroup();
     }
 
-    const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
+    // Parallelize and use cache to reduce latency
+    const [userData, statusData] = await Promise.all([
+        ajaxGet('/api/user/elements/permissions', true).catch(() => ({})),
+        ajaxGet('/api/globals/status', true).catch(() => null)
+    ]);
+
     const perms = userData.permissions || [];
-    const isPresident = await ajaxGet('/api/globals/status').then(_ => true).catch(() => false);
+    const isPresident = !!statusData;
 
     const canManageUsers = perms.includes('user.manage');
     const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');

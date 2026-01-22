@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupMobileMenu();
 
-    ajaxGet('/api/auth/status').then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
+    ajaxGet('/api/auth/status', true).then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
     LoginEvent.subscribe(updateNavOnLoginState);
     BalanceChangedEvent.subscribe(updateBalanceInNav);
 

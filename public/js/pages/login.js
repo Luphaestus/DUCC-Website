@@ -63,7 +63,7 @@ function setupLoginForm() {
  */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/login') {
-        ajaxGet('/api/auth/status').then((data => {
+        ajaxGet('/api/auth/status', true).then((data => {
             if (data.authenticated) {
                 const prev = getPreviousPath();
                 if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');

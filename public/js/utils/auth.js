@@ -12,7 +12,7 @@ import { notify, NotificationTypes } from '/js/components/notification.js';
  */
 export async function requireAuth() {
     try {
-        const data = await ajaxGet('/api/auth/status');
+        const data = await ajaxGet('/api/auth/status', true);
         if (!data.authenticated) {
             sessionStorage.setItem('redirect_after_login', window.location.pathname + window.location.search);
             switchView('/unauthorized');

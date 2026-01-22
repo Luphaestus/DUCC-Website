@@ -61,9 +61,15 @@ async function AdminNavigationListener({ viewId, path }) {
         if (el._syncToggleGroup) el._syncToggleGroup();
     });
 
-    if (!await requireAuth()) return;
+    // Parallelize authentication and permission checks to reduce latency
+    const [authOk, userData, statusData] = await Promise.all([
+        requireAuth(),
+        ajaxGet('/api/user/elements/permissions', true),
+        ajaxGet('/api/globals/status', true).catch(() => ({}))
+    ]);
 
-    const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
+    if (!authOk) return;
+
     const perms = userData.permissions || [];
     
     if (perms.length === 0) {
@@ -77,7 +83,7 @@ async function AdminNavigationListener({ viewId, path }) {
     const canManageRoles = perms.includes('role.manage');
     const canManageDocs = perms.includes('document.write') || perms.includes('document.edit');
     const isExec = perms.length > 0;
-    const isPresident = await ajaxGet('/api/globals/status').then(_ => true).catch(() => false);
+    const isPresident = !!statusData; // statusData exists if request succeeded
 
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;

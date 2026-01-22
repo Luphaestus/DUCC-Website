@@ -5,19 +5,27 @@ import { checkServerConnection, reportConnectionFailure, reportConnectionSuccess
  * @module Ajax
  */
 
+const cache = new Map();
+
 /**
- * HTTP GET request.
+ * HTTP GET request with optional caching.
  * @param {string} url
+ * @param {boolean} useCache - If true, return cached response if available.
  * @returns {Promise<object>}
  */
-async function ajaxGet(url) {
-    return new Promise((resolve, reject) => {
+async function ajaxGet(url, useCache = false) {
+    if (useCache && cache.has(url)) {
+        return cache.get(url);
+    }
+
+    const promise = new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
                 if (xhr.status === 0) {
                     reportConnectionFailure();
+                    cache.delete(url); 
                     reject({ message: 'Network error' });
                 } else if (xhr.status >= 200 && xhr.status < 300) {
                     reportConnectionSuccess();
@@ -25,9 +33,11 @@ async function ajaxGet(url) {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
+                        cache.delete(url);
                         reject({ message: 'Failed to parse response: ' + e.message });
                     }
                 } else {
+                    cache.delete(url);
                     reject({ message: 'Request failed with status: ' + xhr.status });
                 }
             }
@@ -35,12 +45,28 @@ async function ajaxGet(url) {
 
         xhr.onerror = function () {
             reportConnectionFailure();
+            cache.delete(url);
             reject({ message: 'Network error' });
         };
 
         xhr.open('GET', url, true);
         xhr.send();
     });
+
+    if (useCache) {
+        cache.set(url, promise);
+    }
+
+    return promise;
+}
+
+/**
+ * Clear the AJAX GET cache.
+ * @param {string} [url] - If provided, clear only this URL.
+ */
+function clearAjaxCache(url) {
+    if (url) cache.delete(url);
+    else cache.clear();
 }
 
 /**
@@ -50,6 +76,7 @@ async function ajaxGet(url) {
  * @returns {Promise<object>}
  */
 async function ajaxPost(url, data) {
+    clearAjaxCache(); 
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -94,6 +121,7 @@ async function ajaxPost(url, data) {
  * @returns {Promise<object>}
  */
 async function ajaxDelete(url) {
+    clearAjaxCache();
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -138,6 +166,7 @@ async function ajaxDelete(url) {
  * @returns {Promise<object>}
  */
 async function ajaxPut(url, data) {
+    clearAjaxCache();
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -175,4 +204,4 @@ async function ajaxPut(url, data) {
         xhr.send(JSON.stringify(data));
     });
 }
-export { ajaxGet, ajaxPost, ajaxDelete, ajaxPut };
+export { ajaxGet, ajaxPost, ajaxDelete, ajaxPut, clearAjaxCache };
