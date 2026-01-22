@@ -21,21 +21,19 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
     if (totalPages <= 1) return;
 
     const nav = document.createElement('nav');
-    nav.className = 'pagination-nav';
+    nav.className = 'glass-pagination';
 
     const prevBtn = document.createElement('button');
-    prevBtn.innerHTML = '&lsaquo;'; // Arrow
+    prevBtn.innerHTML = '&lsaquo; Prev'; 
     prevBtn.disabled = currentPage <= 1;
-    prevBtn.classList.add('page-btn', 'prev');
     prevBtn.onclick = (e) => {
         e.preventDefault();
         if (currentPage > 1) onPageChange(currentPage - 1);
     };
 
     const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = '&rsaquo;'; // Arrow
+    nextBtn.innerHTML = 'Next &rsaquo;';
     nextBtn.disabled = currentPage >= totalPages;
-    nextBtn.classList.add('page-btn', 'next');
     nextBtn.onclick = (e) => {
         e.preventDefault();
         if (currentPage < totalPages) onPageChange(currentPage + 1);
@@ -43,6 +41,8 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
 
     const info = document.createElement('span');
     info.className = 'pagination-info';
+    info.style.color = 'var(--pico-muted-color)';
+    info.style.fontSize = '0.9rem';
     info.textContent = `Page ${currentPage} of ${totalPages}`;
 
     nav.appendChild(prevBtn);
@@ -71,13 +71,13 @@ export async function renderAdminNavBar(activeSection) {
     const isExec = perms.length > 0;
 
     const navItem = (link, label, key) => `
-        <button data-nav="${link}" class="admin-nav-pill ${activeSection === key ? 'active' : ''}">
+        <button data-nav="${link}" class="small-btn ${activeSection === key ? '' : 'outline secondary'}">
             ${label}
         </button>
     `;
 
     return /*html*/`
-        <div class="admin-nav-group modern-pills">
+        <div class="admin-nav-group" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 1.5rem;">
             ${(canManageUsers || canManageTransactions || isExec) ? navItem('/admin/users', 'Users', 'users') : ''}
             ${canManageEvents ? navItem('/admin/events', 'Events', 'events') : ''}
             ${canManageEvents ? navItem('/admin/tags', 'Tags', 'tags') : ''}

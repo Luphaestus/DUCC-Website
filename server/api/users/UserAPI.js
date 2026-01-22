@@ -164,7 +164,7 @@ class User {
                 case "college_id":
                     error = Rules.validate('presence', value);
                     if (!error) {
-                        const college = await CollegesDB.getCollegeByName(db, value);
+                        const college = await CollegesDB.getCollegeById(db, value);
                         if (!college) error = "Invalid college.";
                     }
                     break;
@@ -312,7 +312,6 @@ class User {
             if (!password) return res.status(400).json({ message: 'Password is required to delete account.' });
 
             try {
-                // Verify password
                 const user = await this.db.get('SELECT hashed_password FROM users WHERE id = ?', [req.user.id]);
                 if (!user || !user.hashed_password) return res.status(400).json({ message: 'User not found or invalid state.' });
 

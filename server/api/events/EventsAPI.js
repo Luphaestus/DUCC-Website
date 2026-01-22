@@ -153,7 +153,6 @@ class EventsAPI {
                 return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            // Need to import Permissions at the top of the file
             const { Permissions } = require('../../misc/permissions.js');
             const canManage = await Permissions.canManageEvent(this.db, req.user.id, eventId);
             res.json({ canManage });

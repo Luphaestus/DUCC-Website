@@ -18,7 +18,7 @@ export async function renderUserDetail(userId) {
 
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) {
-        actionsEl.innerHTML = `<button id="admin-back-btn" class="icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Users</button>`;
+        actionsEl.innerHTML = `<button id="admin-back-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Users</button>`;
         document.getElementById('admin-back-btn').onclick = () => switchView('/admin/users');
     }
 
@@ -32,7 +32,7 @@ export async function renderUserDetail(userId) {
         const canManageTransactions = userPerms.includes('transaction.manage');
         const isExec = userPerms.length > 0;
 
-        let tabsHtml = '<button data-tab="profile" class="tab-btn">Profile</button>';
+        let tabsHtml = '<button data-tab="profile" class="tab-btn active">Profile</button>';
         if (canManageUsers) {
             tabsHtml += `
                 <button data-tab="legal" class="tab-btn">Legal</button>
@@ -46,19 +46,19 @@ export async function renderUserDetail(userId) {
         }
 
         adminContent.innerHTML = /*html*/`
-            <div class="form-info user-detail-container" id="user-detail-container">
-                <article class="form-box admin-card">
-                    <header class="user-detail-header">
-                        <div class="user-identity">
-                            <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
-                            <span class="user-id-badge">ID: ${user.id}</span>
+            <div class="glass-layout">
+                <div class="glass-panel" style="margin-bottom: 1.5rem;">
+                    <header class="user-detail-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-bottom:1px solid rgba(128,128,128,0.2); padding-bottom:1rem; margin-bottom:1rem;">
+                        <div class="user-identity" style="display:flex; flex-direction:column;">
+                            <h2 class="user-name-header" style="margin:0; font-size:1.75rem;">${user.first_name} ${user.last_name}</h2>
+                            <span class="user-id-badge" style="font-size:0.85rem; color:var(--pico-muted-color);">ID: ${user.id}</span>
                         </div>
-                        <nav class="admin-tabs" id="admin-user-tabs">
+                        <nav class="admin-tabs modern-tabs" id="admin-user-tabs" style="display:flex; gap:0.5rem;">
                             ${tabsHtml}
                         </nav>
                     </header>
                     <div id="admin-tab-content" class="tab-content-area"></div>
-                </article>
+                </div>
             </div>
         `;
 

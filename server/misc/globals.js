@@ -72,7 +72,7 @@ class Globals {
      * @returns {number}
      */
     getInt(key) {
-        return parseInt(this.get(key), 10);
+        return parseInt(this.get(key).data, 10);
     }
 
     /**
@@ -81,7 +81,7 @@ class Globals {
      * @returns {number}
      */
     getFloat(key) {
-        return parseFloat(this.get(key));
+        return parseFloat(this.get(key).data);
     }
 
     /**

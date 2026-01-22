@@ -54,24 +54,7 @@ const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
                                 placeholder="e.g. 123 River St&#10;Maidenhead&#10;AB12 3CD&#10;United Kingdom"></textarea>
                             <label for="college">College*</label>
                             <Select id=${college_id} name="college" placeholder="College">
-                                <option value="Select" disabled selected>Select your college</option>
-                                <option value="castle">Castle</option>
-                                <option value="collingwood">Collingwood</option>
-                                <option value="grey">Grey</option>
-                                <option value="hatfield">Hatfield</option>
-                                <option value="johnsnow">John Snow</option>
-                                <option value="jb">Josephine Butler</option>
-                                <option value="south">South</option>
-                                <option value="aidans">St Aidans</option>
-                                <option value="stchads">St Chads</option>
-                                <option value="stcuthberts">St Cuthberts</option>
-                                <option value="hildbede">St Hild & St Bede</option>
-                                <option value="stjohns">St Johns</option>
-                                <option value="stmarys">St Marys</option>
-                                <option value="stephenson">Stephenson</option>
-                                <option value="trevelyan">Trevelyan</option>
-                                <option value="ustinov">Ustinov</option>
-                                <option value="van-mildert">Van Mildert</option>
+                                <option value="" disabled selected>Select your college</option>
                             </Select>
                         </form>
                     </article>

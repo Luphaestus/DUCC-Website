@@ -18,7 +18,7 @@ export async function renderUserAdvanced(userId) {
     if (!adminContent) return;
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = `<button data-nav="/admin/user/${userId}" class="icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to User</button>`;
+    if (actionsEl) actionsEl.innerHTML = `<button data-nav="/admin/user/${userId}" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to User</button>`;
 
     adminContent.innerHTML = '<p class="loading-text">Loading...</p>';
 
@@ -27,94 +27,94 @@ export async function renderUserAdvanced(userId) {
             ajaxGet(`/api/admin/user/${userId}`),
             ajaxGet('/api/admin/permissions').catch(() => []),
             ajaxGet('/api/tags').catch(() => ({ data: [] })),
-            ajaxGet('/api/admin/colleges').catch(() => [])
+            ajaxGet('/api/colleges').catch(() => [])
         ]);
         const allTags = allTagsRes.data || [];
 
         adminContent.innerHTML = /*html*/`
-            <div class="form-info">
-                <article class="form-box admin-card">
-                    <h2>Advanced Settings: ${user.first_name} ${user.last_name}</h2>
-                    
-                    <div class="profile-layout-grid">
-                        <div class="column">
-                            <div class="detail-card">
-                                <header><h3>${PERSON_SVG} Profile Override</h3></header>
-                                <div class="card-body">
-                                    <form id="advanced-profile-form" class="modern-form">
-                                        <label>Email <input type="email" name="email" value="${user.email}"></label>
-                                        <label>Phone <input type="text" name="phone_number" value="${user.phone_number || ''}"></label>
-                                        <label>College 
-                                            <select name="college_id" class="modern-select">
-                                                <option value="">Select College</option>
-                                                ${colleges.map(c => `<option value="${c.id}" ${c.id === user.college_id ? 'selected' : ''}>${c.name}</option>`).join('')}
-                                            </select>
+            <div class="glass-layout">
+                <header class="glass-panel" style="margin-bottom:0; display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="margin:0;">Advanced Settings: ${user.first_name} ${user.last_name}</h2>
+                </header>
+                
+                <div class="profile-layout-grid">
+                    <div class="column">
+                        <div class="detail-card">
+                            <header><h3>${PERSON_SVG} Profile Override</h3></header>
+                            <div class="card-body">
+                                <form id="advanced-profile-form" class="modern-form">
+                                    <label>Email <input type="email" name="email" value="${user.email}"></label>
+                                    <label>Phone <input type="text" name="phone_number" value="${user.phone_number || ''}"></label>
+                                    <label>College 
+                                        <select name="college_id" class="modern-select">
+                                            <option value="">Select College</option>
+                                            ${colleges.map(c => `<option value="${c.id}" ${c.id === user.college_id ? 'selected' : ''}>${c.name}</option>`).join('')}
+                                        </select>
+                                    </label>
+                                    <div class="grid-3-col">
+                                        <label>Free Sessions <input type="number" name="free_sessions" value="${user.free_sessions}"></label>
+                                        <label>Difficulty <input type="number" name="difficulty_level" value="${user.difficulty_level}" min="1" max="5"></label>
+                                        <label>Swims <input type="number" name="swims" value="${user.swims}"></label>
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="is_member" ${user.is_member ? 'checked' : ''}> Is Member
                                         </label>
-                                        <div class="grid-3-col">
-                                            <label>Free Sessions <input type="number" name="free_sessions" value="${user.free_sessions}"></label>
-                                            <label>Difficulty <input type="number" name="difficulty_level" value="${user.difficulty_level}" min="1" max="5"></label>
-                                            <label>Swims <input type="number" name="swims" value="${user.swims}"></label>
-                                        </div>
-                                        <div class="checkbox-group">
-                                            <label class="checkbox-label">
-                                                <input type="checkbox" name="is_member" ${user.is_member ? 'checked' : ''}> Is Member
-                                            </label>
-                                            <label class="checkbox-label">
-                                                <input type="checkbox" name="is_instructor" ${user.is_instructor ? 'checked' : ''}> Is Instructor
-                                            </label>
-                                        </div>
-                                        <button type="submit" class="primary-btn wide-btn">Save Profile</button>
-                                    </form>
-                                </div>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="is_instructor" ${user.is_instructor ? 'checked' : ''}> Is Instructor
+                                        </label>
+                                    </div>
+                                    <button type="submit" class="primary-btn wide-btn">Save Profile</button>
+                                </form>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="column">
-                            <div class="detail-card">
-                                <header><h3>${SHIELD_SVG} Advanced Permissions</h3></header>
-                                <div class="card-body">
-                                    <p class="helper-text">Directly assign specific permissions (overrides role).</p>
-                                    
-                                    <h4>Direct Permissions</h4>
-                                    <div class="inline-add-form">
-                                        <select id="add-perm-select" class="modern-select compact">
-                                            <option value="">Select Permission...</option>
-                                            ${allPerms.map(p => `<option value="${p.id}">${p.slug}</option>`).join('')}
-                                        </select>
-                                        <button id="add-perm-btn" class="icon-btn primary">${ADD_SVG}</button>
-                                    </div>
-                                    <div id="direct-perms-list" class="tags-cloud">
-                                        ${(user.direct_permissions || []).map(p => `
-                                            <span class="tag-chip neutral">
-                                                ${p.slug} 
-                                                <button class="remove-perm-btn delete-icon-btn" data-id="${p.id}">${CLOSE_SVG}</button>
-                                            </span>
-                                        `).join('')}
-                                    </div>
+                    <div class="column">
+                        <div class="detail-card">
+                            <header><h3>${SHIELD_SVG} Advanced Permissions</h3></header>
+                            <div class="card-body">
+                                <p class="helper-text">Directly assign specific permissions (overrides role).</p>
+                                
+                                <h4>Direct Permissions</h4>
+                                <div class="inline-add-form" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                                    <select id="add-perm-select" class="modern-select compact" style="margin-bottom: 0;">
+                                        <option value="">Select Permission...</option>
+                                        ${allPerms.map(p => `<option value="${p.id}">${p.slug}</option>`).join('')}
+                                    </select>
+                                    <button id="add-perm-btn" class="icon-btn primary small-btn">${ADD_SVG}</button>
+                                </div>
+                                <div id="direct-perms-list" class="tags-cloud">
+                                    ${(user.direct_permissions || []).map(p => `
+                                        <span class="tag-chip neutral">
+                                            ${p.slug} 
+                                            <button class="remove-perm-btn delete-icon-btn" data-id="${p.id}">${CLOSE_SVG}</button>
+                                        </span>
+                                    `).join('')}
+                                </div>
 
-                                    <div class="divider"></div>
+                                <div class="divider" style="height:1px; background:rgba(128,128,128,0.2); margin:1.5rem 0;"></div>
 
-                                    <h4>Managed Tags (Scoped)</h4>
-                                    <div class="inline-add-form">
-                                        <select id="add-managed-tag-select" class="modern-select compact">
-                                            <option value="">Select Tag...</option>
-                                            ${allTags.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-                                        </select>
-                                        <button id="add-managed-tag-btn" class="icon-btn primary">${ADD_SVG}</button>
-                                    </div>
-                                    <div id="managed-tags-list" class="tags-cloud">
-                                        ${(user.direct_managed_tags || []).map(t => `
-                                            <span class="tag-chip" style="background-color: ${t.color};">
-                                                ${t.name}
-                                                <button class="remove-managed-tag-btn delete-icon-btn" data-id="${t.id}">${CLOSE_SVG}</button>
-                                            </span>
-                                        `).join('')}
-                                    </div>
+                                <h4>Managed Tags (Scoped)</h4>
+                                <div class="inline-add-form" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                                    <select id="add-managed-tag-select" class="modern-select compact" style="margin-bottom: 0;">
+                                        <option value="">Select Tag...</option>
+                                        ${allTags.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                                    </select>
+                                    <button id="add-managed-tag-btn" class="icon-btn primary small-btn">${ADD_SVG}</button>
+                                </div>
+                                <div id="managed-tags-list" class="tags-cloud">
+                                    ${(user.direct_managed_tags || []).map(t => `
+                                        <span class="tag-chip" style="background-color: ${t.color};">
+                                            ${t.name}
+                                            <button class="remove-managed-tag-btn delete-icon-btn" data-id="${t.id}">${CLOSE_SVG}</button>
+                                        </span>
+                                    `).join('')}
                                 </div>
                             </div>
                         </div>
                     </div>
-                </article>
+                </div>
             </div>
         `;
 
@@ -126,7 +126,7 @@ export async function renderUserAdvanced(userId) {
             data.is_member = !!formData.get('is_member');
             data.is_instructor = !!formData.get('is_instructor');
             data.college_id = parseInt(data.college_id) || null;
-            
+
             // Clean up empty strings
             if (!data.phone_number) data.phone_number = null;
 

@@ -17,30 +17,28 @@ export async function renderManageGlobals() {
     if (!adminContent) return;
 
     adminContent.innerHTML = /*html*/`
-        <div class="form-info">
-            <article class="form-box admin-card">
-                <div class="admin-controls-container">
-                    <div class="admin-nav-row" style="margin-bottom: 1em !important;">
-                         ${await renderAdminNavBar('globals')}
-                    </div>
-                   
-                   <div class="table-responsive">
-                        <table class="admin-table modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Setting</th>
-                                    <th>Description</th>
-                                    <th>Value</th>
-                                    <th class="action-col">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="globals-table-body">
-                                <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                   </div>
+        <div class="glass-layout">
+            <div class="glass-toolbar">
+                 ${await renderAdminNavBar('globals')}
+            </div>
+            
+            <div class="glass-table-container">
+                <div class="table-responsive">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Setting</th>
+                                <th>Description</th>
+                                <th>Value</th>
+                                <th class="action-col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="globals-table-body">
+                            <tr><td colspan="4" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-            </article>
+            </div>
         </div>
     `;
 

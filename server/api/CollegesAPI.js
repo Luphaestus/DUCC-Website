@@ -1,11 +1,10 @@
-const check = require('../../misc/authentication.js');
-const CollegesDB = require('../../db/collegesDB.js');
+const CollegesDB = require('../db/collegesDB.js');
 
 /**
- * Admin API for managing colleges.
- * @module AdminColleges
+ * API for fetching college names.
+ * @module CollegesAPI
  */
-class AdminColleges {
+class CollegesAPI {
     /**
      * @param {object} app
      * @param {object} db
@@ -16,13 +15,13 @@ class AdminColleges {
     }
 
     /**
-     * Registers admin college routes.
+     * Registers college-related routes.
      */
     registerRoutes() {
         /**
          * List all colleges.
          */
-        this.app.get('/api/admin/colleges', check('perm:user.read | perm:user.manage'), async (req, res) => {
+        this.app.get('/api/colleges', async (req, res) => {
             const result = await CollegesDB.getAll(this.db);
             if (result.isError()) return result.getResponse(res);
             res.json(result.getData());
@@ -30,4 +29,4 @@ class AdminColleges {
     }
 }
 
-module.exports = AdminColleges;
+module.exports = CollegesAPI;

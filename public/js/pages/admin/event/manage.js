@@ -28,71 +28,69 @@ export async function renderManageEvents() {
     const location = urlParams.get('location') || '';
 
     adminContent.innerHTML = /*html*/`
-        <div class="form-info">
-            <article class="form-box admin-card">
-                <div class="admin-controls-container">
-                    <div class="admin-nav-row">
-                         ${await renderAdminNavBar('events')}
-                    </div>
-                    
-                    <div class="admin-tools-wrapper">
+        <div class="glass-layout">
+            <div class="glass-toolbar">
+                 ${await renderAdminNavBar('events')}
+                 <div class="toolbar-content">
+                    <div class="toolbar-left">
                         <div class="search-bar">
                             <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
-                            <button id="event-search-btn" class="icon-only" title="Search">
+                            <button id="event-search-btn" class="search-icon-btn" title="Search">
                                 ${SEARCH_SVG}
                             </button>
                         </div>
-                        
-                        <div class="tool-actions">
-                             <button id="toggle-filters-btn" class="secondary outline icon-text-btn">
-                                ${FILTER_LIST_SVG} Filters
-                             </button>
-                             <button data-nav="/admin/event/new" class="primary">Create Event</button>
-                        </div>
                     </div>
-
-                    <div id="advanced-filters-panel" class="filter-panel hidden modern-panel">
-                        <div class="filter-grid">
+                    
+                    <div class="toolbar-right">
+                         <button id="toggle-filters-btn" class="small-btn outline secondary">
+                            ${FILTER_LIST_SVG} Filters
+                         </button>
+                         <button data-nav="/admin/event/new" class="small-btn primary">Create Event</button>
+                        <div id="advanced-filters-panel" class="glass-filter-panel hidden">
+                            <div class="filter-grid">
+                                    <label>
+                                    Events Display
+                                    <select id="filter-show-past">
+                                        <option value="false" ${!showPast ? 'selected' : ''}>Upcoming Only</option>
+                                        <option value="true" ${showPast ? 'selected' : ''}>All Events</option>
+                                    </select>
+                                </label>
                                 <label>
-                                Events Display
-                                <select id="filter-show-past">
-                                    <option value="false" ${!showPast ? 'selected' : ''}>Upcoming Only</option>
-                                    <option value="true" ${showPast ? 'selected' : ''}>All Events</option>
-                                </select>
-                            </label>
-                            <label>
-                                Difficulty
-                                <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
-                            </label>
-                            <label>
-                                Min Cost
-                                <input type="number" id="filter-min-cost" value="${minCost}" step="0.01">
-                            </label>
+                                    Difficulty
+                                    <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
+                                </label>
                                 <label>
-                                Max Cost
-                                <input type="number" id="filter-max-cost" value="${maxCost}" step="0.01">
-                            </label>
-                            <label>
-                                Location
-                                <input type="text" id="filter-location" value="${location}" placeholder="Contains...">
-                            </label>
-                        </div>
-                        <div class="filter-actions">
-                            <button id="apply-filters-btn" class="small-btn primary">Apply</button>
+                                    Min Cost
+                                    <input type="number" id="filter-min-cost" value="${minCost}" step="0.01">
+                                </label>
+                                    <label>
+                                    Max Cost
+                                    <input type="number" id="filter-max-cost" value="${maxCost}" step="0.01">
+                                </label>
+                                <label>
+                                    Location
+                                    <input type="text" id="filter-location" value="${location}" placeholder="Contains...">
+                                </label>
+                            </div>
+                            <div class="filter-actions" style="text-align: right;">
+                                <button id="apply-filters-btn" class="small-btn primary">Apply Filters</button>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <div class="glass-table-container">
                 <div class="table-responsive">
-                    <table class="admin-table modern-table">
+                    <table class="glass-table">
                         <thead id="events-table-head"></thead>
                         <tbody id="events-table-body">
-                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
+                            <tr><td colspan="5" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div id="events-pagination"></div>
-            </article>
+            </div>
+            <div id="events-pagination"></div>
         </div>
     `;
 
@@ -197,9 +195,19 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
                     <td data-label="Cost">£${event.upfront_cost.toFixed(2)}</td>
                 </tr>
             `).join('');
-
+            
+            // Use event delegation on tbody if not already set, or just re-attach to rows safely
+            // Ideally we'd set this once, but since we re-render, re-attaching or delegation is needed.
+            // Let's stick to the previous pattern but ensure it runs. 
+            // Better yet, let's use delegation on the static container if possible, but tbody is inside render.
+            // Let's keep it simple and just ensure the previous click handler logic is robust.
+            
             tbody.querySelectorAll('.event-row').forEach(row => {
-                row.onclick = () => switchView(`/admin/event/${row.dataset.id}`);
+                row.onclick = (e) => {
+                    // Prevent navigation if clicking buttons inside the row (if any)
+                    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                    switchView(`/admin/event/${row.dataset.id}`);
+                };
             });
         }
 

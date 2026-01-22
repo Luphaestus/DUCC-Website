@@ -12,10 +12,10 @@ const fs = require('fs');
  * @module FilesAPI
  */
 class FilesAPI {
-    constructor(app, db) {
+    constructor(app, db, passport = null, uploadDir = null) {
         this.app = app;
         this.db = db;
-        this.uploadDir = path.join(__dirname, '../../data/files');
+        this.uploadDir = uploadDir || path.join(__dirname, '../../data/files');
 
         if (!fs.existsSync(this.uploadDir)) {
             fs.mkdirSync(this.uploadDir, { recursive: true });
@@ -70,7 +70,6 @@ class FilesAPI {
 
             const results = [];
             for (const file of req.files) {
-                // If title is not provided, use originalname but strip extension
                 let defaultTitle = file.originalname;
                 const ext = path.extname(file.originalname);
                 if (ext && defaultTitle.endsWith(ext)) {

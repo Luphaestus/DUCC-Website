@@ -12,13 +12,11 @@ class Permissions {
      * @returns {Promise<boolean>}
      */
     static async hasPermission(db, userId, permissionSlug) {
-        // Dynamic check for scoped permissions. This is the ONLY source of truth for these.
         if (SCOPED_PERMS.includes(permissionSlug)) {
             const managedTags = await this.getManagedTags(db, userId);
             return managedTags.length > 0;
         }
 
-        // Check Role Permissions for all other permission slugs
         const rolePerm = await db.get(
             `SELECT 1 FROM user_roles ur
              JOIN role_permissions rp ON ur.role_id = rp.role_id
@@ -28,7 +26,6 @@ class Permissions {
         );
         if (rolePerm) return true;
 
-        // Check Direct User Permissions
         const userPerm = await db.get(
             `SELECT 1 FROM user_permissions up
              JOIN permissions p ON up.permission_id = p.id

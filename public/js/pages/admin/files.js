@@ -23,39 +23,40 @@ export async function renderAdminFiles() {
     if (!adminContent) return;
 
     adminContent.innerHTML = /*html*/`
-        <div class="admin-controls-container">
-            <div class="admin-nav-row">
+        <div class="glass-layout">
+            <div class="glass-toolbar">
                 ${await renderAdminNavBar('files')}
-            </div>
-            
-            <div class="admin-tools-wrapper">
-                <div class="search-bar">
-                    <input type="text" id="admin-file-search-input" placeholder="Search files..." value="${currentOptions.search}">
-                    <button id="admin-file-search-btn" class="icon-only" title="Search">
-                        ${SEARCH_SVG}
-                    </button>
-                </div>
-                <div class="tool-actions">
-                    <select id="admin-category-filter" class="modern-select compact">
-                        <option value="">All Categories</option>
-                    </select>
-                    <button id="manage-categories-btn" class="secondary outline icon-text-btn">${FOLDER_SVG} Categories</button>
-                    <button id="upload-files-btn" class="primary icon-text-btn">${UPLOAD_SVG} Upload</button>
+                <div class="toolbar-content">
+                    <div class="toolbar-left">
+                        <div class="search-bar">
+                            <input type="text" id="admin-file-search-input" placeholder="Search files..." value="${currentOptions.search}">
+                            <button id="admin-file-search-btn" class="search-icon-btn" title="Search">
+                                ${SEARCH_SVG}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <select id="admin-category-filter" class="modern-select compact" style="margin-bottom:0; width: auto;">
+                            <option value="">All Categories</option>
+                        </select>
+                        <button id="manage-categories-btn" class="small-btn outline secondary">${FOLDER_SVG} Categories</button>
+                        <button id="upload-files-btn" class="small-btn primary">${UPLOAD_SVG} Upload</button>
+                    </div>
                 </div>
             </div>
 
-            <div id="files-admin-content">
+            <div id="files-admin-content" class="glass-table-container">
                 <div class="table-responsive">
-                    <table class="admin-table modern-table files-table">
+                    <table class="glass-table files-table">
                         <thead id="files-table-head"></thead>
                         <tbody id="admin-files-list">
-                            <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
+                            <tr><td colspan="6" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <div id="admin-files-pagination" class="pagination"></div>
+            <div id="admin-files-pagination" class="glass-pagination"></div>
         </div>
 
         <!-- Multi-Upload Modal -->

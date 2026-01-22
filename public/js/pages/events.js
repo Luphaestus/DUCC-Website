@@ -73,7 +73,7 @@ function formatEvent(event) {
     const startDate = new Date(event.start);
     const endDate = new Date(event.end);
     const isPast = endDate < new Date();
-    const isCanceled = event.status === 'canceled';
+    const isCanceled = event.is_canceled;
 
     const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
     const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);

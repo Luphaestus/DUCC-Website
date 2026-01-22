@@ -33,7 +33,7 @@ class eventsDB {
             `SELECT e.*, 
              EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
              FROM events e 
-             WHERE e.start BETWEEN ? AND ? AND e.status = 'active'
+             WHERE e.start BETWEEN ? AND ?
              ORDER BY e.start ASC`,
             [userId, startOfWeek.toISOString(), endOfWeek.toISOString()]
         );
@@ -83,7 +83,7 @@ class eventsDB {
              (SELECT COUNT(*) FROM event_attendees ea WHERE ea.event_id = e.id AND ea.is_attending = 1) as attendee_count,
              EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
              FROM events e 
-             WHERE e.start >= ? AND e.start <= ? AND e.status = 'active'
+             WHERE e.start >= ? AND e.start <= ?
              ORDER BY e.start ASC`,
             [userId, startDate.toISOString(), endDate.toISOString()]
         );
@@ -274,14 +274,72 @@ class eventsDB {
     }
 
     /**
-     * Update event status.
+     * Set event cancellation status.
      * @param {object} db
      * @param {number} id
-     * @param {string} status
-     * @returns {Promise<void>}
+     * @param {boolean} isCanceled
+     * @returns {Promise<statusObject>}
      */
-    static async updateEventStatus(db, id, status) {
-        await db.run('UPDATE events SET status = ? WHERE id = ?', [status, id]);
+    static async setEventCancellation(db, id, isCanceled) {
+        try {
+            await db.run("UPDATE events SET is_canceled = ? WHERE id = ?", [isCanceled ? 1 : 0, id]);
+            return new statusObject(200, 'Event cancellation status updated');
+        } catch (error) {
+            console.error(error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Cancel event, processing refunds and restoring free sessions.
+     * @param {object} db
+     * @param {number} id
+     * @returns {Promise<statusObject>}
+     */
+    static async cancelEvent(db, id) {
+        try {
+            await db.run('BEGIN TRANSACTION');
+
+            const event = await db.get('SELECT * FROM events WHERE id = ?', [id]);
+            if (!event) {
+                await db.run('ROLLBACK');
+                return new statusObject(404, 'Event not found');
+            }
+
+            if (event.is_canceled) {
+                await db.run('ROLLBACK');
+                return new statusObject(400, 'Event already canceled');
+            }
+
+            await db.run("UPDATE events SET is_canceled = 1 WHERE id = ?", [id]);
+
+            const attendees = await db.all('SELECT * FROM event_attendees WHERE event_id = ? AND is_attending = 1', [id]);
+
+            for (const attendee of attendees) {
+                // Check for monetary refund
+                if (attendee.payment_transaction_id) {
+                    const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [attendee.payment_transaction_id]);
+                    if (transaction) {
+                        const refundAmount = Math.abs(transaction.amount);
+                        await TransactionsDB._add_transaction_internal(db, attendee.user_id, refundAmount, `Refund for canceled event: ${event.title}`, id);
+                    }
+                } 
+                
+                const user = await db.get('SELECT is_member FROM users WHERE id = ?', [attendee.user_id]);
+                if (user && !user.is_member) {
+                    await db.run('UPDATE users SET free_sessions = free_sessions + 1 WHERE id = ?', [attendee.user_id]);
+                }
+            }
+
+            await db.run('DELETE FROM event_waiting_list WHERE event_id = ?', [id]);
+
+            await db.run('COMMIT');
+            return new statusObject(200, 'Event canceled and refunds processed');
+        } catch (error) {
+            await db.run('ROLLBACK');
+            console.error(error);
+            return new statusObject(500, 'Database error during cancellation');
+        }
     }
 
     /**

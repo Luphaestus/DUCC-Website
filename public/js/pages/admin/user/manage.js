@@ -25,64 +25,62 @@ export async function renderManageUsers() {
     const difficulty = urlParams.get('difficulty') || '';
 
     adminContent.innerHTML = /*html*/`
-        <div class="form-info">
-            <article class="form-box admin-card">
-                <div class="admin-controls-container">
-                    <div class="admin-nav-row">
-                        ${await renderAdminNavBar('users')}
-                    </div>
-                    
-                    <div class="admin-tools-wrapper">
+        <div class="glass-layout">
+            <div class="glass-toolbar">
+                ${await renderAdminNavBar('users')}
+                <div class="toolbar-content">
+                    <div class="toolbar-left">
                         <div class="search-bar">
                             <input type="text" id="user-search-input" placeholder="Search by name..." value="${search}">
-                            <button id="user-search-btn" class="icon-only" title="Search">${SEARCH_SVG}</button>
-                        </div>
-                        <div class="tool-actions">
-                            <button id="toggle-user-filters-btn" class="secondary outline icon-text-btn">
-                                ${FILTER_LIST_SVG} Filters
-                            </button>
+                            <button id="user-search-btn" class="search-icon-btn" title="Search">${SEARCH_SVG}</button>
                         </div>
                     </div>
-
-                    <div id="advanced-user-filters-panel" class="filter-panel hidden modern-panel">
-                        <div class="filter-grid">
-                            <label>
-                                In Debt
-                                <select id="filter-in-debt">
-                                    <option value="">All</option>
-                                    <option value="true" ${inDebt === 'true' ? 'selected' : ''}>Yes</option>
-                                    <option value="false" ${inDebt === 'false' ? 'selected' : ''}>No</option>
-                                </select>
-                            </label>
-                            <label>
-                                Membership
-                                <select id="filter-is-member">
-                                    <option value="">All</option>
-                                    <option value="true" ${isMember === 'true' ? 'selected' : ''}>Members</option>
-                                    <option value="false" ${isMember === 'false' ? 'selected' : ''}>Non-Members</option>
-                                </select>
-                            </label>
-                            <label>
-                                Difficulty
-                                <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
-                            </label>
-                        </div>
-                        <div class="filter-actions">
-                            <button id="apply-user-filters-btn" class="small-btn primary">Apply</button>
+                    <div class="toolbar-right">
+                        <button id="toggle-user-filters-btn" class="small-btn outline secondary">
+                            ${FILTER_LIST_SVG} Filters
+                        </button>
+                        <div id="advanced-user-filters-panel" class="glass-filter-panel hidden">
+                            <div class="filter-grid">
+                                <label>
+                                    In Debt
+                                    <select id="filter-in-debt">
+                                        <option value="">All</option>
+                                        <option value="true" ${inDebt === 'true' ? 'selected' : ''}>Yes</option>
+                                        <option value="false" ${inDebt === 'false' ? 'selected' : ''}>No</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Membership
+                                    <select id="filter-is-member">
+                                        <option value="">All</option>
+                                        <option value="true" ${isMember === 'true' ? 'selected' : ''}>Members</option>
+                                        <option value="false" ${isMember === 'false' ? 'selected' : ''}>Non-Members</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Difficulty
+                                    <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
+                                </label>
+                            </div>
+                            <div class="filter-actions" style="text-align: right;">
+                                <button id="apply-user-filters-btn" class="small-btn primary">Apply Filters</button>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div id="users-table-container" class="table-responsive">
-                    <table class="admin-table modern-table">
+            <div id="users-table-container" class="glass-table-container">
+                <div class="table-responsive">
+                    <table class="glass-table">
                         <thead id="users-table-head"></thead>
                         <tbody id="users-table-body">
-                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
+                            <tr><td colspan="5" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div id="users-pagination"></div>
-            </article>
+            </div>
+            <div id="users-pagination"></div>
         </div>
     `;
 
@@ -196,7 +194,10 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
         });
 
         tbody.querySelectorAll('.user-row').forEach(row => {
-            row.onclick = () => switchView(`/admin/user/${row.dataset.id}`);
+            row.onclick = (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                switchView(`/admin/user/${row.dataset.id}`);
+            };
         });
 
         renderPaginationControls(pagination, page, data.totalPages || 1, (newPage) => updateUserParams({ page: newPage }));

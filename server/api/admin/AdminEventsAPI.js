@@ -90,12 +90,8 @@ class AdminEvents {
             if (!await Permissions.canManageEvent(this.db, req.user.id, req.params.id)) {
                 return res.status(403).json({ message: 'Not authorized for this event' });
             }
-            try {
-                await EventsDB.updateEventStatus(this.db, req.params.id, 'canceled');
-                res.json({ message: 'Event canceled' });
-            } catch (e) {
-                res.status(500).json({ message: 'Database error' });
-            }
+            const result = await EventsDB.cancelEvent(this.db, req.params.id);
+            return result.getResponse(res);
         });
 
         /**

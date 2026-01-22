@@ -175,7 +175,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
         let isDisabled = false;
         let isDeleteStyle = false;
 
-        if (event.status === 'canceled') {
+        if (event.is_canceled) {
             buttonText = 'Event Canceled';
             isDisabled = true;
         } else if (isAttending) {
@@ -358,12 +358,13 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         }
 
         const isPast = new Date(event.end) < new Date();
+        const isCanceled = event.is_canceled;
 
         navContainer.innerHTML = /*html*/`
-            <div class="event-modal-header ${isPast ? 'past-event' : ''}" style="background-image: url('${imageUrl}');">
+            <div class="event-modal-header ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" style="background-image: url('${imageUrl}');">
                 <div class="header-content">
                     <div class="event-tags">${tagsHtml}</div>
-                    <h2 class="event-title">${event.title}</h2>
+                    <h2 class="event-title ${isCanceled ? 'strikethrough' : ''}">${event.title} ${isCanceled ? '(CANCELED)' : ''}</h2>
                     <p class="event-location">${LOCATION_ON_SVG} ${event.location || 'Location TBD'}</p>
                 </div>
             </div>

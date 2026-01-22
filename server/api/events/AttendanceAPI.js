@@ -48,7 +48,7 @@ class AttendanceAPI {
         /**
          * Get count of instructors attending an event.
          */
-        this.app.get('/api/event/:id/coachCount', async (req, res) => {
+        this.app.get('/api/event/:id/coachCount', check(), async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {
                 return res.status(400).json({ message: 'Event ID must be an integer' });
@@ -88,19 +88,17 @@ class AttendanceAPI {
             if (eventRes.isError()) return res.status(404).json({ message: 'Event not found' });
             const event = eventRes.getData();
 
-            // Check Consolidated Rules
             const user = await UserDB.getElementsById(this.db, req.user.id, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level']);
             if (user.isError()) return user.getResponse(res);
 
             const canJoin = await Rules.canJoinEvent(this.db, event, user.getData());
             if (canJoin.isError()) return canJoin.getResponse(res);
 
-            // 2. Handle Payment / Free Sessions Logic (Actions)
             const membershipStatus = user.getData();
             let usedFreeSession = false;
 
-            if (membershipStatus.is_instructor && event.status === 'canceled') {
-                await EventsDB.updateEventStatus(this.db, eventId, 'active');
+            if (membershipStatus.is_instructor && event.is_canceled) {
+                await EventsDB.setEventCancellation(this.db, eventId, false);
             }
 
             if (!membershipStatus.is_member) {
@@ -148,13 +146,13 @@ class AttendanceAPI {
             if (eventRes.isError()) return res.status(404).json({ message: 'Event not found' });
             const event = eventRes.getData();
 
-            if (event.status === 'canceled') return res.status(400).json({ message: 'Event is canceled' });
+            if (event.is_canceled) return res.status(400).json({ message: 'Event is canceled' });
 
             const userStatus = await UserDB.getElementsById(this.db, req.user.id, ['is_instructor']);
             if (!!userStatus.getData().is_instructor) {
                 const coachCount = await AttendanceDB.getCoachesAttendingCount(this.db, eventId);
                 if (coachCount === 1) {
-                    await EventsDB.updateEventStatus(this.db, eventId, 'canceled');
+                    await EventsDB.setEventCancellation(this.db, eventId, true);
                 }
             }
 
@@ -182,19 +180,16 @@ class AttendanceAPI {
                 }
             }
 
-            // Check waiting list and promote
-            const WaitlistDB = require('../../db/waitlistDB.js'); // Lazy load to ensure file exists or imported correctly
+            const WaitlistDB = require('../../db/waitlistDB.js'); 
             const nextUserRes = await WaitlistDB.get_next_on_waiting_list(this.db, eventId);
             const nextUserId = nextUserRes.getData();
 
             if (nextUserId) {
                 try {
-                    // Fetch user details for eligibility check
                     const nextUser = await UserDB.getElementsById(this.db, nextUserId, ['is_member', 'free_sessions', 'filled_legal_info']);
                     if (!nextUser.isError()) {
                         const u = nextUser.getData();
 
-                        // Check eligibility (ignoring debt for waiting list promotion)
                         let eligible = true;
                         if (!u.filled_legal_info) eligible = false;
                         if (!u.is_member && u.free_sessions <= 0) eligible = false;
@@ -212,7 +207,6 @@ class AttendanceAPI {
                                 }
                             }
 
-                            // Promote user
                             await AttendanceDB.attend_event(this.db, nextUserId, eventId, transactionId);
                             await WaitlistDB.remove_user_from_waiting_list(this.db, eventId, nextUserId);
                         }

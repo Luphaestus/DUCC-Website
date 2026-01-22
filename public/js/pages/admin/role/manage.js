@@ -15,33 +15,33 @@ export async function renderManageRoles() {
     if (!adminContent) return;
 
     adminContent.innerHTML = /*html*/`
-        <div class="form-info">
-            <article class="form-box admin-card">
-                <div class="admin-controls-container">
-                    <div class="admin-nav-row">
-                        ${await renderAdminNavBar('roles')}
-                    </div>
-                    <div class="admin-tools-wrapper">
-                        <div class="tool-actions full-width-actions">
-                            <button data-nav="/admin/role/new" class="primary">Create New Role</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="admin-table modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Description</th>
-                                    <th>Permissions Count</th>
-                                </tr>
-                            </thead>
-                            <tbody id="roles-table-body">
-                                <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
-                            </tbody>
-                        </table>
+        <div class="glass-layout">
+            <div class="glass-toolbar" style="justify-content: flex-end;">
+                ${await renderAdminNavBar('roles')}
+                <div class="toolbar-content">
+                    <div class="toolbar-left"></div>
+                    <div class="toolbar-right">
+                        <button data-nav="/admin/role/new" class="small-btn primary">Create New Role</button>
                     </div>
                 </div>
-            </article>
+            </div>
+
+            <div class="glass-table-container">
+                <div class="table-responsive">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Permissions Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-table-body">
+                            <tr><td colspan="3" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     `;
 

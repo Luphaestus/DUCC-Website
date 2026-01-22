@@ -103,10 +103,8 @@ class TagsAPI {
          * Fetch tags for a specific user.
          */
         this.app.get('/api/user/:userId/tags', check(), async (req, res) => {
-            // Need user.manage or be same user
             if (req.user.id != req.params.userId) {
-                // Check permissions dynamically since check() just authed
-                const Permissions = require('../misc/permissions.js');
+                const { Permissions } = require('../misc/permissions.js');
                 if (!await Permissions.hasPermission(this.db, req.user.id, 'user.manage')) {
                     return res.status(403).json({ message: 'Forbidden' });
                 }

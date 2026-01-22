@@ -43,8 +43,7 @@ class AdminRoles {
         this.app.post('/api/admin/role', check('perm:role.write | perm:role.manage'), async (req, res) => {
             const { name, description, permissions } = req.body;
             const result = await RolesDB.createRole(this.db, name, description, permissions);
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+            result.getResponse(res);
         });
 
         /**

@@ -97,7 +97,7 @@ class Rules {
         if (!user) return new statusObject(401, 'User not authenticated');
 
         // Event Status
-        if (event.status === 'canceled') return new statusObject(400, 'Event is canceled');
+        if (event.is_canceled) return new statusObject(400, 'Event is canceled');
 
         // Timing
         const now = new Date();
@@ -140,7 +140,7 @@ class Rules {
         const balanceRes = await TransactionsDB.get_balance(db, user.id);
         const balance = balanceRes.getData();
         const minMoney = new Globals().getFloat('MinMoney');
-        if (event.upfront_cost === 0 && balance < minMoney) {
+        if (balance < minMoney) {
             return new statusObject(403, 'Outstanding debts');
         }
 

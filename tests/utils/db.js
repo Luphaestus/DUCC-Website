@@ -56,6 +56,7 @@ async function setupTestDb() {
             agrees_to_data_storage BOOLEAN,
             agrees_to_keep_health_data BOOLEAN,
             filled_legal_info BOOLEAN NOT NULL DEFAULT 0,
+            legal_filled_at DATETIME,
             
             difficulty_level INTEGER not NULL DEFAULT 1,
             is_instructor BOOLEAN NOT NULL DEFAULT 0,
@@ -83,7 +84,9 @@ async function setupTestDb() {
             max_attendees INTEGER,
             upfront_cost REAL NOT NULL DEFAULT 0,
             upfront_refund_cutoff DATETIME,
-            status TEXT CHECK(status IN ('active', 'canceled')) NOT NULL DEFAULT 'active',
+            is_canceled BOOLEAN NOT NULL DEFAULT 0,
+            enable_waitlist BOOLEAN NOT NULL DEFAULT 1,
+            signup_required BOOLEAN NOT NULL DEFAULT 1,
             
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
@@ -234,8 +237,41 @@ async function setupTestDb() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             event_id INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS file_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            default_visibility TEXT CHECK(default_visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members'
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            author TEXT,
+            date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            size INTEGER,
+            filename TEXT,
+            category_id INTEGER,
+            visibility TEXT CHECK(visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members',
+            FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL
+        );
+    `);
+
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
     `);

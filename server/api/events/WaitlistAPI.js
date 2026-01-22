@@ -24,21 +24,25 @@ class WaitlistAPI {
             res.json({ isOnWaitlist: onList.getData() });
         });
 
-        /**
-         * Join waiting list.
-         */
         this.app.post('/api/event/:id/waitlist/join', check(), async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) return res.status(400).json({ message: 'Event ID must be an integer' });
 
             const eventRes = await EventsDB.get_event_by_id(this.db, req.user.id, eventId);
-            if (eventRes.isError()) return res.status(404).json({ message: 'Event not found' });
+            if (eventRes.isError()) return eventRes.getResponse(res);
+            const event = eventRes.getData();
+
+            if (!event.enable_waitlist) return res.status(400).json({ message: 'Waitlist is disabled for this event' });
+
+            const user = await UserDB.getElementsById(this.db, req.user.id, ['filled_legal_info']);
+            if (user.isError()) return user.getResponse(res);
+            if (!user.getData().filled_legal_info) return res.status(403).json({ message: 'Legal info incomplete' });
 
             const isAttending = await AttendanceDB.is_user_attending_event(this.db, req.user.id, eventId);
             if (isAttending.getData()) return res.status(400).json({ message: 'Already attending' });
 
-            const maxAttendance = eventRes.getData().max_attendance;
-            if (maxAttendance !== null) {
+            const maxAttendance = event.max_attendees;
+            if (maxAttendance !== null && maxAttendance > 0) {
                 const currentAttendance = await AttendanceDB.get_event_attendance_count(this.db, eventId);
                 if (currentAttendance.isError()) return currentAttendance.getResponse(res);
                 if (currentAttendance.getData() < maxAttendance) {
@@ -69,6 +73,9 @@ class WaitlistAPI {
             if (Number.isNaN(eventId)) {
                 return res.status(400).json({ message: 'Event ID must be an integer' });
             }
+
+            const eventRes = await EventsDB.get_event_by_id(this.db, req.user ? req.user.id : null, eventId);
+            if (eventRes.isError()) return eventRes.getResponse(res);
 
             const isExec = req.user ? await Permissions.hasAnyPermission(this.db, req.user.id) : false;
 

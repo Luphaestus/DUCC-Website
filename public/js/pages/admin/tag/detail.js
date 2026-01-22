@@ -18,7 +18,7 @@ export async function renderTagDetail(id) {
     if (!adminContent) return;
 
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn" class="icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Tags</button>`;
+    if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
@@ -42,74 +42,78 @@ export async function renderTagDetail(id) {
     }
 
     adminContent.innerHTML = /*html*/`
-        <div class="form-info">
-            <article class="form-box admin-card">
-                <header class="card-header-flex">
+        <div class="glass-layout">
+            <div class="glass-panel">
+                <header class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <h2>${isNew ? 'Create New Tag' : 'Edit Tag'}</h2>
-                    ${!isNew ? `<button type="button" id="delete-tag-btn" class="delete-icon-btn outline" title="Delete">${DELETE_SVG}</button>` : ''}
+                    ${!isNew ? `<button type="button" id="delete-tag-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : ''}
                 </header>
                 
                 <form id="tag-form" class="modern-form">
-                    <div class="grid-2-col">
+                    <div class="grid-2-col" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
                         <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
-                        <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input"></label>
+                        <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input" style="height:3rem; padding:0; border:none; background:none; cursor:pointer; width:100%;"></label>
                     </div>
                     
-                    <label>Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
+                    <label style="margin-bottom:1.5rem; display:block;">Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
                     
                     <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
                     
-                    <div class="form-actions-footer">
+                    <div class="form-actions-footer" style="margin-top:2rem; text-align:right;">
                         <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                     </div>
                 </form>
 
                 ${!isNew && userPerms ? `
-                    <div class="divider"></div>
+                    <div class="divider" style="height:1px; background:rgba(128,128,128,0.2); margin:2rem 0;"></div>
                     
                     <div class="permission-section">
-                        <div class="section-header">
-                            <h3>${SHIELD_SVG} Designated Managers</h3>
-                            <p class="helper-text">Users allowed to manage (create/edit/read) events with this tag.</p>
+                        <div class="section-header" style="margin-bottom:1rem;">
+                            <h3 style="display:flex; align-items:center; gap:0.5rem; font-size:1.25rem;">${SHIELD_SVG} Designated Managers</h3>
+                            <p class="helper-text" style="color:var(--pico-muted-color); font-size:0.9rem;">Users allowed to manage (create/edit/read) events with this tag.</p>
                         </div>
                         
-                        <form id="managers-form" class="inline-add-form">
-                            <input list="managers-datalist" id="managers-user-input" placeholder="Search by name or email..." autocomplete="off">
+                        <form id="managers-form" class="inline-add-form" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                            <input list="managers-datalist" id="managers-user-input" placeholder="Search by name or email..." autocomplete="off" style="flex:1; margin-bottom:0;">
                             <datalist id="managers-datalist"></datalist>
-                            <button type="submit" class="icon-btn primary" title="Add Manager">${ADD_SVG}</button>
+                            <button type="submit" class="small-btn primary" title="Add Manager">${ADD_SVG}</button>
                         </form>
                         
-                        <div class="table-responsive">
-                            <table class="admin-table modern-table">
-                                <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
-                                <tbody id="managers-table-body">${renderUserRows(managers, id, 'remove-manager-btn')}</tbody>
-                            </table>
+                        <div class="glass-table-container">
+                            <div class="table-responsive">
+                                <table class="glass-table">
+                                    <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
+                                    <tbody id="managers-table-body">${renderUserRows(managers, id, 'remove-manager-btn')}</tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="divider"></div>
+                    <div class="divider" style="height:1px; background:rgba(128,128,128,0.2); margin:2rem 0;"></div>
 
                     <div class="permission-section">
-                        <div class="section-header">
-                            <h3>${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
-                            <p class="helper-text">Restricts event visibility/joining to specific users.</p>
+                        <div class="section-header" style="margin-bottom:1rem;">
+                            <h3 style="display:flex; align-items:center; gap:0.5rem; font-size:1.25rem;">${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
+                            <p class="helper-text" style="color:var(--pico-muted-color); font-size:0.9rem;">Restricts event visibility/joining to specific users.</p>
                         </div>
                         
-                        <form id="whitelist-form" class="inline-add-form">
-                            <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
+                        <form id="whitelist-form" class="inline-add-form" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                            <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off" style="flex:1; margin-bottom:0;">
                             <datalist id="users-datalist"></datalist>
-                            <button type="submit" class="icon-btn primary" title="Add User">${ADD_SVG}</button>
+                            <button type="submit" class="small-btn primary" title="Add User">${ADD_SVG}</button>
                         </form>
                         
-                        <div class="table-responsive">
-                            <table class="admin-table modern-table">
-                                <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
-                                <tbody id="whitelist-table-body">${renderUserRows(whitelist, id, 'remove-whitelist-btn')}</tbody>
-                            </table>
+                        <div class="glass-table-container">
+                            <div class="table-responsive">
+                                <table class="glass-table">
+                                    <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
+                                    <tbody id="whitelist-table-body">${renderUserRows(whitelist, id, 'remove-whitelist-btn')}</tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 ` : ''}
-            </article>
+            </div>
         </div>`;
 
     document.getElementById('tag-form').onsubmit = async (e) => {

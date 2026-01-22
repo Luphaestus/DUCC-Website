@@ -64,7 +64,7 @@ async function createTables(db) {
         max_attendees INTEGER,
         upfront_cost REAL NOT NULL DEFAULT 0,
         upfront_refund_cutoff DATETIME,
-        status TEXT CHECK(status IN ('active', 'canceled')) NOT NULL DEFAULT 'active',
+        is_canceled BOOLEAN NOT NULL DEFAULT 0,
         enable_waitlist BOOLEAN NOT NULL DEFAULT 1,
         signup_required BOOLEAN NOT NULL DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP

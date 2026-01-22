@@ -16,21 +16,40 @@ class CollegesDB {
         }
     }
 
-    /**
-     * Get college by name.
-     * @param {object} db 
-     * @param {string} name 
-     * @returns {Promise<object|null>} College object or null
-     */
-    static async getCollegeByName(db, name) {
-        try {
-            const college = await db.get('SELECT * FROM colleges WHERE name = ?', [name]);
-            return college;
-        } catch (e) {
-            console.error('Database error fetching college by name:', e);
-            return null;
-        }
-    }
-}
+        /**
 
-module.exports = CollegesDB;
+         * Get college by ID.
+
+         * @param {object} db 
+
+         * @param {number} id 
+
+         * @returns {Promise<object|null>} College object or null
+
+         */
+
+        static async getCollegeById(db, id) {
+
+            try {
+
+                const college = await db.get('SELECT * FROM colleges WHERE id = ?', [id]);
+
+                return college;
+
+            } catch (e) {
+
+                console.error('Database error fetching college by ID:', e);
+
+                return null;
+
+            }
+
+        }
+
+    }
+
+    
+
+    module.exports = CollegesDB;
+
+    

@@ -107,7 +107,6 @@ class Auth {
                     );
                     res.status(200).json({ message: 'Account restored successfully.' });
                 } else {
-                    // Create new account
                     await this.db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
                     res.status(201).json({ message: 'User registered successfully.' });
                 }
