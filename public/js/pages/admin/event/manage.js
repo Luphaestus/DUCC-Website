@@ -72,7 +72,7 @@ export async function renderManageEvents() {
                                     <input type="text" id="filter-location" value="${location}" placeholder="Contains...">
                                 </label>
                             </div>
-                            <div class="filter-actions" style="text-align: right;">
+                            <div class="filter-actions text-right">
                                 <button id="apply-filters-btn" class="small-btn primary">Apply Filters</button>
                             </div>
                         </div>
@@ -85,7 +85,7 @@ export async function renderManageEvents() {
                     <table class="glass-table">
                         <thead id="events-table-head"></thead>
                         <tbody id="events-table-body">
-                            <tr><td colspan="5" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>

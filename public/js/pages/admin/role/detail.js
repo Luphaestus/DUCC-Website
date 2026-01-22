@@ -38,7 +38,7 @@ export async function renderRoleDetail(id) {
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
             <div class="glass-panel">
-                <header class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <header class="card-header-flex">
                     <h2>${isNew ? 'Create New Role' : 'Edit Role'}</h2>
                     ${!isNew ? `<button type="button" id="delete-role-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : ''}
                 </header>
@@ -47,7 +47,7 @@ export async function renderRoleDetail(id) {
                     <label>Name <input type="text" name="name" value="${role.name}" required placeholder="Role Name"></label>
                     <label>Description <textarea name="description" rows="3">${role.description || ''}</textarea></label>
                     
-                    <div class="form-divider" style="height:1px; background:rgba(128,128,128,0.2); margin:2rem 0;"></div>
+                    <div class="form-divider"></div>
                     
                     <h3>Permissions</h3>
                     <div class="permissions-grid">
@@ -59,7 +59,7 @@ export async function renderRoleDetail(id) {
                         `).join('')}
                     </div>
 
-                    <div class="form-actions-footer" style="margin-top:2rem; text-align:right;">
+                    <div class="form-actions-footer">
                         <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                     </div>
                 </form>

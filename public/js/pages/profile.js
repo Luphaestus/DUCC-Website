@@ -313,7 +313,7 @@ function renderTags(tags) {
     const container = document.getElementById('tags-list-container');
     if (tags && tags.length > 0) {
         container.innerHTML = tags.map(tag =>
-            `<span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>`
+            `<span class="tag-badge" style="--tag-color: ${tag.color};">${tag.name}</span>`
         ).join('');
     } else {
         const pannel = document.getElementById('groups-teams-panel');
@@ -328,8 +328,7 @@ function renderInstructor(profile) {
 
     if (isInstructor) {
         text.textContent = 'Active Instructor';
-        text.style.color = '#2ecc71';
-        text.style.fontWeight = 'bold';
+        text.classList.add('instructor-active');
         btn.textContent = 'Resign';
         btn.className = 'small-btn outline delete';
         btn.onclick = async () => {
@@ -340,8 +339,7 @@ function renderInstructor(profile) {
         };
     } else {
         text.textContent = 'Not an instructor';
-        text.style.color = '';
-        text.style.fontWeight = 'normal';
+        text.classList.remove('instructor-active');
         btn.textContent = 'Apply';
         btn.className = 'small-btn secondary';
         btn.onclick = async () => {
@@ -355,7 +353,8 @@ function renderBalance(profile) {
     const bal = Number(profile.balance);
     const el = document.getElementById('balance-amount');
     el.textContent = `£${bal.toFixed(2)}`;
-    el.style.color = bal < 0 ? '#e74c3c' : (bal > 0 ? '#2ecc71' : 'var(--pico-color)');
+    el.classList.toggle('balance-negative', bal < 0);
+    el.classList.toggle('balance-positive', bal > 0);
 }
 
 async function renderTransactions() {
@@ -365,7 +364,7 @@ async function renderTransactions() {
         const txs = res.transactions || [];
 
         if (txs.length === 0) {
-            container.innerHTML = '<p class="text-muted" style="padding:1rem;">No transactions found.</p>';
+            container.innerHTML = '<p class="empty-text">No transactions found.</p>';
             return;
         }
 

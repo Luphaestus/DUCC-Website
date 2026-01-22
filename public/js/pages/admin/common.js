@@ -41,8 +41,6 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
 
     const info = document.createElement('span');
     info.className = 'pagination-info';
-    info.style.color = 'var(--pico-muted-color)';
-    info.style.fontSize = '0.9rem';
     info.textContent = `Page ${currentPage} of ${totalPages}`;
 
     nav.appendChild(prevBtn);
@@ -77,7 +75,7 @@ export async function renderAdminNavBar(activeSection) {
     `;
 
     return /*html*/`
-        <div class="admin-nav-group" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 1.5rem;">
+        <div class="admin-nav-group">
             ${(canManageUsers || canManageTransactions || isExec) ? navItem('/admin/users', 'Users', 'users') : ''}
             ${canManageEvents ? navItem('/admin/events', 'Events', 'events') : ''}
             ${canManageEvents ? navItem('/admin/tags', 'Tags', 'tags') : ''}

@@ -1,0 +1,7 @@
+#login-view {
+    #login-message {
+        margin-top: 1rem;
+        &.error { color: #FF6961; }
+        &.success { color: #77DD77; }
+    }
+}

@@ -1,0 +1,43 @@
+@use "../mixins" as *;
+
+/* Containers */
+.sub-container {
+    background: rgba(var(--pico-background-color-rgb), 0.5); border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+    width: 100%; padding: 1.25rem; border-radius: var(--border-radius-md); margin-bottom: 1rem;
+    :first-child { --success: #2ecc71; --warning: #f39c12; --error: #e74c3c; --ok: #3498db; font-weight: 600; margin-top: 0; }
+    :last-child { margin-bottom: 0; }
+}
+
+/* Glass Panels */
+.glass-panel {
+    background: var(--glass-bg); border: var(--glass-border); box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--border-radius-lg); padding: 1.25rem;
+}
+
+/* Form Layouts */
+.form-info {
+    display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 2rem;
+    .form-box {
+        @include translucent-card; flex: 1 1 320px; padding: 2rem; margin-bottom: 0; @include card-highlights;
+        >form { display: flex; flex-direction: column; gap: 1.25rem; }
+        h3, h2 { display: flex; align-items: center; font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--pico-contrast); >svg { width: 1.75rem; height: 1.75rem; margin-right: 0.75rem; opacity: 0.9; } }
+        div { margin: 0; }
+    }
+}
+
+/* Tooltips */
+.info-tooltip-wrapper {
+    position: relative; display: inline-flex; align-items: center; cursor: help; vertical-align: middle; margin-left: 0.35rem; color: var(--pico-primary);
+    svg { width: 1.1em; height: 1.1em; opacity: 0.8; }
+    &:hover .tooltip-text { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+}
+
+.tooltip-text {
+    visibility: hidden; width: 280px; background-color: rgba(0, 0, 0, 0.9); color: white; text-align: center; border-radius: 8px; padding: 0.75rem; position: absolute; z-index: 100; bottom: 140%; left: 50%; transform: translateX(-50%) translateY(0); opacity: 0; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); font-size: 0.85rem; line-height: 1.4; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    &::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent; }
+}
+
+/* Tags */
+.tag-badge {
+    color: white; padding: 0.25rem 0.75rem; border-radius: var(--border-radius-pill); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}

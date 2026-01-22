@@ -1,0 +1,18 @@
+#admin-view {
+    .event-row {
+        &.clickable-row {
+            cursor: pointer;
+        }
+
+        .primary-text {
+            font-weight: 600;
+            color: var(--pico-contrast);
+        }
+    }
+
+    .loading-cell, .empty-cell, .error-cell {
+        text-align: center;
+        padding: 2rem;
+        color: var(--pico-muted-color);
+    }
+}

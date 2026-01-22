@@ -16,7 +16,7 @@ export async function renderManageTags() {
 
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
-            <div class="glass-toolbar" style="justify-content: flex-end;">
+            <div class="glass-toolbar justify-end">
                  ${await renderAdminNavBar('tags')}
                  <div class="toolbar-content">
                     <div class="toolbar-left"></div>
@@ -38,7 +38,7 @@ export async function renderManageTags() {
                             </tr>
                         </thead>
                         <tbody id="tags-table-body">
-                            <tr><td colspan="4" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                            <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -65,7 +65,7 @@ async function fetchAndRenderTags() {
                 <tr class="tag-row clickable-row" data-id="${tag.id}">
                     <td data-label="Name" class="primary-text">${tag.name}</td>
                     <td data-label="Color">
-                        <span class="tag-badge" style="background-color: ${tag.color};">
+                        <span class="tag-badge" style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
                             ${tag.color}
                         </span>
                     </td>

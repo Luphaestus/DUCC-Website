@@ -1,4 +1,4 @@
-@use "mixins" as *;
+@use "../../mixins" as *;
 
 /* Admin Layout */
 #admin-view {
@@ -573,6 +573,8 @@ textarea[name="description"] {
         z-index: 1;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         pointer-events: none;
+        width: var(--tab-width, 0);
+        transform: translateX(var(--tab-left, 0));
     }
 
     button, .tab-btn {

@@ -22,41 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const container = document.createElement('div');
     container.id = 'animated-background';
-    container.style.position = 'fixed';
-    container.style.top = '0';
-    container.style.left = '0';
-    container.style.width = '100vw';
-    container.style.height = '100vh';
-    container.style.zIndex = '-10';
-    container.style.pointerEvents = 'none';
-    container.style.overflow = 'hidden';
     body.prepend(container);
-
-    const styleSheet = document.createElement('style');
-    document.head.appendChild(styleSheet);
-
-    styleSheet.textContent = `
-        @keyframes floatAround {
-            0% { transform: translate(0, 0); }
-            33% { transform: translate(40vw, -40vh); }
-            66% { transform: translate(-40vw, 40vh); }
-            100% { transform: translate(0, 0); }
-        }
-        @keyframes driftAcross {
-            from { transform: translateX(-200px) rotate(0deg); }
-            to { transform: translateX(calc(100vw + 200px)) rotate(15deg); }
-        }
-    `;
 
     // Generate floating blobs
     colors.forEach((color, i) => {
         const blob = document.createElement('div');
         blob.className = 'bg-blob';
         const size = 40 + (i * 10);
-        blob.style.width = `${size}vmax`;
-        blob.style.height = `${size}vmax`;
-        blob.style.backgroundColor = color;
-        blob.style.filter = 'blur(30px)';
+        blob.style.setProperty('--blob-size', `${size}vmax`);
+        blob.style.setProperty('--blob-color', color);
 
         const positions = [
             { top: '-20%', left: '-20%' },
@@ -66,10 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
             { top: '70%', left: '70%' }
         ];
 
-        blob.style.top = positions[i].top;
-        blob.style.left = positions[i].left;
-        blob.style.animation = `floatAround ${40 + i * 10}s infinite ease-in-out`;
-        blob.style.animationDelay = `${i * -20}s`;
+        blob.style.setProperty('--blob-top', positions[i].top);
+        blob.style.setProperty('--blob-left', positions[i].left);
+        blob.style.setProperty('--blob-duration', `${40 + i * 10}s`);
+        blob.style.setProperty('--blob-delay', `${i * -20}s`);
         container.appendChild(blob);
     });
 
@@ -79,13 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.className = 'bg-icon';
         icon.innerHTML = kayakSvg;
         const size = 60 + Math.random() * 100;
-        icon.style.width = `${size}px`;
-        icon.style.top = `${Math.random() * 100}vh`;
-        icon.style.left = "0";
+        icon.style.setProperty('--icon-size', `${size}px`);
+        icon.style.setProperty('--icon-top', `${Math.random() * 100}vh`);
 
         const duration = 40 + Math.random() * 60;
-        icon.style.animation = `driftAcross ${duration}s linear infinite`;
-        icon.style.animationDelay = `${Math.random() * -duration}s`;
+        icon.style.setProperty('--icon-duration', `${duration}s`);
+        icon.style.setProperty('--icon-delay', `${Math.random() * -duration}s`);
         container.appendChild(icon);
     }
 });

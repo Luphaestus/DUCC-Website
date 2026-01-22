@@ -44,37 +44,37 @@ export async function renderTagDetail(id) {
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
             <div class="glass-panel">
-                <header class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <header class="card-header-flex">
                     <h2>${isNew ? 'Create New Tag' : 'Edit Tag'}</h2>
                     ${!isNew ? `<button type="button" id="delete-tag-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : ''}
                 </header>
                 
                 <form id="tag-form" class="modern-form">
-                    <div class="grid-2-col" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+                    <div class="grid-2-col">
                         <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
-                        <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input" style="height:3rem; padding:0; border:none; background:none; cursor:pointer; width:100%;"></label>
+                        <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input"></label>
                     </div>
                     
-                    <label style="margin-bottom:1.5rem; display:block;">Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
+                    <label class="mb-1-5 block">Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
                     
                     <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
                     
-                    <div class="form-actions-footer" style="margin-top:2rem; text-align:right;">
+                    <div class="form-actions-footer mt-2 text-right">
                         <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                     </div>
                 </form>
 
                 ${!isNew && userPerms ? `
-                    <div class="divider" style="height:1px; background:rgba(128,128,128,0.2); margin:2rem 0;"></div>
+                    <div class="divider"></div>
                     
                     <div class="permission-section">
-                        <div class="section-header" style="margin-bottom:1rem;">
-                            <h3 style="display:flex; align-items:center; gap:0.5rem; font-size:1.25rem;">${SHIELD_SVG} Designated Managers</h3>
-                            <p class="helper-text" style="color:var(--pico-muted-color); font-size:0.9rem;">Users allowed to manage (create/edit/read) events with this tag.</p>
+                        <div class="section-header">
+                            <h3>${SHIELD_SVG} Designated Managers</h3>
+                            <p class="helper-text">Users allowed to manage (create/edit/read) events with this tag.</p>
                         </div>
                         
-                        <form id="managers-form" class="inline-add-form" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                            <input list="managers-datalist" id="managers-user-input" placeholder="Search by name or email..." autocomplete="off" style="flex:1; margin-bottom:0;">
+                        <form id="managers-form" class="inline-add-form">
+                            <input list="managers-datalist" id="managers-user-input" placeholder="Search by name or email..." autocomplete="off">
                             <datalist id="managers-datalist"></datalist>
                             <button type="submit" class="small-btn primary" title="Add Manager">${ADD_SVG}</button>
                         </form>
@@ -89,16 +89,16 @@ export async function renderTagDetail(id) {
                         </div>
                     </div>
 
-                    <div class="divider" style="height:1px; background:rgba(128,128,128,0.2); margin:2rem 0;"></div>
+                    <div class="divider"></div>
 
                     <div class="permission-section">
-                        <div class="section-header" style="margin-bottom:1rem;">
-                            <h3 style="display:flex; align-items:center; gap:0.5rem; font-size:1.25rem;">${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
-                            <p class="helper-text" style="color:var(--pico-muted-color); font-size:0.9rem;">Restricts event visibility/joining to specific users.</p>
+                        <div class="section-header">
+                            <h3>${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
+                            <p class="helper-text">Restricts event visibility/joining to specific users.</p>
                         </div>
                         
-                        <form id="whitelist-form" class="inline-add-form" style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                            <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off" style="flex:1; margin-bottom:0;">
+                        <form id="whitelist-form" class="inline-add-form">
+                            <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
                             <datalist id="users-datalist"></datalist>
                             <button type="submit" class="small-btn primary" title="Add User">${ADD_SVG}</button>
                         </form>

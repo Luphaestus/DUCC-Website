@@ -86,7 +86,8 @@ function displayError(error) {
     if (messageElement) {
         messageElement.classList.remove('hidden');
         messageElement.textContent = error;
-        messageElement.style.color = '#FF6961';
+        messageElement.classList.add('error');
+        messageElement.classList.remove('success');
     }
 }
 
@@ -105,9 +106,6 @@ function displayValidationMessage(inputElement, message) {
         inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
     }
     existingMessage.textContent = message;
-    existingMessage.style.color = '#FF6961';
-    existingMessage.style.fontSize = '0.8em';
-    existingMessage.style.marginTop = '0.2em';
     validationMessages[inputElement.id] = existingMessage;
     inputElement.ariaInvalid = 'true';
 }
@@ -144,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
     messageElement = document.createElement('div');
     messageElement.id = 'signup-message';
     messageElement.setAttribute('role', 'alert');
-    messageElement.style.marginBottom = '0';
     signupFooter.appendChild(messageElement);
 
     // Inputs
@@ -174,10 +171,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        let emailVal = email.value;
+        if (emailVal && !emailVal.includes('@')) {
+            emailVal += '@durham.ac.uk';
+        }
+
         try {
-            await ajaxPost('/api/auth/signup', { first_name: firstName.value, last_name: lastName.value, email: email.value, password: password.value });
+            await ajaxPost('/api/auth/signup', { first_name: firstName.value, last_name: lastName.value, email: emailVal, password: password.value });
             messageElement.textContent = 'Sign up successful! Redirecting...';
-            messageElement.style.color = 'green';
+            messageElement.classList.add('success');
+            messageElement.classList.remove('error');
             messageElement.classList.remove('hidden');
             setTimeout(() => switchView('/login'), 1000);
         } catch (error) {

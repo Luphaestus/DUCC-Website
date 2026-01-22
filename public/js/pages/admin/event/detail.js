@@ -4,28 +4,6 @@ import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
 import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
 
-const CSS_STYLES = /*css*/`
-.conditional-input {
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 1;
-    max-height: 200px;
-    margin-top: 1rem;
-    transform: translateY(0);
-}
-
-.conditional-input.hidden {
-    display: block !important;
-    opacity: 0;
-    max-height: 0;
-    margin-top: 0;
-    transform: translateY(-10px);
-    pointer-events: none;
-    padding-top: 0;
-    padding-bottom: 0;
-}
-`;
-
 /**
  * Admin event creation and editing form.
  * @module AdminEventDetail
@@ -36,13 +14,6 @@ const CSS_STYLES = /*css*/`
  * @param {string} id - Database ID or 'new'.
  */
 export async function renderEventDetail(id) {
-    if (!document.getElementById('admin-event-detail-styles')) {
-        const style = document.createElement('style');
-        style.id = 'admin-event-detail-styles';
-        style.textContent = CSS_STYLES;
-        document.head.appendChild(style);
-    }
-
     const adminContent = document.getElementById(adminContentID);
     const isNew = id === 'new';
 
@@ -70,45 +41,45 @@ export async function renderEventDetail(id) {
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
             <form id="event-form" class="glass-panel">
-                <header class="card-header-flex" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <header class="card-header-flex">
                     <h2>${isNew ? 'Create Event' : 'Edit Event'}</h2>
                 </header>
                 
-                <div class="modern-form-group" style="margin-bottom: 2rem;">
-                    <label class="form-label-top" style="font-size: 1.1rem; color: var(--pico-muted-color);">Event Title
-                        <input type="text" name="title" value="${event.title}" required class="full-width-input title-input" placeholder="e.g. Weekly Training" style="font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem;">
+                <div class="modern-form-group mb-2">
+                    <label class="form-label-top">Event Title
+                        <input type="text" name="title" value="${event.title}" required class="full-width-input title-input" placeholder="e.g. Weekly Training">
                     </label>
                 </div>
 
                 <div class="event-content-split">
                     <div class="event-details-section">
-                        <h3 style="display:flex; align-items:center; gap:0.5rem; color:var(--pico-primary); border-bottom:1px solid rgba(128,128,128,0.2); padding-bottom:0.5rem; margin-bottom:1.5rem;">
+                        <h3 class="section-header-modern">
                             ${INFO_SVG} Basic Details
                         </h3>
                         
-                        <div class="grid-2-col" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+                        <div class="grid-2-col mb-1-5">
                             <label>Start Time <input type="datetime-local" name="start" value="${event.start}" required></label>
                             <label>End Time <input type="datetime-local" name="end" value="${event.end}" required></label>
                         </div>
                         
-                        <label style="margin-bottom:1.5rem; display:block;">Location <input type="text" name="location" value="${event.location}" placeholder="Where is it happening?"></label>
+                        <label class="mb-1-5 block">Location <input type="text" name="location" value="${event.location}" placeholder="Where is it happening?"></label>
                         
-                        <label style="margin-bottom:1.5rem; display:block;">Description <textarea name="description" rows="5" placeholder="What's the plan?" style="resize:vertical;">${event.description}</textarea></label>
+                        <label class="mb-1-5 block">Description <textarea name="description" rows="5" placeholder="What's the plan?"></textarea></label>
                         
-                        <div class="grid-2-col" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+                        <div class="grid-2-col mb-1-5">
                             <label>Difficulty (1-5) <input type="number" name="difficulty_level" min="1" max="5" value="${event.difficulty_level}" required></label>
                             <label>Cost (£) <input type="number" step="0.01" name="upfront_cost" value="${event.upfront_cost}"></label>
                         </div>
 
-                        <div class="form-divider" style="height:1px; background:rgba(128,128,128,0.2); margin: 2rem 0;"></div>
+                        <div class="form-divider"></div>
 
-                        <div class="settings-group" style="display:flex; flex-direction:column; gap:1.5rem; margin-bottom:2rem;">
+                        <div class="settings-group mb-2">
                             <div class="signup-policy">
-                                <label class="checkbox-label" style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
-                                    <input type="checkbox" id="signup_required_toggle" name="signup_required" ${event.signup_required ? 'checked' : ''} style="margin:0;"> 
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="signup_required_toggle" name="signup_required" ${event.signup_required ? 'checked' : ''}> 
                                     Signup Required
                                 </label>
-                                <div id="max-attendees-wrapper" class="conditional-input ${event.signup_required ? '' : 'hidden'}" style="margin-top:1rem; padding-left:1.8rem;">
+                                <div id="max-attendees-wrapper" class="conditional-input pl-1-8 ${event.signup_required ? '' : 'hidden'}">
                                     <label>Max Attendees
                                         <input type="number" name="max_attendees" value="${event.max_attendees}" placeholder="0 = Unlimited">
                                     </label>
@@ -116,11 +87,11 @@ export async function renderEventDetail(id) {
                             </div>
 
                             <div class="refund-policy">
-                                <label class="checkbox-label" style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
-                                    <input type="checkbox" id="allow-refunds" ${event.upfront_refund_cutoff ? 'checked' : ''} style="margin:0;"> 
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="allow-refunds" ${event.upfront_refund_cutoff ? 'checked' : ''}> 
                                     Allow Refunds
                                 </label>
-                                <div id="refund-cutoff-wrapper" class="conditional-input ${event.upfront_refund_cutoff ? '' : 'hidden'}" style="margin-top:1rem; padding-left:1.8rem;">
+                                <div id="refund-cutoff-wrapper" class="conditional-input pl-1-8 ${event.upfront_refund_cutoff ? '' : 'hidden'}">
                                     <label>Refund Cutoff Date
                                         <input type="datetime-local" name="upfront_refund_cutoff" value="${event.upfront_refund_cutoff || ''}">
                                     </label>
@@ -128,57 +99,70 @@ export async function renderEventDetail(id) {
                             </div>
                         </div>
 
-                        <h3 style="margin-bottom:1rem;">Tags</h3>
-                        <div class="tags-selection-grid" style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+                        <h3 class="mb-1">Tags</h3>
+                        <div class="tags-selection-grid">
                             ${allTags.map(tag => `
-                                <label class="tag-checkbox" style="cursor:pointer; display:flex; align-items:center;">
+                                <label class="tag-checkbox">
                                     <input type="checkbox" name="tags" value="${tag.id}" ${event.tags?.find(t => t.id === tag.id) ? 'checked' : ''} style="display:none;">
-                                    <span class="tag-badge ${event.tags?.find(t => t.id === tag.id) ? 'selected' : ''}" style="background-color: ${tag.color}; opacity: 0.6; transition: all 0.2s; border: 2px solid transparent;">${tag.name}</span>
+                                    <span class="tag-badge ${event.tags?.find(t => t.id === tag.id) ? 'selected' : ''}" style="--tag-color: ${tag.color}; background-color: var(--tag-color);">${tag.name}</span>
                                 </label>
                             `).join('')}
                         </div>
                     </div>
 
                     <div class="event-image-section">
-                        <h3 style="display:flex; align-items:center; gap:0.5rem; color:var(--pico-primary); border-bottom:1px solid rgba(128,128,128,0.2); padding-bottom:0.5rem; margin-bottom:1.5rem;">
+                        <h3 class="section-header-modern">
                             ${IMAGE_SVG} Event Image
                         </h3>
-                        <div class="image-upload-container glass-panel" style="padding:1.5rem; text-align:center; border: 2px dashed rgba(128,128,128,0.3);">
-                            <div id="image-preview" class="image-preview" style="width:100%; height:200px; background-size:cover; background-position:center; margin-bottom:1.5rem; border-radius:8px; background-image: url('${event.image_url || '/images/misc/ducc.png'}'); display: ${event.image_url || true ? 'block' : 'none'};"></div>
+                        <div class="image-upload-container glass-panel">
+                            <div id="image-preview" class="image-preview" style="--event-image-url: url('${event.image_url || '/images/misc/ducc.png'}');"></div>
                             <input type="hidden" name="image_url" id="image_url_input" value="${event.image_url || ''}">
-                            <label class="file-upload-btn small-btn primary" style="cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem;">
+                            <label class="file-upload-btn small-btn primary">
                                 ${UPLOAD_SVG} Upload Image
                                 <input type="file" id="event-image-file" accept="image/*" style="display:none;">
                             </label>
-                            <p class="small-text" style="margin-top:0.5rem; opacity:0.7;">Recommended: 1200x600px</p>
+                            <p class="small-text mt-0-5 opacity-0-7">Recommended: 1200x600px</p>
                         </div>
                     </div>
                 </div>
                 
-                <div class="form-actions-footer" style="margin-top:3rem; padding-top:2rem; border-top:1px solid rgba(128,128,128,0.2); display:flex; justify-content:space-between; align-items:center;">
+                <div class="form-actions-footer mt-3 pt-2">
                     <div class="destructive-actions">
                         ${!isNew ? `
-                            <button type="button" id="cancel-event-btn" class="small-btn warning outline" style="margin-right:0.5rem;">${CLOSE_SVG} Cancel Event</button>
+                            <button type="button" id="cancel-event-btn" class="small-btn warning outline mr-0-5">${CLOSE_SVG} Cancel Event</button>
                             <button type="button" id="delete-event-btn" class="small-btn delete outline">${DELETE_HISTORY_SVG} Delete</button>
                         ` : ''}
                     </div>
-                    <button type="submit" class="primary-btn wide-btn" style="min-width:200px;">${isNew ? 'Create Event' : 'Save Changes'}</button>
+                    <button type="submit" class="primary-btn wide-btn min-w-200">${isNew ? 'Create Event' : 'Save Changes'}</button>
                 </div>
             </form>
         </div>`;
+    
+    // Set description value separately to avoid template string literal issues if it contains backticks or weird chars
+    document.querySelector('textarea[name="description"]').value = event.description;
+
+    // Tag Selection Visuals
+    adminContent.querySelectorAll('input[name="tags"]').forEach(input => {
+        const updateSpan = (el) => {
+            const span = el.nextElementSibling;
+            if (el.checked) {
+                span.classList.add('selected');
+            } else {
+                span.classList.remove('selected');
+            }
+        };
+        input.addEventListener('change', (e) => updateSpan(e.target));
+        updateSpan(input);
+    });
     
     // Tag Selection Visuals
     adminContent.querySelectorAll('input[name="tags"]').forEach(input => {
         const updateSpan = (el) => {
             const span = el.nextElementSibling;
             if (el.checked) {
-                span.style.opacity = '1';
-                span.style.transform = 'scale(1.05)';
-                span.style.boxShadow = '0 0 0 2px white, 0 0 0 4px var(--pico-primary)';
+                span.classList.add('selected');
             } else {
-                span.style.opacity = '0.6';
-                span.style.transform = 'scale(1)';
-                span.style.boxShadow = 'none';
+                span.classList.remove('selected');
             }
         };
         input.addEventListener('change', (e) => updateSpan(e.target));
@@ -237,7 +221,7 @@ export async function renderEventDetail(id) {
                 const fileId = result.ids[0];
                 const newUrl = `/api/files/${fileId}/download?view=true`;
                 imageUrlInput.value = newUrl;
-                imagePreview.style.backgroundImage = `url('${newUrl}')`;
+                imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
                 notify('Success', 'Image uploaded', 'success');
             } else {
                 throw new Error('Upload failed');

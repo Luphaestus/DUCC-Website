@@ -11,13 +11,13 @@ addRoute('/unauthorized', 'unauthorized');
 
 const HTML_TEMPLATE = /*html*/`
 <div id="unauthorized-view" class="view hidden">
-    <div class="container" style="text-align: center; padding-top: 4rem;">
-        <div class="error-icon" style="color: var(--pico-secondary); margin-bottom: 1.5rem;">
-            ${SHIELD_SVG.replace('height="24px"', 'height="64px"').replace('width="24px"', 'width="64px"')}
+    <div class="container">
+        <div class="error-icon">
+            ${SHIELD_SVG}
         </div>
         <h1>Access Denied</h1>
         <p>You do not have permission to view this page.</p>
-        <div id="unauthorized-actions" class="error-actions" style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+        <div id="unauthorized-actions" class="error-actions">
             <!-- Buttons injected here -->
         </div>
     </div>

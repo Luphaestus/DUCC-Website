@@ -27,16 +27,14 @@ export async function renderTagsTab(container, userId) {
                     </header>
                     <div class="card-body">
                         <p class="helper-text">Tags this user is explicitly whitelisted for.</p>
-                        <div class="tags-selection-grid" style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:1.5rem;">
+                        <div class="tags-selection-grid">
                             ${allTags.map(tag => {
                                 const isWhitelisted = userWhitelistedTags.some(ut => ut.id === tag.id);
                                 return `
-                                    <label class="tag-checkbox" style="cursor:pointer; display:flex; align-items:center;">
+                                    <label class="tag-checkbox">
                                         <input type="checkbox" class="user-tag-cb" value="${tag.id}" ${isWhitelisted ? 'checked' : ''} style="display:none;">
                                         <span class="tag-badge ${isWhitelisted ? 'selected' : ''}" 
-                                              style="background-color: ${tag.color}; opacity: ${isWhitelisted ? '1' : '0.4'}; transition: all 0.2s; border: 2px solid transparent; 
-                                                     padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: 600; color: white;
-                                                     ${isWhitelisted ? 'box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pico-primary); transform: scale(1.05);' : ''}">
+                                              style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
                                             ${tag.name}
                                         </span>
                                     </label>
@@ -55,16 +53,14 @@ export async function renderTagsTab(container, userId) {
                     </header>
                     <div class="card-body">
                         <p class="helper-text">Tags this user can manage events for.</p>
-                        <div class="tags-selection-grid" style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:1.5rem;">
+                        <div class="tags-selection-grid">
                             ${allTags.map(tag => {
                                 const isManaged = managedTags.some(t => t.id === tag.id);
                                 return `
-                                    <label class="tag-checkbox" style="cursor:pointer; display:flex; align-items:center;">
+                                    <label class="tag-checkbox">
                                         <input type="checkbox" class="managed-tag-cb" value="${tag.id}" ${isManaged ? 'checked' : ''} style="display:none;">
                                         <span class="tag-badge ${isManaged ? 'selected' : ''}" 
-                                              style="background-color: ${tag.color}; opacity: ${isManaged ? '1' : '0.4'}; transition: all 0.2s; border: 2px solid transparent; 
-                                                     padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: 600; color: white;
-                                                     ${isManaged ? 'box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pico-primary); transform: scale(1.05);' : ''}">
+                                              style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
                                             ${tag.name}
                                         </span>
                                     </label>
@@ -86,14 +82,10 @@ export async function renderTagsTab(container, userId) {
                 try {
                     if (isAdding) {
                         await ajaxPost(`/api/tags/${tagId}/whitelist`, { userId });
-                        span.style.opacity = '1';
-                        span.style.transform = 'scale(1.05)';
-                        span.style.boxShadow = '0 0 0 2px white, 0 0 0 4px var(--pico-primary)';
+                        span.classList.add('selected');
                     } else {
                         await ajaxDelete(`/api/tags/${tagId}/whitelist/${userId}`);
-                        span.style.opacity = '0.4';
-                        span.style.transform = 'scale(1)';
-                        span.style.boxShadow = 'none';
+                        span.classList.remove('selected');
                     }
                 } catch (e) {
                     cb.checked = !isAdding;
@@ -112,15 +104,11 @@ export async function renderTagsTab(container, userId) {
                 try {
                     if (isAdding) {
                         await ajaxPost(`/api/admin/user/${userId}/managed_tag`, { tagId });
-                        span.style.opacity = '1';
-                        span.style.transform = 'scale(1.05)';
-                        span.style.boxShadow = '0 0 0 2px white, 0 0 0 4px var(--pico-primary)';
+                        span.classList.add('selected');
                         notify('Success', 'Tag scope added', 'success');
                     } else {
                         await ajaxDelete(`/api/admin/user/${userId}/managed_tag/${tagId}`);
-                        span.style.opacity = '0.4';
-                        span.style.transform = 'scale(1)';
-                        span.style.boxShadow = 'none';
+                        span.classList.remove('selected');
                         notify('Success', 'Tag scope removed', 'success');
                     }
                 } catch (e) {

@@ -1,0 +1,49 @@
+#animated-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -10;
+    pointer-events: none;
+    overflow: hidden;
+
+    .bg-blob {
+        position: absolute;
+        width: var(--blob-size);
+        height: var(--blob-size);
+        background-color: var(--blob-color);
+        filter: blur(30px);
+        top: var(--blob-top);
+        left: var(--blob-left);
+        animation: floatAround var(--blob-duration) infinite ease-in-out;
+        animation-delay: var(--blob-delay);
+    }
+
+    .bg-icon {
+        position: absolute;
+        width: var(--icon-size);
+        top: var(--icon-top);
+        left: 0;
+        animation: driftAcross var(--icon-duration) linear infinite;
+        animation-delay: var(--icon-delay);
+        color: currentColor;
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+    }
+}
+
+@keyframes floatAround {
+    0% { transform: translate(0, 0); }
+    33% { transform: translate(40vw, -40vh); }
+    66% { transform: translate(-40vw, 40vh); }
+    100% { transform: translate(0, 0); }
+}
+
+@keyframes driftAcross {
+    from { transform: translateX(-200px) rotate(0deg); }
+    to { transform: translateX(calc(100vw + 200px)) rotate(15deg); }
+}

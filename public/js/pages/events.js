@@ -106,12 +106,12 @@ function formatEvent(event) {
     const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
 
     const tagsHtml = (event.tags || []).map(tag =>
-        `<span class="tag-badge" style="background-color: ${tag.color};">${tag.name}</span>`
+        `<span class="tag-badge" style="--tag-color: ${tag.color};">${tag.name}</span>`
     ).join('');
 
     const imageUrl = event.image_url || '/images/misc/ducc.png';
     const imageHtml = `<div class="event-image-container">
-        <div class="event-image" style="background-image: url('${imageUrl}');"></div>
+        <div class="event-image" style="--event-image-url: url('${imageUrl}');"></div>
         <div class="image-overlay"></div>
     </div>`;
 

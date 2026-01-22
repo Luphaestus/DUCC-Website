@@ -23,8 +23,8 @@ const HTML_TEMPLATE = /*html*/`
                         <button class="nobottommargin" type="submit">Send Reset Link</button>
                     </div>
                 </form>
-                <div id="reset-message" style="margin-top: 1rem;"></div>
-                <p class="nobottommargin">Remembered it? <a data-nav="/login" style="cursor: pointer;">Login</a></p>
+                <div id="reset-message" class="mt-1"></div>
+                <p class="nobottommargin">Remembered it? <a data-nav="/login" class="cursor-pointer">Login</a></p>
             </article>
         </div>
     </div>
@@ -54,17 +54,20 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         messageEl.textContent = 'Sending...';
-        messageEl.style.color = 'var(--text-color)';
+        messageEl.classList.remove('error', 'success');
 
-        const email = document.getElementById('reset-email').value;
+        let emailVal = document.getElementById('reset-email').value;
+        if (emailVal && !emailVal.includes('@')) {
+            emailVal += '@durham.ac.uk';
+        }
 
         try {
-            const res = await ajaxPost('/api/auth/reset-password-request', { email });
+            const res = await ajaxPost('/api/auth/reset-password-request', { email: emailVal });
             messageEl.textContent = res.message || 'If an account exists, a reset link has been sent.';
-            messageEl.style.color = '#77DD77'; // Pastel green
+            messageEl.classList.add('success');
         } catch (error) {
             messageEl.textContent = error.message || 'Failed to send request.';
-            messageEl.style.color = '#FF6961';
+            messageEl.classList.add('error');
         }
     });
 

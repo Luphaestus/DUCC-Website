@@ -1,0 +1,158 @@
+#admin-view {
+    /* Profile Tab */
+    .dashboard-section {
+        display: none;
+        flex-direction: column;
+        gap: 1.5rem;
+        &.active { display: flex; }
+    }
+
+    .dual-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .balance-header {
+        padding: 1.5rem;
+        &.clickable {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            &:hover { transform: scale(1.02); }
+        }
+
+        .amount {
+            &.negative { color: #e74c3c; }
+            &.positive { color: #2ecc71; }
+            &.large { font-size: 2.2rem; margin-bottom: 0.25rem; }
+        }
+
+        .label-sub {
+            text-transform: none;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+    }
+
+    .box-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        h3 { margin: 0; }
+        .small-btn { margin: 0; }
+    }
+
+    .info-row-modern {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.05);
+        &:last-child { border-bottom: none; }
+        .label { color: var(--pico-muted-color); }
+        .value { font-weight: 600; }
+    }
+
+    .mt-1 { margin-top: 1rem; }
+    .mb-1-5 { margin-bottom: 1.5rem; }
+    .mb-1 { margin-bottom: 1rem; }
+    .mb-0 { margin-bottom: 0; }
+    .gap-1 { gap: 1rem; }
+    .gap-0-5 { gap: 0.5rem; }
+    .min-w-100 { min-width: 100px; }
+    .text-left { text-align: left; }
+    .muted-color { color: var(--pico-muted-color); }
+    .font-size-0-85 { font-size: 0.85rem; }
+    .font-size-0-75 { font-size: 0.75rem; }
+    .font-weight-600 { font-weight: 600; }
+    .justify-between { justify-content: space-between; }
+    .flex { display: flex; }
+    .block { display: block; }
+    .mt-0-5 { margin-top: 0.5rem; }
+    .mt-0-25 { margin-top: 0.25rem; }
+
+    /* Transactions Tab */
+    .new-entry-row {
+        margin-bottom: 2.5rem;
+        border: 1px dashed var(--pico-primary);
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.25rem;
+    }
+
+    .tx-edit-grid {
+        display: grid;
+        grid-template-columns: 1fr 140px auto;
+        gap: 1rem;
+        width: 100%;
+        align-items: center;
+        &.no-btn { grid-template-columns: 1fr 140px; }
+    }
+
+    .transaction-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        
+        .tx-display-content {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .tx-details { flex-grow: 1; }
+        .tx-amount-group { text-align: right; min-width: 100px; }
+        .tx-actions { margin-left: 1rem; display: flex; gap: 0.25rem; }
+    }
+
+    /* Tags Tab */
+    .tags-selection-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .tag-badge {
+        background-color: var(--tag-color, var(--pico-primary));
+        opacity: 0.4;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 600;
+        color: white;
+
+        &.selected {
+            box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pico-primary);
+            transform: scale(1.05);
+            opacity: 1 !important;
+        }
+    }
+
+    /* Legal Tab */
+    .info-item-modern {
+        margin-bottom: 1rem;
+        &.compact { margin-bottom: 0.5rem; }
+        .label { min-width: 140px; }
+    }
+
+    .detail-info-box {
+        .box-value-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            .row { display: flex; justify-content: space-between; }
+            .label-sub { font-weight: 600; color: var(--pico-muted-color); font-size: 0.85rem; }
+        }
+        .contact-name { display: block; margin-bottom: 0.25rem; }
+        .contact-phone { opacity: 0.8; }
+    }
+
+    .medical-section {
+        margin-bottom: 1rem;
+        &:last-child { margin-bottom: 0; }
+    }
+
+    .border-top { border-top: 1px solid rgba(var(--pico-color-rgb), 0.1); }
+}

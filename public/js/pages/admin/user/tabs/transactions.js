@@ -19,11 +19,11 @@ export async function renderTransactionsTab(container, userId) {
                 </header>
                 <div class="card-body">
                     <!-- New Transaction Form -->
-                    <div class="transaction-item glass-panel new-entry-row" style="margin-bottom: 2.5rem; border: 1px dashed var(--pico-primary); display: flex; align-items: center; padding: 1rem 1.25rem;">
-                        <div class="tx-edit-grid" style="display:grid; grid-template-columns: 1fr 140px auto; gap: 1rem; width: 100%; align-items: center;">
-                            <input id="new-tx-desc" type="text" placeholder="Description (e.g. Top Up)" class="compact-input" style="margin-bottom:0;">
-                            <input id="new-tx-amount" type="number" step="0.01" placeholder="Amount" class="compact-input" style="margin-bottom:0;">
-                            <button id="add-tx-btn" class="primary small-btn icon-text-btn" style="margin:0; min-width: 100px;">${ADD_SVG} Add</button>
+                    <div class="transaction-item glass-panel new-entry-row">
+                        <div class="tx-edit-grid">
+                            <input id="new-tx-desc" type="text" placeholder="Description (e.g. Top Up)" class="compact-input mb-0">
+                            <input id="new-tx-amount" type="number" step="0.01" placeholder="Amount" class="compact-input mb-0">
+                            <button id="add-tx-btn" class="primary small-btn icon-text-btn mb-0 min-w-100">${ADD_SVG} Add</button>
                         </div>
                     </div>
 
@@ -31,7 +31,7 @@ export async function renderTransactionsTab(container, userId) {
         `;
 
         if (!transactions || transactions.length === 0) {
-            html += '<p class="empty-text" style="padding:1rem; text-align:center;">No transactions found.</p>';
+            html += '<p class="empty-text">No transactions found.</p>';
         } else {
             transactions.forEach(tx => {
                 const isNegative = tx.amount < 0;
@@ -40,28 +40,28 @@ export async function renderTransactionsTab(container, userId) {
                 const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
                 html += `
-                    <div class="transaction-item glass-panel" data-id="${tx.id}" style="display: flex; align-items: center; padding: 1rem;">
+                    <div class="transaction-item glass-panel" data-id="${tx.id}">
                         <div class="tx-icon ${iconClass}">${icon}</div>
                         
                         <!-- Display Mode -->
-                        <div class="tx-display-content" style="flex-grow: 1; display: flex; align-items: center;">
-                            <div class="tx-details" style="flex-grow: 1;">
+                        <div class="tx-display-content">
+                            <div class="tx-details">
                                 <span class="tx-title">${tx.description}</span>
                                 <span class="tx-date">${dateStr}</span>
                             </div>
-                            <div class="tx-amount-group" style="text-align: right; min-width: 100px;">
+                            <div class="tx-amount-group">
                                 <span class="tx-amount ${iconClass}">${isNegative ? '' : '+'}${tx.amount.toFixed(2)}</span>
                                 <span class="tx-balance-after">£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}</span>
                             </div>
                         </div>
 
                         <!-- Edit Mode (Hidden by default) -->
-                        <div class="tx-edit-grid hidden" style="flex-grow: 1; display: grid; grid-template-columns: 1fr 140px; gap: 1rem; align-items: center;">
-                            <input class="tx-desc-input compact-input" value="${tx.description}" style="margin-bottom:0;">
-                            <input type="number" step="0.01" class="tx-amount-input compact-input" value="${tx.amount}" style="text-align: left; margin-bottom:0;">
+                        <div class="tx-edit-grid no-btn hidden">
+                            <input class="tx-desc-input compact-input mb-0" value="${tx.description}">
+                            <input type="number" step="0.01" class="tx-amount-input compact-input text-left mb-0" value="${tx.amount}">
                         </div>
 
-                        <div class="tx-actions" style="margin-left: 1rem; display: flex; gap: 0.25rem;">
+                        <div class="tx-actions">
                             <button class="icon-btn edit-tx-btn" data-id="${tx.id}" title="Edit">${EDIT_SVG}</button>
                             <button class="icon-btn save-tx-btn hidden success" data-id="${tx.id}" title="Save">${SAVE_SVG}</button>
                             <button class="icon-btn cancel-tx-btn hidden warning" data-id="${tx.id}" title="Cancel">${CLOSE_SVG}</button>

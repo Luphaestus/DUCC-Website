@@ -9,7 +9,7 @@ import { BalanceChangedEvent } from '/js/utils/globals.js';
  * Groups: 'main' (left/center) and 'user' (right)
  */
 const navEntries = [
-    { name: '<img src="/images/misc/ducc.png" alt="DUCC Logo" style="height: 1.8rem; width: auto;">', group: 'main', id: 'nav-home', type: 'text', classes: "contrast logo-link", action: { run: () => switchView('/home') } },
+    { name: '<img src="/images/misc/ducc.png" alt="DUCC Logo" class="nav-logo-img">', group: 'main', id: 'nav-home', type: 'text', classes: "contrast logo-link", action: { run: () => switchView('/home') } },
     { name: 'Events', group: 'main', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
     { name: 'Files', group: 'main', type: 'text', classes: "contrast", action: { run: () => switchView('/files') } },
     { name: 'Swims', group: 'main', id: 'nav-swims', type: 'text', classes: "contrast", action: { run: () => switchView('/swims') } },
@@ -33,9 +33,8 @@ async function updateBalanceInNav() {
         if (data && data.balance !== undefined) {
             const balance = Number(data.balance);
             balanceButton.textContent = `Balance: £${balance.toFixed(2)}`;
-            if (balance < -20) balanceButton.style.color = '#ff6b6b';
-            else if (balance < -10) balanceButton.style.color = '#feca57';
-            else balanceButton.style.color = '';
+            balanceButton.classList.toggle('balance-low', balance < -20);
+            balanceButton.classList.toggle('balance-warn', balance >= -20 && balance < -10);
         }
     }
 }
@@ -48,8 +47,6 @@ function updateActiveNav(path) {
     const navItems = document.querySelectorAll('.navbar-items li a, .navbar-items li button');
     navItems.forEach(item => {
         item.classList.remove('active');
-        item.style.pointerEvents = '';
-        item.style.cursor = 'pointer';
         item.removeAttribute('aria-current');
 
         let match = false;
@@ -64,8 +61,6 @@ function updateActiveNav(path) {
 
         if (match) {
             item.classList.add('active');
-            item.style.pointerEvents = 'none';
-            item.style.cursor = 'default';
             item.setAttribute('aria-current', 'page');
         }
     });
@@ -92,7 +87,6 @@ function create_item(entry) {
     switch (typeof entry.action) {
         case 'string': clicky.href = entry.action; break;
         case 'object':
-            clicky.style.cursor = 'pointer';
             clicky.addEventListener('click', (e) => { 
                 e.preventDefault();
                 entry.action.run?.(); 
@@ -177,12 +171,10 @@ function setupMobileMenu() {
 
         if (shouldOpen) {
             nav.classList.add('mobile-open');
-            overlay.style.display = 'block';
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('mobile-menu-open');
         } else {
             nav.classList.remove('mobile-open');
-            overlay.style.display = 'none';
-            document.body.style.overflow = '';
+            document.body.classList.remove('mobile-menu-open');
         }
     };
 
@@ -192,6 +184,7 @@ function setupMobileMenu() {
     // Append to the start of the main list for mobile visibility
     mainList.parentElement.prepend(li);
 }
+
 
 
 document.addEventListener('DOMContentLoaded', () => {

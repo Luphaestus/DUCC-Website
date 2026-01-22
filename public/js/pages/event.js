@@ -295,7 +295,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         const eventResponse = await ajaxGet("/api" + path);
         const { event } = eventResponse;
 
-        const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="background-color: ${tag.color}65;">${tag.name}</span>`).join('');
+        const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="--tag-color: ${tag.color}65;">${tag.name}</span>`).join('');
 
         const durationMs = new Date(event.end) - new Date(event.start);
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
@@ -361,7 +361,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         const isCanceled = event.is_canceled;
 
         navContainer.innerHTML = /*html*/`
-            <div class="event-modal-header ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" style="background-image: url('${imageUrl}');">
+            <div class="event-modal-header ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" style="--event-image-url: url('${imageUrl}');">
                 <div class="header-content">
                     <div class="event-tags">${tagsHtml}</div>
                     <h2 class="event-title ${isCanceled ? 'strikethrough' : ''}">${event.title} ${isCanceled ? '(CANCELED)' : ''}</h2>

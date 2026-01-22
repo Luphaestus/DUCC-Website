@@ -51,11 +51,11 @@ export async function renderUserDetail(userId) {
 
         adminContent.innerHTML = /*html*/`
             <div class="glass-layout">
-                <div class="glass-panel" style="margin-bottom: 1.5rem;">
-                    <header class="user-detail-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; border-bottom:1px solid rgba(128,128,128,0.2); padding-bottom:1rem; margin-bottom:1rem;">
-                        <div class="user-identity" style="display:flex; flex-direction:column;">
-                            <h2 class="user-name-header" style="margin:0; font-size:1.75rem;">${user.first_name} ${user.last_name}</h2>
-                            <span class="user-id-badge" style="font-size:0.85rem; color:var(--pico-muted-color);">ID: ${user.id}</span>
+                <div class="glass-panel mb-1-5">
+                    <header class="user-detail-header">
+                        <div class="user-identity">
+                            <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
+                            <span class="user-id-badge">ID: ${user.id}</span>
                         </div>
                         <nav class="toggle-group" id="admin-user-tabs">
                             ${tabsHtml}
@@ -72,8 +72,8 @@ export async function renderUserDetail(userId) {
 
         const syncTabBackground = (activeBtn) => {
             if (!activeBtn || !bg) return;
-            bg.style.width = `${activeBtn.offsetWidth}px`;
-            bg.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+            bg.style.setProperty('--tab-width', `${activeBtn.offsetWidth}px`);
+            bg.style.setProperty('--tab-left', `${activeBtn.offsetLeft}px`);
         };
 
         const updateActiveTab = (activeBtn) => {

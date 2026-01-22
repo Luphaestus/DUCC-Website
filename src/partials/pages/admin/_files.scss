@@ -1,0 +1,16 @@
+#admin-view {
+    #admin-category-filter {
+        margin-bottom: 0;
+        width: auto;
+    }
+
+    .loading-cell, .empty-cell, .error-cell {
+        text-align: center;
+        padding: 2rem;
+        color: var(--pico-muted-color);
+    }
+
+    .max-w-600 {
+        max-width: 600px;
+    }
+}

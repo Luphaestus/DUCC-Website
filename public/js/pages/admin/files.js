@@ -36,7 +36,7 @@ export async function renderAdminFiles() {
                         </div>
                     </div>
                     <div class="toolbar-right">
-                        <select id="admin-category-filter" class="modern-select compact" style="margin-bottom:0; width: auto;">
+                        <select id="admin-category-filter" class="modern-select compact">
                             <option value="">All Categories</option>
                         </select>
                         <button id="manage-categories-btn" class="small-btn outline secondary">${FOLDER_SVG} Categories</button>
@@ -50,7 +50,7 @@ export async function renderAdminFiles() {
                     <table class="glass-table files-table">
                         <thead id="files-table-head"></thead>
                         <tbody id="admin-files-list">
-                            <tr><td colspan="6" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                            <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -131,7 +131,7 @@ export async function renderAdminFiles() {
 
         <!-- Category Management Modal -->
         <dialog id="categories-modal" class="modern-modal">
-            <article class="modal-content glass-panel" style="max-width: 600px;">
+            <article class="modal-content glass-panel max-w-600">
                 <header>
                     <a href="#close" aria-label="Close" class="close-modal" id="close-categories-modal">${CLOSE_SVG}</a>
                     <h3>Manage Categories</h3>

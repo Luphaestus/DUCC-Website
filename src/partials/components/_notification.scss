@@ -1,0 +1,71 @@
+@use "../mixins" as *;
+
+#notification-container {
+    position: fixed;
+    top: 6rem;
+    right: 1.5rem;
+    z-index: 10000;
+    width: auto;
+    min-width: 300px;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+
+    .notification {
+        pointer-events: auto;
+        cursor: pointer;
+        margin-bottom: 0.75rem;
+        padding: 1rem 1.25rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        transform-origin: right center;
+        animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        border-radius: var(--border-radius-md);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+        strong {
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        p {
+            font-size: 0.9rem;
+            margin: 0;
+            opacity: 0.9;
+            color: white;
+            line-height: 1.4;
+        }
+
+        &.notification-error { background: rgba(231, 76, 60, 0.4); border-left: 4px solid #e74c3c; }
+        &.notification-success { background: rgba(46, 204, 113, 0.4); border-left: 4px solid #2ecc71; }
+        &.notification-info { background: rgba(52, 152, 219, 0.4); border-left: 4px solid #3498db; }
+        &.notification-warning { background: rgba(243, 156, 18, 0.4); border-left: 4px solid #f1c40f; }
+
+        &:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease;
+        }
+
+        &.fade-out {
+            animation: fadeOut 0.3s ease forwards;
+        }
+    }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; transform: translateX(20px); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}

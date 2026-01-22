@@ -17,26 +17,26 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
     const collegeName = colleges.find(c => c.id === user.college_id)?.name || 'N/A';
 
     container.innerHTML = `
-        <div class="dashboard-section active" style="gap: 1.5rem; display: flex; flex-direction: column;">
+        <div class="dashboard-section active gap-1-5">
             
             <!-- 1. Balance & Status Dual Grid -->
-            <div class="dual-grid" style="gap: 1.5rem; display: grid; grid-template-columns: 1fr 1fr;">
-                <div class="balance-header clickable" id="admin-profile-balance-card" style="padding: 1.5rem; cursor: pointer; transition: transform 0.2s ease;">
+            <div class="dual-grid">
+                <div class="balance-header clickable" id="admin-profile-balance-card">
                     <div class="balance-info">
                         <span class="label">Account Balance</span>
-                        <span class="amount" id="balance-amount" style="color: ${bal < 0 ? '#e74c3c' : (bal > 0 ? '#2ecc71' : 'inherit')}">
+                        <span class="amount ${bal < 0 ? 'negative' : (bal > 0 ? 'positive' : '')}" id="balance-amount">
                             £${bal.toFixed(2)}
                         </span>
                     </div>
                 </div>
                 
-                <div class="balance-header" style="padding: 1.5rem;">
+                <div class="balance-header">
                     <div class="balance-info">
                         <span class="label">Member Status</span>
-                        <span class="amount" style="color: ${user.is_member ? '#2ecc71' : 'var(--pico-muted-color)'}; font-size: 2.2rem; margin-bottom: 0.25rem;">
+                        <span class="amount ${user.is_member ? 'positive' : ''} large">
                             ${user.is_member ? 'Active Member' : (user.free_sessions || 0)}
                         </span>
-                        ${!user.is_member ? `<span class="label" style="text-transform: none; font-weight: 600; opacity: 0.8;">free sessions remaining</span>` : ''}
+                        ${!user.is_member ? `<span class="label label-sub">free sessions remaining</span>` : ''}
                     </div>
                 </div>
             </div>
@@ -45,7 +45,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             <div class="glass-panel">
                 <div class="box-header">
                     <h3>${POOL_SVG} Swimming Stats</h3>
-                    ${canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn primary icon-text-btn" style="margin:0;">${ADD_SVG} Log Swim</button>` : ''}
+                    ${canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn primary icon-text-btn">${ADD_SVG} Log Swim</button>` : ''}
                 </div>
                 <div class="stats-grid" id="admin-swimming-stats-grid">
                     <div class="stat-item">
@@ -75,20 +75,20 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         ${userPerms.includes('user.manage.advanced') ? `<button id="edit-account-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>` : ''}
                     </div>
                     <div id="account-info-display" class="info-rows">
-                        <div class="info-row" style="display:flex; justify-content:space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.05);">
-                            <span style="color: var(--pico-muted-color);">Email</span>
-                            <span style="font-weight:600;">${user.email}</span>
+                        <div class="info-row-modern">
+                            <span class="label">Email</span>
+                            <span class="value">${user.email}</span>
                         </div>
-                        <div class="info-row" style="display:flex; justify-content:space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.05);">
-                            <span style="color: var(--pico-muted-color);">Phone</span>
-                            <span style="font-weight:600;">${user.phone_number || 'N/A'}</span>
+                        <div class="info-row-modern">
+                            <span class="label">Phone</span>
+                            <span class="value">${user.phone_number || 'N/A'}</span>
                         </div>
-                        <div class="info-row" style="display:flex; justify-content:space-between; padding: 0.75rem 0;">
-                            <span style="color: var(--pico-muted-color);">College</span>
-                            <span style="font-weight:600;">${collegeName}</span>
+                        <div class="info-row-modern">
+                            <span class="label">College</span>
+                            <span class="value">${collegeName}</span>
                         </div>
                     </div>
-                    <form id="account-info-form" class="hidden modern-form" style="margin-top: 1rem;">
+                    <form id="account-info-form" class="hidden modern-form mt-1">
                         <label>Email <input type="email" id="input-email" value="${user.email}"></label>
                         <label>Phone <input type="tel" id="input-phone" value="${user.phone_number || ''}"></label>
                         <label>College 
@@ -98,16 +98,16 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                             </select>
                         </label>
                         ${canManageUsers ? `
-                            <div class="grid-2-col" style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="grid-2-col">
                                 <label>Free Sessions <input type="number" id="input-free-sessions" value="${user.free_sessions}"></label>
                                 <label>Swims (Total) <input type="number" id="input-total-swims" value="${user.swims}"></label>
                             </div>
-                            <div class="checkbox-group" style="display:flex; gap:1rem; margin-top:0.5rem;">
+                            <div class="checkbox-group mt-0-5 flex gap-1">
                                 <label><input type="checkbox" id="input-is-member" ${user.is_member ? 'checked' : ''}> Is Member</label>
                                 <label><input type="checkbox" id="input-is-instructor" ${user.is_instructor ? 'checked' : ''}> Is Instructor</label>
                             </div>
                         ` : ''}
-                        <div class="form-actions" style="display:flex; gap:0.5rem; margin-top:1rem;">
+                        <div class="form-actions mt-1 flex gap-0-5">
                             <button type="button" id="cancel-account-btn" class="secondary outline small-btn">Cancel</button>
                             <button type="submit" class="primary small-btn">Save</button>
                         </div>
@@ -119,10 +119,10 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     <div class="box-header">
                         <h3>${BOLT_SVG} Capabilities</h3>
                     </div>
-                    <div class="role-toggle" style="margin-bottom: 1.5rem;">
+                    <div class="role-toggle mb-1-5">
                         <div class="role-info">
                             <h4>Instructor Status</h4>
-                            <p style="font-size: 0.85rem; color: var(--pico-muted-color); margin: 0;">Authorized to lead club sessions</p>
+                            <p class="font-size-0-85 muted-color mb-0">Authorized to lead club sessions</p>
                         </div>
                         ${canManageUsers ? `
                             <label class="switch">
@@ -132,9 +132,9 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         ` : `<span class="badge ${user.is_instructor ? 'primary' : 'neutral'}">${user.is_instructor ? 'Yes' : 'No'}</span>`}
                     </div>
                     <div class="difficulty-control">
-                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; display: block;">Difficulty Level (1-5)</label>
-                        <input type="range" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5" step="1" style="margin-bottom: 0;">
-                        <div style="display:flex; justify-content:space-between; font-size: 0.75rem; color: var(--pico-muted-color); margin-top: 0.25rem;">
+                        <label class="font-weight-600 font-size-0-9 mb-0-5 block">Difficulty Level (1-5)</label>
+                        <input type="range" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5" step="1" class="mb-0">
+                        <div class="flex justify-between font-size-0-75 muted-color mt-0-25">
                             <span>Beginner</span>
                             <span>Advanced</span>
                         </div>
@@ -149,8 +149,8 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         <h3>${ID_CARD_SVG} System Role</h3>
                     </div>
                     <div class="card-body">
-                        <p class="small-text" style="margin-bottom: 1rem;">Defines base permissions and access levels.</p>
-                        <select id="admin-user-role-select" class="full-width-select" style="margin-bottom:0;">
+                        <p class="small-text mb-1">Defines base permissions and access levels.</p>
+                        <select id="admin-user-role-select" class="full-width-select mb-0">
                             <option value="">No Role</option>
                             <!-- Roles populated dynamically -->
                         </select>
@@ -163,18 +163,18 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         <h3>${SHIELD_SVG} Direct Permissions</h3>
                     </div>
                     <div class="card-body">
-                        <p class="small-text" style="margin-bottom: 1rem;">Explicitly granted permissions (overrides role).</p>
-                        <div class="inline-add-form" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                            <select id="add-perm-select" style="margin-bottom: 0;">
+                        <p class="small-text mb-1">Explicitly granted permissions (overrides role).</p>
+                        <div class="inline-add-form flex gap-0-5 mb-1">
+                            <select id="add-perm-select" class="mb-0">
                                 <option value="">Select Permission...</option>
                             </select>
                             <button id="add-perm-btn" class="icon-btn primary small-btn">${ADD_SVG}</button>
                         </div>
                         <div id="direct-perms-list" class="tags-cloud">
                             ${(user.direct_permissions || []).map(p => `
-                                <span class="tag-chip neutral" style="background: rgba(var(--pico-color-rgb), 0.1); border-radius: 20px; padding: 0.2rem 0.75rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; color: var(--pico-color); border: 1px solid rgba(var(--pico-color-rgb), 0.1);">
+                                <span class="tag-chip neutral">
                                     ${p.slug} 
-                                    <button class="remove-perm-btn delete-icon-btn" data-id="${p.id}" style="background:none; border:none; padding:0; color:var(--pico-muted-color); cursor:pointer; display:flex; align-items:center; height: 1.25rem; width: 1.25rem; justify-content: center;">${CLOSE_SVG}</button>
+                                    <button class="remove-perm-btn delete-icon-btn" data-id="${p.id}">${CLOSE_SVG}</button>
                                 </span>
                             `).join('')}
                         </div>

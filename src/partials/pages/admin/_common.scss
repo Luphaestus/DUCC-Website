@@ -1,0 +1,13 @@
+#admin-view {
+    .admin-nav-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+
+    .pagination-info {
+        color: var(--pico-muted-color);
+        font-size: 0.9rem;
+    }
+}

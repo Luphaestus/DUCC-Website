@@ -34,7 +34,7 @@ export async function renderManageGlobals() {
                             </tr>
                         </thead>
                         <tbody id="globals-table-body">
-                            <tr><td colspan="4" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                            <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>

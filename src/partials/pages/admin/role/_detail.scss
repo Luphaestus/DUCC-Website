@@ -1,0 +1,19 @@
+#admin-view {
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-divider {
+        height: 1px;
+        background: rgba(128, 128, 128, 0.2);
+        margin: 2rem 0;
+    }
+
+    .form-actions-footer {
+        margin-top: 2rem;
+        text-align: right;
+    }
+}

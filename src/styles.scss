@@ -3,14 +3,44 @@
 @use "partials/mixins";
 @use "partials/base";
 @use "partials/utilities";
-@use "partials/components";
-@use "partials/home";
-@use "partials/events";
-@use "partials/legal";
-@use "partials/profile";
 @use "partials/page_layouts";
-@use "partials/admin";
-@use "partials/footer";
-@use "partials/swims";
-@use "partials/no_internet";
-@use "partials/files";
+
+// Components
+@use "partials/components/common";
+@use "partials/components/navbar";
+@use "partials/components/notification";
+@use "partials/components/background";
+
+// Pages
+@use "partials/pages/home";
+@use "partials/pages/events";
+@use "partials/pages/legal";
+@use "partials/pages/profile";
+@use "partials/pages/footer";
+@use "partials/pages/swims";
+@use "partials/pages/no_internet";
+@use "partials/pages/files" as page_files;
+@use "partials/pages/signup";
+@use "partials/pages/login";
+@use "partials/pages/reset_password";
+@use "partials/pages/set_password";
+@use "partials/pages/unauthorized";
+
+// Admin Pages
+@use "partials/pages/admin/admin" as admin_main;
+@use "partials/pages/admin/admin_home";
+@use "partials/pages/admin/common" as admin_common;
+@use "partials/pages/admin/globals" as admin_globals;
+@use "partials/pages/admin/files" as admin_files;
+@use "partials/pages/admin/event/detail" as admin_event_detail;
+@use "partials/pages/admin/event/manage" as admin_event_manage;
+@use "partials/pages/admin/role/detail" as admin_role_detail;
+@use "partials/pages/admin/role/manage" as admin_role_manage;
+@use "partials/pages/admin/tag/detail" as admin_tag_detail;
+@use "partials/pages/admin/tag/manage" as admin_tag_manage;
+@use "partials/pages/admin/user/detail" as admin_user_detail;
+@use "partials/pages/admin/user/manage" as admin_user_manage;
+@use "partials/pages/admin/user/tabs" as admin_user_tabs;
+
+// Utils
+@use "partials/utils/modal";

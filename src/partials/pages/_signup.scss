@@ -1,0 +1,13 @@
+#signup-view {
+    #signup-message {
+        margin-top: 1rem;
+        &.error { color: #FF6961; }
+        &.success { color: #77DD77; }
+    }
+
+    .validation-message {
+        color: #FF6961;
+        font-size: 0.8em;
+        margin-top: 0.2em;
+    }
+}

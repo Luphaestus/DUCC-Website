@@ -60,7 +60,7 @@ const HTML_TEMPLATE = /*html*/`<div id="${home_view_id}" class="view hidden">
                     <div class="map-container">
                         <iframe
                             data-src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d4603.299914236021!2d-1.559015!3d54.768541!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487e87002bb2c4ad%3A0xdaca718450a9120f!2sDurham%20University%20Canoe%20Club!5e0!3m2!1sen!2suk!4v1763136022459!5m2!1sen!2suk"
-                            width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+                            width="600" height="450" allowfullscreen="" loading="lazy"
                             referrerpolicy="no-referrer-when-downgrade"></iframe>
                     </div>
                     <div class="find-us-images">
@@ -93,10 +93,8 @@ function initMap() {
  * @param {string} url
  */
 function setLayerBg(layer, url) {
-    let urlString = url ? `, url("${url}")` : '';
-    const darkGradient = "linear-gradient(to left, rgba(245, 246, 252, 0), rgb(77, 26, 87))";
-    layer.style.setProperty('--slide-img-light', darkGradient + urlString);
-    layer.style.setProperty('--slide-img-dark', darkGradient + urlString);
+    let urlString = url ? `url("${url}")` : 'none';
+    layer.style.setProperty('--slide-img-url', urlString);
 }
 
 /**
@@ -173,8 +171,6 @@ function initSlideshow(hero) {
         layers[activeLayerIndex].classList.add('show');
 
         setTimeout(() => {
-            layerA.style.transition = 'opacity 900ms ease';
-            layerB.style.transition = 'opacity 900ms ease';
             if (window.location.pathname === '/home' || window.location.pathname === '/') startSlideshow();
         }, 50);
     }).catch(error => {

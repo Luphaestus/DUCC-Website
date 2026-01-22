@@ -52,7 +52,7 @@ export function showPasswordModal(title, message) {
             <div class="custom-modal-content">
                 <h3>${title}</h3>
                 <p>${message}</p>
-                <input type="password" id="confirm-password" placeholder="Enter your password" style="width: 100%; margin-bottom: 1rem;">
+                <input type="password" id="confirm-password" placeholder="Enter your password">
                 <div class="modal-actions">
                     <button class="btn-cancel" id="confirm-cancel">Cancel</button>
                     <button class="btn-confirm" id="confirm-ok">Confirm</button>
@@ -99,8 +99,8 @@ export function showChangePasswordModal() {
             <div class="custom-modal-content">
                 <h3>Change Password</h3>
                 <p>Please enter your current password and a new password.</p>
-                <input type="password" id="current-password" placeholder="Current Password" style="width: 100%; margin-bottom: 0.5rem;">
-                <input type="password" id="new-password" placeholder="New Password" style="width: 100%; margin-bottom: 1rem;">
+                <input type="password" id="current-password" placeholder="Current Password">
+                <input type="password" id="new-password" placeholder="New Password">
                 <div class="modal-actions">
                     <button class="btn-cancel" id="confirm-cancel">Cancel</button>
                     <button class="btn-confirm" id="confirm-ok">Change Password</button>

@@ -62,7 +62,7 @@ export async function renderManageUsers() {
                                     <input type="number" id="filter-difficulty" value="${difficulty}" placeholder="Exact">
                                 </label>
                             </div>
-                            <div class="filter-actions" style="text-align: right;">
+                            <div class="filter-actions text-right">
                                 <button id="apply-user-filters-btn" class="small-btn primary">Apply Filters</button>
                             </div>
                         </div>
@@ -75,7 +75,7 @@ export async function renderManageUsers() {
                     <table class="glass-table">
                         <thead id="users-table-head"></thead>
                         <tbody id="users-table-body">
-                            <tr><td colspan="5" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>

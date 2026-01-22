@@ -28,7 +28,7 @@ const HTML_TEMPLATE = /*html*/`
                         <button class="nobottommargin" type="submit">Update Password</button>
                     </div>
                 </form>
-                <div id="set-password-message" style="margin-top: 1rem;"></div>
+                <div id="set-password-message" class="mt-1"></div>
             </article>
         </div>
     </div>
@@ -50,12 +50,15 @@ function ViewNavigationEventListener({ resolvedPath }) {
 
         if (token) {
             if (tokenInput) tokenInput.value = token;
-            if (messageEl) messageEl.textContent = '';
+            if (messageEl) {
+                messageEl.textContent = '';
+                messageEl.classList.remove('error', 'success');
+            }
             if (form) form.querySelector('button').disabled = false;
         } else {
             if (messageEl) {
                 messageEl.textContent = 'Missing reset token.';
-                messageEl.style.color = '#FF6961';
+                messageEl.classList.add('error');
             }
             if (form) form.querySelector('button').disabled = true;
         }
@@ -83,21 +86,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (newPassword !== confirmPassword) {
             messageEl.textContent = 'Passwords do not match.';
-            messageEl.style.color = '#FF6961';
+            messageEl.classList.add('error');
             return;
         }
 
         messageEl.textContent = 'Updating...';
-        messageEl.style.color = 'var(--text-color)';
+        messageEl.classList.remove('error', 'success');
 
         try {
             const res = await ajaxPost('/api/auth/reset-password', { token, newPassword });
             messageEl.textContent = res.message;
-            messageEl.style.color = '#77DD77';
+            messageEl.classList.add('success');
             setTimeout(() => switchView('/login'), 2000);
         } catch (error) {
             messageEl.textContent = error.message || 'Failed to update password.';
-            messageEl.style.color = '#FF6961';
+            messageEl.classList.add('error');
         }
     });
 

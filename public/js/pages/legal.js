@@ -213,9 +213,6 @@ function displayValidationMessage(inputElement, message) {
         }
     }
     existingMessage.textContent = message;
-    existingMessage.style.color = '#FF6961';
-    existingMessage.style.fontSize = '0.8em';
-    existingMessage.style.marginTop = '0.2em';
     validationMessages[inputElement.id] = existingMessage;
     inputElement.ariaInvalid = 'true';
 }

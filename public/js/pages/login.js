@@ -35,8 +35,8 @@ const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
                                 <button class="nobottommargin" type="submit">Login</button>
                             </div>
                         </form>
-                        <p class="nobottommargin" style="font-size: 0.9em; margin-top: 0.5rem;"><a data-nav="/reset-password" style="cursor: pointer;">Forgot Password?</a></p>
-                        <p class="nobottommargin">Don't have an account? <a data-nav="/signup" style="cursor: pointer;">Sign Up</a></p>
+                        <p class="nobottommargin font-size-0-9 mt-0-5"><a data-nav="/reset-password" class="cursor-pointer">Forgot Password?</a></p>
+                        <p class="nobottommargin">Don't have an account? <a data-nav="/signup" class="cursor-pointer">Sign Up</a></p>
                     </article>
                 </div>
             </div>
@@ -83,15 +83,18 @@ document.addEventListener('DOMContentLoaded', () => {
     messageElement = document.createElement('div');
     messageElement.id = 'login-message';
     messageElement.setAttribute('role', 'alert');
-    messageElement.style.marginBottom = '0';
     loginFooter.appendChild(messageElement);
 
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(loginForm);
+        let emailVal = formData.get('email');
+        if (emailVal && !emailVal.includes('@')) {
+            emailVal += '@durham.ac.uk';
+        }
 
         try {
-            await ajaxPost('/api/auth/login', { email: formData.get('email'), password: formData.get('password') });
+            await ajaxPost('/api/auth/login', { email: emailVal, password: formData.get('password') });
             LoginEvent.notify({ authenticated: true });
 
             const redirect = sessionStorage.getItem('redirect_after_login');
@@ -106,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             messageElement.textContent = error.message || error || 'Login failed.';
-            messageElement.style.color = '#FF6961';
+            messageElement.classList.add('error');
         }
     });
 

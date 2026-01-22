@@ -1,4 +1,4 @@
-@use "mixins" as *;
+@use "../mixins" as *;
 
 /* Dashboard Layout */
 #profile-view {
@@ -10,6 +10,29 @@
     @media (max-width: 768px) {
         padding: 1rem;
         padding-top: 5rem; 
+    }
+
+    .tag-badge {
+        background-color: var(--tag-color, var(--pico-primary));
+    }
+
+    .instructor-active {
+        color: #2ecc71;
+        font-weight: bold;
+    }
+
+    .balance-negative {
+        color: #e74c3c;
+    }
+
+    .balance-positive {
+        color: #2ecc71;
+    }
+
+    .empty-text {
+        padding: 1rem;
+        text-align: center;
+        color: var(--pico-muted-color);
     }
 }
 
@@ -146,6 +169,7 @@
 }
 
 .glass-panel {
+    @include glass-panel;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;

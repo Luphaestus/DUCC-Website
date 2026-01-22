@@ -16,7 +16,7 @@ export async function renderManageRoles() {
 
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
-            <div class="glass-toolbar" style="justify-content: flex-end;">
+            <div class="glass-toolbar justify-end">
                 ${await renderAdminNavBar('roles')}
                 <div class="toolbar-content">
                     <div class="toolbar-left"></div>
@@ -37,7 +37,7 @@ export async function renderManageRoles() {
                             </tr>
                         </thead>
                         <tbody id="roles-table-body">
-                            <tr><td colspan="3" class="loading-cell" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+                            <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
