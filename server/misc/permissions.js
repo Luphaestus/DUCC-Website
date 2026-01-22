@@ -106,6 +106,23 @@ class Permissions {
     }
 
     /**
+     * Check if a user is authorized to manage a specific tag.
+     * Supports global (manage.all) and scoped (manage.scoped + tag match) authorization.
+     * 
+     * @param {object} db - Database connection.
+     * @param {number} userId - ID of the user.
+     * @param {number} tagId - ID of the tag.
+     * @returns {Promise<boolean>}
+     */
+    static async canManageTag(db, userId, tagId) {
+        // Global permission allows management of everything
+        if (await this.hasPermission(db, userId, 'event.manage.all') || await this.hasPermission(db, userId, 'user.manage')) return true;
+
+        const managedTagIds = await this.getManagedTags(db, userId);
+        return managedTagIds.includes(parseInt(tagId));
+    }
+
+    /**
      * Check if a user is authorized to manage a specific event.
      * Supports global (manage.all) and scoped (manage.scoped + tag match) authorization.
      * 

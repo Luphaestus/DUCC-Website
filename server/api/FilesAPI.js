@@ -216,42 +216,47 @@ class FilesAPI {
          * Enforces visibility rules based on the user's role and event participation.
          */
         this.app.get('/api/files/:id/download', async (req, res) => {
-            const id = req.params.id;
-            const fileStatus = await FilesDB.getFileById(this.db, id);
-            if (fileStatus.isError()) return fileStatus.getResponse(res);
+            try {
+                const id = req.params.id;
+                const fileStatus = await FilesDB.getFileById(this.db, id);
+                if (fileStatus.isError()) return fileStatus.getResponse(res);
 
-            const file = fileStatus.getData();
-            const role = await this.getUserRole(req);
+                const file = fileStatus.getData();
+                const role = await this.getUserRole(req);
 
-            // Check if the user has access based on the file's visibility settings
-            if (!await FileRules.canAccessFile(this.db, file, req.user, role)) {
-                return res.status(403).json({ message: 'Forbidden' });
-            }
+                // Check if the user has access based on the file's visibility settings
+                if (!await FileRules.canAccessFile(this.db, file, req.user, role)) {
+                    return res.status(403).json({ message: 'Forbidden' });
+                }
 
-            const filePath = path.join(this.uploadDir, file.filename);
-            if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
+                const filePath = path.join(this.uploadDir, file.filename);
+                if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
 
-            const ext = path.extname(file.filename);
+                const ext = path.extname(file.filename);
 
-            let downloadName = file.title;
-            if (!downloadName.toLowerCase().endsWith(ext.toLowerCase())) {
-                downloadName += ext;
-            }
+                let downloadName = file.title;
+                if (!downloadName.toLowerCase().endsWith(ext.toLowerCase())) {
+                    downloadName += ext;
+                }
 
-            // 'view=true' query param triggers inline display instead of force download
-            if (req.query.view === 'true') {
-                return res.sendFile(filePath, (err) => {
+                // 'view=true' query param triggers inline display instead of force download
+                if (req.query.view === 'true') {
+                    return res.sendFile(filePath, (err) => {
+                        if (err && !res.headersSent) {
+                            res.status(500).json({ message: 'Error sending file' });
+                        }
+                    });
+                }
+
+                return res.download(filePath, downloadName, (err) => {
                     if (err && !res.headersSent) {
-                        res.status(500).json({ message: 'Error sending file' });
+                        res.status(500).json({ message: 'Error downloading file' });
                     }
                 });
+            } catch (error) {
+                console.error('Error in download route:', error);
+                res.status(500).json({ message: 'Internal Server Error', error: error.message });
             }
-
-            return res.download(filePath, downloadName, (err) => {
-                if (err && !res.headersSent) {
-                    res.status(500).json({ message: 'Error downloading file' });
-                }
-            });
         });
 
         // --- Category Routes ---

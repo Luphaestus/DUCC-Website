@@ -63,7 +63,12 @@ class TagsAPI {
         /**
          * Update an existing tag.
          */
-        this.app.put('/api/tags/:id', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
+        this.app.put('/api/tags/:id', check(), async (req, res) => {
+            const { Permissions } = require('../misc/permissions.js');
+            if (!await Permissions.canManageTag(this.db, req.user.id, req.params.id)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+
             const result = await TagsDB.updateTag(this.db, req.params.id, req.body);
             result.getResponse(res);
         });

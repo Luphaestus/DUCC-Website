@@ -1,57 +1,40 @@
-/**
- * detail.js (Tag)
- * 
- * Logic for the Tag Creator and Editor form.
- * Beyond basic metadata (name, color), this module handles complex "Designated Manager"
- * and "Whitelist Access" logic, allowing admins to scope event management and visibility
- * to specific subsets of users.
- * 
- * Registered Routes: /admin/tag/new, /admin/tag/:id
- */
-
 import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
-import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG } from "../../../../images/icons/outline/icons.js"
+import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, UPLOAD_SVG, IMAGE_SVG } from "../../../../images/icons/outline/icons.js"
 
 /**
- * Main rendering function for the tag editor.
- * 
- * @param {string} id - Database ID of the tag, or 'new'.
+ * Admin tag creation and editing form.
+ * @module AdminTagDetail
+ */
+
+/**
+ * Render tag detail/editor form.
+ * @param {string} id
  */
 export async function renderTagDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Set up toolbar
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
-    // Fetch user permissions to determine if management sections should be shown
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
     const userPerms = (userData.permissions || []).includes('user.manage');
-    
     const isNew = id === 'new';
-    let tag = { name: '', color: '#808080', description: '', min_difficulty: '' };
+    let tag = { name: '', color: '#808080', description: '', min_difficulty: '', image_url: '' };
     let whitelist = [];
     let managers = [];
 
     if (!isNew) {
         try {
-            // Batch fetch tag metadata and associated user lists
             const tags = (await ajaxGet('/api/tags')).data || [];
             tag = tags.find(t => t.id == id);
             if (!tag) throw new Error('Tag not found');
-            
-            const [whitelistRes, managersRes] = await Promise.all([
-                ajaxGet(`/api/tags/${id}/whitelist`),
-                ajaxGet(`/api/tags/${id}/managers`)
-            ]);
-            
-            whitelist = whitelistRes.data || [];
-            managers = managersRes.data || [];
+            whitelist = (await ajaxGet(`/api/tags/${id}/whitelist`)).data || [];
+            managers = (await ajaxGet(`/api/tags/${id}/managers`)).data || [];
         } catch (e) {
             adminContent.innerHTML = '<p>Error loading tag.</p>';
             return;
@@ -66,7 +49,6 @@ export async function renderTagDetail(id) {
                     ${!isNew ? `<button type="button" id="delete-tag-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : ''}
                 </header>
                 
-                <!-- Main Metadata Form -->
                 <form id="tag-form" class="modern-form">
                     <div class="grid-2-col">
                         <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
@@ -75,7 +57,29 @@ export async function renderTagDetail(id) {
                     
                     <label class="mb-1-5 block">Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
                     
-                    <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
+                    <div class="tag-content-split mt-1">
+                        <div class="tag-details-section">
+                             <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
+                        </div>
+
+                        <div class="tag-image-section">
+                            <h3 class="section-header-modern">
+                                ${IMAGE_SVG} Tag Image (Fallback for Events)
+                            </h3>
+                            <div class="image-upload-container glass-panel" id="drop-zone">
+                                <div id="image-preview" class="image-preview" style="--event-image-url: url('${tag.image_url || '/images/misc/tag_placeholder.png'}'); height: 120px;"></div>
+                                <div id="upload-progress-container" class="hidden">
+                                    <progress id="upload-progress" value="0" max="100"></progress>
+                                    <span id="progress-text">0%</span>
+                                </div>
+                                <input type="hidden" name="image_url" id="image_url_input" value="${tag.image_url || ''}">
+                                <label class="file-upload-btn small-btn primary">
+                                    ${UPLOAD_SVG} <span>Choose or Drop Image</span>
+                                    <input type="file" id="tag-image-file" accept="image/*" style="display:none;">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="form-actions-footer mt-2 text-right">
                         <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
@@ -85,7 +89,6 @@ export async function renderTagDetail(id) {
                 ${!isNew && userPerms ? `
                     <div class="divider"></div>
                     
-                    <!-- Designated Managers Section -->
                     <div class="permission-section">
                         <div class="section-header">
                             <h3>${SHIELD_SVG} Designated Managers</h3>
@@ -110,7 +113,6 @@ export async function renderTagDetail(id) {
 
                     <div class="divider"></div>
 
-                    <!-- Whitelist Access Section -->
                     <div class="permission-section">
                         <div class="section-header">
                             <h3>${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
@@ -136,11 +138,97 @@ export async function renderTagDetail(id) {
             </div>
         </div>`;
 
-    // --- Core Tag Form Submission ---
+    // Image Upload Handling
+    const fileInput = document.getElementById('tag-image-file');
+    const imagePreview = document.getElementById('image-preview');
+    const imageUrlInput = document.getElementById('image_url_input');
+    const dropZone = document.getElementById('drop-zone');
+    const progressContainer = document.getElementById('upload-progress-container');
+    const progressBar = document.getElementById('upload-progress');
+    const progressText = document.getElementById('progress-text');
+
+    const uploadFile = async (file) => {
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('files', file);
+        formData.append('visibility', 'public');
+        formData.append('title', `Tag Image - ${Date.now()}`);
+
+        try {
+            progressContainer.classList.remove('hidden');
+            progressBar.value = 0;
+            progressText.textContent = '0%';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/files', true);
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.value = percent;
+                    progressText.textContent = `${percent}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                setTimeout(() => progressContainer.classList.add('hidden'), 500);
+                if (xhr.status === 201) {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success && result.ids.length > 0) {
+                        const fileId = result.ids[0];
+                        const newUrl = `/api/files/${fileId}/download?view=true`;
+                        imageUrlInput.value = newUrl;
+                        imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
+                        notify('Success', 'Image uploaded', NotificationTypes.SUCCESS);
+                    } else {
+                        notify('Error', 'Upload succeeded but no ID returned', NotificationTypes.ERROR);
+                    }
+                } else {
+                    notify('Error', 'Upload failed: ' + xhr.status, NotificationTypes.ERROR);
+                }
+            };
+
+            xhr.onerror = () => {
+                progressContainer.classList.add('hidden');
+                notify('Error', 'Network error during upload', NotificationTypes.ERROR);
+            };
+
+            xhr.send(formData);
+        } catch (err) {
+            progressContainer.classList.add('hidden');
+            notify('Error', 'Failed to upload image', NotificationTypes.ERROR);
+        }
+    };
+
+    fileInput.onchange = (e) => uploadFile(e.target.files[0]);
+
+    if (dropZone) {
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        };
+
+        dropZone.ondragleave = () => {
+            dropZone.classList.remove('drag-over');
+        };
+
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                uploadFile(e.dataTransfer.files[0]);
+            }
+        };
+    }
+
     document.getElementById('tag-form').onsubmit = async (e) => {
         e.preventDefault();
-        const data = Object.fromEntries(new FormData(e.target).entries());
-        data.min_difficulty = data.min_difficulty === '' ? null : parseInt(data.min_difficulty);
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        
+        if (data.min_difficulty === '') delete data.min_difficulty;
+        else data.min_difficulty = parseInt(data.min_difficulty);
 
         try {
             if (isNew) await ajaxPost('/api/tags', data);
@@ -148,11 +236,11 @@ export async function renderTagDetail(id) {
             notify('Success', 'Tag saved', NotificationTypes.SUCCESS);
             switchView(`/admin/tags`);
         } catch (err) {
+            console.error(err);
             notify('Error', 'Save failed', NotificationTypes.ERROR);
         }
     };
 
-    // --- User List Management Logic ---
     if (!isNew) {
         document.getElementById('delete-tag-btn').onclick = async () => {
             if (!confirm('Delete tag?')) return;
@@ -162,21 +250,21 @@ export async function renderTagDetail(id) {
         };
 
         if (userPerms) {
-            // Load Whitelist Search Datalist (All users)
+            // Load Whitelist Users (All)
             ajaxGet('/api/admin/users?limit=1000').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('users-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => {});
 
-            // Load Managers Search Datalist (Execs only - identified by is_exec virtual permission)
+            // Load Managers (Execs Only)
             ajaxGet('/api/admin/users?limit=1000&permissions=perm:is_exec').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('managers-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => {});
 
-            // Add Manager Handler
+            // Managers Form
             document.getElementById('managers-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const userId = parseInt(document.getElementById('managers-user-input').value.split(' - ')[0]);
@@ -193,7 +281,7 @@ export async function renderTagDetail(id) {
                 }
             };
 
-            // Add Whitelist User Handler
+            // Whitelist Form
             document.getElementById('whitelist-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const userId = parseInt(document.getElementById('whitelist-user-input').value.split(' - ')[0]);
@@ -210,20 +298,13 @@ export async function renderTagDetail(id) {
                 }
             };
         }
-        
-        // Initialize removal button listeners
         setupActionButtons(id, 'managers-table-body', 'remove-manager-btn', 'managers');
         setupActionButtons(id, 'whitelist-table-body', 'remove-whitelist-btn', 'whitelist');
     }
 }
 
 /**
- * Formats a list of users into table rows for the manager/whitelist tables.
- * 
- * @param {object[]} users 
- * @param {number|string} tagId 
- * @param {string} btnClass 
- * @returns {string} - HTML rows.
+ * Format table rows for users (managers or whitelist).
  */
 function renderUserRows(users, tagId, btnClass) {
     if (!users || users.length === 0) return '<tr><td colspan="3" class="empty-cell">None.</td></tr>';
@@ -237,12 +318,7 @@ function renderUserRows(users, tagId, btnClass) {
 }
 
 /**
- * Initializes the deletion logic for user association tables.
- * 
- * @param {string|number} tagId 
- * @param {string} tableId 
- * @param {string} btnClass 
- * @param {string} endpoint - API path segment ('managers' or 'whitelist').
+ * Initialize action buttons (remove manager or whitelist).
  */
 function setupActionButtons(tagId, tableId, btnClass, endpoint) {
     const tbody = document.getElementById(tableId);
@@ -254,7 +330,6 @@ function setupActionButtons(tagId, tableId, btnClass, endpoint) {
             try {
                 await ajaxDelete(`/api/tags/${tagId}/${endpoint}/${userId}`);
                 notify('Success', 'User removed', NotificationTypes.SUCCESS);
-                // Refresh only the affected table
                 const list = (await ajaxGet(`/api/tags/${tagId}/${endpoint}`)).data || [];
                 tbody.innerHTML = renderUserRows(list, tagId, btnClass);
             } catch (err) {

@@ -99,16 +99,45 @@ describe('rules/FileRules', () => {
             expect(await FileRules.canAccessFile(world.db, file, null, 'exec')).toBe(true);
         });
 
+        test('Allowed: if the user can see an event that uses a tag which has this file as default', async () => {
+            await world.createTag('T1', { image_id: fileId });
+            const tagId = world.data.tags['T1'];
+            await world.createEvent('E1', { difficulty_level: 1 });
+            await world.assignTag('event', 'E1', 'T1');
+
+            const file = { id: fileId, visibility: 'events' };
+            const user = { difficulty_level: 1 };
+            expect(await FileRules.canAccessFile(world.db, file, user, 'member')).toBe(true);
+        });
+
+        test('Denied: if the only event using the tag (with this default image) is too difficult', async () => {
+            await world.createTag('HardTag', { image_id: fileId });
+            const tagId = world.data.tags['HardTag'];
+            await world.createEvent('HardEvent', { difficulty_level: 5 });
+            await world.assignTag('event', 'HardEvent', 'HardTag');
+
+            const file = { id: fileId, visibility: 'events' };
+            const user = { difficulty_level: 1 };
+            expect(await FileRules.canAccessFile(world.db, file, user, 'member')).toBe(false);
+        });
+
         /**
          * Test integration with the Guest difficulty limit global.
          */
         test('should deny access if guest user level is below all associated event difficulties', async () => {
-            // Viewable via E1 (diff 1)
-            expect(await FileRules.canAccessFile(world.db, file, null)).toBe(true);
+            const file = { id: fileId, visibility: 'events' };
+            
+            // 1. Create E1 (difficulty 1) and E2 (difficulty 5)
+            await world.createEvent('E1', { difficulty_level: 1, image_url: `/api/files/${fileId}/download` });
+            await world.createEvent('E2', { difficulty_level: 5, image_url: `/api/files/${fileId}/download` });
+            const e1 = await world.db.get('SELECT id FROM events WHERE title = "E1"');
 
-            // Remove E1; now only E2 (diff 2) is left. Since 2 > Guest Max (1), access should be denied.
-            await world.db.run('DELETE FROM events WHERE id = ?', [e1Id]);
-            expect(await FileRules.canAccessFile(world.db, file, null)).toBe(false);
+            // Viewable via E1 (diff 1) - Guest max is 2 by default in TestWorld/Globals
+            expect(await FileRules.canAccessFile(world.db, file, null, 'public')).toBe(true);
+
+            // Remove E1; now only E2 (diff 5) is left. Since 5 > Guest Max (2), access should be denied.
+            await world.db.run('DELETE FROM events WHERE id = ?', [e1.id]);
+            expect(await FileRules.canAccessFile(world.db, file, null, 'public')).toBe(false);
         });
     });
 });

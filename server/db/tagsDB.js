@@ -45,18 +45,19 @@ class TagsDB {
     /**
      * Create a new tag.
      * @param {object} db - Database connection.
-     * @param {object} data - { name, color, description, min_difficulty }.
+     * @param {object} data - { name, color, description, min_difficulty, priority, join_policy, view_policy, image_id }.
      * @returns {Promise<statusObject>} - Data contains { id }.
      */
     static async createTag(db, data) {
         try {
-            const { name, color, description, min_difficulty } = data;
+            const { name, color, description, min_difficulty, priority, join_policy, view_policy, image_id } = data;
             const result = await db.run(
-                'INSERT INTO tags (name, color, description, min_difficulty) VALUES (?, ?, ?, ?)',
-                [name, color || '#808080', description, min_difficulty]
+                'INSERT INTO tags (name, color, description, min_difficulty, priority, join_policy, view_policy, image_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [name, color || '#808080', description, min_difficulty, priority || 0, join_policy || 'open', view_policy || 'open', image_id]
             );
             return new statusObject(200, null, { id: result.lastID });
         } catch (error) {
+            console.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -66,13 +67,14 @@ class TagsDB {
      */
     static async updateTag(db, id, data) {
         try {
-            const { name, color, description, min_difficulty } = data;
+            const { name, color, description, min_difficulty, priority, join_policy, view_policy, image_id } = data;
             await db.run(
-                'UPDATE tags SET name=?, color=?, description=?, min_difficulty=? WHERE id=?',
-                [name, color, description, min_difficulty, id]
+                'UPDATE tags SET name=?, color=?, description=?, min_difficulty=?, priority=?, join_policy=?, view_policy=?, image_id=? WHERE id=?',
+                [name, color, description, min_difficulty, priority, join_policy, view_policy, image_id, id]
             );
             return new statusObject(200, 'Tag updated');
         } catch (error) {
+            console.error(error);
             return new statusObject(500, 'Database error');
         }
     }

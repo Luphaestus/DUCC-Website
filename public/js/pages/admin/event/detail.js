@@ -11,6 +11,7 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { switchView } from '/js/utils/view.js';
+import { uploadFile } from '/js/utils/upload.js';
 import { adminContentID } from '../common.js';
 import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
 
@@ -213,64 +214,33 @@ export async function renderEventDetail(id) {
     const progressText = document.getElementById('progress-text');
 
     /**
-     * Executes the XHR upload for an image file.
-     * Uses XHR over Fetch to support upload progress tracking.
+     * Helper to handle file upload using the central utility
      */
-    const uploadFile = async (file) => {
+    const handleUpload = async (file) => {
         if (!file) return;
-
-        const formData = new FormData();
-        formData.append('files', file);
-        formData.append('visibility', 'events'); // Restrict access to event context
-        formData.append('title', `Event Image - ${Date.now()}`);
-
         try {
             progressContainer.classList.remove('hidden');
-            progressBar.value = 0;
-            progressText.textContent = '0%';
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/files', true);
-
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
+            const fileId = await uploadFile(file, {
+                visibility: 'events',
+                title: `Event Image - ${Date.now()}`,
+                onProgress: (percent) => {
                     progressBar.value = percent;
                     progressText.textContent = `${percent}%`;
                 }
-            };
-
-            xhr.onload = () => {
-                setTimeout(() => progressContainer.classList.add('hidden'), 500);
-                if (xhr.status === 201) {
-                    const result = JSON.parse(xhr.responseText);
-                    if (result.success && result.ids.length > 0) {
-                        const fileId = result.ids[0];
-                        const newUrl = `/api/files/${fileId}/download?view=true`;
-                        imageUrlInput.value = newUrl;
-                        imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
-                        notify('Success', 'Image uploaded', 'success');
-                    } else {
-                        notify('Error', 'Upload succeeded but no ID returned', 'error');
-                    }
-                } else {
-                    notify('Error', 'Upload failed: ' + xhr.status, 'error');
-                }
-            };
-
-            xhr.onerror = () => {
-                progressContainer.classList.add('hidden');
-                notify('Error', 'Network error during upload', 'error');
-            };
-
-            xhr.send(formData);
+            });
+            setTimeout(() => progressContainer.classList.add('hidden'), 500);
+            
+            const newUrl = `/api/files/${fileId}/download?view=true`;
+            imageUrlInput.value = newUrl;
+            imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
+            notify('Success', 'Image uploaded', 'success');
         } catch (err) {
             progressContainer.classList.add('hidden');
-            notify('Error', 'Failed to upload image', 'error');
+            notify('Error', err.message || 'Upload failed', 'error');
         }
     };
 
-    fileInput.onchange = (e) => uploadFile(e.target.files[0]);
+    fileInput.onchange = (e) => handleUpload(e.target.files[0]);
 
     // Drag-and-drop listeners
     dropZone.ondragover = (e) => {
@@ -286,7 +256,7 @@ export async function renderEventDetail(id) {
         e.preventDefault();
         dropZone.classList.remove('drag-over');
         if (e.dataTransfer.files.length > 0) {
-            uploadFile(e.dataTransfer.files[0]);
+            handleUpload(e.dataTransfer.files[0]);
         }
     };
 

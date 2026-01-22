@@ -108,6 +108,30 @@ describe('api/admin/AdminEventsAPI', () => {
             });
             expect(res2.statusCode).toBe(403);
         });
+
+        test('Event inherits highest priority tag image if no image_url provided', async () => {
+            const lowFileId = await world.createFile('LowImg');
+            const highFileId = await world.createFile('HighImg');
+            
+            await world.createTag('Low', { priority: 1, image_id: lowFileId });
+            await world.createTag('High', { priority: 10, image_id: highFileId });
+            const lowId = world.data.tags['Low'];
+            const highId = world.data.tags['High'];
+
+            const res = await world.as('admin').post('/api/admin/event').send({
+                title: 'Default Image Event',
+                start: '2025-01-01',
+                end: '2025-01-01',
+                difficulty_level: 1,
+                upfront_cost: 0,
+                tags: [lowId, highId]
+            });
+
+            expect(res.statusCode).toBe(200);
+            const eventId = res.body.data.id;
+            const event = await world.db.get('SELECT image_url FROM events WHERE id = ?', [eventId]);
+            expect(event.image_url).toBe(`/api/files/${highFileId}/download?view=true`);
+        });
     });
 
     describe('DELETE /api/admin/event/:id (Safety Constraints)', () => {

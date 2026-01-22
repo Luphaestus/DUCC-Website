@@ -70,6 +70,33 @@ describe('api/TagsAPI', () => {
             const check = await world.db.get('SELECT 1 FROM tags WHERE id = ?', [tagId]);
             expect(check).toBeUndefined();
         });
+
+        test('Tag manager can update their managed tag', async () => {
+            await world.createTag('M1');
+            const tagId = world.data.tags['M1'];
+            await world.assignTag('user_managed', 'user1', 'M1');
+
+            const fileId = await world.createFile('TagIcon');
+            
+            // user1 is not a global admin but is a manager of M1
+            const res = await world.as('user1').put(`/api/tags/${tagId}`).send({
+                name: 'M1-Updated',
+                image_id: fileId
+            });
+            expect(res.statusCode).toBe(200);
+
+            const updated = await world.db.get('SELECT name, image_id FROM tags WHERE id = ?', [tagId]);
+            expect(updated.name).toBe('M1-Updated');
+            expect(updated.image_id).toBe(fileId);
+        });
+
+        test('Standard user cannot update tag they do not manage', async () => {
+            await world.createTag('T1');
+            const tagId = world.data.tags['T1'];
+
+            const res = await world.as('user1').put(`/api/tags/${tagId}`).send({ name: 'Hack' });
+            expect(res.statusCode).toBe(403);
+        });
     });
 
     describe('Whitelist Management', () => {

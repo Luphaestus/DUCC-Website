@@ -26,12 +26,13 @@ class FileRules {
      * @param {string} userRole - Current RBAC role ('public', 'member', or 'exec').
      * @returns {Promise<boolean>} - True if access is granted.
      */
-    static async canAccessFile(db, file, user) {
+    static async canAccessFile(db, file, user, userRole) {
         // Simple RBAC checks
         if (file.visibility === 'public') return true;
-        if (!user) return false;
-        if (file.visibility === 'members') return true;
-        if (file.visibility === 'execs') return !!user.is_exec;
+        if (userRole === 'exec') return true;
+
+        if (file.visibility === 'members') return userRole === 'member';
+        if (file.visibility === 'execs') return false; // exec already handled
 
         // Dynamic Event-based visibility
         if (file.visibility === 'events') {
@@ -41,7 +42,20 @@ class FileRules {
             // Identify all events using this file as their banner image
             const events = await db.all("SELECT * FROM events WHERE image_url LIKE '%/api/files/' || ? || '/download%'", [file.id]);
             
-            // If the file isn't linked to any events, access is denied
+            // Also check if this file is a default image for any tags
+            const tags = await db.all("SELECT id FROM tags WHERE image_id = ?", [file.id]);
+            if (tags.length > 0) {
+                const tagIds = tags.map(t => t.id);
+                const tagPlaceholders = tagIds.map(() => '?').join(',');
+                const eventsWithTags = await db.all(`
+                    SELECT e.* FROM events e
+                    JOIN event_tags et ON e.id = et.event_id
+                    WHERE et.tag_id IN (${tagPlaceholders})
+                `, tagIds);
+                events.push(...eventsWithTags);
+            }
+
+            // If the file isn't linked to any events (directly or via tags), access is denied
             if (events.length === 0) {
                 return false;
             }
@@ -62,7 +76,12 @@ class FileRules {
             }
 
             // Iterate through events; grant access if the user can view at least one of them
+            // Use a Set to avoid checking the same event multiple times if it was added twice
+            const seenEventIds = new Set();
             for (const event of events) {
+                if (seenEventIds.has(event.id)) continue;
+                seenEventIds.add(event.id);
+
                 // Load tags for precise rule evaluation
                 event.tags = await TagsDB.getTagsForEvent(db, event.id);
                 const canView = EventRules.canViewEvent(event, userObj);

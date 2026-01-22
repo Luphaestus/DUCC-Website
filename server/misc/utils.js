@@ -12,8 +12,8 @@ class Utils {
     static getAcademicYearStart() {
         const now = new Date();
         // Academic year changes on September 1st (month 8 in JS)
-        const year = now.getMonth() < 8 ? now.getFullYear() - 1 : now.getFullYear();
-        return new Date(year, 8, 1).toISOString();
+        const year = now.getUTCMonth() < 8 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
+        return new Date(Date.UTC(year, 8, 1)).toISOString();
     }
 
     /**

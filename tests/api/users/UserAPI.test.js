@@ -6,7 +6,7 @@
  * membership joining, and PII anonymization during account deletion.
  */
 
-const TestWorld = require('../utils/TestWorld');
+const TestWorld = require('../../utils/TestWorld');
 const UserAPI = require('../../../server/api/users/UserAPI');
 const bcrypt = require('bcrypt');
 

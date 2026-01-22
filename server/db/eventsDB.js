@@ -248,6 +248,18 @@ class eventsDB {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
+            // If no image is provided, try to find a default from the associated tags
+            if (!image_url && tags && Array.isArray(tags) && tags.length > 0) {
+                const tagPlaceholders = tags.map(() => '?').join(',');
+                const bestTag = await db.get(
+                    `SELECT image_id FROM tags WHERE id IN (${tagPlaceholders}) AND image_id IS NOT NULL ORDER BY priority DESC LIMIT 1`,
+                    tags
+                );
+                if (bestTag) {
+                    image_url = `/api/files/${bestTag.image_id}/download?view=true`;
+                }
+            }
+
             const result = await db.run(
                 `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, image_url, upfront_refund_cutoff)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

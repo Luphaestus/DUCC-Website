@@ -146,17 +146,24 @@ describe('api/events/AttendanceAPI', () => {
          * Verifies that the canJoin endpoint correctly previews business rules.
          */
         it('should enforce coach safety requirements', async () => {
+            await world.createEvent('SafetyEvent');
+            const eventId = world.data.events['SafetyEvent'];
+            
+            await world.createUser('coach_a', { is_instructor: 1, filled_legal_info: 1, is_member: 1 });
+            await world.createUser('member_b', { is_instructor: 0, filled_legal_info: 1, is_member: 1 });
+            await world.createUser('member_c', { is_instructor: 0, filled_legal_info: 0, is_member: 1 });
+
             // Blocked: No coach attending
-            const res1 = await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userB });
+            const res1 = await world.as('member_b').post(`/api/event/${eventId}/attend`);
             expect(res1.status).toBe(403);
 
             // Allowed: Coach added
-            await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userA });
-            const res2 = await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userB });
+            await world.as('coach_a').post(`/api/event/${eventId}/attend`);
+            const res2 = await world.as('member_b').post(`/api/event/${eventId}/attend`);
             expect(res2.status).toBe(200);
 
             // Blocked: Incomplete legal info
-            const res3 = await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userC });
+            const res3 = await world.as('member_c').post(`/api/event/${eventId}/attend`);
             expect(res3.status).toBe(403);
         });
     });
@@ -264,20 +271,30 @@ describe('api/events/AttendanceAPI', () => {
         });
 
         it('should handle refunds and re-joins correctly', async () => {
+            const pastCutoff = new Date(Date.now() - 3600000).toISOString(); 
+            await world.createEvent('RefundEvent', { upfront_cost: 10.0, upfront_refund_cutoff: pastCutoff });
+            const eventId = world.data.events['RefundEvent'];
+            
+            await world.createUser('user_refund', { filled_legal_info: 1, is_member: 1 });
+            const userId = world.data.users['user_refund'];
+            
+            await world.createUser('coach_refund', { is_instructor: 1 });
+            await world.joinEvent('coach_refund', 'RefundEvent');
+
             // Join and pay
-            await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userA });
-            const bal1 = (await UserDB.getUserProfile(world.db, userA.id, ['balance'], true)).getData().balance;
-            expect(bal1).toBe(-10);
+            await world.as('user_refund').post(`/api/event/${eventId}/attend`);
+            const bal1 = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
+            expect(bal1.b).toBe(-10.0);
 
             // Leave after cutoff (no refund)
-            await world.fetch(`/api/event/${eventId}/leave`, { method: 'POST', user: userA });
-            const bal2 = (await UserDB.getUserProfile(world.db, userA.id, ['balance'], true)).getData().balance;
-            expect(bal2).toBe(-10);
+            await world.as('user_refund').post(`/api/event/${eventId}/leave`);
+            const bal2 = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
+            expect(bal2.b).toBe(-10.0);
 
             // Re-join (should NOT pay again)
-            await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userA });
-            const bal3 = (await UserDB.getUserProfile(world.db, userA.id, ['balance'], true)).getData().balance;
-            expect(bal3).toBe(-10);
+            await world.as('user_refund').post(`/api/event/${eventId}/attend`);
+            const bal3 = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
+            expect(bal3.b).toBe(-10.0);
         });
 
         /**

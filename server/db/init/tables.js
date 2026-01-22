@@ -116,7 +116,9 @@ async function createTables(db) {
         min_difficulty INTEGER,
         priority INTEGER DEFAULT 0,
         join_policy TEXT CHECK(join_policy IN ('open', 'whitelist', 'role')) DEFAULT 'open',
-        view_policy TEXT CHECK(view_policy IN ('open', 'whitelist', 'role')) DEFAULT 'open'
+        view_policy TEXT CHECK(view_policy IN ('open', 'whitelist', 'role')) DEFAULT 'open',
+        image_id INTEGER,
+        FOREIGN KEY (image_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {

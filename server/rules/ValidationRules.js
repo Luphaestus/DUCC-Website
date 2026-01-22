@@ -33,27 +33,41 @@ class ValidationRules {
      * @returns {string|null} - Human-readable error message or null if valid.
      */
     static validate(type, value, required = true) {
-    // Check for missing/empty values
-    if (!value && value !== 0 && value !== false) {
-        if (required) return `${label} is required.`;
+        // Check for missing/empty values
+        if (value === null || value === undefined || value === '') {
+            if (required) return `${type} is required.`;
+            return null;
+        }
+
+        // Specialized Type Validations
+        if (type === 'date_of_birth') {
+            const d = new Date(value);
+            if (isNaN(d.getTime())) return 'Invalid date format.';
+            
+            const age = new Date().getFullYear() - d.getFullYear();
+            if (age < 17) return 'You must be at least 17 years old.';
+            if (age > 90) return 'Invalid age.';
+            return null;
+        }
+
+        if (type === 'boolean') {
+            if (typeof value !== 'boolean') return 'Must be a boolean value.';
+            return null;
+        }
+
+        if (type === 'presence') {
+            return null; // Already checked above
+        }
+
+        // Pattern-based Validations (Email, Name, Phone)
+        const rule = this.validation[type];
+        if (rule) {
+            if (rule.pattern && !rule.pattern.test(value)) {
+                return rule.message;
+            }
+        }
+
         return null;
-    }
-
-    // Specialized Type Validations
-    if (type === 'number') {
-        const num = Number(value);
-        if (isNaN(num)) return `${label} must be a number.`;
-        if (min !== undefined && num < min) return `${label} must be at least ${min}.`;
-        if (max !== undefined && num > max) return `${label} must be at most ${max}.`;
-    }
-
-    if (type === 'date') {
-        const d = new Date(value);
-        if (isNaN(d.getTime())) return `${label} must be a valid date.`;
-    }
-
-    // Pattern-based Validations (Email, Name, Phone)
-    if (pattern && !pattern.test(value)) {
     }
 }
 

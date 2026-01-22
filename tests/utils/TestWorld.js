@@ -218,6 +218,26 @@ class TestWorld {
         return res.lastID;
     }
 
+    async createFile(title, overrides = {}) {
+        const defaultFile = {
+            title: title,
+            filename: `${title}.jpg`,
+            hash: title,
+            visibility: 'members',
+            size: 1024
+        };
+        const fileData = { ...defaultFile, ...overrides };
+        const keys = Object.keys(fileData);
+        const values = Object.values(fileData);
+        const placeholders = keys.map(() => '?').join(',');
+
+        const res = await this.db.run(
+            `INSERT INTO files (${keys.join(',')}) VALUES (${placeholders})`,
+            values
+        );
+        return res.lastID;
+    }
+
     async assignTag(type, entityAlias, tagAlias) {
         const tagId = this.data.tags[tagAlias];
         if (type === 'event') {
