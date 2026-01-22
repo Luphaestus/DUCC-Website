@@ -1,45 +1,65 @@
-import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
-import { switchView } from '/js/utils/view.js';
-import { adminContentID } from '../common.js';
-import { notify, NotificationTypes } from '/js/components/notification.js';
-import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, UPLOAD_SVG, IMAGE_SVG } from "../../../../images/icons/outline/icons.js"
-
 /**
- * Admin tag creation and editing form.
- * @module AdminTagDetail
+ * detail.js (Tag)
+ * 
+ * Logic for the Tag Creator and Editor form.
+ * Beyond basic metadata (name, color), this module handles complex "Designated Manager"
+ * and "Whitelist Access" logic, allowing admins to scope event management and visibility
+ * to specific subsets of users.
+ * 
+ * Registered Routes: /admin/tag/new, /admin/tag/:id
  */
 
+import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
+import { switchView } from '/js/utils/view.js';
+import { uploadFile } from '/js/utils/upload.js';
+import { adminContentID } from '../common.js';
+import { notify, NotificationTypes } from '/js/components/notification.js';
+import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, IMAGE_SVG, UPLOAD_SVG } from "../../../../images/icons/outline/icons.js"
+
 /**
- * Render tag detail/editor form.
- * @param {string} id
+ * Main rendering function for the tag editor.
+ * 
+ * @param {string} id - Database ID of the tag, or 'new'.
  */
 export async function renderTagDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
+    // Set up toolbar
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
+    // Fetch user permissions to determine if management sections should be shown
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
     const userPerms = (userData.permissions || []).includes('user.manage');
+    
     const isNew = id === 'new';
-    let tag = { name: '', color: '#808080', description: '', min_difficulty: '', image_url: '' };
+    let tag = { name: '', color: '#808080', description: '', min_difficulty: '', priority: 0, join_policy: 'open', view_policy: 'open', image_id: null };
     let whitelist = [];
     let managers = [];
 
     if (!isNew) {
         try {
+            // Batch fetch tag metadata and associated user lists
             const tags = (await ajaxGet('/api/tags')).data || [];
             tag = tags.find(t => t.id == id);
             if (!tag) throw new Error('Tag not found');
-            whitelist = (await ajaxGet(`/api/tags/${id}/whitelist`)).data || [];
-            managers = (await ajaxGet(`/api/tags/${id}/managers`)).data || [];
+            
+            const [whitelistRes, managersRes] = await Promise.all([
+                ajaxGet(`/api/tags/${id}/whitelist`),
+                ajaxGet(`/api/tags/${id}/managers`)
+            ]);
+            
+            whitelist = whitelistRes.data || [];
+            managers = managersRes.data || [];
         } catch (e) {
             adminContent.innerHTML = '<p>Error loading tag.</p>';
             return;
         }
     }
+
+    const imageUrl = tag.image_id ? `/api/files/${tag.image_id}/download?view=true` : '/images/misc/ducc.png';
 
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
@@ -49,34 +69,59 @@ export async function renderTagDetail(id) {
                     ${!isNew ? `<button type="button" id="delete-tag-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : ''}
                 </header>
                 
+                <!-- Main Metadata Form -->
                 <form id="tag-form" class="modern-form">
-                    <div class="grid-2-col">
-                        <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
-                        <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input"></label>
-                    </div>
-                    
-                    <label class="mb-1-5 block">Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
-                    
-                    <div class="tag-content-split mt-1">
-                        <div class="tag-details-section">
-                             <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
+                    <div class="event-content-split">
+                        <div class="event-details-section">
+                            <div class="grid-2-col">
+                                <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
+                                <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input"></label>
+                            </div>
+                            
+                            <label class="mb-1-5 block">Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
+                            
+                            <div class="grid-2-col">
+                                <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
+                                <label>Priority <input type="number" name="priority" value="${tag.priority || 0}" placeholder="Default 0"></label>
+                            </div>
+
+                            <div class="grid-2-col mt-1">
+                                <label>Join Policy
+                                    <select name="join_policy" class="modern-select">
+                                        <option value="open" ${tag.join_policy === 'open' ? 'selected' : ''}>Open</option>
+                                        <option value="whitelist" ${tag.join_policy === 'whitelist' ? 'selected' : ''}>Whitelist Only</option>
+                                        <option value="role" ${tag.join_policy === 'role' ? 'selected' : ''}>Role Only</option>
+                                    </select>
+                                </label>
+                                <label>View Policy
+                                    <select name="view_policy" class="modern-select">
+                                        <option value="open" ${tag.view_policy === 'open' ? 'selected' : ''}>Open</option>
+                                        <option value="whitelist" ${tag.view_policy === 'whitelist' ? 'selected' : ''}>Whitelist Only</option>
+                                        <option value="role" ${tag.view_policy === 'role' ? 'selected' : ''}>Role Only</option>
+                                    </select>
+                                </label>
+                            </div>
                         </div>
 
-                        <div class="tag-image-section">
+                        <!-- Tag Image Section -->
+                        <div class="event-image-section">
                             <h3 class="section-header-modern">
-                                ${IMAGE_SVG} Tag Image (Fallback for Events)
+                                ${IMAGE_SVG} Default Event Image
                             </h3>
                             <div class="image-upload-container glass-panel" id="drop-zone">
-                                <div id="image-preview" class="image-preview" style="--event-image-url: url('${tag.image_url || '/images/misc/tag_placeholder.png'}'); height: 120px;"></div>
+                                <div id="image-preview" class="image-preview" style="--event-image-url: url('${imageUrl}');"></div>
                                 <div id="upload-progress-container" class="hidden">
                                     <progress id="upload-progress" value="0" max="100"></progress>
                                     <span id="progress-text">0%</span>
                                 </div>
-                                <input type="hidden" name="image_url" id="image_url_input" value="${tag.image_url || ''}">
-                                <label class="file-upload-btn small-btn primary">
-                                    ${UPLOAD_SVG} <span>Choose or Drop Image</span>
-                                    <input type="file" id="tag-image-file" accept="image/*" style="display:none;">
-                                </label>
+                                <input type="hidden" name="image_id" id="image_id_input" value="${tag.image_id || ''}">
+                                <div class="image-actions-row">
+                                    <label class="file-upload-btn small-btn primary flex-grow">
+                                        ${UPLOAD_SVG} <span>Choose or Drop Image</span>
+                                        <input type="file" id="tag-image-file" accept="image/*" style="display:none;">
+                                    </label>
+                                    ${!isNew ? `<button type="button" id="remove-tag-image-btn" class="small-btn delete outline" title="Remove Image">${CLOSE_SVG} Remove</button>` : ''}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -89,6 +134,7 @@ export async function renderTagDetail(id) {
                 ${!isNew && userPerms ? `
                     <div class="divider"></div>
                     
+                    <!-- Designated Managers Section -->
                     <div class="permission-section">
                         <div class="section-header">
                             <h3>${SHIELD_SVG} Designated Managers</h3>
@@ -113,6 +159,7 @@ export async function renderTagDetail(id) {
 
                     <div class="divider"></div>
 
+                    <!-- Whitelist Access Section -->
                     <div class="permission-section">
                         <div class="section-header">
                             <h3>${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
@@ -138,97 +185,86 @@ export async function renderTagDetail(id) {
             </div>
         </div>`;
 
-    // Image Upload Handling
+    // --- Image Upload Logic ---
     const fileInput = document.getElementById('tag-image-file');
     const imagePreview = document.getElementById('image-preview');
-    const imageUrlInput = document.getElementById('image_url_input');
+    const imageIdInput = document.getElementById('image_id_input');
     const dropZone = document.getElementById('drop-zone');
     const progressContainer = document.getElementById('upload-progress-container');
     const progressBar = document.getElementById('upload-progress');
     const progressText = document.getElementById('progress-text');
 
-    const uploadFile = async (file) => {
+    const handleUpload = async (file) => {
         if (!file) return;
-
-        const formData = new FormData();
-        formData.append('files', file);
-        formData.append('visibility', 'public');
-        formData.append('title', `Tag Image - ${Date.now()}`);
-
         try {
             progressContainer.classList.remove('hidden');
-            progressBar.value = 0;
-            progressText.textContent = '0%';
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/files', true);
-
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
+            const fileId = await uploadFile(file, {
+                visibility: 'events',
+                title: `Tag Default Image - ${tag.name || 'New Tag'}`,
+                onProgress: (percent) => {
                     progressBar.value = percent;
                     progressText.textContent = `${percent}%`;
                 }
-            };
-
-            xhr.onload = () => {
-                setTimeout(() => progressContainer.classList.add('hidden'), 500);
-                if (xhr.status === 201) {
-                    const result = JSON.parse(xhr.responseText);
-                    if (result.success && result.ids.length > 0) {
-                        const fileId = result.ids[0];
-                        const newUrl = `/api/files/${fileId}/download?view=true`;
-                        imageUrlInput.value = newUrl;
-                        imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
-                        notify('Success', 'Image uploaded', NotificationTypes.SUCCESS);
-                    } else {
-                        notify('Error', 'Upload succeeded but no ID returned', NotificationTypes.ERROR);
-                    }
-                } else {
-                    notify('Error', 'Upload failed: ' + xhr.status, NotificationTypes.ERROR);
-                }
-            };
-
-            xhr.onerror = () => {
-                progressContainer.classList.add('hidden');
-                notify('Error', 'Network error during upload', NotificationTypes.ERROR);
-            };
-
-            xhr.send(formData);
+            });
+            setTimeout(() => progressContainer.classList.add('hidden'), 500);
+            
+            imageIdInput.value = fileId;
+            const newUrl = `/api/files/${fileId}/download?view=true`;
+            imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
+            notify('Success', 'Image uploaded', 'success');
         } catch (err) {
             progressContainer.classList.add('hidden');
-            notify('Error', 'Failed to upload image', NotificationTypes.ERROR);
+            notify('Error', err.message || 'Upload failed', 'error');
         }
     };
 
-    fileInput.onchange = (e) => uploadFile(e.target.files[0]);
+    fileInput.onchange = (e) => handleUpload(e.target.files[0]);
 
-    if (dropZone) {
-        dropZone.ondragover = (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over');
-        };
+    dropZone.ondragover = (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    };
 
-        dropZone.ondragleave = () => {
-            dropZone.classList.remove('drag-over');
-        };
+    dropZone.ondragleave = () => {
+        dropZone.classList.remove('drag-over');
+    };
 
-        dropZone.ondrop = (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
-            if (e.dataTransfer.files.length > 0) {
-                uploadFile(e.dataTransfer.files[0]);
-            }
-        };
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length > 0) {
+            handleUpload(e.dataTransfer.files[0]);
+        }
+    };
+
+    // --- Image Action Handlers ---
+    if (!isNew) {
+        const removeImgBtn = document.getElementById('remove-tag-image-btn');
+        if (removeImgBtn) {
+            removeImgBtn.onclick = async () => {
+                if (!confirm('Remove tag image?')) return;
+                try {
+                    const res = await fetch(`/api/tags/${id}/reset-image`, { method: 'POST' });
+                    if (!res.ok) throw new Error('Failed to reset image');
+                    
+                    notify('Success', 'Image removed', 'success');
+                    imageIdInput.value = '';
+                    imagePreview.style.setProperty('--event-image-url', `url('/images/misc/ducc.png')`);
+                } catch (err) {
+                    notify('Error', err.message, 'error');
+                }
+            };
+        }
     }
 
+    // --- Core Tag Form Submission ---
     document.getElementById('tag-form').onsubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
-        
-        if (data.min_difficulty === '') delete data.min_difficulty;
-        else data.min_difficulty = parseInt(data.min_difficulty);
+        data.min_difficulty = data.min_difficulty === '' ? null : parseInt(data.min_difficulty);
+        data.priority = parseInt(data.priority) || 0;
+        data.image_id = data.image_id === '' ? null : parseInt(data.image_id);
 
         try {
             if (isNew) await ajaxPost('/api/tags', data);
@@ -236,11 +272,11 @@ export async function renderTagDetail(id) {
             notify('Success', 'Tag saved', NotificationTypes.SUCCESS);
             switchView(`/admin/tags`);
         } catch (err) {
-            console.error(err);
             notify('Error', 'Save failed', NotificationTypes.ERROR);
         }
     };
 
+    // --- User List Management Logic ---
     if (!isNew) {
         document.getElementById('delete-tag-btn').onclick = async () => {
             if (!confirm('Delete tag?')) return;
@@ -250,21 +286,21 @@ export async function renderTagDetail(id) {
         };
 
         if (userPerms) {
-            // Load Whitelist Users (All)
+            // Load Whitelist Search Datalist (All users)
             ajaxGet('/api/admin/users?limit=1000').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('users-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => {});
 
-            // Load Managers (Execs Only)
+            // Load Managers Search Datalist (Execs only - identified by is_exec virtual permission)
             ajaxGet('/api/admin/users?limit=1000&permissions=perm:is_exec').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('managers-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => {});
 
-            // Managers Form
+            // Add Manager Handler
             document.getElementById('managers-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const userId = parseInt(document.getElementById('managers-user-input').value.split(' - ')[0]);
@@ -281,7 +317,7 @@ export async function renderTagDetail(id) {
                 }
             };
 
-            // Whitelist Form
+            // Add Whitelist User Handler
             document.getElementById('whitelist-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const userId = parseInt(document.getElementById('whitelist-user-input').value.split(' - ')[0]);
@@ -298,13 +334,20 @@ export async function renderTagDetail(id) {
                 }
             };
         }
+        
+        // Initialize removal button listeners
         setupActionButtons(id, 'managers-table-body', 'remove-manager-btn', 'managers');
         setupActionButtons(id, 'whitelist-table-body', 'remove-whitelist-btn', 'whitelist');
     }
 }
 
 /**
- * Format table rows for users (managers or whitelist).
+ * Formats a list of users into table rows for the manager/whitelist tables.
+ * 
+ * @param {object[]} users 
+ * @param {number|string} tagId 
+ * @param {string} btnClass 
+ * @returns {string} - HTML rows.
  */
 function renderUserRows(users, tagId, btnClass) {
     if (!users || users.length === 0) return '<tr><td colspan="3" class="empty-cell">None.</td></tr>';
@@ -318,7 +361,12 @@ function renderUserRows(users, tagId, btnClass) {
 }
 
 /**
- * Initialize action buttons (remove manager or whitelist).
+ * Initializes the deletion logic for user association tables.
+ * 
+ * @param {string|number} tagId 
+ * @param {string} tableId 
+ * @param {string} btnClass 
+ * @param {string} endpoint - API path segment ('managers' or 'whitelist').
  */
 function setupActionButtons(tagId, tableId, btnClass, endpoint) {
     const tbody = document.getElementById(tableId);
@@ -330,6 +378,7 @@ function setupActionButtons(tagId, tableId, btnClass, endpoint) {
             try {
                 await ajaxDelete(`/api/tags/${tagId}/${endpoint}/${userId}`);
                 notify('Success', 'User removed', NotificationTypes.SUCCESS);
+                // Refresh only the affected table
                 const list = (await ajaxGet(`/api/tags/${tagId}/${endpoint}`)).data || [];
                 tbody.innerHTML = renderUserRows(list, tagId, btnClass);
             } catch (err) {

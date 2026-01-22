@@ -7,6 +7,7 @@
  * - GET /api/tags: Fetch all available tags.
  * - POST /api/tags: Create a new tag (Exec only).
  * - PUT /api/tags/:id: Update tag metadata.
+ * - POST /api/tags/:id/reset-image: Reset tag image to default.
  * - DELETE /api/tags/:id: Remove a tag.
  * 
  * Whitelist/Manager Routes:
@@ -71,6 +72,23 @@ class TagsAPI {
 
             const result = await TagsDB.updateTag(this.db, req.params.id, req.body);
             result.getResponse(res);
+        });
+
+        /**
+         * Reset tag image to default (none).
+         */
+        this.app.post('/api/tags/:id/reset-image', check(), async (req, res) => {
+            const { Permissions } = require('../misc/permissions.js');
+            if (!await Permissions.canManageTag(this.db, req.user.id, req.params.id)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+
+            try {
+                await this.db.run('UPDATE tags SET image_id = NULL WHERE id = ?', [req.params.id]);
+                res.json({ success: true, message: 'Image removed' });
+            } catch (error) {
+                res.status(500).json({ message: 'Database error' });
+            }
         });
 
         /**

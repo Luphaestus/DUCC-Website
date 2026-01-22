@@ -8,6 +8,8 @@
 const bcrypt = require('bcrypt');
 const cliProgress = require('cli-progress');
 const colors = require('ansi-colors');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Main development seeding function.
@@ -124,6 +126,23 @@ async function seedDevelopment(db) {
         if (swimProgressBar) swimProgressBar.stop();
     }
 
+    // --- Seed Tag Images ---
+    const slidesDir = path.join(__dirname, '..', '..', '..', 'public', 'images', 'slides');
+    let slideFiles = [];
+    try {
+        slideFiles = fs.readdirSync(slidesDir).filter(f => ['.png', '.jpg', '.jpeg'].includes(path.extname(f).toLowerCase()));
+    } catch (e) {}
+
+    const seedFile = async (filename) => {
+        const title = filename.split('.')[0];
+        const res = await db.run(
+            'INSERT OR IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
+            [title, filename, 'public', filename] 
+        );
+        const row = await db.get('SELECT id FROM files WHERE filename = ?', [filename]);
+        return row ? row.id : null;
+    };
+
     const tags = [
         { name: 'slalom', color: '#e6194b', priority: 3 },
         { name: 'polo', color: '#3cb44b', priority: 3 },
@@ -136,12 +155,19 @@ async function seedDevelopment(db) {
     ];
 
     const tagIds = {};
-    for (const t of tags) {
+    for (let i = 0; i < tags.length; i++) {
+        const t = tags[i];
+        let imageId = null;
+        if (slideFiles.length > 0) {
+            imageId = await seedFile(slideFiles[i % slideFiles.length]);
+        }
+
         let row = await db.get('SELECT id FROM tags WHERE name = ?', [t.name]);
         if (!row) {
-            const res = await db.run('INSERT INTO tags (name, color, priority, join_policy) VALUES (?, ?, ?, ?)', [t.name, t.color, t.priority, t.join_policy || 'open']);
+            const res = await db.run('INSERT INTO tags (name, color, priority, join_policy, image_id) VALUES (?, ?, ?, ?, ?)', [t.name, t.color, t.priority, t.join_policy || 'open', imageId]);
             tagIds[t.name] = res.lastID;
         } else {
+            await db.run('UPDATE tags SET image_id = ? WHERE id = ?', [imageId, row.id]);
             tagIds[t.name] = row.id;
         }
     }
@@ -207,7 +233,7 @@ async function seedDevelopment(db) {
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + (12 * 7));
 
-    const topicalNames = ["Pub Night", "Board Games", "Movie Night", "Quiz Night", "Karaoke", "Bar Crawl"];
+    const topicalNames = ["Pub Night", "Board Games", "Quiz Night", "Karaoke", "Bar Crawl"];
     let currentDate = new Date(startDate);
 
     const formatDate = (d) => d.toISOString().slice(0, 19).replace('T', ' ');

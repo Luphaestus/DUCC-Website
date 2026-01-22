@@ -65,7 +65,12 @@ class TestWorld {
             return 0;
         });
         vi.spyOn(Globals.prototype, 'getFloat').mockImplementation((k) => this.globalFloats[k] !== undefined ? this.globalFloats[k] : 0);
-        vi.spyOn(Globals.prototype, 'get').mockImplementation((k) => this.globalObjects[k]);
+        vi.spyOn(Globals.prototype, 'get').mockImplementation((k) => {
+            if (k === 'DefaultEventImage') {
+                return this.globalObjects[k] || { data: '/images/misc/ducc.png' };
+            }
+            return this.globalObjects[k];
+        });
         vi.spyOn(Globals.prototype, 'getAll').mockImplementation(() => this.globalObjects);
         vi.spyOn(Globals.prototype, 'getKeys').mockImplementation((keys, permission) => {
             const validPermissions = ['Guest', 'Authenticated', 'President'];

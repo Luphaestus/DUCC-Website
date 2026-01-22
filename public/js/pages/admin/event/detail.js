@@ -138,10 +138,13 @@ export async function renderEventDetail(id) {
                                 <span id="progress-text">0%</span>
                             </div>
                             <input type="hidden" name="image_url" id="image_url_input" value="${event.image_url || ''}">
-                            <label class="file-upload-btn small-btn primary">
-                                ${UPLOAD_SVG} <span>Choose or Drop Image</span>
-                                <input type="file" id="event-image-file" accept="image/*" style="display:none;">
-                            </label>
+                            <div class="image-actions-row">
+                                <label class="file-upload-btn small-btn primary flex-grow">
+                                    ${UPLOAD_SVG} <span>Choose or Drop Image</span>
+                                    <input type="file" id="event-image-file" accept="image/*" style="display:none;">
+                                </label>
+                                ${!isNew ? `<button type="button" id="remove-image-btn" class="small-btn delete outline" title="Reset to Default">${CLOSE_SVG} Remove</button>` : ''}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -296,6 +299,31 @@ export async function renderEventDetail(id) {
             notify('Error', 'Save failed', 'error');
         }
     };
+
+    // --- Image Action Handlers ---
+    if (!isNew) {
+        const removeImgBtn = document.getElementById('remove-image-btn');
+        if (removeImgBtn) {
+            removeImgBtn.onclick = async () => {
+                if (!confirm('Remove manual image and reset to default?')) return;
+                try {
+                    const res = await fetch(`/api/admin/event/${id}/reset-image`, { method: 'POST' });
+                    if (!res.ok) throw new Error('Failed to reset image');
+                    
+                    notify('Success', 'Image reset to default', 'success');
+                    
+                    // Update UI state
+                    imageUrlInput.value = '';
+                    
+                    // Fetch updated event to see what the new default is
+                    const updatedEvent = await ajaxGet(`/api/admin/event/${id}`);
+                    imagePreview.style.setProperty('--event-image-url', `url('${updatedEvent.image_url || '/images/misc/ducc.png'}')`);
+                } catch (err) {
+                    notify('Error', err.message, 'error');
+                }
+            };
+        }
+    }
 
     // --- Destructive Action Handlers ---
     if (!isNew) {

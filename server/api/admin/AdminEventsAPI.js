@@ -9,6 +9,7 @@
  * - GET /api/admin/event/:id: Fetch full event details including non-public info.
  * - POST /api/admin/event: Create a new event.
  * - PUT /api/admin/event/:id: Update existing event details.
+ * - POST /api/admin/event/:id/reset-image: Reset event image to default.
  * - POST /api/admin/event/:id/cancel: Cancel an event and process attendee refunds.
  * - DELETE /api/admin/event/:id: Permanently delete an event (only if it hasn't started yet).
  */
@@ -101,6 +102,22 @@ class AdminEvents {
             }
             const result = await EventsDB.updateEvent(this.db, req.params.id, req.body);
             result.getResponse(res);
+        });
+
+        /**
+         * Reset event image to default.
+         */
+        this.app.post('/api/admin/event/:id/reset-image', check('perm:event.write.all | perm:event.manage.all | perm:event.write.scoped | perm:event.manage.scoped'), async (req, res) => {
+            if (!await Permissions.canManageEvent(this.db, req.user.id, req.params.id)) {
+                return res.status(403).json({ message: 'Not authorized for this event' });
+            }
+            
+            try {
+                await this.db.run('UPDATE events SET image_url = NULL WHERE id = ?', [req.params.id]);
+                res.json({ success: true, message: 'Image reset to default' });
+            } catch (error) {
+                res.status(500).json({ message: 'Database error' });
+            }
         });
 
         /**

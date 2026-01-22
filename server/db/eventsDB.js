@@ -10,6 +10,7 @@ const TransactionsDB = require('./transactionDB.js');
 const TagsDB = require('./tagsDB.js');
 const UserDB = require('./userDB.js');
 const EventRules = require('../rules/EventRules.js');
+const Globals = require('../misc/globals.js');
 
 /**
  * Database operations for events, attendee management, and scheduling.
@@ -51,9 +52,8 @@ class eventsDB {
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
 
         for (const event of events) {
-            // Attach tags to the event object
-            const tags = await TagsDB.getTagsForEvent(db, event.id);
-            event.tags = tags;
+            // Attach tags and effective image to the event object
+            await this._enrichEvent(db, event);
 
             // Enforce visibility rules (difficulty and tag-based)
             if (EventRules.canViewEvent(event, user)) {
@@ -103,8 +103,7 @@ class eventsDB {
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
 
         for (const event of events) {
-            const tags = await TagsDB.getTagsForEvent(db, event.id);
-            event.tags = tags;
+            await this._enrichEvent(db, event);
 
             if (EventRules.canViewEvent(event, user)) {
                 visibleEvents.push(event);
@@ -181,7 +180,7 @@ class eventsDB {
             const events = await db.all(query, [...params, limit, offset]);
 
             for (const event of events) {
-                event.tags = await TagsDB.getTagsForEvent(db, event.id);
+                await this._enrichEvent(db, event);
             }
 
             const countResult = await db.get(`SELECT COUNT(*) as count FROM events ${whereClause}`, params);
@@ -205,8 +204,7 @@ class eventsDB {
         const event = await db.get('SELECT * FROM events WHERE id = ?', [eventId]);
         if (!event) return new statusObject(404, 'Event not found');
 
-        const tags = await TagsDB.getTagsForEvent(db, eventId);
-        event.tags = tags;
+        await this._enrichEvent(db, event);
 
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
         if (!EventRules.canViewEvent(event, user)) {
@@ -226,7 +224,7 @@ class eventsDB {
         try {
             const event = await db.get('SELECT * FROM events WHERE id = ?', [id]);
             if (!event) return new statusObject(404, 'Event not found');
-            event.tags = await TagsDB.getTagsForEvent(db, id);
+            await this._enrichEvent(db, event);
             return new statusObject(200, null, event);
         } catch (error) {
             return new statusObject(500, 'Database error');
@@ -248,16 +246,12 @@ class eventsDB {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
-            // If no image is provided, try to find a default from the associated tags
-            if (!image_url && tags && Array.isArray(tags) && tags.length > 0) {
-                const tagPlaceholders = tags.map(() => '?').join(',');
-                const bestTag = await db.get(
-                    `SELECT image_id FROM tags WHERE id IN (${tagPlaceholders}) AND image_id IS NOT NULL ORDER BY priority DESC LIMIT 1`,
-                    tags
-                );
-                if (bestTag) {
-                    image_url = `/api/files/${bestTag.image_id}/download?view=true`;
-                }
+            // Final fallback logic
+            if (!image_url) {
+                // Fetch tag objects to calculate fallback if needed
+                const tagObjects = (tags && Array.isArray(tags)) ? 
+                    await db.all(`SELECT * FROM tags WHERE id IN (${tags.map(() => '?').join(',')})`, tags) : [];
+                image_url = await this._getFallbackImage(db, tagObjects);
             }
 
             const result = await db.run(
@@ -398,6 +392,38 @@ class eventsDB {
         } catch (error) {
             return new statusObject(500, 'Database error');
         }
+    }
+
+    /**
+     * Internal helper to enrich event object with tags and effective image URL.
+     * @private
+     */
+    static async _enrichEvent(db, event) {
+        event.tags = await TagsDB.getTagsForEvent(db, event.id);
+        if (!event.image_url) {
+            event.image_url = await this._getFallbackImage(db, event.tags);
+        }
+    }
+
+    /**
+     * Internal helper to calculate fallback image based on tags or global default.
+     * @private
+     */
+    static async _getFallbackImage(db, tags) {
+        if (tags && tags.length > 0) {
+            // Find tag with image_id, sorted by priority
+            const bestTag = tags
+                .filter(t => t.image_id !== null)
+                .sort((a, b) => b.priority - a.priority)[0];
+            
+            if (bestTag) {
+                return `/api/files/${bestTag.image_id}/download?view=true`;
+            }
+        }
+        
+        // Final fallback to global default
+        const Globals = require('../misc/globals.js');
+        return new Globals().get('DefaultEventImage').data;
     }
 }
 

@@ -71,6 +71,20 @@ describe('api/TagsAPI', () => {
             expect(check).toBeUndefined();
         });
 
+        test('POST /api/tags/:id/reset-image - Clear tag image', async () => {
+            const fileId = await world.createFile('TagIcon');
+            await world.createTag('T1', { image_id: fileId });
+            const tagId = world.data.tags['T1'];
+
+            // Action: Reset image
+            const res = await world.as('admin').post(`/api/tags/${tagId}/reset-image`);
+            expect(res.statusCode).toBe(200);
+
+            // Verification: image_id is NULL
+            const updated = await world.db.get('SELECT image_id FROM tags WHERE id = ?', [tagId]);
+            expect(updated.image_id).toBeNull();
+        });
+
         test('Tag manager can update their managed tag', async () => {
             await world.createTag('M1');
             const tagId = world.data.tags['M1'];

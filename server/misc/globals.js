@@ -61,6 +61,15 @@ class Globals {
                     error: "Value must be a valid currency amount.",
                     permission: "Authenticated",
                 },
+                DefaultEventImage: {
+                    data: "/images/misc/ducc.png",
+                    name: "Default Event Image",
+                    description: "The default banner image for events if no other image is set.",
+                    type: "image",
+                    regexp: "^/(images|api/files)/.+$",
+                    error: "Value must be a valid path or file API URL.",
+                    permission: "President",
+                },
             }, null, 4)); // Pretty-print for easier manual editing
         }
     }

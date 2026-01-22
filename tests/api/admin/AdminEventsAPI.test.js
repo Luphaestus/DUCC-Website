@@ -8,6 +8,7 @@
 
 const TestWorld = require('../../utils/TestWorld');
 const AdminEventsAPI = require('../../../server/api/admin/AdminEventsAPI');
+const TagsAPI = require('../../../server/api/TagsAPI');
 
 describe('api/admin/AdminEventsAPI', () => {
     let world;
@@ -16,7 +17,7 @@ describe('api/admin/AdminEventsAPI', () => {
         world = new TestWorld();
         await world.setUp();
         
-        await world.createRole('Admin', ['event.manage.all', 'event.read.all', 'event.write.all']);
+        await world.createRole('Admin', ['event.manage.all', 'event.read.all', 'event.write.all', 'event.delete']);
         await world.createRole('ScopedAdmin', ['event.manage.scoped', 'event.read.scoped']);
         await world.createRole('Editor', ['event.write.all', 'event.read.all']); // Creation/Edit but no deletion
         
@@ -26,6 +27,7 @@ describe('api/admin/AdminEventsAPI', () => {
         await world.createUser('user', {});
 
         new AdminEventsAPI(world.app, world.db).registerRoutes();
+        new TagsAPI(world.app, world.db).registerRoutes();
     });
 
     afterEach(async () => {
@@ -131,6 +133,47 @@ describe('api/admin/AdminEventsAPI', () => {
             const eventId = res.body.data.id;
             const event = await world.db.get('SELECT image_url FROM events WHERE id = ?', [eventId]);
             expect(event.image_url).toBe(`/api/files/${highFileId}/download?view=true`);
+        });
+
+        test('POST /api/admin/event/:id/reset-image - Clear event custom image', async () => {
+            const eventId = await world.createEvent('ImageEvent', { image_url: '/custom.png' });
+            
+            const res = await world.as('admin').post(`/api/admin/event/${eventId}/reset-image`);
+            expect(res.statusCode).toBe(200);
+
+            const event = await world.db.get('SELECT image_url FROM events WHERE id = ?', [eventId]);
+            expect(event.image_url).toBeNull();
+        });
+
+        test('Image Fallback Chain: Event -> Tag -> Global Default', async () => {
+            const globalDefault = '/images/misc/ducc.png';
+
+            // 1. Tag with image
+            const tagFileId = await world.createFile('TagImg');
+            await world.createTag('Nature', { priority: 10, image_id: tagFileId });
+            const tagId = world.data.tags['Nature'];
+            const tagImageUrl = `/api/files/${tagFileId}/download?view=true`;
+
+            // 2. Event with its own image
+            const eventImageUrl = '/event-own.png';
+            const eventId = await world.createEvent('Hiking', { 
+                image_url: eventImageUrl
+            });
+            await world.assignTag('event', 'Hiking', 'Nature');
+
+            // Step 1: Verify event image
+            let res = await world.as('admin').get(`/api/admin/event/${eventId}`);
+            expect(res.body.image_url).toBe(eventImageUrl);
+
+            // Step 2: Remove event image, verify fallback to tag image
+            await world.as('admin').post(`/api/admin/event/${eventId}/reset-image`);
+            res = await world.as('admin').get(`/api/admin/event/${eventId}`);
+            expect(res.body.image_url).toBe(tagImageUrl);
+
+            // Step 3: Remove tag image, verify fallback to global default
+            await world.as('admin').post(`/api/tags/${tagId}/reset-image`);
+            res = await world.as('admin').get(`/api/admin/event/${eventId}`);
+            expect(res.body.image_url).toBe(globalDefault);
         });
     });
 

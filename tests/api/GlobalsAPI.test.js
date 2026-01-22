@@ -37,6 +37,13 @@ describe('api/GlobalsAPI', () => {
             regexp: "^\\d+(\\.\\d{1,2})?$",
             error: "Value must be a valid currency amount."
         });
+        world.mockGlobalObject('DefaultEventImage', {
+            data: "/images/misc/ducc.png",
+            name: "Default Event Image",
+            permission: "President",
+            regexp: "^/(images|api/files)/.+$",
+            error: "Value must be a valid path or file API URL."
+        });
 
         await world.createRole('President', ['globals.manage']);
         await world.createUser('president', {}, ['President']);
@@ -117,6 +124,21 @@ describe('api/GlobalsAPI', () => {
                 .send({ value: "not-a-number" });
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toMatch(/currency amount/i);
+        });
+
+        test('DefaultEventImage validation: allows valid paths, rejects invalid', async () => {
+            // Valid static path
+            let res = await world.as('president').post('/api/globals/DefaultEventImage').send({ value: "/images/custom.png" });
+            expect(res.statusCode).toBe(200);
+
+            // Valid API path
+            res = await world.as('president').post('/api/globals/DefaultEventImage').send({ value: "/api/files/123/download?view=true" });
+            expect(res.statusCode).toBe(200);
+
+            // Invalid path
+            res = await world.as('president').post('/api/globals/DefaultEventImage').send({ value: "http://external.com/img.png" });
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toMatch(/valid path or file API URL/i);
         });
 
         /**
