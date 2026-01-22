@@ -3198,6 +3198,10 @@ table tbody tr td {
   margin-bottom: 0 !important;
 }
 
+.no-margin {
+  margin: 0 !important;
+}
+
 .text-right {
   text-align: right;
 }

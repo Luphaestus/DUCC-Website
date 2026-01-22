@@ -12,6 +12,7 @@ import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { switchView } from '/js/utils/view.js';
 import { uploadFile } from '/js/utils/upload.js';
+import { library, loadLibrary } from '../util/library.js';
 import { adminContentID } from '../common.js';
 import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
 
@@ -143,6 +144,7 @@ export async function renderEventDetail(id) {
                                     ${UPLOAD_SVG} <span>Choose or Drop Image</span>
                                     <input type="file" id="event-image-file" accept="image/*" style="display:none;">
                                 </label>
+                                <button type="button" id="open-library-btn" class="small-btn primary" title="Choose from Library">${IMAGE_SVG} Library</button>
                                 ${!isNew ? `<button type="button" id="remove-image-btn" class="small-btn delete outline" title="Reset to Default">${CLOSE_SVG} Remove</button>` : ''}
                             </div>
                         </div>
@@ -151,16 +153,29 @@ export async function renderEventDetail(id) {
                 
                 <!-- Form Footer Actions -->
                 <div class="form-actions-footer mt-3 pt-2">
-                    <div class="destructive-actions">
+                    <div class="destructive-actions mb-1">
                         ${!isNew ? `
-                            <button type="button" id="cancel-event-btn" class="small-btn warning outline mr-0-5">${CLOSE_SVG} Cancel Event</button>
-                            <button type="button" id="delete-event-btn" class="small-btn delete outline">${DELETE_HISTORY_SVG} Delete</button>
+                            <button type="button" id="cancel-event-btn" class="small-btn warning outline no-margin" style="flex: 1;">${CLOSE_SVG} Cancel Event</button>
+                            <button type="button" id="delete-event-btn" class="small-btn delete outline no-margin" style="flex: 1;">${DELETE_HISTORY_SVG} Delete</button>
                         ` : ''}
                     </div>
                     <button type="submit" class="primary-btn wide-btn min-w-200">${isNew ? 'Create Event' : 'Save Changes'}</button>
                 </div>
             </form>
-        </div>`;
+        </div>
+
+        <dialog id="image-picker-modal" class="modern-modal">
+            <article class="modal-content glass-panel max-w-800">
+                <button class="modal-close-btn" id="close-image-modal">${CLOSE_SVG}</button>
+                <header>
+                    <h3>Choose Image</h3>
+                </header>
+                <div class="image-picker-content">
+                    ${library()}
+                </div>
+            </article>
+        </dialog>
+    `;
     
     // Set description separately to handle special characters safely
     document.querySelector('textarea[name="description"]').value = event.description;
@@ -263,6 +278,23 @@ export async function renderEventDetail(id) {
         }
     };
 
+    // --- Library Selection Logic ---
+    const modal = document.getElementById('image-picker-modal');
+    const closeBtn = document.getElementById('close-image-modal');
+
+    const selectImage = (url) => {
+        imageUrlInput.value = url;
+        imagePreview.style.setProperty('--event-image-url', `url('${url}')`);
+        modal.close();
+    };
+
+    document.getElementById('open-library-btn').onclick = () => {
+        modal.showModal();
+        loadLibrary(selectImage);
+    };
+
+    closeBtn.onclick = () => modal.close();
+    modal.onclick = (e) => { if (e.target === modal) modal.close(); };
 
     // --- Form Submission ---
     document.getElementById('event-form').onsubmit = async (e) => {

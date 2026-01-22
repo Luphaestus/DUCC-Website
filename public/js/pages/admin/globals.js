@@ -12,6 +12,7 @@ import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { adminContentID, renderAdminNavBar } from './common.js';
 import { notify } from '/js/components/notification.js';
 import { uploadFile } from '/js/utils/upload.js';
+import { library, loadLibrary } from './util/library.js';
 import { SAVE_SVG, IMAGE_SVG, UPLOAD_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
 
 /**
@@ -68,10 +69,7 @@ export async function renderManageGlobals() {
                             </div>
                         </div>
 
-                        <h3 class="section-header-modern small-header">From Library</h3>
-                        <div id="image-library-grid" class="image-grid">
-                            <p class="loading-cell">Loading images...</p>
-                        </div>
+                        ${library()}
                     </div>
                 </article>
         </dialog>
@@ -175,40 +173,6 @@ async function selectImage(url) {
     document.getElementById('image-picker-modal').close();
 }
 
-async function loadLibraryImages() {
-    const grid = document.getElementById('image-library-grid');
-    try {
-        const [filesRes, slidesRes] = await Promise.all([
-            ajaxGet('/api/files?limit=50'),
-            ajaxGet('/api/slides/images')
-        ]);
-
-        const files = (filesRes.data?.files || []).filter(f => f.filename.match(/\.(jpg|jpeg|png|webp|gif)$/i));
-        const slides = slidesRes.images || [];
-
-        let html = '';
-        
-        // Custom slides
-        slides.forEach(url => {
-            html += `<div class="image-item" onclick="selectImage('${url}')" style="background-image: url('${url}')" title="${url}"></div>`;
-        });
-
-        // Uploaded files
-        files.forEach(f => {
-            const url = `/api/files/${f.id}/download?view=true`;
-            html += `<div class="image-item" onclick="selectImage('${url}')" style="background-image: url('${url}')" title="${f.title}"></div>`;
-        });
-
-        grid.innerHTML = html || '<p class="empty-cell">No images found.</p>';
-        
-        // Expose selectImage to global scope for onclick or re-bind
-        window.selectImage = selectImage;
-
-    } catch (e) {
-        grid.innerHTML = '<p class="error-cell">Failed to load library.</p>';
-    }
-}
-
 /**
  * Fetches the list of all global variables and populates the management table.
  * Dynamically generates input types based on the 'type' field from the database.
@@ -263,7 +227,7 @@ async function fetchAndRenderGlobals() {
                 activePickerKey = btn.dataset.key;
                 const modal = document.getElementById('image-picker-modal');
                 modal.showModal();
-                loadLibraryImages();
+                loadLibrary(selectImage);
             };
         });
 

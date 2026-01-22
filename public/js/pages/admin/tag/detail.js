@@ -12,6 +12,7 @@
 import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { uploadFile } from '/js/utils/upload.js';
+import { library, loadLibrary } from '../util/library.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, IMAGE_SVG, UPLOAD_SVG } from "../../../../images/icons/outline/icons.js"
@@ -120,6 +121,7 @@ export async function renderTagDetail(id) {
                                         ${UPLOAD_SVG} <span>Choose or Drop Image</span>
                                         <input type="file" id="tag-image-file" accept="image/*" style="display:none;">
                                     </label>
+                                    <button type="button" id="open-library-btn" class="small-btn" title="Choose from Library">${IMAGE_SVG} Library</button>
                                     ${!isNew ? `<button type="button" id="remove-tag-image-btn" class="small-btn delete outline" title="Remove Image">${CLOSE_SVG} Remove</button>` : ''}
                                 </div>
                             </div>
@@ -130,6 +132,18 @@ export async function renderTagDetail(id) {
                         <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                     </div>
                 </form>
+
+                <dialog id="image-picker-modal" class="modern-modal">
+                    <article class="modal-content glass-panel max-w-800">
+                        <button class="modal-close-btn" id="close-image-modal">${CLOSE_SVG}</button>
+                        <header>
+                            <h3>Choose Image</h3>
+                        </header>
+                        <div class="image-picker-content">
+                            ${library()}
+                        </div>
+                    </article>
+                </dialog>
 
                 ${!isNew && userPerms ? `
                     <div class="divider"></div>
@@ -236,6 +250,29 @@ export async function renderTagDetail(id) {
             handleUpload(e.dataTransfer.files[0]);
         }
     };
+
+    // --- Library Selection Logic ---
+    const modal = document.getElementById('image-picker-modal');
+    const closeBtn = document.getElementById('close-image-modal');
+
+    const selectImage = (url, id) => {
+        if (!id && !url.startsWith('/api/files')) {
+            notify('Warning', 'Tags currently only support uploaded library files, not slides.', NotificationTypes.WARNING);
+            return;
+        }
+        
+        imageIdInput.value = id || '';
+        imagePreview.style.setProperty('--event-image-url', `url('${url}')`);
+        modal.close();
+    };
+
+    document.getElementById('open-library-btn').onclick = () => {
+        modal.showModal();
+        loadLibrary(selectImage);
+    };
+
+    closeBtn.onclick = () => modal.close();
+    modal.onclick = (e) => { if (e.target === modal) modal.close(); };
 
     // --- Image Action Handlers ---
     if (!isNew) {
