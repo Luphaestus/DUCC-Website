@@ -1,3 +1,10 @@
+/**
+ * AuthAPI.test.js
+ * 
+ * Integration tests for the Authentication API.
+ * Covers signup, account restoration, login, status checks, and password resets.
+ */
+
 const request = require('supertest');
 const express = require('express');
 const session = require('express-session');
@@ -16,6 +23,7 @@ describe('api/AuthAPI', () => {
         await world.setUp();
         db = world.db;
         
+        // Manual Express setup to inject the test database
         passport = new passportModule.Authenticator();
         app = express();
         app.use(express.json());
@@ -39,6 +47,9 @@ describe('api/AuthAPI', () => {
     });
 
     describe('Signup & Registration', () => {
+        /**
+         * Test standard successful signup.
+         */
         test('POST /api/auth/signup - Success', async () => {
             const res = await request(app)
                 .post('/api/auth/signup')
@@ -51,29 +62,36 @@ describe('api/AuthAPI', () => {
             expect(res.statusCode).toBe(201);
         });
 
+        /**
+         * Test account restoration logic.
+         * When a user deletes their account and then signs up again with the same email,
+         * their old ID and historical data should be preserved.
+         */
         test('Account Restoration: Actually calling deleteAccount then re-signing up', async () => {
             const agent = request.agent(app);
             const email = 'rejoiner.real@durham.ac.uk';
             const password = 'securePassword123';
             
+            // 1. Create and populate user
             await agent.post('/api/auth/signup').send({
                 email, password, first_name: 'Old', last_name: 'Name'
             });
-            
             await agent.post('/api/auth/login').send({ email, password });
-            
             const userRow = await db.get('SELECT id FROM users WHERE email = ?', [email]);
             await db.run('UPDATE users SET swims = 10 WHERE id = ?', [userRow.id]);
 
+            // 2. Soft-delete the account
             const deleteRes = await agent.post('/api/user/deleteAccount').send({ password });
             expect(deleteRes.statusCode).toBe(200);
 
+            // 3. Re-signup
             const signupRes = await agent.post('/api/auth/signup').send({
                 email, password, first_name: 'Restored', last_name: 'User'
             });
             expect(signupRes.statusCode).toBe(200);
             expect(signupRes.body.message).toMatch(/restored/i);
 
+            // 4. Verify data preservation
             const restoredUser = await db.get('SELECT * FROM users WHERE email = ?', [email]);
             expect(restoredUser.id).toBe(userRow.id);
             expect(restoredUser.swims).toBe(10);
@@ -116,6 +134,9 @@ describe('api/AuthAPI', () => {
             await db.run('INSERT INTO users (email, first_name, last_name) VALUES (?,?,?)', [email, 'R', 'T']);
         });
 
+        /**
+         * Test token generation.
+         */
         test('POST /api/auth/reset-password-request creates token', async () => {
             const res = await request(app).post('/api/auth/reset-password-request').send({ email });
             expect(res.statusCode).toBe(200);
@@ -125,6 +146,9 @@ describe('api/AuthAPI', () => {
             expect(reset.token).toBeDefined();
         });
 
+        /**
+         * Test password update using token.
+         */
         test('POST /api/auth/reset-password updates password', async () => {
             await request(app).post('/api/auth/reset-password-request').send({ email });
             const { token } = await db.get('SELECT token FROM password_resets');

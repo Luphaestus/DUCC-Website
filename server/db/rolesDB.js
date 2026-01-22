@@ -1,7 +1,21 @@
+/**
+ * rolesDB.js
+ * 
+ * This module manages the Role-Based Access Control (RBAC) database tables.
+ * It handles role definitions, permission mappings, and direct user overrides.
+ * It also supports scoped management for Execs over specific event tags.
+ */
+
 const { statusObject } = require('../misc/status.js');
 const { SCOPED_PERMS, Permissions } = require('../misc/permissions.js');
 
 class RolesDB {
+    /**
+     * Fetch all roles currently assigned to a user.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @returns {Promise<statusObject>} - Data contains { id, name } objects.
+     */
     static async getUserRoles(db, userId) {
         try {
             const roles = await db.all('SELECT r.id, r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?', [userId]);
@@ -12,8 +26,17 @@ class RolesDB {
         }
     }
 
+    /**
+     * Assign a single role to a user.
+     * Currently, the system supports one role per user (Exec vs Member).
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @param {number} roleId - Role ID.
+     * @returns {Promise<statusObject>}
+     */
     static async assignRole(db, userId, roleId) {
         try {
+            // Clear existing roles first (one role per user logic)
             await db.run('DELETE FROM user_roles WHERE user_id = ?', [userId]);
             await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleId]);
             return new statusObject(200, 'Role assigned');
@@ -23,6 +46,14 @@ class RolesDB {
         }
     }
 
+    /**
+     * Remove a role from a user.
+     * Prevents removing the President role to ensure system stability.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @param {number} roleId - Role ID.
+     * @returns {Promise<statusObject>}
+     */
     static async removeRole(db, userId, roleId) {
         try {
             const role = await db.get('SELECT name FROM roles WHERE id = ?', [roleId]);
@@ -37,6 +68,12 @@ class RolesDB {
         }
     }
 
+    /**
+     * Fetch direct permission overrides assigned to a user.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @returns {Promise<statusObject>} - Data contains { id, slug, description } objects.
+     */
     static async getUserPermissions(db, userId) {
         try {
             const perms = await db.all(
@@ -53,10 +90,10 @@ class RolesDB {
     }
 
     /**
-     * Get all unique permission slugs for a user (Role-based + Direct).
-     * @param {object} db 
-     * @param {number} userId 
-     * @returns {Promise<statusObject>} Data is array of strings.
+     * Get all unique permission slugs for a user by combining their role-based and direct permissions.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @returns {Promise<statusObject>} - Data is an array of permission slug strings.
      */
     static async getAllUserPermissions(db, userId) {
         try {
@@ -87,6 +124,14 @@ class RolesDB {
         }
     }
 
+    /**
+     * Add a direct permission override to a user.
+     * Prevents manual assignment of scoped permissions (handled by managed tags).
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @param {number} permissionId - Permission ID.
+     * @returns {Promise<statusObject>}
+     */
     static async addUserPermission(db, userId, permissionId) {
         try {
             const perm = await db.get('SELECT slug FROM permissions WHERE id = ?', [permissionId]);
@@ -105,6 +150,9 @@ class RolesDB {
         }
     }
 
+    /**
+     * Remove a direct permission override from a user.
+     */
     static async removeUserPermission(db, userId, permissionId) {
         try {
             await db.run('DELETE FROM user_permissions WHERE user_id = ? AND permission_id = ?', [userId, permissionId]);
@@ -115,6 +163,12 @@ class RolesDB {
         }
     }
 
+    /**
+     * Fetch all event tags that a user is directly authorized to manage.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @returns {Promise<statusObject>}
+     */
     static async getUserManagedTags(db, userId) {
         try {
             const tags = await db.all(
@@ -130,6 +184,9 @@ class RolesDB {
         }
     }
 
+    /**
+     * Add a managed tag scope to a user.
+     */
     static async addManagedTag(db, userId, tagId) {
         try {
             await db.run('INSERT OR IGNORE INTO user_managed_tags (user_id, tag_id) VALUES (?, ?)', [userId, tagId]);
@@ -140,6 +197,9 @@ class RolesDB {
         }
     }
 
+    /**
+     * Remove a managed tag scope from a user.
+     */
     static async removeManagedTag(db, userId, tagId) {
         try {
             await db.run('DELETE FROM user_managed_tags WHERE user_id = ? AND tag_id = ?', [userId, tagId]);
@@ -151,10 +211,10 @@ class RolesDB {
     }
 
     /**
-     * Check if a user has a role that manages a specific tag.
-     * @param {object} db 
-     * @param {number} userId 
-     * @param {number} tagId 
+     * Check if a user has a role that grants management of a specific tag.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @param {number} tagId - Tag ID.
      * @returns {Promise<boolean>}
      */
     static async hasRoleForTag(db, userId, tagId) {
@@ -167,6 +227,12 @@ class RolesDB {
         return !!hasRole;
     }
 
+    /**
+     * Fetch all permissions registered in the system.
+     * Filters out scoped permissions as they aren't manually assignable.
+     * @param {object} db - Database connection.
+     * @returns {Promise<statusObject>}
+     */
     static async getAllPermissions(db) {
         try {
             let perms = await db.all('SELECT * FROM permissions ORDER BY slug ASC');
@@ -178,10 +244,16 @@ class RolesDB {
         }
     }
 
+    /**
+     * Fetch all defined roles and their permission mappings.
+     * @param {object} db - Database connection.
+     * @returns {Promise<statusObject>}
+     */
     static async getAllRoles(db) {
         try {
             const roles = await db.all('SELECT * FROM roles');
             for (const role of roles) {
+                // Attach permission slugs to each role object
                 const perms = await db.all(
                     `SELECT p.slug FROM permissions p 
                      JOIN role_permissions rp ON p.id = rp.permission_id 
@@ -197,6 +269,14 @@ class RolesDB {
         }
     }
 
+    /**
+     * Create a new role definition.
+     * @param {object} db - Database connection.
+     * @param {string} name - Role name.
+     * @param {string} description - Role description.
+     * @param {string[]} permissions - Array of permission slugs.
+     * @returns {Promise<statusObject>}
+     */
     static async createRole(db, name, description, permissions) {
         try {
             const existingRole = await db.get('SELECT id FROM roles WHERE name = ?', [name]);
@@ -207,6 +287,7 @@ class RolesDB {
             const result = await db.run('INSERT INTO roles (name, description) VALUES (?, ?)', [name, description]);
             const roleId = result.lastID;
 
+            // Map permission slugs to the new role
             if (permissions && Array.isArray(permissions)) {
                 permissions = Permissions.filterScopedPerms(permissions);
                 for (const slug of permissions) {
@@ -223,6 +304,15 @@ class RolesDB {
         }
     }
 
+    /**
+     * Update an existing role definition and its permission mappings.
+     * @param {object} db - Database connection.
+     * @param {number} id - Role ID.
+     * @param {string} name - New name.
+     * @param {string} description - New description.
+     * @param {string[]} permissions - New array of permission slugs.
+     * @returns {Promise<statusObject>}
+     */
     static async updateRole(db, id, name, description, permissions) {
         try {
             const role = await db.get('SELECT name FROM roles WHERE id = ?', [id]);
@@ -233,6 +323,7 @@ class RolesDB {
             await db.run('UPDATE roles SET name = ?, description = ? WHERE id = ?', [name, description, id]);
 
             if (permissions && Array.isArray(permissions)) {
+                // Sync permissions: clear existing and re-insert new list
                 await db.run('DELETE FROM role_permissions WHERE role_id = ?', [id]);
                 permissions = Permissions.filterScopedPerms(permissions);
                 for (const slug of permissions) {
@@ -249,6 +340,9 @@ class RolesDB {
         }
     }
 
+    /**
+     * Permanently delete a role definition.
+     */
     static async deleteRole(db, id) {
         try {
             const role = await db.get('SELECT name FROM roles WHERE id = ?', [id]);
@@ -264,6 +358,13 @@ class RolesDB {
         }
     }
 
+    /**
+     * Find the ID of the first user assigned to a specific role.
+     * Used for identifying the system administrator.
+     * @param {object} db - Database connection.
+     * @param {string} roleName - Name of the role.
+     * @returns {Promise<statusObject>} - Data contains the user ID.
+     */
     static async getFirstUserIdByRoleName(db, roleName) {
         try {
             const role = await db.get('SELECT id FROM roles WHERE name = ?', [roleName]);

@@ -1,3 +1,10 @@
+/**
+ * tagsDB.test.js
+ * 
+ * Database layer tests for event tags and whitelists.
+ * Verifies tag management, user whitelisting, and event-tag associations.
+ */
+
 const TestWorld = require('../utils/TestWorld');
 const TagsDB = require('../../server/db/tagsDB');
 
@@ -13,7 +20,7 @@ describe('db/tagsDB', () => {
         await world.tearDown();
     });
 
-    test('createTag and getTagById', async () => {
+    test('createTag and getTagById lifecycle', async () => {
         const tagData = {
             name: 'Intermediate',
             color: '#FFA500',
@@ -30,25 +37,35 @@ describe('db/tagsDB', () => {
         expect(tag.name).toBe('Intermediate');
     });
 
-    test('whitelist operations', async () => {
+    /**
+     * Test whitelist addition, lookup, and removal.
+     */
+    test('Whitelist operations correctly modify user access lists', async () => {
         await world.createTag('Tag1');
         const tagId = world.data.tags['Tag1'];
 
         await world.createUser('user', {});
         const userId = world.data.users['user'];
 
+        // 1. Add
         await TagsDB.addToWhitelist(world.db, tagId, userId);
         
+        // 2. Fetch full list
         const list = await TagsDB.getWhitelist(world.db, tagId);
         expect(list.getData().some(u => u.id === userId)).toBe(true);
 
+        // 3. Direct check
         expect(await TagsDB.isWhitelisted(world.db, tagId, userId)).toBe(true);
 
+        // 4. Remove
         await TagsDB.removeFromWhitelist(world.db, tagId, userId);
         expect(await TagsDB.isWhitelisted(world.db, tagId, userId)).toBe(false);
     });
 
-    test('event tag association', async () => {
+    /**
+     * Test mapping events to tags.
+     */
+    test('associateTag correctly links an event to a tag', async () => {
         await world.createTag('Tag1');
         const tagId = world.data.tags['Tag1'];
 
@@ -57,6 +74,7 @@ describe('db/tagsDB', () => {
 
         await TagsDB.associateTag(world.db, eventId, tagId);
 
+        // Verification: tag list for the event includes our tag
         const tags = await TagsDB.getTagsForEvent(world.db, eventId);
         expect(tags.some(t => t.id === tagId)).toBe(true);
     });

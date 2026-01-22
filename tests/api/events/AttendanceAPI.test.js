@@ -1,3 +1,10 @@
+/**
+ * AttendanceAPI.test.js
+ * 
+ * Functional tests for the Event Attendance API.
+ * Covers joining/leaving events, coach requirements, payment logic, and automatic waitlist promotion.
+ */
+
 const TestWorld = require('../../utils/TestWorld');
 const AttendanceAPI = require('../../../server/api/events/AttendanceAPI');
 const EventsAPI = require('../../../server/api/events/EventsAPI');
@@ -25,32 +32,32 @@ describe('api/events/AttendanceAPI', () => {
     });
 
     /**
-     * Helper to test authentication and permission requirements.
+     * Helper to test authentication requirements for specific routes.
      */
     const itRequiresAuth = (method, pathTemplate) => {
-        test(`${method.toUpperCase()} ${pathTemplate} - Fail if not logged in`, async () => {
+        test(`${method.toUpperCase()} ${pathTemplate} - Fail if guest user`, async () => {
             const res = await world.request[method](pathTemplate.replace(':id', '1'));
             expect(res.statusCode).toBe(401);
         });
     };
 
     /**
-     * Helper to test common :id parameter validation rules.
+     * Helper to test standard :id parameter validation logic.
      */
     const itValidatesIdParam = (method, pathTemplate, notFoundStatus = 404) => {
-        test(`${method.toUpperCase()} ${pathTemplate} - Fail if ID is not a number`, async () => {
+        test(`${method.toUpperCase()} ${pathTemplate} - Fail if ID is non-numeric`, async () => {
             const res = await world.as('user')[method](pathTemplate.replace(':id', 'abc'));
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toMatch(/integer/i);
         });
 
-        test(`${method.toUpperCase()} ${pathTemplate} - Behavior if event does not exist`, async () => {
+        test(`${method.toUpperCase()} ${pathTemplate} - Handle request for non-existent ID`, async () => {
             const res = await world.as('user')[method](pathTemplate.replace(':id', '999999'));
             expect(res.statusCode).toBe(notFoundStatus);
         });
     };
 
-    describe('Security and Validation', () => {
+    describe('General Endpoint Security and Parameter Validation', () => {
         const protectedRoutes = [
             ['get', '/api/event/:id/isAttending'],
             ['get', '/api/event/:id/isPaying'],
@@ -70,8 +77,8 @@ describe('api/events/AttendanceAPI', () => {
         itValidatesIdParam('get', '/api/event/:id/attendees');
     });
 
-    describe('GET /api/event/:id/isAttending', () => {
-        test('Returns true if attending', async () => {
+    describe('GET /api/event/:id/isAttending (Status Verification)', () => {
+        test('Returns true for active attendees', async () => {
             await world.createEvent('E1');
             const eventId = world.data.events['E1'];
             await world.joinEvent('user', 'E1');
@@ -81,7 +88,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.body.isAttending).toBe(true);
         });
 
-        test('Returns false if not attending', async () => {
+        test('Returns false for non-attendees', async () => {
             await world.createEvent('E1');
             const eventId = world.data.events['E1'];
 
@@ -91,8 +98,8 @@ describe('api/events/AttendanceAPI', () => {
         });
     });
 
-    describe('GET /api/event/:id/isPaying', () => {
-        test('Returns true if paid, false otherwise', async () => {
+    describe('GET /api/event/:id/isPaying (Financial Status)', () => {
+        test('Correctly identifies if a user has a linked payment transaction', async () => {
             await world.createEvent('E1', { upfront_cost: 10 });
             const eventId = world.data.events['E1'];
             const userId = world.data.users['user'];
@@ -100,7 +107,8 @@ describe('api/events/AttendanceAPI', () => {
             let res = await world.as('user').get(`/api/event/${eventId}/isPaying`);
             expect(res.body.isPaying).toBe(false);
 
-            await world.addTransaction('user', -10, 'Pay', eventId);
+            // Simulate a completed payment transaction
+            await world.addTransaction('user', -10, 'Manual Payment', eventId);
             const tx = await world.db.get('SELECT id FROM transactions WHERE event_id = ?', [eventId]);
             await world.db.run('INSERT INTO event_attendees (event_id, user_id, payment_transaction_id) VALUES (?, ?, ?)', [eventId, userId, tx.id]);
 
@@ -109,19 +117,21 @@ describe('api/events/AttendanceAPI', () => {
         });
     });
 
-    describe('GET /api/event/:id/coachCount', () => {
-        test('Returns correct counts (0, 1, 12)', async () => {
+    describe('GET /api/event/:id/coachCount (Safety Auditing)', () => {
+        test('Correctly aggregates attending instructor counts', async () => {
             await world.createEvent('E1');
             const eventId = world.data.events['E1'];
 
             let res = await world.as('user').get(`/api/event/${eventId}/coachCount`);
             expect(res.body.count).toBe(0);
 
+            // Add one coach
             await world.createUser('c1', { is_instructor: 1 });
             await world.joinEvent('c1', 'E1');
             res = await world.as('user').get(`/api/event/${eventId}/coachCount`);
             expect(res.body.count).toBe(1);
 
+            // Add many more coaches
             for(let i=2; i<=12; i++) {
                 await world.createUser(`c${i}`, { is_instructor: 1 });
                 await world.joinEvent(`c${i}`, 'E1');
@@ -131,24 +141,26 @@ describe('api/events/AttendanceAPI', () => {
         });
     });
 
-    describe('GET /api/event/:id/canJoin', () => {
-        test('Reflects attendance rules (coach, legal, membership)', async () => {
+    describe('GET /api/event/:id/canJoin (Pre-check Logic)', () => {
+        /**
+         * Verifies that the canJoin endpoint correctly previews business rules.
+         */
+        test('Reflects join rules: coach availability, legal status, and standing', async () => {
             await world.createEvent('E1');
             const eventId = world.data.events['E1'];
 
-            // No coach yet
+            // 1. Blocked: No coach attending
             let res = await world.as('user').get(`/api/event/${eventId}/canJoin`);
             expect(res.body.canJoin).toBe(false);
             expect(res.body.reason).toMatch(/coach/i);
 
-            // Add coach
+            // 2. Allowed: Coach added
             await world.createUser('c', { is_instructor: 1 });
             await world.joinEvent('c', 'E1');
-
             res = await world.as('user').get(`/api/event/${eventId}/canJoin`);
             expect(res.body.canJoin).toBe(true);
 
-            // Incomplete legal
+            // 3. Blocked: Incomplete legal info
             await world.db.run('UPDATE users SET filled_legal_info = 0 WHERE id = ?', [world.data.users['user']]);
             res = await world.as('user').get(`/api/event/${eventId}/canJoin`);
             expect(res.body.canJoin).toBe(false);
@@ -156,8 +168,8 @@ describe('api/events/AttendanceAPI', () => {
         });
     });
 
-    describe('POST /api/event/:id/attend', () => {
-        test('Success for normal member', async () => {
+    describe('POST /api/event/:id/attend (Joining Logic)', () => {
+        test('Successful registration for a standard event', async () => {
             await world.createEvent('E1');
             await world.createUser('coach', { is_instructor: 1 });
             await world.joinEvent('coach', 'E1');
@@ -166,7 +178,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.statusCode).toBe(200);
         });
 
-        test('Fail if event is canceled', async () => {
+        test('Blocked: cannot join canceled events', async () => {
             await world.createEvent('CanceledEvent', { is_canceled: 1 });
             
             const res = await world.as('user').post(`/api/event/${world.data.events['CanceledEvent']}/attend`);
@@ -174,7 +186,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.body.message).toMatch(/canceled/i);
         });
 
-        test('Fail if event is in the past', async () => {
+        test('Blocked: cannot join past events', async () => {
             const past = new Date(Date.now() - 86400000).toISOString();
             await world.createEvent('PastEvent', { start: past, end: past });
 
@@ -183,7 +195,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.body.message).toMatch(/ended|started/i);
         });
 
-        test('Fail if restricted by tag whitelist', async () => {
+        test('Blocked: whitelist-only tag policy enforcement', async () => {
             await world.createEvent('RestrictedEvent');
             await world.createTag('SecretTag', { join_policy: 'whitelist' });
             await world.assignTag('event', 'RestrictedEvent', 'SecretTag');
@@ -196,7 +208,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.body.message).toMatch(/Restricted access/i);
         });
 
-        test('Success if whitelisted for restricted event', async () => {
+        test('Success: joining whitelisted restricted event', async () => {
             await world.createEvent('WhitelistedEvent');
             await world.createTag('WhiteTag', { join_policy: 'whitelist' });
             await world.assignTag('event', 'WhitelistedEvent', 'WhiteTag');
@@ -205,6 +217,7 @@ describe('api/events/AttendanceAPI', () => {
             const userId = world.data.users['user_ok'];
             const tagId = world.data.tags['WhiteTag'];
             
+            // Add user to whitelist
             await world.db.run('INSERT INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
 
             await world.createUser('coach', { is_instructor: 1 });
@@ -214,7 +227,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.statusCode).toBe(200);
         });
 
-        test('Fail if no coach is attending', async () => {
+        test('Blocked: non-instructors require at least one instructor present', async () => {
             await world.createEvent('NoCoachEvent');
 
             const res = await world.as('user').post(`/api/event/${world.data.events['NoCoachEvent']}/attend`);
@@ -222,7 +235,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.body.message).toMatch(/No coach/i);
         });
 
-        test('Coach can join event even if no other coach is there', async () => {
+        test('Instructors can join events solo', async () => {
             await world.createEvent('EmptyEvent');
             await world.createUser('coach_alone', { is_instructor: 1, filled_legal_info: 1, is_member: 1 });
 
@@ -230,7 +243,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(res.statusCode).toBe(200);
         });
 
-        test('Free sessions decrease for non-members', async () => {
+        test('Automatic credit consumption for non-members', async () => {
             await world.createEvent('FreeEvent');
             await world.createUser('coach_f', { is_instructor: 1 });
             await world.joinEvent('coach_f', 'FreeEvent');
@@ -239,11 +252,12 @@ describe('api/events/AttendanceAPI', () => {
             const res = await world.as('nonmember').post(`/api/event/${world.data.events['FreeEvent']}/attend`);
             expect(res.statusCode).toBe(200);
 
+            // Verification: session count decreased
             const user = await world.db.get('SELECT free_sessions FROM users WHERE first_name = "nonmember"');
             expect(user.free_sessions).toBe(2);
         });
 
-        test('Balance decreases for paid events', async () => {
+        test('Automatic balance deduction for paid events', async () => {
             await world.createEvent('PaidEvent', { upfront_cost: 15.0 });
             await world.createUser('coach_p', { is_instructor: 1 });
             await world.joinEvent('coach_p', 'PaidEvent');
@@ -251,11 +265,15 @@ describe('api/events/AttendanceAPI', () => {
             const res = await world.as('user').post(`/api/event/${world.data.events['PaidEvent']}/attend`);
             expect(res.statusCode).toBe(200);
 
+            // Verification: negative transaction recorded
             const balance = await world.db.get('SELECT SUM(amount) as b FROM transactions WHERE user_id = ?', [world.data.users['user']]);
             expect(balance.b).toBe(-15.0);
         });
 
-        test('Balance does not change if already paid and not refunded', async () => {
+        /**
+         * Re-joining logic: Users who left after the refund cutoff shouldn't be charged twice if they re-join.
+         */
+        test('Users are not double-charged if they re-join after a non-refundable exit', async () => {
             const pastCutoff = new Date(Date.now() - 3600000).toISOString(); 
             await world.createEvent('AlreadyPaidEvent', { upfront_cost: 10.0, upfront_refund_cutoff: pastCutoff });
             const eventId = world.data.events['AlreadyPaidEvent'];
@@ -264,14 +282,17 @@ describe('api/events/AttendanceAPI', () => {
             await world.createUser('coach_rep', { is_instructor: 1 });
             await world.joinEvent('coach_rep', 'AlreadyPaidEvent');
 
+            // 1. Join and pay
             await world.as('user').post(`/api/event/${eventId}/attend`);
             let balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
             expect(balance.b).toBe(-10.0);
 
+            // 2. Leave after cutoff (no refund)
             await world.as('user').post(`/api/event/${eventId}/leave`);
             balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
             expect(balance.b).toBe(-10.0); 
 
+            // 3. Re-join (should NOT pay again)
             const res = await world.as('user').post(`/api/event/${eventId}/attend`);
             expect(res.statusCode).toBe(200);
             
@@ -279,27 +300,34 @@ describe('api/events/AttendanceAPI', () => {
             expect(balance.b).toBe(-10.0); 
         });
 
-        test('Balance DOES change if re-joining after being refunded (refunded by replacement)', async () => {
+        /**
+         * Transfer logic: If User A pays but leaves, and User B takes their spot, User A gets a refund.
+         */
+        test('Balance is restored if a spot is effectively "purchased" by another user', async () => {
             const pastCutoff = new Date(Date.now() - 3600000).toISOString(); 
             await world.createEvent('RefundReplacementEvent', { upfront_cost: 10.0, upfront_refund_cutoff: pastCutoff });
             const eventId = world.data.events['RefundReplacementEvent'];
             const userIdA = world.data.users['user'];
             
             await world.createUser('user_b', { filled_legal_info: 1, is_member: 1 });
-
             await world.createUser('coach_replace', { is_instructor: 1 });
             await world.joinEvent('coach_replace', 'RefundReplacementEvent');
 
+            // 1. User A joins and pays
             await world.as('user').post(`/api/event/${eventId}/attend`);
             
+            // 2. User A leaves after cutoff (stays at -10)
             await world.as('user').post(`/api/event/${eventId}/leave`);
             let balanceA = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userIdA]);
             expect(balanceA.b).toBe(-10.0);
 
+            // 3. User B joins (takes User A's paid slot)
             await world.as('user_b').post(`/api/event/${eventId}/attend`);
+            // User A should now be at 0 (refunded automatically)
             balanceA = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userIdA]);
             expect(balanceA.b).toBe(0); 
 
+            // 4. User A joins again (now they must pay again as their previous slot was transferred)
             const res = await world.as('user').post(`/api/event/${eventId}/attend`);
             expect(res.statusCode).toBe(200);
             
@@ -308,8 +336,8 @@ describe('api/events/AttendanceAPI', () => {
         });
     });
 
-    describe('POST /api/event/:id/leave', () => {
-        test('Free sessions increase (refunded) for non-members', async () => {
+    describe('POST /api/event/:id/leave (Exit Logic)', () => {
+        test('Non-member free sessions are refunded upon exit', async () => {
             await world.createEvent('E1');
             await world.createUser('nonmember_l', { is_member: 0, free_sessions: 2 });
             await world.joinEvent('nonmember_l', 'E1');
@@ -321,7 +349,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(user.free_sessions).toBe(3);
         });
 
-        test('Money is refunded if no cutoff exists', async () => {
+        test('Automatic refund if no cutoff date exists', async () => {
             await world.createEvent('PaidEvent_l', { upfront_cost: 10.0 });
             const eventId = world.data.events['PaidEvent_l'];
             const userId = world.data.users['user'];
@@ -337,7 +365,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(balance.b).toBe(0); 
         });
 
-        test('Money is refunded if leaving BEFORE cutoff', async () => {
+        test('Success: monetary refund when leaving BEFORE cutoff', async () => {
             const futureCutoff = new Date(Date.now() + 86400000).toISOString(); 
             await world.createEvent('CutoffEvent_l', { upfront_cost: 10.0, upfront_refund_cutoff: futureCutoff });
             await world.createUser('user_early', { is_member: 1 });
@@ -355,7 +383,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(balance.b).toBe(0);
         });
 
-        test('Money is NOT refunded if leaving AFTER cutoff', async () => {
+        test('Denied: no refund when leaving AFTER cutoff', async () => {
             const pastCutoff = new Date(Date.now() - 3600000).toISOString();
             await world.createEvent('LateEvent_l', { upfront_cost: 10.0, upfront_refund_cutoff: pastCutoff });
             await world.createUser('user_late', { is_member: 1 });
@@ -373,7 +401,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(balance.b).toBe(-10.0); 
         });
 
-        test('Event is canceled if the last coach leaves', async () => {
+        test('Safety: event is canceled if the last attending coach leaves', async () => {
             await world.createEvent('CoachEvent_l');
             const eventId = world.data.events['CoachEvent_l'];
             
@@ -384,38 +412,48 @@ describe('api/events/AttendanceAPI', () => {
             const res = await world.as('coach_l').post(`/api/event/${eventId}/leave`);
             expect(res.statusCode).toBe(200);
 
+            // Verification: event is now canceled
             const event = await world.db.get('SELECT is_canceled FROM events WHERE id = ?', [eventId]);
             expect(event.is_canceled).toBe(1);
         });
 
-        test('Leaves successfully and promotes next user from waitlist (and charges them if paid)', async () => {
+        /**
+         * Waitlist promotion logic: if someone leaves a full event, the next person in line should join.
+         */
+        test('Waitlist: automatically promotes and charges the next user when a spot opens', async () => {
             await world.createEvent('FullPaidEvent', { max_attendees: 1, upfront_cost: 15.0 });
             const eventId = world.data.events['FullPaidEvent'];
             
+            // Attendee occupying the only spot
             await world.createUser('attendee', { filled_legal_info: 1, is_member: 1 });
             await world.joinEvent('attendee', 'FullPaidEvent');
 
+            // User waiting in line
             await world.createUser('waitlist_user', { filled_legal_info: 1, is_member: 1 });
             const waitUserId = world.data.users['waitlist_user'];
             await world.db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, waitUserId]);
 
+            // Action: Attendee leaves
             const res = await world.as('attendee').post(`/api/event/${eventId}/leave`);
             expect(res.statusCode).toBe(200);
 
+            // Verification 1: Waitlist user is now an attendee
             const attendeeRecord = await world.db.get('SELECT payment_transaction_id FROM event_attendees WHERE event_id = ? AND user_id = ? AND is_attending = 1', [eventId, waitUserId]);
             expect(attendeeRecord).toBeDefined();
             expect(attendeeRecord.payment_transaction_id).not.toBeNull();
 
+            // Verification 2: Waitlist user is removed from waiting list
             const onWaitlist = await world.db.get('SELECT 1 FROM event_waiting_list WHERE event_id = ? AND user_id = ?', [eventId, waitUserId]);
             expect(onWaitlist).toBeUndefined();
 
+            // Verification 3: Waitlist user was automatically charged
             const balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [waitUserId]);
             expect(balance.b).toBe(-15.0);
         });
     });
 
-    describe('GET /api/event/:id/attendees', () => {
-        test('Normal user sees attendee list (basic info)', async () => {
+    describe('GET /api/event/:id/attendees (Listings)', () => {
+        test('Normal user sees a simplified attendee list', async () => {
             await world.createEvent('E1');
             const eventId = world.data.events['E1'];
             await world.joinEvent('user', 'E1');
@@ -423,10 +461,12 @@ describe('api/events/AttendanceAPI', () => {
             const res = await world.as('user').get(`/api/event/${eventId}/attendees`);
             expect(res.statusCode).toBe(200);
             expect(res.body.attendees.length).toBe(1);
+            // Verify PII exclusion
             expect(res.body.attendees[0]).toHaveProperty('first_name');
+            expect(res.body.attendees[0]).not.toHaveProperty('balance');
         });
 
-        test('Admin sees attendee history (detailed info)', async () => {
+        test('Exec sees full attendee history and detailed data', async () => {
             await world.createRole('Admin', []);
             await world.createUser('admin', {}, ['Admin']);
             
@@ -436,6 +476,7 @@ describe('api/events/AttendanceAPI', () => {
 
             const res = await world.as('admin').get(`/api/event/${eventId}/attendees`);
             expect(res.statusCode).toBe(200);
+            // Execs see the internal 'is_attending' flag
             expect(res.body.attendees[0]).toHaveProperty('is_attending');
         });
     });

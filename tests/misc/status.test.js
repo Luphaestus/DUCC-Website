@@ -1,7 +1,17 @@
+/**
+ * status.test.js
+ * 
+ * Unit tests for the standardized Status Object.
+ * Verifies error detection logic and Express response formatting.
+ */
+
 const { statusObject } = require('../../server/misc/status');
 
 describe('misc/status', () => {
-    test('isError returns true for >= 400', () => {
+    /**
+     * Test logic: any status code >= 400 represents an error.
+     */
+    test('isError correctly identifies error status codes (>= 400)', () => {
         expect(new statusObject(200).isError()).toBe(false);
         expect(new statusObject(201).isError()).toBe(false);
         expect(new statusObject(400).isError()).toBe(true);
@@ -11,17 +21,22 @@ describe('misc/status', () => {
         expect(new statusObject(500).isError()).toBe(true);
     });
 
-    test('getResponse returns correct format', () => {
+    /**
+     * Verifies the uniform JSON structure sent to clients.
+     */
+    test('getResponse correctly formats the JSON payload for Express', () => {
         const res = {
             status: vi.fn().mockReturnThis(),
             json: vi.fn()
         };
 
+        // 1. Success case
         const success = new statusObject(200, 'Ok', { foo: 'bar' });
         success.getResponse(res);
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({ message: 'Ok', data: { foo: 'bar' } });
 
+        // 2. Error case (omits data payload)
         const error = new statusObject(404, 'Not Found');
         error.getResponse(res);
         expect(res.status).toHaveBeenCalledWith(404);

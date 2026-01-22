@@ -1,3 +1,12 @@
+/**
+ * TestWorld.js
+ * 
+ * Central utility for creating a controlled testing environment.
+ * Sets up an in-memory database, mocks global configuration, 
+ * provides factories for common entities (users, events, tags), 
+ * and handles mock authentication sessions.
+ */
+
 const request = require('supertest');
 const express = require('express');
 const { setupTestDb } = require('./db');
@@ -9,22 +18,31 @@ class TestWorld {
         this.db = null;
         this.app = null;
         this.data = {
-            users: {}, // alias -> id
-            roles: {}, // name -> id
-            events: {}, // alias -> id
-            tags: {}, // name -> id
-            perms: {} // slug -> id
+            users: {},   // alias -> ID mapping
+            roles: {},   // name -> ID mapping
+            events: {},  // alias -> ID mapping
+            tags: {},    // name -> ID mapping
+            perms: {}    // slug -> ID mapping
         };
+        // Internal state for configuration overrides
         this.globalInts = {};
         this.globalFloats = {};
         this.globalObjects = {};
     }
 
+    /**
+     * Initializes the test environment.
+     * Hooks into the request lifecycle to simulate authentication.
+     */
     async setUp() {
         this.db = await setupTestDb();
         this.app = express();
         this.app.use(express.json());
 
+        /**
+         * Auth Simulation Middleware:
+         * Uses the 'x-test-user' header to identify which mock user is "logged in".
+         */
         this.app.use((req, res, next) => {
             req.db = this.db;
             const userAlias = req.headers['x-test-user'];
@@ -38,7 +56,9 @@ class TestWorld {
             next();
         });
 
-        // Default Mocks
+        // ---------------------------------------------------------
+        // Global Configuration Mocks
+        // ---------------------------------------------------------
         vi.spyOn(Globals.prototype, 'getInt').mockImplementation((k) => {
             if (this.globalInts[k] !== undefined) return this.globalInts[k];
             if (k === 'Unauthorized_max_difficulty') return 2;
@@ -67,6 +87,9 @@ class TestWorld {
         });
     }
 
+    /**
+     * Cleans up the test environment.
+     */
     async tearDown() {
         if (this.db) {
             await this.db.close();
@@ -77,7 +100,8 @@ class TestWorld {
         this.globalObjects = {};
     }
 
-    // --- Global Mocks ---
+    // --- State Control Helpers ---
+
     mockGlobalInt(key, value) {
         this.globalInts[key] = value;
     }
@@ -90,7 +114,9 @@ class TestWorld {
         this.globalObjects[key] = valueContainer;
     }
 
-    // --- Factories ---
+    // ---------------------------------------------------------
+    // Entity Factories
+    // ---------------------------------------------------------
 
     async createPermission(slug) {
         if (this.data.perms[slug]) return this.data.perms[slug];
@@ -214,8 +240,14 @@ class TestWorld {
          await this.db.run('INSERT INTO event_attendees (event_id, user_id) VALUES (?, ?)', [eventId, userId]);
     }
 
-    // --- Request Helper ---
+    // ---------------------------------------------------------
+    // Supertest Proxies
+    // ---------------------------------------------------------
     
+    /**
+     * Identifies as a mock user for the subsequent request.
+     * @param {string} userAlias - Alias of the user to impersonate.
+     */
     as(userAlias) {
         return {
             get: (url) => request(this.app).get(url).set('x-test-user', userAlias),
@@ -225,6 +257,9 @@ class TestWorld {
         };
     }
     
+    /**
+     * Simple guest requester.
+     */
     get request() {
         return request(this.app);
     }

@@ -1,3 +1,10 @@
+/**
+ * eventsDB.js
+ * 
+ * This module handles all core database operations for events.
+ * It manages event listings, administrative overrides, creation, updates, and cancellations.
+ */
+
 const { statusObject } = require('../misc/status.js');
 const TransactionsDB = require('./transactionDB.js');
 const TagsDB = require('./tagsDB.js');
@@ -9,14 +16,15 @@ const EventRules = require('../rules/EventRules.js');
  */
 class eventsDB {
     /**
-     * Fetch events for a specific week up to max difficulty, including attendance status.
-     * @param {object} db
-     * @param {number} max_difficulty
-     * @param {Date} [date]
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
+     * Fetch events for a specific week, filtered by the maximum difficulty the user is allowed to see.
+     * @param {object} db - Database connection.
+     * @param {number} max_difficulty - Maximum difficulty level allowed.
+     * @param {Date} [date=new Date()] - Target date to identify the week.
+     * @param {number|null} [userId=null] - ID of the user requesting (for attendance check).
+     * @returns {Promise<statusObject>} - Data contains a sorted array of visible event objects.
      */
     static async get_events_for_week(db, max_difficulty, date = new Date(), userId = null) {
+        // Calculate the Monday of the week containing the target date
         const startOfWeek = new Date(date);
         startOfWeek.setDate(startOfWeek.getDate() - (startOfWeek.getDay() === 0 ? 6 : startOfWeek.getDay() - 1));
         startOfWeek.setHours(0, 0, 0, 0);
@@ -29,6 +37,7 @@ class eventsDB {
         endOfWeek.setDate(endOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
+        // Fetch events and mark if the user is already attending
         const events = await db.all(
             `SELECT e.*, 
              EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
@@ -42,9 +51,11 @@ class eventsDB {
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
 
         for (const event of events) {
+            // Attach tags to the event object
             const tags = await TagsDB.getTagsForEvent(db, event.id);
             event.tags = tags;
 
+            // Enforce visibility rules (difficulty and tag-based)
             if (EventRules.canViewEvent(event, user)) {
                 visibleEvents.push(event);
             }
@@ -55,11 +66,11 @@ class eventsDB {
     }
 
     /**
-     * Fetch events for a specific relative week offset.
-     * @param {object} db
-     * @param {number} max_difficulty
-     * @param {number} offset
-     * @param {number} userId
+     * Fetch events for a week relative to the current week.
+     * @param {object} db - Database connection.
+     * @param {number} max_difficulty - Maximum difficulty level.
+     * @param {number} [offset=0] - Week offset (0 = current, 1 = next).
+     * @param {number|null} [userId=null] - Requesting user's ID.
      * @returns {Promise<statusObject>}
      */
     static async get_events_relative_week(db, max_difficulty, offset = 0, userId = null) {
@@ -69,12 +80,12 @@ class eventsDB {
     }
 
     /**
-     * Fetch events within a specific date range.
-     * @param {object} db
-     * @param {number} max_difficulty
-     * @param {Date} startDate
-     * @param {Date} endDate
-     * @param {number} userId
+     * Fetch events within an arbitrary date range.
+     * @param {object} db - Database connection.
+     * @param {number} max_difficulty - Maximum difficulty level.
+     * @param {Date} startDate - Range start.
+     * @param {Date} endDate - Range end.
+     * @param {number|null} [userId=null] - Requesting user's ID.
      * @returns {Promise<statusObject>}
      */
     static async get_events_in_range(db, max_difficulty, startDate, endDate, userId = null) {
@@ -105,10 +116,10 @@ class eventsDB {
     }
 
     /**
-     * Fetch paginated events for admin with search/sort.
-     * @param {object} db
-     * @param {object} options
-     * @returns {Promise<statusObject>}
+     * Administrative fetch of events with full filtering and no visibility restrictions.
+     * @param {object} db - Database connection.
+     * @param {object} options - Filter and pagination options.
+     * @returns {Promise<statusObject>} - Data contains { events, totalPages, currentPage }.
      */
     static async getEventsAdmin(db, options) {
         const { page, limit, search, sort, order, showPast, minCost, maxCost, difficulty, location, permissions } = options;
@@ -122,6 +133,7 @@ class eventsDB {
         let conditions = [];
         const params = [];
 
+        // Dynamic search across multiple fields
         if (search) {
             const terms = search.trim().split(/\s+/);
             terms.forEach(term => {
@@ -153,6 +165,7 @@ class eventsDB {
             params.push(`%${location.trim()}%`);
         }
 
+        // Filter events by manageable tags (for scoped admins)
         if (permissions !== undefined) {
             if (Array.isArray(permissions) && permissions.length > 0) {
                 const tagPlaceholders = permissions.map(() => '?').join(',');
@@ -182,10 +195,10 @@ class eventsDB {
     }
 
     /**
-     * Fetch event by ID with permission and tag checks.
-     * @param {object} db
-     * @param {number|null} userId
-     * @param {number} eventId
+     * Fetch event by ID, enforcing user-specific visibility rules.
+     * @param {object} db - Database connection.
+     * @param {number|null} userId - ID of the user requesting.
+     * @param {number} eventId - ID of the target event.
      * @returns {Promise<statusObject>}
      */
     static async get_event_by_id(db, userId, eventId) {
@@ -204,9 +217,9 @@ class eventsDB {
     }
 
     /**
-     * Fetch event by ID for admin (no permission checks).
-     * @param {object} db
-     * @param {number} id
+     * Fetch event by ID for administrative use, bypassing visibility rules.
+     * @param {object} db - Database connection.
+     * @param {number} id - ID of the target event.
      * @returns {Promise<statusObject>}
      */
     static async getEventByIdAdmin(db, id) {
@@ -221,15 +234,16 @@ class eventsDB {
     }
 
     /**
-     * Create new event and associate tags.
-     * @param {object} db
-     * @param {object} data
-     * @returns {Promise<statusObject>}
+     * Create a new event record and link its tags.
+     * @param {object} db - Database connection.
+     * @param {object} data - Event data object.
+     * @returns {Promise<statusObject>} - Data contains { id }.
      */
     static async createEvent(db, data) {
         try {
             let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
             
+            // Logic validation: max_attendees requires signup
             if (!signup_required && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
@@ -241,6 +255,7 @@ class eventsDB {
             );
             const eventId = result.lastID;
 
+            // Create tag associations
             if (tags && Array.isArray(tags)) {
                 for (const tagId of tags) await TagsDB.associateTag(db, eventId, tagId);
             }
@@ -253,10 +268,10 @@ class eventsDB {
     }
 
     /**
-     * Update event and sync tags.
-     * @param {object} db
-     * @param {number} id
-     * @param {object} data
+     * Update an existing event record and its tag associations.
+     * @param {object} db - Database connection.
+     * @param {number} id - ID of the event to update.
+     * @param {object} data - New event data.
      * @returns {Promise<statusObject>}
      */
     static async updateEvent(db, id, data) {
@@ -272,6 +287,7 @@ class eventsDB {
                 [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_url, upfront_refund_cutoff, id]
             );
 
+            // Sync tags: clear existing and re-insert new list
             if (tags && Array.isArray(tags)) {
                 await TagsDB.clearEventTags(db, id);
                 for (const tagId of tags) await TagsDB.associateTag(db, id, tagId);
@@ -285,10 +301,10 @@ class eventsDB {
     }
 
     /**
-     * Set event cancellation status.
-     * @param {object} db
-     * @param {number} id
-     * @param {boolean} isCanceled
+     * Toggle the cancellation status of an event.
+     * @param {object} db - Database connection.
+     * @param {number} id - Event ID.
+     * @param {boolean} isCanceled - Target status.
      * @returns {Promise<statusObject>}
      */
     static async setEventCancellation(db, id, isCanceled) {
@@ -302,9 +318,10 @@ class eventsDB {
     }
 
     /**
-     * Cancel event, processing refunds and restoring free sessions.
-     * @param {object} db
-     * @param {number} id
+     * Cancel an event and process automatic refunds for all attendees.
+     * This operation is wrapped in a transaction to ensure atomic execution.
+     * @param {object} db - Database connection.
+     * @param {number} id - ID of the event to cancel.
      * @returns {Promise<statusObject>}
      */
     static async cancelEvent(db, id) {
@@ -324,10 +341,11 @@ class eventsDB {
 
             await db.run("UPDATE events SET is_canceled = 1 WHERE id = ?", [id]);
 
+            // Refund all active attendees
             const attendees = await db.all('SELECT * FROM event_attendees WHERE event_id = ? AND is_attending = 1', [id]);
 
             for (const attendee of attendees) {
-                // Check for monetary refund
+                // If they made a monetary payment, create a refund transaction
                 if (attendee.payment_transaction_id) {
                     const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [attendee.payment_transaction_id]);
                     if (transaction) {
@@ -336,12 +354,14 @@ class eventsDB {
                     }
                 } 
                 
+                // If they are a non-member, refund their consumed free session
                 const user = await db.get('SELECT is_member FROM users WHERE id = ?', [attendee.user_id]);
                 if (user && !user.is_member) {
                     await db.run('UPDATE users SET free_sessions = free_sessions + 1 WHERE id = ?', [attendee.user_id]);
                 }
             }
 
+            // Wipe the waitlist
             await db.run('DELETE FROM event_waiting_list WHERE event_id = ?', [id]);
 
             await db.run('COMMIT');
@@ -354,9 +374,9 @@ class eventsDB {
     }
 
     /**
-     * Delete event.
-     * @param {object} db
-     * @param {number} id
+     * Delete an event record.
+     * @param {object} db - Database connection.
+     * @param {number} id - ID of the event.
      * @returns {Promise<statusObject>}
      */
     static async deleteEvent(db, id) {

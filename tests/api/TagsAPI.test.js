@@ -1,3 +1,10 @@
+/**
+ * TagsAPI.test.js
+ * 
+ * Functional tests for the Tag Management API.
+ * Covers tag CRUD operations, whitelist management, and user-specific tag visibility.
+ */
+
 const TestWorld = require('../utils/TestWorld');
 const TagsAPI = require('../../server/api/TagsAPI');
 
@@ -23,40 +30,43 @@ describe('api/TagsAPI', () => {
     });
 
     describe('CRUD Operations', () => {
-        test('GET /api/tags - Public access', async () => {
+        test('GET /api/tags - Authorized public access', async () => {
             await world.createTag('T1');
             const res = await world.request.get('/api/tags');
             expect(res.statusCode).toBe(200);
             expect(res.body.data.some(t => t.name === 'T1')).toBe(true);
         });
 
-        test('POST /api/tags - Access control', async () => {
+        test('POST /api/tags - RBAC enforcement', async () => {
             const tagData = { name: 'NewTag', color: '#ff0000', description: 'D', min_difficulty: 1 };
             
-            // Guest fail
+            // 1. Guest should fail
             const resGuest = await world.request.post('/api/tags').send(tagData);
             expect(resGuest.statusCode).toBe(401);
 
-            // User fail
+            // 2. Standard user should fail
             const resUser = await world.as('user1').post('/api/tags').send(tagData);
             expect(resUser.statusCode).toBe(403);
 
-            // Admin success
+            // 3. Admin should succeed
             const resAdmin = await world.as('admin').post('/api/tags').send(tagData);
             expect(resAdmin.statusCode).toBe(200);
             expect(resAdmin.body.data).toHaveProperty('id');
         });
 
-        test('PUT /api/tags/:id and DELETE /api/tags/:id', async () => {
+        test('PUT /api/tags/:id and DELETE /api/tags/:id lifecycle', async () => {
             await world.createTag('OldTag');
             const tagId = world.data.tags['OldTag'];
 
+            // Update
             const resUpdate = await world.as('admin').put(`/api/tags/${tagId}`).send({ name: 'Updated' });
             expect(resUpdate.statusCode).toBe(200);
 
+            // Delete
             const resDelete = await world.as('admin').delete(`/api/tags/${tagId}`);
             expect(resDelete.statusCode).toBe(200);
 
+            // Verify deletion
             const check = await world.db.get('SELECT 1 FROM tags WHERE id = ?', [tagId]);
             expect(check).toBeUndefined();
         });
@@ -71,30 +81,31 @@ describe('api/TagsAPI', () => {
             targetUserId = world.data.users['user1'];
         });
 
-        test('Full lifecycle: Add, Get, Remove', async () => {
-            // Add
+        test('Whitelist lifecycle: Add, Get, Remove', async () => {
+            // 1. Add user
             const resAdd = await world.as('admin').post(`/api/tags/${tagId}/whitelist`).send({ userId: targetUserId });
             expect(resAdd.statusCode).toBe(200);
 
-            // Get
+            // 2. Verify in list
             const resGet = await world.as('admin').get(`/api/tags/${tagId}/whitelist`);
             expect(resGet.body.data.some(u => u.id === targetUserId)).toBe(true);
 
-            // Remove
+            // 3. Remove user
             const resDel = await world.as('admin').delete(`/api/tags/${tagId}/whitelist/${targetUserId}`);
             expect(resDel.statusCode).toBe(200);
 
+            // 4. Verify gone
             const resGet2 = await world.as('admin').get(`/api/tags/${tagId}/whitelist`);
             expect(resGet2.body.data.some(u => u.id === targetUserId)).toBe(false);
         });
 
-        test('Forbidden for normal users', async () => {
+        test('Whitelist endpoints are forbidden for non-admins', async () => {
             const res = await world.as('user1').get(`/api/tags/${tagId}/whitelist`);
             expect(res.statusCode).toBe(403);
         });
     });
 
-    describe('Manager Management', () => {
+    describe('Manager Scoping Management', () => {
         let tagId, targetUserId;
 
         beforeEach(async () => {
@@ -103,42 +114,44 @@ describe('api/TagsAPI', () => {
             targetUserId = world.data.users['user1'];
         });
 
-        test('Add and remove managers', async () => {
+        test('Assign and revoke direct tag management scope', async () => {
+            // Assign
             await world.as('admin').post(`/api/tags/${tagId}/managers`).send({ userId: targetUserId });
             
             const resGet = await world.as('admin').get(`/api/tags/${tagId}/managers`);
             expect(resGet.body.data.some(u => u.id === targetUserId)).toBe(true);
 
+            // Revoke
             await world.as('admin').delete(`/api/tags/${tagId}/managers/${targetUserId}`);
             const resGet2 = await world.as('admin').get(`/api/tags/${tagId}/managers`);
             expect(resGet2.body.data.some(u => u.id === targetUserId)).toBe(false);
         });
     });
 
-    describe('User-Specific Tags', () => {
+    describe('User-Specific Tag Lookups', () => {
         beforeEach(async () => {
             await world.createTag('T1');
             await world.db.run('INSERT INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [world.data.tags['T1'], world.data.users['user1']]);
         });
 
-        test('GET /api/user/tags - Current user sees their own', async () => {
+        test('Current user can see their own whitelisted tags', async () => {
             const res = await world.as('user1').get('/api/user/tags');
             expect(res.statusCode).toBe(200);
             expect(res.body.some(t => t.name === 'T1')).toBe(true);
         });
 
-        test('GET /api/user/:userId/tags - Permissions', async () => {
+        test('RBAC check for other user\'s whitelisted tags', async () => {
             const u1Id = world.data.users['user1'];
             
-            // Self access
+            // 1. User can look up themselves
             const resSelf = await world.as('user1').get(`/api/user/${u1Id}/tags`);
             expect(resSelf.statusCode).toBe(200);
 
-            // Admin access
+            // 2. Admin can look up any user
             const resAdmin = await world.as('admin').get(`/api/user/${u1Id}/tags`);
             expect(resAdmin.statusCode).toBe(200);
 
-            // Other user denied
+            // 3. Unauthorized user is blocked from PII lookup
             const resOther = await world.as('user2').get(`/api/user/${u1Id}/tags`);
             expect(resOther.statusCode).toBe(403);
         });

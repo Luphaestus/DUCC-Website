@@ -1,3 +1,10 @@
+/**
+ * transactionDB.js
+ * 
+ * This module handles all database operations related to user financial transactions.
+ * It calculates balances, records event payments, and manages manual admin adjustments.
+ */
+
 const { statusObject } = require('../misc/status.js');
 const { Permissions } = require('../misc/permissions.js');
 
@@ -6,11 +13,11 @@ const { Permissions } = require('../misc/permissions.js');
  */
 class TransactionsDB {
     /**
-     * Fetch user transaction data (balance or transactions).
-     * @param {object} db
-     * @param {number} userId
-     * @param {string[]} elements
-     * @returns {Promise<statusObject>}
+     * Fetch requested transaction-related elements for a user.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @param {string[]} elements - List of requested keys ('balance', 'transactions').
+     * @returns {Promise<statusObject>} - Data is a map of requested elements.
      */
     static async getElements(db, userId, elements) {
         const data = {};
@@ -35,24 +42,20 @@ class TransactionsDB {
     }
 
     /**
-     * Calculate user balance by summing transactions.
-     * @param {object} db
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
+     * Calculate a user's current balance by summing all their transaction amounts.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @returns {Promise<statusObject>} - Data is the calculated numerical balance.
      */
     static async get_balance(db, userId) {
         const result = await db.get('SELECT SUM(amount) AS balance FROM transactions WHERE user_id = ?', [userId]);
+        // If no transactions exist, result.balance is null; fallback to 0
         return new statusObject(200, null, result?.balance ?? 0);
     }
 
     /**
-     * Add transaction record (internal).
-     * @param {object} db
-     * @param {number} userId
-     * @param {number} amount
-     * @param {string} description
-     * @param {number|null} eventId
-     * @returns {Promise<statusObject>}
+     * Internal method to insert a transaction record.
+     * @private
      */
     static async _add_transaction_internal(db, userId, amount, description, eventId = null) {
         await db.run(
@@ -64,23 +67,20 @@ class TransactionsDB {
     }
 
     /**
-     * Add transaction record.
-     * @param {object} db
-     * @param {number} userId
-     * @param {number} amount
-     * @param {string} description
-     * @param {number|null} eventId
-     * @returns {Promise<statusObject>}
+     * Public method to add a transaction record.
+     * @param {object} db - Database connection.
+     * @param {number} userId - Target user ID.
+     * @param {number} amount - Amount (negative for charges, positive for credits/refunds).
+     * @param {string} description - Description of the transaction.
+     * @param {number|null} [eventId=null] - Optional ID of the associated event.
+     * @returns {Promise<statusObject>} - Data contains the new transaction's ID.
      */
     static async add_transaction(db, userId, amount, description, eventId = null) {
         return this._add_transaction_internal(db, userId, amount, description, eventId);
     }
 
     /**
-     * Check if transaction ID exists.
-     * @param {object} db
-     * @param {number} transactionId
-     * @returns {Promise<boolean>}
+     * Verify if a transaction ID exists in the database.
      */
     static async get_transaction_exists(db, transactionId) {
         const transaction = await db.get('SELECT id FROM transactions WHERE id = ?', [transactionId]);
@@ -88,12 +88,14 @@ class TransactionsDB {
     }
 
     /**
-     * Fetch all transactions for a user with running balance, newest first.
-     * @param {object} db
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
+     * Fetch all transactions for a user, calculating a running balance for each point in history.
+     * Returns results sorted newest first.
+     * @param {object} db - Database connection.
+     * @param {number} userId - User ID.
+     * @returns {Promise<statusObject>} - Data is a list of transactions with 'after' (balance) field.
      */
     static async get_transactions(db, userId) {
+        // Fetch all chronologically to calculate running balance
         const transactions = await db.all(
             'SELECT id, amount, description, created_at FROM transactions WHERE user_id = ? ORDER BY created_at ASC',
             [userId]
@@ -105,42 +107,41 @@ class TransactionsDB {
             return { ...tx, after: runningBalance };
         });
 
+        // Reverse to return newest first for the UI
         return new statusObject(200, null, transactionsWithAfter.reverse());
     }
 
     /**
-     * Delete transaction and clear event links (internal).
-     * @param {object} db
-     * @param {number} transactionId
-     * @returns {Promise<statusObject>}
+     * Internal method to delete a transaction and clean up event references.
+     * @private
      */
     static async _delete_transaction_internal(db, transactionId) {
         if (!await this.get_transaction_exists(db, transactionId)) {
             return new statusObject(404, 'Transaction not found');
         }
 
+        // Physically delete the record
         await db.run('DELETE FROM transactions WHERE id = ?', [transactionId]);
+        
+        // Clear the foreign key in the event_attendees table to maintain referential integrity
         await db.run('UPDATE event_attendees SET payment_transaction_id = NULL WHERE payment_transaction_id = ?', [transactionId]);
 
         return new statusObject(200, 'Transaction deleted successfully');
     }
 
     /**
-     * Delete transaction.
-     * @param {object} db
-     * @param {number} transactionId
-     * @returns {Promise<statusObject>}
+     * Public method to delete a transaction.
      */
     static async delete_transaction(db, transactionId) {
         return this._delete_transaction_internal(db, transactionId);
     }
 
     /**
-     * Fetch transaction ID for a specific event/user.
-     * @param {object} db
-     * @param {number} eventId
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
+     * Find the transaction ID associated with a specific user's attendance at an event.
+     * @param {object} db - Database connection.
+     * @param {number} eventId - ID of the event.
+     * @param {number} userId - ID of the user.
+     * @returns {Promise<statusObject>} - Data is the transaction ID.
      */
     static async get_transactionid_by_event(db, eventId, userId) {
         const transaction = await db.get('SELECT id FROM transactions WHERE event_id = ? AND user_id = ?', [eventId, userId]);
@@ -149,12 +150,7 @@ class TransactionsDB {
     }
 
     /**
-     * Update transaction details.
-     * @param {object} db
-     * @param {number} transactionId
-     * @param {number} amount
-     * @param {string} description
-     * @returns {Promise<statusObject>}
+     * Update the details of an existing transaction record.
      */
     static async edit_transaction(db, transactionId, amount, description) {
         const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [transactionId]);
@@ -165,10 +161,7 @@ class TransactionsDB {
     }
 
     /**
-     * Fetch a single transaction by ID.
-     * @param {object} db
-     * @param {number} transactionId
-     * @returns {Promise<statusObject>}
+     * Retrieve a single transaction record by its ID.
      */
     static async get_transaction_by_id(db, transactionId) {
         const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [transactionId]);

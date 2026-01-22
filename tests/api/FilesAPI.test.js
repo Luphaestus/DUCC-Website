@@ -1,3 +1,10 @@
+/**
+ * FilesAPI.test.js
+ * 
+ * Integration tests for file management and access control.
+ * Covers visibility filtering, metadata management, and event-linked image access.
+ */
+
 const TestWorld = require('../utils/TestWorld');
 const FilesAPI = require('../../server/api/FilesAPI');
 const FilesDB = require('../../server/db/filesDB');
@@ -13,6 +20,7 @@ describe('api/FilesAPI', () => {
         world = new TestWorld();
         await world.setUp();
         
+        // Use a temporary directory for file uploads during tests
         testUploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ducc-files-test-'));
         
         await world.createRole('Admin', ['file.read', 'file.write', 'file.edit', 'file.category.manage']);
@@ -28,6 +36,7 @@ describe('api/FilesAPI', () => {
 
     afterEach(async () => {
         await world.tearDown();
+        // Cleanup test files
         if (fs.existsSync(testUploadDir)) {
             fs.rmSync(testUploadDir, { recursive: true, force: true });
         }
@@ -45,23 +54,23 @@ describe('api/FilesAPI', () => {
             await FilesDB.createFile(world.db, { title: 'ExeFile', filename: 'e.txt', visibility: 'execs' });
         });
 
-        test('Guest sees only public', async () => {
+        test('Guest sees only public files', async () => {
             const res = await world.request.get('/api/files');
             expect(res.body.data.files).toHaveLength(1);
             expect(res.body.data.files[0].title).toBe('PubFile');
         });
 
-        test('Member sees public and members', async () => {
+        test('Member sees public and member-only files', async () => {
             const res = await world.as('member').get('/api/files');
             expect(res.body.data.files).toHaveLength(2);
         });
 
-        test('Exec sees everything', async () => {
+        test('Exec sees all files (including exec-only)', async () => {
             const res = await world.as('exec').get('/api/files');
             expect(res.body.data.files).toHaveLength(3);
         });
 
-        test('Category listing filters by role', async () => {
+        test('Category listing filters based on user role', async () => {
             const resGuest = await world.request.get('/api/file-categories');
             expect(resGuest.body.data).toHaveLength(1);
 
@@ -71,7 +80,7 @@ describe('api/FilesAPI', () => {
     });
 
     describe('Upload & Management', () => {
-        test('Admin can edit metadata', async () => {
+        test('Admin can update file metadata', async () => {
             await world.db.run('INSERT INTO file_categories (name) VALUES ("Cat")');
             const catId = (await world.db.get('SELECT id FROM file_categories')).id;
             const fileRes = await FilesDB.createFile(world.db, { title: 'Old', filename: 'f.txt' });
@@ -87,12 +96,12 @@ describe('api/FilesAPI', () => {
             expect(updated.title).toBe('New Title');
         });
 
-        test('Guest cannot upload', async () => {
+        test('Unauthorized users cannot perform uploads', async () => {
             const res = await world.request.post('/api/files');
             expect(res.statusCode).toBe(401);
         });
 
-        test('Member cannot upload without permission', async () => {
+        test('Members without write permission cannot upload', async () => {
             const res = await world.as('member').post('/api/files');
             expect(res.statusCode).toBe(403);
         });
@@ -106,18 +115,22 @@ describe('api/FilesAPI', () => {
             fs.writeFileSync(path.join(testUploadDir, 'secret.txt'), 'content');
         });
 
-        test('Guest cannot download exec file', async () => {
+        test('Unauthorized users cannot download restricted files', async () => {
             const res = await world.request.get(`/api/files/${fileId}/download`);
             expect(res.statusCode).toBe(403);
         });
 
-        test('Exec can download exec file', async () => {
+        test('Authorized users can download restricted files', async () => {
             const res = await world.as('exec').get(`/api/files/${fileId}/download`);
             expect(res.statusCode).toBe(200);
             expect(res.text).toBe('content');
         });
 
-        test('Event image visibility is restricted by event access', async () => {
+        /**
+         * Complex test case for 'visibility: events' logic.
+         * Access should be granted if the user is authorized to view an event that uses the file.
+         */
+        test('Event image visibility is restricted by the user\'s event access', async () => {
             const filename = 'event_img.txt';
             const filePath = path.join(testUploadDir, filename);
             fs.writeFileSync(filePath, 'fake image content');
@@ -130,24 +143,32 @@ describe('api/FilesAPI', () => {
             const eventFileId = fileRes.getData().id;
             const imageUrl = `/api/files/${eventFileId}/download`;
 
+            // Create an event that is too difficult for the current user
             await world.createEvent('Hard Event', {
                 difficulty_level: 5,
                 image_url: imageUrl
             });
 
+            // Guests should be blocked
             expect((await world.request.get(imageUrl)).statusCode).toBe(403);
 
+            // Beginners (difficulty 1) should be blocked
             expect((await world.as('member').get(imageUrl)).statusCode).toBe(403);
 
+            // After promoting user to difficulty 5, they should gain access
             await world.db.run('UPDATE users SET difficulty_level = 5 WHERE id = ?', [world.data.users['member']]);
             const resMemberHigh = await world.as('member').get(imageUrl);
             expect(resMemberHigh.statusCode).toBe(200);
             expect(resMemberHigh.text).toBe('fake image content');
 
+            // Execs should always have access
             expect((await world.as('exec').get(imageUrl)).statusCode).toBe(200);
         });
 
-        test('Orphaned events image is accessible only to execs', async () => {
+        /**
+         * Test for images not currently linked to any active event.
+         */
+        test('Orphaned event images are accessible only to execs', async () => {
             const filename = 'orphan.jpg';
             const filePath = path.join(testUploadDir, filename);
             fs.writeFileSync(filePath, 'orphan content');

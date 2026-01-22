@@ -1,3 +1,10 @@
+/**
+ * tagsDB.js
+ * 
+ * This module manages the lifecycle of event tags and their associated user whitelists.
+ * Tags are used to categorize events and restrict visibility or joining based on policies.
+ */
+
 const { statusObject } = require('../misc/status.js');
 
 /**
@@ -5,9 +12,9 @@ const { statusObject } = require('../misc/status.js');
  */
 class TagsDB {
     /**
-     * Fetch all tags.
-     * @param {object} db
-     * @returns {Promise<statusObject>}
+     * Fetch all tags registered in the system.
+     * @param {object} db - Database connection.
+     * @returns {Promise<statusObject>} - Data is an array of tag objects.
      */
     static async getAllTags(db) {
         try {
@@ -20,9 +27,9 @@ class TagsDB {
     }
 
     /**
-     * Fetch a tag by ID.
-     * @param {object} db
-     * @param {number} id
+     * Fetch metadata for a specific tag by its ID.
+     * @param {object} db - Database connection.
+     * @param {number} id - Tag ID.
      * @returns {Promise<statusObject>}
      */
     static async getTagById(db, id) {
@@ -37,9 +44,9 @@ class TagsDB {
 
     /**
      * Create a new tag.
-     * @param {object} db
-     * @param {object} data
-     * @returns {Promise<statusObject>}
+     * @param {object} db - Database connection.
+     * @param {object} data - { name, color, description, min_difficulty }.
+     * @returns {Promise<statusObject>} - Data contains { id }.
      */
     static async createTag(db, data) {
         try {
@@ -55,11 +62,7 @@ class TagsDB {
     }
 
     /**
-     * Update a tag.
-     * @param {object} db
-     * @param {number} id
-     * @param {object} data
-     * @returns {Promise<statusObject>}
+     * Update an existing tag's metadata.
      */
     static async updateTag(db, id, data) {
         try {
@@ -75,10 +78,7 @@ class TagsDB {
     }
 
     /**
-     * Delete a tag.
-     * @param {object} db
-     * @param {number} id
-     * @returns {Promise<statusObject>}
+     * Delete a tag from the database.
      */
     static async deleteTag(db, id) {
         try {
@@ -90,9 +90,9 @@ class TagsDB {
     }
 
     /**
-     * Fetch whitelisted users for a tag.
-     * @param {object} db
-     * @param {number} tagId
+     * Fetch a list of all users currently whitelisted for a specific tag.
+     * @param {object} db - Database connection.
+     * @param {number} tagId - Tag ID.
      * @returns {Promise<statusObject>}
      */
     static async getWhitelist(db, tagId) {
@@ -111,10 +111,6 @@ class TagsDB {
 
     /**
      * Add a user to a tag's whitelist.
-     * @param {object} db
-     * @param {number} tagId
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
      */
     static async addToWhitelist(db, tagId, userId) {
         try {
@@ -127,10 +123,6 @@ class TagsDB {
 
     /**
      * Remove a user from a tag's whitelist.
-     * @param {object} db
-     * @param {number} tagId
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
      */
     static async removeFromWhitelist(db, tagId, userId) {
         try {
@@ -142,11 +134,7 @@ class TagsDB {
     }
 
     /**
-     * Check if a user is whitelisted for a tag.
-     * @param {object} db 
-     * @param {number} tagId 
-     * @param {number} userId 
-     * @returns {Promise<boolean>}
+     * Check if a specific user is whitelisted for a tag.
      */
     static async isWhitelisted(db, tagId, userId) {
         const whitelisted = await db.get(
@@ -157,10 +145,7 @@ class TagsDB {
     }
 
     /**
-     * Fetch managers for a tag.
-     * @param {object} db
-     * @param {number} tagId
-     * @returns {Promise<statusObject>}
+     * Fetch a list of users explicitly assigned as managers for a tag scope.
      */
     static async getManagers(db, tagId) {
         try {
@@ -177,11 +162,7 @@ class TagsDB {
     }
 
     /**
-     * Add a manager to a tag.
-     * @param {object} db
-     * @param {number} tagId
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
+     * Assign a user as a direct manager for a tag scope.
      */
     static async addManager(db, tagId, userId) {
         try {
@@ -193,11 +174,7 @@ class TagsDB {
     }
 
     /**
-     * Remove a manager from a tag.
-     * @param {object} db
-     * @param {number} tagId
-     * @param {number} userId
-     * @returns {Promise<statusObject>}
+     * Remove a user from the direct management scope of a tag.
      */
     static async removeManager(db, tagId, userId) {
         try {
@@ -210,28 +187,21 @@ class TagsDB {
 
     /**
      * Link a tag to an event.
-     * @param {object} db
-     * @param {number} eventId
-     * @param {number} tagId
      */
     static async associateTag(db, eventId, tagId) {
         await db.run('INSERT OR IGNORE INTO event_tags (event_id, tag_id) VALUES (?, ?)', [eventId, tagId]);
     }
 
     /**
-     * Remove all tags from an event.
-     * @param {object} db
-     * @param {number} eventId
+     * Remove all tag associations for a specific event.
      */
     static async clearEventTags(db, eventId) {
         await db.run('DELETE FROM event_tags WHERE event_id = ?', [eventId]);
     }
 
     /**
-     * Fetch tags linked to an event.
-     * @param {object} db
-     * @param {number} eventId
-     * @returns {Promise<Array>}
+     * Fetch all tags associated with a specific event.
+     * @returns {Promise<Array>} - List of tag objects.
      */
     static async getTagsForEvent(db, eventId) {
         return db.all(`
@@ -243,10 +213,7 @@ class TagsDB {
     }
 
     /**
-     * Fetch tags a user is whitelisted for.
-     * @param {object} db
-     * @param {number} userId
-     * @returns {Promise<Array>}
+     * Fetch all tags that a specific user is whitelisted for.
      */
     static async getTagsForUser(db, userId) {
         return db.all(`

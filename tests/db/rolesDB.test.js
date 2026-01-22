@@ -1,3 +1,10 @@
+/**
+ * rolesDB.test.js
+ * 
+ * Database layer tests for RBAC (Role-Based Access Control).
+ * Verifies role creation, user assignment, and permission resolution.
+ */
+
 const TestWorld = require('../utils/TestWorld');
 const RolesDB = require('../../server/db/rolesDB');
 
@@ -13,14 +20,17 @@ describe('db/rolesDB', () => {
         await world.tearDown();
     });
 
-    test('createRole and getAllRoles', async () => {
+    test('createRole and getAllRoles persistence', async () => {
         await RolesDB.createRole(world.db, 'NewRole', 'Desc', ['user.manage']);
         const res = await RolesDB.getAllRoles(world.db);
         const roles = res.getData();
         expect(roles.some(r => r.name === 'NewRole')).toBe(true);
     });
 
-    test('assignRole and getUserRoles', async () => {
+    /**
+     * Verifies that assigning a role correctly allows subsequent lookup.
+     */
+    test('assignRole successfully links a role to a user', async () => {
         await world.createUser('user', {});
         const userId = world.data.users['user'];
         
@@ -33,7 +43,10 @@ describe('db/rolesDB', () => {
         expect(res.getData()[0].name).toBe('TestRole');
     });
 
-    test('addUserPermission and getAllUserPermissions', async () => {
+    /**
+     * Test direct permission overrides (independent of roles).
+     */
+    test('addUserPermission adds a direct override that is included in user permissions', async () => {
         await world.createUser('user', {});
         const userId = world.data.users['user'];
         

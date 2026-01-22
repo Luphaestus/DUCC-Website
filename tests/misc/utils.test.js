@@ -1,14 +1,27 @@
+/**
+ * utils.test.js
+ * 
+ * Unit tests for general server-side utility functions.
+ */
+
 const Utils = require('../../server/misc/utils');
 
 describe('misc/utils', () => {
-    test('getAcademicYearStart returns Sept 1st', () => {
+    /**
+     * Requirement: Academic year always starts on September 1st.
+     */
+    test('getAcademicYearStart always returns September 1st of the relevant year', () => {
         const start = Utils.getAcademicYearStart();
         const date = new Date(start);
-        expect(date.getMonth()).toBe(8); // Sept
-        expect(date.getDate()).toBe(1);
+        
+        expect(date.getUTCMonth()).toBe(8); // September (0-indexed)
+        expect(date.getUTCDate()).toBe(1);
     });
 
-    test('getBaseUrl returns correct URL', () => {
+    /**
+     * Requirement: Correctly identifies protocol and host from Express request.
+     */
+    test('getBaseUrl correctly reconstructs the root URL from an Express request object', () => {
         const req = {
             protocol: 'https',
             get: vi.fn().mockReturnValue('example.com')

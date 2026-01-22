@@ -1,3 +1,10 @@
+/**
+ * filesDB.test.js
+ * 
+ * Database layer tests for file metadata and categories.
+ * Verifies insertion, retrieval by ID, and role-based visibility filtering.
+ */
+
 const TestWorld = require('../utils/TestWorld');
 const FilesDB = require('../../server/db/filesDB');
 
@@ -13,7 +20,7 @@ describe('db/filesDB', () => {
         await world.tearDown();
     });
 
-    test('createFile and getFileById', async () => {
+    test('createFile and getFileById correctly stores and retrieves metadata', async () => {
         const fileData = {
             title: 'Test File',
             filename: 'test.png',
@@ -28,17 +35,23 @@ describe('db/filesDB', () => {
         expect(getRes.getData().title).toBe('Test File');
     });
 
-    test('getFiles filters by role', async () => {
+    /**
+     * Verifies that the SQL filtering correctly applies role-based visibility.
+     */
+    test('getFiles correctly applies role-based visibility filters', async () => {
         await FilesDB.createFile(world.db, { title: 'Public', filename: 'pub.txt', visibility: 'public' });
         await FilesDB.createFile(world.db, { title: 'Member', filename: 'mem.txt', visibility: 'members' });
         await FilesDB.createFile(world.db, { title: 'Exec', filename: 'exe.txt', visibility: 'execs' });
 
+        // 1. Guest sees only 1 file (public)
         const pubRes = await FilesDB.getFiles(world.db, {}, 'public');
         expect(pubRes.getData().files.length).toBe(1);
 
+        // 2. Member sees 2 files (public + members)
         const memRes = await FilesDB.getFiles(world.db, {}, 'member');
         expect(memRes.getData().files.length).toBe(2);
 
+        // 3. Exec sees all 3 files
         const exeRes = await FilesDB.getFiles(world.db, {}, 'exec');
         expect(exeRes.getData().files.length).toBe(3);
     });
