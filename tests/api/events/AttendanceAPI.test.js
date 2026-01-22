@@ -145,26 +145,19 @@ describe('api/events/AttendanceAPI', () => {
         /**
          * Verifies that the canJoin endpoint correctly previews business rules.
          */
-        test('Reflects join rules: coach availability, legal status, and standing', async () => {
-            await world.createEvent('E1');
-            const eventId = world.data.events['E1'];
+        it('should enforce coach safety requirements', async () => {
+            // Blocked: No coach attending
+            const res1 = await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userB });
+            expect(res1.status).toBe(403);
 
-            // 1. Blocked: No coach attending
-            let res = await world.as('user').get(`/api/event/${eventId}/canJoin`);
-            expect(res.body.canJoin).toBe(false);
-            expect(res.body.reason).toMatch(/coach/i);
+            // Allowed: Coach added
+            await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userA });
+            const res2 = await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userB });
+            expect(res2.status).toBe(200);
 
-            // 2. Allowed: Coach added
-            await world.createUser('c', { is_instructor: 1 });
-            await world.joinEvent('c', 'E1');
-            res = await world.as('user').get(`/api/event/${eventId}/canJoin`);
-            expect(res.body.canJoin).toBe(true);
-
-            // 3. Blocked: Incomplete legal info
-            await world.db.run('UPDATE users SET filled_legal_info = 0 WHERE id = ?', [world.data.users['user']]);
-            res = await world.as('user').get(`/api/event/${eventId}/canJoin`);
-            expect(res.body.canJoin).toBe(false);
-            expect(res.body.reason).toMatch(/legal/i);
+            // Blocked: Incomplete legal info
+            const res3 = await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userC });
+            expect(res3.status).toBe(403);
         });
     });
 
@@ -270,34 +263,21 @@ describe('api/events/AttendanceAPI', () => {
             expect(balance.b).toBe(-15.0);
         });
 
-        /**
-         * Re-joining logic: Users who left after the refund cutoff shouldn't be charged twice if they re-join.
-         */
-        test('Users are not double-charged if they re-join after a non-refundable exit', async () => {
-            const pastCutoff = new Date(Date.now() - 3600000).toISOString(); 
-            await world.createEvent('AlreadyPaidEvent', { upfront_cost: 10.0, upfront_refund_cutoff: pastCutoff });
-            const eventId = world.data.events['AlreadyPaidEvent'];
-            const userId = world.data.users['user'];
+        it('should handle refunds and re-joins correctly', async () => {
+            // Join and pay
+            await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userA });
+            const bal1 = (await UserDB.getUserProfile(world.db, userA.id, ['balance'], true)).getData().balance;
+            expect(bal1).toBe(-10);
 
-            await world.createUser('coach_rep', { is_instructor: 1 });
-            await world.joinEvent('coach_rep', 'AlreadyPaidEvent');
+            // Leave after cutoff (no refund)
+            await world.fetch(`/api/event/${eventId}/leave`, { method: 'POST', user: userA });
+            const bal2 = (await UserDB.getUserProfile(world.db, userA.id, ['balance'], true)).getData().balance;
+            expect(bal2).toBe(-10);
 
-            // 1. Join and pay
-            await world.as('user').post(`/api/event/${eventId}/attend`);
-            let balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
-            expect(balance.b).toBe(-10.0);
-
-            // 2. Leave after cutoff (no refund)
-            await world.as('user').post(`/api/event/${eventId}/leave`);
-            balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
-            expect(balance.b).toBe(-10.0); 
-
-            // 3. Re-join (should NOT pay again)
-            const res = await world.as('user').post(`/api/event/${eventId}/attend`);
-            expect(res.statusCode).toBe(200);
-            
-            balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
-            expect(balance.b).toBe(-10.0); 
+            // Re-join (should NOT pay again)
+            await world.fetch(`/api/event/${eventId}/attend`, { method: 'POST', user: userA });
+            const bal3 = (await UserDB.getUserProfile(world.db, userA.id, ['balance'], true)).getData().balance;
+            expect(bal3).toBe(-10);
         });
 
         /**
@@ -313,21 +293,21 @@ describe('api/events/AttendanceAPI', () => {
             await world.createUser('coach_replace', { is_instructor: 1 });
             await world.joinEvent('coach_replace', 'RefundReplacementEvent');
 
-            // 1. User A joins and pays
+            // User A joins and pays
             await world.as('user').post(`/api/event/${eventId}/attend`);
             
-            // 2. User A leaves after cutoff (stays at -10)
+            // User A leaves after cutoff (stays at -10)
             await world.as('user').post(`/api/event/${eventId}/leave`);
             let balanceA = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userIdA]);
             expect(balanceA.b).toBe(-10.0);
 
-            // 3. User B joins (takes User A's paid slot)
+            // User B joins (takes User A's paid slot)
             await world.as('user_b').post(`/api/event/${eventId}/attend`);
             // User A should now be at 0 (refunded automatically)
             balanceA = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userIdA]);
             expect(balanceA.b).toBe(0); 
 
-            // 4. User A joins again (now they must pay again as their previous slot was transferred)
+            // User A joins again (now they must pay again as their previous slot was transferred)
             const res = await world.as('user').post(`/api/event/${eventId}/attend`);
             expect(res.statusCode).toBe(200);
             

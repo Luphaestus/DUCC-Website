@@ -1,10 +1,14 @@
-import { SIGNAL_DISCONNECTED_SVG } from '../../images/icons/outline/icons.js';
-
 /**
- * No Internet / Connection Lost view.
- * @module NoInternet
+ * no_internet.js
+ * 
+ * Logic for the connection-loss overlay view.
+ * Displays a full-screen alert when the client cannot reach the backend server.
+ * Managed by connection.js.
  */
 
+import { SIGNAL_DISCONNECTED_SVG } from '../../images/icons/outline/icons.js';
+
+/** HTML Template for the connectivity error view */
 const HTML_TEMPLATE = /*html*/`
         <div id="no-connection-view" class="view hidden">
             <div class="container">

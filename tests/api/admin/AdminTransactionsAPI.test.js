@@ -33,29 +33,29 @@ describe('api/admin/AdminTransactionsAPI', () => {
         test('Full CRUD cycle for user transactions', async () => {
             const userId = world.data.users['user'];
 
-            // 1. Create a transaction
+            // Create a transaction
             const res1 = await world.as('admin').post(`/api/admin/user/${userId}/transaction`).send({
                 amount: 50, description: 'Initial adjustment'
             });
             expect(res1.statusCode).toBe(200);
 
-            // 2. Fetch and verify
+            // Fetch and verify
             const res2 = await world.as('admin').get(`/api/admin/user/${userId}/transactions`);
             expect(res2.statusCode).toBe(200);
             expect(res2.body).toHaveLength(1);
             const txId = res2.body[0].id;
 
-            // 3. Edit existing transaction
+            // Edit existing transaction
             const res3 = await world.as('admin').put(`/api/admin/transaction/${txId}`).send({
                 amount: 100, description: 'Corrected adjustment'
             });
             expect(res3.statusCode).toBe(200);
 
-            // 4. Delete the transaction
+            // Delete the transaction
             const res4 = await world.as('admin').delete(`/api/admin/transaction/${txId}`);
             expect(res4.statusCode).toBe(200);
 
-            // 5. Final balance verification
+            // Final balance verification
             const balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userId]);
             expect(balance.b).toBe(0);
         });

@@ -1,3 +1,14 @@
+/**
+ * profile.js
+ * 
+ * Logic for the consolidated User Dashboard.
+ * Merges profile overview, transaction history, and account settings.
+ * Handles membership registration, swim stat visualization, safety info updates,
+ * and account-level security (password change, deletion).
+ * 
+ * Registered Routes: /profile, /transactions
+ */
+
 import { LoginEvent } from './login.js';
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { LegalEvent } from './legal.js';
@@ -14,18 +25,15 @@ import {
     CONTRACT_SVG, MEDICAL_INFORMATION_SVG, GROUP_SVG, BOLT_SVG
 } from '../../images/icons/outline/icons.js';
 
-/**
- * Consolidated Dashboard View (Profile + Transactions).
- * @module Profile
- */
-
+// Register routes
 addRoute('/profile', 'profile');
-addRoute('/transactions', 'profile'); // Redirects effectively handled by tab logic if needed, or we just rely on profile.
+addRoute('/transactions', 'profile'); 
 
+/** HTML Template for the dashboard */
 const HTML_TEMPLATE = /*html*/`
 <div id="profile-view" class="view hidden">
     <div class="dashboard-container">
-        <!-- Sidebar -->
+        <!-- Sidebar Navigation -->
         <nav class="dashboard-sidebar glass-panel">
             <button class="nav-item active" data-tab="overview">
                 ${DASHBOARD_SVG} Overview
@@ -41,15 +49,15 @@ const HTML_TEMPLATE = /*html*/`
             </button>
         </nav>
 
-        <!-- Main Content -->
+        <!-- Main Content Area -->
         <main class="dashboard-content">
             
-            <!-- 1. Overview Tab -->
+            <!-- Overview Tab -->
             <section id="tab-overview" class="dashboard-section active">
-                <!-- Membership Banner -->
+                <!-- Membership Banner (Conditional) -->
                 <div id="membership-banner-container"></div>
 
-                <!-- Swim Stats -->
+                <!-- Swimming Stats -->
                 <div class="glass-panel">
                     <div class="box-header">
                         <h3>${POOL_SVG} Swimming Stats</h3>
@@ -64,7 +72,7 @@ const HTML_TEMPLATE = /*html*/`
 
                 <!-- Legal & Safety Row -->
                 <div class="dual-grid">
-                    <!-- Legal Waiver -->
+                    <!-- Legal Status -->
                     <div class="glass-panel">
                         <div class="box-header">
                             <h3>${CONTRACT_SVG} Legal Waiver</h3>
@@ -74,7 +82,7 @@ const HTML_TEMPLATE = /*html*/`
                         </div>
                     </div>
 
-                    <!-- Safety Info -->
+                    <!-- Safety/Medical Expiry Info -->
                     <div class="glass-panel">
                         <div class="box-header">
                             <h3>${MEDICAL_INFORMATION_SVG} Safety Info</h3>
@@ -105,7 +113,7 @@ const HTML_TEMPLATE = /*html*/`
                     </div>
                 </div>
 
-                <!-- Groups & Teams -->
+                <!-- Groups & Teams (Tags) -->
                 <div id="groups-teams-panel" class="glass-panel">
                     <div class="box-header">
                         <h3>${GROUP_SVG} Groups & Teams</h3>
@@ -115,7 +123,7 @@ const HTML_TEMPLATE = /*html*/`
                     </div>
                 </div>
 
-                <!-- Instructor Status -->
+                <!-- Instructor Application -->
                 <div class="glass-panel">
                     <div class="role-toggle">
                         <div class="role-info">
@@ -127,9 +135,9 @@ const HTML_TEMPLATE = /*html*/`
                 </div>
             </section>
 
-            <!-- 2. Balance & History Tab -->
+            <!-- Balance & History Tab -->
             <section id="tab-balance" class="dashboard-section">
-                <!-- Balance Header -->
+                <!-- Balance Overview -->
                 <div class="balance-header">
                     <div class="balance-info">
                         <span class="label">Current Balance</span>
@@ -140,7 +148,7 @@ const HTML_TEMPLATE = /*html*/`
                     </div>
                 </div>
 
-                <!-- Transaction History -->
+                <!-- List of recent transactions -->
                 <div class="glass-panel">
                     <div class="box-header">
                         <h3>Transaction History</h3>
@@ -151,10 +159,10 @@ const HTML_TEMPLATE = /*html*/`
                 </div>
             </section>
 
-            <!-- 3. Account Settings Tab -->
+            <!-- Account Settings Tab -->
             <section id="tab-settings" class="dashboard-section">
                 <div class="settings-grid">
-                    <!-- Security -->
+                    <!-- Security Controls -->
                     <div class="glass-panel">
                         <div class="box-header">
                             <h3>${ID_CARD_SVG} Security</h3>
@@ -162,7 +170,7 @@ const HTML_TEMPLATE = /*html*/`
                         <button id="change-password-btn" class="outline">Change Password</button>
                     </div>
 
-                    <!-- Danger Zone -->
+                    <!-- Account Deletion -->
                     <div class="glass-panel danger-zone">
                         <div class="box-header">
                             <h3>${BRIGHTNESS_ALERT_SVG} Danger Zone</h3>
@@ -176,16 +184,28 @@ const HTML_TEMPLATE = /*html*/`
     </div>
 </div>`;
 
+/** @type {Function|null} Handle to current notification */
 let notification = null;
+
+/** @type {object|null} Cached current user object */
 let currentUser = null;
 
 // --- Helper Functions ---
 
+/**
+ * Displays a toast notification.
+ */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
+/**
+ * Formats a number with its ordinal suffix (e.g. 1 -> 1st).
+ * 
+ * @param {number|string} n 
+ * @returns {string}
+ */
 function getOrdinal(n) {
     if (n === undefined || n === null || n === '-' || n < 1) return '-';
     const s = ["th", "st", "nd", "rd"], v = n % 100;
@@ -194,6 +214,12 @@ function getOrdinal(n) {
 
 // --- Render Functions ---
 
+/**
+ * Renders the top-level membership call-to-action banner for non-members.
+ * 
+ * @param {object} profile - User profile data.
+ * @param {object} globals - Global settings (e.g. membership cost).
+ */
 function renderMembershipBanner(profile, globals) {
     const container = document.getElementById('membership-banner-container');
     if (!container) return;
@@ -231,12 +257,16 @@ function renderMembershipBanner(profile, globals) {
             }
         };
     } else {
-        console.log("Hiding membership banner for member");
         container.classList.add('hidden');
         container.innerHTML = '';
     }
 }
 
+/**
+ * Renders user's swimming statistics grid.
+ * 
+ * @param {object} stats 
+ */
 function renderSwimStats(stats) {
     const grid = document.getElementById('swim-stats-grid');
     const s = stats || { allTime: { swims: 0, rank: '-' }, yearly: { swims: 0, rank: '-' } };
@@ -261,12 +291,17 @@ function renderSwimStats(stats) {
     `;
 }
 
+/**
+ * Renders the legal waiver status card.
+ * 
+ * @param {object} profile 
+ */
 function renderLegalStatus(profile) {
     const container = document.getElementById('legal-status-content');
     const isComplete = !!profile.filled_legal_info;
     const lastFilled = profile.legal_filled_at ? new Date(profile.legal_filled_at).toLocaleDateString('en-GB') : null;
 
-    // Update Header Button
+    // Link the "Update" button to the legal form view
     const header = container.parentElement.querySelector('.box-header');
     let updateBtn = header.querySelector('.small-btn');
     if (!updateBtn) {
@@ -303,6 +338,11 @@ function renderLegalStatus(profile) {
     }
 }
 
+/**
+ * Syncs profile safety fields with the UI.
+ * 
+ * @param {object} profile 
+ */
 function renderSafetyInfo(profile) {
     document.getElementById('display-first-aid').textContent = profile.first_aid_expiry || 'Not Set';
     document.getElementById('display-emergency').textContent = profile.phone_number || 'Not Set';
@@ -311,6 +351,11 @@ function renderSafetyInfo(profile) {
     document.getElementById('input-emergency').value = profile.phone_number || '';
 }
 
+/**
+ * Renders the list of tags (teams/groups) assigned to the user.
+ * 
+ * @param {object[]} tags 
+ */
 function renderTags(tags) {
     const container = document.getElementById('tags-list-container');
     if (tags && tags.length > 0) {
@@ -323,6 +368,11 @@ function renderTags(tags) {
     }
 }
 
+/**
+ * Renders the instructor status toggle/application button.
+ * 
+ * @param {object} profile 
+ */
 function renderInstructor(profile) {
     const isInstructor = profile.is_instructor;
     const text = document.getElementById('instructor-status-text');
@@ -351,6 +401,11 @@ function renderInstructor(profile) {
     }
 }
 
+/**
+ * Updates the user's financial balance display.
+ * 
+ * @param {object} profile 
+ */
 function renderBalance(profile) {
     const bal = Number(profile.balance);
     const el = document.getElementById('balance-amount');
@@ -359,6 +414,9 @@ function renderBalance(profile) {
     el.classList.toggle('balance-positive', bal > 0);
 }
 
+/**
+ * Fetches and renders the user's transaction history list.
+ */
 async function renderTransactions() {
     const container = document.getElementById('transactions-list-container');
     try {
@@ -372,7 +430,7 @@ async function renderTransactions() {
 
         container.innerHTML = txs.map(tx => {
             const isNegative = tx.amount < 0;
-            const icon = isNegative ? REMOVE_SVG : ADD_SVG; // Or specific icons if available
+            const icon = isNegative ? REMOVE_SVG : ADD_SVG;
             const iconClass = isNegative ? 'negative' : 'positive';
             const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -398,6 +456,10 @@ async function renderTransactions() {
 
 // --- Main Update Logic ---
 
+/**
+ * Full dashboard data refresh.
+ * Fetches user profile, global settings, and tags in parallel.
+ */
 async function updateDashboard() {
     if (!await requireAuth()) return;
 
@@ -429,22 +491,22 @@ async function updateDashboard() {
 
 // --- Event Listeners ---
 
+/**
+ * Binds static UI element listeners.
+ */
 function bindEvents() {
-    // Sidebar Navigation
+    // Sidebar Tab Switching
     document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             const tabName = btn.dataset.tab;
-            // Update URL
             const url = new URL(window.location);
             url.searchParams.set('tab', tabName);
             window.history.pushState({}, '', url);
-
-            // Update UI
             setActiveTab(tabName);
         });
     });
 
-    // Safety Info Toggle
+    // Safety Info Inline Editor Toggle
     const displayDiv = document.getElementById('safety-info-display');
     const formDiv = document.getElementById('safety-info-form');
     const editBtn = document.getElementById('edit-safety-btn');
@@ -480,11 +542,10 @@ function bindEvents() {
         }
     };
 
-    // Balance Top Up
+    // Manual Top Up Instruction Modal
     document.getElementById('top-up-btn').onclick = () => {
         const refrense = currentUser.first_name.charAt(0).toUpperCase() + currentUser.last_name.toUpperCase() + "WEBSITE";
         
-
         showConfirmModal(
             "Top Up Balance",
             `Please transfer the desired amount to:<br><br>
@@ -492,11 +553,11 @@ function bindEvents() {
             <strong>Sort Code:</strong> 20-27-66<br>
             <strong>Account:</strong> 53770109<br>
             <strong>Reference:</strong> ${refrense}<br><br>
-            <p>Pressing the confirm button will notify the finace team to credit your account once the transfer is verified. Please press cancel if you have not made a transfer.</p>`
+            <p>Pressing the confirm button will notify the finance team to credit your account once the transfer is verified. Please press cancel if you have not made a transfer.</p>`
         );
     };
 
-    // Settings
+    // Account Security Listeners
     document.getElementById('change-password-btn').onclick = async () => {
         const passwords = await showChangePasswordModal();
         if (passwords) {
@@ -529,17 +590,19 @@ function bindEvents() {
     };
 }
 
+/**
+ * Toggles the active tab section and sidebar highlighting.
+ * 
+ * @param {string} tabName 
+ */
 function setActiveTab(tabName) {
-    // Default to overview if invalid
     if (!['overview', 'balance', 'settings'].includes(tabName)) tabName = 'overview';
 
-    // Update active button
     document.querySelectorAll('.nav-item').forEach(b => {
         if (b.dataset.tab === tabName) b.classList.add('active');
         else b.classList.remove('active');
     });
 
-    // Show active section
     document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
     const tabId = `tab-${tabName}`;
     const section = document.getElementById(tabId);
@@ -548,10 +611,13 @@ function setActiveTab(tabName) {
 
 document.addEventListener('DOMContentLoaded', () => {
     bindEvents();
+    
+    // Subscribe to external refresh triggers
     LoginEvent.subscribe(() => updateDashboard());
     LegalEvent.subscribe(() => updateDashboard());
     BalanceChangedEvent.subscribe(() => updateDashboard());
 
+    // Router hook
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/profile') {
             const params = new URLSearchParams(window.location.search);

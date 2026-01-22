@@ -1,10 +1,23 @@
 /**
- * Formats a number with its ordinal suffix (e.g., 1st, 2nd, 3rd).
+ * utils.js (Admin User)
+ * 
+ * Shared utility functions for administrative user management views.
+ */
+
+/**
+ * Formats a number with its corresponding ordinal suffix (e.g., 1 -> 1st, 22 -> 22nd).
+ * Used for displaying swimming rank and other ordered statistics.
+ * 
  * @param {number|string} n - The number to format.
- * @returns {string} The formatted string or '-' if invalid.
+ * @returns {string} - The formatted string (e.g., "1st") or "-" if the input is invalid.
  */
 export function getOrdinal(n) {
+    // Return placeholder for invalid/null ranks
     if (n === undefined || n === null || n === '-' || n < 1) return '-';
-    const s = ["th", "st", "nd", "rd"], v = n % 100;
+    
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    
+    // Apply special suffix logic for English ordinals
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }

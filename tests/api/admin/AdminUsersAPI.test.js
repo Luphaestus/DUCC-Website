@@ -70,12 +70,12 @@ describe('api/admin/AdminUsersAPI', () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
             const userId = world.data.users['user'];
 
-            // 1. Admin sees full profile
+            // Admin sees full profile
             const resAdmin = await world.as('admin').get(`/api/admin/user/${userId}`);
             expect(resAdmin.body).toHaveProperty('email');
             expect(resAdmin.body).toHaveProperty('balance');
 
-            // 2. Scoped Exec sees restricted profile
+            // Scoped Exec sees restricted profile
             await world.createTag('T1');
             await world.assignTag('user_managed', 'exec', 'T1');
             const resExec = await world.as('exec').get(`/api/admin/user/${userId}`);
@@ -106,11 +106,11 @@ describe('api/admin/AdminUsersAPI', () => {
             });
             new AdminUsersAPI(world.app, world.db).registerRoutes();
 
-            // 1. Fail without password
+            // Fail without password
             const res1 = await world.as('admin').post(`/api/admin/user/${targetId}/role`).send({ roleId: presRole.id });
             expect(res1.statusCode).toBe(400);
 
-            // 2. Success with password
+            // Success with password
             const res2 = await world.as('admin').post(`/api/admin/user/${targetId}/role`).send({ 
                 roleId: presRole.id, 
                 password: password 
@@ -120,8 +120,8 @@ describe('api/admin/AdminUsersAPI', () => {
 
         /**
          * President transfer has system-wide side effects:
-         * 1. Wipes all existing role assignments and direct permissions (clean slate for new Captain).
-         * 2. Scrubs PII for users who didn't opt-in to long-term data storage.
+         * Wipes all existing role assignments and direct permissions (clean slate for new Captain).
+         * Scrubs PII for users who didn't opt-in to long-term data storage.
          */
         test('Side-effects of President transfer: wipes permissions and scrubs PII', async () => {
             const password = 'password';
@@ -165,23 +165,23 @@ describe('api/admin/AdminUsersAPI', () => {
             await world.as('admin').post(`/api/admin/user/${targetId}/role`).send({ roleId: presRole.id, password });
 
             // Verify logic
-            // 1. Roles and direct permissions are wiped
+            // Roles and direct permissions are wiped
             const rolesCount = await world.db.get('SELECT COUNT(*) as c FROM user_roles WHERE user_id != ?', [targetId]);
             expect(rolesCount.c).toBe(0);
             const directPermsCount = await world.db.get('SELECT COUNT(*) as c FROM user_permissions');
             expect(directPermsCount.c).toBe(0);
 
-            // 2. GDPR scrubbing performed on User A
+            // GDPR scrubbing performed on User A
             const scrubbed = await world.db.get('SELECT home_address, filled_legal_info FROM users WHERE id = ?', [scrubbedId]);
             expect(scrubbed.home_address).toBeNull();
             expect(scrubbed.filled_legal_info).toBe(0);
 
-            // 3. Data preserved for User B
+            // Data preserved for User B
             const kept = await world.db.get('SELECT home_address, filled_legal_info FROM users WHERE id = ?', [keptId]);
             expect(kept.home_address).toBe('Known Location');
             expect(kept.filled_legal_info).toBe(1);
 
-            // 4. Target user is now President
+            // Target user is now President
             const targetRole = await world.db.get('SELECT r.name FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?', [targetId]);
             expect(targetRole.name).toBe('President');
         });
@@ -197,17 +197,17 @@ describe('api/admin/AdminUsersAPI', () => {
             await world.createPermission('custom.perm');
             const permId = world.data.perms['custom.perm'];
 
-            // 1. Grant direct permission
+            // Grant direct permission
             const res1 = await world.as('admin').post(`/api/admin/user/${userId}/permission`).send({ permissionId: permId });
             expect(res1.statusCode).toBe(200);
 
-            // 2. Grant direct tag scope
+            // Grant direct tag scope
             await world.createTag('T1');
             const tagId = world.data.tags['T1'];
             const res2 = await world.as('admin').post(`/api/admin/user/${userId}/managed_tag`).send({ tagId });
             expect(res2.statusCode).toBe(200);
 
-            // 3. Verify via profile fetch
+            // Verify via profile fetch
             const res3 = await world.as('admin').get(`/api/admin/user/${userId}`);
             expect(res3.body.direct_permissions.some(p => p.id === permId)).toBe(true);
             expect(res3.body.direct_managed_tags.some(t => t.id === tagId)).toBe(true);

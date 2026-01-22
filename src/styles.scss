@@ -1,3 +1,11 @@
+/**
+ * styles.scss
+ * 
+ * Main stylesheet entry point.
+ * Aggregates Pico CSS framework defaults, global theme variables,
+ * shared mixins, and individual page/component partials.
+ */
+
 @use "pico" with ($theme-color: "purple");
 @use "partials/theme";
 @use "partials/mixins";
@@ -5,13 +13,13 @@
 @use "partials/utilities";
 @use "partials/page_layouts";
 
-// Components
+// --- Components ---
 @use "partials/components/common";
 @use "partials/components/navbar";
 @use "partials/components/notification";
 @use "partials/components/background";
 
-// Pages
+// --- Standard Pages ---
 @use "partials/pages/home";
 @use "partials/pages/events";
 @use "partials/pages/legal";
@@ -26,7 +34,7 @@
 @use "partials/pages/set_password";
 @use "partials/pages/unauthorized";
 
-// Admin Pages
+// --- Admin Pages ---
 @use "partials/pages/admin/admin" as admin_main;
 @use "partials/pages/admin/admin_home";
 @use "partials/pages/admin/common" as admin_common;
@@ -42,5 +50,5 @@
 @use "partials/pages/admin/user/manage" as admin_user_manage;
 @use "partials/pages/admin/user/tabs" as admin_user_tabs;
 
-// Utils
+// --- Utilities ---
 @use "partials/utils/modal";

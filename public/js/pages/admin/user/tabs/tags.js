@@ -1,13 +1,25 @@
+/**
+ * tags.js (Admin User Tab)
+ * 
+ * Renders the "Tags" tab within the administrative user management view.
+ * Allows admins to manage a user's whitelisted tag access and their
+ * "Designated Manager" status for specific event categories.
+ */
+
 import { ajaxGet, ajaxPost, ajaxDelete } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { LOCAL_ACTIVITY_SVG, SHIELD_SVG } from '../../../../../images/icons/outline/icons.js';
 
 /**
- * Fetches and renders the tags tab for the user.
+ * Main rendering and logic binding function for the Admin Tags tab.
+ * 
+ * @param {HTMLElement} container - Tab content area.
+ * @param {number|string} userId - ID of the user being managed.
  */
 export async function renderTagsTab(container, userId) {
     container.innerHTML = '<p class="loading-text">Loading tags...</p>';
     try {
+        // Fetch all available tags and the user's specific associations in parallel
         const [allTagsData, userWhitelistedTags, userDetails] = await Promise.all([
             ajaxGet('/api/tags'),
             ajaxGet(`/api/user/${userId}/tags`),
@@ -19,6 +31,7 @@ export async function renderTagsTab(container, userId) {
 
         container.innerHTML = `
         <div class="profile-layout-grid">
+            <!-- Whitelist Management -->
             <div class="column">
                 <div class="detail-card">
                     <header>
@@ -45,6 +58,7 @@ export async function renderTagsTab(container, userId) {
                 </div>
             </div>
 
+            <!-- Management Scope Management -->
             <div class="column">
                 <div class="detail-card">
                     <header>
@@ -72,7 +86,7 @@ export async function renderTagsTab(container, userId) {
             </div>
         </div>`;
 
-        // Whitelist Toggle Handlers
+        // --- Whitelist Toggle Handlers ---
         container.querySelectorAll('.user-tag-cb').forEach(cb => {
             cb.onchange = async () => {
                 const tagId = cb.value;
@@ -88,13 +102,13 @@ export async function renderTagsTab(container, userId) {
                         span.classList.remove('selected');
                     }
                 } catch (e) {
-                    cb.checked = !isAdding;
+                    cb.checked = !isAdding; // Revert UI
                     notify('Error', 'Update failed', 'error');
                 }
             };
         });
 
-        // Managed Tag Toggle Handlers
+        // --- Managed Tag Toggle Handlers ---
         container.querySelectorAll('.managed-tag-cb').forEach(cb => {
             cb.onchange = async () => {
                 const tagId = cb.value;
@@ -112,7 +126,7 @@ export async function renderTagsTab(container, userId) {
                         notify('Success', 'Tag scope removed', 'success');
                     }
                 } catch (e) {
-                    cb.checked = !isAdding;
+                    cb.checked = !isAdding; // Revert UI
                     notify('Error', 'Update failed', 'error');
                 }
             };

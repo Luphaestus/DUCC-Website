@@ -278,9 +278,9 @@ class UserDB {
 
             if (!real) {
                 // Soft delete logic:
-                // 1. Prefix email with 'deleted:' to free up the unique constraint
-                // 2. Clear all PII fields (medical, address, phone, etc.)
-                // 3. Keep first/last name and historical record links (attendance, transactions)
+                // Prefix email with 'deleted:' to free up the unique constraint
+                // Clear all PII fields (medical, address, phone, etc.)
+                // Keep first/last name and historical record links (attendance, transactions)
                 
                 const user = await db.get('SELECT email FROM users WHERE id = ?', [targetId]);
                 if (!user) return new statusObject(404, 'User not found');

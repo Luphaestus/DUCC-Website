@@ -1,3 +1,13 @@
+/**
+ * detail.js
+ * 
+ * Logic for the Event Creator and Editor form.
+ * Handles extensive event metadata including times, location, difficulty,
+ * cost, and sign-up policies. Supports image uploading and tag assignment.
+ * 
+ * Registered Routes: /admin/event/new, /admin/event/:id
+ */
+
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { switchView } from '/js/utils/view.js';
@@ -5,18 +15,15 @@ import { adminContentID } from '../common.js';
 import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
 
 /**
- * Admin event creation and editing form.
- * @module AdminEventDetail
- */
-
-/**
- * Render event detail/editor form.
- * @param {string} id - Database ID or 'new'.
+ * Main rendering function for the event editor form.
+ * 
+ * @param {string} id - The ID of the event to edit, or 'new' for creation.
  */
 export async function renderEventDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     const isNew = id === 'new';
 
+    // Initial state
     let event = { title: '', description: '', location: '', start: '', end: '', difficulty_level: 1, max_attendees: 0, upfront_cost: 0, upfront_refund_cutoff: '', signup_required: 1, image_url: '', tags: [] };
     let allTags = [];
 
@@ -26,14 +33,18 @@ export async function renderEventDetail(id) {
 
         if (!isNew) {
             event = eventData;
+            // Format dates for datetime-local input fields
             event.start = new Date(event.start).toISOString().slice(0, 16);
             event.end = new Date(event.end).toISOString().slice(0, 16);
-            if (event.upfront_refund_cutoff) event.upfront_refund_cutoff = new Date(event.upfront_refund_cutoff).toISOString().slice(0, 16);
+            if (event.upfront_refund_cutoff) {
+                event.upfront_refund_cutoff = new Date(event.upfront_refund_cutoff).toISOString().slice(0, 16);
+            }
         }
     } catch (e) {
         return adminContent.innerHTML = '<p>Error loading data.</p>';
     }
 
+    // Set up toolbar action
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = ` <button id="back-to-events-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
     document.getElementById('back-to-events-btn').onclick = () => switchView('/admin/events');
@@ -45,6 +56,7 @@ export async function renderEventDetail(id) {
                     <h2>${isNew ? 'Create Event' : 'Edit Event'}</h2>
                 </header>
                 
+                <!-- Title Field -->
                 <div class="modern-form-group mb-2">
                     <label class="form-label-top">Event Title
                         <input type="text" name="title" value="${event.title}" required class="full-width-input title-input" placeholder="e.g. Weekly Training">
@@ -52,6 +64,7 @@ export async function renderEventDetail(id) {
                 </div>
 
                 <div class="event-content-split">
+                    <!-- Left Section: Basic Info & Logic -->
                     <div class="event-details-section">
                         <h3 class="section-header-modern">
                             ${INFO_SVG} Basic Details
@@ -73,6 +86,7 @@ export async function renderEventDetail(id) {
 
                         <div class="form-divider"></div>
 
+                        <!-- Policy Settings -->
                         <div class="settings-group mb-2">
                             <div class="signup-policy">
                                 <label class="checkbox-label">
@@ -99,6 +113,7 @@ export async function renderEventDetail(id) {
                             </div>
                         </div>
 
+                        <!-- Tag Selection -->
                         <h3 class="mb-1">Tags</h3>
                         <div class="tags-selection-grid">
                             ${allTags.map(tag => `
@@ -110,6 +125,7 @@ export async function renderEventDetail(id) {
                         </div>
                     </div>
 
+                    <!-- Right Section: Media -->
                     <div class="event-image-section">
                         <h3 class="section-header-modern">
                             ${IMAGE_SVG} Event Image
@@ -129,6 +145,7 @@ export async function renderEventDetail(id) {
                     </div>
                 </div>
                 
+                <!-- Form Footer Actions -->
                 <div class="form-actions-footer mt-3 pt-2">
                     <div class="destructive-actions">
                         ${!isNew ? `
@@ -141,24 +158,23 @@ export async function renderEventDetail(id) {
             </form>
         </div>`;
     
-    // Set description value separately to avoid template string literal issues if it contains backticks or weird chars
+    // Set description separately to handle special characters safely
     document.querySelector('textarea[name="description"]').value = event.description;
 
-    // Tag Selection Visuals
+    // --- Interactive Logic Hooks ---
+
+    // Tag Checkbox Selection Visuals
     adminContent.querySelectorAll('input[name="tags"]').forEach(input => {
         const updateSpan = (el) => {
             const span = el.nextElementSibling;
-            if (el.checked) {
-                span.classList.add('selected');
-            } else {
-                span.classList.remove('selected');
-            }
+            if (el.checked) span.classList.add('selected');
+            else span.classList.remove('selected');
         };
         input.addEventListener('change', (e) => updateSpan(e.target));
         updateSpan(input);
     });
 
-    // Refund Cutoff Toggle
+    // Refund Cutoff Visibility Toggle
     const refundToggle = document.getElementById('allow-refunds');
     const cutoffWrapper = document.getElementById('refund-cutoff-wrapper');
     refundToggle.onchange = () => {
@@ -170,7 +186,7 @@ export async function renderEventDetail(id) {
         }
     };
 
-    // Signup Required Toggle
+    // Signup Required Logic
     const signupToggle = document.getElementById('signup_required_toggle');
     const maxAttendeesInput = document.querySelector('input[name="max_attendees"]');
     const maxAttendeesWrapper = document.getElementById('max-attendees-wrapper');
@@ -187,7 +203,7 @@ export async function renderEventDetail(id) {
     signupToggle.onchange = updateMaxAttendeesState;
     updateMaxAttendeesState();
 
-    // Image Upload Handling
+    // --- Image Upload Logic ---
     const fileInput = document.getElementById('event-image-file');
     const imagePreview = document.getElementById('image-preview');
     const imageUrlInput = document.getElementById('image_url_input');
@@ -196,12 +212,16 @@ export async function renderEventDetail(id) {
     const progressBar = document.getElementById('upload-progress');
     const progressText = document.getElementById('progress-text');
 
+    /**
+     * Executes the XHR upload for an image file.
+     * Uses XHR over Fetch to support upload progress tracking.
+     */
     const uploadFile = async (file) => {
         if (!file) return;
 
         const formData = new FormData();
         formData.append('files', file);
-        formData.append('visibility', 'events');
+        formData.append('visibility', 'events'); // Restrict access to event context
         formData.append('title', `Event Image - ${Date.now()}`);
 
         try {
@@ -252,6 +272,7 @@ export async function renderEventDetail(id) {
 
     fileInput.onchange = (e) => uploadFile(e.target.files[0]);
 
+    // Drag-and-drop listeners
     dropZone.ondragover = (e) => {
         e.preventDefault();
         dropZone.classList.add('drag-over');
@@ -270,12 +291,13 @@ export async function renderEventDetail(id) {
     };
 
 
-    // Form Submission
+    // --- Form Submission ---
     document.getElementById('event-form').onsubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
         
+        // Parse complex fields
         data.tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
         data.signup_required = formData.get('signup_required') === 'on';
         data.upfront_cost = parseFloat(data.upfront_cost) || 0;
@@ -305,7 +327,7 @@ export async function renderEventDetail(id) {
         }
     };
 
-    // Delete/Cancel Buttons
+    // --- Destructive Action Handlers ---
     if (!isNew) {
         document.getElementById('delete-event-btn').onclick = async () => {
             if (!confirm('Delete event permanently? This cannot be undone.')) return;

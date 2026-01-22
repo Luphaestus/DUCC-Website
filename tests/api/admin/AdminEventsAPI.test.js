@@ -94,14 +94,14 @@ describe('api/admin/AdminEventsAPI', () => {
             await world.createTag('SecretTag');
             await world.assignTag('user_managed', 'scoped', 'ManagedTag');
 
-            // 1. Success case: using a managed tag
+            // Success case: using a managed tag
             const res1 = await world.as('scoped').post('/api/admin/event').send({
                 title: 'Ok Event', start: '2025-01-01', end: '2025-01-01', difficulty_level: 1, upfront_cost: 0,
                 tags: [world.data.tags['ManagedTag']]
             });
             expect(res1.statusCode).toBe(200);
 
-            // 2. Failure case: using an unmanaged tag
+            // Failure case: using an unmanaged tag
             const res2 = await world.as('scoped').post('/api/admin/event').send({
                 title: 'Bad Event', start: '2025-01-01', end: '2025-01-01', difficulty_level: 1, upfront_cost: 0,
                 tags: [world.data.tags['SecretTag']]
@@ -145,11 +145,11 @@ describe('api/admin/AdminEventsAPI', () => {
     describe('POST /api/admin/event/:id/cancel (Refund Logic)', () => {
         /**
          * Complex workflow test:
-         * 1. Create paid event.
-         * 2. Enroll a guest (uses free session).
-         * 3. Enroll a member (pays upfront cost).
-         * 4. Admin cancels event.
-         * 5. Verify guest gets session back and member gets money back.
+         * Create paid event.
+         * Enroll a guest (uses free session).
+         * Enroll a member (pays upfront cost).
+         * Admin cancels event.
+         * Verify guest gets session back and member gets money back.
          */
         test('Automatically refunds all active attendees upon administrative cancellation', async () => {
             const eventId = await world.createEvent('PaidEvent', { upfront_cost: 15 });

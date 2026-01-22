@@ -27,13 +27,13 @@ describe('db/waitlistDB', () => {
         const userId = world.data.users['user1'];
         const eventId = world.data.events['Event1'];
 
-        // 1. Initial state
+        // Initial state
         expect((await WaitlistDB.is_user_on_waiting_list(world.db, userId, eventId)).getData()).toBe(false);
 
-        // 2. Join
+        // Join
         await WaitlistDB.join_waiting_list(world.db, userId, eventId);
         
-        // 3. Verify
+        // Verify
         expect((await WaitlistDB.is_user_on_waiting_list(world.db, userId, eventId)).getData()).toBe(true);
     });
 

@@ -48,20 +48,20 @@ describe('api/admin/AdminRolesAPI', () => {
          * Verify full creation, update, and deletion flow for standard roles.
          */
         test('Full CRUD flow for custom administrative roles', async () => {
-            // 1. Create
+            // Create
             const res1 = await world.as('admin').post('/api/admin/role').send({
                 name: 'TestRole', description: 'Desc', permissions: ['role.read']
             });
             expect(res1.statusCode).toBe(201);
             const roleId = res1.body.id;
 
-            // 2. Update
+            // Update
             const res2 = await world.as('admin').put(`/api/admin/role/${roleId}`).send({
                 name: 'UpdatedName', description: 'NewDesc', permissions: []
             });
             expect(res2.statusCode).toBe(200);
 
-            // 3. Delete
+            // Delete
             const res3 = await world.as('admin').delete(`/api/admin/role/${roleId}`);
             expect(res3.statusCode).toBe(200);
         });

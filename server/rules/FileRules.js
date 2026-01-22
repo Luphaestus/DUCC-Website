@@ -26,13 +26,14 @@ class FileRules {
      * @param {string} userRole - Current RBAC role ('public', 'member', or 'exec').
      * @returns {Promise<boolean>} - True if access is granted.
      */
-    static async canAccessFile(db, file, user, userRole) {
-        // 1. Simple RBAC checks
+    static async canAccessFile(db, file, user) {
+        // Simple RBAC checks
         if (file.visibility === 'public') return true;
-        if (file.visibility === 'members' && (userRole === 'member' || userRole === 'exec')) return true;
-        if (file.visibility === 'execs' && userRole === 'exec') return true;
-        
-        // 2. Dynamic Event-based visibility
+        if (!user) return false;
+        if (file.visibility === 'members') return true;
+        if (file.visibility === 'execs') return !!user.is_exec;
+
+        // Dynamic Event-based visibility
         if (file.visibility === 'events') {
             // Execs bypass the difficulty/tag checks for event images
             if (userRole === 'exec') return true;

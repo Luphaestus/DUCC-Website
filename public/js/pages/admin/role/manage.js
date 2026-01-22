@@ -1,14 +1,18 @@
+/**
+ * manage.js (Role)
+ * 
+ * Logic for the administrative roles list view.
+ * Provides an overview of system roles and their permission counts.
+ * 
+ * Registered Route: /admin/roles
+ */
+
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
 
 /**
- * Admin role management list.
- * @module AdminRoleManage
- */
-
-/**
- * Render role management interface.
+ * Main rendering function for the roles management dashboard.
  */
 export async function renderManageRoles() {
     const adminContent = document.getElementById(adminContentID);
@@ -49,7 +53,7 @@ export async function renderManageRoles() {
 }
 
 /**
- * Fetch and render roles list.
+ * Fetches the list of all roles and populates the table.
  */
 async function fetchAndRenderRoles() {
     try {
@@ -67,6 +71,7 @@ async function fetchAndRenderRoles() {
                 </tr>
             `).join('');
 
+            // Attach row click listeners for detail navigation
             tbody.querySelectorAll('.role-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/role/${row.dataset.id}`);
             });

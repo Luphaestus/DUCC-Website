@@ -47,12 +47,12 @@ const getPermissionType = (perm) => {
  */
 const checkAuthentication = (...requirements) => {
     return async (req, res, next) => {
-        // 1. Basic session verification
+        // Basic session verification
         if (!req.isAuthenticated || !req.isAuthenticated()) {
             return res.status(401).json({ message: 'Unauthorized: Please log in.' });
         }
 
-        // 2. Permission evaluation
+        // Permission evaluation
         for (const requirement of requirements) {
             let hasPermission = false;
 

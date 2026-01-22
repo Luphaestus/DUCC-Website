@@ -1,3 +1,12 @@
+/**
+ * profile.js (Admin User Tab)
+ * 
+ * Renders the "Profile" tab within the administrative user management view.
+ * Provides full CRUD capabilities for user metadata (email, college, etc.),
+ * role assignment, and granular permission overrides.
+ * Includes specialized logic for the "President" role transfer.
+ */
+
 import { ajaxGet, ajaxPost, ajaxDelete } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { showPasswordModal } from '/js/utils/modal.js';
@@ -6,12 +15,19 @@ import { getOrdinal } from '../utils.js';
 import { POOL_SVG, ADD_SVG, PERSON_SVG, EDIT_SVG, BOLT_SVG, ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG } from '../../../../../images/icons/outline/icons.js';
 
 /**
- * Renders the Profile tab content.
+ * Main rendering and logic binding function for the Admin Profile tab.
+ * 
+ * @param {HTMLElement} container - Tab content area.
+ * @param {object} user - Target user data object.
+ * @param {string[]} userPerms - Current admin's permissions.
+ * @param {boolean} canManageUsers - Access flag.
+ * @param {boolean} isExec - Access flag.
  */
 export async function renderProfileTab(container, user, userPerms, canManageUsers, isExec) {
     const canManageSwims = userPerms.includes('swims.manage');
     const bal = Number(user.balance || 0);
 
+    // Fetch college registry for the dropdown
     const collegesRes = await ajaxGet('/api/colleges').catch(() => ({ data: [] }));
     const colleges = collegesRes.data || [];
     const collegeName = colleges.find(c => c.id === user.college_id)?.name || 'N/A';
@@ -19,7 +35,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
     container.innerHTML = `
         <div class="dashboard-section active gap-1-5">
             
-            <!-- 1. Balance & Status Dual Grid -->
+            <!-- Balance & Member Status -->
             <div class="dual-grid">
                 <div class="balance-header clickable" id="admin-profile-balance-card">
                     <div class="balance-info">
@@ -41,7 +57,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                 </div>
             </div>
 
-            <!-- 2. Swimming Stats Grid -->
+            <!-- Swimming Stats & Manual Log -->
             <div class="glass-panel">
                 <div class="box-header">
                     <h3>${POOL_SVG} Swimming Stats</h3>
@@ -68,7 +84,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             </div>
 
             <div class="dual-grid">
-                <!-- 3. Account Details -->
+                <!-- Account Metadata Editor -->
                 <div class="glass-panel" id="admin-account-details-panel">
                     <div class="box-header">
                         <h3>${PERSON_SVG} Account Details</h3>
@@ -114,7 +130,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     </form>
                 </div>
 
-                <!-- 4. Instructor & Level -->
+                <!-- Instructor Status & Skill Level -->
                 <div class="glass-panel">
                     <div class="box-header">
                         <h3>${BOLT_SVG} Capabilities</h3>
@@ -143,7 +159,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             </div>
 
             <div class="dual-grid">
-                <!-- 5. System Role -->
+                <!-- RBAC: System Role Assignment -->
                 <div class="glass-panel">
                     <div class="box-header">
                         <h3>${ID_CARD_SVG} System Role</h3>
@@ -152,12 +168,11 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         <p class="small-text mb-1">Defines base permissions and access levels.</p>
                         <select id="admin-user-role-select" class="full-width-select mb-0">
                             <option value="">No Role</option>
-                            <!-- Roles populated dynamically -->
                         </select>
                     </div>
                 </div>
 
-                <!-- 6. Direct Permissions -->
+                <!-- Direct Permission Overrides -->
                 <div class="glass-panel">
                     <div class="box-header">
                         <h3>${SHIELD_SVG} Direct Permissions</h3>
@@ -183,8 +198,10 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             </div>
     `;
 
-    // Role Loading & Binding
+    // --- Interactive Logic Hooks ---
+
     if (canManageUsers) {
+        // --- Role Assignment with Security Interlock ---
         const roleSelect = document.getElementById('admin-user-role-select');
         if (roleSelect) {
             const allRoles = await ajaxGet('/api/admin/roles').catch(() => []);
@@ -197,6 +214,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                 const isPresident = selectedRole?.name === 'President';
 
                 let password = null;
+                // Critical Interlock: Transferring "President" requires password confirmation
                 if (isPresident) {
                     password = await showPasswordModal(
                         'Transfer President Role',
@@ -212,9 +230,8 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     await ajaxPost(`/api/admin/user/${user.id}/role`, { roleId: roleSelect.value, password });
                     notify('Success', 'Role updated', 'success');
                     lastValue = roleSelect.value;
-                    if (isPresident) {
-                        renderUserDetail(user.id);
-                    }
+                    // If presidency transferred, the current admin's own permissions may have been revoked
+                    if (isPresident) renderUserDetail(user.id);
                 } catch (e) {
                     notify('Error', e.message || 'Failed to update role', 'error');
                     roleSelect.value = lastValue;
@@ -222,6 +239,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             };
         }
 
+        // --- Instructor Status Toggle ---
         const instructorToggle = document.getElementById('admin-user-instructor');
         if (instructorToggle) {
             instructorToggle.onchange = async () => {
@@ -236,7 +254,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             };
         }
 
-        // Direct Permissions Logic
+        // --- Direct Permission Management ---
         const permSelect = document.getElementById('add-perm-select');
         if (permSelect) {
             const allPerms = await ajaxGet('/api/admin/permissions').catch(() => []);
@@ -265,7 +283,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             });
         }
 
-        // Account Details Edit Logic
+        // --- Inline Metadata Editor Logic ---
         const editBtn = document.getElementById('edit-account-btn');
         if (editBtn) {
             const displayDiv = document.getElementById('account-info-display');
@@ -302,7 +320,6 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                 try {
                     await ajaxPost(`/api/admin/user/${user.id}/elements`, updateData);
                     notify('Success', 'Account details updated', 'success');
-                    // Refresh view
                     Object.assign(user, updateData);
                     renderProfileTab(container, user, userPerms, canManageUsers, isExec);
                 } catch (err) {
@@ -311,6 +328,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             };
         }
 
+        // Shortcut to transactions tab
         const balanceCard = document.getElementById('admin-profile-balance-card');
         if (balanceCard) {
             balanceCard.onclick = () => {
@@ -319,18 +337,18 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             };
         }
 
+        // --- Manual Swim Logger ---
         if (canManageSwims) {
             document.getElementById('admin-add-swim-btn').onclick = async () => {
                 try {
                     await ajaxPost(`/api/user/${user.id}/swims`, { count: 1 });
 
-                    // Refresh swimmer stats from the server to get updated ranks
+                    // Refresh stats to recalculate ranks
                     const statsRes = await ajaxGet(`/api/user/${user.id}/elements/swimmer_rank`);
                     if (statsRes.swimmer_stats) {
                         user.swimmer_stats = statsRes.swimmer_stats;
                     }
 
-                    // Update UI elements
                     const yearlyEl = document.getElementById('admin-user-swims-yearly');
                     const yearlyRankEl = document.getElementById('admin-user-rank-yearly');
                     const totalEl = document.getElementById('admin-user-swims-total');
@@ -348,6 +366,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             };
         }
 
+        // --- Difficulty Range Input ---
         const difficultyInput = document.getElementById('admin-user-difficulty');
         if (difficultyInput) {
             difficultyInput.onchange = async () => {

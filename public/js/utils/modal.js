@@ -1,8 +1,17 @@
 /**
- * Show custom confirmation modal.
- * @param {string} title
- * @param {string} message
- * @returns {Promise<boolean>}
+ * modal.js
+ * 
+ * Provides utility functions for displaying custom glassmorphic modals.
+ * Supports standard confirmations, password entry for sensitive actions,
+ * and change-password dialogs.
+ */
+
+/**
+ * Displays a custom confirmation modal with "Confirm" and "Cancel" buttons.
+ * 
+ * @param {string} title - Modal heading.
+ * @param {string} message - Modal body text (supports HTML).
+ * @returns {Promise<boolean>} - Resolves to true if confirmed, false otherwise.
  */
 export function showConfirmModal(title, message) {
     return new Promise((resolve) => {
@@ -21,6 +30,7 @@ export function showConfirmModal(title, message) {
         `;
 
         document.body.appendChild(modalOverlay);
+        // Force reflow for transition
         requestAnimationFrame(() => modalOverlay.classList.add('visible'));
 
         const cleanup = (val) => {
@@ -38,10 +48,11 @@ export function showConfirmModal(title, message) {
 }
 
 /**
- * Show password confirmation modal.
- * @param {string} title
- * @param {string} message
- * @returns {Promise<string|null>} Returns password if confirmed, null otherwise.
+ * Displays a password entry modal for confirming high-security actions.
+ * 
+ * @param {string} title - Heading.
+ * @param {string} message - Instruction text.
+ * @returns {Promise<string|null>} - Resolves with the password if confirmed, or null if cancelled.
  */
 export function showPasswordModal(title, message) {
     return new Promise((resolve) => {
@@ -81,13 +92,14 @@ export function showPasswordModal(title, message) {
 
         modalOverlay.querySelector('#confirm-ok').onclick = confirm;
         modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(null);
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(null); };
+        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(false); };
         input.onkeydown = (e) => { if (e.key === 'Enter') confirm(); };
     });
 }
 
 /**
- * Show change password modal.
+ * Displays a modal specifically designed for changing a user's password.
+ * 
  * @returns {Promise<{currentPassword: string, newPassword: string}|null>}
  */
 export function showChangePasswordModal() {
@@ -131,7 +143,7 @@ export function showChangePasswordModal() {
 
         modalOverlay.querySelector('#confirm-ok').onclick = confirm;
         modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(null);
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(null); };
+        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(false); };
         newInput.onkeydown = (e) => { if (e.key === 'Enter') confirm(); };
     });
 }

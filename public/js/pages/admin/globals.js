@@ -1,16 +1,21 @@
+/**
+ * globals.js
+ * 
+ * Administrative interface for managing system-wide global variables.
+ * Allows "President" level users to modify critical configuration settings
+ * such as membership costs, trial session limits, and API keys.
+ * 
+ * Registered Route: /admin/globals
+ */
+
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { adminContentID, renderAdminNavBar } from './common.js';
 import { notify } from '/js/components/notification.js';
 import { SAVE_SVG } from '../../../images/icons/outline/icons.js';
 
 /**
- * Admin interface for managing system-wide settings.
- * @module AdminGlobals
- */
-
-
-/**
- * Render globals management tables.
+ * Main rendering function for the globals management dashboard.
+ * Builds the layout table and triggers the initial data fetch.
  */
 export async function renderManageGlobals() {
     const adminContent = document.getElementById(adminContentID);
@@ -46,7 +51,8 @@ export async function renderManageGlobals() {
 }
 
 /**
- * Fetch and render global settings.
+ * Fetches the list of all global variables and populates the management table.
+ * Dynamically generates input types based on the 'type' field from the database.
  */
 async function fetchAndRenderGlobals() {
     const tbody = document.getElementById('globals-table-body');
@@ -76,6 +82,7 @@ async function fetchAndRenderGlobals() {
                     </tr>`;
         }).join('');
 
+        // Attach event listeners to all save buttons
         for (const [key] of Object.entries(globals)) {
             const btn = tbody.querySelector(`.save-global-btn[data-key="${key}"]`);
             btn.addEventListener('click', async () => {
@@ -92,16 +99,18 @@ async function fetchAndRenderGlobals() {
 }
 
 /**
- * Update a global setting.
- * @param {string} key
- * @param {string} value
- * @param {string|null} displayName
+ * Sends a POST request to update a specific global variable.
+ * Handles type parsing (converting strings to floats where appropriate).
+ * 
+ * @param {string} key - The internal slug of the setting.
+ * @param {string} value - The new value from the input field.
+ * @param {string|null} displayName - Friendly name for notifications.
  */
 async function updateGlobal(key, value, displayName) {
     let parsedValue = isNaN(value) || value.trim() === '' ? value : parseFloat(value);
     const payload = { value: parsedValue };
-    let response;
-    response = await ajaxPost(`/api/globals/${key}`, payload).then(() => {
+    
+    await ajaxPost(`/api/globals/${key}`, payload).then(() => {
         notify("Success", `Updated ${displayName}`, 'success');
     }).catch((e) => {
         notify(`Failed to Update ${displayName}`, e, 'error');

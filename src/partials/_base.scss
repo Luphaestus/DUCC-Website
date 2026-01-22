@@ -1,6 +1,14 @@
+/**
+ * _base.scss
+ * 
+ * Core layout and global element defaults.
+ * Configures typography, base scroll behavior, and standardized
+ * styling for buttons, tables, and form inputs.
+ */
+
 @use "mixins" as *;
 
-/* Base Layout */
+/* --- Layout --- */
 html { scroll-behavior: smooth; }
 
 body {
@@ -22,12 +30,12 @@ main.container {
     padding-inline: 0; padding-block-end: 2rem; width: 100%; max-width: none; flex: 1;
 }
 
-/* Inline Button Helpers */
+/* --- Inline Helpers --- */
 p>button { padding: 0.25rem 0.5rem; margin-left: auto; }
 p:has(>button) { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
 p>svg { width: 1.3em; height: 1.3em; flex-shrink: 0; }
 
-/* Form Elements */
+/* --- Global Form Elements --- */
 input:not([type="checkbox"]):not([type="radio"]), select, textarea {
     @include common-element-size;
     background: rgba(255, 255, 255, 0.4); border-radius: var(--border-radius-sm);
@@ -47,7 +55,7 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea {
     &[aria-invalid="false"] { border-color: var(--colour-good); background: rgba(46, 204, 113, 0.05); }
 }
 
-/* Button Styling */
+/* --- Global Button Styling --- */
 button, [type="button"], [type="submit"], [type="reset"], [role="button"], .button, a[role="button"] {
     @include common-element-size;
     background: var(--pico-primary); border-radius: var(--border-radius-md);
@@ -70,7 +78,7 @@ button, [type="button"], [type="submit"], [type="reset"], [role="button"], .butt
     }
 }
 
-/* Table Styling */
+/* --- Global Table Styling --- */
 table {
     width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 1.5rem;
     th, td { padding: 1rem; text-align: left; border-bottom: var(--table-border); }

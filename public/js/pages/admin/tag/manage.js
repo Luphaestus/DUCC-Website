@@ -1,14 +1,18 @@
+/**
+ * manage.js (Tag)
+ * 
+ * Logic for the administrative tags list view.
+ * Displays all event tags, their associated colors, and any minimum difficulty requirements.
+ * 
+ * Registered Route: /admin/tags
+ */
+
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderAdminNavBar } from '../common.js';
 
 /**
- * Admin tag management list.
- * @module AdminTagManage
- */
-
-/**
- * Render tag management interface.
+ * Main rendering function for the tag management dashboard.
  */
 export async function renderManageTags() {
     const adminContent = document.getElementById(adminContentID);
@@ -50,7 +54,7 @@ export async function renderManageTags() {
 }
 
 /**
- * Fetch and render tags list.
+ * Fetches the list of all tags and populates the table.
  */
 async function fetchAndRenderTags() {
     try {
@@ -65,6 +69,7 @@ async function fetchAndRenderTags() {
                 <tr class="tag-row clickable-row" data-id="${tag.id}">
                     <td data-label="Name" class="primary-text">${tag.name}</td>
                     <td data-label="Color">
+                        <!-- Preview the color badge -->
                         <span class="tag-badge" style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
                             ${tag.color}
                         </span>
@@ -74,6 +79,7 @@ async function fetchAndRenderTags() {
                 </tr>
             `).join('');
 
+            // Attach row click listeners for navigation
             tbody.querySelectorAll('.tag-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/tag/${row.dataset.id}`);
             });

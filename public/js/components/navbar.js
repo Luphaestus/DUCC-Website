@@ -1,3 +1,11 @@
+/**
+ * navbar.js
+ * 
+ * Manages the global navigation bar.
+ * Handles dynamic rendering of navigation items based on authentication state,
+ * active route highlighting, balance updates, and mobile menu logic.
+ */
+
 import { switchView, ViewChangedEvent } from '/js/utils/view.js';
 import { ajaxGet } from '/js/utils/ajax.js';
 import { Event } from '/js/utils/event.js';
@@ -6,7 +14,8 @@ import { BalanceChangedEvent } from '/js/utils/globals.js';
 
 /**
  * Navigation configuration.
- * Groups: 'main' (left/center) and 'user' (right)
+ * Groups: 'main' (left/center) and 'user' (right).
+ * Action can be a function or a string (URL).
  */
 const navEntries = [
     { name: '<img src="/images/misc/ducc.png" alt="DUCC Logo" class="nav-logo-img">', group: 'main', id: 'nav-home', type: 'text', classes: "contrast logo-link", action: { run: () => switchView('/home') } },
@@ -20,11 +29,15 @@ const navEntries = [
     { name: 'Login', group: 'user', id: 'login-button', type: 'text', classes: "contrast", action: { run: () => switchView('/login') } },
 ];
 
-// Fired on profile name change
+/** 
+ * Fired when the user's first name is changed in the profile.
+ * @type {Event} 
+ */
 const FirstNameChangedEvent = new Event();
 
 /**
- * Fetch and update balance in navbar.
+ * Fetches the current user's balance and updates the navbar display.
+ * Applies conditional styling if balance is low or negative.
  */
 async function updateBalanceInNav() {
     const balanceButton = document.getElementById('balance-button');
@@ -33,6 +46,7 @@ async function updateBalanceInNav() {
         if (data && data.balance !== undefined) {
             const balance = Number(data.balance);
             balanceButton.textContent = `Balance: £${balance.toFixed(2)}`;
+            // Apply warning classes for low/negative balances
             balanceButton.classList.toggle('balance-low', balance < -20);
             balanceButton.classList.toggle('balance-warn', balance >= -20 && balance < -10);
         }
@@ -40,8 +54,9 @@ async function updateBalanceInNav() {
 }
 
 /**
- * Update active navigation item.
- * @param {string} path 
+ * Updates the 'active' state of navbar items based on the current URL.
+ * 
+ * @param {string} path - The current application path.
  */
 function updateActiveNav(path) {
     const navItems = document.querySelectorAll('.navbar-items li a, .navbar-items li button');
@@ -50,6 +65,7 @@ function updateActiveNav(path) {
         item.removeAttribute('aria-current');
 
         let match = false;
+        // Check for matches based on known IDs or path prefixes
         if (item.id === 'nav-home' && (path === '/home' || path === '/')) match = true;
         else if (item.id === 'nav-events' && path.startsWith('/events')) match = true;
         else if (item.id === 'nav-files' && path.startsWith('/files')) match = true;
@@ -67,13 +83,15 @@ function updateActiveNav(path) {
 }
 
 /**
- * Create navbar item element.
- * @param {object} entry
- * @returns {HTMLElement}
+ * Creates a DOM element for a navigation entry.
+ * 
+ * @param {object} entry - Navigation item configuration.
+ * @returns {HTMLElement} - The list item element.
  */
 function create_item(entry) {
     const li = document.createElement('li');
     let clicky;
+    // Support either anchor or button elements
     switch (entry.type) {
         case 'button': clicky = document.createElement('button'); break;
         case 'text':
@@ -84,6 +102,7 @@ function create_item(entry) {
     clicky.id = entry.id || `nav-${entry.name.toLowerCase().replace(/[^a-z]/g, '')}`;
     clicky.innerHTML = entry.name;
 
+    // Handle string URLs vs functional actions
     switch (typeof entry.action) {
         case 'string': clicky.href = entry.action; break;
         case 'object':
@@ -100,13 +119,14 @@ function create_item(entry) {
 }
 
 /**
- * Update navbar visibility based on login state.
- * @param {object} data
+ * Updates visibility of restricted navbar items based on current authentication and permissions.
+ * 
+ * @param {object} data - Auth status data from /api/auth/status.
  */
 async function updateNavOnLoginState(data) {
     const isLoggedIn = data.authenticated;
     
-    // Auth-only items
+    // Auth-only vs Guest-only items
     const authIds = ['profile-button', 'balance-button', 'nav-swims'];
     const guestIds = ['login-button'];
 
@@ -121,6 +141,7 @@ async function updateNavOnLoginState(data) {
     });
 
     if (isLoggedIn) {
+        // Fetch detailed data for authenticated users
         const [userData, swimData] = await Promise.all([
             ajaxGet('/api/user/elements/permissions').catch(() => ({})),
             ajaxGet('/api/user/elements/swims').catch(() => ({ swims: 0 })),
@@ -133,6 +154,7 @@ async function updateNavOnLoginState(data) {
             profileButton.textContent = `Profile (${swimData.swims})`;
         }
 
+        // Show admin button only if user has any administrative permissions
         const adminLi = document.getElementById('admin-button')?.parentElement;
         if (adminLi) {
             adminLi.classList.toggle('hidden', perms.length === 0);
@@ -143,11 +165,14 @@ async function updateNavOnLoginState(data) {
     }
 }
 
-// Global toggle menu function exposed for event listeners
+/** 
+ * Closes or opens the mobile side-menu. 
+ * Initialized in setupMobileMenu.
+ */
 let toggleMobileMenu = () => {};
 
 /**
- * Setup mobile hamburger menu.
+ * Initializes the mobile hamburger menu and overlay.
  */
 function setupMobileMenu() {
     const nav = document.querySelector('nav.small-container');
@@ -155,6 +180,7 @@ function setupMobileMenu() {
 
     if (!nav || !mainList) return;
 
+    // Hamburger icon
     const li = document.createElement('li');
     li.className = 'hamburger-menu';
 
@@ -162,6 +188,7 @@ function setupMobileMenu() {
     inner.className = 'hamburger-inner';
     li.appendChild(inner);
 
+    // Dimming overlay
     const overlay = document.createElement('div');
     overlay.id = 'mobile-menu-overlay';
     document.body.appendChild(overlay);
@@ -182,11 +209,9 @@ function setupMobileMenu() {
     li.addEventListener('click', () => toggleMobileMenu());
     overlay.addEventListener('click', () => toggleMobileMenu(false));
 
-    // Append to the start of the main list for mobile visibility
+    // Append hamburger icon to the start of the main list
     mainList.parentElement.prepend(li);
 }
-
-
 
 document.addEventListener('DOMContentLoaded', () => {
     const mainList = document.querySelector('.navbar-items.main-items');
@@ -194,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (!mainList || !userList) return;
 
+    // Populate navbar lists
     navEntries.forEach(entry => {
         const item = create_item(entry);
         if (entry.group === 'main') mainList.appendChild(item);
@@ -202,12 +228,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupMobileMenu();
 
+    // Initial state setup
     ajaxGet('/api/auth/status', true).then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
+    
+    // Subscribe to state change events
     LoginEvent.subscribe(updateNavOnLoginState);
     BalanceChangedEvent.subscribe(updateBalanceInNav);
 
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
-        toggleMobileMenu(false);
+        toggleMobileMenu(false); // Close mobile menu on navigation
         updateActiveNav(resolvedPath || window.location.pathname);
     });
 

@@ -1,19 +1,23 @@
-import { ajaxGet } from '/js/utils/ajax.js';
-
 /**
- * Shared admin UI components and constants.
- * @module AdminCommon
+ * common.js
+ * 
+ * Shared UI components and utilities for the Admin Dashboard.
+ * Includes pagination logic, admin navigation rendering, and
+ * the sliding background logic for toggle groups.
  */
 
-/** @type {string} ID of the admin content container */
+import { ajaxGet } from '/js/utils/ajax.js';
+
+/** @type {string} ID of the primary container for admin sub-content */
 export const adminContentID = 'admin-content';
 
 /**
- * Render pagination controls.
- * @param {HTMLElement} container
- * @param {number} currentPage
- * @param {number} totalPages
- * @param {function} onPageChange
+ * Renders standardized pagination controls (Prev/Next buttons + Page Info).
+ * 
+ * @param {HTMLElement} container - The element to inject pagination into.
+ * @param {number} currentPage - The currently active page index.
+ * @param {number} totalPages - Total number of available pages.
+ * @param {Function} onPageChange - Callback function receiving the new page index.
  */
 export function renderPaginationControls(container, currentPage, totalPages, onPageChange) {
     container.innerHTML = '';
@@ -51,18 +55,20 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
 }
 
 /**
- * Render admin navigation bar based on permissions.
- * @param {string} activeSection - Key of the section to disable.
- * @returns {Promise<string>} HTML string.
+ * Dynamically renders the administrative navigation bar based on the current user's permissions.
+ * Includes animated sliding background for active tab indication.
+ * 
+ * @param {string} activeSection - Key of the section to highlight (e.g. 'users', 'events').
+ * @returns {Promise<string>} - HTML string for the navigation bar.
  */
 export async function renderAdminNavBar(activeSection) {
-    // Save current position of existing nav if it exists, to allow for animation
+    // Synchronize positions of existing nav to allow for smooth transitions across renders
     const existingNav = document.getElementById('admin-main-nav');
     if (existingNav && existingNav._syncToggleGroup) {
         existingNav._syncToggleGroup();
     }
 
-    // Parallelize and use cache to reduce latency
+    // Fetch required permissions and status in parallel
     const [userData, statusData] = await Promise.all([
         ajaxGet('/api/user/elements/permissions', true).catch(() => ({})),
         ajaxGet('/api/globals/status', true).catch(() => null)
@@ -84,7 +90,7 @@ export async function renderAdminNavBar(activeSection) {
         </button>
     `;
 
-    // Initialize the background sync after a short delay to allow for rendering
+    // Re-initialize the sliding background after DOM injection
     setTimeout(() => initToggleGroup(document.getElementById('admin-main-nav')), 50);
 
     return /*html*/`
@@ -101,8 +107,10 @@ export async function renderAdminNavBar(activeSection) {
 }
 
 /**
- * Initialize a toggle group's sliding background.
- * @param {HTMLElement} element - The .toggle-group element.
+ * Initializes the sliding background logic for a .toggle-group element.
+ * Attaches a resize listener and a state-sync function to the element.
+ * 
+ * @param {HTMLElement} element - The container element with .toggle-group class.
  */
 export function initToggleGroup(element) {
     if (!element || element.dataset.initialized === 'true') {
@@ -116,6 +124,10 @@ export function initToggleGroup(element) {
     const bg = element.querySelector('.toggle-bg');
     if (!bg) return;
 
+    /**
+     * Updates the position and size of the sliding background to match the active tab.
+     * @param {boolean} [silent=false] - If true, disables transition during move.
+     */
     const sync = (silent = false) => {
         const active = element.querySelector('.tab-btn.active') || element.querySelector('button.active');
         if (active) {
@@ -133,23 +145,23 @@ export function initToggleGroup(element) {
             bg.style.setProperty('--tab-left', pos.left);
             bg.style.setProperty('--tab-top', pos.top);
             
+            // Persist position globally to allow smooth rendering across SPA view switches
             if (element.id) {
                 window.__lastTogglePositions = window.__lastTogglePositions || {};
                 window.__lastTogglePositions[element.id] = pos;
             }
 
             if (silent) {
-                // Force reflow
-                bg.offsetHeight;
+                bg.offsetHeight; // Force reflow
                 bg.style.transition = '';
             }
         }
     };
 
-    // Store sync function on element for manual calls
     element._syncToggleGroup = sync;
     element.dataset.initialized = 'true';
 
+    // Restore previous position if available to prevent jumpy initial loads
     const savedPos = element.id ? (window.__lastTogglePositions && window.__lastTogglePositions[element.id]) : null;
     
     if (savedPos) {
@@ -160,13 +172,11 @@ export function initToggleGroup(element) {
         bg.style.setProperty('--tab-top', savedPos.top);
         bg.offsetHeight; 
         bg.style.transition = '';
-        
         requestAnimationFrame(() => sync(false));
     } else {
         sync(true);
     }
 
     window.addEventListener('resize', () => sync());
-    
     bg.addEventListener('transitionend', () => sync());
 }

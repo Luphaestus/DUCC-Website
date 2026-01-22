@@ -111,14 +111,14 @@ describe('rules/EventRules', () => {
          * Ensures users can only join future events.
          */
         test('Denied: joining events that have already started or ended', async () => {
-            // 1. Started
+            // Started
             await world.db.run('UPDATE events SET start = ? WHERE id = ?', [new Date(Date.now() - 1000).toISOString(), event.id]);
             let updated = await world.db.get('SELECT * FROM events WHERE id = ?', [event.id]);
             let status = await EventRules.canJoinEvent(world.db, updated, user);
             expect(status.getStatus()).toBe(400);
             expect(status.getMessage()).toMatch(/started/i);
 
-            // 2. Ended
+            // Ended
             await world.db.run('UPDATE events SET start = ?, end = ? WHERE id = ?', [new Date(Date.now() - 2000).toISOString(), new Date(Date.now() - 1000).toISOString(), event.id]);
             updated = await world.db.get('SELECT * FROM events WHERE id = ?', [event.id]);
             status = await EventRules.canJoinEvent(world.db, updated, user);
@@ -194,15 +194,15 @@ describe('rules/EventRules', () => {
             const updatedEvent = await world.db.get('SELECT * FROM events WHERE id = ?', [event.id]);
             updatedEvent.tags = [await world.db.get('SELECT * FROM tags WHERE id = ?', [tag.id])];
 
-            // 1. Initially blocked
+            // Initially blocked
             let status = await EventRules.canJoinEvent(world.db, updatedEvent, user);
             expect(status.getStatus()).toBe(403);
             expect(status.getMessage()).toMatch(/Restricted/i);
 
-            // 2. Add user to whitelist
+            // Add user to whitelist
             await world.db.run('INSERT INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tag.id, user.id]);
             
-            // 3. Now allowed
+            // Now allowed
             status = await EventRules.canJoinEvent(world.db, updatedEvent, user);
             expect(status.isError()).toBe(false);
         });

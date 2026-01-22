@@ -1,4 +1,10 @@
-/* Global Dark/Light Theme Settings */
+/**
+ * _theme.scss
+ * 
+ * Global theme variables and color palettes.
+ * Defines shared design tokens for both light and dark modes,
+ * including typography, border radii, shadows, and glassmorphic backgrounds.
+ */
 
 @mixin dark-mode-vars {
     --theme: black; --theme-opposite: white;
@@ -18,13 +24,16 @@
 }
 
 body {
+    /* --- Font Stacks --- */
     --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-family-display: 'Outfit', var(--font-family-sans);
+    
+    /* --- Design Tokens --- */
     --border-radius-sm: 0.5rem; --border-radius-md: 1rem; --border-radius-lg: 1.5rem; --border-radius-pill: 9999px;
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05); --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
     --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 
-    /* Light Mode */
+    /* --- Light Mode Defaults --- */
     --translucent-bg: rgba(255, 255, 255, 0.65);
     --glass-bg: rgba(255, 255, 255, 0.6);
     --glass-highlight: rgba(0, 0, 0, 0.1);
@@ -44,5 +53,6 @@ body {
     .bg-icon { position: absolute; opacity: 0.12; color: var(--pico-color); pointer-events: none; z-index: 1; }
 }
 
+/* --- Dark Mode Activation --- */
 @media (prefers-color-scheme: dark) { body:not([data-theme="light"]) { @include dark-mode-vars; } }
 body[data-theme="dark"] { @include dark-mode-vars; }

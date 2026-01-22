@@ -1,15 +1,21 @@
+/**
+ * manage.js (User)
+ * 
+ * Logic for the administrative user directory view.
+ * Provides a responsive, sortable, and paginated table of all registered users.
+ * Supports filtering by debt status, membership, and difficulty level.
+ * 
+ * Registered Route: /admin/users
+ */
+
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderPaginationControls, renderAdminNavBar } from '../common.js';
 import { UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, SEARCH_SVG, FILTER_LIST_SVG } from '../../../../images/icons/outline/icons.js'
 
 /**
- * Paginated and searchable user management table.
- * @module AdminUserManage
- */
-
-/**
- * Render user management interface.
+ * Main rendering function for the user management dashboard.
+ * Parses query parameters to initialize table state.
  */
 export async function renderManageUsers() {
     const adminContent = document.getElementById(adminContentID);
@@ -39,6 +45,7 @@ export async function renderManageUsers() {
                         <button id="toggle-user-filters-btn" class="small-btn outline secondary">
                             ${FILTER_LIST_SVG} Filters
                         </button>
+                        <!-- Filter Dropdown Panel -->
                         <div id="advanced-user-filters-panel" class="glass-filter-panel hidden">
                             <div class="filter-grid">
                                 <label>
@@ -70,6 +77,7 @@ export async function renderManageUsers() {
                 </div>
             </div>
 
+            <!-- Main Data Table -->
             <div id="users-table-container" class="glass-table-container">
                 <div class="table-responsive">
                     <table class="glass-table">
@@ -84,6 +92,7 @@ export async function renderManageUsers() {
         </div>
     `;
 
+    // --- UI Interaction Handlers ---
     const searchInput = document.getElementById('user-search-input');
     const searchBtn = document.getElementById('user-search-btn');
     const filterBtn = document.getElementById('toggle-user-filters-btn');
@@ -112,8 +121,9 @@ export async function renderManageUsers() {
 }
 
 /**
- * Update URL parameters and refresh user list.
- * @param {object} updates
+ * Updates browser history and refreshes the user list based on new parameters.
+ * 
+ * @param {object} updates - Filter or pagination changes.
  */
 function updateUserParams(updates) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -137,7 +147,10 @@ function updateUserParams(updates) {
 }
 
 /**
- * Fetch and render users list.
+ * Fetches user data from the server and renders the table content.
+ * Dynamically determines columns based on provided user data samples.
+ * 
+ * @param {object} params - Search and sort query state.
  */
 async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember, difficulty }) {
     const thead = document.getElementById('users-table-head');
@@ -155,6 +168,7 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
             return;
         }
 
+        // Determine visible columns based on data attributes
         const sample = users[0];
         const columns = [{ key: 'name', label: 'Name', sort: 'last_name' }];
         if (sample.balance !== undefined) columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
@@ -162,8 +176,10 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
         if (sample.difficulty_level !== undefined) columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });
         if (sample.is_member !== undefined) columns.push({ key: 'member', label: 'Status', sort: 'is_member' });
 
+        // Render sortable header
         thead.innerHTML = `<tr>${columns.map(c => `<th class="sortable" data-sort="${c.sort}">${c.label} ${sort === c.sort ? (order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}</th>`).join('')}</tr>`;
 
+        // Render rows
         tbody.innerHTML = users.map(user => `
             <tr class="user-row clickable-row" data-id="${user.id}">
                 ${columns.map(col => {
@@ -183,6 +199,7 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
             </tr>
         `).join('');
 
+        // Attach sort listeners
         thead.querySelectorAll('th.sortable').forEach(th => {
             th.onclick = () => {
                 const currentParams = new URLSearchParams(window.location.search);
@@ -193,6 +210,7 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
             };
         });
 
+        // Attach row click listeners for navigation
         tbody.querySelectorAll('.user-row').forEach(row => {
             row.onclick = (e) => {
                 if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;

@@ -21,14 +21,14 @@ class EventRules {
      * @returns {boolean} - True if viewable.
      */
     static canViewEvent(event, user) {
-        // 1. Difficulty Evaluation
+        // Difficulty Evaluation
         // Guests use the 'Unauthorized_max_difficulty' global setting
         const userDiff = user ? user.difficulty_level : new Globals().getInt("Unauthorized_max_difficulty");
         
         // Block if the main event difficulty exceeds user's level
         if (event.difficulty_level > userDiff) return false;
 
-        // 2. Tag Visibility Policy
+        // Tag Visibility Policy
         // Block if ANY tag assigned to the event has a minimum difficulty higher than the user's level
         if (event.tags) {
             for (const tag of event.tags) {

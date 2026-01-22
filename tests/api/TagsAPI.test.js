@@ -40,15 +40,15 @@ describe('api/TagsAPI', () => {
         test('POST /api/tags - RBAC enforcement', async () => {
             const tagData = { name: 'NewTag', color: '#ff0000', description: 'D', min_difficulty: 1 };
             
-            // 1. Guest should fail
+            // Guest should fail
             const resGuest = await world.request.post('/api/tags').send(tagData);
             expect(resGuest.statusCode).toBe(401);
 
-            // 2. Standard user should fail
+            // Standard user should fail
             const resUser = await world.as('user1').post('/api/tags').send(tagData);
             expect(resUser.statusCode).toBe(403);
 
-            // 3. Admin should succeed
+            // Admin should succeed
             const resAdmin = await world.as('admin').post('/api/tags').send(tagData);
             expect(resAdmin.statusCode).toBe(200);
             expect(resAdmin.body.data).toHaveProperty('id');
@@ -82,19 +82,19 @@ describe('api/TagsAPI', () => {
         });
 
         test('Whitelist lifecycle: Add, Get, Remove', async () => {
-            // 1. Add user
+            // Add user
             const resAdd = await world.as('admin').post(`/api/tags/${tagId}/whitelist`).send({ userId: targetUserId });
             expect(resAdd.statusCode).toBe(200);
 
-            // 2. Verify in list
+            // Verify in list
             const resGet = await world.as('admin').get(`/api/tags/${tagId}/whitelist`);
             expect(resGet.body.data.some(u => u.id === targetUserId)).toBe(true);
 
-            // 3. Remove user
+            // Remove user
             const resDel = await world.as('admin').delete(`/api/tags/${tagId}/whitelist/${targetUserId}`);
             expect(resDel.statusCode).toBe(200);
 
-            // 4. Verify gone
+            // Verify gone
             const resGet2 = await world.as('admin').get(`/api/tags/${tagId}/whitelist`);
             expect(resGet2.body.data.some(u => u.id === targetUserId)).toBe(false);
         });
@@ -143,15 +143,15 @@ describe('api/TagsAPI', () => {
         test('RBAC check for other user\'s whitelisted tags', async () => {
             const u1Id = world.data.users['user1'];
             
-            // 1. User can look up themselves
+            // User can look up themselves
             const resSelf = await world.as('user1').get(`/api/user/${u1Id}/tags`);
             expect(resSelf.statusCode).toBe(200);
 
-            // 2. Admin can look up any user
+            // Admin can look up any user
             const resAdmin = await world.as('admin').get(`/api/user/${u1Id}/tags`);
             expect(resAdmin.statusCode).toBe(200);
 
-            // 3. Unauthorized user is blocked from PII lookup
+            // Unauthorized user is blocked from PII lookup
             const resOther = await world.as('user2').get(`/api/user/${u1Id}/tags`);
             expect(resOther.statusCode).toBe(403);
         });

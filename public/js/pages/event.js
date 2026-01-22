@@ -1,3 +1,13 @@
+/**
+ * event.js
+ * 
+ * Logic for the individual event detail view (modal).
+ * Handles fetching event metadata, managing sign-ups/cancellations,
+ * and displaying real-time attendee and waitlist status.
+ * 
+ * Registered Route: /event/:id
+ */
+
 import { ViewChangedEvent, switchView, addRoute } from "/js/utils/view.js";
 import { ajaxGet, ajaxPost } from "/js/utils/ajax.js";
 import { notify } from '/js/components/notification.js';
@@ -6,13 +16,10 @@ import { showConfirmModal } from '/js/utils/modal.js';
 import { hasHistory } from '/js/utils/history.js';
 import { BRIGHTNESS_ALERT_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, ALL_INCLUSIVE_SVG, WALLET_SVG, SCHEDULE_SVG } from '../../images/icons/outline/icons.js';
 
-/**
- * View details for a single event and manage sign-ups.
- * @module EventDetail
- */
-
+// Register the overlay route
 addRoute('/event/:id', 'event', { isOverlay: true });
 
+/** HTML Template for the event detail modal */
 const HTML_TEMPLATE = /*html*/`
 <div id="event-view" class="view hidden event-modal-overlay">
     <div class="event-modal-content glass-panel">
@@ -23,18 +30,22 @@ const HTML_TEMPLATE = /*html*/`
     </div>
 </div>`;
 
+/** @type {Function|null} Handle to the current view notification */
 let notification = null;
 
-/** Show notification for this view. */
+/**
+ * Displays a toast notification for the event view.
+ */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
 /**
- * Fill the attendees list in the UI.
+ * Fetches and renders the list of event attendees as stylized bubbles.
+ * 
  * @param {number} eventId 
- * @param {boolean} canManage
+ * @param {boolean} canManage - Whether the current user has permission to manage this event.
  */
 async function fillAttendeesList(eventId, canManage) {
     try {
@@ -54,6 +65,7 @@ async function fillAttendeesList(eventId, canManage) {
         const container = document.getElementById('attendees-list-container');
         if (container) container.innerHTML = attendeesListHtml;
 
+        // Mobile fallback for title hover
         document.querySelectorAll('.attendee-bubble').forEach(bubble => {
             bubble.onclick = (e) => {
                 if (window.innerWidth <= 768 && !bubble.dataset.userId) {
@@ -67,10 +79,11 @@ async function fillAttendeesList(eventId, canManage) {
 }
 
 /**
- * Fill the waiting list information in the UI.
+ * Fetches and renders waitlist status and members.
+ * 
  * @param {number} eventId 
- * @param {boolean} isFull
- * @param {boolean} canManage
+ * @param {boolean} isFull - Whether the event has reached max capacity.
+ * @param {boolean} canManage - Admin/Exec status for member visibility.
  */
 async function fillWaitlist(eventId, isFull, canManage) {
     try {
@@ -81,12 +94,14 @@ async function fillWaitlist(eventId, isFull, canManage) {
             if (isFull && (data.count > 0 || data.position)) {
                 summaryField.classList.remove('hidden');
                 let html = '';
+                // Show position if the user is on the list, otherwise total count
                 if (data.position) {
                     html = `<p>${HOURGLASS_TOP_SVG} <strong>Waitlist:</strong> <span class="highlight-text">${data.position - 1}</span> people in front of you</p>`;
                 } else {
                     html = `<p>${HOURGLASS_TOP_SVG} <strong>Waitlist:</strong> <span class="highlight-text">${data.count || 0}</span> people waiting</p>`;
                 }
 
+                // Show actual member bubbles to admins
                 if (canManage && data.waitlist && data.waitlist.length > 0) {
                     const bubblesHtml = data.waitlist.map(u => {
                         const initials = `${u.first_name[0]}${u.last_name[0]}`;
@@ -106,7 +121,9 @@ async function fillWaitlist(eventId, isFull, canManage) {
 }
 
 /**
- * Setup and update the attend/leave/waitlist button.
+ * Configures the primary action button based on the user's relationship to the event.
+ * Handles Join, Leave, Waitlist Join/Leave, and requirements checks.
+ * 
  * @param {number} eventId
  * @param {string} path
  * @param {string} resolvedPath
@@ -132,6 +149,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
             return;
         }
 
+        // Batch fetch required state
         const [isAttendingRes, isOnWaitlistRes, attendeesResponse, eventResponse, canJoinRes, coachCountRes] = await Promise.all([
             ajaxGet(`/api/event/${eventId}/isAttending`),
             ajaxGet(`/api/event/${eventId}/isOnWaitlist`).catch(() => ({ isOnWaitlist: false })),
@@ -144,6 +162,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
         const { event } = eventResponse;
         const coachCount = coachCountRes.count;
 
+        // Skip signup logic for non-joining events
         if (!event.signup_required) {
             if (attendButton) {
                 attendButton.textContent = 'No Sign-up Required';
@@ -175,6 +194,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
         let isDisabled = false;
         let isDeleteStyle = false;
 
+        // Determine state and button behavior
         if (event.is_canceled) {
             buttonText = 'Event Canceled';
             isDisabled = true;
@@ -193,6 +213,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
             isDeleteStyle = true;
             buttonAction = 'waitlist_leave';
         } else if (!canJoinRes.canJoin) {
+            // Block joining based on rule violations (legal, debt, etc.)
             isDisabled = false; 
             if (canJoinRes.reason.includes('Legal info')) {
                 buttonText = 'Complete Legal Form';
@@ -233,6 +254,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
             if (isDeleteStyle) attendButton.classList.add('delete');
             else attendButton.classList.remove('delete');
 
+            // Re-bind click listener
             const newBtn = attendButton.cloneNode(true);
             attendButton.parentNode.replaceChild(newBtn, attendButton);
 
@@ -244,6 +266,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
                     return;
                 }
 
+                // Safety check: Don't let last instructor leave without warning
                 if (isAttending) {
                     const activeAttendees = attendees.filter(u => u.is_attending === undefined || u.is_attending === 1);
                     try {
@@ -265,7 +288,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
                     else if (buttonAction === 'waitlist_join') url = `/api/event/${event.id}/waitlist/join`;
 
                     await ajaxPost(url, {});
-                    BalanceChangedEvent.notify();
+                    BalanceChangedEvent.notify(); // Refresh navbar balance
                     await fillAttendeesList(eventId, canManage);
                     await setupEventButtons(eventId, path, resolvedPath, canManage);
                 } catch (error) {
@@ -279,8 +302,8 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
 }
 
 /**
- * Handle view switch to a specific event.
- * @param {object} params
+ * Main navigation listener for the event view.
+ * Fetches event data and populates the modal content.
  */
 async function NavigationEventListner({ viewId, path, resolvedPath }) {
     if (viewId !== "event") {
@@ -297,6 +320,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
 
         const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="--tag-color: ${tag.color}65;">${tag.name}</span>`).join('');
 
+        // Calculate friendly duration string
         const durationMs = new Date(event.end) - new Date(event.start);
         const hours = Math.floor(durationMs / (1000 * 60 * 60));
         const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -308,6 +332,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         const start = new Date(event.start);
         const dateStr = start.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+        // Generate difficulty bars (1-5)
         let difficultyBars = '';
         const level = event.difficulty_level || 1;
         for (let i = 1; i <= 5; i++) {
@@ -316,6 +341,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
 
         const imageUrl = event.image_url || '/images/misc/ducc.png';
 
+        // Render pricing info box if event has a cost
         let priceBoxHtml = '';
         if (event.upfront_cost > 0) {
             const now = new Date();
@@ -414,6 +440,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
                 </div>
             </div>`;
 
+        // Check if current user can manage this event
         const manageRes = await ajaxGet(`/api/event/${event.id}/canManage`).catch(() => ({ canManage: false }));
         const canManage = manageRes.canManage;
 
@@ -438,7 +465,10 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
 ViewChangedEvent.subscribe(NavigationEventListner);
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
-/** Handle modal close: go back or default to /events */
+/** 
+ * Handles modal dismissal by either returning to previous page 
+ * or defaulting to the /events list if no history exists.
+ */
 function handleClose() {
     if (hasHistory()) {
         window.history.back();
@@ -447,6 +477,7 @@ function handleClose() {
     }
 }
 
+// Background click closes modal
 document.getElementById('event-view').onclick = (e) => {
     if (e.target.id === 'event-view') {
         handleClose();
@@ -457,6 +488,7 @@ document.getElementById('event-modal-close').onclick = () => {
     handleClose();
 };
 
+// Global listener for clicking on attendee bubbles to view their admin profile
 document.querySelector('main').addEventListener('click', (e) => {
     const target = e.target.closest('.attendee-bubble[data-user-id]');
     if (target && document.getElementById('event-view').contains(target)) {

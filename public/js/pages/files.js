@@ -1,14 +1,21 @@
+/**
+ * files.js
+ * 
+ * Logic for the club resources and documents view.
+ * Displays a sortable and paginated table of club files.
+ * Supports category filtering, search, and dynamic permission-based admin links.
+ * 
+ * Registered Route: /files
+ */
+
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { ajaxGet } from '/js/utils/ajax.js';
 import { DESCRIPTION_SVG, CLOUD_DOWNLOAD_SVG, SEARCH_SVG, CALENDAR_TODAY_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
 
-/**
- * View for club files.
- * @module Files
- */
-
+// Register route
 addRoute('/files', 'files');
 
+/** HTML Template for the files library page */
 const HTML_TEMPLATE = /*html*/`
 <div id="files-view" class="view hidden small-container">
     <div class="files-header">
@@ -39,6 +46,7 @@ const HTML_TEMPLATE = /*html*/`
     <div id="files-pagination" class="pagination"></div>
 </div>`;
 
+/** @type {object} Current query parameters for the files table */
 let currentOptions = {
     page: 1,
     limit: 15,
@@ -48,6 +56,12 @@ let currentOptions = {
     categoryId: ''
 };
 
+/**
+ * Formats a byte count into a human-readable size string.
+ * 
+ * @param {number} bytes 
+ * @returns {string} - e.g. "1.5 MB".
+ */
 function formatSize(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -56,12 +70,21 @@ function formatSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+/**
+ * Determines if a file is suitable for inline viewing in the browser.
+ * 
+ * @param {string} filename 
+ * @returns {boolean}
+ */
 function isViewable(filename) {
     const viewableExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'];
     const ext = filename.split('.').pop().toLowerCase();
     return viewableExtensions.includes(ext);
 }
 
+/**
+ * Fetches and populates the category filter dropdown.
+ */
 async function loadCategories() {
     const filter = document.getElementById('category-filter');
     if (!filter) return;
@@ -76,6 +99,10 @@ async function loadCategories() {
     }
 }
 
+/**
+ * Verifies if the current user has permission to manage files.
+ * Shows the "Manage Files" button if authorized.
+ */
 async function checkManagePermissions() {
     const editBtn = document.getElementById('manage-files-btn');
     if (!editBtn) return;
@@ -91,6 +118,10 @@ async function checkManagePermissions() {
     } catch (e) {}
 }
 
+/**
+ * Fetches the list of files from the server and renders the table content.
+ * Handles header generation and sort listeners.
+ */
 async function fetchFiles() {
     const list = document.getElementById('files-list');
     const thead = document.getElementById('files-table-head');
@@ -103,6 +134,7 @@ async function fetchFiles() {
         { key: 'size', label: 'Size', sort: 'size' }
     ];
 
+    // Generate table header with sort indicators
     thead.innerHTML = `<tr>${columns.map(c => `
         <th class="sortable" data-sort="${c.sort}" data-label="${c.label}">
             ${c.label} ${currentOptions.sort === c.sort ? (currentOptions.order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
@@ -170,6 +202,11 @@ async function fetchFiles() {
     }
 }
 
+/**
+ * Renders the pagination controls for the file table.
+ * 
+ * @param {number} totalPages 
+ */
 function renderPagination(totalPages) {
     const container = document.getElementById('files-pagination');
     if (!container) return;
@@ -179,6 +216,7 @@ function renderPagination(totalPages) {
         return;
     }
 
+    // Determine range of visible page numbers
     let startPage = currentOptions.page - 1;
     if (startPage < 1) startPage = 1;
     let endPage = startPage + 2;
@@ -208,6 +246,7 @@ function renderPagination(totalPages) {
     container.innerHTML = html;
 }
 
+// Router subscription
 ViewChangedEvent.subscribe(async ({ viewId }) => {
     if (viewId === 'files') {
         await checkManagePermissions();
@@ -219,6 +258,7 @@ ViewChangedEvent.subscribe(async ({ viewId }) => {
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
+    // Filter and Search Listeners
     document.addEventListener('input', (e) => {
         if (e.target.id === 'file-search') {
             currentOptions.search = e.target.value;

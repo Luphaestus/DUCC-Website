@@ -43,15 +43,15 @@ describe('db/filesDB', () => {
         await FilesDB.createFile(world.db, { title: 'Member', filename: 'mem.txt', visibility: 'members' });
         await FilesDB.createFile(world.db, { title: 'Exec', filename: 'exe.txt', visibility: 'execs' });
 
-        // 1. Guest sees only 1 file (public)
+        // Guest sees only 1 file (public)
         const pubRes = await FilesDB.getFiles(world.db, {}, 'public');
         expect(pubRes.getData().files.length).toBe(1);
 
-        // 2. Member sees 2 files (public + members)
+        // Member sees 2 files (public + members)
         const memRes = await FilesDB.getFiles(world.db, {}, 'member');
         expect(memRes.getData().files.length).toBe(2);
 
-        // 3. Exec sees all 3 files
+        // Exec sees all 3 files
         const exeRes = await FilesDB.getFiles(world.db, {}, 'exec');
         expect(exeRes.getData().files.length).toBe(3);
     });

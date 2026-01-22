@@ -1,14 +1,20 @@
+/**
+ * files.js
+ * 
+ * Administrative interface for managing club files and categories.
+ * Provides a comprehensive dashboard for file CRUD operations, category management,
+ * and bulk file uploading with real-time progress tracking.
+ * 
+ * Registered Route: /admin/files
+ */
+
 import { adminContentID, renderAdminNavBar } from './common.js';
 import { ajaxGet, ajaxPost, ajaxDelete, ajaxPut } from '../../utils/ajax.js';
 import { switchView } from '../../utils/view.js';
 import { notify, NotificationTypes } from '../../components/notification.js';
 import { SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
 
-/**
- * Admin interface for managing files and categories.
- * @module AdminFiles
- */
-
+/** @type {object} Current filter and pagination state */
 let currentOptions = {
     page: 1,
     limit: 15,
@@ -18,6 +24,10 @@ let currentOptions = {
     categoryId: ''
 };
 
+/**
+ * Main rendering function for the admin files dashboard.
+ * Sets up the layout, modals, and initial data fetch.
+ */
 export async function renderAdminFiles() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
@@ -144,7 +154,7 @@ export async function renderAdminFiles() {
                         <option value="public">Public</option>
                         <option value="execs">Execs</option>
                     </select>
-                    <button type="submit" class="icon-btn primary">${UPLOAD_SVG}</button> <!-- Using Upload icon as 'Add' metaphor here or ADD_SVG if available -->
+                    <button type="submit" class="icon-btn primary">${UPLOAD_SVG}</button>
                 </form>
             </article>
         </dialog>
@@ -157,6 +167,9 @@ export async function renderAdminFiles() {
     ]);
 }
 
+/**
+ * Fetches and renders the list of files for administration.
+ */
 async function loadAdminFiles() {
     const list = document.getElementById('admin-files-list');
     const thead = document.getElementById('files-table-head');
@@ -176,6 +189,7 @@ async function loadAdminFiles() {
         </th>
     `).join('')}<th data-label="Actions" class="action-col">Actions</th></tr>`;
 
+    // Re-bind sort listeners
     thead.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {
             const field = th.dataset.sort;
@@ -223,6 +237,10 @@ async function loadAdminFiles() {
     }
 }
 
+/**
+ * Renders the simple numeric pagination for the admin file table.
+ * @param {number} totalPages 
+ */
 function renderAdminPagination(totalPages) {
     const container = document.getElementById('admin-files-pagination');
     if (!container) return;
@@ -234,6 +252,9 @@ function renderAdminPagination(totalPages) {
     container.innerHTML = html;
 }
 
+/**
+ * Fetches and populates the toolbar category filter.
+ */
 async function loadAdminCategories() {
     const filter = document.getElementById('admin-category-filter');
     if (!filter) return;
@@ -249,6 +270,9 @@ async function loadAdminCategories() {
     }
 }
 
+/**
+ * Synchronizes all category selection dropdowns in modals with the latest data.
+ */
 async function loadCategorySelects() {
     try {
         const res = await ajaxGet('/api/file-categories');
@@ -260,6 +284,9 @@ async function loadCategorySelects() {
     } catch (e) {}
 }
 
+/**
+ * Populates the category management modal list.
+ */
 async function loadCategoriesList() {
     const container = document.getElementById('categories-list-container');
     try {
@@ -279,8 +306,11 @@ async function loadCategoriesList() {
     } catch (e) {}
 }
 
+/**
+ * Sets up listeners for searching, filtering, pagination, and modal controls.
+ */
 function setupEventListeners() {
-    // Search
+    // --- Search ---
     const searchInput = document.getElementById('admin-file-search-input');
     const searchBtn = document.getElementById('admin-file-search-btn');
 
@@ -297,7 +327,7 @@ function setupEventListeners() {
         };
     }
 
-    // Filter
+    // --- Filter ---
     const categoryFilter = document.getElementById('admin-category-filter');
     if (categoryFilter) {
         categoryFilter.onchange = (e) => {
@@ -307,7 +337,7 @@ function setupEventListeners() {
         };
     }
 
-    // Pagination
+    // --- Pagination ---
     document.addEventListener('click', (e) => {
         const pageBtn = e.target.closest('.page-btn');
         if (pageBtn && e.target.closest('#admin-files-pagination')) {
@@ -317,7 +347,7 @@ function setupEventListeners() {
         }
     });
 
-    // Modal controls
+    // --- Modal Toggles ---
     const uploadBtn = document.getElementById('upload-files-btn');
     if (uploadBtn) {
         uploadBtn.onclick = async () => {
@@ -337,7 +367,7 @@ function setupEventListeners() {
     document.getElementById('close-categories-modal').onclick = () => document.getElementById('categories-modal').close();
     document.getElementById('close-edit-modal').onclick = () => document.getElementById('edit-file-modal').close();
 
-    // Multi-Upload
+    // --- Bulk File Upload ---
     const multiUploadForm = document.getElementById('multi-upload-form');
     if (multiUploadForm) {
         multiUploadForm.onsubmit = async (e) => {
@@ -360,14 +390,15 @@ function setupEventListeners() {
                 if (res.ok) {
                     document.getElementById('upload-files-modal').close();
                     await loadAdminFiles();
+                    notify('Success', 'Files uploaded', 'success');
                 }
             } catch (e) {
-                console.error('Upload failed', e);
+                notify('Error', 'Upload failed', 'error');
             }
         };
     }
 
-    // Edit File
+    // --- Edit File Details ---
     const editFileForm = document.getElementById('edit-file-form');
     if (editFileForm) {
         editFileForm.onsubmit = async (e) => {
@@ -384,11 +415,14 @@ function setupEventListeners() {
                 });
                 document.getElementById('edit-file-modal').close();
                 await loadAdminFiles();
-            } catch (e) {}
+                notify('Success', 'File updated', 'success');
+            } catch (e) {
+                notify('Error', 'Update failed', 'error');
+            }
         };
     }
 
-    // Category Creation
+    // --- Category Creation ---
     const newCatForm = document.getElementById('new-category-form');
     if (newCatForm) {
         newCatForm.onsubmit = async (e) => {
@@ -401,18 +435,22 @@ function setupEventListeners() {
                 });
                 e.target.reset();
                 await loadCategoriesList();
-                await loadAdminCategories(); // Refresh the filter dropdown
-            } catch (e) {}
+                await loadAdminCategories(); // Refresh toolbar filter
+                notify('Success', 'Category created', 'success');
+            } catch (e) {
+                notify('Error', 'Creation failed', 'error');
+            }
         };
     }
 
-    // Interaction Listeners (Delete and Edit)
+    // --- Row Action Dispatcher ---
     const handleActionClick = async (e) => {
+        // Edit File
         const editBtn = e.target.closest('.edit-file');
         if (editBtn) {
             const id = editBtn.dataset.id;
             await loadCategorySelects();
-            const res = await ajaxGet(`/api/files?limit=1000`); // Simple fetch for now
+            const res = await ajaxGet(`/api/files?limit=1000`); 
             const file = res.data.files.find(f => f.id == id);
             
             if (file) {
@@ -427,19 +465,24 @@ function setupEventListeners() {
             }
         }
 
+        // Delete File
         if (e.target.closest('.delete-file')) {
             const id = e.target.closest('.delete-file').dataset.id;
             if (confirm('Are you sure you want to delete this file?')) {
                 await ajaxDelete(`/api/files/${id}`);
                 await loadAdminFiles();
+                notify('Success', 'File deleted', 'success');
             }
         }
+
+        // Delete Category
         if (e.target.closest('.delete-cat')) {
             const id = e.target.closest('.delete-cat').dataset.id;
             if (confirm('Delete category? Files in this category will be uncategorized.')) {
                 await ajaxDelete(`/api/file-categories/${id}`);
                 await loadCategoriesList();
                 await loadAdminCategories();
+                notify('Success', 'Category removed', 'success');
             }
         }
     };
@@ -451,7 +494,7 @@ function setupEventListeners() {
     if (catList) {
         catList.onclick = handleActionClick;
         
-        // Auto-save for categories
+        // Auto-save changes to category names/visibility on change
         catList.onchange = async (e) => {
             const id = e.target.dataset.id;
             const container = e.target.closest('.category-item');

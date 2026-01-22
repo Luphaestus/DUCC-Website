@@ -1,14 +1,20 @@
+/**
+ * legal.js
+ * 
+ * Logic for the Legal & Medical Information Form.
+ * Handles extensive user profile data collection including personal info,
+ * emergency contacts, medical history, and liability waivers.
+ * Features complex field validation and auto-population.
+ * 
+ * Registered Route: /legal
+ */
+
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { Event } from "/js/utils/event.js";
 import { requireAuth } from '/js/utils/auth.js';
 import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from '/images/icons/outline/icons.js';
-
-/**
- * Legal & Medical information form management.
- * @module Legal
- */
 
 // --- DOM IDs ---
 const name_id = 'name';
@@ -33,6 +39,7 @@ const submitButton_id = 'health-form-submit';
 
 addRoute('/legal', 'legal');
 
+/** HTML Template for the legal form page */
 const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
             <div class="small-container hidden" id="legal-container">
                 <h1>Legal & Medical Information Form</h1>
@@ -142,7 +149,8 @@ const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
         </div>`;
 
 /**
- * API field to DOM ID mapping.
+ * Mapping between Backend API field names and Frontend DOM IDs.
+ * @type {Object<string, string>}
  */
 const FIELD_MAP = {
     date_of_birth: date_of_birth_id,
@@ -162,36 +170,29 @@ const FIELD_MAP = {
     agrees_to_keep_health_data: agrees_to_keep_health_data_id
 };
 
-/**
- * Human-readable labels for fields.
- */
-const ID_TO_LABEL = {
-    [name_id]: "Personal Name",
-    [phone_number_id]: "Personal Phone Number",
-    [date_of_birth_id]: "Date of Birth",
-    [home_address_id]: "Home Address",
-    [college_id]: "College",
-    [emergency_contact_name_id]: "Emergency Contact Name",
-    [emergency_contact_phone_id]: "Emergency Contact Phone",
-    [has_medical_conditions_id]: "Medical Conditions (Yes/No)",
-    [takes_medication_id]: "Medication (Yes/No)",
-    [medical_conditions_details_id]: "Medical Condition Details",
-    [medication_details_id]: "Medication Details",
-    [agrees_to_fitness_statement_id]: "Fitness Statement",
-    [agrees_to_club_rules_id]: "Club Rules Agreement",
-    [agrees_to_pay_debts_id]: "Debt Agreement",
-    [agrees_to_data_storage_id]: "Data Storage Agreement"
-};
-
+/** @type {Event} Emitted when legal info is successfully saved */
 const LegalEvent = new Event();
+
+/** @type {Function|null} Handle to current notification */
 let notification = null;
+
+/** @type {Object<string, HTMLElement>} Map of active validation message elements */
 let validationMessages = {};
 
+/**
+ * Displays a toast notification.
+ */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
+/**
+ * Injects a validation error message below a specific input element.
+ * 
+ * @param {HTMLElement} inputElement 
+ * @param {string} message 
+ */
 function displayValidationMessage(inputElement, message) {
     let messageId = `validation-message-${inputElement.id}`;
     let existingMessage = document.getElementById(messageId);
@@ -217,6 +218,11 @@ function displayValidationMessage(inputElement, message) {
     inputElement.ariaInvalid = 'true';
 }
 
+/**
+ * Removes the validation error state from an input.
+ * 
+ * @param {HTMLElement} inputElement 
+ */
 function clearInputError(inputElement) {
     if (validationMessages[inputElement.id]) {
         validationMessages[inputElement.id].remove();
@@ -226,7 +232,10 @@ function clearInputError(inputElement) {
 }
 
 /**
- * Validate checkbox.
+ * Configures a checkbox for validation watching.
+ * 
+ * @param {string} id - DOM ID.
+ * @param {boolean} [watch=true] - If true, clears error on input.
  */
 function validateCheckbox(id, watch = true) {
     const input = document.getElementById(id);
@@ -235,7 +244,13 @@ function validateCheckbox(id, watch = true) {
 }
 
 /**
- * Handle conditional medical/medication details.
+ * Configures a Yes/No radio group and its associated detail field.
+ * Handles toggling visibility of the detail field based on the "Yes" selection.
+ * 
+ * @param {string} idYes - "Yes" radio ID.
+ * @param {string} idNo - "No" radio ID.
+ * @param {string|null} detailId - ID of the text field for extra info.
+ * @param {boolean} [watch=true] - If true, adds event listeners.
  */
 function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
     const inputYes = document.getElementById(idYes);
@@ -263,6 +278,7 @@ function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
         if (detailInput) detailInput.addEventListener('input', () => clearInputError(detailInput));
     }
 
+    // Initial state
     if (detailInput) {
         if (inputYes.checked) detailInput.classList.remove('hidden');
         else detailInput.classList.add('hidden');
@@ -270,7 +286,9 @@ function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
 }
 
 /**
- * Collect form data into JSON.
+ * Aggregates all form fields into a JSON object for submission.
+ * 
+ * @returns {object}
  */
 function getFormData() {
     const data = {};
@@ -298,6 +316,7 @@ function getFormData() {
         else data['takes_medication'] = null;
     }
 
+    // Clean up numeric fields
     if (data.college_id === "" || data.college_id === null) data.college_id = null;
     else data.college_id = parseInt(data.college_id, 10);
 
@@ -305,7 +324,9 @@ function getFormData() {
 }
 
 /**
- * Populate form from JSON data.
+ * Fills the form fields from a data object.
+ * 
+ * @param {object} data 
  */
 function populateForm(data) {
     for (const [apiKey, domId] of Object.entries(FIELD_MAP)) {
@@ -317,13 +338,16 @@ function populateForm(data) {
 }
 
 /**
- * Run all form validations.
+ * Initializes form validation logic and input restriction.
+ * 
+ * @param {boolean} [watch=true]
  */
 async function validateForm(watch = true) {
+    // Lock name field if already set in profile
     const name = await ajaxGet('/api/user/elements/first_name,last_name').then((d) => `${d.first_name} ${d.last_name}`).catch(() => null);
     const nameInput = document.getElementById(name_id);
     if (nameInput && name && name.trim() !== '' && name.trim() !== 'undefined undefined') {
-        nameInput.value = name
+        nameInput.value = name;
         nameInput.disabled = true;
     } else if (watch && nameInput) {
         nameInput.addEventListener('input', () => clearInputError(nameInput));
@@ -336,6 +360,7 @@ async function validateForm(watch = true) {
         }
     });
 
+    // Set Date of Birth constraints (Min 17 years old)
     const dobInput = document.getElementById(date_of_birth_id);
     if (dobInput) {
         const today = new Date();
@@ -351,16 +376,17 @@ async function validateForm(watch = true) {
         collegeSelect.addEventListener('input', () => clearInputError(collegeSelect));
     }
 
+    // Initialize radio group behavior
     validateYeseNo(has_medical_conditions_id, has_medical_conditions_no_id, medical_conditions_details_id, watch);
     validateYeseNo(takes_medication_id, takes_medication_no_id, medication_details_id, watch);
     [agrees_to_fitness_statement_id, agrees_to_club_rules_id, agrees_to_pay_debts_id, agrees_to_data_storage_id].forEach(id => validateCheckbox(id, watch));
 }
 
 /**
- * Fetch and populate existing medical data.
+ * Fetches existing user data and college list to populate the form.
  */
 async function getCurrentMedicalData() {
-    // 1. Fetch colleges first to ensure dropdown is ready
+    // Fetch colleges first to ensure dropdown is ready
     try {
         const colleges = await ajaxGet('/api/colleges');
         const collegeSelect = document.getElementById(college_id);
@@ -372,14 +398,14 @@ async function getCurrentMedicalData() {
         console.error("Failed to load colleges", e);
     }
 
-    // 2. Fetch user data
+    // Fetch user data
     const keys = ['filled_legal_info', ...Object.keys(FIELD_MAP)].join(',');
     const data = await ajaxGet(`/api/user/elements/${keys}`);
     if (!data || !data.filled_legal_info) return;
     
     populateForm(data);
     
-    // Explicitly handle radio buttons as they are usually handled by groups
+    // Explicitly handle radio buttons as they are usually handled by groups in the mapper
     if (data.has_medical_conditions !== null) {
         document.getElementById(data.has_medical_conditions ? has_medical_conditions_id : has_medical_conditions_no_id).checked = true;
     }
@@ -389,7 +415,7 @@ async function getCurrentMedicalData() {
 }
 
 /**
- * Initialize static event listeners.
+ * Binds the submission button logic.
  */
 function bindStaticEvents() {
     const btn = document.getElementById(submitButton_id);
@@ -402,11 +428,13 @@ function bindStaticEvents() {
             displayNotification('Information Saved', 'Saved successfully.', 'success');
             LegalEvent.notify();
 
+            // Clear all errors on success
             Object.keys(validationMessages).forEach(id => {
                 const el = document.getElementById(id);
                 if (el) clearInputError(el);
             });
         } catch (error) {
+            // Handle field-specific validation errors from server
             if (error.errors) {
                 let displayedError = false;
                 for (const [key, msg] of Object.entries(error.errors)) {
@@ -431,7 +459,7 @@ function bindStaticEvents() {
 }
 
 /**
- * Load legal page data and setup.
+ * Triggers full page update when the route is matched.
  */
 async function updateLegalPage(page) {
     if (page !== '/legal' || !await requireAuth()) return;

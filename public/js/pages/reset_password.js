@@ -1,9 +1,20 @@
+/**
+ * reset_password.js
+ * 
+ * Logic for the password reset request view.
+ * Allows users to enter their email to receive a recovery link.
+ * 
+ * Registered Route: /reset-password
+ */
+
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { addRoute, ViewChangedEvent, switchView } from '/js/utils/view.js';
 import { MAIL_SVG } from '../../images/icons/outline/icons.js';
 
+// Register route
 addRoute('/reset-password', 'reset-password');
 
+/** HTML Template for the password reset request page */
 const HTML_TEMPLATE = /*html*/`
 <div id="reset-password-view" class="view hidden">
     <div class="small-container">
@@ -30,6 +41,11 @@ const HTML_TEMPLATE = /*html*/`
     </div>
 </div>`;
 
+/**
+ * Handle view switch to reset-password; redirects if already authenticated.
+ * 
+ * @param {object} params
+ */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/reset-password') {
         ajaxGet('/api/auth/status').then((data => {
@@ -38,6 +54,7 @@ function ViewNavigationEventListener({ resolvedPath }) {
             }
         }));
         
+        // Reset form UI
         const emailInput = document.getElementById('reset-email');
         const messageEl = document.getElementById('reset-message');
         if (emailInput) emailInput.value = '';
@@ -57,12 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
         messageEl.classList.remove('error', 'success');
 
         let emailVal = document.getElementById('reset-email').value;
+        // Normalize email: append university domain if missing
         if (emailVal && !emailVal.includes('@')) {
             emailVal += '@durham.ac.uk';
         }
 
         try {
             const res = await ajaxPost('/api/auth/reset-password-request', { email: emailVal });
+            // Always show success message even if email doesn't exist (security practice)
             messageEl.textContent = res.message || 'If an account exists, a reset link has been sent.';
             messageEl.classList.add('success');
         } catch (error) {

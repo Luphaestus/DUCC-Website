@@ -1,10 +1,15 @@
 /**
- * Animated background with floating blobs and drifting kayak icons.
+ * background.js
+ * 
+ * Manages the animated application background.
+ * Creates floating blobs with randomized colors and drifting kayak SVG icons
+ * to provide a dynamic, modern aesthetic.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     const body = document.body;
 
+    /** @type {string[]} Semi-transparent colors for the floating blobs */
     const colors = [
         'rgba(170, 64, 191, 0.1)',
         'rgba(91, 125, 196, 0.1)',
@@ -13,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'rgba(38, 222, 129, 0.1)'
     ];
 
+    /** @type {string} SVG path data for the kayak icon */
     const kayakSvg = /*html*/`
         <svg viewBox="0 0 153.41 103.85" xmlns="http://www.w3.org/2000/svg">
             <g transform="translate(-247.58 -156.15)">
@@ -24,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     container.id = 'animated-background';
     body.prepend(container);
 
-    // Generate floating blobs
+    // Generate floating blobs using CSS variables for animation properties
     colors.forEach((color, i) => {
         const blob = document.createElement('div');
         blob.className = 'bg-blob';
@@ -47,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(blob);
     });
 
-    // Generate drifting kayak icons
+    // Generate drifting kayak icons with randomized speed and size
     for (let i = 0; i < 10; i++) {
         const icon = document.createElement('div');
         icon.className = 'bg-icon';

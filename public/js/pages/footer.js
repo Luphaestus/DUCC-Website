@@ -1,10 +1,14 @@
-import { MAIL_SVG } from "../../images/icons/outline/icons.js";
-
 /**
- * Footer component.
- * @module Footer
+ * footer.js
+ * 
+ * Logic for the global application footer.
+ * Injects social media links, contact information, and copyright notice
+ * at the bottom of the main container.
  */
 
+import { MAIL_SVG } from "../../images/icons/outline/icons.js";
+
+/** HTML Template for the global footer */
 const HTML_TEMPLATE = /*html*/`
     <footer>
         <div class="small-container">
@@ -28,7 +32,7 @@ const HTML_TEMPLATE = /*html*/`
     </footer>
 `;
 
-// Insert after main to keep semantic structure
+// Insert the footer after the main container to maintain semantic document order
 const main = document.querySelector('main');
 if (main) {
     main.insertAdjacentHTML('afterend', HTML_TEMPLATE);

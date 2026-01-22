@@ -1,34 +1,46 @@
+/**
+ * connection.js
+ * 
+ * Monitors connectivity between the client and the backend server.
+ * Provides real-time notifications when the connection is lost or restored,
+ * and handles automatic view switching to a "no internet" state when necessary.
+ */
+
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { ViewChangedEvent, switchView } from '/js/utils/view.js';
 
-/**
- * Polls server health to monitor connectivity.
- * @module Connection
- */
-
+/** @type {boolean} Current server availability status */
 let isServerConnected = true;
+
+/** @type {Function|null} Handle to the current connectivity notification */
 let currentNotification = null;
+
+/** @type {number|null} Timestamp of the last successful health check */
 let time_of_last_successful_check = null;
+
+/** @type {number} Timestamp of the last route change */
 let lastNavigationTime = 0;
 
 /**
- * Update connection state and notify user.
- * @param {boolean} newStatus
+ * Updates the global connection state and alerts the user of changes.
+ * If reconnection occurs while the error screen is visible, it reloads the current view.
+ * 
+ * @param {boolean} newStatus - The newly detected connection status.
  */
 function updateConnectionStatus(newStatus) {
     if (isServerConnected === newStatus) {
-        // Even if status hasn't changed, if we are back online and the error screen is up, hide it.
+        // Handle case where we are back online but the error screen was stuck
         if (newStatus) {
             const noConnectionView = document.getElementById('no-connection-view');
             if (noConnectionView && !noConnectionView.classList.contains('hidden')) {
                 noConnectionView.classList.add('hidden');
-                // Reload current view to retry data fetch
                 switchView(window.location.pathname, true);
             }
         }
         return;
     }
 
+    // Dismiss existing toast
     if (currentNotification) currentNotification();
     isServerConnected = newStatus;
 
@@ -37,7 +49,7 @@ function updateConnectionStatus(newStatus) {
         const noConnectionView = document.getElementById('no-connection-view');
         if (noConnectionView && !noConnectionView.classList.contains('hidden')) {
             noConnectionView.classList.add('hidden');
-            // Reload current view to retry data fetch
+            // Force reload current view to fetch missing data
             switchView(window.location.pathname, true);
         }
     } else {
@@ -46,7 +58,8 @@ function updateConnectionStatus(newStatus) {
 }
 
 /**
- * Report a connection failure (e.g. from a failed AJAX request).
+ * Explicitly reports a network failure.
+ * Used by the AJAX module when a request times out or returns status 0.
  */
 function reportConnectionFailure() {
     if (!isServerConnected) {
@@ -56,7 +69,7 @@ function reportConnectionFailure() {
         updateConnectionStatus(false);
     }
 
-    // Check if we navigated recently (within 2 seconds)
+    // If navigation failed within 2 seconds of a request, show the full-screen error overlay
     if (Date.now() - lastNavigationTime < 2000) {
         const noConnectionView = document.getElementById('no-connection-view');
         if (noConnectionView) {
@@ -66,7 +79,8 @@ function reportConnectionFailure() {
 }
 
 /**
- * Report a successful connection (e.g. from a successful AJAX request).
+ * Explicitly reports a network success.
+ * Updates the internal status and record timestamp.
  */
 function reportConnectionSuccess() {
     updateConnectionStatus(true);
@@ -74,7 +88,8 @@ function reportConnectionSuccess() {
 }
 
 /**
- * Verify server availability.
+ * Actively polls the server health endpoint.
+ * Throttled to once every 10 seconds unless triggered by a critical failure.
  */
 async function checkServerConnection() {
     if (time_of_last_successful_check && Date.now() - time_of_last_successful_check < 10000) return;
@@ -88,9 +103,11 @@ async function checkServerConnection() {
     }
 }
 
+// Background polling loop
 setInterval(checkServerConnection, 1000);
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Check connection on every navigation
     ViewChangedEvent.subscribe(checkServerConnection);
     ViewChangedEvent.subscribe(() => {
         lastNavigationTime = Date.now();

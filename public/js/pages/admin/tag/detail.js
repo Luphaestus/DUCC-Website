@@ -1,3 +1,14 @@
+/**
+ * detail.js (Tag)
+ * 
+ * Logic for the Tag Creator and Editor form.
+ * Beyond basic metadata (name, color), this module handles complex "Designated Manager"
+ * and "Whitelist Access" logic, allowing admins to scope event management and visibility
+ * to specific subsets of users.
+ * 
+ * Registered Routes: /admin/tag/new, /admin/tag/:id
+ */
+
 import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
@@ -5,24 +16,23 @@ import { notify, NotificationTypes } from '/js/components/notification.js';
 import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG } from "../../../../images/icons/outline/icons.js"
 
 /**
- * Admin tag creation and editing form.
- * @module AdminTagDetail
- */
-
-/**
- * Render tag detail/editor form.
- * @param {string} id
+ * Main rendering function for the tag editor.
+ * 
+ * @param {string} id - Database ID of the tag, or 'new'.
  */
 export async function renderTagDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
+    // Set up toolbar
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
+    // Fetch user permissions to determine if management sections should be shown
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
     const userPerms = (userData.permissions || []).includes('user.manage');
+    
     const isNew = id === 'new';
     let tag = { name: '', color: '#808080', description: '', min_difficulty: '' };
     let whitelist = [];
@@ -30,11 +40,18 @@ export async function renderTagDetail(id) {
 
     if (!isNew) {
         try {
+            // Batch fetch tag metadata and associated user lists
             const tags = (await ajaxGet('/api/tags')).data || [];
             tag = tags.find(t => t.id == id);
             if (!tag) throw new Error('Tag not found');
-            whitelist = (await ajaxGet(`/api/tags/${id}/whitelist`)).data || [];
-            managers = (await ajaxGet(`/api/tags/${id}/managers`)).data || [];
+            
+            const [whitelistRes, managersRes] = await Promise.all([
+                ajaxGet(`/api/tags/${id}/whitelist`),
+                ajaxGet(`/api/tags/${id}/managers`)
+            ]);
+            
+            whitelist = whitelistRes.data || [];
+            managers = managersRes.data || [];
         } catch (e) {
             adminContent.innerHTML = '<p>Error loading tag.</p>';
             return;
@@ -49,6 +66,7 @@ export async function renderTagDetail(id) {
                     ${!isNew ? `<button type="button" id="delete-tag-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : ''}
                 </header>
                 
+                <!-- Main Metadata Form -->
                 <form id="tag-form" class="modern-form">
                     <div class="grid-2-col">
                         <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
@@ -67,6 +85,7 @@ export async function renderTagDetail(id) {
                 ${!isNew && userPerms ? `
                     <div class="divider"></div>
                     
+                    <!-- Designated Managers Section -->
                     <div class="permission-section">
                         <div class="section-header">
                             <h3>${SHIELD_SVG} Designated Managers</h3>
@@ -91,6 +110,7 @@ export async function renderTagDetail(id) {
 
                     <div class="divider"></div>
 
+                    <!-- Whitelist Access Section -->
                     <div class="permission-section">
                         <div class="section-header">
                             <h3>${LOCAL_ACTIVITY_SVG} Whitelist Access</h3>
@@ -116,6 +136,7 @@ export async function renderTagDetail(id) {
             </div>
         </div>`;
 
+    // --- Core Tag Form Submission ---
     document.getElementById('tag-form').onsubmit = async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target).entries());
@@ -131,6 +152,7 @@ export async function renderTagDetail(id) {
         }
     };
 
+    // --- User List Management Logic ---
     if (!isNew) {
         document.getElementById('delete-tag-btn').onclick = async () => {
             if (!confirm('Delete tag?')) return;
@@ -140,21 +162,21 @@ export async function renderTagDetail(id) {
         };
 
         if (userPerms) {
-            // Load Whitelist Users (All)
+            // Load Whitelist Search Datalist (All users)
             ajaxGet('/api/admin/users?limit=1000').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('users-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => {});
 
-            // Load Managers (Execs Only)
+            // Load Managers Search Datalist (Execs only - identified by is_exec virtual permission)
             ajaxGet('/api/admin/users?limit=1000&permissions=perm:is_exec').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('managers-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => {});
 
-            // Managers Form
+            // Add Manager Handler
             document.getElementById('managers-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const userId = parseInt(document.getElementById('managers-user-input').value.split(' - ')[0]);
@@ -171,7 +193,7 @@ export async function renderTagDetail(id) {
                 }
             };
 
-            // Whitelist Form
+            // Add Whitelist User Handler
             document.getElementById('whitelist-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const userId = parseInt(document.getElementById('whitelist-user-input').value.split(' - ')[0]);
@@ -188,13 +210,20 @@ export async function renderTagDetail(id) {
                 }
             };
         }
+        
+        // Initialize removal button listeners
         setupActionButtons(id, 'managers-table-body', 'remove-manager-btn', 'managers');
         setupActionButtons(id, 'whitelist-table-body', 'remove-whitelist-btn', 'whitelist');
     }
 }
 
 /**
- * Format table rows for users (managers or whitelist).
+ * Formats a list of users into table rows for the manager/whitelist tables.
+ * 
+ * @param {object[]} users 
+ * @param {number|string} tagId 
+ * @param {string} btnClass 
+ * @returns {string} - HTML rows.
  */
 function renderUserRows(users, tagId, btnClass) {
     if (!users || users.length === 0) return '<tr><td colspan="3" class="empty-cell">None.</td></tr>';
@@ -208,7 +237,12 @@ function renderUserRows(users, tagId, btnClass) {
 }
 
 /**
- * Initialize action buttons (remove manager or whitelist).
+ * Initializes the deletion logic for user association tables.
+ * 
+ * @param {string|number} tagId 
+ * @param {string} tableId 
+ * @param {string} btnClass 
+ * @param {string} endpoint - API path segment ('managers' or 'whitelist').
  */
 function setupActionButtons(tagId, tableId, btnClass, endpoint) {
     const tbody = document.getElementById(tableId);
@@ -220,6 +254,7 @@ function setupActionButtons(tagId, tableId, btnClass, endpoint) {
             try {
                 await ajaxDelete(`/api/tags/${tagId}/${endpoint}/${userId}`);
                 notify('Success', 'User removed', NotificationTypes.SUCCESS);
+                // Refresh only the affected table
                 const list = (await ajaxGet(`/api/tags/${tagId}/${endpoint}`)).data || [];
                 tbody.innerHTML = renderUserRows(list, tagId, btnClass);
             } catch (err) {

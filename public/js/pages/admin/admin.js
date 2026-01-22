@@ -1,3 +1,13 @@
+/**
+ * admin.js
+ * 
+ * Central entry point and secondary router for the Admin Dashboard.
+ * Handles sub-route management within /admin/*, permission-based access control,
+ * and layout rendering for the admin interface.
+ * 
+ * Registered Route: /admin/*
+ */
+
 import { ViewChangedEvent, switchView, addRoute } from '/js/utils/view.js';
 import { ajaxGet } from '/js/utils/ajax.js';
 import { adminContentID } from './common.js';
@@ -14,16 +24,10 @@ import { renderAdminFiles } from './files.js';
 import { requireAuth } from '/js/utils/auth.js';
 import { GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG, ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG } from '../../../images/icons/outline/icons.js';
 
-/**
- * Nested router for administrative modules.
- * @module Admin
- */
-
+// Register wildcard route
 addRoute('/admin/*', 'admin');
 
-/**
- * Admin layout template.
- */
+/** HTML Template for the admin view container */
 const HTML_TEMPLATE = /*html*/`
 <div id="admin-view" class="view hidden small-container">
     <div class="admin-header-modern">
@@ -36,8 +40,9 @@ const HTML_TEMPLATE = /*html*/`
 </div>`;
 
 /**
- * Update the admin dashboard title responsively.
- * @param {string} [section] - The name of the current section.
+ * Updates the admin dashboard title based on the active section.
+ * 
+ * @param {string} [section] - Name of the section (e.g. 'Users').
  */
 function updateAdminTitle(section) {
     const titleEl = document.getElementById('admin-dashboard-title');
@@ -50,18 +55,21 @@ function updateAdminTitle(section) {
 }
 
 /**
- * Router for sub-paths within /admin/*.
- * @param {object} eventData
+ * Primary navigation listener for the admin module.
+ * Performs a fresh permission check on every sub-route change and
+ * delegates rendering to specific section modules.
+ * 
+ * @param {object} eventData - Router event data.
  */
 async function AdminNavigationListener({ viewId, path }) {
     if (viewId !== "admin") return;
 
-    // Save positions of all existing toggle groups before they are replaced
+    // Sync toggle group positions before DOM is replaced to enable animation
     document.querySelectorAll('.toggle-group[id]').forEach(el => {
         if (el._syncToggleGroup) el._syncToggleGroup();
     });
 
-    // Parallelize authentication and permission checks to reduce latency
+    // Parallelize authentication and system status checks
     const [authOk, userData, statusData] = await Promise.all([
         requireAuth(),
         ajaxGet('/api/user/elements/permissions', true),
@@ -72,18 +80,20 @@ async function AdminNavigationListener({ viewId, path }) {
 
     const perms = userData.permissions || [];
     
+    // Redirect if user has no administrative roles
     if (perms.length === 0) {
         switchView('/unauthorized');
         return;
     }
 
+    // Permission flags
     const canManageUsers = perms.includes('user.manage');
     const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');
     const canManageTransactions = perms.includes('transaction.manage');
     const canManageRoles = perms.includes('role.manage');
     const canManageDocs = perms.includes('document.write') || perms.includes('document.edit');
     const isExec = perms.length > 0;
-    const isPresident = !!statusData; // statusData exists if request succeeded
+    const isPresident = !!statusData; 
 
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
@@ -94,7 +104,7 @@ async function AdminNavigationListener({ viewId, path }) {
 
     const cleanPath = path.split('?')[0];
 
-    // Protection logic based on button visibility
+    // Determine access eligibility for specific modules
     const canAccessUsers = canManageUsers || canManageTransactions || isExec;
     const canAccessEvents = canManageEvents;
     const canAccessTags = canManageEvents; 
@@ -102,6 +112,9 @@ async function AdminNavigationListener({ viewId, path }) {
     const canAccessGlobals = isPresident;
     const canAccessDocs = canManageDocs;
 
+    // --- Sub-Route Handling ---
+
+    // Users Module
     if (cleanPath === '/admin/users' || cleanPath.match(/^\/admin\/user\/\d+$/)) {
         if (!canAccessUsers) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/\d+$/) ? 'User Details' : 'Users');
@@ -109,6 +122,7 @@ async function AdminNavigationListener({ viewId, path }) {
         if (cleanPath === '/admin/users') await renderManageUsers();
         else await renderUserDetail(cleanPath.split('/').pop());
 
+    // Events Module
     } else if (cleanPath === '/admin/events' || cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {
         if (!canAccessEvents) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Event Details' : 'Events');
@@ -116,6 +130,7 @@ async function AdminNavigationListener({ viewId, path }) {
         if (cleanPath === '/admin/events') await renderManageEvents();
         else await renderEventDetail(cleanPath.split('/').pop());
 
+    // Tags Module
     } else if (cleanPath === '/admin/tags' || cleanPath.match(/^\/admin\/tag\/(new|\d+)$/)) {
         if (!canAccessTags) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Tag Details' : 'Tags');
@@ -123,6 +138,7 @@ async function AdminNavigationListener({ viewId, path }) {
         if (cleanPath === '/admin/tags') await renderManageTags();
         else await renderTagDetail(cleanPath.split('/').pop());
 
+    // Roles Module
     } else if (cleanPath === '/admin/roles' || cleanPath.match(/^\/admin\/role\/(new|\d+)$/)) {
         if (!canAccessRoles) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Role Details' : 'Roles');
@@ -130,18 +146,20 @@ async function AdminNavigationListener({ viewId, path }) {
         if (cleanPath === '/admin/roles') await renderManageRoles();
         else await renderRoleDetail(cleanPath.split('/').pop());
 
+    // Files Module
     } else if (cleanPath === '/admin/files') {
         if (!canAccessDocs) return switchView('/unauthorized');
         updateAdminTitle('Files');
         await renderAdminFiles();
 
+    // Global Settings
     } else if (cleanPath === '/admin/globals') {
         if (!canAccessGlobals) return switchView('/unauthorized');
         updateAdminTitle('Globals');
         await renderManageGlobals();
 
+    // Dashboard Home
     } else if (cleanPath === '/admin' || cleanPath === '/admin/') {
-        // Main Dashboard Home
         let cardsHtml = '';
         
         if (canAccessUsers) cardsHtml += createDashboardCard('Users', 'Manage members & permissions', GROUP_SVG, '/admin/users');
@@ -159,6 +177,9 @@ async function AdminNavigationListener({ viewId, path }) {
     }
 }
 
+/**
+ * Creates HTML for a dashboard feature card.
+ */
 function createDashboardCard(title, desc, icon, link) {
     return `
         <button class="dashboard-card" data-nav="${link}">

@@ -102,19 +102,13 @@ describe('rules/FileRules', () => {
         /**
          * Test integration with the Guest difficulty limit global.
          */
-        test('Guest Access: correctly evaluates visibility using global guest difficulty limit', async () => {
-            world.mockGlobalInt('Unauthorized_max_difficulty', 1);
-            await world.createEvent('E1', { difficulty_level: 1, image_url: `/api/files/${fileId}/download` });
-            await world.createEvent('E2', { difficulty_level: 2, image_url: `/api/files/${fileId}/download` });
+        test('should deny access if guest user level is below all associated event difficulties', async () => {
+            // Viewable via E1 (diff 1)
+            expect(await FileRules.canAccessFile(world.db, file, null)).toBe(true);
 
-            const file = { id: fileId, visibility: 'events' };
-            
-            // 1. Viewable via E1 (diff 1)
-            expect(await FileRules.canAccessFile(world.db, file, null, 'public')).toBe(true);
-
-            // 2. Remove E1; now only E2 (diff 2) is left. Since 2 > Guest Max (1), access should be denied.
-            await world.db.run('DELETE FROM events WHERE title = "E1"');
-            expect(await FileRules.canAccessFile(world.db, file, null, 'public')).toBe(false);
+            // Remove E1; now only E2 (diff 2) is left. Since 2 > Guest Max (1), access should be denied.
+            await world.db.run('DELETE FROM events WHERE id = ?', [e1Id]);
+            expect(await FileRules.canAccessFile(world.db, file, null)).toBe(false);
         });
     });
 });

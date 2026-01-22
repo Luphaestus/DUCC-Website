@@ -1,19 +1,30 @@
+/**
+ * ajax.js
+ * 
+ * High-level wrapper for XMLHttpRequest providing a Promise-based API.
+ * Includes support for response caching, automatic connectivity reporting,
+ * and standard HTTP method implementations (GET, POST, PUT, DELETE).
+ * 
+ * Used by all page and component modules to communicate with the backend API.
+ */
+
 import { checkServerConnection, reportConnectionFailure, reportConnectionSuccess } from '../connection.js';
 
 /**
- * Wrapper for XMLHttpRequest using Promises.
- * @module Ajax
+ * Cache for GET requests to reduce redundant network traffic.
+ * @type {Map<string, Promise<object>>}
  */
-
 const cache = new Map();
 
 /**
- * HTTP GET request with optional caching.
- * @param {string} url
- * @param {boolean} useCache - If true, return cached response if available.
- * @returns {Promise<object>}
+ * Perform an asynchronous HTTP GET request.
+ * 
+ * @param {string} url - The target API endpoint.
+ * @param {boolean} [useCache=false] - If true, returns a cached promise if available.
+ * @returns {Promise<object>} - Resolves with the parsed JSON response.
  */
 async function ajaxGet(url, useCache = false) {
+    // Return from cache if requested and present
     if (useCache && cache.has(url)) {
         return cache.get(url);
     }
@@ -24,10 +35,12 @@ async function ajaxGet(url, useCache = false) {
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
                 if (xhr.status === 0) {
+                    // Handle network-level failures (e.g., DNS, connection lost)
                     reportConnectionFailure();
                     cache.delete(url); 
                     reject({ message: 'Network error' });
                 } else if (xhr.status >= 200 && xhr.status < 300) {
+                    // Successful response
                     reportConnectionSuccess();
                     try {
                         const response = JSON.parse(xhr.responseText);
@@ -37,6 +50,7 @@ async function ajaxGet(url, useCache = false) {
                         reject({ message: 'Failed to parse response: ' + e.message });
                     }
                 } else {
+                    // HTTP error status (4xx, 5xx)
                     cache.delete(url);
                     reject({ message: 'Request failed with status: ' + xhr.status });
                 }
@@ -61,8 +75,9 @@ async function ajaxGet(url, useCache = false) {
 }
 
 /**
- * Clear the AJAX GET cache.
- * @param {string} [url] - If provided, clear only this URL.
+ * Manually clear the AJAX GET cache.
+ * Generally called after write operations (POST/PUT/DELETE) to ensure data freshness.
+ * @param {string} [url] - If provided, clears only the specific URL.
  */
 function clearAjaxCache(url) {
     if (url) cache.delete(url);
@@ -70,9 +85,11 @@ function clearAjaxCache(url) {
 }
 
 /**
- * HTTP POST request with JSON body.
- * @param {string} url
- * @param {object} data
+ * Perform an asynchronous HTTP POST request.
+ * Clears the entire GET cache to prevent stale data display after state changes.
+ * 
+ * @param {string} url - Target endpoint.
+ * @param {object} data - JSON payload to send in the request body.
  * @returns {Promise<object>}
  */
 async function ajaxPost(url, data) {
@@ -94,6 +111,7 @@ async function ajaxPost(url, data) {
                         reject({ message: 'Failed to parse response: ' + e.message });
                     }
                 } else {
+                    // Attempt to parse error message from server
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
                         reject(errorResponse);
@@ -116,8 +134,8 @@ async function ajaxPost(url, data) {
 }
 
 /**
- * HTTP DELETE request.
- * @param {string} url
+ * Perform an asynchronous HTTP DELETE request.
+ * @param {string} url - Target endpoint.
  * @returns {Promise<object>}
  */
 async function ajaxDelete(url) {
@@ -160,9 +178,9 @@ async function ajaxDelete(url) {
 }
 
 /**
- * HTTP PUT request with JSON body.
- * @param {string} url
- * @param {object} data
+ * Perform an asynchronous HTTP PUT request.
+ * @param {string} url - Target endpoint.
+ * @param {object} data - JSON update payload.
  * @returns {Promise<object>}
  */
 async function ajaxPut(url, data) {

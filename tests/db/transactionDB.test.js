@@ -50,11 +50,11 @@ describe('db/transactionDB', () => {
         // Results are sorted newest first by the DB handler
         expect(history.length).toBe(2);
         
-        // 1. Most recent: Gear purchase
+        // Most recent: Gear purchase
         expect(history[0].amount).toBe(-30);
         expect(history[0].after).toBe(70); // 100 - 30 = 70
         
-        // 2. Oldest: Initial deposit
+        // Oldest: Initial deposit
         expect(history[1].amount).toBe(100);
         expect(history[1].after).toBe(100);
     });

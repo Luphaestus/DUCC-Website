@@ -1,9 +1,20 @@
-/* UI Components */
+/**
+ * _mixins.scss
+ * 
+ * Reusable SCSS mixins for design consistency.
+ * Includes patterns for glassmorphic panels, animated cards with color highlights,
+ * and responsive scaling for interactive elements and tables.
+ */
+
+/* --- UI Component Mixins --- */
+
+/** Applies glassmorphism with blur, semi-transparent background, and soft shadow */
 @mixin glass-panel {
     background: var(--glass-bg); border: var(--glass-border); box-shadow: var(--shadow-glass);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--border-radius-lg); padding: 1.25rem;
 }
 
+/** Applies high-translucency background with lift-on-hover interaction */
 @mixin translucent-card {
     background: var(--translucent-bg); border: var(--glass-border); box-shadow: var(--shadow-glass);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--border-radius-lg);
@@ -11,6 +22,7 @@
     &:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
 }
 
+/** Adds a colored vertical bar to the left side of a card */
 @mixin card-highlights {
     position: relative; overflow: hidden;
     &::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--highlight); border-radius: 4px; }
@@ -21,7 +33,9 @@
     &:nth-child(4) { --highlight: #3498db; }
 }
 
-/* Responsive Scaling */
+/* --- Responsive Scaling Mixins --- */
+
+/** Standardizes button and input height/padding across 3 breakpoints */
 @mixin common-element-size($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
     height: 3rem !important; padding: 0 1.5rem; font-size: 1rem; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
     @media (max-width: $bp1) { height: 2.75rem !important; padding: 0 1.25rem; }
@@ -29,6 +43,7 @@
     @media (max-width: $bp3) { height: 2.25rem !important; padding: 0 0.75rem; font-size: 0.8rem !important; }
 }
 
+/** Standardizes general content padding and icon sizing across breakpoints */
 @mixin scaling-element($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
     padding: 0.75rem 1rem;
     @media (max-width: $bp1) { padding: 0.6rem 0.9rem; font-size: 0.95em; }
@@ -36,6 +51,7 @@
     @media (max-width: $bp3) { padding: 0.4rem 0.5rem; svg, img { width: 1.2rem; height: 1.2rem; } }
 }
 
+/** Standardizes table layout and cell responsiveness */
 @mixin scaling-table($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
     width: 100%; margin-bottom: 0; table-layout: auto;
     th, td { text-align: left; border-bottom: var(--table-border); @include scaling-element($bp1, $bp2, $bp3); @media (max-width: $bp2) { td>svg, td>img { width: 1.5rem !important; height: 1.5rem !important; } } }

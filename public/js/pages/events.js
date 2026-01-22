@@ -1,11 +1,23 @@
+/**
+ * events.js
+ * 
+ * Logic for the primary events listing view.
+ * Features a week-by-week navigator, caching, and animated transitions.
+ * Events are grouped by day and rendered as glassmorphic cards.
+ * 
+ * Registered Route: /events
+ */
+
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { LoginEvent } from './login.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
-import './event.js';
+import './event.js'; // Ensure the overlay modal logic is loaded
 import { CALENDAR_TODAY_SVG, CHECK_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, REFRESH_SVG, SCHEDULE_SVG, CALENDAR_MONTH_SVG, GROUP_SVG, SETTINGS_SVG, ALL_INCLUSIVE_SVG, CURRENCY_POUND_SVG, CLOSE_SVG } from '../../images/icons/outline/icons.js';
 
+// Register route
 addRoute('/events', 'events');
 
+/** HTML Template for the events list page */
 const HTML_TEMPLATE = /*html*/`
         <div id="events-view" class="view hidden small-container">
             <div class="events-controls-modern">
@@ -40,15 +52,26 @@ const HTML_TEMPLATE = /*html*/`
             <div id="event-navigation"></div>
         </div>`;
 
+/** @type {number} Tracking the currently viewed week relative to today (0) */
 let relativeWeekOffset = 0;
+
+/** @type {boolean} State lock for slide animations */
 let isAnimating = false;
+
+/** @type {boolean} Cached admin permission state */
 let isAdmin = false;
 
+/** 
+ * Persistent cache for week data objects to enable instant navigation.
+ * @type {Map<number, object>} 
+ */
 const weekDataCache = new Map();
 
 /**
- * Fetch week data with caching.
- * @param {number} offset
+ * Fetches data for a specific week, utilizing the internal cache.
+ * 
+ * @param {number} offset - Week offset from today.
+ * @returns {Promise<object>}
  */
 async function getWeekData(offset) {
     if (weekDataCache.has(offset)) return weekDataCache.get(offset);
@@ -58,23 +81,25 @@ async function getWeekData(offset) {
 }
 
 /**
- * Preload data for surrounding weeks.
- * @param {number} baseOffset
+ * Background preloads data for surrounding weeks to improve responsiveness.
+ * 
+ * @param {number} baseOffset - The central week offset.
  */
 function preloadWeeks(baseOffset) {
     [-2, -1, 1, 2].forEach(delta => {
         const offset = baseOffset + delta;
         if (!weekDataCache.has(offset)) {
-            getWeekData(offset).catch(() => {});
+            getWeekData(offset).catch(() => {}); // Fire and forget
         }
     });
 }
 
 /**
- * Format date range for the week navigator.
- * @param {string} startDateStr
- * @param {string} endDateStr
- * @returns {string}
+ * Generates a human-readable date range string for the UI display.
+ * 
+ * @param {string} startDateStr - ISO date string.
+ * @param {string} endDateStr - ISO date string.
+ * @returns {string} - e.g. "Today - 25 Jan" or "18 Jan - 24 Jan".
  */
 function getRangeText(startDateStr, endDateStr) {
     const formatDate = (d) => new Date(d).toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
@@ -93,9 +118,10 @@ function getRangeText(startDateStr, endDateStr) {
 }
 
 /**
- * Render HTML for a single event card.
- * @param {object} event
- * @returns {string}
+ * Generates the HTML for a single event card.
+ * 
+ * @param {object} event - Event data object from the API.
+ * @returns {string} - HTML card string.
  */
 function formatEvent(event) {
     const startDate = new Date(event.start);
@@ -166,7 +192,9 @@ function formatEvent(event) {
         </div>`;
 }
 
-/** Sync week offset with URL query parameters. */
+/**
+ * Synchronizes the internal week offset with the browser URL.
+ */
 function updateUrlParams() {
     const url = new URL(window.location);
     if (relativeWeekOffset === 0) url.searchParams.delete('week');
@@ -174,7 +202,9 @@ function updateUrlParams() {
     window.history.pushState({}, '', url);
 }
 
-/** Toggle admin link visibility based on user permissions. */
+/**
+ * Checks if the user has permission to see the Admin quick-link button.
+ */
 async function checkAdminAccess() {
     try {
         const data = await ajaxGet('/api/user/elements/permissions');
@@ -188,6 +218,7 @@ async function checkAdminAccess() {
             else btn.classList.add('hidden');
         }
         
+        // Refresh current week view to reflect possible permission changes
         if (relativeWeekOffset !== undefined) changeWeek(0, false);
     } catch (e) {
         isAdmin = false;
@@ -197,9 +228,11 @@ async function checkAdminAccess() {
 }
 
 /**
- * Fetch and render events for a specific week.
- * @param {number} offset
- * @param {HTMLElement} targetElement
+ * Fetches events for a specific week and injects them into the DOM.
+ * Groups events into daily strips.
+ * 
+ * @param {number} offset - Relative week offset.
+ * @param {HTMLElement} targetElement - DOM element to populate.
  */
 async function renderWeekContent(offset, targetElement) {
     try {
@@ -230,6 +263,7 @@ async function renderWeekContent(offset, targetElement) {
         let last_day = null;
         for (const event of events) {
             const eventDate = new Date(event.start).getDate();
+            // Start a new day group if the date changes
             if (last_day !== eventDate) {
                 if (last_day !== null) html += '</div></div>';
                 last_day = eventDate;
@@ -261,9 +295,11 @@ async function renderWeekContent(offset, targetElement) {
 }
 
 /**
- * Navigate between weeks with animation.
- * @param {number} delta
- * @param {boolean} animated
+ * Handles navigation to a new week with a smooth sliding transition.
+ * 
+ * @param {number} delta - Amount to shift the week offset (e.g. -1 for previous). 
+ *                         Pass 0 to reset to 'Today'.
+ * @param {boolean} [animated=true] - Whether to perform the slide animation.
  */
 async function changeWeek(delta, animated = true) {
     if (isAnimating) return;
@@ -295,6 +331,7 @@ async function changeWeek(delta, animated = true) {
     if (delta === 0) direction = (oldOffset > 0) ? -1 : 1;
     if (delta === null || delta === undefined) direction = 1;
 
+    // Create a temporary page for the animation
     const nextView = document.createElement('div');
     nextView.className = 'events-page';
     nextView.innerHTML = '<div class="loading-container"><div class="spinner"></div></div>';
@@ -310,6 +347,7 @@ async function changeWeek(delta, animated = true) {
         slider.style.transform = `translateX(-100%)`;
     }
 
+    // Force reflow
     slider.offsetHeight;
 
     slider.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
@@ -323,6 +361,7 @@ async function changeWeek(delta, animated = true) {
     } catch (e) {
         console.error("Failed to load week content", e);
     } finally {
+        // Swap content and cleanup
         currentView.innerHTML = nextView.innerHTML;
         slider.style.transition = 'none';
         slider.style.transform = 'translateX(0%)';
@@ -336,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAdminAccess();
     LoginEvent.subscribe(() => checkAdminAccess());
 
+    // Global click handler for events list controls
     document.addEventListener('click', async (e) => {
         const target = e.target.closest('.nav-btn, .today-btn, .admin-link-btn');
         if (target) {
@@ -369,6 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         const ev = document.getElementById('events-view');
         if (!ev || ev.classList.contains('hidden') || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
@@ -378,6 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     LoginEvent.subscribe(() => changeWeek(0, false));
+    
+    // Router synchronization
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/events') {
             checkAdminAccess();
@@ -390,4 +433,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
-

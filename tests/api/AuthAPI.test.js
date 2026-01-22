@@ -72,7 +72,7 @@ describe('api/AuthAPI', () => {
             const email = 'rejoiner.real@durham.ac.uk';
             const password = 'securePassword123';
             
-            // 1. Create and populate user
+            // Create and populate user
             await agent.post('/api/auth/signup').send({
                 email, password, first_name: 'Old', last_name: 'Name'
             });
@@ -80,18 +80,18 @@ describe('api/AuthAPI', () => {
             const userRow = await db.get('SELECT id FROM users WHERE email = ?', [email]);
             await db.run('UPDATE users SET swims = 10 WHERE id = ?', [userRow.id]);
 
-            // 2. Soft-delete the account
+            // Soft-delete the account
             const deleteRes = await agent.post('/api/user/deleteAccount').send({ password });
             expect(deleteRes.statusCode).toBe(200);
 
-            // 3. Re-signup
+            // Re-signup
             const signupRes = await agent.post('/api/auth/signup').send({
                 email, password, first_name: 'Restored', last_name: 'User'
             });
             expect(signupRes.statusCode).toBe(200);
             expect(signupRes.body.message).toMatch(/restored/i);
 
-            // 4. Verify data preservation
+            // Verify data preservation
             const restoredUser = await db.get('SELECT * FROM users WHERE email = ?', [email]);
             expect(restoredUser.id).toBe(userRow.id);
             expect(restoredUser.swims).toBe(10);

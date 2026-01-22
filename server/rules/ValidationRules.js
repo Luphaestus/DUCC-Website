@@ -33,45 +33,27 @@ class ValidationRules {
      * @returns {string|null} - Human-readable error message or null if valid.
      */
     static validate(type, value, required = true) {
-        // 1. Check for missing/empty values
-        if (value === undefined || value === null || value === '') {
-            if (required) return 'Field is required.';
-            return null;
-        }
-
-        // 'presence' type only checks if the field is non-empty
-        if (type === 'presence') return null; 
-
-        // 2. Specialized Type Validations
-        if (type === 'boolean') {
-            if (typeof value !== 'boolean') return 'Invalid value. Must be true or false.';
-            return null;
-        }
-
-        if (type === 'date_of_birth') {
-            const dob = new Date(value);
-            if (isNaN(dob.getTime())) return 'Invalid date.';
-            
-            const today = new Date();
-            // Minimum age: 17, Maximum age: 90
-            const maxDate = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate());
-            const minDate = new Date(today.getFullYear() - 90, today.getMonth(), today.getDate());
-            
-            if (dob < minDate || dob > maxDate) return 'Age must be between 17 and 90.';
-            return null;
-        }
-
-        // 3. Pattern-based Validations (Email, Name, Phone)
-        const rule = this.validation[type];
-        if (!rule) return null;
-
-        if (typeof value !== 'string') return 'Invalid format.';
-
-        if (!rule.pattern.test(value)) {
-            return rule.message;
-        }
-        
+    // Check for missing/empty values
+    if (!value && value !== 0 && value !== false) {
+        if (required) return `${label} is required.`;
         return null;
+    }
+
+    // Specialized Type Validations
+    if (type === 'number') {
+        const num = Number(value);
+        if (isNaN(num)) return `${label} must be a number.`;
+        if (min !== undefined && num < min) return `${label} must be at least ${min}.`;
+        if (max !== undefined && num > max) return `${label} must be at most ${max}.`;
+    }
+
+    if (type === 'date') {
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return `${label} must be a valid date.`;
+    }
+
+    // Pattern-based Validations (Email, Name, Phone)
+    if (pattern && !pattern.test(value)) {
     }
 }
 

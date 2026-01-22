@@ -1,26 +1,42 @@
+/**
+ * view.js
+ * 
+ * The central SPA (Single Page Application) router.
+ * Handles URL changes, path resolution, view visibility toggling,
+ * and emits events when the active view changes.
+ */
+
 import { ajaxGet } from './ajax.js';
 import { Event } from "./event.js";
 import { updateHistory } from './history.js';
 
 /**
- * SPA router handling URL changes, path resolution, and view visibility.
- * @module View
+ * Event fired whenever the view successfully changes.
+ * Subscribers receive an object containing { resolvedPath, viewId, path }.
+ * @type {Event}
  */
-
 const ViewChangedEvent = new Event();
+
+/**
+ * List of registered application routes.
+ * @type {Array<{pattern: string, regex: RegExp, viewId: string, isOverlay: boolean}>}
+ */
 const Routes = [];
 
 /**
- * Register a route explicitly.
- * @param {string} pattern - URL pattern (e.g. '/events', '/admin/*', '/user/:id')
- * @param {string} viewId - ID of the view element (without '-view' suffix)
- * @param {Object} options - Additional options for the route
+ * Registers a new route in the application. 
+ * 
+ * @param {string} pattern - URL pattern (e.g. '/events', '/admin/*', '/user/:id').
+ * @param {string} viewId - ID of the container element (without '-view' suffix).
+ * @param {Object} [options={}] - Route configuration.
+ * @param {boolean} [options.isOverlay=false] - If true, previous views are not hidden (used for modals).
  */
 export function addRoute(pattern, viewId, options = {}) {
+    // Convert pattern to regex
     const regexString = '^' + pattern
         .replace(/\//g, '\\/') // Escape slashes
-        .replace(/:(\w+)/g, '([^/]+)') // Named parameters
-        .replace(/\*/g, '.*') + '$'; // Wildcard
+        .replace(/:(\w+)/g, '([^/]+)') // Handle named parameters like :id
+        .replace(/\*/g, '.*') + '$'; // Handle wildcards
 
     Routes.push({
         pattern,
@@ -31,79 +47,90 @@ export function addRoute(pattern, viewId, options = {}) {
 }
 
 /**
- * Find the matching route for a path.
- * @param {string} path 
- * @returns {Object|null} Route object or null
+ * Internal helper to find a matching route for a given path. 
+ * 
+ * @param {string} path - The path to match.
+ * @returns {Object|null} - The matched route object or null.
  */
 function matchRoute(path) {
-    const pathOnly = path.split('?')[0];
+    const pathOnly = path.split('?')[0]; // Ignore query strings for matching
     return Routes.find(route => route.regex.test(pathOnly)) || null;
 }
 
 /**
- * Check if path matches current location.
- * @param {string} path
+ * Checks if the provided path is the one currently in the browser address bar.
+ * 
+ * @param {string}
  * @returns {boolean}
  */
 function isCurrentPath(path) {
-    return (window.location.pathname + window.location.search) === path
+    return (window.location.pathname + window.location.search) === path;
 }
 
 /**
- * Switch active SPA view and sync browser state.
- * @param {string} path
- * @param {boolean} force
- * @returns {boolean}
+ * Main function to trigger a view switch. Updates browser history,
+ * toggles DOM visibility, and notifies subscribers.
+ * 
+ * @param {string} path - Destination path.
+ * @param {boolean} [force=false] - If true, reloads the view even if already active.
+ * @returns {boolean} - Returns true if navigation was handled.
  */
 function switchView(path, force = false) {
-    if (!path.startsWith('/')) path = '/' + path
+    if (!path.startsWith('/')) path = '/' + path;
 
+    // Handle root path: redirect to events if logged in, home if not
     if (path === '/') {
         ajaxGet('/api/auth/status').then((data) => {
             if (data.authenticated) switchView('/events');
             else switchView('/home');
         }).catch(() => switchView('/home'));
-        return true
+        return true;
     }
 
     updateHistory(path);
     const route = matchRoute(path);
 
-    if (isCurrentPath(path) && !force) return true
+    // Skip if already there, unless forced
+    if (isCurrentPath(path) && !force) return true;
 
+    // Update browser address bar
     if (path !== "/error" && !isCurrentPath(path)) {
         window.history.pushState({}, path, window.location.origin + path);
     }
 
+    // Handle 404
     if (!route) return switchView('/error');
 
-    // Toggle views
+    // Toggle DOM elements
     const allViews = document.querySelectorAll('.view');
     allViews.forEach(el => {
         if (el.id === route.viewId + '-view') {
             el.classList.remove('hidden');
         } else {
-            // Don't hide views if the new route is an overlay
+            // Don't hide existing views if the target is an overlay (e.g. event modal)
             if (!route.isOverlay) {
                 el.classList.add('hidden');
             }
         }
     });
 
-    ViewChangedEvent.notify({ 
+    // Notify application parts of the change
+    ViewChangedEvent.notify({
         resolvedPath: route.pattern, 
         viewId: route.viewId, 
         path 
     });
     
+    // Update browser tab title
     const titlePath = path.split('?')[0];
-    document.title = `DUCC - ${titlePath.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`
+    document.title = `DUCC - ${titlePath.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`;
 
-    return true
+    return true;
 }
 
 /**
- * Update view from current URL.
+ * Triggered on popstate (browser back/forward) or initial load.
+ * Synchronizes the app state with the current URL.
  */
 function updateContent() {
     switchView(window.location.pathname + window.location.search, true);
@@ -113,18 +140,19 @@ window.onpopstate = updateContent;
 window.onload = updateContent;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Scan for existing views and register them if not already registered
+    // Auto-discover views in HTML and register them as routes if they follow the naming convention
     document.querySelectorAll('.view').forEach(v => {
         const id = v.id;
         if (id.endsWith('-view')) {
             const viewId = id.slice(0, -5);
-            // If the ID looks like a path (starts with /), use it as a pattern.
+            // If the ID looks like a path (starts with /), treat it as a static route
             if (viewId.startsWith('/') && !Routes.some(r => r.pattern === viewId)) {
                 addRoute(viewId, viewId);
             }
         }
     });
 
+    // Global click listener for elements with [data-nav] attribute to handle SPA navigation
     document.addEventListener('click', (e) => {
         const link = e.target.closest('[data-nav]');
         if (link) {

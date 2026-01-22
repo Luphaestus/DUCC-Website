@@ -1,19 +1,27 @@
+/**
+ * swims.js
+ * 
+ * Logic for the Swimming Leaderboard view.
+ * Features a dynamic podium for the top 3 swimmers and a ranked list for the rest.
+ * Supports toggling between "This Year" and "All Time" statistics.
+ * 
+ * Registered Route: /swims
+ */
+
 import { ajaxGet } from '/js/utils/ajax.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG } from '../../images/icons/outline/icons.js';
 
-/**
- * Ranked list of users by swim count with podium.
- * @module Swims
- */
-
+// Register route
 addRoute('/swims', 'swims');
 
+/** HTML Template for the leaderboard page */
 const HTML_TEMPLATE = /*html*/`
 <div id="swims-view" class="view hidden">
     <div class="small-container">
         <h1>Leaderboard</h1>
         
+        <!-- Stats Mode Toggle -->
         <div class="swims-toggle-container">
             <div class="toggle-wrapper" id="swims-toggle-wrapper">
                 <div class="toggle-bg"></div>
@@ -28,8 +36,12 @@ const HTML_TEMPLATE = /*html*/`
     </div>
 </div>`;
 
+/** @type {string} Current filter mode: 'yearly' or 'alltime' */
 let currentMode = 'yearly'; 
 
+/**
+ * Fetches swim data from the API and renders the podium and table.
+ */
 async function populateLeaderboard() {
     const content = document.getElementById('leaderboard-content');
     if (!content) return;
@@ -48,8 +60,10 @@ async function populateLeaderboard() {
         const top3 = leaderboardData.slice(0, 3);
         const rest = leaderboardData.slice(3);
 
+        // --- Render Podium (1st, 2nd, 3rd) ---
         let podiumHtml = '<div class="podium-container">';
         
+        // Visual order: [Silver, Gold, Bronze]
         const podiumOrder = [1, 0, 2]; 
         const styles = ['gold', 'silver', 'bronze']; 
 
@@ -75,6 +89,7 @@ async function populateLeaderboard() {
         });
         podiumHtml += '</div>';
 
+        // --- Render List (4th and below) ---
         let listHtml = '<div class="leaderboard-list glass-panel">';
         rest.forEach(user => {
             const isMe = user.is_me;
@@ -98,6 +113,9 @@ async function populateLeaderboard() {
     }
 }
 
+/**
+ * Updates the toggle switch UI state and refreshes data.
+ */
 function updateToggleState() {
     const wrapper = document.getElementById('swims-toggle-wrapper');
     const yearlyBtn = document.getElementById('swims-yearly-btn');
@@ -116,6 +134,7 @@ function updateToggleState() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Refresh data when navigating to this view
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/swims') populateLeaderboard();
     });

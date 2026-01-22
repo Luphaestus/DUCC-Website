@@ -1,9 +1,21 @@
+/**
+ * legal.js (Admin User Tab)
+ * 
+ * Renders the "Legal" tab within the administrative user management view.
+ * Provides a read-only overview of the user's signed waiver status,
+ * emergency contacts, and sensitive medical disclosures.
+ */
+
 import { CONTRACT_SVG, PERSON_SVG, ID_CARD_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG } from '../../../../../images/icons/outline/icons.js';
 
 /**
- * Renders the Legal tab content.
+ * Main rendering function for the Legal tab content.
+ * 
+ * @param {HTMLElement} container - The tab content area.
+ * @param {object} user - The detailed user data object.
  */
 export function renderLegalTab(container, user) {
+    // Format the signing date for display
     const legalDate = user.legal_filled_at ? new Date(user.legal_filled_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Never';
 
     container.innerHTML = `
@@ -34,7 +46,7 @@ export function renderLegalTab(container, user) {
                         <h3>Identity & Contact</h3>
                     </header>
                     <div class="card-body detail-info-group">
-                        <!-- Identity Details Box -->
+                        <!-- Identity Details -->
                         <div class="detail-info-box">
                             <span class="box-label">${ID_CARD_SVG} Identity Details</span>
                             <div class="box-value-grid">
@@ -49,13 +61,13 @@ export function renderLegalTab(container, user) {
                             </div>
                         </div>
                         
-                        <!-- Address Box -->
+                        <!-- Address -->
                         <div class="detail-info-box">
                             <span class="box-label">${HOME_SVG} Home Address</span>
                             <span class="box-value">${user.home_address || 'N/A'}</span>
                         </div>
                         
-                        <!-- Emergency Box -->
+                        <!-- Emergency Contact -->
                         <div class="detail-info-box warning">
                             <span class="box-label">${EMERGENCY_SVG} Emergency Contact</span>
                             <div class="box-value">
@@ -75,6 +87,7 @@ export function renderLegalTab(container, user) {
                         <h3>Health Information</h3>
                     </header>
                     <div class="card-body detail-info-group">
+                        <!-- Conditions -->
                         <div class="medical-section">
                             <div class="info-item-modern compact">
                                 <span class="label">Medical Conditions:</span> 
@@ -83,6 +96,7 @@ export function renderLegalTab(container, user) {
                             ${user.has_medical_conditions ? `<div class="detail-info-box">${user.medical_conditions_details}</div>` : ''}
                         </div>
 
+                        <!-- Medication -->
                         <div class="medical-section">
                             <div class="info-item-modern compact">
                                 <span class="label">Medication:</span>
@@ -91,6 +105,7 @@ export function renderLegalTab(container, user) {
                             ${user.takes_medication ? `<div class="detail-info-box">${user.medication_details}</div>` : ''}
                         </div>
 
+                        <!-- GDPR / Privacy Consent -->
                         <div class="info-item-modern border-top">
                             <span class="label">Data Consent:</span>
                             <span class="badge ${user.agrees_to_keep_health_data ? 'success' : 'neutral'}">

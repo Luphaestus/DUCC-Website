@@ -1,21 +1,27 @@
+/**
+ * manage.js
+ * 
+ * Logic for the administrative events list view.
+ * Features advanced server-side search, multi-field filtering (cost, difficulty, location),
+ * and sortable, paginated data tables.
+ * 
+ * Registered Route: /admin/events
+ */
+
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderAdminNavBar, renderPaginationControls } from '../common.js';
 import { UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG } from '../../../../images/icons/outline/icons.js'
 
-
 /**
- * Paginated, searchable, and sortable events management table.
- * @module AdminEventManage
- */
-
-/**
- * Render event management interface.
+ * Main rendering function for the admin events management dashboard.
+ * Parses current URL state to set initial filters.
  */
 export async function renderManageEvents() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
+    // Load initial filter state from URL
     const urlParams = new URLSearchParams(window.location.search);
     const search = urlParams.get('search') || '';
     const sort = urlParams.get('sort') || 'start';
@@ -33,6 +39,7 @@ export async function renderManageEvents() {
                  ${await renderAdminNavBar('events')}
                  <div class="toolbar-content">
                     <div class="toolbar-left">
+                        <!-- Search Input -->
                         <div class="search-bar">
                             <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
                             <button id="event-search-btn" class="search-icon-btn" title="Search">
@@ -46,6 +53,8 @@ export async function renderManageEvents() {
                             ${FILTER_LIST_SVG} Filters
                          </button>
                          <button data-nav="/admin/event/new" class="small-btn primary">Create Event</button>
+                        
+                        <!-- Advanced Filter Panel (Hidden by default) -->
                         <div id="advanced-filters-panel" class="glass-filter-panel hidden">
                             <div class="filter-grid">
                                     <label>
@@ -80,6 +89,7 @@ export async function renderManageEvents() {
                 </div>
             </div>
 
+            <!-- Events Table -->
             <div class="glass-table-container">
                 <div class="table-responsive">
                     <table class="glass-table">
@@ -94,6 +104,7 @@ export async function renderManageEvents() {
         </div>
     `;
 
+    // --- UI Logic Binding ---
     const searchInput = document.getElementById('event-search-input');
     const searchBtn = document.getElementById('event-search-btn');
     const filterBtn = document.getElementById('toggle-filters-btn');
@@ -122,8 +133,9 @@ export async function renderManageEvents() {
 }
 
 /**
- * Update URL parameters and refresh events list.
- * @param {object} updates
+ * Updates the browser URL with new query parameters and triggers a table refresh.
+ * 
+ * @param {object} updates - Key-value pairs of URL parameters to change.
  */
 function updateEventParams(updates) {
     const params = new URLSearchParams(window.location.search);
@@ -133,6 +145,7 @@ function updateEventParams(updates) {
     }
     window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
 
+    // Re-fetch with new state
     fetchAndRenderEvents({
         page: parseInt(params.get('page')) || 1,
         search: params.get('search') || '',
@@ -147,8 +160,9 @@ function updateEventParams(updates) {
 }
 
 /**
- * Fetch and render events list.
- * @param {object} params
+ * Fetches the event list from the API and renders the table rows.
+ * 
+ * @param {object} params - Search and sort parameters.
  */
 async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCost, maxCost, difficulty, location }) {
     const thead = document.getElementById('events-table-head');
@@ -168,6 +182,7 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
             { key: 'upfront_cost', label: 'Cost', sort: 'upfront_cost' }
         ];
 
+        // Render sortable header
         thead.innerHTML = `<tr>${columns.map(c => `
             <th class="sortable" data-sort="${c.sort}">
                 ${c.label} ${sort === c.sort ? (order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
@@ -196,15 +211,9 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
                 </tr>
             `).join('');
             
-            // Use event delegation on tbody if not already set, or just re-attach to rows safely
-            // Ideally we'd set this once, but since we re-render, re-attaching or delegation is needed.
-            // Let's stick to the previous pattern but ensure it runs. 
-            // Better yet, let's use delegation on the static container if possible, but tbody is inside render.
-            // Let's keep it simple and just ensure the previous click handler logic is robust.
-            
+            // Re-attach row click listeners
             tbody.querySelectorAll('.event-row').forEach(row => {
                 row.onclick = (e) => {
-                    // Prevent navigation if clicking buttons inside the row (if any)
                     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
                     switchView(`/admin/event/${row.dataset.id}`);
                 };

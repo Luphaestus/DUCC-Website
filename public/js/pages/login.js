@@ -1,16 +1,23 @@
+/**
+ * login.js
+ * 
+ * Logic for the user login view.
+ * Handles credential submission, email normalization (auto-appending domain),
+ * and redirects users based on their navigation history.
+ * 
+ * Registered Route: /login
+ */
+
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { switchView, ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { Event } from "/js/utils/event.js";
 import { getPreviousPath } from '/js/utils/history.js';
 import { LOGIN_SVG } from '../../images/icons/outline/icons.js';
 
-/**
- * User login view management.
- * @module Login
- */
-
+// Register route
 addRoute('/login', 'login');
 
+/** HTML Template for the login page */
 const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
             <div class="small-container">
                 <h1>Login</h1>
@@ -42,14 +49,20 @@ const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
             </div>
         </div>`;
 
+/** @type {HTMLElement|null} Element for displaying login error messages */
 let messageElement = null;
+
+/** @type {HTMLInputElement|null} Email field handle */
 let email = null;
+
+/** @type {HTMLInputElement|null} Password field handle */
 let password = null;
 
+/** @type {Event} Fired upon successful authentication */
 const LoginEvent = new Event();
 
 /**
- * Reset login form fields.
+ * Resets the login form state.
  */
 function setupLoginForm() {
     if (messageElement) messageElement.textContent = '';
@@ -58,7 +71,8 @@ function setupLoginForm() {
 }
 
 /**
- * Handle view switch to login; redirect if already authenticated.
+ * Handle view switch to login; redirects to dashboard if already authenticated.
+ * 
  * @param {object} params
  */
 function ViewNavigationEventListener({ resolvedPath }) {
@@ -66,6 +80,7 @@ function ViewNavigationEventListener({ resolvedPath }) {
         ajaxGet('/api/auth/status', true).then((data => {
             if (data.authenticated) {
                 const prev = getPreviousPath();
+                // Avoid infinite loops or logic-dead-ends
                 if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
                 else switchView(prev);
             }
@@ -89,6 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         const formData = new FormData(loginForm);
         let emailVal = formData.get('email');
+        
+        // Normalize email: append university domain if missing
         if (emailVal && !emailVal.includes('@')) {
             emailVal += '@durham.ac.uk';
         }
@@ -97,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await ajaxPost('/api/auth/login', { email: emailVal, password: formData.get('password') });
             LoginEvent.notify({ authenticated: true });
 
+            // Prioritize explicit redirect targets set by requireAuth()
             const redirect = sessionStorage.getItem('redirect_after_login');
             sessionStorage.removeItem('redirect_after_login');
 

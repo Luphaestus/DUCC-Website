@@ -1,4 +1,11 @@
 @charset "UTF-8";
+/**
+ * styles.scss
+ * 
+ * Main stylesheet entry point.
+ * Aggregates Pico CSS framework defaults, global theme variables,
+ * shared mixins, and individual page/component partials.
+ */
 /*!
  * Pico CSS ✨ v2.1.1 (https://picocss.com)
  * Copyright 2019-2025 - Licensed under MIT
@@ -2806,10 +2813,18 @@ textarea,
     transition-duration: 0s !important;
   }
 }
-/* Global Dark/Light Theme Settings */
+/**
+ * _theme.scss
+ * 
+ * Global theme variables and color palettes.
+ * Defines shared design tokens for both light and dark modes,
+ * including typography, border radii, shadows, and glassmorphic backgrounds.
+ */
 body {
+  /* --- Font Stacks --- */
   --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-family-display: 'Outfit', var(--font-family-sans);
+  /* --- Design Tokens --- */
   --border-radius-sm: 0.5rem;
   --border-radius-md: 1rem;
   --border-radius-lg: 1.5rem;
@@ -2817,7 +2832,7 @@ body {
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
   --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
   --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-  /* Light Mode */
+  /* --- Light Mode Defaults --- */
   --translucent-bg: rgba(255, 255, 255, 0.65);
   --glass-bg: rgba(255, 255, 255, 0.6);
   --glass-highlight: rgba(0, 0, 0, 0.1);
@@ -2851,6 +2866,7 @@ body .bg-icon {
   z-index: 1;
 }
 
+/* --- Dark Mode Activation --- */
 @media (prefers-color-scheme: dark) {
   body:not([data-theme=light]) {
     --theme: black;
@@ -2896,9 +2912,29 @@ body[data-theme=dark] .bg-icon {
   opacity: 0.06;
 }
 
-/* UI Components */
-/* Responsive Scaling */
-/* Base Layout */
+/**
+ * _mixins.scss
+ * 
+ * Reusable SCSS mixins for design consistency.
+ * Includes patterns for glassmorphic panels, animated cards with color highlights,
+ * and responsive scaling for interactive elements and tables.
+ */
+/* --- UI Component Mixins --- */
+/** Applies glassmorphism with blur, semi-transparent background, and soft shadow */
+/** Applies high-translucency background with lift-on-hover interaction */
+/** Adds a colored vertical bar to the left side of a card */
+/* --- Responsive Scaling Mixins --- */
+/** Standardizes button and input height/padding across 3 breakpoints */
+/** Standardizes general content padding and icon sizing across breakpoints */
+/** Standardizes table layout and cell responsiveness */
+/**
+ * _base.scss
+ * 
+ * Core layout and global element defaults.
+ * Configures typography, base scroll behavior, and standardized
+ * styling for buttons, tables, and form inputs.
+ */
+/* --- Layout --- */
 html {
   scroll-behavior: smooth;
 }
@@ -2945,7 +2981,7 @@ main.container {
   flex: 1;
 }
 
-/* Inline Button Helpers */
+/* --- Inline Helpers --- */
 p > button {
   padding: 0.25rem 0.5rem;
   margin-left: auto;
@@ -2964,7 +3000,7 @@ p > svg {
   flex-shrink: 0;
 }
 
-/* Form Elements */
+/* --- Global Form Elements --- */
 input:not([type=checkbox]):not([type=radio]), select, textarea {
   height: 3rem !important;
   padding: 0 1.5rem;
@@ -3031,7 +3067,7 @@ input:not([type=checkbox]):not([type=radio])[aria-invalid=false], select[aria-in
   background: rgba(46, 204, 113, 0.05);
 }
 
-/* Button Styling */
+/* --- Global Button Styling --- */
 button, [type=button], [type=submit], [type=reset], [role=button], .button, a[role=button] {
   height: 3rem !important;
   padding: 0 1.5rem;
@@ -3110,7 +3146,7 @@ button.delete:hover, [type=button].delete:hover, [type=submit].delete:hover, [ty
   box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
 }
 
-/* Table Styling */
+/* --- Global Table Styling --- */
 table {
   width: 100%;
   border-collapse: separate;

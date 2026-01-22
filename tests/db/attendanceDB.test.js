@@ -29,14 +29,14 @@ describe('db/attendanceDB', () => {
         const userId = world.data.users['user'];
         const eventId = world.data.events['Event1'];
 
-        // 1. Initial state check
+        // Initial state check
         let res = await AttendanceDB.is_user_attending_event(world.db, userId, eventId);
         expect(res.getData()).toBe(false);
 
-        // 2. Action: join
+        // Action: join
         await AttendanceDB.attend_event(world.db, userId, eventId);
         
-        // 3. Final state check
+        // Final state check
         res = await AttendanceDB.is_user_attending_event(world.db, userId, eventId);
         expect(res.getData()).toBe(true);
     });
@@ -64,10 +64,10 @@ describe('db/attendanceDB', () => {
         await world.createUser('coach', { is_instructor: 1 });
         const coachId = world.data.users['coach'];
         
-        // 1. Zero state
+        // Zero state
         expect(await AttendanceDB.getCoachesAttendingCount(world.db, eventId)).toBe(0);
 
-        // 2. Joined state
+        // Joined state
         await AttendanceDB.attend_event(world.db, coachId, eventId);
         expect(await AttendanceDB.getCoachesAttendingCount(world.db, eventId)).toBe(1);
     });
