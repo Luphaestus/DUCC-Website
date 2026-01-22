@@ -1,3 +1,23 @@
+/**
+ * AuthAPI.js
+ * 
+ * This file handles all authentication-related routes, including:
+ * - User signup and account restoration
+ * - User login and logout
+ * - Password reset requests and execution
+ * - Password changes for authenticated users
+ * - Authentication status checks
+ * 
+ * Routes:
+ * - POST /api/auth/signup: Register a new user or restore a deleted account.
+ * - POST /api/auth/login: Authenticate a user and start a session.
+ * - GET /api/auth/logout: End the user's session and clear cookies.
+ * - GET /api/auth/status: Check if the current user is authenticated.
+ * - POST /api/auth/reset-password-request: Request a password reset email (logged to console).
+ * - POST /api/auth/reset-password: Reset password using a valid token.
+ * - POST /api/auth/change-password: Change password for the currently logged-in user.
+ */
+
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -13,15 +33,16 @@ class Auth {
 
     /**
      * Initialize Passport strategies and serialization.
-     * @param {object} app
-     * @param {object} db
-     * @param {object} passport
+     * @param {object} app - The Express application instance.
+     * @param {object} db - The database connection instance.
+     * @param {object} passport - The Passport.js instance.
      */
     constructor(app, db, passport) {
         this.app = app;
         this.db = db;
         this.passport = passport;
 
+        // Configure Local Strategy for email/password login
         passport.use(new LocalStrategy(
             { usernameField: 'email' },
             async (email, password, done) => {
@@ -40,10 +61,12 @@ class Auth {
             }
         ));
 
+        // Serialize user ID into the session
         passport.serializeUser((user, done) => {
             done(null, user.id);
         });
 
+        // Deserialize user object from the ID in the session
         passport.deserializeUser(async (id, done) => {
             try {
                 const user = await this.db.get('SELECT * FROM users WHERE id = ?', [id]);
@@ -55,11 +78,12 @@ class Auth {
     }
 
     /**
-     * Registers authentication routes.
+     * Registers authentication-related routes.
      */
     registerRoutes() {
         /**
          * Register a new user with Durham email validation.
+         * Handles both fresh signups and restoring previously deleted accounts.
          */
         this.app.post('/api/auth/signup', async (req, res) => {
             let { email, password, first_name, last_name } = req.body;
@@ -70,6 +94,7 @@ class Auth {
 
             email = email.replace(/\s/g, '').toLowerCase();
 
+            // Validate input data
             const errors = {};
             const emailError = ValidationRules.validate('email', email);
             if (emailError) errors.email = emailError;
@@ -85,14 +110,14 @@ class Auth {
             }
 
             try {
-                // Check for soft-deleted account
+                // Check for soft-deleted account by looking for 'deleted:' prefix
                 const deletedEmail = 'deleted:' + email;
                 const existingUser = await this.db.get('SELECT id FROM users WHERE email = ?', [deletedEmail]);
 
                 const hashedPassword = await bcrypt.hash(password, 10);
 
                 if (existingUser) {
-                    // Restore account
+                    // Restore account by removing prefix and updating data
                     await this.db.run(`
                         UPDATE users SET 
                             email = ?, 
@@ -105,6 +130,7 @@ class Auth {
                     );
                     res.status(200).json({ message: 'Account restored successfully.' });
                 } else {
+                    // Insert fresh user
                     await this.db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
                     res.status(201).json({ message: 'User registered successfully.' });
                 }
@@ -155,6 +181,7 @@ class Auth {
 
         /**
          * Request password reset.
+         * Generates a token and logs the reset URL to the console.
          */
         this.app.post('/api/auth/reset-password-request', async (req, res) => {
             const { email } = req.body;
@@ -163,11 +190,12 @@ class Auth {
             try {
                 const user = await this.db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
                 if (!user) {
+                    // Security best practice: don't reveal if user exists
                     return res.json({ message: 'If an account exists, a reset link has been sent.' });
                 }
 
                 const token = crypto.randomBytes(32).toString('hex');
-                const expiresAt = new Date(Date.now() + 3600000).toISOString(); 
+                const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour expiry
 
                 await this.db.run('DELETE FROM password_resets WHERE user_id = ?', [user.id]);
 
@@ -178,6 +206,7 @@ class Auth {
 
                 const baseUrl = Utils.getBaseUrl(req);
 
+                // In a production environment, this would send an email
                 console.log(`[RESET] Password reset url for ${email}: ${baseUrl}/set-password?token=${token}`);
 
                 res.json({ message: 'If an account exists, a reset link has been sent.' });
@@ -243,6 +272,10 @@ class Auth {
 
     /**
      * Authentication middleware proxy.
+     * @param {object} req - Express request object.
+     * @param {object} res - Express response object.
+     * @param {function} next - Express next function.
+     * @returns {void}
      */
     isAuthenticated(req, res, next) {
         return checkAuthentication()(req, res, next);
@@ -250,6 +283,8 @@ class Auth {
 
     /**
      * Permission middleware proxy.
+     * @param {...string} requirements - Permission requirements to check.
+     * @returns {function} - Middleware function.
      */
     check(...requirements) {
         return checkAuthentication(...requirements);

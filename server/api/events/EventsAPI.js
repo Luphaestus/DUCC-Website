@@ -1,3 +1,16 @@
+/**
+ * EventsAPI.js
+ * 
+ * This file handles public and member event listing routes.
+ * It features dynamic date range calculations for the events page.
+ * 
+ * Routes:
+ * - GET /api/events/rweek/:offset: Fetch events for a week relative to today.
+ * - GET /api/events/paged/:page: Fetch events using custom paging logic (today-sun, past, full weeks).
+ * - GET /api/event/:id: Fetch specific event details.
+ * - GET /api/event/:id/canManage: Check if the user has permission to manage a specific event.
+ */
+
 const EventsDB = require('../../db/eventsDB.js');
 const UserDB = require('../../db/userDB.js');
 const Globals = require('../../misc/globals.js');
@@ -9,8 +22,8 @@ const check = require('../../misc/authentication.js');
  */
 class EventsAPI {
     /**
-     * @param {object} app
-     * @param {object} db
+     * @param {object} app - Express application instance.
+     * @param {object} db - Database connection instance.
      */
     constructor(app, db) {
         this.app = app;
@@ -18,16 +31,18 @@ class EventsAPI {
     }
 
     /**
-     * Registers event-related routes.
+     * Registers public and member-facing event listing routes.
      */
     registerRoutes() {
         /**
-         * Fetch events for a specific week, filtered by difficulty.
+         * Fetch events for a specific week, filtered by user difficulty.
+         * Offset 0 is current week, 1 is next week, etc.
          */
         this.app.get('/api/events/rweek/:offset', async (req, res) => {
             const userId = req.user ? req.user.id : null;
             let max_difficulty_val;
             
+            // Fetch the maximum difficulty the user is allowed to view
             if (userId) {
                 const max_difficulty = await UserDB.getElementsById(this.db, userId, "difficulty_level");
                 if (max_difficulty.isError()) return max_difficulty.getResponse(res);
@@ -51,7 +66,10 @@ class EventsAPI {
         });
 
         /**
-         * Fetch events paged by logic: 0=Today-Sun, -1=Mon-Yest, others=Full Weeks.
+         * Fetch events paged by logical chunks.
+         * Page 0: Today until this Sunday.
+         * Page -1: This past Monday until yesterday.
+         * Other pages: Full weeks (Mon-Sun) relative to current Monday.
          */
         this.app.get('/api/events/paged/:page', async (req, res) => {
             const userId = req.user ? req.user.id : null;
@@ -93,27 +111,23 @@ class EventsAPI {
                 }
             } else if (page === -1) {
                 if (isMonday) {
-                    // Today is Monday, so "Mon-Yest" is empty/invalid. 
-                    // Logic: -1 becomes Last Week.
+                    // Today is Monday, so "Mon-Yest" is empty. 
+                    // Fallback: Show last week.
                     startDate = new Date(currentMonday);
                     startDate.setDate(currentMonday.getDate() - 7);
                     endDate = new Date(startDate);
                     endDate.setDate(startDate.getDate() + 6);
                 } else {
-                    // Monday -> Yesterday
+                    // Monday of this week -> Yesterday
                     startDate = new Date(currentMonday);
                     endDate = new Date(today);
                     endDate.setDate(today.getDate() - 1);
                 }
             } else {
-                // Other pages are full weeks
-                // Logic shift based on whether we had a partial -1 page
-                // If isMonday: Page -1 was Week -1. Page -2 is Week -2.
-                // If !isMonday: Page -1 was Partial. Page -2 is Week -1.
-                
+                // Other pages represent full weeks
                 let weekOffset = page;
                 if (!isMonday && page < 0) {
-                    weekOffset = page + 1; // Shift back: -2 becomes -1 (Last Week)
+                    weekOffset = page + 1; // Correct for the partial -1 page
                 }
 
                 startDate = new Date(currentMonday);
@@ -122,7 +136,7 @@ class EventsAPI {
                 endDate.setDate(startDate.getDate() + 6);
             }
 
-            // Set times
+            // Set final time boundaries
             startDate.setHours(0, 0, 0, 0);
             endDate.setHours(23, 59, 59, 999);
 
@@ -133,7 +147,8 @@ class EventsAPI {
         });
 
         /**
-         * Fetch event details by ID.
+         * Fetch specific event details by ID.
+         * Enforces view authorization (difficulty/tags).
          */
         this.app.get('/api/event/:id', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
@@ -147,6 +162,10 @@ class EventsAPI {
             res.json({ event: event.getData() });
         });
 
+        /**
+         * Check if the current user is authorized to manage a specific event.
+         * Used to show/hide "Edit" buttons in the UI.
+         */
         this.app.get('/api/event/:id/canManage', check(), async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
             if (Number.isNaN(eventId)) {

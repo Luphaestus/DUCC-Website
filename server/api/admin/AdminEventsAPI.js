@@ -1,3 +1,18 @@
+/**
+ * AdminEventsAPI.js
+ * 
+ * This file handles administrative actions for events, allowing Execs to create, update, and delete events.
+ * It enforces scoped access, meaning some Execs can only manage events with certain tags.
+ * 
+ * Routes:
+ * - GET /api/admin/events: List all events with pagination and detailed admin filters.
+ * - GET /api/admin/event/:id: Fetch full event details including non-public info.
+ * - POST /api/admin/event: Create a new event.
+ * - PUT /api/admin/event/:id: Update existing event details.
+ * - POST /api/admin/event/:id/cancel: Cancel an event and process attendee refunds.
+ * - DELETE /api/admin/event/:id: Permanently delete an event (only if it hasn't started yet).
+ */
+
 const EventsDB = require('../../db/eventsDB.js');
 const check = require('../../misc/authentication.js');
 const { Permissions } = require('../../misc/permissions.js');
@@ -8,8 +23,8 @@ const { Permissions } = require('../../misc/permissions.js');
  */
 class AdminEvents {
     /**
-     * @param {object} app
-     * @param {object} db
+     * @param {object} app - Express application instance.
+     * @param {object} db - Database connection instance.
      */
     constructor(app, db) {
         this.app = app;
@@ -17,11 +32,12 @@ class AdminEvents {
     }
 
     /**
-     * Registers admin event routes.
+     * Registers all admin-level event management routes.
      */
     registerRoutes() {
         /**
-         * Fetch paginated events list.
+         * Fetch paginated events list for admin dashboard.
+         * Enforces scoping: users with scoped permissions only see events they are allowed to manage.
          */
         this.app.get('/api/admin/events', check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped'), async (req, res) => {
             const page = parseInt(req.query.page) || 1;
@@ -37,10 +53,12 @@ class AdminEvents {
 
             let permissionsFilter = undefined;
 
+            // Check if user has global or scoped permission
             const hasAll = await Permissions.hasPermission(this.db, req.user.id, 'event.read.all') ||
                 await Permissions.hasPermission(this.db, req.user.id, 'event.manage.all');
 
             if (!hasAll) {
+                // Fetch list of tags this user is allowed to manage to filter the event list
                 permissionsFilter = await Permissions.getManagedTags(this.db, req.user.id);
             }
 
@@ -53,7 +71,7 @@ class AdminEvents {
         });
 
         /**
-         * Fetch event details.
+         * Fetch event details by ID for administrative editing.
          */
         this.app.get('/api/admin/event/:id', check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped'), async (req, res) => {
             const result = await EventsDB.getEventByIdAdmin(this.db, req.params.id);
@@ -62,7 +80,8 @@ class AdminEvents {
         });
 
         /**
-         * Create new event.
+         * Create a new event.
+         * Verifies that the admin has permission to use the tags they are assigning to the event.
          */
         this.app.post('/api/admin/event', check('perm:event.write.all | perm:event.manage.all | perm:event.write.scoped | perm:event.manage.scoped'), async (req, res) => {
             if (!await Permissions.canManageEvent(this.db, req.user.id, null, req.body.tags)) {
@@ -73,7 +92,8 @@ class AdminEvents {
         });
 
         /**
-         * Update event.
+         * Update an existing event.
+         * Enforces scoping: the admin must have permission to manage this specific event.
          */
         this.app.put('/api/admin/event/:id', check('perm:event.write.all | perm:event.manage.all | perm:event.write.scoped | perm:event.manage.scoped'), async (req, res) => {
             if (!await Permissions.canManageEvent(this.db, req.user.id, req.params.id)) {
@@ -84,7 +104,8 @@ class AdminEvents {
         });
 
         /**
-         * Cancel event.
+         * Cancel an event.
+         * Triggers automatic refunds for all attendees who have paid.
          */
         this.app.post('/api/admin/event/:id/cancel', check('perm:event.write.all | perm:event.manage.all | perm:event.write.scoped | perm:event.manage.scoped'), async (req, res) => {
             if (!await Permissions.canManageEvent(this.db, req.user.id, req.params.id)) {
@@ -95,7 +116,8 @@ class AdminEvents {
         });
 
         /**
-         * Delete event.
+         * Delete an event from the database.
+         * Only permitted for future events. Past events should be archived or canceled instead.
          */
         this.app.delete('/api/admin/event/:id', check('perm:event.delete | perm:event.manage.all | perm:event.manage.scoped'), async (req, res) => {
             if (!await Permissions.canManageEvent(this.db, req.user.id, req.params.id)) {
@@ -104,6 +126,7 @@ class AdminEvents {
             const eventRes = await EventsDB.getEventByIdAdmin(this.db, req.params.id);
             if (eventRes.isError()) return eventRes.getResponse(res);
 
+            // Safety check: Prevent deletion of events that have already started/happened
             if (new Date(eventRes.getData().start) < new Date()) {
                 return res.status(400).json({ message: 'Cannot delete past events' });
             }

@@ -1,15 +1,38 @@
+/**
+ * SwimsAPI.js
+ * 
+ * This file handles user "swims" (disciplinary records/penalties).
+ * It includes leaderboard viewing and administrative addition of swims.
+ * 
+ * Routes:
+ * - GET /api/user/swims/leaderboard: Fetch the global swims leaderboard.
+ * - POST /api/user/:id/swims: Manually add swims to a specific user (Exec only).
+ */
+
 const SwimsDB = require('../../db/swimsDB.js');
 const check = require('../../misc/authentication');
 
+/**
+ * API for swim management and leaderboard.
+ * @module SwimsAPI
+ */
 class SwimsAPI {
+    /**
+     * @param {object} app - Express application.
+     * @param {object} db - Database connection.
+     */
     constructor(app, db) {
         this.app = app;
         this.db = db;
     }
 
+    /**
+     * Registers all swim-related routes.
+     */
     registerRoutes() {
         /**
-         * Fetch swim leaderboard (all-time or yearly).
+         * Fetch swim leaderboard.
+         * Support for all-time or yearly stats.
          */
         this.app.get('/api/user/swims/leaderboard', check(), async (req, res) => {
             const yearly = req.query.yearly === 'true';
@@ -18,12 +41,14 @@ class SwimsAPI {
         });
 
         /**
-         * Add swims to a user.
+         * Add swims to a user account.
+         * Typically used by Execs during training or events.
          */
         this.app.post('/api/user/:id/swims', check('perm:swims.manage'), async (req, res) => {
             const userId = parseInt(req.params.id, 10);
             const count = parseInt(req.body.count, 10);
             if (isNaN(userId) || isNaN(count)) return res.status(400).json({ message: 'Invalid data' });
+            
             const status = await SwimsDB.addSwims(this.db, userId, count, req.user.id);
             return status.getResponse(res);
         });

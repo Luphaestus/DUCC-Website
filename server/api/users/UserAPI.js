@@ -1,3 +1,17 @@
+/**
+ * UserAPI.js
+ * 
+ * This file handles user profile management, membership status, and account settings.
+ * It features robust field-level validation and dynamic profile filtering.
+ * 
+ * Routes:
+ * - GET /api/user/elements/:elements: Fetch specific profile fields for the current user.
+ * - GET /api/user/:id/elements/:elements: Fetch specific profile fields for another user (Exec only).
+ * - POST /api/user/elements: Update the current user's profile information.
+ * - POST /api/user/join: Process membership signup and fee deduction.
+ * - POST /api/user/deleteAccount: Self-deletion of account (requires password verification).
+ */
+
 const { statusObject } = require('../../misc/status.js');
 const UserDB = require('../../db/userDB.js');
 const SwimsDB = require('../../db/swimsDB.js');
@@ -15,8 +29,8 @@ const ValidationRules = require('../../rules/ValidationRules.js');
  */
 class User {
     /**
-     * @param {object} app
-     * @param {object} db
+     * @param {object} app - Express app.
+     * @param {object} db - SQLite database.
      */
     constructor(app, db) {
         this.app = app;
@@ -25,6 +39,7 @@ class User {
 
     /**
      * Required fields for complete legal/medical information.
+     * The system identifies a profile as "legal info complete" when all these are populated.
      */
     static legalElements = [
         "date_of_birth", "college_id", "emergency_contact_name", "emergency_contact_phone",
@@ -35,21 +50,22 @@ class User {
 
     /**
      * Get authenticated user ID.
-     * @param {object} req
+     * @param {object} req - Express request.
      * @returns {number|null}
      */
     static getID(req) { return req.user ? req.user.id : null; }
 
     /**
      * Fetch whitelisted profile elements for current user.
-     * @param {object} req
-     * @param {object} db
-     * @param {string|string[]} elements
+     * Ensures users only request data they are allowed to see about themselves.
+     * @param {object} req - Express request.
+     * @param {object} db - Database connection.
+     * @param {string|string[]} elements - List of requested field names.
      * @returns {Promise<statusObject>}
      */
     static async getAccessibleElements(req, db, elements) {
         /**
-         * Check element access permissions.
+         * Internal helper to verify if an element key is accessible by a normal user.
          */
         function isElementAccessibleByNormalUser(element) {
             const accessibleUserDB = [
@@ -71,6 +87,7 @@ class User {
         const userElements = [];
         const transactionElements = [];
 
+        // Distribute element requests to their respective database handlers
         for (const element of elements) {
             const [accessibleUserDB, accessibleTransactionsDB] = isElementAccessibleByNormalUser(element);
             if (!accessibleUserDB && !accessibleTransactionsDB) return new statusObject(403, 'Forbidden element: ' + element);
@@ -80,6 +97,7 @@ class User {
 
         let userResultData = {};
         if (userElements.length > 0) {
+            // Some "virtual" elements require additional logic beyond simple column lookups
             const needsRank = userElements.includes('swimmer_rank');
             const needsPerms = userElements.includes('permissions');
             const needsRoles = userElements.includes('roles');
@@ -92,6 +110,7 @@ class User {
                 userResultData = userResult.getData();
             }
 
+            // Handle swimmer rank and stats fetching
             if (needsRank) {
                 const [allTimeRes, yearlyRes] = await Promise.all([
                     SwimsDB.getUserSwimmerRank(db, req.user.id, false),
@@ -107,6 +126,7 @@ class User {
                 userResultData.swimmer_rank = allTimeData.rank;
             }
 
+            // Handle role and permission expansion
             if (needsPerms || needsRoles) {
                 if (needsRoles) {
                     const rolesRes = await RolesDB.getUserRoles(db, req.user.id);
@@ -134,12 +154,16 @@ class User {
 
     /**
      * Validate and write profile updates.
-     * @param {object} req
-     * @param {object} db
-     * @param {object} data
+     * Enforces business rules and formatting (e.g. trimming emails).
+     * @param {object} req - Express request.
+     * @param {object} db - Database instance.
+     * @param {object} data - Field update map.
      * @returns {Promise<statusObject>}
      */
     static async writeNormalElements(req, db, data) {
+        /**
+         * Fetch a field either from the current update batch or the database.
+         */
         async function getElement(element, data, db) {
             if (element in data) return new statusObject(200, null, data[element]);
             return await User.getAccessibleElements(req, db, element);
@@ -148,6 +172,7 @@ class User {
         const errors = {};
         let legalUpdateNeeded = false;
 
+        // Perform validation for each field in the update batch
         for (const element in data) {
             const value = data[element];
             let error = null;
@@ -224,6 +249,7 @@ class User {
             return new statusObject(400, 'Validation failed', { errors });
         }
 
+        // Logic to automatically flag profile as "legal info complete"
         if (legalUpdateNeeded) {
             let allFilled = true;
             for (const element of User.legalElements) {
@@ -248,18 +274,19 @@ class User {
 
     /**
      * Internal helper to preprocess input data before database operations.
-     * @param {object} data
+     * @param {object} data - Input data object.
      */
     static preprocessData(data) {
         if (data.email) data.email = data.email.replace(/\s/g, '').toLowerCase();
     }
 
     /**
-     * Register user routes.
+     * Register user-related Express routes.
      */
     registerRoutes() {
         /**
-         * Fetch profile elements.
+         * Fetch profile elements for current user.
+         * Usage: /api/user/elements/email,first_name,balance
          */
         this.app.get('/api/user/elements/:elements', check(), async (req, res) => {
             const elements = req.params.elements.split(',').map(e => e.trim());
@@ -269,13 +296,15 @@ class User {
         });
 
         /**
-         * Fetch profile elements for a specific user (Admin/Exec).
+         * Fetch profile elements for a specific user.
+         * Restricted to Execs only.
          */
         this.app.get('/api/user/:id/elements/:elements', check('perm:is_exec'), async (req, res) => {
             const userId = parseInt(req.params.id);
             if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
             
             const elements = req.params.elements.split(',').map(e => e.trim());
+            // Mock a request object for the target user to reuse access logic
             const targetReq = { ...req, user: { ...req.user, id: userId } };
             const status = await User.getAccessibleElements(targetReq, this.db, elements);
             if (status.isError()) return status.getResponse(res);
@@ -283,7 +312,7 @@ class User {
         });
 
         /**
-         * Update profile elements.
+         * Update current user's profile elements.
          */
         this.app.post('/api/user/elements', check(), async (req, res) => {
             User.preprocessData(req.body);
@@ -298,7 +327,8 @@ class User {
         });
 
         /**
-         * Process membership joining and fee.
+         * Process membership joining.
+         * Deducts membership cost from user balance and sets membership flag.
          */
         this.app.post('/api/user/join', check(), async (req, res) => {
             try {
@@ -322,7 +352,8 @@ class User {
         });
 
         /**
-         * Delete account (denied if in debt).
+         * Permanently delete current user account.
+         * Denied if the user has an outstanding balance (debt).
          */
         this.app.post('/api/user/deleteAccount', check(), async (req, res) => {
             const { password } = req.body;
@@ -332,9 +363,11 @@ class User {
                 const user = await this.db.get('SELECT hashed_password FROM users WHERE id = ?', [req.user.id]);
                 if (!user || !user.hashed_password) return res.status(400).json({ message: 'User not found or invalid state.' });
 
+                // Verify identity before deletion
                 const isMatch = await bcrypt.compare(password, user.hashed_password);
                 if (!isMatch) return res.status(403).json({ message: 'Incorrect password.' });
 
+                // Prevent deletion if user owes money
                 const balance = await transactionsDB.get_balance(this.db, req.user.id);
                 if (balance.isError()) return balance.getResponse(res);
                 if (balance.getData() !== 0) return res.status(400).json({ message: 'Balance must be zero to delete account.' });

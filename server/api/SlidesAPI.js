@@ -1,8 +1,19 @@
+/**
+ * SlidesAPI.js
+ * 
+ * This file scans the public/images/slides directory and serves image paths for the home page slideshow.
+ * It features an automated directory watcher to update the file list when images are added or removed.
+ * 
+ * Routes:
+ * - GET /api/slides/count: Fetch the total number of slide images.
+ * - GET /api/slides/images: Fetch an array of all slide image paths.
+ * - GET /api/slides/random: Fetch a random slide image path.
+ * - GET /api/slides/:index: Fetch a slide image path by its index.
+ */
+
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
-
-//todo fix
 
 /**
  * API for scanning and serving slideshow images.
@@ -12,7 +23,7 @@ class SlidesAPI {
 
   /**
    * Initialize and start initial scan.
-   * @param {object} app
+   * @param {object} app - The Express application instance.
    */
   constructor(app) {
     this.app = app;
@@ -24,13 +35,14 @@ class SlidesAPI {
     this._scanTimer = null;
     this._watcher = null;
 
+    // Start initial scan and watcher
     this._init().catch(err => {
       console.error('Slides init error:', err);
     });
   }
 
   /**
-   * Start scan and setup watcher.
+   * Start initial scan and setup watcher.
    * @private
    */
   async _init() {
@@ -39,7 +51,7 @@ class SlidesAPI {
   }
 
   /**
-   * Scan directory for valid images and update internal paths.
+   * Scan directory for valid images and update internal path lists.
    */
   async scan() {
     let entries = [];
@@ -58,11 +70,12 @@ class SlidesAPI {
       .sort();
 
     this.files = files;
+    // Map to public paths accessible by the browser
     this.paths = files.map(f => path.posix.join('/', ...this.dirParts, f));
   }
 
   /**
-   * Debounce directory scan.
+   * Schedule a directory scan with debouncing.
    * @private
    */
   _scheduleScan() {
@@ -74,7 +87,7 @@ class SlidesAPI {
   }
 
   /**
-   * Watch directory for changes and trigger rescan.
+   * Watch the slides directory for changes.
    * @private
    */
   _setupWatcher() {
@@ -102,7 +115,7 @@ class SlidesAPI {
   }
 
   /**
-   * Get count of slide images.
+   * Get total count of slide images.
    * @returns {number}
    */
   getFileCount() {
@@ -111,7 +124,7 @@ class SlidesAPI {
 
   /**
    * Get slide URL by index.
-   * @param {number} index
+   * @param {number} index - Index of the file.
    * @returns {string|null}
    */
   getFileAt(index) {
@@ -129,7 +142,7 @@ class SlidesAPI {
   }
 
   /**
-   * Register slides routes.
+   * Register slides-related routes.
    */
   registerRoutes() {
 
@@ -161,7 +174,7 @@ class SlidesAPI {
   }
 
   /**
-   * Cleanup watcher and timers.
+   * Cleanup file watcher and scan timers.
    */
   close() {
     if (this._watcher) {
