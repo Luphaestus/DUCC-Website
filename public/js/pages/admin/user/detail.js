@@ -352,66 +352,56 @@ async function renderTagsTab(container, userId) {
         ]);
 
         const allTags = allTagsData.data || [];
-        const availableTags = allTags.filter(tag => !userTags.some(ut => ut.id === tag.id));
 
-        let html = `
+        container.innerHTML = `
             <div class="detail-card full-width">
-                <header><h3>User Tags</h3></header>
+                <header>
+                    ${LOCAL_ACTIVITY_SVG}
+                    <h3>Whitelisted Tags</h3>
+                </header>
                 <div class="card-body">
-                    <div class="tag-controls-row">
-                        <select id="admin-add-tag-select" class="modern-select">
-                            <option value="">Select a tag to add...</option>
-                            ${availableTags.map(tag => `<option value="${tag.id}">${tag.name}</option>`).join('')}
-                        </select>
-                        <button id="admin-add-tag-btn" class="primary small-btn" disabled>Add Tag</button>
+                    <p class="helper-text">Tags this user is explicitly whitelisted for.</p>
+                    <div class="tags-selection-grid" style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:1.5rem;">
+                        ${allTags.map(tag => {
+                            const isWhitelisted = userTags.some(ut => ut.id === tag.id);
+                            return `
+                                <label class="tag-checkbox" style="cursor:pointer; display:flex; align-items:center;">
+                                    <input type="checkbox" class="user-tag-cb" value="${tag.id}" ${isWhitelisted ? 'checked' : ''} style="display:none;">
+                                    <span class="tag-badge ${isWhitelisted ? 'selected' : ''}" 
+                                          style="background-color: ${tag.color}; opacity: ${isWhitelisted ? '1' : '0.4'}; transition: all 0.2s; border: 2px solid transparent; 
+                                                 padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: 600; color: white;
+                                                 ${isWhitelisted ? 'box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pico-primary); transform: scale(1.05);' : ''}">
+                                        ${tag.name}
+                                    </span>
+                                </label>
+                            `;
+                        }).join('')}
                     </div>
-                    
-                    <div id="admin-user-tags-list" class="tags-cloud">
-        `;
-
-        if (userTags.length === 0) {
-            html += '<p class="empty-text">No tags assigned.</p>';
-        } else {
-            userTags.forEach(tag => {
-                html += `
-                    <div class="tag-chip" style="background-color: ${tag.color};">
-                        <span>${tag.name}</span>
-                        <button class="remove-tag-btn" data-tag-id="${tag.id}" title="Remove">${CLOSE_SVG}</button>
-                    </div>
-                `;
-            });
-        }
-
-        html += `   </div>
                 </div>
             </div>`;
-        container.innerHTML = html;
 
-        // ... Bind events (Add/Remove) ...
-        const select = document.getElementById('admin-add-tag-select');
-        const addBtn = document.getElementById('admin-add-tag-btn');
+        container.querySelectorAll('.user-tag-cb').forEach(cb => {
+            cb.onchange = async () => {
+                const tagId = cb.value;
+                const isAdding = cb.checked;
+                const span = cb.nextElementSibling;
 
-        if (select) {
-            select.onchange = () => { addBtn.disabled = !select.value; };
-            addBtn.onclick = async () => {
-                const tagId = select.value;
-                if (!tagId) return;
                 try {
-                    await ajaxPost(`/api/tags/${tagId}/whitelist`, { userId });
-                    notify('Success', 'Tag added', 'success');
-                    renderTagsTab(container, userId);
-                } catch (e) { notify('Error', 'Failed to add tag', 'error'); }
-            };
-        }
-
-        container.querySelectorAll('.remove-tag-btn').forEach(btn => {
-            btn.onclick = async () => {
-                if (!confirm('Remove tag?')) return;
-                try {
-                    await fetch(`/api/tags/${btn.dataset.tagId}/whitelist/${userId}`, { method: 'DELETE' });
-                    notify('Success', 'Tag removed', 'success');
-                    renderTagsTab(container, userId);
-                } catch (e) { notify('Error', 'Failed to remove tag', 'error'); }
+                    if (isAdding) {
+                        await ajaxPost(`/api/tags/${tagId}/whitelist`, { userId });
+                        span.style.opacity = '1';
+                        span.style.transform = 'scale(1.05)';
+                        span.style.boxShadow = '0 0 0 2px white, 0 0 0 4px var(--pico-primary)';
+                    } else {
+                        await fetch(`/api/tags/${tagId}/whitelist/${userId}`, { method: 'DELETE' });
+                        span.style.opacity = '0.4';
+                        span.style.transform = 'scale(1)';
+                        span.style.boxShadow = 'none';
+                    }
+                } catch (e) {
+                    cb.checked = !isAdding; // Revert UI
+                    notify('Error', 'Update failed', 'error');
+                }
             };
         });
 

@@ -30,6 +30,7 @@ export async function renderUserAdvanced(userId) {
             ajaxGet('/api/colleges').catch(() => [])
         ]);
         const allTags = allTagsRes.data || [];
+        const managedTags = user.direct_managed_tags || [];
 
         adminContent.innerHTML = /*html*/`
             <div class="glass-layout">
@@ -96,20 +97,22 @@ export async function renderUserAdvanced(userId) {
                                 <div class="divider" style="height:1px; background:rgba(128,128,128,0.2); margin:1.5rem 0;"></div>
 
                                 <h4>Managed Tags (Scoped)</h4>
-                                <div class="inline-add-form" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                                    <select id="add-managed-tag-select" class="modern-select compact" style="margin-bottom: 0;">
-                                        <option value="">Select Tag...</option>
-                                        ${allTags.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
-                                    </select>
-                                    <button id="add-managed-tag-btn" class="icon-btn primary small-btn">${ADD_SVG}</button>
-                                </div>
-                                <div id="managed-tags-list" class="tags-cloud">
-                                    ${(user.direct_managed_tags || []).map(t => `
-                                        <span class="tag-chip" style="background-color: ${t.color};">
-                                            ${t.name}
-                                            <button class="remove-managed-tag-btn delete-icon-btn" data-id="${t.id}">${CLOSE_SVG}</button>
-                                        </span>
-                                    `).join('')}
+                                <p class="helper-text">Tags this user can manage events for.</p>
+                                <div class="tags-selection-grid" style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-top:1rem;">
+                                    ${allTags.map(tag => {
+                                        const isManaged = managedTags.some(t => t.id === tag.id);
+                                        return `
+                                            <label class="tag-checkbox" style="cursor:pointer; display:flex; align-items:center;">
+                                                <input type="checkbox" class="managed-tag-cb" value="${tag.id}" ${isManaged ? 'checked' : ''} style="display:none;">
+                                                <span class="tag-badge ${isManaged ? 'selected' : ''}" 
+                                                      style="background-color: ${tag.color}; opacity: ${isManaged ? '1' : '0.4'}; transition: all 0.2s; border: 2px solid transparent; 
+                                                             padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: 600; color: white;
+                                                             ${isManaged ? 'box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pico-primary); transform: scale(1.05);' : ''}">
+                                                    ${tag.name}
+                                                </span>
+                                            </label>
+                                        `;
+                                    }).join('')}
                                 </div>
                             </div>
                         </div>
@@ -160,25 +163,32 @@ export async function renderUserAdvanced(userId) {
             }
         });
 
-        // Tag Handlers
-        document.getElementById('add-managed-tag-btn').onclick = async () => {
-            const tagId = document.getElementById('add-managed-tag-select').value;
-            if (!tagId) return;
-            try {
-                await ajaxPost(`/api/admin/user/${userId}/managed_tag`, { tagId });
-                notify('Success', 'Tag scope added', 'success');
-                renderUserAdvanced(userId); // Refresh
-            } catch (e) { notify('Error', 'Failed', 'error'); }
-        };
+        // Scoped Tag Handlers (Toggle Style)
+        container.querySelectorAll('.managed-tag-cb').forEach(cb => {
+            cb.onchange = async () => {
+                const tagId = cb.value;
+                const isAdding = cb.checked;
+                const span = cb.nextElementSibling;
 
-        container.querySelectorAll('.remove-managed-tag-btn').forEach(btn => {
-            btn.onclick = async () => {
                 try {
-                    await fetch(`/api/admin/user/${userId}/managed_tag/${btn.dataset.id}`, { method: 'DELETE' });
-                    notify('Success', 'Removed', 'success');
-                    renderUserAdvanced(userId); // Refresh
-                } catch (e) { notify('Error', 'Failed', 'error'); }
-            }
+                    if (isAdding) {
+                        await ajaxPost(`/api/admin/user/${userId}/managed_tag`, { tagId });
+                        span.style.opacity = '1';
+                        span.style.transform = 'scale(1.05)';
+                        span.style.boxShadow = '0 0 0 2px white, 0 0 0 4px var(--pico-primary)';
+                        notify('Success', 'Tag scope added', 'success');
+                    } else {
+                        await fetch(`/api/admin/user/${userId}/managed_tag/${tagId}`, { method: 'DELETE' });
+                        span.style.opacity = '0.4';
+                        span.style.transform = 'scale(1)';
+                        span.style.boxShadow = 'none';
+                        notify('Success', 'Tag scope removed', 'success');
+                    }
+                } catch (e) {
+                    cb.checked = !isAdding; // Revert UI
+                    notify('Error', 'Update failed', 'error');
+                }
+            };
         });
 
     } catch (e) {

@@ -23,7 +23,7 @@ class UserDB {
         const isOnlyExec = isScopedExec && !canManageUsers && !canManageTrans && !canManageEvents;
 
         const allowedSorts = ['first_name', 'last_name', 'email', 'balance', 'first_aid_expiry', 'filled_legal_info', 'is_member', 'difficulty_level'];
-        let sortCol = allowedSorts.includes(sort) ? sort : (isOnlyExec ? 'first_name' : 'last_name');
+        let sortCol = allowedSorts.includes(sort) ? sort : 'last_name';
         let sortOrder = order === 'desc' ? 'DESC' : 'ASC';
 
         let conditions = [];
@@ -107,11 +107,13 @@ class UserDB {
                 joinTransactions = `LEFT JOIN transactions t ON u.id = t.user_id`;
             }
 
-            let orderBy = `${sortCol} ${sortOrder}`;
-            if (sortCol === 'first_name' || isOnlyExec) {
-                orderBy = `u.first_name COLLATE NOCASE ${sortOrder}, u.last_name COLLATE NOCASE ${sortOrder}`;
-            } else if (sortCol === 'last_name') {
-                orderBy = `u.last_name COLLATE NOCASE ${sortOrder}, u.first_name COLLATE NOCASE ${sortOrder}`;
+            let orderBy;
+            if (sortCol === 'first_name' || sortCol === 'last_name' || isOnlyExec) {
+                const primary = sortCol === 'first_name' ? 'u.first_name' : 'u.last_name';
+                const secondary = sortCol === 'first_name' ? 'u.last_name' : 'u.first_name';
+                orderBy = `${primary} COLLATE NOCASE ${sortOrder}, ${secondary} COLLATE NOCASE ${sortOrder}`;
+            } else {
+                orderBy = `${sortCol} ${sortOrder}, u.last_name COLLATE NOCASE ASC`;
             }
 
             const query = `
@@ -398,30 +400,34 @@ class UserDB {
      */
     static async resetPermissions(db, newPresidentId) {
         try {
-            // Remove all roles from everyone
-            await db.run(`DELETE FROM user_roles`);
+            await db.run('BEGIN TRANSACTION');
 
-            // GDPR Cleanup: Delete legal info for users who haven't agreed to data storage
+            await db.run(`DELETE FROM user_roles`);
+            await db.run(`DELETE FROM user_permissions`);
+            await db.run(`DELETE FROM user_managed_tags`);
+
             const legalFields = [
                 "date_of_birth", "college_id", "emergency_contact_name", "emergency_contact_phone",
                 "home_address", "phone_number", "has_medical_conditions", "medical_conditions_details",
                 "takes_medication", "medication_details", "agrees_to_fitness_statement",
-                "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_keep_health_data"
+                "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data"
             ];
-            const setClause = legalFields.map(f => `${f} = NULL`).join(', ') + ", filled_legal_info = 0";
-            await db.run(`UPDATE users SET ${setClause} WHERE agrees_to_data_storage = 0 OR agrees_to_data_storage IS NULL`);
+            const setClause = legalFields.map(f => `${f} = NULL`).join(', ') + ", filled_legal_info = 0, legal_filled_at = NULL";
+            
+            await db.run(`UPDATE users SET ${setClause} WHERE agrees_to_keep_health_data = 0 OR agrees_to_keep_health_data IS NULL`);
 
-            // Assign President role to new President
             const presidentRole = await db.get('SELECT id FROM roles WHERE name = ?', ['President']);
             if (presidentRole) {
                 await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [newPresidentId, presidentRole.id]);
             }
 
+            await db.run('COMMIT');
+            return new statusObject(200);
         } catch (error) {
+            await db.run('ROLLBACK');
             console.error('Database error in resetPermissions:', error);
             return new statusObject(500, 'Database error');
         }
-        return new statusObject(200);
     }
 }
 

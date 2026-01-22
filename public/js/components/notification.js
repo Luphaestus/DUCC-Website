@@ -1,5 +1,5 @@
 /**
- * Toast-style notification system.
+ * Toast-style notification system with glassmorphic styling.
  */
 
 /**
@@ -17,13 +17,15 @@ class NotificationTypes {
  * @param {HTMLElement} notification
  */
 function closeNotification(notification) {
-    notification.classList.remove('fade-in');
+    if (notification.classList.contains('fade-out')) return;
     
     const fadeOutListener = () => {
         notification.remove();
     };
     notification.addEventListener('animationend', fadeOutListener, { once: true });
     
+    setTimeout(() => { if (notification.parentNode) notification.remove(); }, 500);
+
     notification.classList.add('fade-out');
 }
 
@@ -40,15 +42,17 @@ function notify(title, message, type = NotificationTypes.INFO, duration = 5000) 
     if (!notificationContainer) return;
 
     const notification = document.createElement('div');
-    notification.classList.add('notification', `notification-${type}`, 'fade-in');
+    notification.classList.add('notification', `notification-${type}`);
 
     const notificationTitle = document.createElement('strong');
     notificationTitle.textContent = title;
     notification.appendChild(notificationTitle);
 
-    const notificationMessage = document.createElement('p');
-    notificationMessage.textContent = message;
-    notification.appendChild(notificationMessage);
+    if (message) {
+        const notificationMessage = document.createElement('p');
+        notificationMessage.textContent = message;
+        notification.appendChild(notificationMessage);
+    }
 
     notification.addEventListener('click', () => {
         closeNotification(notification);

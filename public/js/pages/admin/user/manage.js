@@ -156,7 +156,7 @@ async function fetchAndRenderUsers({ page, search, sort, order, inDebt, isMember
         }
 
         const sample = users[0];
-        const columns = [{ key: 'name', label: 'Name', sort: 'first_name' }];
+        const columns = [{ key: 'name', label: 'Name', sort: 'last_name' }];
         if (sample.balance !== undefined) columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
         if (sample.first_aid_expiry !== undefined) columns.push({ key: 'first_aid', label: 'First Aid', sort: 'first_aid_expiry' });
         if (sample.difficulty_level !== undefined) columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });

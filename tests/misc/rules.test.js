@@ -55,7 +55,6 @@ describe('misc/rules', () => {
             await world.createUser('user', { filled_legal_info: 1, is_member: 1 });
             user = await world.db.get('SELECT * FROM users WHERE first_name = "user"');
 
-            // Add a coach
             await world.createUser('coach', { is_instructor: 1 });
             await world.joinEvent('coach', 'Event1');
         });
@@ -69,7 +68,6 @@ describe('misc/rules', () => {
             world.mockGlobalFloat('MinMoney', -10.0);
             await world.addTransaction('user', -15.0);
             
-            // Refresh user balance might not be needed if Rules.canJoinEvent fetches it
             const res = await Rules.canJoinEvent(world.db, event, user);
             expect(res.isError()).toBe(true);
             expect(res.getMessage()).toBe('Outstanding debts');

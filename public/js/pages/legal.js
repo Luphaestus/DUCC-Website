@@ -301,6 +301,9 @@ function getFormData() {
         else data['takes_medication'] = null;
     }
 
+    if (data.college_id === "" || data.college_id === null) data.college_id = null;
+    else data.college_id = parseInt(data.college_id, 10);
+
     return data;
 }
 
@@ -360,12 +363,32 @@ async function validateForm(watch = true) {
  * Fetch and populate existing medical data.
  */
 async function getCurrentMedicalData() {
+    // 1. Fetch colleges first to ensure dropdown is ready
+    try {
+        const colleges = await ajaxGet('/api/colleges');
+        const collegeSelect = document.getElementById(college_id);
+        if (collegeSelect) {
+            collegeSelect.innerHTML = '<option value="" disabled selected>Select your college</option>' + 
+                colleges.map(c => `<option value="${c.id}">${c.name.charAt(0).toUpperCase() + c.name.slice(1)}</option>`).join('');
+        }
+    } catch (e) {
+        console.error("Failed to load colleges", e);
+    }
+
+    // 2. Fetch user data
     const keys = ['filled_legal_info', ...Object.keys(FIELD_MAP)].join(',');
     const data = await ajaxGet(`/api/user/elements/${keys}`);
     if (!data || !data.filled_legal_info) return;
+    
     populateForm(data);
-    document.getElementById(has_medical_conditions_no_id).checked = !data.has_medical_conditions;
-    document.getElementById(takes_medication_no_id).checked = !data.takes_medication;
+    
+    // Explicitly handle radio buttons as they are usually handled by groups
+    if (data.has_medical_conditions !== null) {
+        document.getElementById(data.has_medical_conditions ? has_medical_conditions_id : has_medical_conditions_no_id).checked = true;
+    }
+    if (data.takes_medication !== null) {
+        document.getElementById(data.takes_medication ? takes_medication_id : takes_medication_no_id).checked = true;
+    }
 }
 
 /**

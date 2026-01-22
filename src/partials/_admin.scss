@@ -9,8 +9,7 @@
     
     .admin-content-wrapper {
         width: 100%;
-        max-width: 1400px;
-        margin: 0 auto;
+        margin: 0 auto 3rem auto;
     }
 }
 
@@ -31,6 +30,7 @@
         transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease;
         cursor: pointer;
         height: 100%;
+        min-height: 180px;
         border: var(--glass-border);
         background: var(--glass-bg);
 
@@ -114,7 +114,7 @@
 .glass-table-container {
     @include glass-panel;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
 
     .table-responsive {
         width: 100%;
@@ -155,7 +155,7 @@
                 cursor: pointer;
 
                 &:last-child { border-bottom: none; }
-                &:hover { background: rgba(var(--pico-color-rgb), 0.05); }
+                &:hover { background: rgba(var(--pico-color-rgb), 0.08); } /* Clearer row highlight */
 
                 td {
                     padding: 1rem;
@@ -198,28 +198,31 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
+    gap: 1rem;
+    margin-top: 2rem;
 
     button {
+        @include common-element-size;
+        min-width: 6rem;
         background: var(--glass-bg);
         border: var(--glass-border);
-        color: var(--pico-color);
-        padding: 0.5rem 1rem;
-        border-radius: var(--border-radius);
-        font-size: 0.9rem;
+        color: var(--theme-opposite);
+        border-radius: var(--border-radius-md);
         transition: all 0.2s ease;
         box-shadow: none;
+        margin-bottom: 0;
 
         &:hover:not(:disabled) {
             background: rgba(var(--pico-primary-rgb), 0.1);
             color: var(--pico-primary);
             border-color: var(--pico-primary);
+            transform: translateY(-2px);
         }
 
         &:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
+            filter: grayscale(1);
         }
         
         &.active {
@@ -227,6 +230,13 @@
             color: white;
             border-color: var(--pico-primary);
         }
+    }
+
+    .pagination-info {
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        min-width: 100px;
+        text-align: center;
     }
 }
 
@@ -246,6 +256,7 @@
         letter-spacing: -0.02em;
         background: linear-gradient(135deg, var(--pico-contrast) 0%, var(--pico-muted-color) 100%);
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
         
         .admin-title-section {

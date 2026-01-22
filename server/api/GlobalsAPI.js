@@ -60,13 +60,6 @@ class GlobalsAPI {
          */
         this.app.get('/api/globals', check('perm:globals.manage'), async (req, res) => {
             const globals = new Globals().getAll();
-
-            // Inject current President ID
-            const presidentRes = await RolesDB.getFirstUserIdByRoleName(this.db, 'President');
-            if (!presidentRes.isError()) {
-                globals['President'] = presidentRes.getData();
-            }
-
             res.json({ res: globals });
         });
 

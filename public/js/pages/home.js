@@ -94,8 +94,9 @@ function initMap() {
  */
 function setLayerBg(layer, url) {
     let urlString = url ? `, url("${url}")` : '';
-    layer.style.setProperty('--slide-img-light', "linear-gradient(to left, rgba(245, 246, 252, 0), rgb(231, 182, 238))" + urlString);
-    layer.style.setProperty('--slide-img-dark', "linear-gradient(to left, rgba(245, 246, 252, 0), rgb(77, 26, 87))" + urlString);
+    const darkGradient = "linear-gradient(to left, rgba(245, 246, 252, 0), rgb(77, 26, 87))";
+    layer.style.setProperty('--slide-img-light', darkGradient + urlString);
+    layer.style.setProperty('--slide-img-dark', darkGradient + urlString);
 }
 
 /**

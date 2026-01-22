@@ -121,6 +121,7 @@
 
     .today-btn {
         right: 1rem;
+        z-index: -1;
         &:hover svg { transform: rotate(180deg); }
         &.spin-active svg { animation: spin-cycle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
     }
