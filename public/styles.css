@@ -7013,6 +7013,11 @@ textarea[name=description] {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }
+@media (max-width: 768px) {
+  .profile-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .profile-layout-grid .column {
   display: flex;
   flex-direction: column;
@@ -7098,7 +7103,7 @@ textarea[name=description] {
 }
 @media (max-width: 600px) {
   .info-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 .info-grid .full-row {
@@ -7804,6 +7809,11 @@ textarea[name=description] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+}
+@media (max-width: 600px) {
+  #admin-view .dual-grid {
+    grid-template-columns: 1fr;
+  }
 }
 #admin-view .balance-header {
   padding: 1.5rem;

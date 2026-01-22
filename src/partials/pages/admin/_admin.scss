@@ -560,6 +560,10 @@ textarea[name="description"] {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
 
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+
     .column {
         display: flex;
         flex-direction: column;
@@ -644,7 +648,7 @@ textarea[name="description"] {
     gap: 1.5rem;
 
     @media (max-width: 600px) {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 
     .full-row {
