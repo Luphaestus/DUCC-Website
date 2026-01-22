@@ -197,6 +197,7 @@ function getOrdinal(n) {
 function renderMembershipBanner(profile, globals) {
     const container = document.getElementById('membership-banner-container');
     if (!container) return;
+
     const isMember = profile.is_member;
     const freeSessions = profile.free_sessions || 0;
     const cost = Number(globals.MembershipCost) || 50;
@@ -230,8 +231,9 @@ function renderMembershipBanner(profile, globals) {
             }
         };
     } else {
+        console.log("Hiding membership banner for member");
         container.classList.add('hidden');
-        container.innerHTML = ``;
+        container.innerHTML = '';
     }
 }
 
