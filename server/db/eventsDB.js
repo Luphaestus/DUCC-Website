@@ -228,11 +228,11 @@ class eventsDB {
      */
     static async createEvent(db, data) {
         try {
-            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags } = data;
+            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
             const result = await db.run(
-                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost]
+                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, image_url, upfront_refund_cutoff)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_url, upfront_refund_cutoff]
             );
             const eventId = result.lastID;
 
@@ -256,10 +256,10 @@ class eventsDB {
      */
     static async updateEvent(db, id, data) {
         try {
-            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags } = data;
+            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
             await db.run(
-                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=? WHERE id=?`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, id]
+                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, image_url=?, upfront_refund_cutoff=? WHERE id=?`,
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_url, upfront_refund_cutoff, id]
             );
 
             if (tags && Array.isArray(tags)) {
@@ -269,7 +269,8 @@ class eventsDB {
 
             return new statusObject(200, 'Event updated');
         } catch (error) {
-            return new statusObject(500, 'Database error');
+            console.error(error);
+            return new statusObject(500, 'Database error: ' + error.message);
         }
     }
 

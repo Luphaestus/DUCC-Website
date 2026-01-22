@@ -4064,9 +4064,8 @@ nav.small-container ul.navbar-items.user-items {
   .events-controls-modern .today-btn,
   .events-controls-modern .admin-link-btn {
     padding: 0.5rem;
-    width: 2.5rem;
-    height: 2.5rem;
-    justify-content: center;
+    width: auto;
+    height: auto;
   }
 }
 .events-controls-modern .today-btn {
@@ -4252,7 +4251,7 @@ nav.small-container ul.navbar-items.user-items {
   pointer-events: none;
 }
 .event-card .event-card-content {
-  padding: 0.6rem 0.6rem;
+  padding: 0 0.6rem;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -5205,19 +5204,18 @@ body[data-theme=light] .event-actions #edit-event-button {
   }
 }
 
-.dashboard-section .glass-panel {
+.glass-panel {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 1.5rem;
 }
-.dashboard-section .glass-panel .box-header {
+.glass-panel .box-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-height: 2.5rem;
 }
-.dashboard-section .glass-panel .box-header h3 {
+.glass-panel .box-header h3 {
   margin: 0;
   font-size: 1.1rem;
   display: flex;
@@ -5225,12 +5223,12 @@ body[data-theme=light] .event-actions #edit-event-button {
   gap: 0.5rem;
   line-height: 1;
 }
-.dashboard-section .glass-panel .box-header button {
+.glass-panel .box-header button {
   margin: 0;
   height: auto;
   padding: 0.4rem 0.75rem;
 }
-.dashboard-section .glass-panel .box-header button svg {
+.glass-panel .box-header button svg {
   margin-right: 0.5rem;
 }
 
@@ -5735,7 +5733,6 @@ body[data-theme=light] .event-actions #edit-event-button {
 .glass-table-container table.glass-table tbody tr:hover {
   background: rgba(var(--pico-color-rgb), 0.08);
 }
-.glass-table-container table.glass-table tbody tr { /* Clearer row highlight */ }
 .glass-table-container table.glass-table tbody tr td {
   padding: 1rem;
   vertical-align: middle;
@@ -5922,7 +5919,7 @@ body[data-theme=light] .event-actions #edit-event-button {
 textarea[name=description] {
   padding: 1rem;
   line-height: 1.5;
-  min-height: 150px; /* Default to reasonable height */
+  min-height: 150px;
 }
 
 /* Glass Toolbar Adjustments for Nav */
@@ -6226,6 +6223,10 @@ textarea[name=description] {
 }
 
 /* Tabs */
+.modern-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
 .modern-tabs .tab-btn {
   background: transparent;
   border: none;
@@ -6235,6 +6236,7 @@ textarea[name=description] {
   border-radius: var(--border-radius-pill);
   transition: all 0.2s;
   box-shadow: none;
+  margin-bottom: 0;
 }
 .modern-tabs .tab-btn:hover {
   color: var(--pico-color);
@@ -6243,6 +6245,100 @@ textarea[name=description] {
 .modern-tabs .tab-btn.active {
   background: var(--pico-primary);
   color: white;
+}
+
+/* Toggle Group (Merged Buttons / Sliding look) */
+.toggle-group {
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  border-radius: var(--border-radius-pill);
+  padding: 0.25rem;
+  display: flex;
+  position: relative;
+  backdrop-filter: blur(12px);
+  width: fit-content;
+}
+.toggle-group .toggle-bg {
+  position: absolute;
+  top: 0.25rem;
+  left: 0;
+  height: calc(100% - 0.5rem);
+  background: var(--pico-primary);
+  border-radius: var(--border-radius-pill);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+.toggle-group button, .toggle-group .tab-btn {
+  background: transparent !important;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  color: var(--pico-muted-color);
+  font-weight: 600;
+  z-index: 2;
+  transition: color 0.3s ease;
+  box-shadow: none;
+  margin-bottom: 0;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.9rem;
+  position: relative;
+}
+.toggle-group button.active, .toggle-group .tab-btn.active {
+  color: white !important;
+}
+.toggle-group button:hover:not(.active), .toggle-group .tab-btn:hover:not(.active) {
+  color: var(--pico-contrast);
+  background: rgba(var(--pico-color-rgb), 0.05) !important;
+}
+
+/* Detail Info Boxes (for grouped fields) */
+.detail-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-info-box {
+  background: rgba(var(--pico-background-color-rgb), 0.4);
+  border: var(--glass-border);
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: background 0.2s ease;
+}
+.detail-info-box:hover {
+  background: rgba(var(--pico-background-color-rgb), 0.6);
+}
+.detail-info-box .box-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--pico-muted-color);
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.detail-info-box .box-label svg {
+  width: 1rem;
+  height: 1rem;
+}
+.detail-info-box .box-value {
+  font-size: 0.95rem;
+  color: var(--pico-contrast);
+  line-height: 1.4;
+  font-weight: 500;
+}
+.detail-info-box.warning {
+  background: rgba(243, 156, 18, 0.05);
+  border-color: rgba(243, 156, 18, 0.15);
+}
+.detail-info-box.warning .box-label {
+  color: #d35400;
 }
 
 /* Footer */

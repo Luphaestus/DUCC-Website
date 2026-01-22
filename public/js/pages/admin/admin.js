@@ -10,7 +10,6 @@ import { renderTagDetail } from './tag/detail.js';
 import { renderManageRoles } from './role/manage.js';
 import { renderRoleDetail } from './role/detail.js';
 import { renderManageGlobals } from './globals.js';
-import { renderUserAdvanced } from './user/advanced.js';
 import { renderAdminFiles } from './files.js';
 import { requireAuth } from '/js/utils/auth.js';
 import { GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG, ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG } from '../../../images/icons/outline/icons.js';
@@ -92,12 +91,11 @@ async function AdminNavigationListener({ viewId, path }) {
     const canAccessGlobals = isPresident;
     const canAccessDocs = canManageDocs;
 
-    if (cleanPath === '/admin/users' || cleanPath.match(/^\/admin\/user\/\d+(\/advanced)?$/)) {
+    if (cleanPath === '/admin/users' || cleanPath.match(/^\/admin\/user\/\d+$/)) {
         if (!canAccessUsers) return switchView('/unauthorized');
-        updateAdminTitle(cleanPath.includes('advanced') ? 'Advanced User Settings' : (cleanPath.match(/\d+$/) ? 'User Details' : 'Users'));
+        updateAdminTitle(cleanPath.match(/\d+$/) ? 'User Details' : 'Users');
         
         if (cleanPath === '/admin/users') await renderManageUsers();
-        else if (cleanPath.includes('advanced')) await renderUserAdvanced(cleanPath.split('/')[3]);
         else await renderUserDetail(cleanPath.split('/').pop());
 
     } else if (cleanPath === '/admin/events' || cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {

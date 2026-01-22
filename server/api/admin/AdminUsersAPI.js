@@ -1,5 +1,6 @@
 const UserDB = require('../../db/userDB.js');
 const RolesDB = require('../../db/rolesDB.js');
+const SwimsDB = require('../../db/swimsDB.js');
 const transactionsDB = require('../../db/transactionDB.js');
 const check = require('../../misc/authentication.js');
 const { statusObject } = require('../../misc/status.js');
@@ -56,7 +57,9 @@ class AdminUsers {
          * Fetch user profile and balance (Admin/Exec, filtered).
          */
         this.app.get('/api/admin/user/:id', check('perm:user.read | perm:user.manage | perm:transaction.read | perm:transaction.manage | perm:is_exec'), async (req, res) => {
-            const userId = req.params.id;
+            const userId = parseInt(req.params.id);
+            if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
+
             const canManageUsers = await Permissions.hasPermission(this.db, req.user.id, 'user.manage') || await Permissions.hasPermission(this.db, req.user.id, 'user.read');
             const canManageTransactions = await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage') || await Permissions.hasPermission(this.db, req.user.id, 'transaction.read');
 
@@ -81,6 +84,18 @@ class AdminUsers {
             if (profileRes.isError()) return profileRes.getResponse(res);
 
             const filteredUser = profileRes.getData();
+
+            const [allTimeRes, yearlyRes] = await Promise.all([
+                SwimsDB.getUserSwimmerRank(this.db, userId, false),
+                SwimsDB.getUserSwimmerRank(this.db, userId, true)
+            ]);
+            let allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
+            allTimeData.rank = allTimeData.swims === 0 ? -1 : allTimeData.rank;
+            
+            let yearlyData = yearlyRes.getData() || { rank: -1, swims: 0 };
+            yearlyData.rank = yearlyData.swims === 0 ? -1 : yearlyData.rank;
+
+            filteredUser.swimmer_stats = { allTime: allTimeData, yearly: yearlyData };
 
             // Add roles
             const rolesRes = await RolesDB.getUserRoles(this.db, userId);

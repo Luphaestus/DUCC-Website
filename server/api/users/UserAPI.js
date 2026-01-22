@@ -98,8 +98,11 @@ class User {
                     SwimsDB.getUserSwimmerRank(db, req.user.id, true)
                 ]);
                 let allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
-                allTimeData.rank = allTimeRes.getData().swims === 0 ? -1 : allTimeData.rank;
-                const yearlyData = yearlyRes.getData() || { rank: -1, swims: 0 };
+                allTimeData.rank = allTimeData.swims === 0 ? -1 : allTimeData.rank;
+                
+                let yearlyData = yearlyRes.getData() || { rank: -1, swims: 0 };
+                yearlyData.rank = yearlyData.swims === 0 ? -1 : yearlyData.rank;
+
                 userResultData.swimmer_stats = { allTime: allTimeData, yearly: yearlyData };
                 userResultData.swimmer_rank = allTimeData.rank;
             }
@@ -261,6 +264,20 @@ class User {
         this.app.get('/api/user/elements/:elements', check(), async (req, res) => {
             const elements = req.params.elements.split(',').map(e => e.trim());
             const status = await User.getAccessibleElements(req, this.db, elements);
+            if (status.isError()) return status.getResponse(res);
+            res.json(status.getData());
+        });
+
+        /**
+         * Fetch profile elements for a specific user (Admin/Exec).
+         */
+        this.app.get('/api/user/:id/elements/:elements', check('perm:is_exec'), async (req, res) => {
+            const userId = parseInt(req.params.id);
+            if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
+            
+            const elements = req.params.elements.split(',').map(e => e.trim());
+            const targetReq = { ...req, user: { ...req.user, id: userId } };
+            const status = await User.getAccessibleElements(targetReq, this.db, elements);
             if (status.isError()) return status.getResponse(res);
             res.json(status.getData());
         });

@@ -42,6 +42,32 @@ let relativeWeekOffset = 0;
 let isAnimating = false;
 let isAdmin = false;
 
+const weekDataCache = new Map();
+
+/**
+ * Fetch week data with caching.
+ * @param {number} offset
+ */
+async function getWeekData(offset) {
+    if (weekDataCache.has(offset)) return weekDataCache.get(offset);
+    const data = await ajaxGet(`/api/events/paged/${offset}`);
+    weekDataCache.set(offset, data);
+    return data;
+}
+
+/**
+ * Preload data for surrounding weeks.
+ * @param {number} baseOffset
+ */
+function preloadWeeks(baseOffset) {
+    [-2, -1, 1, 2].forEach(delta => {
+        const offset = baseOffset + delta;
+        if (!weekDataCache.has(offset)) {
+            getWeekData(offset).catch(() => {});
+        }
+    });
+}
+
 /**
  * Format date range for the week navigator.
  * @param {string} startDateStr
@@ -177,7 +203,7 @@ async function checkAdminAccess() {
  */
 async function renderWeekContent(offset, targetElement) {
     try {
-        const data = await ajaxGet(`/api/events/paged/${offset}`);
+        const data = await getWeekData(offset);
         const events = data.events || [];
         const { startDate, endDate } = data;
 
@@ -302,6 +328,7 @@ async function changeWeek(delta, animated = true) {
         slider.style.transform = 'translateX(0%)';
         if (nextView.parentNode === slider) slider.removeChild(nextView);
         isAnimating = false;
+        preloadWeeks(relativeWeekOffset);
     }
 }
 
