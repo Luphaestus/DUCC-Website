@@ -4020,19 +4020,23 @@ nav.small-container ul.navbar-items.user-items {
   margin-bottom: 1rem;
   position: relative;
   padding: 0 1rem;
+  gap: 1rem;
 }
-.events-controls-modern .week-navigator {
+.events-controls-modern .week-navigator,
+.events-controls-modern .controls-group {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 1.5rem;
-  padding: 0.5rem 1.25rem;
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: var(--glass-border);
   border-radius: var(--border-radius-pill);
   box-shadow: var(--shadow-glass);
+  padding: 0.5rem 1.25rem;
+}
+.events-controls-modern .week-navigator {
+  gap: 1.5rem;
 }
 .events-controls-modern .week-navigator .nav-btn {
   background: transparent !important;
@@ -4067,72 +4071,68 @@ nav.small-container ul.navbar-items.user-items {
   white-space: nowrap;
   color: var(--glass-text-color);
 }
-.events-controls-modern .today-btn,
-.events-controls-modern .admin-link-btn {
+.events-controls-modern .controls-group {
   position: absolute;
+  right: 1rem;
+  gap: 0.5rem;
+  /* Today and Admin buttons inside group */
+}
+.events-controls-modern .controls-group .today-btn,
+.events-controls-modern .controls-group .admin-link-btn {
   display: flex;
+  flex-direction: row !important;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: var(--glass-border);
-  border-radius: var(--border-radius-pill);
-  font-size: 0.9rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--glass-text-color);
   transition: all 0.3s ease;
-  box-shadow: var(--shadow-glass);
-  top: 50%;
-  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   height: auto !important;
   width: auto !important;
   --scale-base: 1;
 }
-.events-controls-modern .today-btn:hover,
-.events-controls-modern .admin-link-btn:hover {
+.events-controls-modern .controls-group .today-btn:hover,
+.events-controls-modern .controls-group .admin-link-btn:hover {
   background: rgba(var(--pico-primary-rgb), 0.1);
-  border-color: var(--pico-primary);
-  transform: translateY(calc(-50% - 2px)) scale(var(--scale-base));
   color: var(--pico-primary);
+  transform: scale(1.05);
+  border-radius: var(--border-radius-pill);
 }
-.events-controls-modern .today-btn svg,
-.events-controls-modern .admin-link-btn svg {
-  width: 1.1rem;
-  height: 1.1rem;
+.events-controls-modern .controls-group .today-btn svg,
+.events-controls-modern .controls-group .admin-link-btn svg {
+  width: 1rem;
+  height: 1rem;
   fill: currentColor;
-  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @media (max-width: 600px) {
-  .events-controls-modern .today-btn span,
-  .events-controls-modern .admin-link-btn span {
+  .events-controls-modern .controls-group .today-btn span,
+  .events-controls-modern .controls-group .admin-link-btn span {
     display: none;
   }
 }
-@media (max-width: 600px) {
-  .events-controls-modern .today-btn,
-  .events-controls-modern .admin-link-btn {
-    padding: 0.5rem;
-    width: auto;
-    height: auto;
-  }
-}
-.events-controls-modern .today-btn {
-  right: 1rem;
-  z-index: -1;
-}
-.events-controls-modern .today-btn:hover svg {
+.events-controls-modern .controls-group .today-btn:hover svg {
   transform: rotate(180deg);
 }
-.events-controls-modern .today-btn.spin-active svg {
+.events-controls-modern .controls-group .today-btn.spin-active svg {
   animation: spin-cycle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.events-controls-modern .admin-link-btn {
-  left: 1rem;
-}
-.events-controls-modern .admin-link-btn.hidden {
+.events-controls-modern .controls-group .admin-link-btn.hidden {
   display: none;
+}
+@media (max-width: 900px) {
+  .events-controls-modern {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .events-controls-modern .controls-group {
+    position: static;
+    transform: none;
+    width: fit-content;
+  }
 }
 .events-controls-modern {
   /* Animations */
@@ -4261,6 +4261,11 @@ nav.small-container ul.navbar-items.user-items {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
 }
+@media (max-width: 480px) {
+  .day-events-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Event Card Styles */
 .event-card {
@@ -4274,10 +4279,12 @@ nav.small-container ul.navbar-items.user-items {
   padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+  padding-bottom: 0 !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 320px;
+  gap: 0 !important;
 }
 .event-card:hover {
   transform: translateY(-6px);
@@ -4289,7 +4296,7 @@ nav.small-container ul.navbar-items.user-items {
 }
 .event-card .event-image-container {
   width: 100%;
-  height: 140px;
+  height: 160px;
   position: relative;
   overflow: hidden;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -4312,40 +4319,47 @@ nav.small-container ul.navbar-items.user-items {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 60%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+  height: 100%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
   pointer-events: none;
 }
-.event-card .event-card-content {
-  padding: 0 0.6rem;
+.event-card .event-image-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0.75rem;
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  gap: 0.3rem;
-  width: 100%;
+  gap: 0.35rem;
 }
-.event-card .event-header-row {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 0;
-}
-.event-card .event-header-row .event-tags {
+.event-card .event-image-content .event-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
 }
-.event-card .event-title-bold {
+.event-card .event-image-content .event-title-bold {
   margin: 0;
   font-family: var(--font-family-display);
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 800;
   line-height: 1.2;
-  color: var(--glass-text-color);
+  color: white;
   text-align: left;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
-.event-card .event-title-bold.strikethrough {
+.event-card .event-image-content .event-title-bold.strikethrough {
   text-decoration: line-through;
   opacity: 0.7;
+}
+.event-card .event-card-content {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.4rem;
+  width: 100%;
 }
 .event-card .event-info-block {
   display: flex;
@@ -6534,16 +6548,17 @@ footer .footer-bottom p {
 /* Glass Toolbar (Search & Filters) */
 .glass-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   background: var(--glass-bg);
   border: var(--glass-border);
-  backdrop-filter: blur(12px);
-  padding: 1rem;
-  border-radius: var(--border-radius-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-pill);
+  box-shadow: var(--shadow-glass);
 }
 .glass-toolbar .toolbar-left {
   display: flex;
@@ -6551,6 +6566,12 @@ footer .footer-bottom p {
   gap: 1rem;
   flex: 1;
   min-width: 200px;
+}
+.glass-toolbar .toolbar-left:empty {
+  display: none;
+}
+.glass-toolbar .toolbar-left.hidden {
+  display: none;
 }
 .glass-toolbar .toolbar-right {
   display: flex;
@@ -6560,35 +6581,45 @@ footer .footer-bottom p {
 .glass-toolbar .search-bar {
   position: relative;
   flex: 1;
-  max-width: 400px;
+  max-width: 350px;
 }
 .glass-toolbar .search-bar input {
   width: 100%;
-  padding-right: 2.5rem;
+  padding: 0.45rem 2.5rem 0.45rem 1.25rem;
   margin-bottom: 0;
-  background: rgba(var(--pico-background-color-rgb), 0.5);
+  background: rgba(var(--pico-background-color-rgb), 0.35);
   border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+  border-radius: var(--border-radius-pill);
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
 }
 .glass-toolbar .search-bar input:focus {
-  background: rgba(var(--pico-background-color-rgb), 0.8);
+  background: rgba(var(--pico-background-color-rgb), 0.7);
+  border-color: var(--pico-primary);
+  box-shadow: 0 0 0 4px rgba(var(--pico-primary-rgb), 0.1);
 }
 .glass-toolbar .search-bar .search-icon-btn {
   position: absolute;
-  right: 0.5rem;
+  right: 0.4rem;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  padding: 0.25rem;
+  padding: 0.3rem;
   color: var(--pico-muted-color);
   box-shadow: none;
+  height: auto !important;
+  width: auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .glass-toolbar .search-bar .search-icon-btn:hover {
   color: var(--pico-primary);
 }
 .glass-toolbar .search-bar .search-icon-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 /* Glass Table */
@@ -6840,25 +6871,25 @@ textarea[name=description] {
 }
 
 /* Glass Toolbar Adjustments for Nav */
-.glass-toolbar {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 1rem;
-}
 .glass-toolbar .admin-nav-group {
-  width: 100%;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
-  padding-bottom: 1rem;
-  justify-content: flex-start;
+  margin-bottom: 0 !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+.glass-toolbar .admin-nav-group.toggle-group {
+  background: rgba(var(--pico-color-rgb), 0.03);
+  border: 1px solid rgba(var(--pico-color-rgb), 0.05);
 }
 .glass-toolbar .toolbar-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  width: 100%;
+  flex: 1;
 }
 .glass-toolbar .toolbar-content .toolbar-left, .glass-toolbar .toolbar-content .toolbar-right {
   display: flex;
@@ -6868,6 +6899,23 @@ textarea[name=description] {
 .glass-toolbar .toolbar-content .toolbar-left {
   flex: 1;
   min-width: 200px;
+}
+@media (max-width: 1024px) {
+  .glass-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: var(--border-radius-lg);
+    padding: 1rem;
+  }
+  .glass-toolbar .admin-nav-group {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+  .glass-toolbar .toolbar-content {
+    border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+    padding-top: 1rem;
+  }
 }
 
 /* Filter Panel (Dropdown) */
@@ -7171,15 +7219,16 @@ textarea[name=description] {
   border-radius: var(--border-radius-pill);
   padding: 0.25rem;
   display: flex;
+  flex-wrap: wrap;
   position: relative;
   backdrop-filter: blur(12px);
   width: fit-content;
+  gap: 0;
 }
 .toggle-group .toggle-bg {
   position: absolute;
-  top: 0.25rem;
+  top: 0;
   left: 0;
-  height: calc(100% - 0.5rem);
   background: var(--pico-primary);
   border-radius: var(--border-radius-pill);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -7187,7 +7236,8 @@ textarea[name=description] {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   pointer-events: none;
   width: var(--tab-width, 0);
-  transform: translateX(var(--tab-left, 0));
+  height: var(--tab-height, 0);
+  transform: translate(var(--tab-left, 0), var(--tab-top, 0));
 }
 .toggle-group button, .toggle-group .tab-btn {
   background: transparent !important;
@@ -7209,6 +7259,16 @@ textarea[name=description] {
 .toggle-group button:hover:not(.active), .toggle-group .tab-btn:hover:not(.active) {
   color: var(--pico-contrast);
   background: rgba(var(--pico-color-rgb), 0.05) !important;
+}
+@media (max-width: 600px) {
+  .toggle-group {
+    border-radius: var(--border-radius-lg);
+    width: 100%;
+  }
+  .toggle-group button, .toggle-group .tab-btn {
+    flex: 1 1 auto;
+    text-align: center;
+  }
 }
 
 /* Detail Info Boxes (for grouped fields) */
@@ -7547,9 +7607,6 @@ textarea[name=description] {
   text-align: center;
   padding: 2rem;
   color: var(--pico-muted-color);
-}
-#admin-view .justify-end {
-  justify-content: flex-end;
 }
 
 #admin-view .grid-2-col {

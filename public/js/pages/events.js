@@ -9,11 +9,6 @@ addRoute('/events', 'events');
 const HTML_TEMPLATE = /*html*/`
         <div id="events-view" class="view hidden small-container">
             <div class="events-controls-modern">
-                <button id="admin-events-link" class="admin-link-btn glass-panel hidden" title="Event Admin">
-                    ${SETTINGS_SVG}
-                    <span>Admin</span>
-                </button>
-
                 <div class="week-navigator glass-panel">
                     <button class="nav-btn prev-week" title="Previous Week">${ARROW_BACK_IOS_NEW_SVG}</button>
                     <div class="current-week-display">
@@ -21,11 +16,18 @@ const HTML_TEMPLATE = /*html*/`
                     </div>
                     <button class="nav-btn next-week" title="Next Week">${ARROW_FORWARD_IOS_SVG}</button>
                 </div>
-                
-                <button class="today-btn glass-panel" title="Back to Today">
-                    ${REFRESH_SVG}
-                    <span>Today</span>
-                </button>
+
+                <div class="controls-group glass-panel">
+                    <button id="admin-events-link" class="admin-link-btn hidden" title="Event Admin">
+                        ${SETTINGS_SVG}
+                        <span>Admin</span>
+                    </button>
+                    
+                    <button class="today-btn" title="Back to Today">
+                        ${REFRESH_SVG}
+                        <span>Today</span>
+                    </button>
+                </div>
             </div>
 
             <div id="events-list">
@@ -113,6 +115,10 @@ function formatEvent(event) {
     const imageHtml = `<div class="event-image-container">
         <div class="event-image" style="--event-image-url: url('${imageUrl}');"></div>
         <div class="image-overlay"></div>
+        <div class="event-image-content">
+            <div class="event-tags">${tagsHtml}</div>
+            <h3 class="event-title-bold ${isCanceled ? 'strikethrough' : ''}">${event.title || 'Untitled Event'}</h3>
+        </div>
     </div>`;
 
     const count = event.attendee_count !== undefined ? event.attendee_count : '0';
@@ -135,12 +141,6 @@ function formatEvent(event) {
         <div class="event-card glass-panel ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" data-nav="event/${event.id}" role="button" tabindex="0">
             ${imageHtml}
             <div class="event-card-content">
-                <div class="event-header-row">
-                    <div class="event-tags">${tagsHtml}</div>
-                </div>
-                
-                <h3 class="event-title-bold ${isCanceled ? 'strikethrough' : ''}">${event.title || 'Untitled Event'}</h3>
-                
                 <div class="event-info-block">
                     <div class="info-item time">
                         ${SCHEDULE_SVG}

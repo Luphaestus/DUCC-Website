@@ -66,46 +66,68 @@
 /* Glass Toolbar (Search & Filters) */
 .glass-toolbar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.25rem;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
     background: var(--glass-bg);
     border: var(--glass-border);
-    backdrop-filter: blur(12px);
-    padding: 1rem;
-    border-radius: var(--border-radius-lg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-pill);
+    box-shadow: var(--shadow-glass);
 
-    .toolbar-left { display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 200px; }
+    .toolbar-left { 
+        display: flex; 
+        align-items: center; 
+        gap: 1rem; 
+        flex: 1; 
+        min-width: 200px; 
+        &:empty { display: none; }
+        &.hidden { display: none; }
+    }
     .toolbar-right { display: flex; align-items: center; gap: 0.5rem; }
 
     .search-bar {
         position: relative;
         flex: 1;
-        max-width: 400px;
+        max-width: 350px;
         
         input {
             width: 100%;
-            padding-right: 2.5rem;
+            padding: 0.45rem 2.5rem 0.45rem 1.25rem;
             margin-bottom: 0;
-            background: rgba(var(--pico-background-color-rgb), 0.5);
+            background: rgba(var(--pico-background-color-rgb), 0.35);
             border: 1px solid rgba(var(--pico-color-rgb), 0.1);
-            &:focus { background: rgba(var(--pico-background-color-rgb), 0.8); }
+            border-radius: var(--border-radius-pill);
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+
+            &:focus { 
+                background: rgba(var(--pico-background-color-rgb), 0.7);
+                border-color: var(--pico-primary);
+                box-shadow: 0 0 0 4px rgba(var(--pico-primary-rgb), 0.1);
+            }
         }
 
         .search-icon-btn {
             position: absolute;
-            right: 0.5rem;
+            right: 0.4rem;
             top: 50%;
             transform: translateY(-50%);
             background: transparent;
             border: none;
-            padding: 0.25rem;
+            padding: 0.3rem;
             color: var(--pico-muted-color);
             box-shadow: none;
+            height: auto !important;
+            width: auto !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             &:hover { color: var(--pico-primary); }
-            svg { width: 1.25rem; height: 1.25rem; }
+            svg { width: 1.1rem; height: 1.1rem; }
         }
     }
 }
@@ -293,25 +315,27 @@ textarea[name="description"] {
 
 /* Glass Toolbar Adjustments for Nav */
 .glass-toolbar {
-    flex-direction: column; 
-    align-items: stretch;
-    gap: 1rem;
-    
     .admin-nav-group {
-        width: 100%;
-        margin-bottom: 0.5rem;
-        border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
-        padding-bottom: 1rem;
-        justify-content: flex-start;
+        margin-bottom: 0 !important;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+        padding: 0;
+        
+        &.toggle-group {
+            background: rgba(var(--pico-color-rgb), 0.03);
+            border: 1px solid rgba(var(--pico-color-rgb), 0.05);
+        }
     }
 
     .toolbar-content {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
         flex-wrap: wrap;
         gap: 1rem;
-        width: 100%;
+        flex: 1;
         
         .toolbar-left, .toolbar-right {
             display: flex;
@@ -320,6 +344,24 @@ textarea[name="description"] {
         }
         
         .toolbar-left { flex: 1; min-width: 200px; }
+    }
+
+    @media (max-width: 1024px) {
+        flex-direction: column;
+        align-items: stretch;
+        border-radius: var(--border-radius-lg);
+        padding: 1rem;
+        
+        .admin-nav-group {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .toolbar-content {
+            border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+            padding-top: 1rem;
+        }
     }
 }
 
@@ -558,15 +600,16 @@ textarea[name="description"] {
     border-radius: var(--border-radius-pill);
     padding: 0.25rem;
     display: flex;
+    flex-wrap: wrap;
     position: relative;
     backdrop-filter: blur(12px);
     width: fit-content;
+    gap: 0;
 
     .toggle-bg {
         position: absolute;
-        top: 0.25rem;
+        top: 0;
         left: 0;
-        height: calc(100% - 0.5rem);
         background: var(--pico-primary);
         border-radius: var(--border-radius-pill);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -574,7 +617,8 @@ textarea[name="description"] {
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         pointer-events: none;
         width: var(--tab-width, 0);
-        transform: translateX(var(--tab-left, 0));
+        height: var(--tab-height, 0);
+        transform: translate(var(--tab-left, 0), var(--tab-top, 0));
     }
 
     button, .tab-btn {
@@ -595,6 +639,15 @@ textarea[name="description"] {
         &:hover:not(.active) {
             color: var(--pico-contrast);
             background: rgba(var(--pico-color-rgb), 0.05) !important;
+        }
+    }
+
+    @media (max-width: 600px) {
+        border-radius: var(--border-radius-lg);
+        width: 100%;
+        button, .tab-btn {
+            flex: 1 1 auto;
+            text-align: center;
         }
     }
 }

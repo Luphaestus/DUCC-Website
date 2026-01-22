@@ -16,10 +16,10 @@ export async function renderManageTags() {
 
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
-            <div class="glass-toolbar justify-end">
+            <div class="glass-toolbar">
                  ${await renderAdminNavBar('tags')}
                  <div class="toolbar-content">
-                    <div class="toolbar-left"></div>
+                    <div class="toolbar-left hidden"></div>
                     <div class="toolbar-right">
                         <button data-nav="/admin/tag/new" class="small-btn primary">Create New Tag</button>
                     </div>

@@ -1,6 +1,6 @@
 import { ajaxGet } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
-import { adminContentID } from '../common.js';
+import { adminContentID, initToggleGroup } from '../common.js';
 import { ARROW_BACK_IOS_NEW_SVG } from '../../../../images/icons/outline/icons.js';
 
 // Import Tab Render Functions
@@ -66,20 +66,13 @@ export async function renderUserDetail(userId) {
             </div>
         `;
 
-
-        const tabs = adminContent.querySelectorAll('#admin-user-tabs button');
-        const bg = adminContent.querySelector('#admin-user-tabs .toggle-bg');
-
-        const syncTabBackground = (activeBtn) => {
-            if (!activeBtn || !bg) return;
-            bg.style.setProperty('--tab-width', `${activeBtn.offsetWidth}px`);
-            bg.style.setProperty('--tab-left', `${activeBtn.offsetLeft}px`);
-        };
+        const tabsNav = adminContent.querySelector('#admin-user-tabs');
+        const tabs = tabsNav.querySelectorAll('button');
 
         const updateActiveTab = (activeBtn) => {
             tabs.forEach(t => t.classList.remove('active'));
             activeBtn.classList.add('active');
-            syncTabBackground(activeBtn);
+            initToggleGroup(tabsNav);
         };
 
         const currentTab = new URLSearchParams(window.location.search).get('tab') || 'profile';
@@ -98,15 +91,9 @@ export async function renderUserDetail(userId) {
         if (initialTabBtn) {
             updateActiveTab(initialTabBtn);
             renderTab(initialTabBtn.dataset.tab, user, userPerms, canManageUsers, isExec);
-            // Slight delay to ensure layout is ready for measurement
-            setTimeout(() => syncTabBackground(initialTabBtn), 50);
+            // Initial sync
+            setTimeout(() => initToggleGroup(tabsNav), 50);
         }
-
-        // Resync on window resize
-        window.addEventListener('resize', () => {
-            const active = Array.from(tabs).find(t => t.classList.contains('active'));
-            if (active) syncTabBackground(active);
-        });
 
     } catch (e) {
         console.error(e);

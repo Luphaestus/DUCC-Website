@@ -60,7 +60,6 @@ export async function renderAdminNavBar(activeSection) {
     const perms = userData.permissions || [];
     const isPresident = await ajaxGet('/api/globals/status').then(_ => true).catch(() => false);
 
-
     const canManageUsers = perms.includes('user.manage');
     const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');
     const canManageTransactions = perms.includes('transaction.manage');
@@ -69,19 +68,71 @@ export async function renderAdminNavBar(activeSection) {
     const isExec = perms.length > 0;
 
     const navItem = (link, label, key) => `
-        <button data-nav="${link}" class="small-btn ${activeSection === key ? '' : 'outline secondary'}">
+        <button data-nav="${link}" class="tab-btn ${activeSection === key ? 'active' : ''}">
             ${label}
         </button>
     `;
 
+    // Initialize the background sync after a short delay to allow for rendering
+    setTimeout(() => initToggleGroup(document.getElementById('admin-main-nav')), 50);
+
     return /*html*/`
-        <div class="admin-nav-group">
+        <nav class="toggle-group admin-nav-group" id="admin-main-nav">
+            <div class="toggle-bg"></div>
             ${(canManageUsers || canManageTransactions || isExec) ? navItem('/admin/users', 'Users', 'users') : ''}
             ${canManageEvents ? navItem('/admin/events', 'Events', 'events') : ''}
             ${canManageEvents ? navItem('/admin/tags', 'Tags', 'tags') : ''}
             ${canManageFiles ? navItem('/admin/files', 'Files', 'files') : ''}
             ${canManageRoles ? navItem('/admin/roles', 'Roles', 'roles') : ''}
             ${isPresident ? navItem('/admin/globals', 'Globals', 'globals') : ''}
-        </div>
+        </nav>
     `;
+}
+
+/**
+ * Initialize a toggle group's sliding background.
+ * @param {HTMLElement} element - The .toggle-group element.
+ */
+export function initToggleGroup(element) {
+    if (!element || element.dataset.initialized === 'true') {
+        if (element.dataset.initialized === 'true') {
+            const sync = element._syncToggleGroup;
+            if (sync) sync();
+        }
+        return;
+    }
+
+    const bg = element.querySelector('.toggle-bg');
+    if (!bg) return;
+
+    const sync = (silent = false) => {
+        const active = element.querySelector('.tab-btn.active');
+        if (active) {
+            if (silent) bg.style.transition = 'none';
+            
+            bg.style.setProperty('--tab-width', `${active.offsetWidth}px`);
+            bg.style.setProperty('--tab-height', `${active.offsetHeight}px`);
+            bg.style.setProperty('--tab-left', `${active.offsetLeft}px`);
+            bg.style.setProperty('--tab-top', `${active.offsetTop}px`);
+            
+            if (silent) {
+                // Force reflow
+                bg.offsetHeight;
+                bg.style.transition = '';
+            }
+        }
+    };
+
+    // Store sync function on element for manual calls
+    element._syncToggleGroup = sync;
+    element.dataset.initialized = 'true';
+
+    // Initial silent sync to prevent "slide from left" on load
+    sync(true);
+
+    // Sync on interactions and layout changes
+    window.addEventListener('resize', () => sync());
+    element.addEventListener('transitionend', (e) => {
+        if (e.target === element) sync();
+    });
 }
