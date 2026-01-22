@@ -56,6 +56,12 @@ export function renderPaginationControls(container, currentPage, totalPages, onP
  * @returns {Promise<string>} HTML string.
  */
 export async function renderAdminNavBar(activeSection) {
+
+    const existingNav = document.getElementById('admin-main-nav');
+    if (existingNav && existingNav._syncToggleGroup) {
+        existingNav._syncToggleGroup();
+    }
+
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
     const perms = userData.permissions || [];
     const isPresident = await ajaxGet('/api/globals/status').then(_ => true).catch(() => false);
@@ -106,15 +112,27 @@ export function initToggleGroup(element) {
     if (!bg) return;
 
     const sync = (silent = false) => {
-        const active = element.querySelector('.tab-btn.active');
+        const active = element.querySelector('.tab-btn.active') || element.querySelector('button.active');
         if (active) {
             if (silent) bg.style.transition = 'none';
             
-            bg.style.setProperty('--tab-width', `${active.offsetWidth}px`);
-            bg.style.setProperty('--tab-height', `${active.offsetHeight}px`);
-            bg.style.setProperty('--tab-left', `${active.offsetLeft}px`);
-            bg.style.setProperty('--tab-top', `${active.offsetTop}px`);
+            const pos = {
+                width: `${active.offsetWidth}px`,
+                height: `${active.offsetHeight}px`,
+                left: `${active.offsetLeft}px`,
+                top: `${active.offsetTop}px`
+            };
+
+            bg.style.setProperty('--tab-width', pos.width);
+            bg.style.setProperty('--tab-height', pos.height);
+            bg.style.setProperty('--tab-left', pos.left);
+            bg.style.setProperty('--tab-top', pos.top);
             
+            if (element.id) {
+                window.__lastTogglePositions = window.__lastTogglePositions || {};
+                window.__lastTogglePositions[element.id] = pos;
+            }
+
             if (silent) {
                 // Force reflow
                 bg.offsetHeight;
@@ -127,12 +145,23 @@ export function initToggleGroup(element) {
     element._syncToggleGroup = sync;
     element.dataset.initialized = 'true';
 
-    // Initial silent sync to prevent "slide from left" on load
-    sync(true);
+    const savedPos = element.id ? (window.__lastTogglePositions && window.__lastTogglePositions[element.id]) : null;
+    
+    if (savedPos) {
+        bg.style.transition = 'none';
+        bg.style.setProperty('--tab-width', savedPos.width);
+        bg.style.setProperty('--tab-height', savedPos.height);
+        bg.style.setProperty('--tab-left', savedPos.left);
+        bg.style.setProperty('--tab-top', savedPos.top);
+        bg.offsetHeight; 
+        bg.style.transition = '';
+        
+        requestAnimationFrame(() => sync(false));
+    } else {
+        sync(true);
+    }
 
-    // Sync on interactions and layout changes
     window.addEventListener('resize', () => sync());
-    element.addEventListener('transitionend', (e) => {
-        if (e.target === element) sync();
-    });
+    
+    bg.addEventListener('transitionend', () => sync());
 }

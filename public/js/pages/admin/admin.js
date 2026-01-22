@@ -56,6 +56,11 @@ function updateAdminTitle(section) {
 async function AdminNavigationListener({ viewId, path }) {
     if (viewId !== "admin") return;
 
+    // Save positions of all existing toggle groups before they are replaced
+    document.querySelectorAll('.toggle-group[id]').forEach(el => {
+        if (el._syncToggleGroup) el._syncToggleGroup();
+    });
+
     if (!await requireAuth()) return;
 
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
