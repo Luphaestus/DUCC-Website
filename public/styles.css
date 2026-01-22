@@ -6637,10 +6637,12 @@ footer .footer-bottom p {
 .glass-table-container .table-responsive {
   width: 100%;
   overflow-x: auto;
+  border-radius: var(--border-radius-lg);
 }
 .glass-table-container table.glass-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-bottom: 0;
 }
 .glass-table-container table.glass-table thead {
@@ -6658,6 +6660,12 @@ footer .footer-bottom p {
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
+}
+.glass-table-container table.glass-table thead th:first-child {
+  border-top-left-radius: var(--border-radius-lg);
+}
+.glass-table-container table.glass-table thead th:last-child {
+  border-top-right-radius: var(--border-radius-lg);
 }
 .glass-table-container table.glass-table thead th:hover {
   color: var(--pico-primary);
@@ -6677,6 +6685,12 @@ footer .footer-bottom p {
 }
 .glass-table-container table.glass-table tbody tr:last-child {
   border-bottom: none;
+}
+.glass-table-container table.glass-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--border-radius-lg);
+}
+.glass-table-container table.glass-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--border-radius-lg);
 }
 .glass-table-container table.glass-table tbody tr:hover {
   background: rgba(var(--pico-color-rgb), 0.08);

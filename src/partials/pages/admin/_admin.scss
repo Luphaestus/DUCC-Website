@@ -141,11 +141,13 @@
     .table-responsive {
         width: 100%;
         overflow-x: auto;
+        border-radius: var(--border-radius-lg);
     }
 
     table.glass-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
         margin-bottom: 0;
 
         thead {
@@ -164,6 +166,9 @@
                 cursor: pointer;
                 user-select: none;
                 
+                &:first-child { border-top-left-radius: var(--border-radius-lg); }
+                &:last-child { border-top-right-radius: var(--border-radius-lg); }
+                
                 &:hover { color: var(--pico-primary); background: rgba(var(--pico-color-rgb), 0.02); }
                 
                 svg { vertical-align: middle; margin-left: 0.25rem; width: 1rem; height: 1rem; opacity: 0.7; }
@@ -176,7 +181,12 @@
                 transition: background 0.15s ease;
                 cursor: pointer;
 
-                &:last-child { border-bottom: none; }
+                &:last-child {
+                    border-bottom: none;
+                    td:first-child { border-bottom-left-radius: var(--border-radius-lg); }
+                    td:last-child { border-bottom-right-radius: var(--border-radius-lg); }
+                }
+                
                 &:hover { background: rgba(var(--pico-color-rgb), 0.08); }
 
                 td {
