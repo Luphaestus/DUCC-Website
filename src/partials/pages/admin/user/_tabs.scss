@@ -102,7 +102,75 @@
 
         .tx-details { flex-grow: 1; }
         .tx-amount-group { text-align: right; min-width: 100px; }
-        .tx-actions { margin-left: 1rem; display: flex; gap: 0.25rem; }
+        .tx-actions { 
+            margin-left: 1rem; 
+            display: flex; 
+            gap: 0.25rem; 
+
+            .edit-tx-btn {
+                margin-right: 0.5rem;
+            }
+        }
+    }
+
+    @media (max-width: 550px) {
+        .new-entry-row {
+            padding: 1rem;
+        }
+
+        .tx-edit-grid {
+            grid-template-columns: 1fr !important;
+            gap: 0.75rem;
+            align-items: stretch;
+
+            &.no-btn {
+                grid-template-columns: 1fr !important;
+            }
+
+            button {
+                width: 100%;
+                margin-top: 0.25rem;
+            }
+
+            input {
+                margin-bottom: 0 !important;
+            }
+        }
+
+        .transaction-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+            padding: 1.25rem;
+
+            .tx-icon {
+                display: none;
+            }
+            
+            .tx-display-content {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .tx-amount-group {
+                text-align: left;
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 0.25rem;
+                padding-top: 0.5rem;
+                border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+            }
+
+            .tx-actions {
+                margin-left: 0;
+                margin-top: 0.5rem;
+                justify-content: flex-end;
+                width: 100%;
+            }
+        }
     }
 
     /* Tags Tab */

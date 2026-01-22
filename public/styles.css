@@ -6478,9 +6478,9 @@ footer .footer-bottom p {
   padding: 2rem;
   overflow-x: hidden;
 }
-@media (max-width: 576px) {
+@media (max-width: 630px) {
   #admin-view {
-    padding: 5rem 0.5rem 0.5rem 0.5rem;
+    padding: 5rem 0.5rem 0.5rem 0.5rem !important;
   }
 }
 #admin-view .admin-content-wrapper {
@@ -6871,7 +6871,8 @@ footer .footer-bottom p {
   .glass-table {
     /* Ensure key columns stay visible and sized correctly */
   }
-  .glass-table th, .glass-table td {
+  .glass-table th,
+  .glass-table td {
     white-space: normal;
     font-size: 0.85rem;
     padding: 0.75rem;
@@ -6905,7 +6906,8 @@ textarea[name=description] {
   gap: 1rem;
   flex: none;
 }
-.glass-toolbar .toolbar-content .toolbar-left, .glass-toolbar .toolbar-content .toolbar-right {
+.glass-toolbar .toolbar-content .toolbar-left,
+.glass-toolbar .toolbar-content .toolbar-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -6982,7 +6984,8 @@ textarea[name=description] {
   margin-bottom: 0;
   color: var(--pico-muted-color);
 }
-.glass-filter-panel .filter-grid label select, .glass-filter-panel .filter-grid label input {
+.glass-filter-panel .filter-grid label select,
+.glass-filter-panel .filter-grid label input {
   margin-top: 0.25rem;
   margin-bottom: 0;
   font-size: 0.9rem;
@@ -7052,31 +7055,37 @@ textarea[name=description] {
 }
 
 /* Info List */
-.info-list, .info-grid {
+.info-list,
+.info-grid {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-.info-list .info-item, .info-grid .info-item {
+.info-list .info-item,
+.info-grid .info-item {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
   font-size: 0.95rem;
 }
-.info-list .info-item .icon, .info-grid .info-item .icon {
+.info-list .info-item .icon,
+.info-grid .info-item .icon {
   color: var(--pico-muted-color);
   margin-top: 0.1rem;
 }
-.info-list .info-item .icon svg, .info-grid .info-item .icon svg {
+.info-list .info-item .icon svg,
+.info-grid .info-item .icon svg {
   width: 1.1rem;
   height: 1.1rem;
 }
-.info-list .info-item .label, .info-grid .info-item .label {
+.info-list .info-item .label,
+.info-grid .info-item .label {
   font-weight: 600;
   color: var(--pico-muted-color);
   min-width: 80px;
 }
-.info-list .info-item .value, .info-grid .info-item .value {
+.info-list .info-item .value,
+.info-grid .info-item .value {
   color: var(--pico-contrast);
   flex: 1;
   word-break: break-word;
@@ -7274,7 +7283,8 @@ textarea[name=description] {
   height: var(--tab-height, 0);
   transform: translate(var(--tab-left, 0), var(--tab-top, 0));
 }
-.toggle-group button, .toggle-group .tab-btn {
+.toggle-group button,
+.toggle-group .tab-btn {
   background: transparent !important;
   border: none;
   padding: 0.5rem 1.5rem;
@@ -7288,10 +7298,12 @@ textarea[name=description] {
   font-size: 0.9rem;
   position: relative;
 }
-.toggle-group button.active, .toggle-group .tab-btn.active {
+.toggle-group button.active,
+.toggle-group .tab-btn.active {
   color: white !important;
 }
-.toggle-group button:hover:not(.active), .toggle-group .tab-btn:hover:not(.active) {
+.toggle-group button:hover:not(.active),
+.toggle-group .tab-btn:hover:not(.active) {
   color: var(--pico-contrast);
   background: rgba(var(--pico-color-rgb), 0.05) !important;
 }
@@ -7300,7 +7312,8 @@ textarea[name=description] {
     border-radius: var(--border-radius-lg);
     width: 100%;
   }
-  .toggle-group button, .toggle-group .tab-btn {
+  .toggle-group button,
+  .toggle-group .tab-btn {
     flex: 1 1 auto;
     text-align: center;
   }
@@ -7936,6 +7949,59 @@ textarea[name=description] {
   margin-left: 1rem;
   display: flex;
   gap: 0.25rem;
+}
+#admin-view .transaction-item .tx-actions .edit-tx-btn {
+  margin-right: 0.5rem;
+}
+@media (max-width: 550px) {
+  #admin-view .new-entry-row {
+    padding: 1rem;
+  }
+  #admin-view .tx-edit-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  #admin-view .tx-edit-grid.no-btn {
+    grid-template-columns: 1fr !important;
+  }
+  #admin-view .tx-edit-grid button {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+  #admin-view .tx-edit-grid input {
+    margin-bottom: 0 !important;
+  }
+  #admin-view .transaction-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 1.25rem;
+  }
+  #admin-view .transaction-item .tx-icon {
+    display: none;
+  }
+  #admin-view .transaction-item .tx-display-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  #admin-view .transaction-item .tx-amount-group {
+    text-align: left;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+  }
+  #admin-view .transaction-item .tx-actions {
+    margin-left: 0;
+    margin-top: 0.5rem;
+    justify-content: flex-end;
+    width: 100%;
+  }
 }
 #admin-view {
   /* Tags Tab */
