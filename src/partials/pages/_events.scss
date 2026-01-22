@@ -169,6 +169,19 @@
     @media (max-width: 768px) { margin-bottom: 2rem; }
 }
 
+/* Tags */
+.tag-badge {
+    background-color: var(--tag-color, var(--pico-primary));
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--border-radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    display: inline-block;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
 /* Event List Grouping */
 .day-group {
     width: 100%;
@@ -238,7 +251,9 @@
     -webkit-backdrop-filter: blur(16px);
     border-radius: var(--border-radius-lg);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-    padding: 0;
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -432,7 +447,7 @@
     overflow: hidden;
     position: relative;
     animation: modal-expand 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 0; 
+    padding: 0 !important; 
     @media (max-width: 600px) { max-height: 100vh; border-radius: 0; }
 }
 
@@ -464,6 +479,7 @@
 .event-modal-header {
     height: 35vh;
     min-height: 250px;
+    background-image: var(--event-image-url);
     background-size: cover;
     background-position: center;
     position: relative;

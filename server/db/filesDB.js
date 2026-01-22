@@ -72,15 +72,29 @@ class FilesDB {
      * Create a new file entry.
      */
     static async createFile(db, data) {
-        const { title, author, date, size, filename, category_id, visibility } = data;
+        const { title, author, date, size, filename, hash, category_id, visibility } = data;
         try {
             const result = await db.run(
-                `INSERT INTO files (title, author, date, size, filename, category_id, visibility) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [title, author, date || new Date().toISOString(), size, filename, category_id, visibility || 'members']
+                `INSERT INTO files (title, author, date, size, filename, hash, category_id, visibility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, author, date || new Date().toISOString(), size, filename, hash, category_id, visibility || 'members']
             );
             return new statusObject(201, null, { id: result.lastID });
         } catch (error) {
             console.error('Database error in createFile:', error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Get a file by its content hash.
+     */
+    static async getFileByHash(db, hash) {
+        try {
+            const file = await db.get(`SELECT * FROM files WHERE hash = ? LIMIT 1`, hash);
+            if (!file) return new statusObject(404, 'File not found');
+            return new statusObject(200, null, file);
+        } catch (error) {
+            console.error('Database error in getFileByHash:', error);
             return new statusObject(500, 'Database error');
         }
     }

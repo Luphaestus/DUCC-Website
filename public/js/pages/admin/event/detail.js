@@ -114,14 +114,17 @@ export async function renderEventDetail(id) {
                         <h3 class="section-header-modern">
                             ${IMAGE_SVG} Event Image
                         </h3>
-                        <div class="image-upload-container glass-panel">
+                        <div class="image-upload-container glass-panel" id="drop-zone">
                             <div id="image-preview" class="image-preview" style="--event-image-url: url('${event.image_url || '/images/misc/ducc.png'}');"></div>
+                            <div id="upload-progress-container" class="hidden">
+                                <progress id="upload-progress" value="0" max="100"></progress>
+                                <span id="progress-text">0%</span>
+                            </div>
                             <input type="hidden" name="image_url" id="image_url_input" value="${event.image_url || ''}">
                             <label class="file-upload-btn small-btn primary">
-                                ${UPLOAD_SVG} Upload Image
+                                ${UPLOAD_SVG} <span>Choose or Drop Image</span>
                                 <input type="file" id="event-image-file" accept="image/*" style="display:none;">
                             </label>
-                            <p class="small-text mt-0-5 opacity-0-7">Recommended: 1200x600px</p>
                         </div>
                     </div>
                 </div>
@@ -141,20 +144,6 @@ export async function renderEventDetail(id) {
     // Set description value separately to avoid template string literal issues if it contains backticks or weird chars
     document.querySelector('textarea[name="description"]').value = event.description;
 
-    // Tag Selection Visuals
-    adminContent.querySelectorAll('input[name="tags"]').forEach(input => {
-        const updateSpan = (el) => {
-            const span = el.nextElementSibling;
-            if (el.checked) {
-                span.classList.add('selected');
-            } else {
-                span.classList.remove('selected');
-            }
-        };
-        input.addEventListener('change', (e) => updateSpan(e.target));
-        updateSpan(input);
-    });
-    
     // Tag Selection Visuals
     adminContent.querySelectorAll('input[name="tags"]').forEach(input => {
         const updateSpan = (el) => {
@@ -202,9 +191,12 @@ export async function renderEventDetail(id) {
     const fileInput = document.getElementById('event-image-file');
     const imagePreview = document.getElementById('image-preview');
     const imageUrlInput = document.getElementById('image_url_input');
+    const dropZone = document.getElementById('drop-zone');
+    const progressContainer = document.getElementById('upload-progress-container');
+    const progressBar = document.getElementById('upload-progress');
+    const progressText = document.getElementById('progress-text');
 
-    fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
+    const uploadFile = async (file) => {
         if (!file) return;
 
         const formData = new FormData();
@@ -213,23 +205,70 @@ export async function renderEventDetail(id) {
         formData.append('title', `Event Image - ${Date.now()}`);
 
         try {
-            notify('Info', 'Uploading image...', 'info');
-            const res = await fetch('/api/files', { method: 'POST', body: formData });
-            const result = await res.json();
-            
-            if (result.success && result.ids.length > 0) {
-                const fileId = result.ids[0];
-                const newUrl = `/api/files/${fileId}/download?view=true`;
-                imageUrlInput.value = newUrl;
-                imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
-                notify('Success', 'Image uploaded', 'success');
-            } else {
-                throw new Error('Upload failed');
-            }
+            progressContainer.classList.remove('hidden');
+            progressBar.value = 0;
+            progressText.textContent = '0%';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/files', true);
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.value = percent;
+                    progressText.textContent = `${percent}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                setTimeout(() => progressContainer.classList.add('hidden'), 500);
+                if (xhr.status === 201) {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success && result.ids.length > 0) {
+                        const fileId = result.ids[0];
+                        const newUrl = `/api/files/${fileId}/download?view=true`;
+                        imageUrlInput.value = newUrl;
+                        imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
+                        notify('Success', 'Image uploaded', 'success');
+                    } else {
+                        notify('Error', 'Upload succeeded but no ID returned', 'error');
+                    }
+                } else {
+                    notify('Error', 'Upload failed: ' + xhr.status, 'error');
+                }
+            };
+
+            xhr.onerror = () => {
+                progressContainer.classList.add('hidden');
+                notify('Error', 'Network error during upload', 'error');
+            };
+
+            xhr.send(formData);
         } catch (err) {
+            progressContainer.classList.add('hidden');
             notify('Error', 'Failed to upload image', 'error');
         }
     };
+
+    fileInput.onchange = (e) => uploadFile(e.target.files[0]);
+
+    dropZone.ondragover = (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    };
+
+    dropZone.ondragleave = () => {
+        dropZone.classList.remove('drag-over');
+    };
+
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length > 0) {
+            uploadFile(e.dataTransfer.files[0]);
+        }
+    };
+
 
     // Form Submission
     document.getElementById('event-form').onsubmit = async (e) => {

@@ -4195,6 +4195,19 @@ nav.small-container ul.navbar-items.user-items {
   }
 }
 
+/* Tags */
+.tag-badge {
+  background-color: var(--tag-color, var(--pico-primary));
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: inline-block;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
 /* Event List Grouping */
 .day-group {
   width: 100%;
@@ -4258,7 +4271,9 @@ nav.small-container ul.navbar-items.user-items {
   -webkit-backdrop-filter: blur(16px);
   border-radius: var(--border-radius-lg);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-  padding: 0;
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -4491,7 +4506,7 @@ nav.small-container ul.navbar-items.user-items {
   overflow: hidden;
   position: relative;
   animation: modal-expand 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 0;
+  padding: 0 !important;
 }
 @media (max-width: 600px) {
   .event-modal-content {
@@ -4544,6 +4559,7 @@ nav.small-container ul.navbar-items.user-items {
 .event-modal-header {
   height: 35vh;
   min-height: 250px;
+  background-image: var(--event-image-url);
   background-size: cover;
   background-position: center;
   position: relative;
@@ -7430,6 +7446,13 @@ textarea[name=description] {
   padding: 1.5rem;
   text-align: center;
   border: 2px dashed rgba(128, 128, 128, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+}
+#admin-view #event-form .image-upload-container.drag-over {
+  border-color: var(--pico-primary);
+  background: rgba(var(--pico-primary-rgb), 0.05);
+  transform: scale(1.02);
 }
 #admin-view #event-form .image-upload-container .image-preview {
   width: 100%;
@@ -7439,6 +7462,38 @@ textarea[name=description] {
   background-position: center;
   margin-bottom: 1.5rem;
   border-radius: 8px;
+}
+#admin-view #event-form .image-upload-container #upload-progress-container {
+  margin-bottom: 1rem;
+}
+#admin-view #event-form .image-upload-container #upload-progress-container progress {
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+#admin-view #event-form .image-upload-container #upload-progress-container #progress-text {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+}
+#admin-view #event-form .image-upload-container .file-upload-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-md);
+  background: var(--pico-primary);
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+#admin-view #event-form .image-upload-container .file-upload-btn:hover {
+  background: var(--pico-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--pico-primary-rgb), 0.3);
+}
+#admin-view #event-form .image-upload-container .file-upload-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 #admin-view #event-form .tag-badge {
   opacity: 0.6;

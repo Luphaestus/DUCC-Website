@@ -237,6 +237,7 @@ async function createTables(db) {
         date DATETIME DEFAULT CURRENT_TIMESTAMP,
         size INTEGER,
         filename TEXT,
+        hash TEXT,
         category_id INTEGER,
         visibility TEXT CHECK(visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members',
         FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL

@@ -6,6 +6,7 @@ const FileRules = require('../misc/fileRules.js');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 /**
  * API for file management and uploads.
@@ -34,13 +35,26 @@ class FilesAPI {
         this.upload = multer({ 
             storage: storage,
             fileFilter: (req, file, cb) => {
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
                 if (allowedTypes.includes(file.mimetype)) {
                     cb(null, true);
                 } else {
-                    cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WEBP images are allowed.'), false);
+                    cb(new Error('Invalid file type.'), false);
                 }
             }
+        });
+    }
+
+    /**
+     * Calculate file hash.
+     */
+    async calculateHash(filePath) {
+        return new Promise((resolve, reject) => {
+            const hash = crypto.createHash('sha256');
+            const stream = fs.createReadStream(filePath);
+            stream.on('data', (data) => hash.update(data));
+            stream.on('end', () => resolve(hash.digest('hex')));
+            stream.on('error', reject);
         });
     }
 
@@ -80,6 +94,22 @@ class FilesAPI {
 
             const results = [];
             for (const file of req.files) {
+                const filePath = file.path;
+                const fileHash = await this.calculateHash(filePath);
+
+                // Check for existing file with same hash
+                const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
+                let finalFilename = file.filename;
+
+                if (!existingFileStatus.isError()) {
+                    const existingFile = existingFileStatus.getData();
+                    // If file exists, we can delete the newly uploaded one and reuse existing
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                    }
+                    finalFilename = existingFile.filename;
+                }
+
                 let defaultTitle = file.originalname;
                 const ext = path.extname(file.originalname);
                 if (ext && defaultTitle.endsWith(ext)) {
@@ -91,12 +121,16 @@ class FilesAPI {
                     author: req.body.author || (req.user.first_name + ' ' + req.user.last_name),
                     date: req.body.date,
                     size: file.size,
-                    filename: file.filename,
+                    filename: finalFilename,
+                    hash: fileHash,
                     category_id: req.body.categoryId,
                     visibility: req.body.visibility || 'members'
                 };
                 const status = await FilesDB.createFile(this.db, data);
-                if (!status.isError()) results.push(status.getData().id);
+                if (status.isError()) {
+                    return status.getResponse(res);
+                }
+                results.push(status.getData().id);
             }
 
             res.status(201).json({ success: true, ids: results });
