@@ -390,3 +390,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
+

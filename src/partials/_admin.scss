@@ -645,3 +645,20 @@ textarea[name="description"] {
         .box-label { color: #d35400; }
     }
 }
+
+/* Event Detail Editor Layout */
+.event-content-split {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Destructive Actions Group */
+.destructive-actions {
+    display: flex;
+    gap: 0.5rem;
+}

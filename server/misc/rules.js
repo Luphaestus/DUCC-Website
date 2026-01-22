@@ -96,6 +96,11 @@ class Rules {
     static async canJoinEvent(db, event, user) {
         if (!user) return new statusObject(401, 'User not authenticated');
 
+        // Signup Required Check
+        if (!event.signup_required) {
+            return new statusObject(400, 'Signup is not required for this event');
+        }
+
         // Event Status
         if (event.is_canceled) return new statusObject(400, 'Event is canceled');
 

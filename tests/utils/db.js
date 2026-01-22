@@ -87,6 +87,7 @@ async function setupTestDb() {
             is_canceled BOOLEAN NOT NULL DEFAULT 0,
             enable_waitlist BOOLEAN NOT NULL DEFAULT 1,
             signup_required BOOLEAN NOT NULL DEFAULT 1,
+            image_url TEXT,
             
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );

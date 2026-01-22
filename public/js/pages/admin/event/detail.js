@@ -4,6 +4,28 @@ import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../common.js';
 import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
 
+const CSS_STYLES = /*css*/`
+.conditional-input {
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+    max-height: 200px;
+    margin-top: 1rem;
+    transform: translateY(0);
+}
+
+.conditional-input.hidden {
+    display: block !important;
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+`;
+
 /**
  * Admin event creation and editing form.
  * @module AdminEventDetail
@@ -14,6 +36,13 @@ import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, IN
  * @param {string} id - Database ID or 'new'.
  */
 export async function renderEventDetail(id) {
+    if (!document.getElementById('admin-event-detail-styles')) {
+        const style = document.createElement('style');
+        style.id = 'admin-event-detail-styles';
+        style.textContent = CSS_STYLES;
+        document.head.appendChild(style);
+    }
+
     const adminContent = document.getElementById(adminContentID);
     const isNew = id === 'new';
 
@@ -51,7 +80,7 @@ export async function renderEventDetail(id) {
                     </label>
                 </div>
 
-                <div class="event-content-split" style="display:grid; grid-template-columns: 1.5fr 1fr; gap:2rem;">
+                <div class="event-content-split">
                     <div class="event-details-section">
                         <h3 style="display:flex; align-items:center; gap:0.5rem; color:var(--pico-primary); border-bottom:1px solid rgba(128,128,128,0.2); padding-bottom:0.5rem; margin-bottom:1.5rem;">
                             ${INFO_SVG} Basic Details
@@ -66,19 +95,25 @@ export async function renderEventDetail(id) {
                         
                         <label style="margin-bottom:1.5rem; display:block;">Description <textarea name="description" rows="5" placeholder="What's the plan?" style="resize:vertical;">${event.description}</textarea></label>
                         
-                        <div class="grid-3-col" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+                        <div class="grid-2-col" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
                             <label>Difficulty (1-5) <input type="number" name="difficulty_level" min="1" max="5" value="${event.difficulty_level}" required></label>
-                            <label>Max Attendees <input type="number" name="max_attendees" value="${event.max_attendees}" placeholder="0 = Unlimited"></label>
                             <label>Cost (£) <input type="number" step="0.01" name="upfront_cost" value="${event.upfront_cost}"></label>
                         </div>
 
                         <div class="form-divider" style="height:1px; background:rgba(128,128,128,0.2); margin: 2rem 0;"></div>
 
                         <div class="settings-group" style="display:flex; flex-direction:column; gap:1.5rem; margin-bottom:2rem;">
-                            <label class="checkbox-label" style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
-                                <input type="checkbox" name="signup_required" ${event.signup_required ? 'checked' : ''} style="margin:0;"> 
-                                Signup Required
-                            </label>
+                            <div class="signup-policy">
+                                <label class="checkbox-label" style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                                    <input type="checkbox" id="signup_required_toggle" name="signup_required" ${event.signup_required ? 'checked' : ''} style="margin:0;"> 
+                                    Signup Required
+                                </label>
+                                <div id="max-attendees-wrapper" class="conditional-input ${event.signup_required ? '' : 'hidden'}" style="margin-top:1rem; padding-left:1.8rem;">
+                                    <label>Max Attendees
+                                        <input type="number" name="max_attendees" value="${event.max_attendees}" placeholder="0 = Unlimited">
+                                    </label>
+                                </div>
+                            </div>
 
                             <div class="refund-policy">
                                 <label class="checkbox-label" style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
@@ -161,6 +196,23 @@ export async function renderEventDetail(id) {
             cutoffWrapper.querySelector('input').value = '';
         }
     };
+
+    // Signup Required Toggle
+    const signupToggle = document.getElementById('signup_required_toggle');
+    const maxAttendeesInput = document.querySelector('input[name="max_attendees"]');
+    const maxAttendeesWrapper = document.getElementById('max-attendees-wrapper');
+    const updateMaxAttendeesState = () => {
+        if (signupToggle.checked) {
+            maxAttendeesWrapper.classList.remove('hidden');
+            maxAttendeesInput.disabled = false;
+        } else {
+            maxAttendeesWrapper.classList.add('hidden');
+            maxAttendeesInput.disabled = true;
+            maxAttendeesInput.value = 0;
+        }
+    };
+    signupToggle.onchange = updateMaxAttendeesState;
+    updateMaxAttendeesState();
 
     // Image Upload Handling
     const fileInput = document.getElementById('event-image-file');

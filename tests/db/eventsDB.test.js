@@ -1,6 +1,7 @@
 const TestWorld = require('../utils/TestWorld');
 const EventsDB = require('../../server/db/eventsDB');
 const TransactionsDB = require('../../server/db/transactionDB');
+const Rules = require('../../server/misc/rules');
 
 describe('db/eventsDB', () => {
     let world;
@@ -60,5 +61,103 @@ describe('db/eventsDB', () => {
         // Verify session restored
         const user = await world.db.get('SELECT free_sessions FROM users WHERE id = ?', [userId]);
         expect(user.free_sessions).toBe(2);
+    });
+
+    describe('signup_required and max_attendees logic', () => {
+        test('cannot create event with max_attendees > 0 if signup_required is false', async () => {
+            const eventData = {
+                title: 'No Signup Required Event',
+                start: new Date().toISOString(),
+                end: new Date().toISOString(),
+                difficulty_level: 1,
+                max_attendees: 10,
+                signup_required: false,
+                upfront_cost: 0
+            };
+            const result = await EventsDB.createEvent(world.db, eventData);
+            expect(result.getStatus()).toBe(400);
+            expect(result.getMessage()).toBe('Max attendees cannot be set if signup is not required');
+        });
+
+        test('can create event with max_attendees = 0 if signup_required is false', async () => {
+            const eventData = {
+                title: 'No Signup Required Event',
+                start: new Date().toISOString(),
+                end: new Date().toISOString(),
+                difficulty_level: 1,
+                max_attendees: 0,
+                signup_required: false,
+                upfront_cost: 0
+            };
+            const result = await EventsDB.createEvent(world.db, eventData);
+            expect(result.getStatus()).toBe(200);
+        });
+
+        test('cannot update event to max_attendees > 0 if signup_required is false', async () => {
+            const eventData = {
+                title: 'Initial Event',
+                start: new Date().toISOString(),
+                end: new Date().toISOString(),
+                difficulty_level: 1,
+                max_attendees: 0,
+                signup_required: true,
+                upfront_cost: 0
+            };
+            const createRes = await EventsDB.createEvent(world.db, eventData);
+            const eventId = createRes.getData().id;
+
+            const updateData = {
+                ...eventData,
+                max_attendees: 10,
+                signup_required: false
+            };
+            const result = await EventsDB.updateEvent(world.db, eventId, updateData);
+            expect(result.getStatus()).toBe(400);
+            expect(result.getMessage()).toBe('Max attendees cannot be set if signup is not required');
+        });
+
+        test('can update event if signup_required is false and max_attendees is 0', async () => {
+            const eventData = {
+                title: 'Initial Event',
+                start: new Date().toISOString(),
+                end: new Date().toISOString(),
+                difficulty_level: 1,
+                max_attendees: 10,
+                signup_required: true,
+                upfront_cost: 0
+            };
+            const createRes = await EventsDB.createEvent(world.db, eventData);
+            const eventId = createRes.getData().id;
+
+            const updateData = {
+                ...eventData,
+                max_attendees: 0,
+                signup_required: false
+            };
+            const result = await EventsDB.updateEvent(world.db, eventId, updateData);
+            expect(result.getStatus()).toBe(200);
+        });
+
+        test('Rules.canJoinEvent prevents joining if signup_required is false', async () => {
+            const eventData = {
+                title: 'No Signup Required Event',
+                start: new Date(Date.now() + 10000).toISOString(),
+                end: new Date(Date.now() + 20000).toISOString(),
+                difficulty_level: 1,
+                max_attendees: 0,
+                signup_required: false,
+                upfront_cost: 0
+            };
+            const createRes = await EventsDB.createEvent(world.db, eventData);
+            const eventId = createRes.getData().id;
+            const event = (await EventsDB.getEventByIdAdmin(world.db, eventId)).getData();
+
+            await world.createUser('user', { filled_legal_info: 1 });
+            const user = (await world.db.get('SELECT * FROM users WHERE id = ?', [world.data.users['user']]));
+
+            const result = await Rules.canJoinEvent(world.db, event, user);
+            expect(result.getStatus()).toBe(400);
+            expect(result.getMessage()).toBe('Signup is not required for this event');
+        });
     });
 });

@@ -228,7 +228,12 @@ class eventsDB {
      */
     static async createEvent(db, data) {
         try {
-            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
+            
+            if (!signup_required && max_attendees > 0) {
+                return new statusObject(400, 'Max attendees cannot be set if signup is not required');
+            }
+
             const result = await db.run(
                 `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, image_url, upfront_refund_cutoff)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -256,7 +261,12 @@ class eventsDB {
      */
     static async updateEvent(db, id, data) {
         try {
-            const { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
+
+            if (!signup_required && max_attendees > 0) {
+                return new statusObject(400, 'Max attendees cannot be set if signup is not required');
+            }
+
             await db.run(
                 `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, image_url=?, upfront_refund_cutoff=? WHERE id=?`,
                 [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_url, upfront_refund_cutoff, id]
