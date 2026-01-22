@@ -1,7 +1,7 @@
-const EventRules = require('./eventRules.js');
+const EventRules = require('./EventRules.js');
 const TagsDB = require('../db/tagsDB.js');
 const UserDB = require('../db/userDB.js');
-const Globals = require('./globals.js');
+const Globals = require('../misc/globals.js');
 
 class FileRules {
     /**
@@ -41,7 +41,7 @@ class FileRules {
             for (const event of events) {
                 event.tags = await TagsDB.getTagsForEvent(db, event.id);
                 const canView = EventRules.canViewEvent(event, userObj);
-            if (canView) return true;
+                if (canView) return true;
             }
         }
 

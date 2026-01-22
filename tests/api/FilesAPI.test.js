@@ -116,5 +116,52 @@ describe('api/FilesAPI', () => {
             expect(res.statusCode).toBe(200);
             expect(res.text).toBe('content');
         });
+
+        test('Event image visibility is restricted by event access', async () => {
+            const filename = 'event_img.txt';
+            const filePath = path.join(testUploadDir, filename);
+            fs.writeFileSync(filePath, 'fake image content');
+
+            const fileRes = await FilesDB.createFile(world.db, {
+                title: 'Event Image',
+                filename: filename,
+                visibility: 'events'
+            });
+            const eventFileId = fileRes.getData().id;
+            const imageUrl = `/api/files/${eventFileId}/download`;
+
+            await world.createEvent('Hard Event', {
+                difficulty_level: 5,
+                image_url: imageUrl
+            });
+
+            expect((await world.request.get(imageUrl)).statusCode).toBe(403);
+
+            expect((await world.as('member').get(imageUrl)).statusCode).toBe(403);
+
+            await world.db.run('UPDATE users SET difficulty_level = 5 WHERE id = ?', [world.data.users['member']]);
+            const resMemberHigh = await world.as('member').get(imageUrl);
+            expect(resMemberHigh.statusCode).toBe(200);
+            expect(resMemberHigh.text).toBe('fake image content');
+
+            expect((await world.as('exec').get(imageUrl)).statusCode).toBe(200);
+        });
+
+        test('Orphaned events image is accessible only to execs', async () => {
+            const filename = 'orphan.jpg';
+            const filePath = path.join(testUploadDir, filename);
+            fs.writeFileSync(filePath, 'orphan content');
+
+            const fileRes = await FilesDB.createFile(world.db, {
+                title: 'Orphan Image',
+                filename: filename,
+                visibility: 'events'
+            });
+            const orphanFileId = fileRes.getData().id;
+            const imageUrl = `/api/files/${orphanFileId}/download`;
+
+            expect((await world.as('member').get(imageUrl)).statusCode).toBe(403);
+            expect((await world.as('exec').get(imageUrl)).statusCode).toBe(200);
+        });
     });
 });

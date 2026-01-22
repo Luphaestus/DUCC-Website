@@ -1,7 +1,7 @@
 const TestWorld = require('../utils/TestWorld');
 const EventsDB = require('../../server/db/eventsDB');
 const TransactionsDB = require('../../server/db/transactionDB');
-const Rules = require('../../server/misc/rules');
+const EventRules = require('../../server/rules/EventRules');
 
 describe('db/eventsDB', () => {
     let world;
@@ -138,7 +138,7 @@ describe('db/eventsDB', () => {
             expect(result.getStatus()).toBe(200);
         });
 
-        test('Rules.canJoinEvent prevents joining if signup_required is false', async () => {
+        test('EventRules.canJoinEvent prevents joining if signup_required is false', async () => {
             const eventData = {
                 title: 'No Signup Required Event',
                 start: new Date(Date.now() + 10000).toISOString(),
@@ -155,7 +155,7 @@ describe('db/eventsDB', () => {
             await world.createUser('user', { filled_legal_info: 1 });
             const user = (await world.db.get('SELECT * FROM users WHERE id = ?', [world.data.users['user']]));
 
-            const result = await Rules.canJoinEvent(world.db, event, user);
+            const result = await EventRules.canJoinEvent(world.db, event, user);
             expect(result.getStatus()).toBe(400);
             expect(result.getMessage()).toBe('Signup is not required for this event');
         });

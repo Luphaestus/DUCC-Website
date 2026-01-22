@@ -201,7 +201,7 @@ export async function renderEventDetail(id) {
 
         const formData = new FormData();
         formData.append('files', file);
-        formData.append('visibility', 'public');
+        formData.append('visibility', 'events');
         formData.append('title', `Event Image - ${Date.now()}`);
 
         try {

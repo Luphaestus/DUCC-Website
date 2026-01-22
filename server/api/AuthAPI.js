@@ -3,9 +3,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const checkAuthentication = require('../misc/authentication.js');
 const Utils = require('../misc/utils.js');
-const Rules = require('../misc/rules.js');
-
-//todo fix
+const ValidationRules = require('../rules/ValidationRules.js');
 
 /**
  * API for authentication, registration, and session management.
@@ -73,13 +71,13 @@ class Auth {
             email = email.replace(/\s/g, '').toLowerCase();
 
             const errors = {};
-            const emailError = Rules.validate('email', email);
+            const emailError = ValidationRules.validate('email', email);
             if (emailError) errors.email = emailError;
 
-            const firstNameError = Rules.validate('name', first_name);
+            const firstNameError = ValidationRules.validate('name', first_name);
             if (firstNameError) errors.first_name = firstNameError;
 
-            const lastNameError = Rules.validate('name', last_name);
+            const lastNameError = ValidationRules.validate('name', last_name);
             if (lastNameError) errors.last_name = lastNameError;
 
             if (Object.keys(errors).length > 0) {

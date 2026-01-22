@@ -225,7 +225,7 @@ async function createTables(db) {
       schema: `
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL,
-        default_visibility TEXT CHECK(default_visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members'
+        default_visibility TEXT CHECK(default_visibility IN ('public', 'members', 'execs', 'events')) NOT NULL DEFAULT 'members'
       `
     },
     {
@@ -239,7 +239,7 @@ async function createTables(db) {
         filename TEXT,
         hash TEXT,
         category_id INTEGER,
-        visibility TEXT CHECK(visibility IN ('public', 'members', 'execs')) NOT NULL DEFAULT 'members',
+        visibility TEXT CHECK(visibility IN ('public', 'members', 'execs', 'events')) NOT NULL DEFAULT 'members',
         FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL
       `
     },

@@ -39,7 +39,11 @@ class TestWorld {
         });
 
         // Default Mocks
-        vi.spyOn(Globals.prototype, 'getInt').mockImplementation((k) => this.globalInts[k] !== undefined ? this.globalInts[k] : 0);
+        vi.spyOn(Globals.prototype, 'getInt').mockImplementation((k) => {
+            if (this.globalInts[k] !== undefined) return this.globalInts[k];
+            if (k === 'Unauthorized_max_difficulty') return 2;
+            return 0;
+        });
         vi.spyOn(Globals.prototype, 'getFloat').mockImplementation((k) => this.globalFloats[k] !== undefined ? this.globalFloats[k] : 0);
         vi.spyOn(Globals.prototype, 'get').mockImplementation((k) => this.globalObjects[k]);
         vi.spyOn(Globals.prototype, 'getAll').mockImplementation(() => this.globalObjects);

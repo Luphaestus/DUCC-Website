@@ -2,7 +2,7 @@ const { statusObject } = require('../misc/status.js');
 const TransactionsDB = require('./transactionDB.js');
 const TagsDB = require('./tagsDB.js');
 const UserDB = require('./userDB.js');
-const Rules = require('../misc/rules.js');
+const EventRules = require('../rules/EventRules.js');
 
 /**
  * Database operations for events, attendee management, and scheduling.
@@ -45,7 +45,7 @@ class eventsDB {
             const tags = await TagsDB.getTagsForEvent(db, event.id);
             event.tags = tags;
 
-            if (Rules.canViewEvent(event, user)) {
+            if (EventRules.canViewEvent(event, user)) {
                 visibleEvents.push(event);
             }
         }
@@ -95,7 +95,7 @@ class eventsDB {
             const tags = await TagsDB.getTagsForEvent(db, event.id);
             event.tags = tags;
 
-            if (Rules.canViewEvent(event, user)) {
+            if (EventRules.canViewEvent(event, user)) {
                 visibleEvents.push(event);
             }
         }
@@ -196,7 +196,7 @@ class eventsDB {
         event.tags = tags;
 
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
-        if (!Rules.canViewEvent(event, user)) {
+        if (!EventRules.canViewEvent(event, user)) {
             return new statusObject(401, 'User not authorized');
         }
 

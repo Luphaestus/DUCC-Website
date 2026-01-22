@@ -7,7 +7,7 @@ const CollegesDB = require('../../db/collegesDB.js');
 const Globals = require('../../misc/globals.js');
 const check = require('../../misc/authentication.js');
 const bcrypt = require('bcrypt');
-const Rules = require('../../misc/rules.js');
+const ValidationRules = require('../../rules/ValidationRules.js');
 
 /**
  * API for user profiles, validation, membership, and account management.
@@ -154,18 +154,18 @@ class User {
 
             switch (element) {
                 case "email":
-                    error = Rules.validate('email', value);
+                    error = ValidationRules.validate('email', value);
                     break;
                 case "first_name":
                 case "last_name":
                 case "emergency_contact_name":
-                    error = Rules.validate('name', value);
+                    error = ValidationRules.validate('name', value);
                     break;
                 case "date_of_birth":
-                    error = Rules.validate('date_of_birth', value);
+                    error = ValidationRules.validate('date_of_birth', value);
                     break;
                 case "college_id":
-                    error = Rules.validate('presence', value);
+                    error = ValidationRules.validate('presence', value);
                     if (!error) {
                         const college = await CollegesDB.getCollegeById(db, value);
                         if (!college) error = "Invalid college.";
@@ -173,26 +173,26 @@ class User {
                     break;
                 case "emergency_contact_phone":
                 case "phone_number":
-                    error = Rules.validate('phone', value);
+                    error = ValidationRules.validate('phone', value);
                     break;
                 case "home_address":
-                    error = Rules.validate('presence', value);
+                    error = ValidationRules.validate('presence', value);
                     break;
                 case "has_medical_conditions":
                 case "takes_medication":
                 case "agrees_to_keep_health_data":
                 case "is_instructor":
-                    error = Rules.validate('boolean', value);
+                    error = ValidationRules.validate('boolean', value);
                     break;
                 case "medical_conditions_details":
                     if ((await getElement("has_medical_conditions", data, db)).getData()) {
-                        error = Rules.validate('presence', value);
+                        error = ValidationRules.validate('presence', value);
                         if (error) error = "Description required if conditions exist.";
                     }
                     break;
                 case "medication_details":
                     if ((await getElement("takes_medication", data, db)).getData()) {
-                        error = Rules.validate('presence', value);
+                        error = ValidationRules.validate('presence', value);
                         if (error) error = "Description required if taking medication.";
                     }
                     break;

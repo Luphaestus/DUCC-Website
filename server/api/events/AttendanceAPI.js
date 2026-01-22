@@ -2,7 +2,7 @@ const EventsDB = require('../../db/eventsDB.js');
 const AttendanceDB = require('../../db/attendanceDB.js');
 const TransactionsDB = require('../../db/transactionDB.js');
 const UserDB = require('../../db/userDB.js');
-const Rules = require('../../misc/rules.js');
+const EventRules = require('../../rules/EventRules.js');
 const check = require('../../misc/authentication.js');
 const { statusObject } = require('../../misc/status.js');
 const { Permissions } = require('../../misc/permissions.js');
@@ -71,7 +71,7 @@ class AttendanceAPI {
             const user = await UserDB.getElementsById(this.db, req.user.id, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level']);
             if (user.isError()) return user.getResponse(res);
 
-            const status = await Rules.canJoinEvent(this.db, eventRes.getData(), user.getData());
+            const status = await EventRules.canJoinEvent(this.db, eventRes.getData(), user.getData());
             res.json({ canJoin: !status.isError(), reason: status.getMessage() });
         });
 
@@ -91,7 +91,7 @@ class AttendanceAPI {
             const user = await UserDB.getElementsById(this.db, req.user.id, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level']);
             if (user.isError()) return user.getResponse(res);
 
-            const canJoin = await Rules.canJoinEvent(this.db, event, user.getData());
+            const canJoin = await EventRules.canJoinEvent(this.db, event, user.getData());
             if (canJoin.isError()) return canJoin.getResponse(res);
 
             const membershipStatus = user.getData();

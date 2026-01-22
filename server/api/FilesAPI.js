@@ -2,7 +2,7 @@ const { statusObject } = require('../misc/status.js');
 const FilesDB = require('../db/filesDB.js');
 const check = require('../misc/authentication.js');
 const { Permissions } = require('../misc/permissions.js');
-const FileRules = require('../misc/fileRules.js');
+const FileRules = require('../rules/FileRules.js');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -184,7 +184,7 @@ class FilesAPI {
             const file = fileStatus.getData();
             const role = await this.getUserRole(req);
 
-            if (!FileRules.canAccessFile(file, role)) {
+            if (!await FileRules.canAccessFile(this.db, file, req.user, role)) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
 
