@@ -178,6 +178,7 @@ nav.small-container {
 }
 
 .navbar-items li a, .navbar-items li button {
+    cursor: pointer;
     &.active {
         font-weight: 700;
         color: var(--pico-primary);

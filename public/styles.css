@@ -3620,6 +3620,9 @@ nav.small-container ul.navbar-items.user-items {
   }
 }
 
+.navbar-items li a, .navbar-items li button {
+  cursor: pointer;
+}
 .navbar-items li a.active, .navbar-items li button.active {
   font-weight: 700;
   color: var(--pico-primary);

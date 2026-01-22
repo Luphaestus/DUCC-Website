@@ -87,6 +87,7 @@ function create_item(entry) {
     switch (typeof entry.action) {
         case 'string': clicky.href = entry.action; break;
         case 'object':
+            clicky.href = '#';
             clicky.addEventListener('click', (e) => { 
                 e.preventDefault();
                 entry.action.run?.(); 
