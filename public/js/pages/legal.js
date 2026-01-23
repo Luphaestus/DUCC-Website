@@ -41,59 +41,80 @@ addRoute('/legal', 'legal');
 
 /** HTML Template for the legal form page */
 const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
-            <div class="small-container hidden" id="legal-container">
+            <div class="legal-container" id="legal-container">
                 <h1>Legal & Medical Information Form</h1>
-                <div id="grid-legal">
-                    <article>
-                        <form>
-                            <header>
+                
+                <div class="legal-grid">
+                    <!-- Personal Info (Full Width) -->
+                    <article class="glass-panel full-width">
+                        <div class="box-header">
+                            <h3>
                                 ${ACCOUNT_BOX_SVG}
-                                <h3>Personal Information</h3>
-                            </header>
-                            <label for="name">Name*</label>
-                            <input type="text" id=${name_id} name="name" placeholder="e.g. John Doe">
-                            <label for="phone-number">Phone Number*</label>
-                            <input type="tel" id=${phone_number_id} name="phone-number" placeholder="e.g. +44 7123 456789">
-                            <label for="date">Date of Birth*</label>
-                            <input type="date" id=${date_of_birth_id} name="date">
-                            <label for="address">Home Address*</label>
-                            <textarea id=${home_address_id} name="address" rows="4"
-                                placeholder="e.g. 123 River St&#10;Maidenhead&#10;AB12 3CD&#10;United Kingdom"></textarea>
-                            <label for="college">College*</label>
-                            <Select id=${college_id} name="college" placeholder="College">
-                                <option value="" disabled selected>Select your college</option>
-                            </Select>
+                                Personal Information
+                            </h3>
+                        </div>
+                        <form>
+                            <div class="grid">
+                                <label>Name* 
+                                    <input type="text" id=${name_id} name="name" placeholder="e.g. John Doe">
+                                </label>
+                                <label>Phone Number*
+                                    <input type="tel" id=${phone_number_id} name="phone-number" placeholder="e.g. +44 7123 456789">
+                                </label>
+                            </div>
+                            <div class="grid">
+                                <label>Date of Birth*
+                                    <input type="date" id=${date_of_birth_id} name="date">
+                                </label>
+                                <label>College*
+                                    <Select id=${college_id} name="college" placeholder="College">
+                                        <option value="" disabled selected>Select your college</option>
+                                    </Select>
+                                </label>
+                            </div>
+                            <label>Home Address*
+                                <textarea id=${home_address_id} name="address" rows="3"
+                                    placeholder="e.g. 123 River St&#10;Maidenhead&#10;AB12 3CD&#10;United Kingdom"></textarea>
+                            </label>
                         </form>
                     </article>
 
-                    <article>
-                        <form>
-                            <header>
+                    <!-- Emergency Contact -->
+                    <article class="glass-panel">
+                        <div class="box-header">
+                            <h3>
                                 ${CALL_SVG}
-                                <h3>Emergency Contact</h3>
-                            </header>
-                            <label for="emergency-contact-name">Name*</label>
-                            <input type="text" id=${emergency_contact_name_id} name="emergency-contact-name"
-                                placeholder="e.g. Jane Doe">
-                            <label for="emergency-contact-phone">Phone Number*</label>
-                            <input type="tel" id=${emergency_contact_phone_id} name="emergency-contact-phone"
-                                placeholder="e.g. +44 7123 456789">
+                                Emergency Contact
+                            </h3>
+                        </div>
+                        <form>
+                            <label>Name*
+                                <input type="text" id=${emergency_contact_name_id} name="emergency-contact-name"
+                                    placeholder="e.g. Jane Doe">
+                            </label>
+                            <label>Phone Number*
+                                <input type="tel" id=${emergency_contact_phone_id} name="emergency-contact-phone"
+                                    placeholder="e.g. +44 7123 456789">
+                            </label>
                         </form>
                     </article>
 
-                    <article>
-                        <form>
-                            <header>
+                    <!-- Medical Information -->
+                    <article class="glass-panel">
+                        <div class="box-header">
+                            <h3>
                                 ${MEDICAL_INFORMATION_SVG}
-                                <h3>Medical Information</h3>
-                            </header>
+                                Medical Information
+                            </h3>
+                        </div>
+                        <form>
                             <fieldset>
                                 <legend>Medical Conditions & Allergies*</legend>
                                 <div class="radio-group">
                                     <label for="medical-yes"><input type="radio" id=${has_medical_conditions_id} name="medical-condition-radio" value="yes"> Yes</label>
                                     <label for="medical-no"><input type="radio" id=${has_medical_conditions_no_id} name="medical-condition-radio" value="no"> No</label>
                                 </div>
-                                <input type="text" id=${medical_conditions_details_id} name="medical-condition" placeholder="Please specify... (e.g. Asthma)">
+                                <input type="text" id=${medical_conditions_details_id} class="conditional-reveal hidden" name="medical-condition" placeholder="Please specify... (e.g. Asthma)">
                             </fieldset>
                             <fieldset>
                                 <legend>Medication*</legend>
@@ -101,7 +122,7 @@ const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
                                     <label for="medication-yes"><input type="radio" id=${takes_medication_id} name="medication-radio" value="yes"> Yes</label>
                                     <label for="medication-no"><input type="radio" id=${takes_medication_no_id} name="medication-radio" value="no"> No</label>
                                 </div>
-                                <input type="text" id=${medication_details_id} name="medication-condition" placeholder="Please specify... (e.g. Inhaler)">
+                                <input type="text" id=${medication_details_id} class="conditional-reveal hidden" name="medication-condition" placeholder="Please specify... (e.g. Inhaler)">
                             </fieldset>
                             <fieldset>
                                 <label for="no-incapacity-checkbox">
@@ -111,40 +132,48 @@ const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
                             </fieldset>
                         </form>
                     </article>
+
+                    <!-- Terms (Full Width) -->
+                    <article class="glass-panel full-width">
+                        <div class="box-header">
+                            <h3>
+                                ${CONTRACT_SVG}
+                                Terms and Conditions
+                            </h3>
+                        </div>
+                        <form>
+                            <div class="grid">
+                                <fieldset>
+                                    <label for="terms-checkbox">
+                                        <input type="checkbox" id=${agrees_to_club_rules_id} name="terms-checkbox">
+                                        I agree to the club rules and safety policy.*
+                                    </label>
+                                </fieldset>
+                                <fieldset>
+                                    <label for="debts-checkbox">
+                                        <input type="checkbox" id=${agrees_to_pay_debts_id} name="debts-checkbox">
+                                        I agree to pay all outstanding debts.*
+                                    </label>
+                                </fieldset>
+                            </div>
+                            <div class="grid">
+                                <fieldset>
+                                    <label for="data-checkbox">
+                                        <input type="checkbox" id=${agrees_to_data_storage_id} name="data-checkbox">
+                                        I agree to encrypted storage of my data.*
+                                    </label>
+                                </fieldset>
+                                <fieldset>
+                                    <label for="keep-health-checkbox">
+                                        <input type="checkbox" id=${agrees_to_keep_health_data_id} name="keep-health-checkbox">
+                                        I would like my health form to be kept on the server beyond the end of the year.
+                                    </label>
+                                </fieldset>
+                            </div>
+                            <button type="submit" id=${submitButton_id}>Submit Information</button>
+                        </form>
+                    </article>
                 </div>
-                <article>
-                    <form>
-                        <header>
-                            ${CONTRACT_SVG}
-                            <h3>Terms and Conditions</h3>
-                        </header>
-                        <fieldset>
-                            <label for="terms-checkbox">
-                                <input type="checkbox" id=${agrees_to_club_rules_id} name="terms-checkbox">
-                                I agree to the club rules and safety policy.*
-                            </label>
-                        </fieldset>
-                        <fieldset>
-                            <label for="debts-checkbox">
-                                <input type="checkbox" id=${agrees_to_pay_debts_id} name="debts-checkbox">
-                                I agree to pay all outstanding debts.*
-                            </label>
-                        </fieldset>
-                        <fieldset>
-                            <label for="data-checkbox">
-                                <input type="checkbox" id=${agrees_to_data_storage_id} name="data-checkbox">
-                                I agree to encrypted storage of my data.*
-                            </label>
-                        </fieldset>
-                        <fieldset>
-                            <label for="keep-health-checkbox">
-                                <input type="checkbox" id=${agrees_to_keep_health_data_id} name="keep-health-checkbox">
-                                I would like my health form to be kept on the server beyond the end of the year.
-                            </label>
-                        </fieldset>
-                        <button type="submit" id=${submitButton_id}>Submit</button>
-                    </form>
-                </article>
             </div>
         </div>`;
 
@@ -407,10 +436,16 @@ async function getCurrentMedicalData() {
     
     // Explicitly handle radio buttons as they are usually handled by groups in the mapper
     if (data.has_medical_conditions !== null) {
-        document.getElementById(data.has_medical_conditions ? has_medical_conditions_id : has_medical_conditions_no_id).checked = true;
+        const medicalYes = document.getElementById(has_medical_conditions_id);
+        const medicalNo = document.getElementById(has_medical_conditions_no_id);
+        if (data.has_medical_conditions) medicalYes.checked = true;
+        else medicalNo.checked = true;
     }
     if (data.takes_medication !== null) {
-        document.getElementById(data.takes_medication ? takes_medication_id : takes_medication_no_id).checked = true;
+        const medYes = document.getElementById(takes_medication_id);
+        const medNo = document.getElementById(takes_medication_no_id);
+        if (data.takes_medication) medYes.checked = true;
+        else medNo.checked = true;
     }
 }
 
@@ -476,3 +511,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 export { LegalEvent };
+

@@ -10,7 +10,7 @@
  */
 
 import { LoginEvent } from './login.js';
-import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { ajaxGet, ajaxPost, clearAjaxCache } from '/js/utils/ajax.js';
 import { LegalEvent } from './legal.js';
 import { notify } from '/js/components/notification.js';
 import { FirstNameChangedEvent } from '/js/components/navbar.js';
@@ -585,6 +585,7 @@ function bindEvents() {
 
     document.getElementById('sidebar-logout-btn').onclick = async () => {
         await ajaxGet('/api/auth/logout');
+        clearAjaxCache();
         LoginEvent.notify({ authenticated: false });
         switchView('/home');
     };

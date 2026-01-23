@@ -2,7 +2,10 @@
 
 /* Containers */
 .sub-container {
-    background: rgba(var(--pico-background-color-rgb), 0.5); border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+    background: var(--glass-bg); 
+    border: var(--glass-border);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     width: 100%; padding: 1.25rem; border-radius: var(--border-radius-md); margin-bottom: 1rem;
     :first-child { --success: #2ecc71; --warning: #f39c12; --error: #e74c3c; --ok: #3498db; font-weight: 600; margin-top: 0; }
     :last-child { margin-bottom: 0; }
@@ -10,15 +13,17 @@
 
 /* Glass Panels */
 .glass-panel {
-    background: var(--glass-bg); border: var(--glass-border); box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--border-radius-lg); padding: 1.25rem;
+    @include glass-panel;
 }
 
 /* Form Layouts */
 .form-info {
     display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 2rem;
     .form-box {
-        @include translucent-card; flex: 1 1 320px; padding: 2rem; margin-bottom: 0; @include card-highlights;
+        @include glass-panel; flex: 1 1 320px; padding: 2rem; margin-bottom: 0; @include card-highlights;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        &:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+        
         >form { display: flex; flex-direction: column; gap: 1.25rem; }
         h3, h2 { display: flex; align-items: center; font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--pico-contrast); >svg { width: 1.75rem; height: 1.75rem; margin-right: 0.75rem; opacity: 0.9; } }
         div { margin: 0; }
