@@ -11,7 +11,7 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { switchView } from '/js/utils/view.js';
-import { uploadFile } from '/js/utils/upload.js';
+import { uploadFile } from '/js/utils/ajax.js';
 import { library, loadLibrary } from '../util/library.js';
 import { adminContentID } from '../common.js';
 import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
@@ -176,7 +176,7 @@ export async function renderEventDetail(id) {
             </article>
         </dialog>
     `;
-    
+
     // Set description separately to handle special characters safely
     document.querySelector('textarea[name="description"]').value = event.description;
 
@@ -247,7 +247,7 @@ export async function renderEventDetail(id) {
                 }
             });
             setTimeout(() => progressContainer.classList.add('hidden'), 500);
-            
+
             const newUrl = `/api/files/${fileId}/download?view=true`;
             imageUrlInput.value = newUrl;
             imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
@@ -301,7 +301,7 @@ export async function renderEventDetail(id) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
-        
+
         // Parse complex fields
         data.tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
         data.signup_required = formData.get('signup_required') === 'on';
@@ -319,10 +319,10 @@ export async function renderEventDetail(id) {
                 notify('Success', 'Event created', 'success');
                 switchView('/admin/events');
             } else {
-                const res = await fetch(`/api/admin/event/${id}`, { 
-                    method: 'PUT', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(data) 
+                const res = await fetch(`/api/admin/event/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
                 if (!res.ok) throw new Error('Save failed');
                 notify('Success', 'Event updated', 'success');
@@ -341,12 +341,12 @@ export async function renderEventDetail(id) {
                 try {
                     const res = await fetch(`/api/admin/event/${id}/reset-image`, { method: 'POST' });
                     if (!res.ok) throw new Error('Failed to reset image');
-                    
+
                     notify('Success', 'Image reset to default', 'success');
-                    
+
                     // Update UI state
                     imageUrlInput.value = '';
-                    
+
                     // Fetch updated event to see what the new default is
                     const updatedEvent = await ajaxGet(`/api/admin/event/${id}`);
                     imagePreview.style.setProperty('--event-image-url', `url('${updatedEvent.image_url || '/images/misc/ducc.png'}')`);

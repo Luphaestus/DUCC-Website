@@ -11,9 +11,9 @@
 import { ViewChangedEvent, switchView, addRoute } from "/js/utils/view.js";
 import { ajaxGet, ajaxPost } from "/js/utils/ajax.js";
 import { notify } from '/js/components/notification.js';
-import { BalanceChangedEvent } from '/js/utils/globals.js';
+import { BalanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal } from '/js/utils/modal.js';
-import { hasHistory } from '/js/utils/history.js';
+import { hasHistory, getPreviousPath } from '/js/utils/history.js';
 import { BRIGHTNESS_ALERT_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, CLOSE_SVG, CHECK_INDETERMINATE_SMALL_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, ALL_INCLUSIVE_SVG, WALLET_SVG, SCHEDULE_SVG } from '../../images/icons/outline/icons.js';
 
 // Register the overlay route
@@ -214,7 +214,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
             buttonAction = 'waitlist_leave';
         } else if (!canJoinRes.canJoin) {
             // Block joining based on rule violations (legal, debt, etc.)
-            isDisabled = false; 
+            isDisabled = false;
             if (canJoinRes.reason.includes('Legal info')) {
                 buttonText = 'Complete Legal Form';
                 warningHtml = `<div class="glass-warning">${INFO_SVG} You must fill out the legal form before joining.</div>`;
@@ -315,7 +315,8 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
     if (!navContainer) return;
 
     try {
-        const eventResponse = await ajaxGet("/api" + path);
+        const apiPath = path.split('?')[0];
+        const eventResponse = await ajaxGet("/api" + apiPath);
         const { event } = eventResponse;
 
         const tagsHtml = (event.tags || []).map(tag => `<span class="tag-badge" style="--tag-color: ${tag.color}65;">${tag.name}</span>`).join('');
@@ -470,8 +471,29 @@ document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
  * or defaulting to the /events list if no history exists.
  */
 function handleClose() {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // 1. Check for explicit 'back' or 'return' parameter (highest priority)
+    const back = urlParams.get('back') || urlParams.get('return');
+    if (back) {
+        switchView(back);
+        return;
+    }
+
+    // 2. Check for SPA internal history
     if (hasHistory()) {
-        window.history.back();
+        const prev = getPreviousPath();
+        // Ensure we don't get stuck in a loop if the previous page was also an event
+        if (prev && !prev.includes('/event/')) {
+            switchView(prev);
+            return;
+        }
+    }
+
+    // 3. Fallback to events list, preserving the week if specified
+    const week = urlParams.get('week');
+    if (week !== null && week !== undefined) {
+        switchView(`/events?week=${week}`);
     } else {
         switchView('/events');
     }

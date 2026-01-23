@@ -1,9 +1,8 @@
 /**
  * event.js
  * 
- * Lightweight implementation of the Publish/Subscribe (Pub/Sub) pattern.
+ * Lightweight Publish/Subscribe pattern.
  * Enables decoupled communication between different parts of the SPA,
- * such as alerting the navbar when a user's balance changes or when a view switch occurs.
  */
 
 class Event {
@@ -40,7 +39,7 @@ class Event {
     /**
      * Removes a specific callback from the subscriber list.
      * 
-     * @param {Function} callback - The callback to remove.
+     * @param {Function} callback - The callback to delete.
      */
     unsubscribe(callback) {
         this.subscribers.delete(callback);
@@ -49,7 +48,7 @@ class Event {
     /**
      * Triggers the event, executing all subscribed callbacks with the provided data.
      * 
-     * @param {*} data - The payload to pass to all subscribers.
+     * @param {*} data - The payload to pass to subscribers.
      */
     notify(data) {
         this.subscribers.forEach(sub => {

@@ -11,10 +11,10 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { LoginEvent } from './login.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
+import { updateHistory } from '/js/utils/history.js';
 import './event.js'; // Ensure the overlay modal logic is loaded
 import { CALENDAR_TODAY_SVG, CHECK_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, REFRESH_SVG, SCHEDULE_SVG, CALENDAR_MONTH_SVG, GROUP_SVG, SETTINGS_SVG, ALL_INCLUSIVE_SVG, CURRENCY_POUND_SVG, CLOSE_SVG } from '../../images/icons/outline/icons.js';
 
-// Register route
 addRoute('/events', 'events');
 
 /** HTML Template for the events list page */
@@ -89,7 +89,7 @@ function preloadWeeks(baseOffset) {
     [-2, -1, 1, 2].forEach(delta => {
         const offset = baseOffset + delta;
         if (!weekDataCache.has(offset)) {
-            getWeekData(offset).catch(() => {}); // Fire and forget
+            getWeekData(offset).catch(() => { }); // Fire and forget
         }
     });
 }
@@ -164,7 +164,7 @@ function formatEvent(event) {
     else if (isPast) statusLabel = '<span class="status-badge neutral">Unavailable</span>';
 
     return /*html*/`
-        <div class="event-card glass-panel ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" data-nav="event/${event.id}" role="button" tabindex="0">
+        <div class="event-card glass-panel ${isPast ? 'past-event' : ''} ${isCanceled ? 'canceled-event' : ''}" data-nav="event/${event.id}${relativeWeekOffset !== 0 ? `?week=${relativeWeekOffset}` : ''}" role="button" tabindex="0">
             ${imageHtml}
             <div class="event-card-content">
                 <div class="event-info-block">
@@ -194,12 +194,21 @@ function formatEvent(event) {
 
 /**
  * Synchronizes the internal week offset with the browser URL.
+ * @param {boolean} push - Whether to push a new history state or replace the current one.
  */
-function updateUrlParams() {
+function updateUrlParams(push = true) {
     const url = new URL(window.location);
     if (relativeWeekOffset === 0) url.searchParams.delete('week');
     else url.searchParams.set('week', relativeWeekOffset);
-    window.history.pushState({}, '', url);
+
+    const newPath = url.pathname + url.search;
+
+    if (push) {
+        updateHistory(newPath);
+        window.history.pushState({}, '', url);
+    } else {
+        window.history.replaceState({}, '', url);
+    }
 }
 
 /**
@@ -217,7 +226,7 @@ async function checkAdminAccess() {
             if (isAdmin) btn.classList.remove('hidden');
             else btn.classList.add('hidden');
         }
-        
+
         // Refresh current week view to reflect possible permission changes
         if (relativeWeekOffset !== undefined) changeWeek(0, false);
     } catch (e) {
@@ -317,7 +326,10 @@ async function changeWeek(delta, animated = true) {
 
     isAnimating = true;
     relativeWeekOffset = newOffset;
-    updateUrlParams();
+
+    // Only push history if it's a user action (delta is defined)
+    const isUserAction = delta !== null && delta !== undefined;
+    updateUrlParams(isUserAction);
 
     if (!animated) {
         await renderWeekContent(relativeWeekOffset, currentView);
@@ -419,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     LoginEvent.subscribe(() => changeWeek(0, false));
-    
+
     // Router synchronization
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/events') {

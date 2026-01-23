@@ -16,7 +16,7 @@ import { notify } from '/js/components/notification.js';
 import { FirstNameChangedEvent } from '/js/components/navbar.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import { requireAuth } from '/js/utils/auth.js';
-import { BalanceChangedEvent } from '/js/utils/globals.js';
+import { BalanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from '/js/utils/modal.js';
 import {
     CHECK_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, AR_ON_YOU_SVG,
@@ -27,7 +27,7 @@ import {
 
 // Register routes
 addRoute('/profile', 'profile');
-addRoute('/transactions', 'profile'); 
+addRoute('/transactions', 'profile');
 
 /** HTML Template for the dashboard */
 const HTML_TEMPLATE = /*html*/`
@@ -545,7 +545,7 @@ function bindEvents() {
     // Manual Top Up Instruction Modal
     document.getElementById('top-up-btn').onclick = () => {
         const refrense = currentUser.first_name.charAt(0).toUpperCase() + currentUser.last_name.toUpperCase() + "WEBSITE";
-        
+
         showConfirmModal(
             "Top Up Balance",
             `Please transfer the desired amount to:<br><br>
@@ -612,7 +612,7 @@ function setActiveTab(tabName) {
 
 document.addEventListener('DOMContentLoaded', () => {
     bindEvents();
-    
+
     // Subscribe to external refresh triggers
     LoginEvent.subscribe(() => updateDashboard());
     LegalEvent.subscribe(() => updateDashboard());

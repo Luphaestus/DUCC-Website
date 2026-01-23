@@ -17,11 +17,9 @@ import { switchView } from './view.js';
  */
 export async function requireAuth() {
     try {
-        // Fetch status from server, using cache to minimize redundant checks
         const data = await ajaxGet('/api/auth/status', true);
         
         if (!data.authenticated) {
-            // Save current path so we can return here after login
             sessionStorage.setItem('redirect_after_login', window.location.pathname + window.location.search);
             switchView('/unauthorized');
             return false;

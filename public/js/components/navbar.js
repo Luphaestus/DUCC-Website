@@ -8,9 +8,9 @@
 
 import { switchView, ViewChangedEvent } from '/js/utils/view.js';
 import { ajaxGet } from '/js/utils/ajax.js';
-import { Event } from '/js/utils/event.js';
+import { Event } from '/js/utils/events/event.js';
 import { LoginEvent } from '../pages/login.js';
-import { BalanceChangedEvent } from '/js/utils/globals.js';
+import { BalanceChangedEvent, FirstNameChangedEvent } from '/js/utils/events/events.js';
 
 /**
  * Navigation configuration.
@@ -21,18 +21,12 @@ const navEntries = [
     { name: 'Events', group: 'main', id: 'nav-events', classes: "contrast", action: { run: () => switchView('/events') } },
     { name: 'Files', group: 'main', id: 'nav-files', classes: "contrast", action: { run: () => switchView('/files') } },
     { name: 'Swims', group: 'main', id: 'nav-swims', classes: "contrast", action: { run: () => switchView('/swims') } },
-    
+
     { name: 'Admin', group: 'user', id: 'admin-button', classes: "contrast", action: { run: () => switchView('/admin/') } },
     { name: 'Balance: £0.00', group: 'user', id: 'balance-button', classes: "contrast", action: { run: () => switchView('/profile?tab=balance') } },
     { name: 'Profile', group: 'user', id: 'profile-button', classes: "contrast", action: { run: () => switchView('/profile') } },
     { name: 'Login', group: 'user', id: 'login-button', classes: "contrast", action: { run: () => switchView('/login') } },
 ];
-
-/** 
- * Fired when the user's first name is changed in the profile.
- * @type {Event} 
- */
-const FirstNameChangedEvent = new Event();
 
 /**
  * Fetches the current user's balance and updates the navbar display.
@@ -72,11 +66,11 @@ function updateActiveNav(path) {
         else if (item.id === 'nav-events' && path.startsWith('/events')) match = true;
         else if (item.id === 'nav-files' && path.startsWith('/files')) match = true;
         else if (item.id === 'nav-swims' && path.startsWith('/swims')) match = true;
-        
+
         // Differentiate Balance vs Profile based on query param
         else if (item.id === 'balance-button' && path.startsWith('/profile') && isBalanceTab) match = true;
         else if (item.id === 'profile-button' && path.startsWith('/profile') && !isBalanceTab) match = true;
-        
+
         else if (item.id === 'admin-button' && path.startsWith('/admin')) match = true;
         else if (item.id === 'login-button' && path.startsWith('/login')) match = true;
 
@@ -95,7 +89,7 @@ function updateActiveNav(path) {
  */
 function create_item(entry) {
     const li = document.createElement('li');
-    const clicky = document.createElement('button'); 
+    const clicky = document.createElement('button');
 
 
     if (entry.classes) clicky.className = entry.classes;
@@ -107,9 +101,9 @@ function create_item(entry) {
         case 'string': clicky.href = entry.action; break;
         case 'object':
             clicky.href = '#';
-            clicky.addEventListener('click', (e) => { 
+            clicky.addEventListener('click', (e) => {
                 e.preventDefault();
-                entry.action.run?.(); 
+                entry.action.run?.();
             });
             break;
     }
@@ -125,7 +119,7 @@ function create_item(entry) {
  */
 async function updateNavOnLoginState(data) {
     const isLoggedIn = data.authenticated;
-    
+
     // Auth-only vs Guest-only items
     const authIds = ['profile-button', 'balance-button', 'nav-swims'];
     const guestIds = ['login-button'];
@@ -169,7 +163,7 @@ async function updateNavOnLoginState(data) {
  * Closes or opens the mobile side-menu. 
  * Initialized in setupMobileMenu.
  */
-let toggleMobileMenu = () => {};
+let toggleMobileMenu = () => { };
 
 /**
  * Initializes the mobile hamburger menu and overlay.
@@ -215,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nav = document.querySelector('nav.small-container');
     const mainList = document.querySelector('.navbar-items.main-items');
     const userList = document.querySelector('.navbar-items.user-items');
-    
+
     if (!mainList || !userList) return;
 
     // Manual Logo Creation (Left side)
@@ -237,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupMobileMenu();
 
     ajaxGet('/api/auth/status', true).then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
-    
+
     // Subscribe to state change events
     LoginEvent.subscribe(updateNavOnLoginState);
     BalanceChangedEvent.subscribe(updateBalanceInNav);

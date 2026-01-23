@@ -30,7 +30,6 @@ export function showConfirmModal(title, message) {
         `;
 
         document.body.appendChild(modalOverlay);
-        // Force reflow for transition
         requestAnimationFrame(() => modalOverlay.classList.add('visible'));
 
         const cleanup = (val) => {

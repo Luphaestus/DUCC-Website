@@ -10,7 +10,7 @@
 
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { switchView, ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { Event } from "/js/utils/event.js";
+import { LoginEvent } from "/js/utils/events/events.js";
 import { getPreviousPath } from '/js/utils/history.js';
 import { LOGIN_SVG } from '../../images/icons/outline/icons.js';
 
@@ -58,8 +58,6 @@ let email = null;
 /** @type {HTMLInputElement|null} Password field handle */
 let password = null;
 
-/** @type {Event} Fired upon successful authentication */
-const LoginEvent = new Event();
 
 /**
  * Resets the login form state.
@@ -104,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         const formData = new FormData(loginForm);
         let emailVal = formData.get('email');
-        
+
         // Normalize email: append university domain if missing
         if (emailVal && !emailVal.includes('@')) {
             emailVal += '@durham.ac.uk';

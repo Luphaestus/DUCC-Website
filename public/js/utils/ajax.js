@@ -8,7 +8,7 @@
  * Used by all page and component modules to communicate with the backend API.
  */
 
-import { checkServerConnection, reportConnectionFailure, reportConnectionSuccess } from '../connection.js';
+import { reportConnectionFailure, reportConnectionSuccess } from '../connection.js';
 
 /**
  * Cache for GET requests to reduce redundant network traffic.
@@ -37,7 +37,7 @@ async function ajaxGet(url, useCache = false) {
                 if (xhr.status === 0) {
                     // Handle network-level failures (e.g., DNS, connection lost)
                     reportConnectionFailure();
-                    cache.delete(url); 
+                    cache.delete(url);
                     reject({ message: 'Network error' });
                 } else if (xhr.status >= 200 && xhr.status < 300) {
                     // Successful response
@@ -93,7 +93,7 @@ function clearAjaxCache(url) {
  * @returns {Promise<object>}
  */
 async function ajaxPost(url, data) {
-    clearAjaxCache(); 
+    clearAjaxCache();
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
@@ -222,4 +222,65 @@ async function ajaxPut(url, data) {
         xhr.send(JSON.stringify(data));
     });
 }
-export { ajaxGet, ajaxPost, ajaxDelete, ajaxPut, clearAjaxCache };
+
+/**
+ * Uploads a file to the server using XHR to support progress tracking.
+ * 
+ * @param {File} file - The file object to upload.
+ * @param {object} options - Upload options.
+ * @param {string} [options.visibility='events'] - Visibility of the uploaded file.
+ * @param {string} [options.title] - Title for the uploaded file metadata.
+ * @param {string} [options.categoryId] - Optional category ID.
+ * @param {Function} [options.onProgress] - Callback for upload progress (0-100).
+ * @returns {Promise<number>} - The ID of the uploaded file.
+ */
+async function uploadFile(file, options = {}) {
+    if (!file) return null;
+
+    const visibility = options.visibility || 'events';
+    const title = options.title || `${file.name.split('.')[0]} - ${Date.now()}`;
+
+    const formData = new FormData();
+    formData.append('files', file);
+    formData.append('visibility', visibility);
+    formData.append('title', title);
+    if (options.categoryId) {
+        formData.append('categoryId', options.categoryId);
+    }
+
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/files', true);
+
+        if (options.onProgress) {
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    options.onProgress(percent);
+                }
+            };
+        }
+
+        xhr.onload = () => {
+            if (xhr.status === 201) {
+                const result = JSON.parse(xhr.responseText);
+                if (result.success && result.ids.length > 0) {
+                    resolve(result.ids[0]);
+                } else {
+                    reject(new Error('Upload succeeded but no ID returned'));
+                }
+            } else {
+                reject(new Error('Upload failed: ' + xhr.status));
+            }
+        };
+
+        xhr.onerror = () => {
+            reject(new Error('Network error during upload'));
+        };
+
+        xhr.send(formData);
+    });
+}
+
+
+export { ajaxGet, ajaxPost, ajaxDelete, ajaxPut, clearAjaxCache, uploadFile };

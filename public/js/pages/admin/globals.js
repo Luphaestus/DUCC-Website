@@ -11,7 +11,7 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { adminContentID, renderAdminNavBar } from './common.js';
 import { notify } from '/js/components/notification.js';
-import { uploadFile } from '/js/utils/upload.js';
+import { uploadFile } from '/js/utils/ajax.js';
 import { library, loadLibrary } from './util/library.js';
 import { SAVE_SVG, IMAGE_SVG, UPLOAD_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
 
@@ -153,7 +153,7 @@ let activePickerKey = null;
 
 async function selectImage(url) {
     if (!activePickerKey) return;
-    
+
     const input = document.querySelector(`.global-input[data-key="${activePickerKey}"]`);
     if (input) {
         input.value = url;
@@ -236,10 +236,10 @@ async function fetchAndRenderGlobals() {
             el.onclick = (e) => {
                 e.stopPropagation();
                 const wasVisible = el.classList.contains('preview-open');
-                
+
                 // Close all other previews first
                 document.querySelectorAll('.image-preview-global.preview-open').forEach(p => p.classList.remove('preview-open'));
-                
+
                 if (!wasVisible) {
                     el.classList.add('preview-open');
                 }
@@ -282,7 +282,7 @@ async function fetchAndRenderGlobals() {
 async function updateGlobal(key, value, displayName) {
     let parsedValue = isNaN(value) || value.trim() === '' ? value : parseFloat(value);
     const payload = { value: parsedValue };
-    
+
     await ajaxPost(`/api/globals/${key}`, payload).then(() => {
         notify("Success", `Updated ${displayName}`, 'success');
     }).catch((e) => {

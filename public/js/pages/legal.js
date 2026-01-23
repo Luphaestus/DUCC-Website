@@ -12,9 +12,10 @@
 import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
 import { notify } from '/js/components/notification.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { Event } from "/js/utils/event.js";
+import { Event } from "/js/utils/events/event.js";
 import { requireAuth } from '/js/utils/auth.js';
 import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from '/images/icons/outline/icons.js';
+import { LegalEvent } from "/js/utils/events/events.js";
 
 // --- DOM IDs ---
 const name_id = 'name';
@@ -199,8 +200,6 @@ const FIELD_MAP = {
     agrees_to_keep_health_data: agrees_to_keep_health_data_id
 };
 
-/** @type {Event} Emitted when legal info is successfully saved */
-const LegalEvent = new Event();
 
 /** @type {Function|null} Handle to current notification */
 let notification = null;
@@ -225,12 +224,12 @@ function displayNotification(title, message, type) {
 function displayValidationMessage(inputElement, message) {
     let messageId = `validation-message-${inputElement.id}`;
     let existingMessage = document.getElementById(messageId);
-    
+
     if (!existingMessage) {
         existingMessage = document.createElement('p');
         existingMessage.id = messageId;
         existingMessage.classList.add('validation-message');
-        
+
         if (inputElement.type === 'radio') {
             const fieldset = inputElement.closest('fieldset');
             if (fieldset) {
@@ -420,7 +419,7 @@ async function getCurrentMedicalData() {
         const colleges = await ajaxGet('/api/colleges');
         const collegeSelect = document.getElementById(college_id);
         if (collegeSelect) {
-            collegeSelect.innerHTML = '<option value="" disabled selected>Select your college</option>' + 
+            collegeSelect.innerHTML = '<option value="" disabled selected>Select your college</option>' +
                 colleges.map(c => `<option value="${c.id}">${c.name.charAt(0).toUpperCase() + c.name.slice(1)}</option>`).join('');
         }
     } catch (e) {
@@ -431,9 +430,9 @@ async function getCurrentMedicalData() {
     const keys = ['filled_legal_info', ...Object.keys(FIELD_MAP)].join(',');
     const data = await ajaxGet(`/api/user/elements/${keys}`);
     if (!data || !data.filled_legal_info) return;
-    
+
     populateForm(data);
-    
+
     // Explicitly handle radio buttons as they are usually handled by groups in the mapper
     if (data.has_medical_conditions !== null) {
         const medicalYes = document.getElementById(has_medical_conditions_id);
@@ -457,7 +456,7 @@ function bindStaticEvents() {
     if (!btn) return;
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
-        
+
         try {
             await ajaxPost('/api/user/elements', getFormData());
             displayNotification('Information Saved', 'Saved successfully.', 'success');

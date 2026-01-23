@@ -11,7 +11,7 @@
 
 import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
 import { switchView } from '/js/utils/view.js';
-import { uploadFile } from '/js/utils/upload.js';
+import { uploadFile } from '/js/utils/ajax.js';
 import { library, loadLibrary } from '../util/library.js';
 import { adminContentID } from '../common.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
@@ -34,7 +34,7 @@ export async function renderTagDetail(id) {
     // Fetch user permissions to determine if management sections should be shown
     const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
     const userPerms = (userData.permissions || []).includes('user.manage');
-    
+
     const isNew = id === 'new';
     let tag = { name: '', color: '#808080', description: '', min_difficulty: '', priority: 0, join_policy: 'open', view_policy: 'open', image_id: null };
     let whitelist = [];
@@ -46,12 +46,12 @@ export async function renderTagDetail(id) {
             const tags = (await ajaxGet('/api/tags')).data || [];
             tag = tags.find(t => t.id == id);
             if (!tag) throw new Error('Tag not found');
-            
+
             const [whitelistRes, managersRes] = await Promise.all([
                 ajaxGet(`/api/tags/${id}/whitelist`),
                 ajaxGet(`/api/tags/${id}/managers`)
             ]);
-            
+
             whitelist = whitelistRes.data || [];
             managers = managersRes.data || [];
         } catch (e) {
@@ -221,7 +221,7 @@ export async function renderTagDetail(id) {
                 }
             });
             setTimeout(() => progressContainer.classList.add('hidden'), 500);
-            
+
             imageIdInput.value = fileId;
             const newUrl = `/api/files/${fileId}/download?view=true`;
             imagePreview.style.setProperty('--event-image-url', `url('${newUrl}')`);
@@ -260,7 +260,7 @@ export async function renderTagDetail(id) {
             notify('Warning', 'Tags currently only support uploaded library files, not slides.', NotificationTypes.WARNING);
             return;
         }
-        
+
         imageIdInput.value = id || '';
         imagePreview.style.setProperty('--event-image-url', `url('${url}')`);
         modal.close();
@@ -283,7 +283,7 @@ export async function renderTagDetail(id) {
                 try {
                     const res = await fetch(`/api/tags/${id}/reset-image`, { method: 'POST' });
                     if (!res.ok) throw new Error('Failed to reset image');
-                    
+
                     notify('Success', 'Image removed', 'success');
                     imageIdInput.value = '';
                     imagePreview.style.setProperty('--event-image-url', `url('/images/misc/ducc.png')`);
@@ -328,14 +328,14 @@ export async function renderTagDetail(id) {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('users-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
-            }).catch(() => {});
+            }).catch(() => { });
 
             // Load Managers Search Datalist (Execs only - identified by is_exec virtual permission)
             ajaxGet('/api/admin/users?limit=1000&permissions=perm:is_exec').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('managers-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
-            }).catch(() => {});
+            }).catch(() => { });
 
             // Add Manager Handler
             document.getElementById('managers-form').onsubmit = async (e) => {
@@ -371,7 +371,7 @@ export async function renderTagDetail(id) {
                 }
             };
         }
-        
+
         // Initialize removal button listeners
         setupActionButtons(id, 'managers-table-body', 'remove-manager-btn', 'managers');
         setupActionButtons(id, 'whitelist-table-body', 'remove-whitelist-btn', 'whitelist');

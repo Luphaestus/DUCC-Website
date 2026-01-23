@@ -1,0 +1,42 @@
+/**
+ * events.js
+ * 
+ * File defining all events. ( Saves time looking for them! )
+ */
+
+import { Event } from './event.js';
+
+/**
+ * Triggered whenever a financial transaction occurs (top-up, event join, etc.).
+ * Subscribed to by the navbar and profile pages to refresh balance displays.
+ * @type {Event}
+ */
+const BalanceChangedEvent = new Event();
+
+
+/** 
+ * Fired when the user's first name is changed in the profile.
+ * @type {Event} 
+ */
+const FirstNameChangedEvent = new Event();
+
+/** 
+ * Fired when the legal waiver is saved. 
+ * @type {Event} 
+ */
+const LegalEvent = new Event();
+
+
+/** 
+ * Fired when the user logs in
+ * @type {Event}
+ */
+const LoginEvent = new Event();
+
+/**
+ * Event fired whenever the view successfully changes.
+ * @type {Event}
+ */
+const ViewChangedEvent = new Event();
+
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent };
