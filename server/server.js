@@ -65,12 +65,12 @@ app.use((req, res, next) => {
     return next();
   }
 
-  let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-src 'self' https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
+  let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
   
   if (isDev) {
     // Inject LiveReload script permission in dev mode
     csp = csp.replace("script-src 'self'", "script-src 'self' 'unsafe-inline' http://localhost:35729");
-    csp += " connect-src 'self' ws://localhost:35729;";
+    csp = csp.replace("connect-src 'self'", "connect-src 'self' ws://localhost:35729");
   }
 
   res.setHeader("Content-Security-Policy", csp);
