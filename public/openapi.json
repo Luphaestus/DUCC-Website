@@ -1,0 +1,410 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "DUCC Website API",
+    "description": "API documentation for the Durham University Canoe Club website.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid"
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/signup": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "format": "password" },
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" }
+                },
+                "required": ["email", "password", "first_name", "last_name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User registered successfully" },
+          "400": { "description": "Validation failed" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "format": "password" }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" },
+          "401": { "description": "Authentication failed" }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "get": {
+        "summary": "Logout user",
+        "tags": ["Auth"],
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Logged out" }
+        }
+      }
+    },
+    "/api/auth/status": {
+      "get": {
+        "summary": "Check authentication status",
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "Status returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "authenticated": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password-request": {
+        "post": {
+            "summary": "Request password reset",
+            "tags": ["Auth"],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": { "type": "string", "format": "email" }
+                            },
+                            "required": ["email"]
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": { "description": "Reset link sent (if account exists)" },
+                "400": { "description": "Email is required" }
+            }
+        }
+    },
+    "/api/auth/reset-password": {
+        "post": {
+            "summary": "Reset password with token",
+            "tags": ["Auth"],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "token": { "type": "string" },
+                                "newPassword": { "type": "string", "format": "password" }
+                            },
+                            "required": ["token", "newPassword"]
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": { "description": "Password updated successfully" },
+                "400": { "description": "Invalid token or missing data" }
+            }
+        }
+    },
+    "/api/auth/change-password": {
+        "post": {
+            "summary": "Change password",
+            "tags": ["Auth"],
+            "security": [{ "cookieAuth": [] }],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "currentPassword": { "type": "string", "format": "password" },
+                                "newPassword": { "type": "string", "format": "password" }
+                            },
+                            "required": ["currentPassword", "newPassword"]
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": { "description": "Password changed successfully" },
+                "403": { "description": "Incorrect current password" }
+            }
+        }
+    },
+    "/api/colleges": {
+      "get": {
+        "summary": "List all colleges",
+        "tags": ["Colleges"],
+        "responses": {
+          "200": {
+            "description": "List of colleges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "name": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/rweek/{offset}": {
+      "get": {
+        "summary": "Get events for a relative week",
+        "tags": ["Events"],
+        "parameters": [
+          {
+            "name": "offset",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Offset from current week (0 = current)"
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of events" }
+        }
+      }
+    },
+    "/api/events/paged/{page}": {
+      "get": {
+        "summary": "Get events by page",
+        "tags": ["Events"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Page number (0 = today-sun, -1 = past mon-yest)"
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of events with date range" }
+        }
+      }
+    },
+    "/api/event/{id}": {
+      "get": {
+        "summary": "Get event details",
+        "tags": ["Events"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Event details" }
+        }
+      }
+    },
+    "/api/event/{id}/canManage": {
+        "get": {
+            "summary": "Check if user can manage event",
+            "tags": ["Events"],
+            "security": [{ "cookieAuth": [] }],
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "integer" }
+                }
+            ],
+            "responses": {
+                "200": { "description": "Permission status" }
+            }
+        }
+    },
+    "/api/files": {
+        "get": {
+            "summary": "List files",
+            "tags": ["Files"],
+            "parameters": [
+                { "name": "page", "in": "query", "schema": { "type": "integer" } },
+                { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+                { "name": "search", "in": "query", "schema": { "type": "string" } },
+                { "name": "categoryId", "in": "query", "schema": { "type": "integer" } }
+            ],
+            "responses": {
+                "200": { "description": "List of files" }
+            }
+        },
+        "post": {
+            "summary": "Upload files",
+            "tags": ["Files"],
+            "security": [{ "cookieAuth": [] }],
+            "requestBody": {
+                "content": {
+                    "multipart/form-data": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "files": { "type": "array", "items": { "type": "string", "format": "binary" } },
+                                "title": { "type": "string" },
+                                "categoryId": { "type": "integer" }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": { "description": "Files uploaded" }
+            }
+        }
+    },
+    "/api/files/{id}": {
+        "put": {
+            "summary": "Update file metadata",
+            "tags": ["Files"],
+            "security": [{ "cookieAuth": [] }],
+            "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+            "requestBody": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "title": { "type": "string" },
+                                "categoryId": { "type": "integer" },
+                                "visibility": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": { "200": { "description": "File updated" } }
+        },
+        "delete": {
+            "summary": "Delete file",
+            "tags": ["Files"],
+            "security": [{ "cookieAuth": [] }],
+            "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+            "responses": { "200": { "description": "File deleted" } }
+        }
+    },
+    "/api/files/{id}/download": {
+        "get": {
+            "summary": "Download file",
+            "tags": ["Files"],
+            "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+                { "name": "view", "in": "query", "schema": { "type": "boolean" }, "description": "Inline view" }
+            ],
+            "responses": { "200": { "description": "File content" } }
+        }
+    },
+    "/api/file-categories": {
+        "get": {
+            "summary": "List file categories",
+            "tags": ["Files"],
+            "responses": { "200": { "description": "List of categories" } }
+        },
+        "post": {
+            "summary": "Create file category",
+            "tags": ["Files"],
+            "security": [{ "cookieAuth": [] }],
+            "requestBody": {
+                "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } } } } }
+            },
+            "responses": { "200": { "description": "Category created" } }
+        }
+    },
+    "/api/slides/count": {
+      "get": {
+        "summary": "Get total slide count",
+        "tags": ["Slides"],
+        "responses": { "200": { "description": "Count returned" } }
+      }
+    },
+    "/api/slides/images": {
+      "get": {
+        "summary": "Get all slide images",
+        "tags": ["Slides"],
+        "responses": { "200": { "description": "List of image paths" } }
+      }
+    },
+    "/api/tags": {
+        "get": {
+            "summary": "Get all tags",
+            "tags": ["Tags"],
+            "responses": { "200": { "description": "List of tags" } }
+        }
+    },
+    "/api/user/tags": {
+        "get": {
+            "summary": "Get current user tags",
+            "tags": ["Tags"],
+            "security": [{ "cookieAuth": [] }],
+            "responses": { "200": { "description": "List of user tags" } }
+        }
+    },
+    "/api/globals/{key}": {
+        "get": {
+            "summary": "Get global setting(s)",
+            "tags": ["Globals"],
+            "parameters": [{ "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }],
+            "responses": { "200": { "description": "Global settings" } }
+        }
+    }
+  }
+}
