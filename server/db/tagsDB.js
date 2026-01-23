@@ -78,7 +78,7 @@ class TagsDB {
             );
 
             if (oldTag && oldTag.image_id !== image_id) {
-                FileCleanup.checkAndDeleteIfUnused(db, oldTag.image_id);
+                await FileCleanup.checkAndDeleteIfUnused(db, oldTag.image_id);
             }
 
             return new statusObject(200, 'Tag updated');
@@ -97,7 +97,7 @@ class TagsDB {
             await db.run('DELETE FROM tags WHERE id = ?', [id]);
             
             if (tag) {
-                FileCleanup.checkAndDeleteIfUnused(db, tag.image_id);
+                await FileCleanup.checkAndDeleteIfUnused(db, tag.image_id);
             }
             
             return new statusObject(200, 'Tag deleted');

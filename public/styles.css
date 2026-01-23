@@ -3495,7 +3495,7 @@ nav.small-container button {
   height: auto !important;
   background: transparent;
   box-shadow: none;
-  color: var(--pico-color);
+  color: var(--theme-opposite);
   position: relative;
 }
 nav.small-container button::after {
@@ -3524,10 +3524,10 @@ nav.small-container .nav-logo {
   gap: 0.75rem;
   cursor: pointer;
   padding: 0.25rem 0;
-  margin-left: 1rem;
+  margin: 1rem;
 }
 nav.small-container .nav-logo img {
-  height: 2.5rem;
+  height: 2.2rem;
   width: auto;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
@@ -3546,7 +3546,9 @@ nav.small-container .hamburger-menu {
   position: relative;
   cursor: pointer;
 }
-nav.small-container .hamburger-menu .hamburger-inner, nav.small-container .hamburger-menu .hamburger-inner::before, nav.small-container .hamburger-menu .hamburger-inner::after {
+nav.small-container .hamburger-menu .hamburger-inner,
+nav.small-container .hamburger-menu .hamburger-inner::before,
+nav.small-container .hamburger-menu .hamburger-inner::after {
   width: 24px;
   height: 2px;
   background-color: var(--pico-color);
@@ -3593,6 +3595,15 @@ nav.small-container ul.navbar-items {
 nav.small-container ul.navbar-items.user-items {
   margin-left: auto;
 }
+nav.small-container ul.navbar-items li {
+  padding: 0 !important;
+}
+nav.small-container ul.navbar-items li button:not(#login-button) {
+  padding: 1rem;
+}
+nav.small-container ul.navbar-items li button#login-button {
+  margin-right: 1rem;
+}
 @media (max-width: 768px) {
   nav.small-container {
     border-radius: 1rem;
@@ -3629,7 +3640,7 @@ nav.small-container ul.navbar-items.user-items {
     width: 100%;
     text-align: left;
     justify-content: flex-start;
-    padding: 1rem;
+    padding: 0 1rem 1rem 1rem !important;
     border-radius: 0.5rem;
   }
   nav.small-container .main-items li a:hover, nav.small-container .main-items li button:hover {
@@ -3637,6 +3648,9 @@ nav.small-container ul.navbar-items.user-items {
   }
   nav.small-container .main-items li a:hover::after, nav.small-container .main-items li button:hover::after {
     display: none;
+  }
+  nav.small-container .main-items li:first-child a, nav.small-container .main-items li:first-child button {
+    padding-top: 1rem !important;
   }
   nav.small-container .user-items {
     display: flex;
@@ -3660,43 +3674,78 @@ nav.small-container ul.navbar-items.user-items {
   }
 }
 
-.navbar-items li a, .navbar-items li button {
+.navbar-items li a,
+.navbar-items li button {
   cursor: pointer;
 }
-.navbar-items li a.active, .navbar-items li button.active {
+.navbar-items li a.active,
+.navbar-items li button.active {
   font-weight: 700;
   color: var(--pico-primary);
   background: transparent;
   cursor: default;
 }
-.navbar-items li a.active::after, .navbar-items li button.active::after {
+.navbar-items li a.active::after,
+.navbar-items li button.active::after {
   width: calc(100% - 2.5rem);
 }
 @media (max-width: 768px) {
-  .navbar-items li a.active, .navbar-items li button.active {
+  .navbar-items li a.active,
+  .navbar-items li button.active {
     background: rgba(var(--pico-primary-rgb), 0.1);
   }
-  .navbar-items li a.active::after, .navbar-items li button.active::after {
+  .navbar-items li a.active::after,
+  .navbar-items li button.active::after {
     display: none;
   }
 }
-.navbar-items li a.logo-link img, .navbar-items li button.logo-link img {
+.navbar-items li a#login-button,
+.navbar-items li button#login-button {
+  background: var(--pico-primary);
+  color: var(--pico-primary-inverse);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  padding: 0.5rem 1.5rem;
+  transition: all 0.2s ease;
+}
+.navbar-items li a#login-button::after,
+.navbar-items li button#login-button::after {
+  display: none;
+}
+.navbar-items li a#login-button:hover,
+.navbar-items li button#login-button:hover {
+  background: var(--pico-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  color: var(--pico-primary-inverse);
+}
+.navbar-items li a#login-button.active,
+.navbar-items li button#login-button.active {
+  color: var(--pico-primary-inverse);
+  background: var(--pico-primary-hover);
+}
+.navbar-items li a.logo-link img,
+.navbar-items li button.logo-link img {
   height: 1.8rem;
   width: auto;
 }
-.navbar-items li a.logo-link.active::after, .navbar-items li button.logo-link.active::after {
+.navbar-items li a.logo-link.active::after,
+.navbar-items li button.logo-link.active::after {
   width: 1.5rem;
   bottom: -0.25rem;
 }
-.navbar-items li a.logo-link.active img, .navbar-items li button.logo-link.active img {
+.navbar-items li a.logo-link.active img,
+.navbar-items li button.logo-link.active img {
   filter: drop-shadow(0 0 8px rgba(var(--pico-primary-rgb), 0.4));
   transform: scale(1.05);
   transition: all 0.3s ease;
 }
-.navbar-items li a#balance-button.balance-low, .navbar-items li button#balance-button.balance-low {
+.navbar-items li a#balance-button.balance-low,
+.navbar-items li button#balance-button.balance-low {
   color: #ff6b6b;
 }
-.navbar-items li a#balance-button.balance-warn, .navbar-items li button#balance-button.balance-warn {
+.navbar-items li a#balance-button.balance-warn,
+.navbar-items li button#balance-button.balance-warn {
   color: #feca57;
 }
 
@@ -8459,3 +8508,5 @@ textarea[name=description] {
   background-color: rgba(0, 0, 0, 0.05);
   color: var(--pico-color);
 }
+
+/*# sourceMappingURL=styles.css.map */

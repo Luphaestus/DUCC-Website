@@ -18,15 +18,14 @@ import { BalanceChangedEvent } from '/js/utils/globals.js';
  * Action can be a function or a string (URL).
  */
 const navEntries = [
-    { name: '<img src="/images/misc/ducc.png" alt="DUCC Logo" class="nav-logo-img">', group: 'main', id: 'nav-home', type: 'text', classes: "contrast logo-link", action: { run: () => switchView('/home') } },
-    { name: 'Events', group: 'main', type: 'text', classes: "contrast", action: { run: () => switchView('/events') } },
-    { name: 'Files', group: 'main', type: 'text', classes: "contrast", action: { run: () => switchView('/files') } },
-    { name: 'Swims', group: 'main', id: 'nav-swims', type: 'text', classes: "contrast", action: { run: () => switchView('/swims') } },
+    { name: 'Events', group: 'main', id: 'nav-events', classes: "contrast", action: { run: () => switchView('/events') } },
+    { name: 'Files', group: 'main', id: 'nav-files', classes: "contrast", action: { run: () => switchView('/files') } },
+    { name: 'Swims', group: 'main', id: 'nav-swims', classes: "contrast", action: { run: () => switchView('/swims') } },
     
-    { name: 'Admin', group: 'user', id: 'admin-button', type: 'text', classes: "contrast", action: { run: () => switchView('/admin/') } },
-    { name: 'Balance: £0.00', group: 'user', id: 'balance-button', type: 'text', classes: "contrast", action: { run: () => switchView('/transactions') } },
-    { name: 'Profile', group: 'user', id: 'profile-button', type: 'text', classes: "contrast", action: { run: () => switchView('/profile') } },
-    { name: 'Login', group: 'user', id: 'login-button', type: 'text', classes: "contrast", action: { run: () => switchView('/login') } },
+    { name: 'Admin', group: 'user', id: 'admin-button', classes: "contrast", action: { run: () => switchView('/admin/') } },
+    { name: 'Balance: £0.00', group: 'user', id: 'balance-button', classes: "contrast", action: { run: () => switchView('/profile?tab=balance') } },
+    { name: 'Profile', group: 'user', id: 'profile-button', classes: "contrast", action: { run: () => switchView('/profile') } },
+    { name: 'Login', group: 'user', id: 'login-button', classes: "contrast", action: { run: () => switchView('/login') } },
 ];
 
 /** 
@@ -60,6 +59,9 @@ async function updateBalanceInNav() {
  */
 function updateActiveNav(path) {
     const navItems = document.querySelectorAll('.navbar-items li a, .navbar-items li button');
+    const urlParams = new URLSearchParams(window.location.search);
+    const isBalanceTab = urlParams.get('tab') === 'balance';
+
     navItems.forEach(item => {
         item.classList.remove('active');
         item.removeAttribute('aria-current');
@@ -70,10 +72,13 @@ function updateActiveNav(path) {
         else if (item.id === 'nav-events' && path.startsWith('/events')) match = true;
         else if (item.id === 'nav-files' && path.startsWith('/files')) match = true;
         else if (item.id === 'nav-swims' && path.startsWith('/swims')) match = true;
-        else if (item.id === 'balance-button' && path.startsWith('/transactions')) match = true;
+        
+        // Differentiate Balance vs Profile based on query param
+        else if (item.id === 'balance-button' && path.startsWith('/profile') && isBalanceTab) match = true;
+        else if (item.id === 'profile-button' && path.startsWith('/profile') && !isBalanceTab) match = true;
+        
         else if (item.id === 'admin-button' && path.startsWith('/admin')) match = true;
         else if (item.id === 'login-button' && path.startsWith('/login')) match = true;
-        else if (item.id === 'profile-button' && path.startsWith('/profile')) match = true;
 
         if (match) {
             item.classList.add('active');
@@ -90,13 +95,8 @@ function updateActiveNav(path) {
  */
 function create_item(entry) {
     const li = document.createElement('li');
-    let clicky;
-    // Support either anchor or button elements
-    switch (entry.type) {
-        case 'button': clicky = document.createElement('button'); break;
-        case 'text':
-        default: clicky = document.createElement('a'); break;
-    }
+    const clicky = document.createElement('button'); 
+
 
     if (entry.classes) clicky.className = entry.classes;
     clicky.id = entry.id || `nav-${entry.name.toLowerCase().replace(/[^a-z]/g, '')}`;
@@ -176,12 +176,10 @@ let toggleMobileMenu = () => {};
  */
 function setupMobileMenu() {
     const nav = document.querySelector('nav.small-container');
-    const mainList = document.querySelector('.navbar-items.main-items');
-
-    if (!nav || !mainList) return;
+    if (!nav) return;
 
     // Hamburger icon
-    const li = document.createElement('li');
+    const li = document.createElement('div'); // Use div as it's direct child of nav, not ul
     li.className = 'hamburger-menu';
 
     const inner = document.createElement('span');
@@ -209,15 +207,25 @@ function setupMobileMenu() {
     li.addEventListener('click', () => toggleMobileMenu());
     overlay.addEventListener('click', () => toggleMobileMenu(false));
 
-    // Append hamburger icon to the start of the main list
-    mainList.parentElement.prepend(li);
+    // Append hamburger icon to the end of the nav (Right side)
+    nav.appendChild(li);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const nav = document.querySelector('nav.small-container');
     const mainList = document.querySelector('.navbar-items.main-items');
     const userList = document.querySelector('.navbar-items.user-items');
     
     if (!mainList || !userList) return;
+
+    // Manual Logo Creation (Left side)
+    const logoLink = document.createElement('a');
+    logoLink.className = 'nav-logo logo-link';
+    logoLink.id = 'nav-home';
+    logoLink.href = '#';
+    logoLink.onclick = (e) => { e.preventDefault(); switchView('/home'); };
+    logoLink.innerHTML = '<img src="/images/misc/ducc.png" alt="DUCC Logo">';
+    nav.prepend(logoLink);
 
     // Populate navbar lists
     navEntries.forEach(entry => {
@@ -228,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupMobileMenu();
 
-    // Initial state setup
     ajaxGet('/api/auth/status', true).then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
     
     // Subscribe to state change events
@@ -236,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     BalanceChangedEvent.subscribe(updateBalanceInNav);
 
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
-        toggleMobileMenu(false); // Close mobile menu on navigation
+        toggleMobileMenu(false);
         updateActiveNav(resolvedPath || window.location.pathname);
     });
 

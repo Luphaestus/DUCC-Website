@@ -88,7 +88,7 @@ class TagsAPI {
                 const tag = await this.db.get('SELECT image_id FROM tags WHERE id = ?', [req.params.id]);
                 await this.db.run('UPDATE tags SET image_id = NULL WHERE id = ?', [req.params.id]);
                 
-                if (tag) FileCleanup.checkAndDeleteIfUnused(this.db, tag.image_id);
+                if (tag) await FileCleanup.checkAndDeleteIfUnused(this.db, tag.image_id);
                 
                 res.json({ success: true, message: 'Image removed' });
             } catch (error) {

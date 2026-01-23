@@ -117,7 +117,7 @@ class AdminEvents {
                 const event = await this.db.get('SELECT image_url FROM events WHERE id = ?', [req.params.id]);
                 await this.db.run('UPDATE events SET image_url = NULL WHERE id = ?', [req.params.id]);
                 
-                if (event) FileCleanup.checkAndDeleteIfUnused(this.db, event.image_url);
+                if (event) await FileCleanup.checkAndDeleteIfUnused(this.db, event.image_url);
                 
                 res.json({ success: true, message: 'Image reset to default' });
             } catch (error) {

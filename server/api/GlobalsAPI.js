@@ -111,7 +111,7 @@ class GlobalsAPI {
                     const oldVal = globals.get(key).data;
                     globals.set(key, req.body.value);
                     if (oldVal !== req.body.value) {
-                        FileCleanup.checkAndDeleteIfUnused(this.db, oldVal);
+                        await FileCleanup.checkAndDeleteIfUnused(this.db, oldVal);
                     }
                 } else {
                     globals.set(key, req.body.value);

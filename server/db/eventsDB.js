@@ -297,7 +297,7 @@ class eventsDB {
             );
 
             if (oldEvent && oldEvent.image_url !== image_url) {
-                FileCleanup.checkAndDeleteIfUnused(db, oldEvent.image_url);
+                await FileCleanup.checkAndDeleteIfUnused(db, oldEvent.image_url);
             }
 
             // Sync tags: clear existing and re-insert new list
