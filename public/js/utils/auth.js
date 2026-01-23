@@ -5,7 +5,7 @@
  * Integrates with the SPA router to redirect unauthorized users.
  */
 
-import { ajaxGet } from './ajax.js';
+import { apiRequest } from './api.js';
 import { switchView } from './view.js';
 
 /**
@@ -17,7 +17,7 @@ import { switchView } from './view.js';
  */
 export async function requireAuth() {
     try {
-        const data = await ajaxGet('/api/auth/status', true);
+        const data = await apiRequest('GET', '/api/auth/status', true);
         
         if (!data.authenticated) {
             sessionStorage.setItem('redirect_after_login', window.location.pathname + window.location.search);

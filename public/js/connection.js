@@ -9,7 +9,7 @@
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { ViewChangedEvent, switchView, isCurrentPath } from '/js/utils/view.js';
 import { getPreviousPath } from '/js/utils/history.js';
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 
 let isServerConnected = true;
 let currentNotification = null;
@@ -23,7 +23,7 @@ let reconnectInterval = null;
  */
 async function updateConnectionStatus(newStatus) {
     if (newStatus === null) {
-        ajaxGet('/api/health', false).catch();
+        apiRequest('GET', '/api/health', false).catch();
         return;
     }        
 
