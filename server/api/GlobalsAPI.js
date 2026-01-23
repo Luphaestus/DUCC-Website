@@ -16,6 +16,7 @@ const UserDB = require('../db/userDB.js');
 const RolesDB = require('../db/rolesDB.js');
 const check = require('../misc/authentication.js');
 const { Permissions } = require('../misc/permissions.js');
+const FileCleanup = require('../misc/FileCleanup.js');
 
 /**
  * API for system-wide configuration.
@@ -106,7 +107,15 @@ class GlobalsAPI {
             const key = req.params.key;
             const globals = new Globals();
             try {
-                globals.set(key, req.body.value);
+                if (key === 'DefaultEventImage') {
+                    const oldVal = globals.get(key).data;
+                    globals.set(key, req.body.value);
+                    if (oldVal !== req.body.value) {
+                        FileCleanup.checkAndDeleteIfUnused(this.db, oldVal);
+                    }
+                } else {
+                    globals.set(key, req.body.value);
+                }
             } catch (error) {
                 return res.status(400).json({ message: error.message });
             }

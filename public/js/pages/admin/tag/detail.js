@@ -134,7 +134,7 @@ export async function renderTagDetail(id) {
                 </form>
 
                 <dialog id="image-picker-modal" class="modern-modal">
-                    <article class="modal-content glass-panel max-w-800">
+                    <article class="modal-content glass-panel">
                         <button class="modal-close-btn" id="close-image-modal">${CLOSE_SVG}</button>
                         <header>
                             <h3>Choose Image</h3>

@@ -17,6 +17,7 @@
 const EventsDB = require('../../db/eventsDB.js');
 const check = require('../../misc/authentication.js');
 const { Permissions } = require('../../misc/permissions.js');
+const FileCleanup = require('../../misc/FileCleanup.js');
 
 /**
  * Admin API for managing events.
@@ -113,7 +114,11 @@ class AdminEvents {
             }
             
             try {
+                const event = await this.db.get('SELECT image_url FROM events WHERE id = ?', [req.params.id]);
                 await this.db.run('UPDATE events SET image_url = NULL WHERE id = ?', [req.params.id]);
+                
+                if (event) FileCleanup.checkAndDeleteIfUnused(this.db, event.image_url);
+                
                 res.json({ success: true, message: 'Image reset to default' });
             } catch (error) {
                 res.status(500).json({ message: 'Database error' });

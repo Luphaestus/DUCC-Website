@@ -141,7 +141,7 @@ export async function renderAdminFiles() {
 
         <!-- Category Management Modal -->
         <dialog id="categories-modal" class="modern-modal">
-            <article class="modal-content glass-panel max-w-600">
+            <article class="modal-content glass-panel">
                 <header>
                     <a href="#close" aria-label="Close" class="close-modal" id="close-categories-modal">${CLOSE_SVG}</a>
                     <h3>Manage Categories</h3>

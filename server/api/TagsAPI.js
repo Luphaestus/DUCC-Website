@@ -25,6 +25,7 @@
 
 const TagsDB = require('../db/tagsDB.js');
 const check = require('../misc/authentication.js');
+const FileCleanup = require('../misc/FileCleanup.js');
 
 /**
  * API for managing event tags and user whitelists.
@@ -84,7 +85,11 @@ class TagsAPI {
             }
 
             try {
+                const tag = await this.db.get('SELECT image_id FROM tags WHERE id = ?', [req.params.id]);
                 await this.db.run('UPDATE tags SET image_id = NULL WHERE id = ?', [req.params.id]);
+                
+                if (tag) FileCleanup.checkAndDeleteIfUnused(this.db, tag.image_id);
+                
                 res.json({ success: true, message: 'Image removed' });
             } catch (error) {
                 res.status(500).json({ message: 'Database error' });

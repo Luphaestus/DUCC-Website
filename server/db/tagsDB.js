@@ -6,6 +6,7 @@
  */
 
 const { statusObject } = require('../misc/status.js');
+const FileCleanup = require('../misc/FileCleanup.js');
 
 /**
  * Database operations for event tags and user whitelists.
@@ -68,10 +69,18 @@ class TagsDB {
     static async updateTag(db, id, data) {
         try {
             const { name, color, description, min_difficulty, priority, join_policy, view_policy, image_id } = data;
+            
+            const oldTag = await db.get('SELECT image_id FROM tags WHERE id = ?', [id]);
+            
             await db.run(
                 'UPDATE tags SET name=?, color=?, description=?, min_difficulty=?, priority=?, join_policy=?, view_policy=?, image_id=? WHERE id=?',
                 [name, color, description, min_difficulty, priority, join_policy, view_policy, image_id, id]
             );
+
+            if (oldTag && oldTag.image_id !== image_id) {
+                FileCleanup.checkAndDeleteIfUnused(db, oldTag.image_id);
+            }
+
             return new statusObject(200, 'Tag updated');
         } catch (error) {
             console.error(error);
@@ -84,7 +93,13 @@ class TagsDB {
      */
     static async deleteTag(db, id) {
         try {
+            const tag = await db.get('SELECT image_id FROM tags WHERE id = ?', [id]);
             await db.run('DELETE FROM tags WHERE id = ?', [id]);
+            
+            if (tag) {
+                FileCleanup.checkAndDeleteIfUnused(db, tag.image_id);
+            }
+            
             return new statusObject(200, 'Tag deleted');
         } catch (error) {
             return new statusObject(500, 'Database error');

@@ -11,6 +11,7 @@ const TagsDB = require('./tagsDB.js');
 const UserDB = require('./userDB.js');
 const EventRules = require('../rules/EventRules.js');
 const Globals = require('../misc/globals.js');
+const FileCleanup = require('../misc/FileCleanup.js');
 
 /**
  * Database operations for events, attendee management, and scheduling.
@@ -288,10 +289,16 @@ class eventsDB {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
+            const oldEvent = await db.get('SELECT image_url FROM events WHERE id = ?', [id]);
+
             await db.run(
                 `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, image_url=?, upfront_refund_cutoff=? WHERE id=?`,
                 [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_url, upfront_refund_cutoff, id]
             );
+
+            if (oldEvent && oldEvent.image_url !== image_url) {
+                FileCleanup.checkAndDeleteIfUnused(db, oldEvent.image_url);
+            }
 
             // Sync tags: clear existing and re-insert new list
             if (tags && Array.isArray(tags)) {
@@ -387,7 +394,13 @@ class eventsDB {
      */
     static async deleteEvent(db, id) {
         try {
+            const event = await db.get('SELECT image_url FROM events WHERE id = ?', [id]);
             await db.run('DELETE FROM events WHERE id = ?', [id]);
+            
+            if (event) {
+                FileCleanup.checkAndDeleteIfUnused(db, event.image_url);
+            }
+
             return new statusObject(200, 'Event deleted');
         } catch (error) {
             return new statusObject(500, 'Database error');

@@ -144,7 +144,7 @@ export async function renderEventDetail(id) {
                                     ${UPLOAD_SVG} <span>Choose or Drop Image</span>
                                     <input type="file" id="event-image-file" accept="image/*" style="display:none;">
                                 </label>
-                                <button type="button" id="open-library-btn" class="small-btn primary" title="Choose from Library">${IMAGE_SVG} Library</button>
+                                <button type="button" id="open-library-btn" class="small-btn" title="Choose from Library">${IMAGE_SVG} Library</button>
                                 ${!isNew ? `<button type="button" id="remove-image-btn" class="small-btn delete outline" title="Reset to Default">${CLOSE_SVG} Remove</button>` : ''}
                             </div>
                         </div>
@@ -165,7 +165,7 @@ export async function renderEventDetail(id) {
         </div>
 
         <dialog id="image-picker-modal" class="modern-modal">
-            <article class="modal-content glass-panel max-w-800">
+            <article class="modal-content glass-panel">
                 <button class="modal-close-btn" id="close-image-modal">${CLOSE_SVG}</button>
                 <header>
                     <h3>Choose Image</h3>
