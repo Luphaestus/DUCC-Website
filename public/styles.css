@@ -3481,8 +3481,8 @@ nav.small-container {
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--border-radius-lg);
   padding: 1.25rem;
-  backdrop-filter: blur(130px);
-  -webkit-backdrop-filter: blur(130px);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   position: fixed;
   top: 0.5rem;
   left: 1rem;
@@ -3589,6 +3589,11 @@ nav.small-container.mobile-open .hamburger-inner::after {
   transform: rotate(-90deg);
   background-color: var(--pico-color);
 }
+nav.small-container .nav-links {
+  display: flex;
+  flex: 1;
+  align-items: center;
+}
 nav.small-container ul.navbar-items {
   display: flex;
   align-items: center;
@@ -3596,8 +3601,6 @@ nav.small-container ul.navbar-items {
   margin-bottom: 0;
   padding: 0;
   list-style: none;
-  backdrop-filter: blur(130px);
-  -webkit-backdrop-filter: blur(130px);
 }
 nav.small-container ul.navbar-items.user-items {
   margin-left: auto;
@@ -3622,7 +3625,7 @@ nav.small-container ul.navbar-items li button#login-button {
   nav.small-container .hamburger-menu {
     display: flex;
   }
-  nav.small-container .main-items {
+  nav.small-container .nav-links {
     display: flex;
     position: absolute;
     top: calc(100% + 0.5rem);
@@ -3636,8 +3639,8 @@ nav.small-container ul.navbar-items li button#login-button {
     -webkit-backdrop-filter: blur(12px);
     border-radius: var(--border-radius-lg);
     padding: 1.25rem;
-    backdrop-filter: blur(130px);
-    -webkit-backdrop-filter: blur(130px);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
     padding: 0.5rem;
     border-radius: 1rem;
     transform-origin: top center;
@@ -3646,45 +3649,47 @@ nav.small-container ul.navbar-items li button#login-button {
     pointer-events: none;
     transform: scaleY(0.9) translateY(-10px);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    align-items: stretch;
   }
-  nav.small-container .main-items li {
+  nav.small-container .nav-links ul.navbar-items {
+    flex-direction: column;
+    width: 100%;
+    gap: 0;
+  }
+  nav.small-container .nav-links ul.navbar-items.user-items {
+    margin-left: 0;
+    margin-top: 0;
+    border-top: 1px solid var(--glass-highlight);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  nav.small-container .nav-links ul.navbar-items li {
     width: 100%;
     margin: 0;
   }
-  nav.small-container .main-items li a, nav.small-container .main-items li button {
+  nav.small-container .nav-links ul.navbar-items li a, nav.small-container .nav-links ul.navbar-items li button {
     width: 100%;
     text-align: left;
     justify-content: flex-start;
     padding: 0 1rem 1rem 1rem !important;
     border-radius: 0.5rem;
   }
-  nav.small-container .main-items li a:hover, nav.small-container .main-items li button:hover {
+  nav.small-container .nav-links ul.navbar-items li a:hover, nav.small-container .nav-links ul.navbar-items li button:hover {
     background: rgba(var(--pico-primary-rgb), 0.1);
   }
-  nav.small-container .main-items li a:hover::after, nav.small-container .main-items li button:hover::after {
+  nav.small-container .nav-links ul.navbar-items li a:hover::after, nav.small-container .nav-links ul.navbar-items li button:hover::after {
     display: none;
   }
-  nav.small-container .main-items li:first-child a, nav.small-container .main-items li:first-child button {
+  nav.small-container .nav-links ul.navbar-items li:first-child a, nav.small-container .nav-links ul.navbar-items li:first-child button {
     padding-top: 1rem !important;
   }
-  nav.small-container .user-items {
-    display: flex;
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
-    width: 100%;
-    flex-direction: column;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-  nav.small-container.mobile-open .main-items {
+  nav.small-container.mobile-open .nav-links {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
     transform: scaleY(1) translateY(0);
   }
-  nav.small-container.mobile-open .main-items .hidden {
+  nav.small-container.mobile-open .nav-links .hidden {
     display: none !important;
   }
 }
