@@ -1,3 +1,4 @@
+//todo refine
 /**
  * history.js
  * 
@@ -6,22 +7,19 @@
  * in history or if they should perform a default navigation.
  */
 
-/** @type {string[]} Stack of previous pathnames */
-let previousPath = [];
+import { ViewChangedEvent } from './events/events.js';
 
-/** @type {string} The currently active path */
+let previousPath = [];
 let currentPath = window.location.pathname + window.location.search;
 
 /**
- * Pushes the current path to the history stack and updates the current tracked path.
- * Called automatically by the router on every view change.
- * 
- * @param {string} newPath - The destination path.
+ * Updates the internal history stack.
+ * Listens to ViewChangedEvent to track navigation.
  */
-function updateHistory(newPath) {
+ViewChangedEvent.subscribe(({ path }) => {
     previousPath.push(currentPath);
-    currentPath = newPath;
-}
+    currentPath = path;
+});
 
 /**
  * Pops and returns the last path from the history stack.
@@ -43,5 +41,3 @@ export const hasHistory = () => previousPath.length > 0;
  * @returns {string}
  */
 export const getCurrentPath = () => currentPath;
-
-export { updateHistory };

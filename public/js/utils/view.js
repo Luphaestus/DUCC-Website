@@ -1,30 +1,28 @@
 /**
  * view.js
  * 
- * The central SPA (Single Page Application) router.
+ * The central router.
  * Handles URL changes, path resolution, view visibility toggling,
- * and emits events when the active view changes.
  */
 
-import { ajaxGet } from './ajax.js';
+import { apiRequest } from './api.js';
 import { ViewChangedEvent } from "./events/events.js";
-import { updateHistory } from './history.js';
 
 
 /**
- * List of registered application routes.
- * @type {Array<{pattern: string, regex: RegExp, viewId: string, isOverlay: boolean}>}
+ * List of registered routes.
+ * @type {Array<{pattern: string, regex: RegExp, viewId: string, isOverlay: boolean, titleFunc: (path: string) => string|null}>}
  */
 const Routes = [];
 
 /**
  * Registers a new route in the application. 
  * 
- * @param {string} pattern - URL pattern (e.g. '/events', '/admin/*', '/user/:id').
- * @param {string} viewId - ID of the container element (without '-view' suffix).
- * @param {Object} [options={}] - Route configuration.
- * @param {boolean} [options.isOverlay=false] - If true, previous views are not hidden (used for modals)
- * @param {lambda} [options.titleFunc(path)=>String) - Optional function to set document title dynamically. 
+ * @param {string} pattern - URL pattern.
+ * @param {string} viewId
+ * @param {Object} [options={}]
+ * @param {boolean} [options.isOverlay=false] - If true, previous views are not hidden. (optional)
+ * @param {lambda} [options.titleFunc(path)=>String) - function to set document title dynamically. (optional) 
  */
 export function addRoute(pattern, viewId, options = {}) {
     const regexString = '^' + pattern
@@ -42,10 +40,10 @@ export function addRoute(pattern, viewId, options = {}) {
 }
 
 /**
- * Internal helper to find a matching route for a given path. 
+ * find a matching route for a given path. 
  * 
- * @param {string} path - The path to match.
- * @returns {Object|null} - The matched route object or null.
+ * @param {string} path 
+ * @returns {Object|null}
  */
 function matchRoute(path) {
     const pathOnly = path.split('?')[0];
@@ -53,7 +51,7 @@ function matchRoute(path) {
 }
 
 /**
- * Checks if the provided path is the one currently in the browser address bar.
+ * Checks if path is different to current path.
  * 
  * @param {string}
  * @returns {boolean}
@@ -63,31 +61,34 @@ function isCurrentPath(path) {
 }
 
 /**
- * Main function to trigger a view switch. Updates browser history,
- * toggles DOM visibility, and notifies subscribers.
+ * Switches to new view
  * 
- * @param {string} path - Destination path.
- * @param {boolean} [force=false] - If true, reloads the view even if already active.
- * @returns {boolean} - Returns true if navigation was handled.
+ * @param {string} path
+ * @param {boolean} [force=false] - reloads the view even if already active.
+ * @returns {boolean}
  */
 function switchView(path, force = false) {
     if (!path.startsWith('/')) path = '/' + path;
 
     // Handle root path: redirect to events if logged in, home if not
     if (path === '/') {
-        ajaxGet('/api/auth/status').then((data) => {
+        apiRequest('GET', '/api/auth/status').then((data) => {
             if (data.authenticated) switchView('/events');
             else switchView('/home');
         }).catch(() => switchView('/home'));
         return true;
     }
 
-    updateHistory(path);
+
     const route = matchRoute(path);
 
     if (isCurrentPath(path) && !force) return true;
 
     if (!route) return switchView('/error');
+
+    if (!isCurrentPath(path)) {
+        window.history.pushState(null, '', path);
+    }
 
     const allViews = document.querySelectorAll('.view');
     allViews.forEach(el => {
@@ -138,4 +139,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-export { switchView, ViewChangedEvent };
+export { switchView, ViewChangedEvent, isCurrentPath };
