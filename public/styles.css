@@ -3474,20 +3474,25 @@ table tbody tr td {
 }
 
 nav.small-container {
-  position: fixed;
-  width: 95%;
-  left: 2.5%;
-  top: 0.5rem;
-  background: var(--nav-bg);
-  z-index: 100;
-  backdrop-filter: blur(20px);
+  background: var(--glass-bg);
   border: var(--glass-border);
-  border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--border-radius-lg);
+  padding: 1.25rem;
+  backdrop-filter: blur(130px);
+  -webkit-backdrop-filter: blur(130px);
+  position: fixed;
+  top: 0.5rem;
+  left: 1rem;
+  right: 1rem;
+  width: auto;
+  z-index: 100;
+  padding: 0 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 1rem;
 }
 nav.small-container button {
   padding: 0.5rem 1.25rem;
@@ -3591,6 +3596,8 @@ nav.small-container ul.navbar-items {
   margin-bottom: 0;
   padding: 0;
   list-style: none;
+  backdrop-filter: blur(130px);
+  -webkit-backdrop-filter: blur(130px);
 }
 nav.small-container ul.navbar-items.user-items {
   margin-left: auto;
@@ -3608,7 +3615,9 @@ nav.small-container ul.navbar-items li button#login-button {
   nav.small-container {
     border-radius: 1rem;
     top: 0.5rem;
-    width: calc(100% - 1rem);
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
   }
   nav.small-container .hamburger-menu {
     display: flex;
@@ -3620,11 +3629,17 @@ nav.small-container ul.navbar-items li button#login-button {
     right: 0;
     width: 100%;
     flex-direction: column;
-    background: var(--nav-bg);
-    backdrop-filter: blur(20px);
+    background: var(--glass-bg);
     border: var(--glass-border);
-    border-radius: 1rem;
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--border-radius-lg);
+    padding: 1.25rem;
+    backdrop-filter: blur(130px);
+    -webkit-backdrop-filter: blur(130px);
     padding: 0.5rem;
+    border-radius: 1rem;
     transform-origin: top center;
     opacity: 0;
     visibility: hidden;
