@@ -3684,7 +3684,7 @@ nav.small-container ul.navbar-items li button#login-button {
     width: 100%;
     text-align: left;
     justify-content: flex-start;
-    padding: 0 1rem 1rem 1rem !important;
+    padding: 0.75rem 1rem !important;
     border-radius: 0.5rem;
   }
   nav.small-container .nav-links ul.navbar-items li a:hover, nav.small-container .nav-links ul.navbar-items li button:hover {
@@ -3693,8 +3693,10 @@ nav.small-container ul.navbar-items li button#login-button {
   nav.small-container .nav-links ul.navbar-items li a:hover::after, nav.small-container .nav-links ul.navbar-items li button:hover::after {
     display: none;
   }
-  nav.small-container .nav-links ul.navbar-items li:first-child a, nav.small-container .nav-links ul.navbar-items li:first-child button {
-    padding-top: 1rem !important;
+  nav.small-container .nav-links ul.navbar-items li#login-button {
+    margin-top: 0.5rem;
+    text-align: center;
+    justify-content: center;
   }
   nav.small-container.mobile-open .nav-links {
     opacity: 1;
@@ -4015,20 +4017,13 @@ nav.small-container ul.navbar-items li button#login-button {
   flex-direction: row;
 }
 .hero .hero-offer .hero-offer-boxes .hero-offer-box {
-  background: var(--translucent-bg);
+  background: var(--glass-bg);
   border: var(--glass-border);
   box-shadow: var(--shadow-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: var(--border-radius-lg);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
-}
-.hero .hero-offer .hero-offer-boxes .hero-offer-box:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
-}
-.hero .hero-offer .hero-offer-boxes .hero-offer-box {
-  padding: 2vh;
+  padding: 1.25rem;
   margin-right: 2vh;
   flex: 1;
   width: calc(33.333% - 2vh);
@@ -4041,15 +4036,7 @@ nav.small-container ul.navbar-items li button#login-button {
 }
 .hero .hero-offer .hero-offer-boxes .hero-offer-box:hover {
   transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.25);
-}
-@media (prefers-color-scheme: dark) {
-  .hero .hero-offer .hero-offer-boxes .hero-offer-box {
-    background: rgba(0, 0, 0, 0.4);
-  }
-  .hero .hero-offer .hero-offer-boxes .hero-offer-box:hover {
-    background: rgba(0, 0, 0, 0.6);
-  }
+  background: var(--glass-highlight);
 }
 .hero .hero-offer .hero-offer-boxes .hero-offer-box svg {
   height: 3rem;
