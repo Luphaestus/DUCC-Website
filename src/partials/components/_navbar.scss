@@ -2,9 +2,19 @@
 
 nav.small-container {
     @include glass-panel;
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     position: fixed;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border-radius: inherit;
+    }
     top: 0.5rem;
     left: 1rem;
     right: 1rem;
@@ -174,6 +184,7 @@ nav.small-container {
             width: 100%;
             flex-direction: column;
             @include glass-panel;
+            background: var(--glass-bg);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
             padding: 0.5rem;
@@ -185,6 +196,7 @@ nav.small-container {
             transform: scaleY(0.9) translateY(-10px);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             align-items: stretch;
+            z-index: 101;
 
             ul.navbar-items {
                 flex-direction: column;
@@ -225,15 +237,14 @@ nav.small-container {
         }
 
         &.mobile-open {
+            
             .nav-links {
                 opacity: 1;
                 visibility: visible;
                 pointer-events: auto;
                 transform: scaleY(1) translateY(0);
-
-                .hidden {
-                    display: none !important;
-                }
+                -webkit-backdrop-filter: blur(30px) !important;
+                backdrop-filter: blur(30px) !important;
             }
         }
     }

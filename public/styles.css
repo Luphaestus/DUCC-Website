@@ -3481,9 +3481,20 @@ nav.small-container {
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--border-radius-lg);
   padding: 1.25rem;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  position: fixed;
+}
+nav.small-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  position: fixed;
+  border-radius: inherit;
+}
+nav.small-container {
   top: 0.5rem;
   left: 1rem;
   right: 1rem;
@@ -3639,6 +3650,7 @@ nav.small-container ul.navbar-items li button#login-button {
     -webkit-backdrop-filter: blur(12px);
     border-radius: var(--border-radius-lg);
     padding: 1.25rem;
+    background: var(--glass-bg);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     padding: 0.5rem;
@@ -3650,6 +3662,7 @@ nav.small-container ul.navbar-items li button#login-button {
     transform: scaleY(0.9) translateY(-10px);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     align-items: stretch;
+    z-index: 101;
   }
   nav.small-container .nav-links ul.navbar-items {
     flex-direction: column;
@@ -3688,9 +3701,8 @@ nav.small-container ul.navbar-items li button#login-button {
     visibility: visible;
     pointer-events: auto;
     transform: scaleY(1) translateY(0);
-  }
-  nav.small-container.mobile-open .nav-links .hidden {
-    display: none !important;
+    -webkit-backdrop-filter: blur(30px) !important;
+    backdrop-filter: blur(30px) !important;
   }
 }
 
