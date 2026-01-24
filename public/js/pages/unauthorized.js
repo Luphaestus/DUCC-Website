@@ -2,17 +2,14 @@
  * unauthorized.js
  * 
  * Logic for the "Access Denied" view.
- * Displays when a user tries to access a restricted route without sufficient permissions.
- * Provides context-aware call-to-action buttons (Login vs Home).
  * 
  * Registered Route: /unauthorized
  */
 
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { SHIELD_SVG } from '../../images/icons/outline/icons.js';
 
-// Register route
 addRoute('/unauthorized', 'unauthorized');
 
 /** HTML Template for the access denied page */
@@ -38,15 +35,13 @@ async function updateUnauthorizedButtons() {
     if (!actionsContainer) return;
 
     try {
-        const authStatus = await ajaxGet('/api/auth/status');
+        const authStatus = await apiRequest('GET', '/api/auth/status');
         if (authStatus.authenticated) {
-            // Logged in but insufficient permissions (e.g. non-admin visiting admin page)
             actionsContainer.innerHTML = `
                 <button data-nav="/home">Go to Home</button>
                 <button class="secondary" data-nav="/events">View Events</button>
             `;
         } else {
-            // Not logged in
             actionsContainer.innerHTML = `
                 <button data-nav="/login">Login</button>
                 <button class="secondary" data-nav="/home">Go to Home</button>
@@ -59,7 +54,6 @@ async function updateUnauthorizedButtons() {
     }
 }
 
-// Router hook
 ViewChangedEvent.subscribe(({ viewId }) => {
     if (viewId === 'unauthorized') {
         updateUnauthorizedButtons();
