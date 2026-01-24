@@ -1,0 +1,66 @@
+@use "../mixins" as *;
+
+.value-header {
+    @include glass-panel;
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .value-info {
+        .value-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--pico-muted-color);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .value-display {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--pico-color);
+        }
+    }
+
+    .value-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 1rem;
+
+        svg {
+            width: 3rem;
+            height: 3rem;
+            color: var(--pico-primary);
+            opacity: 0.8;
+        }
+
+        button {
+            margin: 0;
+        }
+    }
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+
+        .value-actions {
+            width: 100%;
+            align-items: flex-start;
+            flex-direction: row;
+            justify-content: space-between;
+
+            svg {
+                order: 2;
+            }
+
+            button {
+                order: 1;
+            }
+        }
+    }
+}
