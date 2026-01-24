@@ -19,9 +19,11 @@
 @use "partials/components/notification";
 @use "partials/components/background";
 @use "partials/components/upload";
+@use "partials/components/modal";
 
 @use "partials/pages/home";
 @use "partials/pages/events";
+@use "partials/pages/event";
 @use "partials/pages/legal";
 @use "partials/pages/profile";
 @use "partials/pages/footer";
@@ -50,4 +52,3 @@
 @use "partials/pages/admin/user/tabs" as admin_user_tabs;
 
 // --- Utilities ---
-@use "partials/utils/modal";

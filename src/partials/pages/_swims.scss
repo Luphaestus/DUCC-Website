@@ -19,419 +19,419 @@
         width: 100%;
         position: relative;
     }
-}
 
-/* Toggle Switch */
-.swims-toggle-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 5;
-
-    .toggle-wrapper {
-        @include glass-panel;
-        border-radius: var(--border-radius-pill);
-        padding: 0.25rem;
+    /* Toggle Switch */
+    .swims-toggle-container {
         display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
         position: relative;
+        z-index: 5;
 
-        button {
-            background: transparent;
-            border: none;
-            padding: 0.5rem 1.5rem;
-            color: var(--pico-muted-color);
-            font-weight: 600;
-            z-index: 2;
-            transition: color 0.2s ease;
-            box-shadow: none;
-
-            &.active {
-                color: white;
-            }
-
-            &:hover:not(.active) {
-                color: var(--pico-color);
-            }
-        }
-
-        .toggle-bg {
-            position: absolute;
-            top: 0.25rem;
-            left: 0.25rem;
-            height: calc(100% - 0.5rem);
-            width: calc(50% - 0.25rem);
-            background: var(--pico-primary);
+        .toggle-wrapper {
+            @include glass-panel;
             border-radius: var(--border-radius-pill);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+            padding: 0.25rem;
+            display: flex;
+            position: relative;
 
-        &[data-state="alltime"] .toggle-bg {
-            transform: translateX(100%);
+            button {
+                background: transparent;
+                border: none;
+                padding: 0.5rem 1.5rem;
+                color: var(--pico-muted-color);
+                font-weight: 600;
+                z-index: 2;
+                transition: color 0.2s ease;
+                box-shadow: none;
+
+                &.active {
+                    color: white;
+                }
+
+                &:hover:not(.active) {
+                    color: var(--pico-color);
+                }
+            }
+
+            .toggle-bg {
+                position: absolute;
+                top: 0.25rem;
+                left: 0.25rem;
+                height: calc(100% - 0.5rem);
+                width: calc(50% - 0.25rem);
+                background: var(--pico-primary);
+                border-radius: var(--border-radius-pill);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 1;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            &[data-state="alltime"] .toggle-bg {
+                transform: translateX(100%);
+            }
         }
     }
-}
 
-/* Podium */
-.podium-container {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
-    margin-bottom: 0rem;
-    height: 448px;
-    padding-bottom: 0rem;
-    position: relative;
-    z-index: 1;
-
-    .podium-place {
+    /* Podium */
+    .podium-container {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        width: 140px;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+        margin-bottom: 0rem;
+        height: 448px;
+        padding-bottom: 0rem;
         position: relative;
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: 1;
 
-        &:hover {
-            transform: translateY(-12px) scale(1.1);
-
-            .crown-icon,
-            .medal-icon {
-                transform: translateY(-5px);
-            }
-        }
-
-        .crown-icon {
-            position: absolute;
-            top: -50px;
-            color: #f1c40f;
-            animation: float-crown 2s ease-in-out infinite;
-            z-index: 10;
-
-            svg {
-                width: 3rem;
-                height: 3rem;
-                filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
-            }
-        }
-
-        .swimmer-name {
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-            font-size: 1rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
-        }
-
-        .swim-count {
-            color: var(--pico-primary);
-            font-weight: 800;
-            font-size: 1.1rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .podium-step {
-            width: 100%;
-            @include glass-panel;
-            border-bottom: none;
-            border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+        .podium-place {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding-top: 1.5rem;
+            text-align: center;
+            width: 140px;
             position: relative;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-            /* Inner gradient overlay */
-            &::after {
-                content: '';
+            &:hover {
+                transform: translateY(-12px) scale(1.1);
+
+                .crown-icon,
+                .medal-icon {
+                    transform: translateY(-5px);
+                }
+            }
+
+            .crown-icon {
                 position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
-                pointer-events: none;
-                z-index: 2;
-                border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
-            }
-
-            .rank-circle {
-                width: 3rem;
-                height: 3rem;
-                min-width: 3rem;
-                min-height: 3rem;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 800;
-                font-size: 1.5rem;
-                color: white;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                margin-bottom: 1rem;
-                z-index: 3;
-                line-height: 1;
-            }
-
-            .medal-icon {
-                width: 4rem;
-                height: 4rem;
-                margin-bottom: 0;
-                filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-                z-index: 3;
-                display: flex;
-                justify-content: center;
-                align-items: center;
+                top: -50px;
+                color: #f1c40f;
+                animation: float-crown 2s ease-in-out infinite;
+                z-index: 10;
 
                 svg {
+                    width: 3rem;
+                    height: 3rem;
+                    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+                }
+            }
+
+            .swimmer-name {
+                font-weight: 700;
+                margin-bottom: 0.25rem;
+                font-size: 1rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                width: 100%;
+            }
+
+            .swim-count {
+                color: var(--pico-primary);
+                font-weight: 800;
+                font-size: 1.1rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .podium-step {
+                width: 100%;
+                @include glass-panel;
+                border-bottom: none;
+                border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding-top: 1.5rem;
+                position: relative;
+
+                /* Inner gradient overlay */
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
                     width: 100%;
                     height: 100%;
+                    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
+                    pointer-events: none;
+                    z-index: 2;
+                    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+                }
+
+                .rank-circle {
+                    width: 3rem;
+                    height: 3rem;
+                    min-width: 3rem;
+                    min-height: 3rem;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 800;
+                    font-size: 1.5rem;
+                    color: white;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    margin-bottom: 1rem;
+                    z-index: 3;
+                    line-height: 1;
+                }
+
+                .medal-icon {
+                    width: 4rem;
+                    height: 4rem;
+                    margin-bottom: 0;
+                    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+                    z-index: 3;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+
+                    svg {
+                        width: 100%;
+                        height: 100%;
+                    }
+                }
+            }
+
+            &.gold {
+                order: 2;
+                z-index: 3;
+
+                .podium-step {
+                    height: 280px;
+
+                    @media (min-width: 600px) {
+                        width: 150%;
+                    }
+
+                    background: linear-gradient(to bottom, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
+                    border-color: rgba(255, 215, 0, 0.3);
+                }
+
+                .rank-circle {
+                    background: #f1c40f;
+                    color: white;
+                }
+
+                .medal-icon {
+                    color: #f1c40f;
+                    width: 5rem;
+                    height: 5rem;
+                }
+            }
+
+            &.silver {
+                order: 1;
+                z-index: 2;
+
+                .podium-step {
+                    height: 224px;
+
+                    @media (min-width: 600px) {
+                        width: 125%;
+                    }
+
+                    background: linear-gradient(to bottom, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
+                    border-color: rgba(192, 192, 192, 0.3);
+                }
+
+                .rank-circle {
+                    background: #bdc3c7;
+                    color: #555;
+                }
+
+                .medal-icon {
+                    color: #bdc3c7;
+                    width: 3rem;
+                    height: 3rem;
+                }
+            }
+
+            &.bronze {
+                order: 3;
+                z-index: 1;
+
+                .podium-step {
+                    height: 182px;
+                    background: linear-gradient(to bottom, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.05));
+                    border-color: rgba(205, 127, 50, 0.3);
+                }
+
+                .rank-circle {
+                    background: #cd7f32;
+                    color: white;
+                }
+
+                .medal-icon {
+                    color: #cd7f32;
+                    width: 2.5rem;
+                    height: 2.5rem;
                 }
             }
         }
 
-        &.gold {
-            order: 2;
-            z-index: 3;
+        @media (max-width: 600px) {
+            gap: 0.5rem;
 
-            .podium-step {
-                height: 280px;
+            .podium-place {
+                width: 30%;
+            }
+        }
+    }
 
-                @media (min-width: 600px) {
-                    width: 150%;
+    /* Leaderboard List */
+    .leaderboard-container-list {
+        width: 100%;
+        margin-bottom: 2rem;
+        position: relative;
+        z-index: 4;
+        /* Above podium extension */
+
+        .list-header {
+            display: grid;
+            grid-template-columns: 3rem 1fr auto;
+            padding: 0 1.25rem 0.75rem 1.25rem;
+            gap: 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--pico-muted-color);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
+            margin-bottom: 0.75rem;
+
+            span:nth-child(3) {
+                text-align: right;
+            }
+        }
+    }
+
+    .leaderboard-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+        position: relative;
+        z-index: 4;
+
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 3rem 1fr auto;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            gap: 1rem;
+            border-radius: var(--border-radius-md);
+            background: var(--glass-bg);
+            border: var(--glass-border);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: var(--shadow-glass);
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+
+            &:hover {
+                transform: scale(1.01);
+                background: var(--glass-highlight);
+                box-shadow: var(--shadow-soft);
+            }
+
+            &.highlight {
+                background: rgba(var(--pico-primary-rgb), 0.5);
+                border-color: var(--pico-primary);
+                box-shadow: 0 0 0 1px var(--pico-primary);
+
+                .rank-box {
+                    background: var(--pico-primary);
+                    color: white;
                 }
 
-                background: linear-gradient(to bottom, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
-                border-color: rgba(255, 215, 0, 0.3);
-            }
-
-            .rank-circle {
-                background: #f1c40f;
-                color: white;
-            }
-
-            .medal-icon {
-                color: #f1c40f;
-                width: 5rem;
-                height: 5rem;
-            }
-        }
-
-        &.silver {
-            order: 1;
-            z-index: 2;
-
-            .podium-step {
-                height: 224px;
-
-                @media (min-width: 600px) {
-                    width: 125%;
+                .swimmer-info {
+                    color: var(--pico-primary);
                 }
-
-                background: linear-gradient(to bottom, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
-                border-color: rgba(192, 192, 192, 0.3);
             }
-
-            .rank-circle {
-                background: #bdc3c7;
-                color: #555;
-            }
-
-            .medal-icon {
-                color: #bdc3c7;
-                width: 3rem;
-                height: 3rem;
-            }
-        }
-
-        &.bronze {
-            order: 3;
-            z-index: 1;
-
-            .podium-step {
-                height: 182px;
-                background: linear-gradient(to bottom, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.05));
-                border-color: rgba(205, 127, 50, 0.3);
-            }
-
-            .rank-circle {
-                background: #cd7f32;
-                color: white;
-            }
-
-            .medal-icon {
-                color: #cd7f32;
-                width: 2.5rem;
-                height: 2.5rem;
-            }
-        }
-    }
-
-    @media (max-width: 600px) {
-        gap: 0.5rem;
-
-        .podium-place {
-            width: 30%;
-        }
-    }
-}
-
-/* Leaderboard List */
-.leaderboard-container-list {
-    width: 100%;
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 4;
-    /* Above podium extension */
-
-    .list-header {
-        display: grid;
-        grid-template-columns: 3rem 1fr auto;
-        padding: 0 1.25rem 0.75rem 1.25rem;
-        gap: 1rem;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        color: var(--pico-muted-color);
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
-        margin-bottom: 0.75rem;
-
-        span:nth-child(3) {
-            text-align: right;
-        }
-    }
-}
-
-.leaderboard-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 100%;
-    position: relative;
-    z-index: 4;
-
-    .leaderboard-row {
-        display: grid;
-        grid-template-columns: 3rem 1fr auto;
-        align-items: center;
-        padding: 0.75rem 1.25rem;
-        gap: 1rem;
-        border-radius: var(--border-radius-md);
-        background: var(--glass-bg);
-        border: var(--glass-border);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        box-shadow: var(--shadow-glass);
-        transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-
-        &:hover {
-            transform: scale(1.01);
-            background: var(--glass-highlight);
-            box-shadow: var(--shadow-soft);
-        }
-
-        &.highlight {
-            background: rgba(var(--pico-primary-rgb), 0.5);
-            border-color: var(--pico-primary);
-            box-shadow: 0 0 0 1px var(--pico-primary);
 
             .rank-box {
-                background: var(--pico-primary);
-                color: white;
+                width: 2.25rem;
+                height: 2.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: color-mix(in srgb, var(--theme-opposite) 10%, transparent);
+                border-radius: 10px;
+                font-weight: 800;
+                font-size: 1rem;
+                color: var(--pico-color);
             }
 
             .swimmer-info {
-                color: var(--pico-primary);
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-weight: 600;
+
+                .you-tag {
+                    font-size: 0.65rem;
+                    background: var(--pico-primary);
+                    color: white;
+                    padding: 0.15rem 0.5rem;
+                    border-radius: var(--border-radius-pill);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    font-weight: 700;
+                }
             }
-        }
 
-        .rank-box {
-            width: 2.25rem;
-            height: 2.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: color-mix(in srgb, var(--theme-opposite) 10%, transparent);
-            border-radius: 10px;
-            font-weight: 800;
-            font-size: 1rem;
-            color: var(--pico-color);
-        }
-
-        .swimmer-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-weight: 600;
-
-            .you-tag {
-                font-size: 0.65rem;
-                background: var(--pico-primary);
-                color: white;
-                padding: 0.15rem 0.5rem;
-                border-radius: var(--border-radius-pill);
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
+            .swims-count {
                 font-weight: 700;
-            }
-        }
+                font-size: 1.1rem;
+                color: var(--pico-primary);
+                text-align: right;
 
-        .swims-count {
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--pico-primary);
-            text-align: right;
-
-            span {
-                font-size: 0.8rem;
-                color: var(--pico-muted-color);
-                font-weight: 400;
-                margin-left: 0.25rem;
+                span {
+                    font-size: 0.8rem;
+                    color: var(--pico-muted-color);
+                    font-weight: 400;
+                    margin-left: 0.25rem;
+                }
             }
         }
     }
-}
 
-.leaderboard-status,
-.leaderboard-error {
-    text-align: center;
-    padding: 2rem;
-    color: var(--pico-muted-color);
-    font-style: italic;
-    position: relative;
-    z-index: 4;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
+    .leaderboard-status,
+    .leaderboard-error {
+        text-align: center;
+        padding: 2rem;
+        color: var(--pico-muted-color);
+        font-style: italic;
+        position: relative;
+        z-index: 4;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
 
-@keyframes float-crown {
-    0% {
-        transform: translateY(-5px);
-    }
-
-    50% {
-        transform: translateY(-15px);
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    100% {
-        transform: translateY(-5px);
+    @keyframes float-crown {
+        0% {
+            transform: translateY(-5px);
+        }
+
+        50% {
+            transform: translateY(-15px);
+        }
+
+        100% {
+            transform: translateY(-5px);
+        }
     }
 }
