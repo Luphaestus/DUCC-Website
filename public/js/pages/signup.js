@@ -87,23 +87,6 @@ async function NavigationEventListner({ resolvedPath }) {
     });
 }
 
-/**
- * Sets a field as invalid.
- * 
- * @param {HTMLElement} inputElement 
- */
-function invalidateField(inputElement) {
-    if (inputElement) inputElement.ariaInvalid = 'true';
-}
-
-/**
- * Clears all currently displayed validation states.
- */
-function clearValidation() {
-    [firstName, lastName, email, password, confirmPassword].forEach(input => {
-        if (input) input.removeAttribute('aria-invalid');
-    });
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     const signupForm = document.getElementById('signup-form');
@@ -149,20 +132,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     signupForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        clearValidation();
 
         const fields = [firstName, lastName, email, password, confirmPassword];
-        let hasEmpty = false;
         fields.forEach(field => {
+            field.removeAttribute('aria-invalid');
             if (!field.value || field.value.trim() === '') {
-                invalidateField(field);
-                hasEmpty = true;
+                field.setAttribute('aria-invalid', 'true');
             }
         });
 
 
         if (password.value !== confirmPassword.value) {
-            invalidateField(confirmPassword);
+            confirmPassword.setAttribute('aria-invalid', 'true');
             notify('Error', 'Passwords do not match', 'error', 2000);
             return;
         }
@@ -183,10 +164,10 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => switchView('/login'), 1000);
         } catch (error) {
             if (error.errors) {
-                if (error.errors.email) invalidateField(email);
-                if (error.errors.first_name) invalidateField(firstName);
-                if (error.errors.last_name) invalidateField(lastName);
-                if (error.errors.password) invalidateField(password);
+                if (error.errors.email) email.setAttribute('aria-invalid', 'true');
+                if (error.errors.first_name) firstName.setAttribute('aria-invalid', 'true');
+                if (error.errors.last_name) lastName.setAttribute('aria-invalid', 'true');
+                if (error.errors.password) password.setAttribute('aria-invalid', 'true');
             }
             notify('Error', error.message || error || 'Sign up failed.', 'error', 2000);
         }
