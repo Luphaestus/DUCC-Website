@@ -2,20 +2,16 @@
  * files.js
  * 
  * Logic for the club resources and documents view.
- * Displays a sortable and paginated table of club files.
- * Supports category filtering, search, and dynamic permission-based admin links.
  * 
  * Registered Route: /files
  */
 
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { ajaxGet } from '/js/utils/ajax.js';
-import { DESCRIPTION_SVG, CLOUD_DOWNLOAD_SVG, SEARCH_SVG, CALENDAR_TODAY_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
+import { apiRequest } from '/js/utils/api.js';
+import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
 
-// Register route
 addRoute('/files', 'files');
 
-/** HTML Template for the files library page */
 const HTML_TEMPLATE = /*html*/`
 <div id="files-view" class="view hidden small-container">
     <div class="files-header">
@@ -46,7 +42,6 @@ const HTML_TEMPLATE = /*html*/`
     <div id="files-pagination" class="pagination"></div>
 </div>`;
 
-/** @type {object} Current query parameters for the files table */
 let currentOptions = {
     page: 1,
     limit: 15,
@@ -71,18 +66,6 @@ function formatSize(bytes) {
 }
 
 /**
- * Determines if a file is suitable for inline viewing in the browser.
- * 
- * @param {string} filename 
- * @returns {boolean}
- */
-function isViewable(filename) {
-    const viewableExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'];
-    const ext = filename.split('.').pop().toLowerCase();
-    return viewableExtensions.includes(ext);
-}
-
-/**
  * Fetches and populates the category filter dropdown.
  */
 async function loadCategories() {
@@ -90,9 +73,9 @@ async function loadCategories() {
     if (!filter) return;
 
     try {
-        const res = await ajaxGet('/api/file-categories');
+        const res = await apiRequest('GET', '/api/file-categories');
         const categories = res.data || [];
-        filter.innerHTML = '<option value="">All Categories</option>' + 
+        filter.innerHTML = '<option value="">All Categories</option>' +
             categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
     } catch (e) {
         console.error('Failed to load categories', e);
@@ -101,26 +84,24 @@ async function loadCategories() {
 
 /**
  * Verifies if the current user has permission to manage files.
- * Shows the "Manage Files" button if authorized.
  */
 async function checkManagePermissions() {
     const editBtn = document.getElementById('manage-files-btn');
     if (!editBtn) return;
 
     try {
-        const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
+        const userData = await apiRequest('GET', '/api/user/elements/permissions').catch(() => ({}));
         const perms = userData.permissions || [];
         if (perms.includes('file.write') || perms.includes('file.edit')) {
             editBtn.classList.remove('hidden');
         } else {
             editBtn.classList.add('hidden');
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 /**
  * Fetches the list of files from the server and renders the table content.
- * Handles header generation and sort listeners.
  */
 async function fetchFiles() {
     const list = document.getElementById('files-list');
@@ -156,7 +137,7 @@ async function fetchFiles() {
 
     const query = new URLSearchParams(currentOptions).toString();
     try {
-        const res = await ajaxGet(`/api/files?${query}`);
+        const res = await apiRequest('GET', `/api/files?${query}`);
         const { files, totalPages } = res.data;
 
         if (files.length === 0) {
@@ -165,10 +146,12 @@ async function fetchFiles() {
         }
 
         list.innerHTML = files.map(file => {
-            const viewable = isViewable(file.filename);
+            const viewableExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'];
+            const ext = file.filename.split('.').pop().toLowerCase();
+            const viewable = viewableExtensions.includes(ext);
             const downloadUrl = `/api/files/${file.id}/download${viewable ? '?view=true' : ''}`;
             const target = viewable ? 'target="_blank"' : '';
-            
+
             return `
                 <tr>
                     <td data-label="Title">
