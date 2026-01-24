@@ -1,12 +1,3 @@
-/**
- * iconFormating.py
- * 
- * Build-time utility script for processing SVG icons.
- * Normalizes filenames, strips hardcoded fill attributes to allow CSS coloring,
- * and compiles all icons into a single ES module (icons.js) for efficient
- * frontend importing.
- */
-
 dir = "./public/images/icons/outline/"
 
 from os import listdir
@@ -51,8 +42,7 @@ for file in files:
     iconNames += " " + name + " "
 
 # Finalize the export statement
-icons += f"\nexport { iconNames }" + "};
-"
+icons += f"\nexport { iconNames }" + "};"
 
 # Save the generated JS module
 with open(dir+"icons.js", "w") as i:

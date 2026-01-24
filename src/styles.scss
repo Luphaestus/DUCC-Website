@@ -30,10 +30,7 @@
 @use "partials/pages/swims";
 @use "partials/pages/errors";
 @use "partials/pages/files" as page_files;
-@use "partials/pages/signup";
 @use "partials/pages/login";
-@use "partials/pages/reset_password";
-@use "partials/pages/set_password";
 
 // --- Admin Pages ---
 @use "partials/pages/admin/admin" as admin_main;
