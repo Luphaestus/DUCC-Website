@@ -1,0 +1,39 @@
+@use "../mixins" as *;
+
+/* Panel Component */
+.glass-panel {
+    @include glass-panel;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem; // Ensure padding is consistent
+
+    .box-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 2.5rem;
+        margin-bottom: 0; // Reset any default margin
+
+        h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            line-height: 1;
+            color: var(--pico-color);
+        }
+
+        button {
+            margin: 0;
+            height: auto;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+
+            svg {
+                margin-right: 0.5rem;
+            }
+        }
+    }
+}

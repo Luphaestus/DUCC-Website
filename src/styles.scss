@@ -18,8 +18,15 @@
 @use "partials/components/navbar";
 @use "partials/components/notification";
 @use "partials/components/background";
-@use "partials/components/upload";
-@use "partials/components/modal";
+
+// --- Widgets ---
+@use "partials/widgets/upload";
+@use "partials/widgets/modal";
+@use "partials/widgets/panel";
+@use "partials/widgets/dashboard";
+@use "partials/widgets/status_box";
+@use "partials/widgets/stats";
+@use "partials/widgets/accent_panel";
 
 @use "partials/pages/home";
 @use "partials/pages/events";
@@ -30,7 +37,6 @@
 @use "partials/pages/swims";
 @use "partials/pages/errors";
 @use "partials/pages/files" as page_files;
-@use "partials/pages/login";
 
 // --- Admin Pages ---
 @use "partials/pages/admin/admin" as admin_main;

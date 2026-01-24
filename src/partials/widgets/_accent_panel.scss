@@ -1,0 +1,73 @@
+@use "../mixins" as *;
+
+/* Accent Panel (formerly Membership Banner) */
+.accent-panel {
+    background: linear-gradient(135deg, #8e44ad, #9b59b6);
+    color: white;
+    padding: 2rem;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-glass);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 200px;
+        height: 100%;
+        background: linear-gradient(to left, rgba(255, 255, 255, 0.1), transparent);
+        pointer-events: none;
+    }
+
+    .panel-content {
+        z-index: 2;
+
+        h2 {
+            margin-bottom: 0.5rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        p {
+            margin-bottom: 0;
+            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.9);
+        }
+    }
+
+    .panel-action {
+        z-index: 2;
+
+        button {
+            background: white;
+            color: #8e44ad;
+            border: none;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+
+            &:hover {
+                background: #f0f0f0;
+                transform: translateY(-2px);
+            }
+        }
+    }
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+
+        .panel-action {
+            width: 100%;
+
+            button {
+                width: 100%;
+            }
+        }
+    }
+}
