@@ -1,0 +1,52 @@
+/* Shared Error View Styles (Default: Unauthorized Style) */
+#error-view,
+#unauthorized-view,
+#no-connection-view {
+    .container {
+        text-align: center;
+        padding-top: 4rem;
+    }
+
+    .error-icon {
+        color: var(--pico-secondary);
+        margin-bottom: 1.5rem;
+        
+        svg {
+            height: 64px;
+            width: 64px;
+        }
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+}
+
+/* 404 Error Specifics */
+#error-view {
+    .error-icon {
+        color: #e74c3c; // Red-500 equivalent usually
+    }
+}
+
+/* No Internet Overlay Override */
+#no-connection-view {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+
+    .container {
+        padding-top: 0;
+        color: white;
+        
+        .error-icon {
+             color: white;
+        }
+
+        h1 { color: white; }
+        p { color: rgba(255, 255, 255, 0.8); }
+    }
+}
