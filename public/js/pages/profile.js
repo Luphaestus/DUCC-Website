@@ -10,172 +10,143 @@ import { LoginEvent } from './login.js';
 import { apiRequest, clearApiCache } from '/js/utils/api.js';
 import { LegalEvent } from './legal.js';
 import { notify } from '/js/components/notification.js';
-import { FirstNameChangedEvent } from '/js/components/navbar.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import { requireAuth } from '/js/utils/auth.js';
 import { BalanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from '/js/utils/modal.js';
+import { Sidebar, initSidebar } from '../widgets/sidebar.js';
+import { Panel } from '../widgets/panel.js';
+import { StatusIndicator } from '../widgets/status.js';
+import { AccentPanel } from '../widgets/accent_panel.js';
+import { ValueHeader, updateValueDisplay } from '../widgets/value_header.js';
+import { ItemList, StandardListItem } from '../widgets/item_list.js';
 import {
-    CHECK_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
-    SETTINGS_SVG, LOGOUT_SVG, EDIT_SVG, SAVE_SVG, ADD_SVG, REMOVE_SVG,
-    CONTRACT_SVG, MEDICAL_INFORMATION_SVG, GROUP_SVG, BOLT_SVG
+    SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
+    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, SAVE_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG
 } from '../../images/icons/outline/icons.js';
 
 // Register routes
 addRoute('/profile', 'profile');
 addRoute('/transactions', 'profile');
 
+const sidebarItems = [
+    { id: 'overview', label: 'Overview', icon: DASHBOARD_SVG, active: true },
+    { id: 'balance', label: 'Balance & History', icon: WALLET_SVG },
+    { id: 'settings', label: 'Account Settings', icon: SETTINGS_SVG },
+    { label: 'Sign Out', icon: LOGOUT_SVG, actionId: 'sidebar-logout-btn', classes: 'logout' }
+];
+
 /** HTML Template for the dashboard */
 const HTML_TEMPLATE = /*html*/`
-<div id="profile-view" class="view hidden">
-    <div class="dashboard-container">
-        <!-- Sidebar Navigation -->
-        <nav class="dashboard-sidebar glass-panel">
-            <button class="nav-item active" data-tab="overview">
-                ${DASHBOARD_SVG} Overview
-            </button>
-            <button class="nav-item" data-tab="balance">
-                ${WALLET_SVG} Balance & History
-            </button>
-            <button class="nav-item" data-tab="settings">
-                ${SETTINGS_SVG} Account Settings
-            </button>
-            <button class="nav-item" id="sidebar-logout-btn">
-                ${LOGOUT_SVG} Sign Out
-            </button>
-        </nav>
+        <div id="profile-view" class="view hidden">
+            <div class="dashboard-container">
+                ${Sidebar(sidebarItems)}
 
-        <!-- Main Content Area -->
-        <main class="dashboard-content">
+                <!-- Main Content Area -->
+                <main class="dashboard-content">
             
-            <!-- Overview Tab -->
-            <section id="tab-overview" class="dashboard-section active">
-                <div id="membership-banner-container"></div>
+                <!-- Overview Tab -->
+                <section id="tab-overview" class="dashboard-section active">
+                    <div id="membership-banner-container"></div>
 
-                <div class="glass-panel">
-                    <div class="box-header">
-                        <h3>${POOL_SVG} Swimming Stats</h3>
-                        <button class="small-btn secondary" data-nav="/swims">
-                            ${SOCIAL_LEADERBOARD_SVG} View Leaderboard
-                        </button>
-                    </div>
-                    <div id="swim-stats-grid" class="stats-grid">
-                        <p>Loading stats...</p>
-                    </div>
-                </div>
+                    ${Panel({
+    title: 'Swimming Stats',
+    icon: POOL_SVG,
+    action: `<button class="small-btn secondary" data-nav="/swims">${SOCIAL_LEADERBOARD_SVG} View Leaderboard</button>`,
+    content: `<div id="swim-stats-grid" class="stats-grid"><p>Loading stats...</p></div>`
+})}
 
-                <!-- Legal & Safety Row -->
-                <div class="dual-grid">
-                    <div class="glass-panel">
-                        <div class="box-header">
-                            <h3>${CONTRACT_SVG} Legal Waiver</h3>
-                        </div>
-                        <div id="legal-status-content">
-                            <p>Loading...</p>
-                        </div>
-                    </div>
+                    <!-- Legal & Safety Row -->
+                    <div class="dual-grid">
+                        ${Panel({
+    title: 'Legal Waiver',
+    icon: CONTRACT_SVG,
+    action: `<button class="small-btn secondary" data-nav="/legal">${EDIT_SVG} Update</button>`,
+    content: `<div id="legal-status-content"><p>Loading...</p></div>`
+})}
 
-                    <!-- Safety/Medical Expiry Info -->
-                    <div class="glass-panel">
-                        <div class="box-header">
-                            <h3>${MEDICAL_INFORMATION_SVG} Safety Info</h3>
-                            <button id="edit-safety-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>
-                        </div>
-                        <div id="safety-info-display">
-                            <div class="info-rows">
-                                <div class="info-row">
-                                    <span>First Aid Expiry</span>
-                                    <span id="display-first-aid">Not Set</span>
+                        ${Panel({
+    title: 'Safety Info',
+    icon: MEDICAL_INFORMATION_SVG,
+    action: `<button id="edit-safety-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>`,
+    content: `
+                                <div id="safety-info-display">
+                                    <div class="info-rows">
+                                        <div class="info-row"><span>First Aid Expiry</span><span id="display-first-aid">Not Set</span></div>
+                                        <div class="info-row"><span>Emergency Contact</span><span id="display-emergency">Not Set</span></div>
+                                    </div>
                                 </div>
-                                <div class="info-row">
-                                    <span>Emergency Contact</span>
-                                    <span id="display-emergency">Not Set</span>
+                                <form id="safety-info-form" class="hidden modern-form">
+                                    <div class="grid-2-col">
+                                        <label>First Aid Expiry <input type="date" id="input-first-aid"></label>
+                                        <label>Emergency Contact <input type="tel" id="input-emergency" placeholder="07700 900000"></label>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="button" id="cancel-safety-btn" class="secondary">${CLOSE_SVG} Cancel</button>
+                                        <button type="submit">${SAVE_SVG} Save</button>
+                                    </div>
+                                </form>
+                            `
+})}
+                    </div>
+
+                    ${Panel({
+    id: 'groups-teams-panel',
+    title: 'Groups & Teams',
+    icon: GROUP_SVG,
+    content: `<div id="tags-list-container" class="tags-list"><p>Loading tags...</p></div>`
+})}
+
+                    ${Panel({
+    content: `
+                            <div class="role-toggle">
+                                <div class="role-info">
+                                    <h4>${BOLT_SVG} Instructor Status</h4>
+                                    <p id="instructor-status-text">Not an instructor</p>
                                 </div>
+                                <button id="toggle-instructor-btn" class="small-btn secondary">Apply</button>
                             </div>
-                        </div>
-                        <form id="safety-info-form" class="hidden modern-form">
-                            <div class="grid-2-col">
-                                <label>First Aid Expiry <input type="date" id="input-first-aid"></label>
-                                <label>Emergency Contact <input type="tel" id="input-emergency" placeholder="07700 900000"></label>
-                            </div>
-                            <div class="form-actions">
-                                <button type="button" id="cancel-safety-btn" class="secondary">${CLOSE_SVG} Cancel</button>
-                                <button type="submit">${SAVE_SVG} Save</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        `
+})}
+                </section>
 
-                <!-- Groups & Teams (Tags) -->
-                <div id="groups-teams-panel" class="glass-panel">
-                    <div class="box-header">
-                        <h3>${GROUP_SVG} Groups & Teams</h3>
-                    </div>
-                    <div id="tags-list-container" class="tags-list">
-                        <p>Loading tags...</p>
-                    </div>
-                </div>
+                <section id="tab-balance" class="dashboard-section">
+                    <!-- Balance Overview -->
+                    ${ValueHeader({
+    title: 'Current Balance',
+    value: '£0.00',
+    valueId: 'balance-amount',
+    actions: `<button id="top-up-btn" class="primary">Top Up Balance</button>`
+})}
 
-                <!-- Instructor Application -->
-                <div class="glass-panel">
-                    <div class="role-toggle">
-                        <div class="role-info">
-                            <h4>${BOLT_SVG} Instructor Status</h4>
-                            <p id="instructor-status-text">Not an instructor</p>
-                        </div>
-                        <button id="toggle-instructor-btn" class="small-btn secondary">Apply</button>
-                    </div>
-                </div>
-            </section>
+                    ${Panel({
+    title: 'Transaction History',
+    content: `<div id="transactions-list-container"></div>`
+})}
+                </section>
 
-            <section id="tab-balance" class="dashboard-section">
-                <!-- Balance Overview -->
-                <div class="balance-header">
-                    <div class="balance-info">
-                        <span class="label">Current Balance</span>
-                        <span class="amount" id="balance-amount">£0.00</span>
-                    </div>
-                    <div class="balance-actions">
-                        <button id="top-up-btn" class="primary">Top Up Balance</button>
-                    </div>
-                </div>
+                <section id="tab-settings" class="dashboard-section">
+                    <div class="settings-grid">
+                        ${Panel({
+    title: 'Security',
+    icon: ID_CARD_SVG,
+    content: `<button id="change-password-btn" class="outline">Change Password</button>`
+})}
 
-                <!-- List of recent transactions -->
-                <div class="glass-panel">
-                    <div class="box-header">
-                        <h3>Transaction History</h3>
+                        ${Panel({
+    title: 'Danger Zone',
+    icon: BRIGHTNESS_ALERT_SVG,
+    classes: 'danger-zone',
+    content: `<button id="delete-account-btn" class="delete outline">Delete Account</button>`
+})}
                     </div>
-                    <div id="transactions-list-container" class="transaction-list">
-                        <p>Loading history...</p>
-                    </div>
-                </div>
-            </section>
-
-            <section id="tab-settings" class="dashboard-section">
-                <div class="settings-grid">
-                    <!-- Security Controls -->
-                    <div class="glass-panel">
-                        <div class="box-header">
-                            <h3>${ID_CARD_SVG} Security</h3>
-                        </div>
-                        <button id="change-password-btn" class="outline">Change Password</button>
-                    </div>
-
-                    <!-- Account Deletion -->
-                    <div class="glass-panel danger-zone">
-                        <div class="box-header">
-                            <h3>${BRIGHTNESS_ALERT_SVG} Danger Zone</h3>
-                        </div>
-                        <button id="delete-account-btn" class="delete outline">Delete Account</button>
-                    </div>
-                </div>
-            </section>
-
-        </main>
-    </div>
-</div>`;
+                </section>
+            </main>
+        </div>
+    </div>`;
 
 let currentUser = null;
+let sidebarController = null;
 
 // --- Helper Functions ---
 
@@ -213,16 +184,12 @@ function renderMembershipBanner(profile, globals) {
 
     if (!isMember) {
         container.classList.remove('hidden');
-        container.innerHTML = `
-            <div class="membership-banner">
-                <div class="banner-content">
-                    <h2>You aren't a member yet</h2>
-                    <p>You have <strong>${freeSessions}</strong> free trial event${freeSessions !== 1 ? 's' : ''} remaining before membership is required.</p>
-                </div>
-                <div class="banner-action">
-                    <button id="join-membership-btn">Become a Member</button>
-                </div>
-            </div>`;
+        container.innerHTML = AccentPanel({
+            title: "You aren't a member yet",
+            text: `You have <strong>${freeSessions}</strong> free trial event${freeSessions !== 1 ? 's' : ''} remaining before membership is required.`,
+            buttonText: "Become a Member",
+            buttonId: "join-membership-btn"
+        });
 
         document.getElementById('join-membership-btn').onclick = async () => {
             const confirmed = await showConfirmModal(
@@ -284,41 +251,15 @@ function renderLegalStatus(profile) {
     const isComplete = !!profile.filled_legal_info;
     const lastFilled = profile.legal_filled_at ? new Date(profile.legal_filled_at).toLocaleDateString('en-GB') : null;
 
-    // Link the "Update" button to the legal form view
-    const header = container.parentElement.querySelector('.box-header');
-    let updateBtn = header.querySelector('.small-btn');
-    if (!updateBtn) {
-        updateBtn = document.createElement('button');
-        updateBtn.className = 'small-btn secondary';
-        updateBtn.setAttribute('data-nav', '/legal');
-        header.appendChild(updateBtn);
-    }
-    updateBtn.innerHTML = `${EDIT_SVG} Update`;
-
-    if (isComplete) {
-        container.innerHTML = `
-            <div class="status-indicator-box status-green">
-                <div class="indicator-header">
-                    ${CHECK_SVG} <span>Active</span>
-                </div>
-                <div class="indicator-body">
-                    <p>Your legal waiver is up to date.</p>
-                    ${lastFilled ? `<p class="last-filled">Last filled out: ${lastFilled}</p>` : ''}
-                </div>
-            </div>
-        `;
-    } else {
-        container.innerHTML = `
-            <div class="status-indicator-box status-red">
-                <div class="indicator-header">
-                    ${BRIGHTNESS_ALERT_SVG} <span>Action Required</span>
-                </div>
-                <div class="indicator-body">
-                    <p>You must complete the legal waiver to participate in events.</p>
-                </div>
-            </div>
-        `;
-    }
+    container.innerHTML = StatusIndicator({
+        active: isComplete,
+        activeText: 'Active',
+        inactiveText: 'Action Required',
+        content: `
+            <p>${isComplete ? 'Your legal waiver is up to date.' : 'You must complete the legal waiver to participate in events.'}</p>
+            ${isComplete && lastFilled ? `<p class="last-filled">Last filled out: ${lastFilled}</p>` : ''}
+        `
+    });
 }
 
 /**
@@ -389,49 +330,33 @@ function renderInstructor(profile) {
  * 
  * @param {object} profile 
  */
-function renderBalance(profile) {
+function renderProfileBalance(profile) {
     const bal = Number(profile.balance);
-    const el = document.getElementById('balance-amount');
-    el.textContent = `£${bal.toFixed(2)}`;
-    el.classList.toggle('balance-negative', bal < 0);
-    el.classList.toggle('balance-positive', bal > 0);
+    const valueClass = bal < 0 ? 'negative' : (bal > 0 ? 'positive' : '');
+    updateValueDisplay('balance-amount', `£${bal.toFixed(2)}`, valueClass);
 }
 
 /**
  * Fetches and renders the user's transaction history list.
  */
-async function renderTransactions() {
+async function renderProfileTransactions() {
     const container = document.getElementById('transactions-list-container');
     try {
         const res = await apiRequest('GET', '/api/user/elements/transactions');
         const txs = res.transactions || [];
 
-        if (txs.length === 0) {
-            container.innerHTML = '<p class="empty-text">No transactions found.</p>';
-            return;
-        }
-
-        container.innerHTML = txs.map(tx => {
+        container.innerHTML = ItemList(txs, (tx) => {
             const isNegative = tx.amount < 0;
-            const icon = isNegative ? REMOVE_SVG : ADD_SVG;
-            const iconClass = isNegative ? 'negative' : 'positive';
-            const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-            return `
-                <div class="transaction-item glass-panel">
-                    <div class="tx-icon ${iconClass}">${icon}</div>
-                    <div class="tx-details">
-                        <span class="tx-title">${tx.description}</span>
-                        <span class="tx-date">${dateStr}</span>
-                    </div>
-                    <div class="tx-amount-group">
-                        <span class="tx-amount ${iconClass}">${isNegative ? '' : '+'}${tx.amount.toFixed(2)}</span>
-                        <span class="tx-balance-after">£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
+            return StandardListItem({
+                icon: isNegative ? REMOVE_SVG : ADD_SVG,
+                iconClass: isNegative ? 'negative' : 'positive',
+                title: tx.description,
+                subtitle: new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+                value: `${isNegative ? '' : '+'}${tx.amount.toFixed(2)}`,
+                valueClass: isNegative ? 'negative' : 'positive',
+                extra: `£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}`
+            });
+        });
     } catch (e) {
         container.innerHTML = '<p class="error-text">Failed to load transactions.</p>';
     }
@@ -463,8 +388,8 @@ async function updateDashboard() {
             renderTags(tags);
             renderInstructor(profile);
         }
-        renderBalance(profile);
-        renderTransactions();
+        renderProfileBalance(profile);
+        renderProfileTransactions();
 
     } catch (error) {
         console.error("Dashboard update failed", error);
@@ -478,16 +403,8 @@ async function updateDashboard() {
  * Binds static UI element listeners.
  */
 function bindEvents() {
-    // Sidebar Tab Switching
-    document.querySelectorAll('.nav-item[data-tab]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabName = btn.dataset.tab;
-            const url = new URL(window.location);
-            url.searchParams.set('tab', tabName);
-            window.history.pushState({}, '', url);
-            setActiveTab(tabName);
-        });
-    });
+    // Sidebar Navigation Logic
+    sidebarController = initSidebar('overview');
 
     // Safety Info Inline Editor Toggle
     const displayDiv = document.getElementById('safety-info-display');
@@ -526,19 +443,22 @@ function bindEvents() {
     };
 
     // Manual Top Up Instruction Modal
-    document.getElementById('top-up-btn').onclick = () => {
-        const refrense = currentUser.first_name.charAt(0).toUpperCase() + currentUser.last_name.toUpperCase() + "WEBSITE";
+    const topUpBtn = document.getElementById('top-up-btn');
+    if (topUpBtn) {
+        topUpBtn.onclick = () => {
+            const refrense = currentUser.first_name.charAt(0).toUpperCase() + currentUser.last_name.toUpperCase() + "WEBSITE";
 
-        showConfirmModal(
-            "Top Up Balance",
-            `Please transfer the desired amount to:<br><br>
-            <strong>Bank:</strong> Durham University<br>
-            <strong>Sort Code:</strong> 20-27-66<br>
-            <strong>Account:</strong> 53770109<br>
-            <strong>Reference:</strong> ${refrense}<br><br>
-            <p>Pressing the confirm button will notify the finance team to credit your account once the transfer is verified. Please press cancel if you have not made a transfer.</p>`
-        );
-    };
+            showConfirmModal(
+                "Top Up Balance",
+                `Please transfer the desired amount to:<br><br>
+                <strong>Bank:</strong> Durham University<br>
+                <strong>Sort Code:</strong> 20-27-66<br>
+                <strong>Account:</strong> 53770109<br>
+                <strong>Reference:</strong> ${refrense}<br><br>
+                <p>Pressing the confirm button will notify the finance team to credit your account once the transfer is verified. Please press cancel if you have not made a transfer.</p>`
+            );
+        };
+    }
 
     // Account Security Listeners
     document.getElementById('change-password-btn').onclick = async () => {
@@ -574,25 +494,6 @@ function bindEvents() {
     };
 }
 
-/**
- * Toggles the active tab section and sidebar highlighting.
- * 
- * @param {string} tabName 
- */
-function setActiveTab(tabName) {
-    if (!['overview', 'balance', 'settings'].includes(tabName)) tabName = 'overview';
-
-    document.querySelectorAll('.nav-item').forEach(b => {
-        if (b.dataset.tab === tabName) b.classList.add('active');
-        else b.classList.remove('active');
-    });
-
-    document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
-    const tabId = `tab-${tabName}`;
-    const section = document.getElementById(tabId);
-    if (section) section.classList.add('active');
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     bindEvents();
 
@@ -605,12 +506,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/profile') {
             const params = new URLSearchParams(window.location.search);
-            const tab = params.get('tab') || 'overview';
-            setActiveTab(tab);
+            let tab = params.get('tab') || 'overview';
+            const validTabs = ['overview', 'balance', 'settings'];
+            if (!validTabs.includes(tab)) tab = 'overview';
+
+            if (sidebarController) sidebarController.setActive(tab);
             updateDashboard();
         }
     });
 });
 
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
-export { FirstNameChangedEvent };
