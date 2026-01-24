@@ -1,4 +1,3 @@
-//todo refine
 /**
  * profile.js
  * 
@@ -176,14 +175,12 @@ const HTML_TEMPLATE = /*html*/`
     </div>
 </div>`;
 
-let notification = null;
 let currentUser = null;
 
 // --- Helper Functions ---
 
-function displayNotification(title, message, type) {
-    if (notification) notification();
-    notification = notify(title, message, type);
+function showStatus(title, message, type) {
+    notify(title, message, type, 3000, 'profile-status');
 }
 
 /**
@@ -235,10 +232,10 @@ function renderMembershipBanner(profile, globals) {
             if (confirmed) {
                 try {
                     await apiRequest('POST', '/api/user/join');
-                    displayNotification('Welcome!', 'You are now a club member.', 'success');
+                    showStatus('Welcome!', 'You are now a club member.', 'success');
                     updateDashboard();
                 } catch (err) {
-                    displayNotification('Error', err.message || 'Failed to join.', 'error');
+                    showStatus('Error', err.message || 'Failed to join.', 'error');
                 }
             }
         };
@@ -471,7 +468,7 @@ async function updateDashboard() {
 
     } catch (error) {
         console.error("Dashboard update failed", error);
-        displayNotification('Error', 'Failed to load profile data.', 'error');
+        showStatus('Error', 'Failed to load profile data.', 'error');
     }
 }
 
@@ -520,11 +517,11 @@ function bindEvents() {
         };
         try {
             await apiRequest('POST', '/api/user/elements', updateData);
-            displayNotification('Success', 'Safety info updated.', 'success');
+            showStatus('Success', 'Safety info updated.', 'success');
             await updateDashboard();
             closeSafetyEdit();
         } catch (err) {
-            displayNotification('Error', err.message, 'error');
+            showStatus('Error', err.message, 'error');
         }
     };
 
@@ -549,9 +546,9 @@ function bindEvents() {
         if (passwords) {
             try {
                 await apiRequest('POST', '/api/auth/change-password', passwords);
-                displayNotification('Success', 'Password changed.', 'success');
+                showStatus('Success', 'Password changed.', 'success');
             } catch (err) {
-                displayNotification('Error', 'Failed to change password.', 'error');
+                showStatus('Error', 'Failed to change password.', 'error');
             }
         }
     };
@@ -564,7 +561,7 @@ function bindEvents() {
                 LoginEvent.notify({ authenticated: false });
                 switchView('/home');
             } catch (err) {
-                displayNotification('Error', 'Delete failed. Check password.', 'error');
+                showStatus('Error', 'Delete failed. Check password.', 'error');
             }
         }
     };

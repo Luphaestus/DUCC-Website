@@ -2,13 +2,11 @@
  * notification.js
  * 
  * Provides a global toast-style notification system.
- * Notifications are glassmorphic, stacked, and support automatic or manual dismissal.
- * Used for feedback on user actions (e.g. "Event Joined") and error reporting.
+ * Supports updating existing notifications via a uniqueCaller ID.
  */
 
 /**
- * Standard notification severity levels.
- * Maps to CSS classes for specific color coding.
+ * notification severity levels.
  */
 class NotificationTypes {
     static INFO = 'info';
@@ -17,15 +15,23 @@ class NotificationTypes {
     static ERROR = 'error';
 }
 
+// Stores references to active notification timeouts and elements to allow updates
+const activeCallers = new Map();
+
 /**
- * Initiates the dismissal animation for a notification element.
- * Removes the element from the DOM after the animation completes.
+ * Removes a notification element with a fade-out effect.
  * 
  * @param {HTMLElement} notification - The notification element to remove.
  */
 function closeNotification(notification) {
-    if (notification.classList.contains('fade-out')) return;
+    if (!notification || notification.classList.contains('fade-out')) return;
     
+    // Cleanup reference if this notification was tracked
+    const callerId = notification.dataset.caller;
+    if (callerId && activeCallers.get(callerId)?.element === notification) {
+        activeCallers.delete(callerId);
+    }
+
     const fadeOutListener = () => {
         notification.remove();
     };
@@ -44,43 +50,56 @@ function closeNotification(notification) {
  * @param {string} message - Detailed body text (optional).
  * @param {string} [type=NotificationTypes.INFO] - Severity level from NotificationTypes.
  * @param {number} [duration=5000] - Visibility time in milliseconds before auto-dismiss.
+ * @param {string|null} [uniqueCaller=null] - ID to prevent duplicate toasts and allow updates.
  * @returns {Function} - A function that can be called to manually dismiss this specific notification.
  */
-function notify(title, message, type = NotificationTypes.INFO, duration = 5000) {
+function notify(title, message, type = NotificationTypes.INFO, duration = 5000, uniqueCaller = null) {
     const notificationContainer = document.getElementById('notification-container');
-    if (!notificationContainer) return;
+    if (!notificationContainer) return () => {};
 
-    const notification = document.createElement('div');
-    notification.classList.add('notification', `notification-${type}`);
+    let notification;
 
-    const notificationTitle = document.createElement('strong');
-    notificationTitle.textContent = title;
-    notification.appendChild(notificationTitle);
+    // Check for existing notification from the same caller.
+    if (uniqueCaller && activeCallers.has(uniqueCaller)) {
+        const existing = activeCallers.get(uniqueCaller);
+        notification = existing.element;
+        clearTimeout(existing.timeout);
+        
+        notification.className = 'notification';
+        notification.classList.add(`notification-${type}`);
+    } else {
+        notification = document.createElement('div');
+        notification.classList.add('notification', `notification-${type}`);
+        if (uniqueCaller) notification.dataset.caller = uniqueCaller;
 
-    if (message) {
-        const notificationMessage = document.createElement('p');
-        notificationMessage.textContent = message;
-        notification.appendChild(notificationMessage);
+        // Allow user to dismiss by clicking
+        notification.addEventListener('click', () => {
+            closeNotification(notification);
+        });
+
+        notificationContainer.appendChild(notification);
     }
 
-    // Allow user to dismiss by clicking anywhere on the toast
-    notification.addEventListener('click', () => {
-        closeNotification(notification);
-    });
-
-    notificationContainer.appendChild(notification);
+    // Update content
+    notification.innerHTML = `<strong>${title}</strong>${message ? `<p>${message}</p>` : ''}`;
 
     // Schedule automatic removal
-    const autoCloseTimeout = setTimeout(() => {
+    const timeout = setTimeout(() => {
         closeNotification(notification);
     }, duration);
 
+    if (uniqueCaller) {
+        activeCallers.set(uniqueCaller, {
+            element: notification,
+            timeout: timeout
+        });
+    }
+
     // Return handle for external dismissal
     return () => {
-        clearTimeout(autoCloseTimeout);
+        clearTimeout(timeout);
         closeNotification(notification);
     };
-
 }
 
 export { notify, NotificationTypes };

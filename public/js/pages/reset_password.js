@@ -82,9 +82,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await apiRequest('POST', '/api/auth/reset-password-request', { email: emailVal });
-            notify('Success', res.message || 'Reset link sent! Please check your email.', 'success', 5000);
+            notify('Success', res.message || 'Reset link sent! Please check your email.', 'success', 5000, 'reset-status');
         } catch (error) {
-            notify('Error', error.message || error || 'Failed to send reset link.', 'error', 2000);
+            notify('Error', error.message || error || 'Failed to send reset link.', 'error', 2000, 'reset-status');
             emailInput.ariaInvalid = 'true'
         }
     });

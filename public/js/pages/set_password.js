@@ -104,12 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         if (invalid) {
-            notify('Error', 'Please fill in all fields.', 'error', 2000);
+            notify('Error', 'Please fill in all fields.', 'error', 2000, 'set-password-status');
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            notify('Error', 'Passwords do not match.', 'error', 2000);
+            notify('Error', 'Passwords do not match.', 'error', 2000, 'set-password-status');
             confirmPasswordInput.setAttribute('aria-invalid', 'true');
             return;
         }
@@ -118,10 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await apiRequest('POST', '/api/auth/reset-password', { token, newPassword });
-            notify(res.message || 'Success', 'Password updated successfully. Redirecting to login...', 'success', 1500);
+            notify(res.message || 'Success', 'Password updated successfully. Redirecting to login...', 'success', 1500, 'set-password-status');
             setTimeout(() => switchView('/login'), 1000);
         } catch (error) {
-            notify('Error', error.message || error || 'Failed to set new password.', 'error', 2000);
+            notify('Error', error.message || error || 'Failed to set new password.', 'error', 2000, 'set-password-status');
             if (error.message && error.message.toLowerCase().includes('token')) {
                 submitButton.disabled = true;
                 setTimeout(() => switchView('/reset-password'), 2000);

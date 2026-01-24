@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (password.value !== confirmPassword.value) {
             confirmPassword.setAttribute('aria-invalid', 'true');
-            notify('Error', 'Passwords do not match', 'error', 2000);
+            notify('Error', 'Passwords do not match', 'error', 2000, 'signup-status');
             return;
         }
 
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 email: emailVal,
                 password: password.value
             });
-            notify('Success', 'Sign up successful! Redirecting...', 'success',  1000);
+            notify('Success', 'Sign up successful! Redirecting...', 'success',  1000, 'signup-status');
             setTimeout(() => switchView('/login'), 1000);
         } catch (error) {
             if (error.errors) {
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error.errors.last_name) lastName.setAttribute('aria-invalid', 'true');
                 if (error.errors.password) password.setAttribute('aria-invalid', 'true');
             }
-            notify('Error', error.message || error || 'Sign up failed.', 'error', 2000);
+            notify('Error', error.message || error || 'Sign up failed.', 'error', 2000, 'signup-status');
         }
     });
 

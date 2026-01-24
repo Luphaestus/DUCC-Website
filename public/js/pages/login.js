@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         if (notPresent) {
-            notify('Error', 'Please fill in all fields.', 'error', 2000);
+            notify('Error', 'Please fill in all fields.', 'error', 2000, 'login-status');
             return;
         }
 
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await apiRequest('POST', '/api/auth/login', { email: emailVal, password: formData.get('password') }).then(res => {
             LoginEvent.notify({ authenticated: true });
-            notify('Success', res.message || 'Login successful! Redirecting...', 'success', 1500);
+            notify('Success', res.message || 'Login successful! Redirecting...', 'success', 1500, 'login-status');
 
             const redirect = sessionStorage.getItem('redirect_after_login');
             sessionStorage.removeItem('redirect_after_login');
@@ -123,11 +123,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 else switchView(prev);
             }
         }).catch((error) => {
-            notify('Error', error.message || error || 'Login failed.', 'error', 3000);
-            if (error.message.includes('email')) {
+            notify('Error', error.message || error || 'Login failed.', 'error', 3000, 'login-status');
+            if (error.message && error.message.includes('email')) {
                 email.setAttribute('aria-invalid', 'true');
             }
-            if (error.message.includes('password')) {
+            if (error.message && error.message.includes('password')) {
                 password.setAttribute('aria-invalid', 'true');
             }
         });

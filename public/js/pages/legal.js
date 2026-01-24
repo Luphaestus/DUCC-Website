@@ -145,12 +145,9 @@ const HTML_TEMPLATE = /*html*/
             </div>
         </div>`;
 
-let notification = null;
-
 // --- Helper Functions ---
 
 const getEl = (id) => document.getElementById(id);
-const showToast = (title, msg, type) => { if (notification) notification(); notification = notify(title, msg, type, 3000); };
 const clearError = (el) => { if (el) el.removeAttribute('aria-invalid'); };
 const markError = (el) => { if (el) el.ariaInvalid = 'true'; };
 function getRadioBoolean(yesId, noId) {
@@ -286,7 +283,7 @@ async function renderLegalPage(page) {
 
     } catch (e) {
         console.error("Legal page load error", e);
-        showToast('Error', 'Failed to load form data.', 'error');
+        notify('Error', 'Failed to load form data.', 'error', 3000, 'legal-status');
     }
 }
 
@@ -300,7 +297,7 @@ function setupFormSubmission() {
 
         try {
             await apiRequest('POST', '/api/user/elements', payload);
-            showToast('Saved', 'Information updated successfully.', 'success');
+            notify('Saved', 'Information updated successfully.', 'success', 3000, 'legal-status');
             LegalEvent.notify();
             
             document.querySelectorAll('[aria-invalid]').forEach(clearError);
@@ -315,16 +312,16 @@ function setupFormSubmission() {
                 }
 
                 if (error.errors.first_name || error.errors.last_name) {
-                    markError(getEl(DOM_IDS.name));
+                    markError(getEl(DOM_IDS[name]));
                     hasError = true;
                 }
 
                 if (hasError) {
-                    showToast('Validation Error', 'Please check the highlighted fields.', 'error');
+                    notify('Validation Error', 'Please check the highlighted fields.', 'error', 3000, 'legal-status');
                     return;
                 }
             }
-            showToast('Error', error.message || 'Save failed.', 'error');
+            notify('Error', error.message || 'Save failed.', 'error', 3000, 'legal-status');
         }
     });
 }
