@@ -10,7 +10,9 @@ import { ViewChangedEvent, switchView, addRoute } from "/js/utils/view.js";
 import { apiRequest } from "/js/utils/api.js";  
 import { BalanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal } from '/js/utils/modal.js';
-import { BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, CLOSE_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, WALLET_SVG, SCHEDULE_SVG } from '../../images/icons/outline/icons.js';
+import { BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, 
+    CLOSE_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, WALLET_SVG, SCHEDULE_SVG 
+} from '../../images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { notify } from '../components/notification.js';
 import { initTooltips } from '/js/widgets/tooltip.js';

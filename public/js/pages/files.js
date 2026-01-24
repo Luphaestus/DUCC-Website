@@ -8,7 +8,9 @@
 
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { apiRequest } from '/js/utils/api.js';
-import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
+import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, 
+    ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG 
+} from '../../images/icons/outline/icons.js';
 
 addRoute('/files', 'files');
 
