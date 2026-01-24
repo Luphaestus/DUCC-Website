@@ -1,16 +1,14 @@
+//todo refine
 /**
  * profile.js
  * 
  * Logic for the consolidated User Dashboard.
- * Merges profile overview, transaction history, and account settings.
- * Handles membership registration, swim stat visualization, safety info updates,
- * and account-level security (password change, deletion).
  * 
  * Registered Routes: /profile, /transactions
  */
 
 import { LoginEvent } from './login.js';
-import { ajaxGet, ajaxPost, clearAjaxCache } from '/js/utils/ajax.js';
+import { apiRequest, clearApiCache } from '/js/utils/api.js';
 import { LegalEvent } from './legal.js';
 import { notify } from '/js/components/notification.js';
 import { FirstNameChangedEvent } from '/js/components/navbar.js';
@@ -19,8 +17,7 @@ import { requireAuth } from '/js/utils/auth.js';
 import { BalanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from '/js/utils/modal.js';
 import {
-    CHECK_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, AR_ON_YOU_SVG,
-    TRIP_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
+    CHECK_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
     SETTINGS_SVG, LOGOUT_SVG, EDIT_SVG, SAVE_SVG, ADD_SVG, REMOVE_SVG,
     CONTRACT_SVG, MEDICAL_INFORMATION_SVG, GROUP_SVG, BOLT_SVG
 } from '../../images/icons/outline/icons.js';
@@ -54,10 +51,8 @@ const HTML_TEMPLATE = /*html*/`
             
             <!-- Overview Tab -->
             <section id="tab-overview" class="dashboard-section active">
-                <!-- Membership Banner (Conditional) -->
                 <div id="membership-banner-container"></div>
 
-                <!-- Swimming Stats -->
                 <div class="glass-panel">
                     <div class="box-header">
                         <h3>${POOL_SVG} Swimming Stats</h3>
@@ -72,7 +67,6 @@ const HTML_TEMPLATE = /*html*/`
 
                 <!-- Legal & Safety Row -->
                 <div class="dual-grid">
-                    <!-- Legal Status -->
                     <div class="glass-panel">
                         <div class="box-header">
                             <h3>${CONTRACT_SVG} Legal Waiver</h3>
@@ -135,7 +129,6 @@ const HTML_TEMPLATE = /*html*/`
                 </div>
             </section>
 
-            <!-- Balance & History Tab -->
             <section id="tab-balance" class="dashboard-section">
                 <!-- Balance Overview -->
                 <div class="balance-header">
@@ -159,7 +152,6 @@ const HTML_TEMPLATE = /*html*/`
                 </div>
             </section>
 
-            <!-- Account Settings Tab -->
             <section id="tab-settings" class="dashboard-section">
                 <div class="settings-grid">
                     <!-- Security Controls -->
@@ -184,24 +176,18 @@ const HTML_TEMPLATE = /*html*/`
     </div>
 </div>`;
 
-/** @type {Function|null} Handle to current notification */
 let notification = null;
-
-/** @type {object|null} Cached current user object */
 let currentUser = null;
 
 // --- Helper Functions ---
 
-/**
- * Displays a toast notification.
- */
 function displayNotification(title, message, type) {
     if (notification) notification();
     notification = notify(title, message, type);
 }
 
 /**
- * Formats a number with its ordinal suffix (e.g. 1 -> 1st).
+ * Formats a number with its ordinal suffix.
  * 
  * @param {number|string} n 
  * @returns {string}
@@ -215,7 +201,7 @@ function getOrdinal(n) {
 // --- Render Functions ---
 
 /**
- * Renders the top-level membership call-to-action banner for non-members.
+ * Renders the top-level membership banner for non-members.
  * 
  * @param {object} profile - User profile data.
  * @param {object} globals - Global settings (e.g. membership cost).
@@ -248,7 +234,7 @@ function renderMembershipBanner(profile, globals) {
             );
             if (confirmed) {
                 try {
-                    await ajaxPost('/api/user/join');
+                    await apiRequest('POST', '/api/user/join');
                     displayNotification('Welcome!', 'You are now a club member.', 'success');
                     updateDashboard();
                 } catch (err) {
@@ -385,7 +371,7 @@ function renderInstructor(profile) {
         btn.className = 'small-btn outline delete';
         btn.onclick = async () => {
             if (await showConfirmModal('Resign?', 'Are you sure you want to resign as an instructor?')) {
-                await ajaxPost('/api/user/elements', { is_instructor: false });
+                await apiRequest('POST', '/api/user/elements', { is_instructor: false });
                 updateDashboard();
             }
         };
@@ -395,7 +381,7 @@ function renderInstructor(profile) {
         btn.textContent = 'Apply';
         btn.className = 'small-btn secondary';
         btn.onclick = async () => {
-            await ajaxPost('/api/user/elements', { is_instructor: true });
+            await apiRequest('POST', '/api/user/elements', { is_instructor: true });
             updateDashboard();
         };
     }
@@ -420,7 +406,7 @@ function renderBalance(profile) {
 async function renderTransactions() {
     const container = document.getElementById('transactions-list-container');
     try {
-        const res = await ajaxGet('/api/user/elements/transactions');
+        const res = await apiRequest('GET', '/api/user/elements/transactions');
         const txs = res.transactions || [];
 
         if (txs.length === 0) {
@@ -465,9 +451,9 @@ async function updateDashboard() {
 
     try {
         const [profile, globals, tags] = await Promise.all([
-            ajaxGet('/api/user/elements/email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank'),
-            ajaxGet('/api/globals/MembershipCost'),
-            ajaxGet('/api/user/tags').catch(() => [])
+            apiRequest('GET', '/api/user/elements/email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank'),
+            apiRequest('GET', '/api/globals/MembershipCost'),
+            apiRequest('GET', '/api/user/tags').catch(() => [])
         ]);
 
         currentUser = profile;
@@ -533,7 +519,7 @@ function bindEvents() {
             phone_number: document.getElementById('input-emergency').value
         };
         try {
-            await ajaxPost('/api/user/elements', updateData);
+            await apiRequest('POST', '/api/user/elements', updateData);
             displayNotification('Success', 'Safety info updated.', 'success');
             await updateDashboard();
             closeSafetyEdit();
@@ -562,7 +548,7 @@ function bindEvents() {
         const passwords = await showChangePasswordModal();
         if (passwords) {
             try {
-                await ajaxPost('/api/auth/change-password', passwords);
+                await apiRequest('POST', '/api/auth/change-password', passwords);
                 displayNotification('Success', 'Password changed.', 'success');
             } catch (err) {
                 displayNotification('Error', 'Failed to change password.', 'error');
@@ -574,7 +560,7 @@ function bindEvents() {
         const password = await showPasswordModal("Delete Account", "This cannot be undone. Enter password to confirm.");
         if (password) {
             try {
-                await ajaxPost('/api/user/deleteAccount', { password });
+                await apiRequest('POST', '/api/user/deleteAccount', { password });
                 LoginEvent.notify({ authenticated: false });
                 switchView('/home');
             } catch (err) {
@@ -584,8 +570,8 @@ function bindEvents() {
     };
 
     document.getElementById('sidebar-logout-btn').onclick = async () => {
-        await ajaxGet('/api/auth/logout');
-        clearAjaxCache();
+        await apiRequest('GET', '/api/auth/logout');
+        clearApiCache();
         LoginEvent.notify({ authenticated: false });
         switchView('/home');
     };
