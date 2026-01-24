@@ -2,11 +2,16 @@
  * no_internet.js
  * 
  * Logic for the connection-loss overlay view.
- * Displays a full-screen alert when the client cannot reach the backend server.
- * Managed by connection.js.
+ * 
+ * Registered Route: /no-internet
  */
 
+//todo Somehow make it so the user can still use the app in offline mode
+
+import { addRoute } from '/js/utils/view.js';
 import { SIGNAL_DISCONNECTED_SVG } from '../../images/icons/outline/icons.js';
+
+addRoute('/no-internet', 'no-connection', { isOverlay: true });
 
 /** HTML Template for the connectivity error view */
 const HTML_TEMPLATE = /*html*/`
