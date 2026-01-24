@@ -1,8 +1,6 @@
 /**
  * errors.js
  * 
- * Error page
- * 
  * Registered Routes:
  * - /error (404)
  * - /unauthorized (403)
