@@ -2,19 +2,17 @@
  * set_password.js
  * 
  * Logic for the password completion view.
- * Handles setting a new password via a secure token provided in a reset email.
  * 
  * Registered Route: /set-password
  */
 
-import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { addRoute, switchView, ViewChangedEvent } from '/js/utils/view.js';
 import { BOLT_SVG } from '../../images/icons/outline/icons.js';
+import { notify } from '../components/notification.js';
 
-// Register route
 addRoute('/set-password', 'set-password');
 
-/** HTML Template for the set new password page */
 const HTML_TEMPLATE = /*html*/`
 <div id="set-password-view" class="view hidden">
     <div class="small-container">
@@ -29,17 +27,16 @@ const HTML_TEMPLATE = /*html*/`
                     <input type="hidden" id="set-password-token">
                     <div>
                         <label for="new-password">New Password:</label>
-                        <input class="nobottommargin" type="password" id="new-password" name="newPassword" required>
+                        <input class="nobottommargin" type="password" id="new-password" name="newPassword">
                     </div>
                     <div>
                         <label for="confirm-password">Confirm Password:</label>
-                        <input class="nobottommargin" type="password" id="confirm-password" name="confirmPassword" required>
+                        <input class="nobottommargin" type="password" id="confirm-password" name="confirmPassword">
                     </div>
                     <div id="set-password-footer">
-                        <button class="nobottommargin" type="submit">Update Password</button>
+                        <button class="nobottommargin" id="set-password-submit" type="submit">Update Password</button>
                     </div>
                 </form>
-                <div id="set-password-message" class="mt-1"></div>
             </article>
         </div>
     </div>
@@ -52,7 +49,7 @@ const HTML_TEMPLATE = /*html*/`
  */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/set-password') {
-        ajaxGet('/api/auth/status').then((data => {
+        apiRequest('GET', '/api/auth/status').then((data => {
             if (data.authenticated) {
                 switchView('/events');
             }
@@ -61,26 +58,19 @@ function ViewNavigationEventListener({ resolvedPath }) {
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         const tokenInput = document.getElementById('set-password-token');
-        const messageEl = document.getElementById('set-password-message');
         const form = document.getElementById('set-password-form');
 
-        // Verify token presence
         if (token) {
             if (tokenInput) tokenInput.value = token;
-            if (messageEl) {
-                messageEl.textContent = '';
-                messageEl.classList.remove('error', 'success');
-            }
             if (form) form.querySelector('button').disabled = false;
+
         } else {
-            if (messageEl) {
-                messageEl.textContent = 'Missing reset token.';
-                messageEl.classList.add('error');
-            }
             if (form) form.querySelector('button').disabled = true;
+            notify('Error', 'Invalid or missing token.', 'error', 3000);
+            setTimeout(() => switchView('/reset-password'), 3000);
+            return;
         }
-        
-        // Reset inputs
+
         const newPassInput = document.getElementById('new-password');
         const confirmPassInput = document.getElementById('confirm-password');
         if (newPassInput) newPassInput.value = '';
@@ -92,35 +82,50 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
     const form = document.getElementById('set-password-form');
-    const messageEl = document.getElementById('set-password-message');
     const tokenInput = document.getElementById('set-password-token');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const token = tokenInput.value;
-        const newPassword = document.getElementById('new-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
 
-        // Frontend validation for matching passwords
-        if (newPassword !== confirmPassword) {
-            messageEl.textContent = 'Passwords do not match.';
-            messageEl.classList.add('error');
+        const token = tokenInput.value;
+        const newPassowordInput = document.getElementById('new-password');
+        const newPassword = newPassowordInput.value;
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        const confirmPassword = confirmPasswordInput.value;
+        const submitButton = document.getElementById('set-password-submit');
+
+        const inputs = [newPassowordInput, confirmPasswordInput];
+        let invalid = false;
+        inputs.forEach(input => {
+            input.removeAttribute('aria-invalid')
+            if (!input.value || input.value.trim() === '') {
+                input.setAttribute('aria-invalid', 'true');
+                invalid = true;
+            }
+        });
+        if (invalid) {
+            notify('Error', 'Please fill in all fields.', 'error', 2000);
             return;
         }
 
-        messageEl.textContent = 'Updating...';
-        messageEl.classList.remove('error', 'success');
+        if (newPassword !== confirmPassword) {
+            notify('Error', 'Passwords do not match.', 'error', 2000);
+            confirmPasswordInput.setAttribute('aria-invalid', 'true');
+            return;
+        }
+
+        confirmPasswordInput.removeAttribute('aria-invalid');
 
         try {
-            const res = await ajaxPost('/api/auth/reset-password', { token, newPassword });
-            messageEl.textContent = res.message;
-            messageEl.classList.add('success');
-            // Redirect to login after successful reset
-            setTimeout(() => switchView('/login'), 2000);
+            const res = await apiRequest('POST', '/api/auth/reset-password', { token, newPassword });
+            notify(res.message || 'Success', 'Password updated successfully. Redirecting to login...', 'success', 1500);
+            setTimeout(() => switchView('/login'), 1000);
         } catch (error) {
-            messageEl.textContent = error.message || 'Failed to update password.';
-            messageEl.classList.add('error');
+            notify('Error', error.message || error || 'Failed to set new password.', 'error', 2000);
+            if (error.message && error.message.toLowerCase().includes('token')) {
+                submitButton.disabled = true;
+                setTimeout(() => switchView('/reset-password'), 2000);
+            }
         }
     });
 
