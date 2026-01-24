@@ -19,6 +19,14 @@
     --table-border: 1px solid rgba(255, 255, 255, 0.05);
     --table-bg-body: rgba(30, 30, 35, 0.4);
     --table-bg-hover-body: rgba(40, 40, 45, 0.6);
+
+    /* --- Dark Mode Blobs --- */
+    --blob-color-1: rgba(155, 89, 182, 0.12);
+    --blob-color-2: rgba(52, 152, 219, 0.12);
+    --blob-color-3: rgba(41, 128, 185, 0.12);
+    --blob-color-4: rgba(26, 188, 156, 0.12);
+    --blob-color-5: rgba(46, 204, 113, 0.12);
+
     #animated-background { opacity: 0.4; }
     .bg-icon { opacity: 0.06; }
 }
@@ -47,6 +55,13 @@ body {
     --table-bg-hover-head: rgba(var(--pico-primary-rgb), 0.1);
     --table-bg-body: rgba(255, 255, 255, 0.4);
     --table-bg-hover-body: rgba(255, 255, 255, 0.6);
+
+    /* --- Light Mode Blobs --- */
+    --blob-color-1: rgba(170, 64, 191, 0.19);
+    --blob-color-2: rgba(188, 203, 235, 0.303);
+    --blob-color-3: rgba(89, 186, 255, 0.245);
+    --blob-color-4: rgba(65, 249, 249, 0.161);
+    --blob-color-5: rgba(58, 243, 151, 0.155);
 
     #animated-background { opacity: 0.6; }
     .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); }
