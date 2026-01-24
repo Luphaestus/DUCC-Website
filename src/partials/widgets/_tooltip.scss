@@ -1,0 +1,63 @@
+/* _tooltip.scss */
+
+/* 
+ * Reusable Bubble Tooltip Styles.
+ * Matches logic in public/js/widgets/tooltip.js
+ */
+
+.attendee-name-tooltip {
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    animation: tooltip-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -6px;
+        border-width: 6px;
+        border-style: solid;
+        border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
+    }
+
+    &.hiding {
+        animation: tooltip-fade-out 0.2s forwards;
+    }
+}
+
+@keyframes tooltip-pop {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.8) translateY(5px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1) translateY(0);
+    }
+}
+
+@keyframes tooltip-fade-out {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.9);
+    }
+}

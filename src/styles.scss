@@ -29,6 +29,8 @@
 @use "partials/widgets/accent_panel";
 @use "partials/widgets/value_header";
 @use "partials/widgets/item_list";
+@use "partials/widgets/conditional_radio";
+@use "partials/widgets/tooltip";
 
 @use "partials/pages/home";
 @use "partials/pages/events";
