@@ -2,23 +2,21 @@
  * login.js
  * 
  * Logic for the user login view.
- * Handles credential submission, email normalization (auto-appending domain),
- * and redirects users based on their navigation history.
  * 
  * Registered Route: /login
  */
 
-import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { switchView, ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { LoginEvent } from "/js/utils/events/events.js";
 import { getPreviousPath } from '/js/utils/history.js';
 import { LOGIN_SVG } from '../../images/icons/outline/icons.js';
+import { notify } from '../components/notification.js';
 
-// Register route
 addRoute('/login', 'login');
 
-/** HTML Template for the login page */
-const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
+const HTML_TEMPLATE = /*html*/
+    `<div id="login-view" class="view hidden">
             <div class="small-container">
                 <h1>Login</h1>
                 <div class="form-info">
@@ -31,7 +29,10 @@ const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
                             <div>
                                 <div>
                                     <label for="email">Email:</label>
-                                    <input class="nobottommargin" id="email" name="email">
+                                    <div class="durham-email-wrapper">
+                                        <input class="nobottommargin" id="email" name="email" placeholder="username" autocomplete="username">
+                                        <span class="email-suffix">@durham.ac.uk</span>
+                                    </div>
                                 </div>
                                 <div>
                                     <label for="password">Password:</label>
@@ -49,24 +50,9 @@ const HTML_TEMPLATE = /*html*/`<div id="login-view" class="view hidden">
             </div>
         </div>`;
 
-/** @type {HTMLElement|null} Element for displaying login error messages */
-let messageElement = null;
-
-/** @type {HTMLInputElement|null} Email field handle */
 let email = null;
-
-/** @type {HTMLInputElement|null} Password field handle */
 let password = null;
 
-
-/**
- * Resets the login form state.
- */
-function setupLoginForm() {
-    if (messageElement) messageElement.textContent = '';
-    if (email) email.value = '';
-    if (password) password.value = '';
-}
 
 /**
  * Handle view switch to login; redirects to dashboard if already authenticated.
@@ -75,44 +61,56 @@ function setupLoginForm() {
  */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/login') {
-        ajaxGet('/api/auth/status', true).then((data => {
+        apiRequest('GET', '/api/auth/status', true).then((data => {
             if (data.authenticated) {
                 const prev = getPreviousPath();
-                // Avoid infinite loops or logic-dead-ends
-                if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
+                const badPaths = ['/login', '/signup', '/home'];
+                if (!prev || badPaths.includes(prev)) switchView('/events');
                 else switchView(prev);
             }
         }));
     }
-    setupLoginForm();
+    if (email) email.value = '';
+    if (password) password.value = '';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
-    const loginFooter = document.getElementById('login-footer');
     email = document.getElementById('email');
     password = document.getElementById('password');
 
-    messageElement = document.createElement('div');
-    messageElement.id = 'login-message';
-    messageElement.setAttribute('role', 'alert');
-    loginFooter.appendChild(messageElement);
+    email.addEventListener('input', () => {
+        if (email.value.includes('@')) {
+            email.value = email.value.split('@')[0];
+        }
+    });
 
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(loginForm);
         let emailVal = formData.get('email');
 
-        // Normalize email: append university domain if missing
+        let notPresent = false;
+        [email, password].forEach(input => {
+            input.removeAttribute('aria-invalid');
+            if (!input.value || input.value.trim() === '') {
+                input.setAttribute('aria-invalid', 'true');
+                notPresent = true;
+            }
+        });
+        if (notPresent) {
+            notify('Error', 'Please fill in all fields.', 'error', 2000);
+            return;
+        }
+
         if (emailVal && !emailVal.includes('@')) {
             emailVal += '@durham.ac.uk';
         }
 
-        try {
-            await ajaxPost('/api/auth/login', { email: emailVal, password: formData.get('password') });
+        await apiRequest('POST', '/api/auth/login', { email: emailVal, password: formData.get('password') }).then(res => {
             LoginEvent.notify({ authenticated: true });
+            notify('Success', res.message || 'Login successful! Redirecting...', 'success', 1500);
 
-            // Prioritize explicit redirect targets set by requireAuth()
             const redirect = sessionStorage.getItem('redirect_after_login');
             sessionStorage.removeItem('redirect_after_login');
 
@@ -120,13 +118,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 switchView(redirect);
             } else {
                 const prev = getPreviousPath();
-                if (!prev || prev === '/login' || prev === '/signup' || prev === '/home') switchView('/events');
+                const badPaths = ['/login', '/signup', '/home'];
+                if (!prev || badPaths.includes(prev)) switchView('/events');
                 else switchView(prev);
             }
-        } catch (error) {
-            messageElement.textContent = error.message || error || 'Login failed.';
-            messageElement.classList.add('error');
-        }
+        }).catch((error) => {
+            notify('Error', error.message || error || 'Login failed.', 'error', 3000);
+            if (error.message.includes('email')) {
+                email.setAttribute('aria-invalid', 'true');
+            }
+            if (error.message.includes('password')) {
+                password.setAttribute('aria-invalid', 'true');
+            }
+        });
     });
 
     ViewChangedEvent.subscribe(ViewNavigationEventListener);
