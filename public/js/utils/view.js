@@ -2,7 +2,6 @@
  * view.js
  * 
  * The central router.
- * Handles URL changes, path resolution, view visibility toggling,
  */
 
 import { apiRequest } from './api.js';
@@ -120,7 +119,6 @@ function switchView(path, force = false) {
 
 /**
  * Triggered on popstate (browser back/forward) or initial load.
- * Synchronizes the app state with the current URL.
  */
 function updateContent() {
     switchView(window.location.pathname + window.location.search, true);

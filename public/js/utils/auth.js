@@ -2,16 +2,13 @@
  * auth.js
  * 
  * Provides client-side authentication protection for routes that require a session.
- * Integrates with the SPA router to redirect unauthorized users.
  */
 
 import { apiRequest } from './api.js';
 import { switchView } from './view.js';
 
 /**
- * Checks the current authentication status with the server.
- * If the user is not authenticated, saves the current path for post-login redirect
- * and moves the application to the unauthorized/login view.
+ * Checks the current authentication status.
  * 
  * @returns {Promise<boolean>} - True if authenticated, false otherwise.
  */

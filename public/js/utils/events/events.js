@@ -7,8 +7,7 @@
 import { Event } from './event.js';
 
 /**
- * Triggered whenever a financial transaction occurs (top-up, event join, etc.).
- * Subscribed to by the navbar and profile pages to refresh balance displays.
+ * Triggered whenever a financial transaction occurs.
  * @type {Event}
  */
 const BalanceChangedEvent = new Event();

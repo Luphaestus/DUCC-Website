@@ -3,10 +3,6 @@
  * api.js
  * 
  * High-level wrapper for XMLHttpRequest providing a Promise-based API.
- * Includes support for response caching, automatic connectivity reporting,
- * and standard HTTP method implementations (GET, POST, PUT, DELETE).
- * 
- * Used by all page and component modules to communicate with the backend API.
  */
 
 import { updateConnectionStatus } from '../connection.js';
@@ -19,9 +15,7 @@ const cache = new Map();
 
 /**
  * Manually clear the API GET cache.
- * Generally called after write operations (POST/PUT/DELETE) to ensure data freshness.
- * @param {string|boolean} [url] - If a string, clears only that specific URL. 
- *                                 If false or omitted, clears the entire cache.
+ * @param {string|boolean} [url]
  */
 function clearApiCache(url) {
     if (url && typeof url === 'string') cache.delete(url);
@@ -29,16 +23,13 @@ function clearApiCache(url) {
 }
 
 /**
- * Universal function to perform XHR requests.
- * Encapsulates common logic for connection status updates, error handling, and response parsing.
- * 
  * @param {string} method - HTTP method (GET, POST, PUT, DELETE).
  * @param {string} url - Target URL.
  * @param {any} [data=null] - Json Payload, or cache controls for GET requests.
 * @returns {Promise<object>}
  */
 function apiRequest(method, url, data = null) {
-    
+
     if (method === 'GET') {
         if (data === true) if (cache.has(url)) return cache.get(url);
         else clearApiCache(data);
@@ -59,7 +50,9 @@ function apiRequest(method, url, data = null) {
                         const response = JSON.parse(xhr.responseText);
                         resolve(response);
                     } catch (e) {
-                        reject({ message: 'Failed to parse response: ' + e.message });
+                        const snippet = xhr.responseText.slice(0, 50);
+                        console.error(`API Parse Error [${method} ${url}]:`, xhr.responseText);
+                        reject({ message: `Failed to parse response: ${e.message}. Content: ${snippet}...` });
                     }
                 } else {
                     try {
@@ -138,11 +131,15 @@ async function uploadFile(file, options = {}) {
 
         xhr.onload = () => {
             if (xhr.status === 201) {
-                const result = JSON.parse(xhr.responseText);
-                if (result.success && result.ids.length > 0) {
-                    resolve(result.ids[0]);
-                } else {
-                    reject(new Error('Upload succeeded but no ID returned'));
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success && result.ids.length > 0) {
+                        resolve(result.ids[0]);
+                    } else {
+                        reject(new Error('Upload succeeded but no ID returned'));
+                    }
+                } catch (e) {
+                    reject(new Error('Failed to parse upload response'));
                 }
             } else {
                 reject(new Error('Upload failed: ' + xhr.status));
