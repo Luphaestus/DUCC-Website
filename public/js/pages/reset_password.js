@@ -2,19 +2,17 @@
  * reset_password.js
  * 
  * Logic for the password reset request view.
- * Allows users to enter their email to receive a recovery link.
  * 
  * Registered Route: /reset-password
  */
 
-import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { addRoute, ViewChangedEvent, switchView } from '/js/utils/view.js';
 import { MAIL_SVG } from '../../images/icons/outline/icons.js';
+import { notify } from '../components/notification.js';
 
-// Register route
 addRoute('/reset-password', 'reset-password');
 
-/** HTML Template for the password reset request page */
 const HTML_TEMPLATE = /*html*/`
 <div id="reset-password-view" class="view hidden">
     <div class="small-container">
@@ -28,13 +26,15 @@ const HTML_TEMPLATE = /*html*/`
                 <form id="reset-password-form">
                     <div>
                         <label for="reset-email">Email:</label>
-                        <input class="nobottommargin" id="reset-email" name="email" required>
+                        <div class="durham-email-wrapper">
+                            <input class="nobottommargin" id="reset-email" name="email" placeholder="username">
+                            <span class="email-suffix">@durham.ac.uk</span>
+                        </div>
                     </div>
                     <div id="reset-password-footer">
-                        <button class="nobottommargin" type="submit">Send Reset Link</button>
+                        <button type="submit">Send Reset Link</button>
                     </div>
                 </form>
-                <div id="reset-message" class="mt-1"></div>
                 <p class="nobottommargin">Remembered it? <a data-nav="/login" class="cursor-pointer">Login</a></p>
             </article>
         </div>
@@ -48,17 +48,14 @@ const HTML_TEMPLATE = /*html*/`
  */
 function ViewNavigationEventListener({ resolvedPath }) {
     if (resolvedPath === '/reset-password') {
-        ajaxGet('/api/auth/status').then((data => {
+        apiRequest('GET', '/api/auth/status').then((data => {
             if (data.authenticated) {
                 switchView('/events');
             }
         }));
-        
-        // Reset form UI
+
         const emailInput = document.getElementById('reset-email');
-        const messageEl = document.getElementById('reset-message');
         if (emailInput) emailInput.value = '';
-        if (messageEl) messageEl.textContent = '';
     }
 }
 
@@ -66,27 +63,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 
     const form = document.getElementById('reset-password-form');
-    const messageEl = document.getElementById('reset-message');
+    const emailInput = document.getElementById('reset-email');
+
+    emailInput.addEventListener('input', () => {
+        emailInput.removeAttribute('aria-invalid');
+        if (emailInput.value.includes('@')) {
+            emailInput.value = emailInput.value.split('@')[0];
+        }
+    });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        messageEl.textContent = 'Sending...';
-        messageEl.classList.remove('error', 'success');
 
         let emailVal = document.getElementById('reset-email').value;
-        // Normalize email: append university domain if missing
         if (emailVal && !emailVal.includes('@')) {
             emailVal += '@durham.ac.uk';
         }
 
         try {
-            const res = await ajaxPost('/api/auth/reset-password-request', { email: emailVal });
-            // Always show success message even if email doesn't exist (security practice)
-            messageEl.textContent = res.message || 'If an account exists, a reset link has been sent.';
-            messageEl.classList.add('success');
+            const res = await apiRequest('POST', '/api/auth/reset-password-request', { email: emailVal });
+            notify('Success', res.message || 'Reset link sent! Please check your email.', 'success', 5000);
         } catch (error) {
-            messageEl.textContent = error.message || 'Failed to send request.';
-            messageEl.classList.add('error');
+            notify('Error', error.message || error || 'Failed to send reset link.', 'error', 2000);
+            emailInput.ariaInvalid = 'true'
         }
     });
 
