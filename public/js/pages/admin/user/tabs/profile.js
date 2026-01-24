@@ -1,3 +1,4 @@
+//todo refine
 /**
  * profile.js (Admin User Tab)
  * 
@@ -7,7 +8,7 @@
  * Includes specialized logic for the "President" role transfer.
  */
 
-import { ajaxGet, ajaxPost, ajaxDelete } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { showPasswordModal } from '/js/utils/modal.js';
 import { renderUserDetail } from '../detail.js';
@@ -28,9 +29,10 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
     const bal = Number(user.balance || 0);
 
     // Fetch college registry for the dropdown
-    const collegesRes = await ajaxGet('/api/colleges').catch(() => ({ data: [] }));
+    const collegesRes = await apiRequest('GET', '/api/colleges').catch(() => ({ data: [] }));
     const colleges = collegesRes.data || [];
     const collegeName = colleges.find(c => c.id === user.college_id)?.name || 'N/A';
+    const emailUsername = user.email ? user.email.split('@')[0] : '';
 
     container.innerHTML = `
         <div class="dashboard-section active gap-1-5">
@@ -105,7 +107,12 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         </div>
                     </div>
                     <form id="account-info-form" class="hidden modern-form mt-1">
-                        <label>Email <input type="email" id="input-email" value="${user.email}"></label>
+                        <label>Email 
+                            <div class="durham-email-wrapper">
+                                <input type="text" id="input-email" value="${emailUsername}">
+                                <span class="email-suffix">@durham.ac.uk</span>
+                            </div>
+                        </label>
                         <label>Phone <input type="tel" id="input-phone" value="${user.phone_number || ''}"></label>
                         <label>College 
                             <select id="input-college">
@@ -204,7 +211,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
         // --- Role Assignment with Security Interlock ---
         const roleSelect = document.getElementById('admin-user-role-select');
         if (roleSelect) {
-            const allRoles = await ajaxGet('/api/admin/roles').catch(() => []);
+            const allRoles = await apiRequest('GET', '/api/admin/roles').catch(() => []);
             const userRoleId = (user.roles && user.roles.length > 0) ? user.roles[0].id : '';
             roleSelect.innerHTML = `<option value="">No Role</option>` + allRoles.map(role => `<option value="${role.id}" ${role.id == userRoleId ? 'selected' : ''}>${role.name}</option>`).join('');
 
@@ -227,7 +234,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                 }
 
                 try {
-                    await ajaxPost(`/api/admin/user/${user.id}/role`, { roleId: roleSelect.value, password });
+                    await apiRequest('POST', `/api/admin/user/${user.id}/role`, { roleId: roleSelect.value, password });
                     notify('Success', 'Role updated', 'success');
                     lastValue = roleSelect.value;
                     // If presidency transferred, the current admin's own permissions may have been revoked
@@ -244,7 +251,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
         if (instructorToggle) {
             instructorToggle.onchange = async () => {
                 try {
-                    await ajaxPost(`/api/admin/user/${user.id}/elements`, { is_instructor: instructorToggle.checked });
+                    await apiRequest('POST', `/api/admin/user/${user.id}/elements`, { is_instructor: instructorToggle.checked });
                     notify('Success', 'Instructor status updated', 'success');
                     user.is_instructor = instructorToggle.checked;
                 } catch (e) {
@@ -257,16 +264,16 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
         // --- Direct Permission Management ---
         const permSelect = document.getElementById('add-perm-select');
         if (permSelect) {
-            const allPerms = await ajaxGet('/api/admin/permissions').catch(() => []);
+            const allPerms = await apiRequest('GET', '/api/admin/permissions').catch(() => []);
             permSelect.innerHTML += allPerms.map(p => `<option value="${p.id}">${p.slug}</option>`).join('');
 
             document.getElementById('add-perm-btn').onclick = async () => {
                 const permId = permSelect.value;
                 if (!permId) return;
                 try {
-                    await ajaxPost(`/api/admin/user/${user.id}/permission`, { permissionId: permId });
+                    await apiRequest('POST', `/api/admin/user/${user.id}/permission`, { permissionId: permId });
                     notify('Success', 'Permission added', 'success');
-                    const updatedUser = await ajaxGet(`/api/admin/user/${user.id}`);
+                    const updatedUser = await apiRequest('GET', `/api/admin/user/${user.id}`);
                     renderProfileTab(container, updatedUser, userPerms, canManageUsers, isExec);
                 } catch (e) { notify('Error', 'Failed to add permission', 'error'); }
             };
@@ -274,9 +281,9 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             container.querySelectorAll('.remove-perm-btn').forEach(btn => {
                 btn.onclick = async () => {
                     try {
-                        await ajaxDelete(`/api/admin/user/${user.id}/permission/${btn.dataset.id}`);
+                        await apiRequest('DELETE', `/api/admin/user/${user.id}/permission/${btn.dataset.id}`);
                         notify('Success', 'Permission removed', 'success');
-                        const updatedUser = await ajaxGet(`/api/admin/user/${user.id}`);
+                        const updatedUser = await apiRequest('GET', `/api/admin/user/${user.id}`);
                         renderProfileTab(container, updatedUser, userPerms, canManageUsers, isExec);
                     } catch (e) { notify('Error', 'Failed to remove', 'error'); }
                 };
@@ -302,12 +309,24 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                 editBtn.classList.remove('hidden');
             };
 
+            const emailInput = document.getElementById('input-email');
+            if (emailInput) {
+                emailInput.addEventListener('input', () => {
+                    if (emailInput.value.includes('@')) {
+                        emailInput.value = emailInput.value.split('@')[0];
+                    }
+                });
+            }
+
             cancelBtn.onclick = closeEdit;
 
             form.onsubmit = async (e) => {
                 e.preventDefault();
+                let emailVal = document.getElementById('input-email').value;
+                if (emailVal && !emailVal.includes('@')) emailVal += '@durham.ac.uk';
+
                 const updateData = {
-                    email: document.getElementById('input-email').value,
+                    email: emailVal,
                     phone_number: document.getElementById('input-phone').value,
                     college_id: parseInt(document.getElementById('input-college').value) || null
                 };
@@ -318,7 +337,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     updateData.is_instructor = document.getElementById('input-is-instructor').checked;
                 }
                 try {
-                    await ajaxPost(`/api/admin/user/${user.id}/elements`, updateData);
+                    await apiRequest('POST', `/api/admin/user/${user.id}/elements`, updateData);
                     notify('Success', 'Account details updated', 'success');
                     Object.assign(user, updateData);
                     renderProfileTab(container, user, userPerms, canManageUsers, isExec);
@@ -341,10 +360,10 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
         if (canManageSwims) {
             document.getElementById('admin-add-swim-btn').onclick = async () => {
                 try {
-                    await ajaxPost(`/api/user/${user.id}/swims`, { count: 1 });
+                    await apiRequest('POST', `/api/user/${user.id}/swims`, { count: 1 });
 
                     // Refresh stats to recalculate ranks
-                    const statsRes = await ajaxGet(`/api/user/${user.id}/elements/swimmer_rank`);
+                    const statsRes = await apiRequest('GET', `/api/user/${user.id}/elements/swimmer_rank`);
                     if (statsRes.swimmer_stats) {
                         user.swimmer_stats = statsRes.swimmer_stats;
                     }
@@ -371,7 +390,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
         if (difficultyInput) {
             difficultyInput.onchange = async () => {
                 try {
-                    await ajaxPost(`/api/admin/user/${user.id}/elements`, { difficulty_level: difficultyInput.value });
+                    await apiRequest('POST', `/api/admin/user/${user.id}/elements`, { difficulty_level: difficultyInput.value });
                     notify('Success', 'Difficulty level updated', 'success');
                 } catch (e) {
                     notify('Error', 'Failed to update level', 'error');
