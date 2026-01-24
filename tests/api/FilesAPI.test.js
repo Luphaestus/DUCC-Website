@@ -184,5 +184,58 @@ describe('api/FilesAPI', () => {
             expect((await world.as('member').get(imageUrl)).statusCode).toBe(403);
             expect((await world.as('exec').get(imageUrl)).statusCode).toBe(200);
         });
+
+        test('Global default event image is accessible to everyone', async () => {
+            const filename = 'default_event.txt';
+            const filePath = path.join(testUploadDir, filename);
+            fs.writeFileSync(filePath, 'default image content');
+
+            const fileRes = await FilesDB.createFile(world.db, {
+                title: 'Default Image',
+                filename: filename,
+                visibility: 'events'
+            });
+            const defaultFileId = fileRes.getData().id;
+            const imageUrl = `/api/files/${defaultFileId}/download`;
+
+            world.mockGlobalObject('DefaultEventImage', { data: imageUrl });
+
+            const resGuest = await world.request.get(imageUrl);
+            expect(resGuest.statusCode).toBe(200);
+            expect(resGuest.text).toBe('default image content');
+        });
+
+        test('Whitelisted tag visibility is enforced for event images', async () => {
+            const filename = 'secret_event.txt';
+            const filePath = path.join(testUploadDir, filename);
+            fs.writeFileSync(filePath, 'secret content');
+
+            const fileRes = await FilesDB.createFile(world.db, {
+                title: 'Secret Image',
+                filename: filename,
+                visibility: 'events'
+            });
+            const secretFileId = fileRes.getData().id;
+            const imageUrl = `/api/files/${secretFileId}/download`;
+
+            // Create a tag with whitelist view policy
+            await world.createTag('SecretTag', { view_policy: 'whitelist' });
+            const tagId = world.data.tags['SecretTag'];
+
+            // Create an event with this tag and image
+            await world.createEvent('Secret Event', { image_url: imageUrl });
+            await world.assignTag('event', 'Secret Event', 'SecretTag');
+
+            // User not on whitelist should be blocked
+            expect((await world.as('member').get(imageUrl)).statusCode).toBe(403);
+
+            // Add user to whitelist
+            await world.db.run('INSERT INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagId, world.data.users['member']]);
+            
+            // User on whitelist should gain access
+            const resOk = await world.as('member').get(imageUrl);
+            expect(resOk.statusCode).toBe(200);
+            expect(resOk.text).toBe('secret content');
+        });
     });
 });

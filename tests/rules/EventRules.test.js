@@ -24,23 +24,23 @@ describe('rules/EventRules', () => {
         /**
          * System Logic: guests are restricted by the 'Unauthorized_max_difficulty' setting.
          */
-        test('Guest visibility is bounded by the global unauthorized limit', () => {
+        test('Guest visibility is bounded by the global unauthorized limit', async () => {
             world.mockGlobalInt('Unauthorized_max_difficulty', 2);
             
-            expect(EventRules.canViewEvent({ difficulty_level: 2 }, null)).toBe(true);
-            expect(EventRules.canViewEvent({ difficulty_level: 3 }, null)).toBe(false);
+            expect(await EventRules.canViewEvent(world.db, { difficulty_level: 2 }, null)).toBe(true);
+            expect(await EventRules.canViewEvent(world.db, { difficulty_level: 3 }, null)).toBe(false);
         });
 
-        test('User visibility is bounded by their own difficulty level', () => {
+        test('User visibility is bounded by their own difficulty level', async () => {
             const user = { difficulty_level: 3 };
-            expect(EventRules.canViewEvent({ difficulty_level: 3 }, user)).toBe(true);
-            expect(EventRules.canViewEvent({ difficulty_level: 4 }, user)).toBe(false);
+            expect(await EventRules.canViewEvent(world.db, { difficulty_level: 3 }, user)).toBe(true);
+            expect(await EventRules.canViewEvent(world.db, { difficulty_level: 4 }, user)).toBe(false);
         });
 
         /**
          * System Logic: even if event difficulty is OK, tags can impose stricter limits.
          */
-        test('Tag difficulty constraints can override event-level accessibility', () => {
+        test('Tag difficulty constraints can override event-level accessibility', async () => {
             const user = { difficulty_level: 2 };
             
             // Event OK (1 <= 2), but Tag NOT OK (3 > 2)
@@ -48,14 +48,14 @@ describe('rules/EventRules', () => {
                 difficulty_level: 1, 
                 tags: [{ min_difficulty: 3 }] 
             };
-            expect(EventRules.canViewEvent(event, user)).toBe(false);
+            expect(await EventRules.canViewEvent(world.db, event, user)).toBe(false);
 
             // Both OK
             const eventOk = { 
                 difficulty_level: 1, 
                 tags: [{ min_difficulty: 2 }, { min_difficulty: 1 }] 
             };
-            expect(EventRules.canViewEvent(eventOk, user)).toBe(true);
+            expect(await EventRules.canViewEvent(world.db, eventOk, user)).toBe(true);
         });
     });
 

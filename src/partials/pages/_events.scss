@@ -215,19 +215,6 @@
         }
     }
 
-    /* Tags */
-    .tag-badge {
-        background-color: var(--tag-color, var(--pico-primary));
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: var(--border-radius-pill);
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.02em;
-        display: inline-block;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
     /* Event List Grouping */
     .day-group {
         width: 100%;
@@ -315,10 +302,16 @@
             transform: translateY(-6px);
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
             border-color: rgba(var(--pico-primary-rgb), 0.4);
+            animation: card-pulse 2s infinite ease-in-out;
 
             .event-image {
                 transform: scale(1.1);
             }
+        }
+
+        @keyframes card-pulse {
+            0%, 100% { transform: translateY(-6px) scale(1); }
+            50% { transform: translateY(-6px) scale(1.01); }
         }
 
         .event-image-container {
@@ -426,11 +419,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
 
             .footer-left {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
+                gap: 0.5rem;
+                flex-wrap: wrap;
             }
 
             .attendance-status,
@@ -461,6 +457,12 @@
                 }
             }
 
+            @keyframes pulse-glow {
+                0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.4); }
+                70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); }
+            }
+
             .attendance-status {
                 color: #2ecc71;
             }
@@ -485,7 +487,8 @@
             }
         }
 
-        &.past-event {
+        &.past-event,
+        &.unavailable-event {
             opacity: 0.7;
             filter: grayscale(1);
             background: rgba(0, 0, 0, 0.02);
