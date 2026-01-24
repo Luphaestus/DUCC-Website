@@ -1,14 +1,13 @@
+//todo refine
 /**
  * home.js
  * 
  * Logic for the application homepage.
- * Manages the high-impact hero slideshow with automatic crossfading,
- * initializes Google Maps integration, and handles MotionOnScroll animations.
  * 
  * Registered Route: /home
  */
 
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { KAYAKING_SVG, SOCIAL_LEADERBOARD_SVG, CAMPING_SVG } from '../../images/icons/outline/icons.js';
 
@@ -16,7 +15,8 @@ const home_view_id = 'home-view';
 addRoute('/home', 'home');
 
 /** HTML Template for the homepage */
-const HTML_TEMPLATE = /*html*/`<div id="${home_view_id}" class="view hidden">
+const HTML_TEMPLATE = /*html*/`
+        <div id="${home_view_id}" class="view hidden">
             <div class="hero">
                 <div class="hero-title" data-mos="fade-up">
                     <h1>Welcome to<br>Durham University<br>Canoe Club</h1>
@@ -73,19 +73,10 @@ const HTML_TEMPLATE = /*html*/`<div id="${home_view_id}" class="view hidden">
             </div>
         </div>`;
 
-/** @type {HTMLElement[]} The two layered slide elements used for crossfading */
 let layers = [];
-
-/** @type {number} Index of the currently visible layer (0 or 1) */
 let activeLayerIndex = 0;
-
-/** @type {number|null} ID of the slideshow interval timer */
 let slideshowInterval = null;
-
-/** @type {string[]} URLs of all available slideshow images */
 let slideImages = [];
-
-/** @type {number} Current image index in slideImages */
 let currentIdx = 0;
 
 /**
@@ -112,14 +103,11 @@ function setLayerBg(layer, url) {
 
 /**
  * Preloads slideshow images into the browser cache.
- * Uses a staggered loading strategy to avoid blocking the main thread.
  * 
  * @param {string[]} urls 
  */
 function preload(urls) {
-    // Immediate preload for first few
     urls.slice(0, 3).forEach(u => { const img = new Image(); img.src = u; });
-    // Staggered preload for the rest
     if (urls.length > 3) {
         setTimeout(() => {
             urls.slice(3).forEach((u, i) => {
@@ -183,7 +171,7 @@ function initSlideshow(hero) {
     layers = [layerA, layerB];
     activeLayerIndex = 0;
 
-    ajaxGet('/api/slides/images').then((data) => {
+    apiRequest('GET', '/api/slides/images').then((data) => {
         slideImages = data?.images || [];
         if (!slideImages.length) return;
         
@@ -193,7 +181,6 @@ function initSlideshow(hero) {
         setLayerBg(layers[activeLayerIndex], slideImages[currentIdx]);
         layers[activeLayerIndex].classList.add('show');
 
-        // Delay starting the interval to ensure initial load is smooth
         setTimeout(() => {
             if (window.location.pathname === '/home' || window.location.pathname === '/') startSlideshow();
         }, 50);
@@ -207,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const hero = document.querySelector('.hero');
     if (hero) initSlideshow(hero);
 
-    // Sync slideshow state with router
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/home') {
             startSlideshow();
