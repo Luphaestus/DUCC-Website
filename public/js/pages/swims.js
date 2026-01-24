@@ -2,20 +2,16 @@
  * swims.js
  * 
  * Logic for the Swimming Leaderboard view.
- * Features a dynamic podium for the top 3 swimmers and a ranked list for the rest.
- * Supports toggling between "This Year" and "All Time" statistics.
  * 
  * Registered Route: /swims
  */
 
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG } from '../../images/icons/outline/icons.js';
 
-// Register route
 addRoute('/swims', 'swims');
 
-/** HTML Template for the leaderboard page */
 const HTML_TEMPLATE = /*html*/`
 <div id="swims-view" class="view hidden">
     <div class="small-container">
@@ -36,8 +32,7 @@ const HTML_TEMPLATE = /*html*/`
     </div>
 </div>`;
 
-/** @type {string} Current filter mode: 'yearly' or 'alltime' */
-let currentMode = 'yearly'; 
+let isYearly = true;
 
 /**
  * Fetches swim data from the API and renders the podium and table.
@@ -49,8 +44,7 @@ async function populateLeaderboard() {
     content.innerHTML = '<p class="leaderboard-status" aria-busy="true">Loading...</p>';
 
     try {
-        const isYearly = currentMode === 'yearly';
-        const leaderboardData = (await ajaxGet(`/api/user/swims/leaderboard?yearly=${isYearly}`)).data;
+        const leaderboardData = (await apiRequest('GET', `/api/user/swims/leaderboard?yearly=${isYearly}`)).data;
 
         if (!leaderboardData || leaderboardData.length === 0) {
             content.innerHTML = '<p class="leaderboard-status">No swims recorded yet!</p>';
@@ -60,7 +54,6 @@ async function populateLeaderboard() {
         const top3 = leaderboardData.slice(0, 3);
         const rest = leaderboardData.slice(3);
 
-        // --- Render Podium (1st, 2nd, 3rd) ---
         let podiumHtml = '<div class="podium-container">';
         
         // Visual order: [Silver, Gold, Bronze]
@@ -121,7 +114,7 @@ function updateToggleState() {
     const yearlyBtn = document.getElementById('swims-yearly-btn');
     const alltimeBtn = document.getElementById('swims-alltime-btn');
 
-    if (currentMode === 'yearly') {
+    if (isYearly) {
         wrapper.removeAttribute('data-state'); 
         yearlyBtn.classList.add('active');
         alltimeBtn.classList.remove('active');
@@ -134,7 +127,6 @@ function updateToggleState() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Refresh data when navigating to this view
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         if (resolvedPath === '/swims') populateLeaderboard();
     });
@@ -144,15 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (yearlyBtn && alltimeBtn) {
         yearlyBtn.addEventListener('click', () => {
-            if (currentMode !== 'yearly') {
-                currentMode = 'yearly';
+            if (!isYearly) {
+                isYearly = true;
                 updateToggleState();
             }
         });
 
         alltimeBtn.addEventListener('click', () => {
-            if (currentMode !== 'alltime') {
-                currentMode = 'alltime';
+            if (isYearly) {
+                isYearly = false;
                 updateToggleState();
             }
         });
