@@ -1,3 +1,4 @@
+//todo refine
 /**
  * legal.js (Admin User Tab)
  * 
