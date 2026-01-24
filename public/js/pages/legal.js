@@ -1,17 +1,11 @@
-/**
- * legal.js
- * 
- * Logic for the Legal & Medical Information Form.
- * 
- * Registered Route: /legal
- */
-
 import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { requireAuth } from '/js/utils/auth.js';
 import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from '/images/icons/outline/icons.js';
 import { LegalEvent } from "/js/utils/events/events.js";
+import { Panel } from '/js/widgets/panel.js';
+import { ConditionalRadio, initConditionalRadio } from '/js/widgets/conditional_radio.js';
 
 // --- Configuration ---
 
@@ -64,10 +58,11 @@ const HTML_TEMPLATE = /*html*/
             <h1>Legal & Medical Information Form</h1>
                 <div class="legal-grid">
                     <!-- Personal Info -->
-                    <article class="glass-panel full-width">
-                        <div class="box-header">
-                            <h3>${ACCOUNT_BOX_SVG} Personal Information</h3>
-                        </div>
+                    ${Panel({
+                        title: 'Personal Information',
+                        icon: ACCOUNT_BOX_SVG,
+                        classes: 'full-width',
+                        content: `
                         <form>
                             <div class="grid">
                                 <label>Name* <input type="text" id="${DOM_IDS.name}" name="name" placeholder="e.g. John Doe"></label>
@@ -82,53 +77,56 @@ const HTML_TEMPLATE = /*html*/
                                 </label>
                             </div>
                             <label>Home Address* <textarea id="${DOM_IDS.home_address}" name="address" rows="3" placeholder="e.g. 123 River St..."></textarea></label>
-                        </form>
-                    </article>
+                        </form>`
+                    })}
 
                     <!-- Emergency Contact -->
-                    <article class="glass-panel">
-                        <div class="box-header">
-                            <h3>${CALL_SVG} Emergency Contact</h3>
-                        </div>
+                    ${Panel({
+                        title: 'Emergency Contact',
+                        icon: CALL_SVG,
+                        content: `
                         <form>
                             <label>Name* <input type="text" id="${DOM_IDS.emergency_contact_name}" name="emergency-contact-name" placeholder="e.g. Jane Doe"></label>
                             <label>Phone Number* <input type="tel" id="${DOM_IDS.emergency_contact_phone}" name="emergency-contact-phone" placeholder="e.g. +44 7123 456789"></label>
-                        </form>
-                    </article>
+                        </form>`
+                    })}
 
                     <!-- Medical Information -->
-                    <article class="glass-panel">
-                        <div class="box-header">
-                            <h3>${MEDICAL_INFORMATION_SVG} Medical Information</h3>
-                        </div>
+                    ${Panel({
+                        title: 'Medical Information',
+                        icon: MEDICAL_INFORMATION_SVG,
+                        content: `
                         <form>
-                            <fieldset>
-                                <legend>Medical Conditions & Allergies*</legend>
-                                <div class="radio-group">
-                                    <label><input type="radio" id="${DOM_IDS.has_medical_conditions}" name="medical-condition-radio" value="yes"> Yes</label>
-                                    <label><input type="radio" id="${DOM_IDS.has_medical_conditions_no}" name="medical-condition-radio" value="no"> No</label>
-                                </div>
-                                <input type="text" id="${DOM_IDS.medical_conditions_details}" class="conditional-reveal hidden" name="medical-condition" placeholder="Please specify... (e.g. Asthma)">
-                            </fieldset>
-                            <fieldset>
-                                <legend>Medication*</legend>
-                                <div class="radio-group">
-                                    <label><input type="radio" id="${DOM_IDS.takes_medication}" name="medication-radio" value="yes"> Yes</label>
-                                    <label><input type="radio" id="${DOM_IDS.takes_medication_no}" name="medication-radio" value="no"> No</label>
-                                </div>
-                                <input type="text" id="${DOM_IDS.medication_details}" class="conditional-reveal hidden" name="medication-condition" placeholder="Please specify... (e.g. Inhaler)">
-                            </fieldset>
+                            ${ConditionalRadio({
+                                legend: 'Medical Conditions & Allergies*',
+                                groupName: 'medical-condition-radio',
+                                yesId: DOM_IDS.has_medical_conditions,
+                                noId: DOM_IDS.has_medical_conditions_no,
+                                detailId: DOM_IDS.medical_conditions_details,
+                                detailPlaceholder: 'Please specify... (e.g. Asthma)'
+                            })}
+                            
+                            ${ConditionalRadio({
+                                legend: 'Medication*',
+                                groupName: 'medication-radio',
+                                yesId: DOM_IDS.takes_medication,
+                                noId: DOM_IDS.takes_medication_no,
+                                detailId: DOM_IDS.medication_details,
+                                detailPlaceholder: 'Please specify... (e.g. Inhaler)'
+                            })}
+
                             <fieldset>
                                 <label><input type="checkbox" id="${DOM_IDS.agrees_to_fitness_statement}"> I am not suffering from any medical condition or injury that prevents full participation.*</label>
                             </fieldset>
-                        </form>
-                    </article>
+                        </form>`
+                    })}
 
                     <!-- Terms -->
-                    <article class="glass-panel full-width">
-                        <div class="box-header">
-                            <h3>${CONTRACT_SVG} Terms and Conditions</h3>
-                        </div>
+                    ${Panel({
+                        title: 'Terms and Conditions',
+                        icon: CONTRACT_SVG,
+                        classes: 'full-width',
+                        content: `
                         <form>
                             <div class="grid">
                                 <fieldset><label><input type="checkbox" id="${DOM_IDS.agrees_to_club_rules}"> I agree to the club rules and safety policy.*</label></fieldset>
@@ -139,8 +137,8 @@ const HTML_TEMPLATE = /*html*/
                                 <fieldset><label><input type="checkbox" id="${DOM_IDS.agrees_to_keep_health_data}"> I would like my health form to be kept on the server beyond the end of the year.</label></fieldset>
                             </div>
                             <button type="submit" id="${DOM_IDS.submit_btn}">Submit Information</button>
-                        </form>
-                    </article>
+                        </form>`
+                    })}
                 </div>
             </div>
         </div>`;
@@ -163,38 +161,13 @@ function setRadioBoolean(yesId, noId, value) {
 
 /**
  * Attaches standard input listeners to clear errors on user interaction.
- * Handles specialized logic for Yes/No radio toggles.
  */
 function initializeInteractivity() {
     const inputs = document.querySelectorAll(`#${DOM_IDS.container} input, #${DOM_IDS.container} select, #${DOM_IDS.container} textarea`);
     inputs.forEach(input => input.addEventListener('input', () => clearError(input)));
 
-    setupRadioToggle(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no, DOM_IDS.medical_conditions_details);
-    setupRadioToggle(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no, DOM_IDS.medication_details);
-}
-
-/**
- * Wires up a Yes/No radio pair to show/hide a detail input field.
- */
-function setupRadioToggle(yesId, noId, detailId) {
-    const yesBtn = getEl(yesId);
-    const noBtn = getEl(noId);
-    const detailInput = getEl(detailId);
-
-    if (!yesBtn || !noBtn || !detailInput) return;
-
-    const updateVisibility = () => {
-        if (yesBtn.checked) {
-            detailInput.classList.remove('hidden');
-        } else {
-            detailInput.classList.add('hidden');
-            detailInput.value = '';
-            clearError(detailInput);
-        }
-    };
-
-    [yesBtn, noBtn].forEach(btn => btn.addEventListener('change', updateVisibility));
-    updateVisibility();
+    initConditionalRadio(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no, DOM_IDS.medical_conditions_details);
+    initConditionalRadio(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no, DOM_IDS.medication_details);
 }
 
 /**
@@ -240,9 +213,6 @@ function applyFormData(data) {
 
     setRadioBoolean(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no, data.has_medical_conditions);
     setRadioBoolean(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no, data.takes_medication);
-
-    setupRadioToggle(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no, DOM_IDS.medical_conditions_details);
-    setupRadioToggle(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no, DOM_IDS.medication_details);
 }
 
 
