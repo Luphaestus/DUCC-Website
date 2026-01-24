@@ -85,6 +85,12 @@
         padding-bottom: 0rem;
         position: relative;
         z-index: 1;
+        width: 100%;
+
+        @media (max-width: 600px) {
+            gap: 0.25rem;
+            height: 400px;
+        }
 
         .podium-place {
             display: flex;
@@ -94,6 +100,10 @@
             width: 140px;
             position: relative;
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+            @media (max-width: 600px) {
+                width: 28%;
+            }
 
             &:hover {
                 transform: translateY(-12px) scale(1.1);
@@ -126,6 +136,10 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 width: 100%;
+
+                @media (max-width: 600px) {
+                    font-size: 0.85rem;
+                }
             }
 
             .swim-count {
@@ -133,6 +147,10 @@
                 font-weight: 800;
                 font-size: 1.1rem;
                 margin-bottom: 0.75rem;
+
+                @media (max-width: 600px) {
+                    font-size: 0.9rem;
+                }
             }
 
             .podium-step {
@@ -177,6 +195,14 @@
                     margin-bottom: 1rem;
                     z-index: 3;
                     line-height: 1;
+
+                    @media (max-width: 600px) {
+                        width: 2rem;
+                        height: 2rem;
+                        min-width: 2rem;
+                        min-height: 2rem;
+                        font-size: 1rem;
+                    }
                 }
 
                 .medal-icon {
@@ -193,6 +219,11 @@
                         width: 100%;
                         height: 100%;
                     }
+
+                    @media (max-width: 600px) {
+                        width: 2.5rem;
+                        height: 2.5rem;
+                    }
                 }
             }
 
@@ -202,10 +233,7 @@
 
                 .podium-step {
                     height: 280px;
-
-                    @media (min-width: 600px) {
-                        width: 150%;
-                    }
+                    width: 150%;
 
                     background: linear-gradient(to bottom, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
                     border-color: rgba(255, 215, 0, 0.3);
@@ -220,6 +248,11 @@
                     color: #f1c40f;
                     width: 5rem;
                     height: 5rem;
+
+                    @media (max-width: 600px) {
+                        width: 3.5rem;
+                        height: 3.5rem;
+                    }
                 }
             }
 
@@ -227,11 +260,18 @@
                 order: 1;
                 z-index: 2;
 
+                @media (max-width: 600px) {
+                    .swimmer-name, .swim-count {
+                        transform: translateX(-25%);
+                    }
+                }
+
                 .podium-step {
                     height: 224px;
+                    width: 125%;
 
-                    @media (min-width: 600px) {
-                        width: 125%;
+                    @media (max-width: 600px) {
+                        height: 182px;
                     }
 
                     background: linear-gradient(to bottom, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
@@ -247,12 +287,23 @@
                     color: #bdc3c7;
                     width: 3rem;
                     height: 3rem;
+
+                    @media (max-width: 600px) {
+                        width: 2rem;
+                        height: 2rem;
+                    }
                 }
             }
 
             &.bronze {
                 order: 3;
                 z-index: 1;
+
+                @media (max-width: 600px) {
+                    .swimmer-name, .swim-count {
+                        transform: translateX(25%);
+                    }
+                }
 
                 .podium-step {
                     height: 182px;
@@ -269,17 +320,16 @@
                     color: #cd7f32;
                     width: 2.5rem;
                     height: 2.5rem;
+
+                    @media (max-width: 600px) {
+                        width: 1.75rem;
+                        height: 1.75rem;
+                    }
                 }
             }
         }
 
-        @media (max-width: 600px) {
-            gap: 0.5rem;
-
-            .podium-place {
-                width: 30%;
-            }
-        }
+   
     }
 
     /* Leaderboard List */
