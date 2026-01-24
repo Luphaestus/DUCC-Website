@@ -2,20 +2,16 @@
  * navbar.js
  * 
  * Manages the global navigation bar.
- * Handles dynamic rendering of navigation items based on authentication state,
- * active route highlighting, balance updates, and mobile menu logic.
  */
 
 import { switchView, ViewChangedEvent } from '/js/utils/view.js';
-import { ajaxGet } from '/js/utils/ajax.js';
-import { Event } from '/js/utils/events/event.js';
+import { apiRequest } from '/js/utils/api.js';
 import { LoginEvent } from '../pages/login.js';
 import { BalanceChangedEvent, FirstNameChangedEvent } from '/js/utils/events/events.js';
 
 /**
  * Navigation configuration.
  * Groups: 'main' (left/center) and 'user' (right).
- * Action can be a function or a string (URL).
  */
 const navEntries = [
     { name: 'Events', group: 'main', id: 'nav-events', classes: "contrast", action: { run: () => switchView('/events') } },
@@ -30,16 +26,17 @@ const navEntries = [
 
 /**
  * Fetches the current user's balance and updates the navbar display.
- * Applies conditional styling if balance is low or negative.
  */
 async function updateBalanceInNav() {
     const balanceButton = document.getElementById('balance-button');
     if (balanceButton) {
-        const data = await ajaxGet('/api/user/elements/balance').catch(() => null);
+        const data = await apiRequest('GET', '/api/user/elements/balance').catch(() => null);
         if (data && data.balance !== undefined) {
             const balance = Number(data.balance);
             balanceButton.textContent = `Balance: £${balance.toFixed(2)}`;
+
             // Apply warning classes for low/negative balances
+            //todo base this off of the acctual debt limit. This was implemented before that existed and I can't be bothered to change it now :D
             balanceButton.classList.toggle('balance-low', balance < -20);
             balanceButton.classList.toggle('balance-warn', balance >= -20 && balance < -10);
         }
@@ -61,7 +58,7 @@ function updateActiveNav(path) {
         item.removeAttribute('aria-current');
 
         let match = false;
-        // Check for matches based on known IDs or path prefixes
+        
         if (item.id === 'nav-home' && (path === '/home' || path === '/')) match = true;
         else if (item.id === 'nav-events' && path.startsWith('/events')) match = true;
         else if (item.id === 'nav-files' && path.startsWith('/files')) match = true;
@@ -135,10 +132,9 @@ async function updateNavOnLoginState(data) {
     });
 
     if (isLoggedIn) {
-        // Fetch detailed data for authenticated users
         const [userData, swimData] = await Promise.all([
-            ajaxGet('/api/user/elements/permissions').catch(() => ({})),
-            ajaxGet('/api/user/elements/swims').catch(() => ({ swims: 0 })),
+            apiRequest('GET', '/api/user/elements/permissions').catch(() => ({})),
+            apiRequest('GET', '/api/user/elements/swims').catch(() => ({ swims: 0 })),
             updateBalanceInNav()
         ]);
 
@@ -173,7 +169,7 @@ function setupMobileMenu() {
     if (!nav) return;
 
     // Hamburger icon
-    const li = document.createElement('div'); // Use div as it's direct child of nav, not ul
+    const li = document.createElement('div'); 
     li.className = 'hamburger-menu';
 
     const inner = document.createElement('span');
@@ -201,7 +197,6 @@ function setupMobileMenu() {
     li.addEventListener('click', () => toggleMobileMenu());
     overlay.addEventListener('click', () => toggleMobileMenu(false));
 
-    // Append hamburger icon to the end of the nav (Right side)
     nav.appendChild(li);
 }
 
@@ -212,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!mainList || !userList) return;
 
-    // Manual Logo Creation (Left side)
     const logoLink = document.createElement('a');
     logoLink.className = 'nav-logo logo-link';
     logoLink.id = 'nav-home';
@@ -221,7 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
     logoLink.innerHTML = '<img src="/images/misc/ducc.png" alt="DUCC Logo">';
     nav.prepend(logoLink);
 
-    // Populate navbar lists
     navEntries.forEach(entry => {
         const item = create_item(entry);
         if (entry.group === 'main') mainList.appendChild(item);
@@ -230,9 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupMobileMenu();
 
-    ajaxGet('/api/auth/status', true).then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
+    apiRequest('GET', '/api/auth/status', true).then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
 
-    // Subscribe to state change events
     LoginEvent.subscribe(updateNavOnLoginState);
     BalanceChangedEvent.subscribe(updateBalanceInNav);
 
