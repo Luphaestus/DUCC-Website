@@ -1,4 +1,3 @@
-//todo refine
 /**
  * home.js
  * 
