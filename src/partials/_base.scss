@@ -55,6 +55,15 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea {
     &[aria-invalid="false"] { border-color: var(--colour-good); background: rgba(46, 204, 113, 0.05); }
 }
 
+textarea {
+    height: auto;
+    min-height: 6rem;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    line-height: 1.5 !important;
+    display: block;
+}
+
 /* --- Global Button Styling --- */
 button, [type="button"], [type="submit"], [type="reset"], [role="button"], .button, a[role="button"] {
     @include common-element-size;

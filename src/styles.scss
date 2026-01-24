@@ -18,21 +18,20 @@
 @use "partials/components/navbar";
 @use "partials/components/notification";
 @use "partials/components/background";
+@use "partials/components/upload";
 
-// --- Standard Pages ---
 @use "partials/pages/home";
 @use "partials/pages/events";
 @use "partials/pages/legal";
 @use "partials/pages/profile";
 @use "partials/pages/footer";
 @use "partials/pages/swims";
-@use "partials/pages/no_internet";
+@use "partials/pages/errors";
 @use "partials/pages/files" as page_files;
 @use "partials/pages/signup";
 @use "partials/pages/login";
 @use "partials/pages/reset_password";
 @use "partials/pages/set_password";
-@use "partials/pages/unauthorized";
 
 // --- Admin Pages ---
 @use "partials/pages/admin/admin" as admin_main;

@@ -37,10 +37,10 @@
 
 /** Standardizes button and input height/padding across 3 breakpoints */
 @mixin common-element-size($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
-    height: 3rem !important; padding: 0 1.5rem; font-size: 1rem; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
-    @media (max-width: $bp1) { height: 2.75rem !important; padding: 0 1.25rem; }
-    @media (max-width: $bp2) { height: 2.5rem !important; padding: 0 1rem; font-size: 0.9rem !important; svg, img { width: 1.25rem !important; height: 1.25rem !important; } }
-    @media (max-width: $bp3) { height: 2.25rem !important; padding: 0 0.75rem; font-size: 0.8rem !important; }
+    min-height: 3rem !important; height: auto; padding: 0 1.5rem; font-size: 1rem; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+    @media (max-width: $bp1) { min-height: 2.75rem !important; padding: 0 1.25rem; }
+    @media (max-width: $bp2) { min-height: 2.5rem !important; padding: 0 1rem; font-size: 0.9rem !important; svg, img { width: 1.25rem !important; height: 1.25rem !important; } }
+    @media (max-width: $bp3) { min-height: 2.25rem !important; padding: 0 0.75rem; font-size: 0.8rem !important; }
 }
 
 /** Standardizes general content padding and icon sizing across breakpoints */

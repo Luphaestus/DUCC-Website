@@ -46,3 +46,33 @@
 .tag-badge {
     color: white; padding: 0.25rem 0.75rem; border-radius: var(--border-radius-pill); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
+/* Email Input Group */
+.durham-email-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: var(--pico-spacing) !important;
+
+    input {
+        padding-right: 8.5rem !important; // Sufficient space for @durham.ac.uk
+        margin-bottom: 0; 
+        width: 100%;
+        text-overflow: ellipsis;
+    }
+
+    .email-suffix {
+        position: absolute;
+        right: 1rem;
+        color: var(--pico-muted-color); 
+        pointer-events: none;
+        font-weight: 500;
+        user-select: none;
+        background: transparent; 
+        display: flex;
+        align-items: center;
+        height: 100%;
+        top: 0;
+    }
+}

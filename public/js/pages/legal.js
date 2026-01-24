@@ -2,512 +2,339 @@
  * legal.js
  * 
  * Logic for the Legal & Medical Information Form.
- * Handles extensive user profile data collection including personal info,
- * emergency contacts, medical history, and liability waivers.
- * Features complex field validation and auto-population.
  * 
  * Registered Route: /legal
  */
 
-import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { Event } from "/js/utils/events/event.js";
 import { requireAuth } from '/js/utils/auth.js';
 import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from '/images/icons/outline/icons.js';
 import { LegalEvent } from "/js/utils/events/events.js";
 
-// --- DOM IDs ---
-const name_id = 'name';
-const date_of_birth_id = 'date';
-const college_id = 'college';
-const emergency_contact_name_id = 'emergency-contact-name';
-const emergency_contact_phone_id = 'emergency-contact-phone';
-const home_address_id = 'address';
-const phone_number_id = 'phone-number';
-const has_medical_conditions_id = 'medical-yes';
-const has_medical_conditions_no_id = 'medical-no';
-const medical_conditions_details_id = 'medical-condition';
-const takes_medication_id = 'medication-yes';
-const takes_medication_no_id = 'medication-no';
-const medication_details_id = 'medication-condition';
-const agrees_to_fitness_statement_id = 'no-incapacity-checkbox';
-const agrees_to_club_rules_id = 'terms-checkbox';
-const agrees_to_pay_debts_id = 'debts-checkbox';
-const agrees_to_data_storage_id = 'data-checkbox';
-const agrees_to_keep_health_data_id = 'keep-health-checkbox';
-const submitButton_id = 'health-form-submit';
+// --- Configuration ---
+
+const DOM_IDS = {
+    // API Field Keys mapped to DOM IDs
+    date_of_birth: 'date',
+    college_id: 'college',
+    emergency_contact_name: 'emergency-contact-name',
+    emergency_contact_phone: 'emergency-contact-phone',
+    home_address: 'address',
+    phone_number: 'phone-number',
+    
+    // Boolean/Radio Logic fields (Base IDs)
+    has_medical_conditions: 'medical-yes',
+    has_medical_conditions_no: 'medical-no',
+    medical_conditions_details: 'medical-condition',
+    
+    takes_medication: 'medication-yes',
+    takes_medication_no: 'medication-no',
+    medication_details: 'medication-condition',
+
+    // Checkboxes
+    agrees_to_fitness_statement: 'no-incapacity-checkbox',
+    agrees_to_club_rules: 'terms-checkbox',
+    agrees_to_pay_debts: 'debts-checkbox',
+    agrees_to_data_storage: 'data-checkbox',
+    agrees_to_keep_health_data: 'keep-health-checkbox',
+
+    // Aux
+    name: 'name',
+    submit_btn: 'health-form-submit',
+    container: 'legal-container'
+};
+
+const SIMPLE_FIELDS = [
+    'date_of_birth', 'college_id', 'emergency_contact_name', 'emergency_contact_phone',
+    'home_address', 'phone_number', 'medical_conditions_details', 'medication_details'
+];
+
+const CHECKBOX_FIELDS = [
+    'agrees_to_fitness_statement', 'agrees_to_club_rules', 'agrees_to_pay_debts', 
+    'agrees_to_data_storage', 'agrees_to_keep_health_data'
+];
 
 addRoute('/legal', 'legal');
 
-/** HTML Template for the legal form page */
-const HTML_TEMPLATE = /*html*/`<div id="legal-view" class="view hidden">
-            <div class="legal-container" id="legal-container">
-                <h1>Legal & Medical Information Form</h1>
-                
+const HTML_TEMPLATE = /*html*/
+    `<div id="legal-view" class="view hidden">
+        <div class="legal-container" id="${DOM_IDS.container}">
+            <h1>Legal & Medical Information Form</h1>
                 <div class="legal-grid">
-                    <!-- Personal Info (Full Width) -->
+                    <!-- Personal Info -->
                     <article class="glass-panel full-width">
                         <div class="box-header">
-                            <h3>
-                                ${ACCOUNT_BOX_SVG}
-                                Personal Information
-                            </h3>
+                            <h3>${ACCOUNT_BOX_SVG} Personal Information</h3>
                         </div>
                         <form>
                             <div class="grid">
-                                <label>Name* 
-                                    <input type="text" id=${name_id} name="name" placeholder="e.g. John Doe">
-                                </label>
-                                <label>Phone Number*
-                                    <input type="tel" id=${phone_number_id} name="phone-number" placeholder="e.g. +44 7123 456789">
-                                </label>
+                                <label>Name* <input type="text" id="${DOM_IDS.name}" name="name" placeholder="e.g. John Doe"></label>
+                                <label>Phone Number* <input type="tel" id="${DOM_IDS.phone_number}" name="phone-number" placeholder="e.g. +44 7123 456789"></label>
                             </div>
                             <div class="grid">
-                                <label>Date of Birth*
-                                    <input type="date" id=${date_of_birth_id} name="date">
-                                </label>
+                                <label>Date of Birth* <input type="date" id="${DOM_IDS.date_of_birth}" name="date"></label>
                                 <label>College*
-                                    <Select id=${college_id} name="college" placeholder="College">
+                                    <select id="${DOM_IDS.college_id}" name="college">
                                         <option value="" disabled selected>Select your college</option>
-                                    </Select>
+                                    </select>
                                 </label>
                             </div>
-                            <label>Home Address*
-                                <textarea id=${home_address_id} name="address" rows="3"
-                                    placeholder="e.g. 123 River St&#10;Maidenhead&#10;AB12 3CD&#10;United Kingdom"></textarea>
-                            </label>
+                            <label>Home Address* <textarea id="${DOM_IDS.home_address}" name="address" rows="3" placeholder="e.g. 123 River St..."></textarea></label>
                         </form>
                     </article>
 
                     <!-- Emergency Contact -->
                     <article class="glass-panel">
                         <div class="box-header">
-                            <h3>
-                                ${CALL_SVG}
-                                Emergency Contact
-                            </h3>
+                            <h3>${CALL_SVG} Emergency Contact</h3>
                         </div>
                         <form>
-                            <label>Name*
-                                <input type="text" id=${emergency_contact_name_id} name="emergency-contact-name"
-                                    placeholder="e.g. Jane Doe">
-                            </label>
-                            <label>Phone Number*
-                                <input type="tel" id=${emergency_contact_phone_id} name="emergency-contact-phone"
-                                    placeholder="e.g. +44 7123 456789">
-                            </label>
+                            <label>Name* <input type="text" id="${DOM_IDS.emergency_contact_name}" name="emergency-contact-name" placeholder="e.g. Jane Doe"></label>
+                            <label>Phone Number* <input type="tel" id="${DOM_IDS.emergency_contact_phone}" name="emergency-contact-phone" placeholder="e.g. +44 7123 456789"></label>
                         </form>
                     </article>
 
                     <!-- Medical Information -->
                     <article class="glass-panel">
                         <div class="box-header">
-                            <h3>
-                                ${MEDICAL_INFORMATION_SVG}
-                                Medical Information
-                            </h3>
+                            <h3>${MEDICAL_INFORMATION_SVG} Medical Information</h3>
                         </div>
                         <form>
                             <fieldset>
                                 <legend>Medical Conditions & Allergies*</legend>
                                 <div class="radio-group">
-                                    <label for="medical-yes"><input type="radio" id=${has_medical_conditions_id} name="medical-condition-radio" value="yes"> Yes</label>
-                                    <label for="medical-no"><input type="radio" id=${has_medical_conditions_no_id} name="medical-condition-radio" value="no"> No</label>
+                                    <label><input type="radio" id="${DOM_IDS.has_medical_conditions}" name="medical-condition-radio" value="yes"> Yes</label>
+                                    <label><input type="radio" id="${DOM_IDS.has_medical_conditions_no}" name="medical-condition-radio" value="no"> No</label>
                                 </div>
-                                <input type="text" id=${medical_conditions_details_id} class="conditional-reveal hidden" name="medical-condition" placeholder="Please specify... (e.g. Asthma)">
+                                <input type="text" id="${DOM_IDS.medical_conditions_details}" class="conditional-reveal hidden" name="medical-condition" placeholder="Please specify... (e.g. Asthma)">
                             </fieldset>
                             <fieldset>
                                 <legend>Medication*</legend>
                                 <div class="radio-group">
-                                    <label for="medication-yes"><input type="radio" id=${takes_medication_id} name="medication-radio" value="yes"> Yes</label>
-                                    <label for="medication-no"><input type="radio" id=${takes_medication_no_id} name="medication-radio" value="no"> No</label>
+                                    <label><input type="radio" id="${DOM_IDS.takes_medication}" name="medication-radio" value="yes"> Yes</label>
+                                    <label><input type="radio" id="${DOM_IDS.takes_medication_no}" name="medication-radio" value="no"> No</label>
                                 </div>
-                                <input type="text" id=${medication_details_id} class="conditional-reveal hidden" name="medication-condition" placeholder="Please specify... (e.g. Inhaler)">
+                                <input type="text" id="${DOM_IDS.medication_details}" class="conditional-reveal hidden" name="medication-condition" placeholder="Please specify... (e.g. Inhaler)">
                             </fieldset>
                             <fieldset>
-                                <label for="no-incapacity-checkbox">
-                                    <input type="checkbox" id=${agrees_to_fitness_statement_id} name="no-incapacity-checkbox">
-                                    I am not suffering from any medical condition or injury that prevents full participation.*
-                                </label>
+                                <label><input type="checkbox" id="${DOM_IDS.agrees_to_fitness_statement}"> I am not suffering from any medical condition or injury that prevents full participation.*</label>
                             </fieldset>
                         </form>
                     </article>
 
-                    <!-- Terms (Full Width) -->
+                    <!-- Terms -->
                     <article class="glass-panel full-width">
                         <div class="box-header">
-                            <h3>
-                                ${CONTRACT_SVG}
-                                Terms and Conditions
-                            </h3>
+                            <h3>${CONTRACT_SVG} Terms and Conditions</h3>
                         </div>
                         <form>
                             <div class="grid">
-                                <fieldset>
-                                    <label for="terms-checkbox">
-                                        <input type="checkbox" id=${agrees_to_club_rules_id} name="terms-checkbox">
-                                        I agree to the club rules and safety policy.*
-                                    </label>
-                                </fieldset>
-                                <fieldset>
-                                    <label for="debts-checkbox">
-                                        <input type="checkbox" id=${agrees_to_pay_debts_id} name="debts-checkbox">
-                                        I agree to pay all outstanding debts.*
-                                    </label>
-                                </fieldset>
+                                <fieldset><label><input type="checkbox" id="${DOM_IDS.agrees_to_club_rules}"> I agree to the club rules and safety policy.*</label></fieldset>
+                                <fieldset><label><input type="checkbox" id="${DOM_IDS.agrees_to_pay_debts}"> I agree to pay all outstanding debts.*</label></fieldset>
                             </div>
                             <div class="grid">
-                                <fieldset>
-                                    <label for="data-checkbox">
-                                        <input type="checkbox" id=${agrees_to_data_storage_id} name="data-checkbox">
-                                        I agree to encrypted storage of my data.*
-                                    </label>
-                                </fieldset>
-                                <fieldset>
-                                    <label for="keep-health-checkbox">
-                                        <input type="checkbox" id=${agrees_to_keep_health_data_id} name="keep-health-checkbox">
-                                        I would like my health form to be kept on the server beyond the end of the year.
-                                    </label>
-                                </fieldset>
+                                <fieldset><label><input type="checkbox" id="${DOM_IDS.agrees_to_data_storage}"> I agree to encrypted storage of my data.*</label></fieldset>
+                                <fieldset><label><input type="checkbox" id="${DOM_IDS.agrees_to_keep_health_data}"> I would like my health form to be kept on the server beyond the end of the year.</label></fieldset>
                             </div>
-                            <button type="submit" id=${submitButton_id}>Submit Information</button>
+                            <button type="submit" id="${DOM_IDS.submit_btn}">Submit Information</button>
                         </form>
                     </article>
                 </div>
             </div>
         </div>`;
 
-/**
- * Mapping between Backend API field names and Frontend DOM IDs.
- * @type {Object<string, string>}
- */
-const FIELD_MAP = {
-    date_of_birth: date_of_birth_id,
-    college_id: college_id,
-    emergency_contact_name: emergency_contact_name_id,
-    emergency_contact_phone: emergency_contact_phone_id,
-    home_address: home_address_id,
-    phone_number: phone_number_id,
-    has_medical_conditions: has_medical_conditions_id,
-    medical_conditions_details: medical_conditions_details_id,
-    takes_medication: takes_medication_id,
-    medication_details: medication_details_id,
-    agrees_to_fitness_statement: agrees_to_fitness_statement_id,
-    agrees_to_club_rules: agrees_to_club_rules_id,
-    agrees_to_pay_debts: agrees_to_pay_debts_id,
-    agrees_to_data_storage: agrees_to_data_storage_id,
-    agrees_to_keep_health_data: agrees_to_keep_health_data_id
-};
-
-
-/** @type {Function|null} Handle to current notification */
 let notification = null;
 
-/** @type {Object<string, HTMLElement>} Map of active validation message elements */
-let validationMessages = {};
+// --- Helper Functions ---
+
+const getEl = (id) => document.getElementById(id);
+const showToast = (title, msg, type) => { if (notification) notification(); notification = notify(title, msg, type, 3000); };
+const clearError = (el) => { if (el) el.removeAttribute('aria-invalid'); };
+const markError = (el) => { if (el) el.ariaInvalid = 'true'; };
+function getRadioBoolean(yesId, noId) {
+    if (getEl(yesId)?.checked) return true;
+    if (getEl(noId)?.checked) return false;
+    return null;
+}
+function setRadioBoolean(yesId, noId, value) {
+    if (value === true) getEl(yesId).checked = true;
+    else if (value === false) getEl(noId).checked = true;
+}
+
 
 /**
- * Displays a toast notification.
+ * Attaches standard input listeners to clear errors on user interaction.
+ * Handles specialized logic for Yes/No radio toggles.
  */
-function displayNotification(title, message, type) {
-    if (notification) notification();
-    notification = notify(title, message, type);
+function initializeInteractivity() {
+    const inputs = document.querySelectorAll(`#${DOM_IDS.container} input, #${DOM_IDS.container} select, #${DOM_IDS.container} textarea`);
+    inputs.forEach(input => input.addEventListener('input', () => clearError(input)));
+
+    setupRadioToggle(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no, DOM_IDS.medical_conditions_details);
+    setupRadioToggle(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no, DOM_IDS.medication_details);
 }
 
 /**
- * Injects a validation error message below a specific input element.
- * 
- * @param {HTMLElement} inputElement 
- * @param {string} message 
+ * Wires up a Yes/No radio pair to show/hide a detail input field.
  */
-function displayValidationMessage(inputElement, message) {
-    let messageId = `validation-message-${inputElement.id}`;
-    let existingMessage = document.getElementById(messageId);
+function setupRadioToggle(yesId, noId, detailId) {
+    const yesBtn = getEl(yesId);
+    const noBtn = getEl(noId);
+    const detailInput = getEl(detailId);
 
-    if (!existingMessage) {
-        existingMessage = document.createElement('p');
-        existingMessage.id = messageId;
-        existingMessage.classList.add('validation-message');
+    if (!yesBtn || !noBtn || !detailInput) return;
 
-        if (inputElement.type === 'radio') {
-            const fieldset = inputElement.closest('fieldset');
-            if (fieldset) {
-                fieldset.appendChild(existingMessage);
-            } else {
-                inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
-            }
+    const updateVisibility = () => {
+        if (yesBtn.checked) {
+            detailInput.classList.remove('hidden');
         } else {
-            inputElement.parentNode.insertBefore(existingMessage, inputElement.nextSibling);
-        }
-    }
-    existingMessage.textContent = message;
-    validationMessages[inputElement.id] = existingMessage;
-    inputElement.ariaInvalid = 'true';
-}
-
-/**
- * Removes the validation error state from an input.
- * 
- * @param {HTMLElement} inputElement 
- */
-function clearInputError(inputElement) {
-    if (validationMessages[inputElement.id]) {
-        validationMessages[inputElement.id].remove();
-        delete validationMessages[inputElement.id];
-    }
-    inputElement.removeAttribute('aria-invalid');
-}
-
-/**
- * Configures a checkbox for validation watching.
- * 
- * @param {string} id - DOM ID.
- * @param {boolean} [watch=true] - If true, clears error on input.
- */
-function validateCheckbox(id, watch = true) {
-    const input = document.getElementById(id);
-    if (!input) return false;
-    if (watch) input.addEventListener('input', () => clearInputError(input));
-}
-
-/**
- * Configures a Yes/No radio group and its associated detail field.
- * Handles toggling visibility of the detail field based on the "Yes" selection.
- * 
- * @param {string} idYes - "Yes" radio ID.
- * @param {string} idNo - "No" radio ID.
- * @param {string|null} detailId - ID of the text field for extra info.
- * @param {boolean} [watch=true] - If true, adds event listeners.
- */
-function validateYeseNo(idYes, idNo, detailId = null, watch = true) {
-    const inputYes = document.getElementById(idYes);
-    const inputNo = document.getElementById(idNo);
-    const detailInput = detailId ? document.getElementById(detailId) : null;
-
-    if (!inputYes || !inputNo) return false;
-
-    const toggle = () => {
-        clearInputError(inputYes);
-        clearInputError(inputNo);
-        if (detailInput) {
-            if (inputYes.checked) {
-                detailInput.classList.remove('hidden');
-            } else {
-                detailInput.classList.add('hidden');
-                clearInputError(detailInput);
-            }
+            detailInput.classList.add('hidden');
+            detailInput.value = '';
+            clearError(detailInput);
         }
     };
 
-    if (watch) {
-        inputYes.addEventListener('input', toggle);
-        inputNo.addEventListener('input', toggle);
-        if (detailInput) detailInput.addEventListener('input', () => clearInputError(detailInput));
-    }
-
-    // Initial state
-    if (detailInput) {
-        if (inputYes.checked) detailInput.classList.remove('hidden');
-        else detailInput.classList.add('hidden');
-    }
+    [yesBtn, noBtn].forEach(btn => btn.addEventListener('change', updateVisibility));
+    updateVisibility();
 }
 
 /**
- * Aggregates all form fields into a JSON object for submission.
- * 
- * @returns {object}
+ * Collects and formats form data for API submission.
  */
-function getFormData() {
-    const data = {};
-    for (const [apiKey, domId] of Object.entries(FIELD_MAP)) {
-        const el = document.getElementById(domId);
-        if (!el) continue;
-        if (el.type === 'checkbox' || el.type === 'radio') data[apiKey] = el.checked;
-        else data[apiKey] = el.value;
-    }
+function collectFormData() {
+    const payload = {};
 
-    // Explicitly handle radio groups to distinguish false vs null (unselected)
-    const medicalYes = document.getElementById(has_medical_conditions_id);
-    const medicalNo = document.getElementById(has_medical_conditions_no_id);
-    if (medicalYes && medicalNo) {
-        if (medicalYes.checked) data['has_medical_conditions'] = true;
-        else if (medicalNo.checked) data['has_medical_conditions'] = false;
-        else data['has_medical_conditions'] = null;
-    }
-
-    const medYes = document.getElementById(takes_medication_id);
-    const medNo = document.getElementById(takes_medication_no_id);
-    if (medYes && medNo) {
-        if (medYes.checked) data['takes_medication'] = true;
-        else if (medNo.checked) data['takes_medication'] = false;
-        else data['takes_medication'] = null;
-    }
-
-    // Clean up numeric fields
-    if (data.college_id === "" || data.college_id === null) data.college_id = null;
-    else data.college_id = parseInt(data.college_id, 10);
-
-    return data;
-}
-
-/**
- * Fills the form fields from a data object.
- * 
- * @param {object} data 
- */
-function populateForm(data) {
-    for (const [apiKey, domId] of Object.entries(FIELD_MAP)) {
-        const el = document.getElementById(domId);
-        if (!el || data[apiKey] === undefined || data[apiKey] === null) continue;
-        if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!data[apiKey];
-        else el.value = data[apiKey];
-    }
-}
-
-/**
- * Initializes form validation logic and input restriction.
- * 
- * @param {boolean} [watch=true]
- */
-async function validateForm(watch = true) {
-    // Lock name field if already set in profile
-    const name = await ajaxGet('/api/user/elements/first_name,last_name').then((d) => `${d.first_name} ${d.last_name}`).catch(() => null);
-    const nameInput = document.getElementById(name_id);
-    if (nameInput && name && name.trim() !== '' && name.trim() !== 'undefined undefined') {
-        nameInput.value = name;
-        nameInput.disabled = true;
-    } else if (watch && nameInput) {
-        nameInput.addEventListener('input', () => clearInputError(nameInput));
-    }
-
-    [emergency_contact_name_id, phone_number_id, emergency_contact_phone_id, home_address_id].forEach(id => {
-        if (watch) {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('input', () => clearInputError(el));
-        }
+    SIMPLE_FIELDS.forEach(key => {
+        const el = getEl(DOM_IDS[key]);
+        if (el) payload[key] = el.value;
     });
 
-    // Set Date of Birth constraints (Min 17 years old)
-    const dobInput = document.getElementById(date_of_birth_id);
-    if (dobInput) {
-        const today = new Date();
-        const max = new Date(today.getFullYear() - 17, today.getMonth(), today.getDate());
-        const min = new Date(today.getFullYear() - 90, today.getMonth(), today.getDate());
-        dobInput.max = max.toISOString().split('T')[0];
-        dobInput.min = min.toISOString().split('T')[0];
-        if (watch) dobInput.addEventListener('input', () => clearInputError(dobInput));
-    }
+    CHECKBOX_FIELDS.forEach(key => {
+        const el = getEl(DOM_IDS[key]);
+        if (el) payload[key] = el.checked;
+    });
 
-    const collegeSelect = document.getElementById(college_id);
-    if (collegeSelect && watch) {
-        collegeSelect.addEventListener('input', () => clearInputError(collegeSelect));
-    }
+    payload.has_medical_conditions = getRadioBoolean(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no);
+    payload.takes_medication = getRadioBoolean(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no);
 
-    // Initialize radio group behavior
-    validateYeseNo(has_medical_conditions_id, has_medical_conditions_no_id, medical_conditions_details_id, watch);
-    validateYeseNo(takes_medication_id, takes_medication_no_id, medication_details_id, watch);
-    [agrees_to_fitness_statement_id, agrees_to_club_rules_id, agrees_to_pay_debts_id, agrees_to_data_storage_id].forEach(id => validateCheckbox(id, watch));
+    payload.college_id = payload.college_id ? parseInt(payload.college_id, 10) : null;
+
+    return payload;
 }
 
+
 /**
- * Fetches existing user data and college list to populate the form.
+ * Populates the form with existing user data.
  */
-async function getCurrentMedicalData() {
-    // Fetch colleges first to ensure dropdown is ready
+function applyFormData(data) {
+    if (!data) return;
+
+    SIMPLE_FIELDS.forEach(key => {
+        const el = getEl(DOM_IDS[key]);
+        if (el && data[key] !== null) el.value = data[key];
+    });
+
+    CHECKBOX_FIELDS.forEach(key => {
+        const el = getEl(DOM_IDS[key]);
+        if (el) el.checked = !!data[key];
+    });
+
+    setRadioBoolean(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no, data.has_medical_conditions);
+    setRadioBoolean(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no, data.takes_medication);
+
+    setupRadioToggle(DOM_IDS.has_medical_conditions, DOM_IDS.has_medical_conditions_no, DOM_IDS.medical_conditions_details);
+    setupRadioToggle(DOM_IDS.takes_medication, DOM_IDS.takes_medication_no, DOM_IDS.medication_details);
+}
+
+
+
+// --- Main Page Logic ---
+
+async function renderLegalPage(page) {
+    if (page !== '/legal' || !await requireAuth()) return;
+    
+    const container = getEl(DOM_IDS.container);
+    if (container) container.classList.remove('hidden');
+
     try {
-        const colleges = await ajaxGet('/api/colleges');
-        const collegeSelect = document.getElementById(college_id);
+        const [collegesRes, userData, userNameRes] = await Promise.all([
+            apiRequest('GET', '/api/colleges'),
+            apiRequest('GET', `/api/user/elements/filled_legal_info,${SIMPLE_FIELDS.join(',')},${CHECKBOX_FIELDS.join(',')},has_medical_conditions,takes_medication`),
+            apiRequest('GET', '/api/user/elements/first_name,last_name')
+        ]);
+
+        const collegeSelect = getEl(DOM_IDS.college_id);
         if (collegeSelect) {
             collegeSelect.innerHTML = '<option value="" disabled selected>Select your college</option>' +
-                colleges.map(c => `<option value="${c.id}">${c.name.charAt(0).toUpperCase() + c.name.slice(1)}</option>`).join('');
+                (collegesRes || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
+
+        const nameInput = getEl(DOM_IDS.name);
+        const userName = `${userNameRes.first_name} ${userNameRes.last_name}`;
+        if (nameInput && userName.trim() !== 'undefined undefined') {
+            nameInput.value = userName;
+            nameInput.disabled = true;
+        }
+
+        if (userData && userData.filled_legal_info) {
+            applyFormData(userData);
+        }
+
+        initializeInteractivity();
+
     } catch (e) {
-        console.error("Failed to load colleges", e);
-    }
-
-    // Fetch user data
-    const keys = ['filled_legal_info', ...Object.keys(FIELD_MAP)].join(',');
-    const data = await ajaxGet(`/api/user/elements/${keys}`);
-    if (!data || !data.filled_legal_info) return;
-
-    populateForm(data);
-
-    // Explicitly handle radio buttons as they are usually handled by groups in the mapper
-    if (data.has_medical_conditions !== null) {
-        const medicalYes = document.getElementById(has_medical_conditions_id);
-        const medicalNo = document.getElementById(has_medical_conditions_no_id);
-        if (data.has_medical_conditions) medicalYes.checked = true;
-        else medicalNo.checked = true;
-    }
-    if (data.takes_medication !== null) {
-        const medYes = document.getElementById(takes_medication_id);
-        const medNo = document.getElementById(takes_medication_no_id);
-        if (data.takes_medication) medYes.checked = true;
-        else medNo.checked = true;
+        console.error("Legal page load error", e);
+        showToast('Error', 'Failed to load form data.', 'error');
     }
 }
 
-/**
- * Binds the submission button logic.
- */
-function bindStaticEvents() {
-    const btn = document.getElementById(submitButton_id);
+function setupFormSubmission() {
+    const btn = getEl(DOM_IDS.submit_btn);
     if (!btn) return;
+
     btn.addEventListener('click', async (e) => {
         e.preventDefault();
+        const payload = collectFormData();
 
         try {
-            await ajaxPost('/api/user/elements', getFormData());
-            displayNotification('Information Saved', 'Saved successfully.', 'success');
+            await apiRequest('POST', '/api/user/elements', payload);
+            showToast('Saved', 'Information updated successfully.', 'success');
             LegalEvent.notify();
-
-            // Clear all errors on success
-            Object.keys(validationMessages).forEach(id => {
-                const el = document.getElementById(id);
-                if (el) clearInputError(el);
-            });
+            
+            document.querySelectorAll('[aria-invalid]').forEach(clearError);
         } catch (error) {
-            // Handle field-specific validation errors from server
             if (error.errors) {
-                let displayedError = false;
-                for (const [key, msg] of Object.entries(error.errors)) {
-                    if (FIELD_MAP[key]) {
-                        displayValidationMessage(document.getElementById(FIELD_MAP[key]), msg);
-                        displayedError = true;
-                    } else if (key === 'first_name' || key === 'last_name') {
-                        const nameInput = document.getElementById(name_id);
-                        if (nameInput && !nameInput.disabled) {
-                            displayValidationMessage(nameInput, msg);
-                            displayedError = true;
-                        }
+                let hasError = false;
+                for (const [key, _] of Object.entries(error.errors)) {
+                    if (DOM_IDS[key]) {
+                        markError(getEl(DOM_IDS[key]));
+                        hasError = true;
                     }
                 }
-                if (displayedError) {
-                    displayNotification('Validation Error', 'Please check the highlighted fields.', 'error');
+
+                if (error.errors.first_name || error.errors.last_name) {
+                    markError(getEl(DOM_IDS.name));
+                    hasError = true;
+                }
+
+                if (hasError) {
+                    showToast('Validation Error', 'Please check the highlighted fields.', 'error');
                     return;
                 }
             }
+            showToast('Error', error.message || 'Save failed.', 'error');
         }
     });
 }
 
-/**
- * Triggers full page update when the route is matched.
- */
-async function updateLegalPage(page) {
-    if (page !== '/legal' || !await requireAuth()) return;
-    const container = document.getElementById('legal-container');
-    if (container) container.classList.remove('hidden');
-    await getCurrentMedicalData();
-    await validateForm();
-}
+// --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    bindStaticEvents();
-    ViewChangedEvent.subscribe(({ resolvedPath }) => updateLegalPage(resolvedPath));
+    setupFormSubmission();
+    ViewChangedEvent.subscribe(({ resolvedPath }) => renderLegalPage(resolvedPath));
 });
 
 document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);
 export { LegalEvent };
-
