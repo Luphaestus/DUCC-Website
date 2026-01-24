@@ -29,11 +29,11 @@ const HTML_TEMPLATE = /*html*/`
                                 <div class="grid">
                                     <div>
                                         <label for="first-name">First Name:</label>
-                                        <input type="text" id="signup-first-name" name="first-name">
+                                        <input type="text" id="signup-first-name" name="first-name" placeholder="First Name" autocomplete="given-name">
                                     </div>
                                     <div>
                                         <label for="last-name">Last Name:</label>
-                                        <input type="text" id="signup-last-name" name="last-name">
+                                        <input type="text" id="signup-last-name" name="last-name" placeholder="Last Name" autocomplete="family-name">
                                     </div>
                                 </div>
                                 <div>
