@@ -39,6 +39,12 @@ class FileRules {
             // Execs bypass the difficulty/tag checks for event images
             if (userRole === 'exec') return true;
 
+            // Check if this file is the global default event image
+            const defaultImage = new Globals().get('DefaultEventImage').data;
+            if (defaultImage && defaultImage.includes(`/api/files/${file.id}/download`)) {
+                return true;
+            }
+
             // Identify all events using this file as their banner image
             const events = await db.all("SELECT * FROM events WHERE image_url LIKE '%/api/files/' || ? || '/download%'", [file.id]);
             
@@ -64,7 +70,7 @@ class FileRules {
             let userObj = user;
             if (user && user.id && user.difficulty_level === undefined) {
                 // Ensure difficulty level is populated from the DB if missing from the request object
-                const userRes = await UserDB.getElementsById(db, user.id, 'difficulty_level');
+                const userRes = await UserDB.getElementsById(db, user.id, ['difficulty_level', 'id']);
                 if (!userRes.isError()) {
                     userObj = userRes.getData();
                 }
@@ -84,7 +90,7 @@ class FileRules {
 
                 // Load tags for precise rule evaluation
                 event.tags = await TagsDB.getTagsForEvent(db, event.id);
-                const canView = EventRules.canViewEvent(event, userObj);
+                const canView = await EventRules.canViewEvent(db, event, userObj);
                 if (canView) return true;
             }
         }

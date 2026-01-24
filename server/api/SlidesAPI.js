@@ -14,6 +14,9 @@
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
+const multer = require('multer');
+const check = require('../misc/authentication.js');
+const FilesDB = require('../db/filesDB.js');
 
 /**
  * API for scanning and serving slideshow images.
@@ -24,9 +27,11 @@ class SlidesAPI {
   /**
    * Initialize and start initial scan.
    * @param {object} app - The Express application instance.
+   * @param {object} db - Database connection.
    */
-  constructor(app) {
+  constructor(app, db) {
     this.app = app;
+    this.db = db;
     this.dirParts = ['images', 'slides'];
     this.fullDir = path.join(__dirname, '..', '..', 'public', ...this.dirParts);
     this.allowedExt = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
@@ -34,6 +39,29 @@ class SlidesAPI {
     this.paths = [];
     this._scanTimer = null;
     this._watcher = null;
+
+    // Ensure slides directory exists
+    if (!fs.existsSync(this.fullDir)) {
+      fs.mkdirSync(this.fullDir, { recursive: true });
+    }
+
+    // Configure multer for uploads
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => cb(null, this.fullDir),
+      filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/[^a-z0-9.]/gi, '_'))
+    });
+
+    this.upload = multer({
+      storage: storage,
+      fileFilter: (req, file, cb) => {
+        if (this.allowedExt.has(path.extname(file.originalname).toLowerCase())) {
+          cb(null, true);
+        } else {
+          cb(new Error('Invalid file type'), false);
+        }
+      },
+      limits: { fileSize: 10 * 1024 * 1024 }
+    });
 
     // Start initial scan and watcher
     this._init().catch(err => {
@@ -152,7 +180,6 @@ class SlidesAPI {
 
     this.app.get('/api/slides/images', (req, res) => {
       const paths = this.getFiles();
-      if (paths.length === 0) return res.status(404).json({ message: 'No slides found' });
       res.json({ images: paths });
     });
 
@@ -170,6 +197,61 @@ class SlidesAPI {
       const image = this.getFileAt(index);
       if (!image) return res.status(404).json({ message: 'Image not found' });
       res.json({ image });
+    });
+
+    // --- Management Routes ---
+
+    // Upload new slide
+    this.app.post('/api/slides/upload', check('file.write'), this.upload.single('file'), (req, res) => {
+      if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+      res.json({ message: 'Slide uploaded', filename: req.file.filename });
+    });
+
+    // Import from library
+    this.app.post('/api/slides/import', check('file.write'), async (req, res) => {
+      const { fileId } = req.body;
+      if (!fileId) return res.status(400).json({ message: 'Missing fileId' });
+
+      try {
+        const fileStatus = await FilesDB.getFileById(this.db, fileId);
+        if (fileStatus.isError()) return fileStatus.getResponse(res);
+        const file = fileStatus.getData();
+
+        const filesDir = path.join(__dirname, '../../data/files');
+        const srcPath = path.join(filesDir, file.filename);
+
+        if (!fs.existsSync(srcPath)) return res.status(404).json({ message: 'Source file not found' });
+
+        const destFilename = Date.now() + '-' + file.filename.replace(/[^a-z0-9.]/gi, '_');
+        const destPath = path.join(this.fullDir, destFilename);
+
+        await fsp.copyFile(srcPath, destPath);
+        res.json({ message: 'Slide imported', filename: destFilename });
+      } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Import failed' });
+      }
+    });
+
+    // Delete slide
+    this.app.delete('/api/slides', check('file.write'), async (req, res) => {
+      const { filename } = req.body;
+      if (!filename) return res.status(400).json({message: 'Missing filename'});
+
+      const cleanName = path.basename(filename); // Simple path traversal protection
+      if (!this.files.includes(cleanName)) return res.status(404).json({message: 'Slide not found'});
+      
+      const filePath = path.join(this.fullDir, cleanName);
+      
+      try {
+        await fsp.unlink(filePath);
+        // Manually trigger rescan just in case
+        await this.scan();
+        res.json({ message: 'Slide deleted' });
+      } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Delete failed' });
+      }
     });
   }
 

@@ -165,7 +165,7 @@ const startServer = async () => {
 
     // Basic health check route
     app.get('/api/health', (req, res) => {
-      res.status(200).send('OK');
+      res.status(200).json({ ok: true });
     });
 
     // Register Auth API first (priority)

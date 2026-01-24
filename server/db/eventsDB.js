@@ -50,14 +50,18 @@ class eventsDB {
         );
 
         const visibleEvents = [];
-        const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
+        const user = userId ? (await UserDB.getElementsById(db, userId, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level'])).getData() : null;
 
         for (const event of events) {
             // Attach tags and effective image to the event object
             await this._enrichEvent(db, event);
 
             // Enforce visibility rules (difficulty and tag-based)
-            if (EventRules.canViewEvent(event, user)) {
+            if (await EventRules.canViewEvent(db, event, user)) {
+                if (user) {
+                    const joinStatus = await EventRules.canJoinEvent(db, event, user);
+                    event.can_attend = !joinStatus.isError();
+                }
                 visibleEvents.push(event);
             }
         }
@@ -101,12 +105,16 @@ class eventsDB {
         );
 
         const visibleEvents = [];
-        const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
+        const user = userId ? (await UserDB.getElementsById(db, userId, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level'])).getData() : null;
 
         for (const event of events) {
             await this._enrichEvent(db, event);
 
-            if (EventRules.canViewEvent(event, user)) {
+            if (await EventRules.canViewEvent(db, event, user)) {
+                if (user) {
+                    const joinStatus = await EventRules.canJoinEvent(db, event, user);
+                    event.can_attend = !joinStatus.isError();
+                }
                 visibleEvents.push(event);
             }
         }
@@ -208,7 +216,7 @@ class eventsDB {
         await this._enrichEvent(db, event);
 
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
-        if (!EventRules.canViewEvent(event, user)) {
+        if (!await EventRules.canViewEvent(db, event, user)) {
             return new statusObject(401, 'User not authorized');
         }
 
