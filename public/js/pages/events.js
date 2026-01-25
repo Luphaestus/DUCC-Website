@@ -350,6 +350,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (todayBtn) {
             todayBtn.classList.add('spin-active');
             todayBtn.addEventListener('animationend', () => todayBtn.classList.remove('spin-active'), { once: true });
+            
+            // Disable hover effect until mouse leaves
+            todayBtn.classList.add('disabled-hover');
+            const onMouseLeave = () => {
+                todayBtn.classList.remove('disabled-hover');
+                todayBtn.removeEventListener('mouseleave', onMouseLeave);
+            };
+            todayBtn.addEventListener('mouseleave', onMouseLeave);
+
             changePage(0);
         } else if (target.closest('.prev-week')) {
             changePage(-1);

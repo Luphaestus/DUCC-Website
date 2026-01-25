@@ -5353,7 +5353,7 @@ nav.small-container ul.navbar-items li button#login-button {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--glass-text-color);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: transparent;
   border: none;
   box-shadow: none;
@@ -5361,8 +5361,8 @@ nav.small-container ul.navbar-items li button#login-button {
   width: auto !important;
   --scale-base: 1;
 }
-#events-view .events-controls-modern .controls-group .today-btn:hover,
-#events-view .events-controls-modern .controls-group .admin-link-btn:hover {
+#events-view .events-controls-modern .controls-group .today-btn:hover:not(.disabled-hover),
+#events-view .events-controls-modern .controls-group .admin-link-btn:hover:not(.disabled-hover) {
   background: rgba(var(--pico-primary-rgb), 0.1);
   color: var(--pico-primary);
   transform: scale(1.05);
@@ -5373,6 +5373,7 @@ nav.small-container ul.navbar-items li button#login-button {
   width: 1rem;
   height: 1rem;
   fill: currentColor;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 @media (max-width: 600px) {
   #events-view .events-controls-modern .controls-group .today-btn span,
@@ -5380,8 +5381,14 @@ nav.small-container ul.navbar-items li button#login-button {
     display: none;
   }
 }
-#events-view .events-controls-modern .controls-group .today-btn:hover svg {
+#events-view .events-controls-modern .controls-group .today-btn:hover:not(.disabled-hover) svg {
   transform: rotate(180deg);
+}
+#events-view .events-controls-modern .controls-group .today-btn.disabled-hover {
+  background: transparent;
+  color: var(--glass-text-color);
+  transform: scale(1);
+  cursor: default;
 }
 #events-view .events-controls-modern .controls-group .today-btn.spin-active svg {
   animation: spin-cycle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
