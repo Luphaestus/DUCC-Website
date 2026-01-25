@@ -67,11 +67,11 @@ export async function renderAdminNavBar(activeSection) {
         <nav class="toggle-group admin-nav-group" id="admin-main-nav">
             <div class="toggle-bg"></div>
             ${(canManageUsers || canManageTransactions || isExec) ? navItem('/admin/users', 'Users', 'users') : ''}
-            ${isExec ? navItem('/admin/slides', 'Slides', 'slides') : ''}
             ${canManageEvents ? navItem('/admin/events', 'Events', 'events') : ''}
             ${canManageEvents ? navItem('/admin/tags', 'Tags', 'tags') : ''}
             ${canManageFiles ? navItem('/admin/files', 'Files', 'files') : ''}
             ${canManageRoles ? navItem('/admin/roles', 'Roles', 'roles') : ''}
+            ${isExec ? navItem('/admin/slides', 'Slides', 'slides') : ''}
             ${isPresident ? navItem('/admin/globals', 'Globals', 'globals') : ''}
         </nav>
     `;
