@@ -1,19 +1,19 @@
 @use "../mixins" as *;
 
 /* Panel Component */
-.glass-panel {
+.panel-widget {
     @include glass-panel;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    padding: 1.5rem; // Ensure padding is consistent
+    padding: 1.5rem;
 
     .box-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         min-height: 2.5rem;
-        margin-bottom: 0; // Reset any default margin
+        margin-bottom: 0;
 
         h3 {
             margin: 0;

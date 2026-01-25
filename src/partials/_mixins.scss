@@ -1,20 +1,16 @@
 /**
  * _mixins.scss
- * 
- * Reusable SCSS mixins for design consistency.
- * Includes patterns for glassmorphic panels, animated cards with color highlights,
- * and responsive scaling for interactive elements and tables.
  */
 
-/* --- UI Component Mixins --- */
+/* UI Component Mixins */
 
-/** Applies glassmorphism with blur, semi-transparent background, and soft shadow */
+/** Glassmorphism */
 @mixin glass-panel {
     background: var(--glass-bg); border: var(--glass-border); box-shadow: var(--shadow-glass);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--border-radius-lg); padding: 1.25rem;
 }
 
-/** Applies high-translucency background with lift-on-hover interaction */
+/** Translucent Card */
 @mixin translucent-card {
     background: var(--translucent-bg); border: var(--glass-border); box-shadow: var(--shadow-glass);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: var(--border-radius-lg);
@@ -22,7 +18,7 @@
     &:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
 }
 
-/** Adds a colored vertical bar to the left side of a card */
+/** Card Highlights */
 @mixin card-highlights {
     position: relative; overflow: hidden;
     &::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--highlight); border-radius: 4px; }
@@ -33,9 +29,24 @@
     &:nth-child(4) { --highlight: #3498db; }
 }
 
-/* --- Responsive Scaling Mixins --- */
+/** Event Card Style */
+@mixin event-card-style {
+    @include glass-panel;
+    padding: 0 !important; gap: 0 !important; overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    display: flex; flex-direction: column; min-height: 320px;
 
-/** Standardizes button and input height/padding across 3 breakpoints */
+    &:hover {
+        transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        border-color: rgba(var(--pico-primary-rgb), 0.4);
+        animation: card-pulse 2s infinite ease-in-out;
+        .event-image { transform: scale(1.1); }
+    }
+}
+
+/* Responsive Scaling Mixins */
+
+/** Common Element Size */
 @mixin common-element-size($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
     min-height: 3rem !important; height: auto; padding: 0 1.5rem; font-size: 1rem; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
     @media (max-width: $bp1) { min-height: 2.75rem !important; padding: 0 1.25rem; }
@@ -43,7 +54,7 @@
     @media (max-width: $bp3) { min-height: 2.25rem !important; padding: 0 0.75rem; font-size: 0.8rem !important; }
 }
 
-/** Standardizes general content padding and icon sizing across breakpoints */
+/** Scaling Element */
 @mixin scaling-element($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
     padding: 0.75rem 1rem;
     @media (max-width: $bp1) { padding: 0.6rem 0.9rem; font-size: 0.95em; }
@@ -51,8 +62,9 @@
     @media (max-width: $bp3) { padding: 0.4rem 0.5rem; svg, img { width: 1.2rem; height: 1.2rem; } }
 }
 
-/** Standardizes table layout and cell responsiveness */
+/** Scaling Table */
 @mixin scaling-table($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
     width: 100%; margin-bottom: 0; table-layout: auto;
     th, td { text-align: left; border-bottom: var(--table-border); @include scaling-element($bp1, $bp2, $bp3); @media (max-width: $bp2) { td>svg, td>img { width: 1.5rem !important; height: 1.5rem !important; } } }
 }
+

@@ -1,12 +1,9 @@
 /* _tooltip.scss */
 
-/* 
- * Reusable Bubble Tooltip Styles.
- * Matches logic in public/js/widgets/tooltip.js
- */
-
 .attendee-name-tooltip {
     position: absolute;
+//...
+
     bottom: 125%;
     left: 50%;
     transform: translateX(-50%);

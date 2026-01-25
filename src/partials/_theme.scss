@@ -1,9 +1,5 @@
 /**
  * _theme.scss
- * 
- * Global theme variables and color palettes.
- * Defines shared design tokens for both light and dark modes,
- * including typography, border radii, shadows, and glassmorphic backgrounds.
  */
 
 @mixin dark-mode-vars {
@@ -20,7 +16,7 @@
     --table-bg-body: rgba(30, 30, 35, 0.4);
     --table-bg-hover-body: rgba(40, 40, 45, 0.6);
 
-    /* --- Dark Mode Blobs --- */
+    /* Dark Mode Blobs */
     --blob-color-1: rgba(155, 89, 182, 0.12);
     --blob-color-2: rgba(52, 152, 219, 0.12);
     --blob-color-3: rgba(41, 128, 185, 0.12);
@@ -32,16 +28,16 @@
 }
 
 body {
-    /* --- Font Stacks --- */
+    /* Font Stacks */
     --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-family-display: 'Outfit', var(--font-family-sans);
     
-    /* --- Design Tokens --- */
+    /* Design Tokens */
     --border-radius-sm: 0.5rem; --border-radius-md: 1rem; --border-radius-lg: 1.5rem; --border-radius-pill: 9999px;
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05); --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
     --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 
-    /* --- Light Mode Defaults --- */
+    /* Light Mode Defaults */
     --translucent-bg: rgba(255, 255, 255, 0.65);
     --glass-bg: rgba(255, 255, 255, 0.6);
     --glass-highlight: rgba(0, 0, 0, 0.1);
@@ -56,7 +52,7 @@ body {
     --table-bg-body: rgba(255, 255, 255, 0.4);
     --table-bg-hover-body: rgba(255, 255, 255, 0.6);
 
-    /* --- Light Mode Blobs --- */
+    /* Light Mode Blobs */
     --blob-color-1: rgba(170, 64, 191, 0.19);
     --blob-color-2: rgba(188, 203, 235, 0.303);
     --blob-color-3: rgba(89, 186, 255, 0.245);
@@ -68,6 +64,6 @@ body {
     .bg-icon { position: absolute; opacity: 0.12; color: var(--pico-color); pointer-events: none; z-index: 1; }
 }
 
-/* --- Dark Mode Activation --- */
+/* Dark Mode Activation */
 @media (prefers-color-scheme: dark) { body:not([data-theme="light"]) { @include dark-mode-vars; } }
 body[data-theme="dark"] { @include dark-mode-vars; }
