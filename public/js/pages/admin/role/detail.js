@@ -13,6 +13,7 @@ import { Panel } from '/js/widgets/panel.js';
 import { ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG } from '../../../../images/icons/outline/icons.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { showConfirmModal } from '/js/utils/modal.js';
+import { debounce } from '/js/utils/utils.js';
 
 /**
  * Main rendering function for role details.
@@ -23,7 +24,6 @@ export async function renderRoleDetail(roleId) {
     const adminContent = document.getElementById(adminContentID);
     adminContent.innerHTML = '<p class="loading-cell">Loading role details...</p>';
 
-    // Toolbar actions
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) {
         actionsEl.innerHTML = `
@@ -45,9 +45,12 @@ export async function renderRoleDetail(roleId) {
             title: isNew ? 'Create New Role' : 'Edit Role',
             content: `
                         <form id="role-form" class="modern-form">
-                            <div class="modern-form-group">
+                            <div class="grid-2-col">
                                 <label class="form-label-top">Role Name
                                     <input type="text" name="name" value="${role.name}" required class="full-width-input" placeholder="e.g. Moderator">
+                                </label>
+                                <label class="form-label-top">Description
+                                    <input type="text" name="description" value="${role.description || ''}" class="full-width-input" placeholder="Role purpose">
                                 </label>
                             </div>
 
@@ -55,12 +58,12 @@ export async function renderRoleDetail(roleId) {
                         <div class="tag-cloud">
                             ${allPermissions.map(p => `
                                 <label class="checkbox-label">
-                                    <input type="checkbox" name="permissions" value="${p.id}" ${rolePerms.find(rp => rp.id === p.id) ? 'checked' : ''}> ${p.key}
+                                    <input type="checkbox" name="permissions" value="${p.slug}" ${(role.permissions || []).includes(p.slug) ? 'checked' : ''}> ${p.key || p.slug}
                                 </label>
                             `).join('')}
                         </div>
 
-                            <div class="form-actions-footer mt-2">
+                            <div class="form-actions-footer mt-2 ${!isNew ? 'hidden' : ''}">
                                 <button type="submit" class="primary-btn wide-btn">${SAVE_SVG} ${isNew ? 'Create' : 'Save Changes'}</button>
                             </div>
                         </form>
@@ -69,30 +72,60 @@ export async function renderRoleDetail(roleId) {
             </div>
         `;
 
-        document.getElementById('role-form').onsubmit = (e) => handleSaveRole(e, roleId);
+        const getFormData = () => {
+            const formData = new FormData(document.getElementById('role-form'));
+            return {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                permissions: formData.getAll('permissions')
+            };
+        };
+
+        const autoSave = async () => {
+            if (isNew) return;
+            const data = getFormData();
+            try {
+                await apiRequest('PUT', `/api/admin/roles/${roleId}`, data);
+            } catch (err) {
+                notify('Auto-save failed', err.message, NotificationTypes.ERROR);
+            }
+        };
+
+        const debouncedAutoSave = debounce(autoSave, 1000);
+
+        const form = document.getElementById('role-form');
+        form.onsubmit = (e) => handleSaveRole(e, roleId);
+
+        if (!isNew) {
+            form.querySelectorAll('input').forEach(input => {
+                if (input.type === 'text') {
+                    input.addEventListener('input', debouncedAutoSave);
+                } else {
+                    input.addEventListener('change', autoSave);
+                }
+            });
+        }
 
     } catch (e) {
+        console.error(e);
         adminContent.innerHTML = '<p class="error-cell">Failed to load role.</p>';
     }
 }
 
 async function handleSaveRole(e, id) {
     e.preventDefault();
-    const isNew = id === 'new';
+    if (id !== 'new') return;
+
     const formData = new FormData(e.target);
     const data = {
         name: formData.get('name'),
+        description: formData.get('description'),
         permissions: formData.getAll('permissions')
     };
 
     try {
-        if (isNew) {
-            await apiRequest('POST', '/api/admin/roles', data);
-            notify('Success', 'Role created', NotificationTypes.SUCCESS);
-        } else {
-            await apiRequest('PUT', `/api/admin/roles/${id}`, data);
-            notify('Success', 'Role updated', NotificationTypes.SUCCESS);
-        }
+        await apiRequest('POST', '/api/admin/roles', data);
+        notify('Success', 'Role created', NotificationTypes.SUCCESS);
         switchView('/admin/roles');
     } catch (err) {
         notify('Error', err.message, NotificationTypes.ERROR);
