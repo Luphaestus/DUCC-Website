@@ -1,10 +1,7 @@
-//todo refine 
 /**
  * detail.js
  * 
  * Logic for the Event Creator and Editor form.
- * Handles extensive event metadata including times, location, difficulty,
- * cost, and sign-up policies. Supports image uploading and tag assignment.
  * 
  * Registered Routes: /admin/event/new, /admin/event/:id
  */
@@ -15,7 +12,7 @@ import { switchView } from '/js/utils/view.js';
 import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { adminContentID } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
-import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
+import { CLOSE_SVG, INFO_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 
 /**
@@ -28,14 +25,22 @@ export async function renderEventDetail(id) {
     const isNew = id === 'new';
 
     let event = { title: '', description: '', location: '', start: '', end: '', difficulty_level: 1, max_attendees: 0, upfront_cost: 0, upfront_refund_cutoff: '', signup_required: 1, image_url: '', tags: [] };
+    let rawImageUrl = null;
     let allTags = [];
 
     try {
-        const eventData = !isNew ? await apiRequest('GET', `/api/admin/event/${id}`) : null;
+        const [eventData, rawEventData] = !isNew 
+            ? await Promise.all([
+                apiRequest('GET', `/api/admin/event/${id}`),
+                apiRequest('GET', `/api/admin/event/${id}/raw`)
+            ])
+            : [null, null];
+        
         allTags = (await apiRequest('GET', '/api/tags')).data || [];
 
         if (!isNew) {
             event = eventData;
+            rawImageUrl = rawEventData.image_url;
             event.end = new Date(event.end).toISOString().slice(0, 16);
             if (event.upfront_refund_cutoff) {
                 event.upfront_refund_cutoff = new Date(event.upfront_refund_cutoff).toISOString().slice(0, 16);
@@ -45,17 +50,19 @@ export async function renderEventDetail(id) {
         return adminContent.innerHTML = '<p>Error loading data.</p>';
     }
 
+    const globalDefaultRes = await apiRequest('GET', '/api/globals/DefaultEventImage');
+    const globalDefaultUrl = globalDefaultRes.res?.DefaultEventImage?.data || '/images/misc/ducc.png';
+
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = ` <button id="back-to-events-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
     document.getElementById('back-to-events-btn').onclick = () => switchView('/admin/events');
 
-    adminContent.innerHTML = `
+    adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
             <form id="event-form">
                 ${Panel({
-                    title: isNew ? 'Create Event' : 'Edit Event',
-                    content: `
-                        <!-- Title Field -->
+        title: isNew ? 'Create Event' : 'Edit Event',
+        content: /*html*/`
                         <div class="modern-form-group">
                             <label class="form-label-top">Event Title
                                 <input type="text" name="title" value="${event.title}" required class="full-width-input title-input" placeholder="e.g. Weekly Training">
@@ -63,7 +70,6 @@ export async function renderEventDetail(id) {
                         </div>
 
                         <div class="event-content-split">
-                            <!-- Left Section: Basic Info & Logic -->
                             <div class="event-details-section">
                                 <h3 class="section-header-modern">
                                     ${INFO_SVG} Basic Details
@@ -85,7 +91,6 @@ export async function renderEventDetail(id) {
 
                                 <div class="form-divider"></div>
 
-                                <!-- Policy Settings -->
                                 <div class="settings-group">
                                     <div class="signup-policy">
                                         <label class="checkbox-label">
@@ -112,7 +117,6 @@ export async function renderEventDetail(id) {
                                     </div>
                                 </div>
 
-                                <!-- Tag Selection -->
                                 <h3>Tags</h3>
                                 <div class="tags-selection-grid">
                                     ${allTags.map(tag => `
@@ -124,17 +128,15 @@ export async function renderEventDetail(id) {
                                 </div>
                             </div>
 
-                            <!-- Right Section: Media -->
                             <div class="event-image-section">
                                 <h3 class="section-header-modern">
                                     ${IMAGE_SVG} Event Image
                                 </h3>
                                 <div id="upload-widget-container"></div>
-                                <input type="hidden" name="image_url" id="image_url_input" value="${event.image_url || ''}">
+                                <input type="hidden" name="image_url" id="image_url_input" value="${rawImageUrl || ''}">
                             </div>
                         </div>
                         
-                        <!-- Form Footer Actions -->
                         <div class="form-actions-footer">
                             <div class="destructive-actions">
                                 ${!isNew ? `
@@ -145,7 +147,7 @@ export async function renderEventDetail(id) {
                             <button type="submit" class="wide-btn">${isNew ? 'Create Event' : 'Save Changes'}</button>
                         </div>
                     `
-                })}
+    })}
             </form>
         </div>
     `;
@@ -154,11 +156,68 @@ export async function renderEventDetail(id) {
 
     // --- Interactive Logic Hooks ---
 
+    const updateEffectiveImage = async () => {
+        if (imageUrlInput.value) {
+            widget.setPreview(imageUrlInput.value);
+            return;
+        }
+
+        const selectedTagIds = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
+        
+        try {
+            const res = await apiRequest('POST', '/api/admin/events/calculate-fallback-image', { tagIds: selectedTagIds });
+            widget.setPreview(res.url || globalDefaultUrl);
+        } catch (e) {
+            widget.setPreview(globalDefaultUrl);
+        }
+    };
+
+    // --- Image Upload Widget ---
+    const imageUrlInput = document.getElementById('image_url_input');
+
+    const widget = new UploadWidget('upload-widget-container', {
+        mode: 'inline',
+        selectMode: 'single',
+        autoUpload: true,
+        defaultPreview: event.image_url || globalDefaultUrl,
+        onImageSelect: async ({ url }) => {
+            imageUrlInput.value = url;
+            await updateEffectiveImage();
+        },
+        onRemove: async () => {
+            imageUrlInput.value = '';
+            await updateEffectiveImage();
+            
+            if (isNew) return true;
+
+            if (!await showConfirmModal('Remove Image', 'Remove manual image and reset to default?')) {
+                return false; 
+            }
+
+            try {
+                const res = await fetch(`/api/admin/event/${id}/reset-image`, { method: 'POST' });
+                if (!res.ok) throw new Error('Failed to reset image');
+
+                notify('Success', 'Image reset to default', 'success');
+                imageUrlInput.value = '';
+                await updateEffectiveImage();
+                return false;
+            } catch (err) {
+                notify('Error', err.message, 'error');
+                return false;
+            }
+        },
+        onUploadError: (err) => {
+            notify('Error', err.message || 'Upload failed', 'error');
+        },
+    });
+
     adminContent.querySelectorAll('input[name="tags"]').forEach(input => {
-        const updateSpan = (el) => {
+        const updateSpan = async (el) => {
             const span = el.nextElementSibling;
             if (el.checked) span.classList.add('selected');
             else span.classList.remove('selected');
+            await updateEffectiveImage();
         };
         input.addEventListener('change', (e) => updateSpan(e.target));
         updateSpan(input);
@@ -191,44 +250,7 @@ export async function renderEventDetail(id) {
     signupToggle.onchange = updateMaxAttendeesState;
     updateMaxAttendeesState();
 
-    // --- Image Upload Widget ---
-    const imageUrlInput = document.getElementById('image_url_input');
-
-    const widget = new UploadWidget('upload-widget-container', {
-        mode: 'inline',
-        selectMode: 'single',
-        autoUpload: true,
-        defaultPreview: event.image_url || '/images/misc/ducc.png',
-        onImageSelect: ({ url }) => {
-            imageUrlInput.value = url;
-        },
-        onRemove: async () => {
-            if (isNew) {
-                imageUrlInput.value = '';
-                return true;
-            }
-
-            if (!await showConfirmModal('Remove Image', 'Remove manual image and reset to default?')) return false;
-
-            try {
-                const res = await fetch(`/api/admin/event/${id}/reset-image`, { method: 'POST' });
-                if (!res.ok) throw new Error('Failed to reset image');
-
-                notify('Success', 'Image reset to default', 'success');
-                imageUrlInput.value = '';
-
-                const updatedEvent = await apiRequest('GET', `/api/admin/event/${id}`);
-                widget.setPreview(updatedEvent.image_url || '/images/misc/ducc.png');
-                return false; 
-            } catch (err) {
-                notify('Error', err.message, 'error');
-                return false;
-            }
-        },
-        onUploadError: (err) => {
-            notify('Error', err.message || 'Upload failed', 'error');
-        },
-    });
+    updateEffectiveImage();
 
     // --- Form Submission ---
     document.getElementById('event-form').onsubmit = async (e) => {
