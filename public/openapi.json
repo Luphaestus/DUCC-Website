@@ -572,7 +572,7 @@
             "responses": { "200": { "description": "Scope removed" } }
         }
     },
-    "/api/admin/permissions": {
+    "/api/admin/roles/permissions": {
         "get": {
             "summary": "List all permissions",
             "description": "Retrieves a list of all available permissions in the system.",
@@ -588,9 +588,7 @@
             "tags": ["Admin"],
             "security": [{ "cookieAuth": [] }],
             "responses": { "200": { "description": "List of roles" } }
-        }
-    },
-    "/api/admin/role": {
+        },
         "post": {
             "summary": "Create role",
             "description": "Creates a new role definition with assigned permissions.",
@@ -600,7 +598,15 @@
             "responses": { "200": { "description": "Role created" } }
         }
     },
-    "/api/admin/role/{id}": {
+    "/api/admin/roles/{id}": {
+        "get": {
+            "summary": "Get specific role details",
+            "description": "Retrieves the details of a specific role, including its permissions.",
+            "tags": ["Admin"],
+            "security": [{ "cookieAuth": [] }],
+            "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The ID of the role.", "schema": { "type": "integer" } }],
+            "responses": { "200": { "description": "Role details" } }
+        },
         "put": {
             "summary": "Update role",
             "description": "Updates an existing role's name or permissions.",

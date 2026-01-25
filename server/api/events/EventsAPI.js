@@ -176,6 +176,29 @@ class EventsAPI {
             const canManage = await Permissions.canManageEvent(this.db, req.user.id, eventId);
             res.json({ canManage });
         });
+
+        /**
+         * Calculate fallback image for an event based on tag IDs.
+         */
+        this.app.post('/api/admin/events/calculate-fallback-image', check('perm:event.manage.all | perm:event.manage.scoped'), async (req, res) => {
+            const tagIds = req.body.tagIds;
+            if (!Array.isArray(tagIds)) {
+                return res.status(400).json({ message: 'tagIds must be an array' });
+            }
+
+            try {
+                let tags = [];
+                if (tagIds.length > 0) {
+                    const placeholders = tagIds.map(() => '?').join(',');
+                    tags = await this.db.all(`SELECT * FROM tags WHERE id IN (${placeholders})`, tagIds);
+                }
+                const url = await EventsDB._getFallbackImage(this.db, tags);
+                res.json({ url });
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal error' });
+            }
+        });
     }
 }
 

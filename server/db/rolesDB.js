@@ -270,6 +270,32 @@ class RolesDB {
     }
 
     /**
+     * Fetch a specific role by its ID and include its permission mappings.
+     * @param {object} db - Database connection.
+     * @param {number} id - Role ID.
+     * @returns {Promise<statusObject>}
+     */
+    static async getRoleById(db, id) {
+        try {
+            const role = await db.get('SELECT * FROM roles WHERE id = ?', [id]);
+            if (!role) return new statusObject(404, 'Role not found');
+
+            const perms = await db.all(
+                `SELECT p.slug FROM permissions p 
+                 JOIN role_permissions rp ON p.id = rp.permission_id 
+                 WHERE rp.role_id = ?`,
+                [id]
+            );
+            role.permissions = perms.map(p => p.slug);
+            
+            return new statusObject(200, 'Success', role);
+        } catch (e) {
+            console.error('Database error fetching role by ID:', e);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Create a new role definition.
      * @param {object} db - Database connection.
      * @param {string} name - Role name.

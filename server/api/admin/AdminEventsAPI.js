@@ -82,6 +82,19 @@ class AdminEvents {
         });
 
         /**
+         * Fetch raw event details (no enrichment).
+         */
+        this.app.get('/api/admin/event/:id/raw', check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped'), async (req, res) => {
+            try {
+                const event = await this.db.get('SELECT * FROM events WHERE id = ?', [req.params.id]);
+                if (!event) return res.status(404).json({ message: 'Event not found' });
+                res.json(event);
+            } catch (error) {
+                res.status(500).json({ message: 'Database error' });
+            }
+        });
+
+        /**
          * Create a new event.
          * Verifies that the admin has permission to use the tags they are assigning to the event.
          */
