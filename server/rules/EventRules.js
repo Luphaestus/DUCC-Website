@@ -94,6 +94,34 @@ class EventRules {
 
         return new statusObject(200, 'Allowed');
     }
+
+    /**
+     * Check if a user is authorized to see an image based on its usage in events/tags.
+     */
+    static async canViewImage(db, imageId, user) {
+        const events = await db.all(`
+            SELECT DISTINCT e.* FROM events e
+            LEFT JOIN event_tags et ON e.id = et.event_id
+            LEFT JOIN tags t ON et.tag_id = t.id
+            WHERE e.image_id = ? OR t.image_id = ?
+        `, [imageId, imageId]);
+
+        if (events.length === 0) return false;
+
+        let userObj = user;
+        if (user && user.id && user.difficulty_level === undefined) {
+            const UserDB = require('../db/userDB.js');
+            const userRes = await UserDB.getElementsById(db, user.id, ['difficulty_level', 'id']);
+            if (!userRes.isError()) userObj = userRes.getData();
+        }
+
+        for (const event of events) {
+            event.tags = await TagsDB.getTagsForEvent(db, event.id);
+            if (await this.canViewEvent(db, event, userObj)) return true;
+        }
+
+        return false;
+    }
 }
 
 module.exports = EventRules;
