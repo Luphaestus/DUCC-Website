@@ -3424,9 +3424,6 @@ table tbody tr td {
 .form-info .form-box p {
   margin-bottom: 0;
 }
-.form-info .form-box input, .form-info .form-box button {
-  margin-bottom: 0;
-}
 
 /* Tooltips */
 .info-tooltip-wrapper {
@@ -5286,6 +5283,7 @@ nav.small-container ul.navbar-items li button#login-button {
   justify-content: center;
   align-items: center;
   width: 100%;
+  margin-top: 1rem;
   margin-bottom: 1rem;
   position: relative;
   padding: 0 1rem;
@@ -5403,10 +5401,6 @@ nav.small-container ul.navbar-items li button#login-button {
   }
 }
 #events-view .events-controls-modern .click-animate {
-  animation: button-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-#events-view .events-controls-modern .today-btn.click-animate,
-#events-view .events-controls-modern .admin-link-btn.click-animate {
   animation: button-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 @media (max-width: 768px) {
@@ -8809,3 +8803,5 @@ textarea[name=description] {
 #admin-view .border-top {
   border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
 }
+
+/*# sourceMappingURL=styles.css.map */
