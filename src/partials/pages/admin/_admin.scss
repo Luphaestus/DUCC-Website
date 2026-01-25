@@ -178,6 +178,15 @@
         border-spacing: 0;
         margin-bottom: 0;
 
+        &.users-table {
+            @media (max-width: 600px) {
+                th:nth-child(2),
+                td:nth-child(2) {
+                    display: none;
+                }
+            }
+        }
+
         thead {
             background: rgba(var(--pico-color-rgb), 0.03);
             border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
@@ -254,9 +263,29 @@
                         font-weight: 600;
                     }
 
+                    &.text-warning {
+                        color: #f39c12;
+                        font-weight: 600;
+                    }
+
                     &.text-success {
                         color: #2ecc71;
                         font-weight: 600;
+                    }
+
+                    &.name-column {
+                        .thin-name {
+                            display: none;
+                        }
+
+                        @media (max-width: 600px) {
+                            .full-name {
+                                display: none;
+                            }
+                            .thin-name {
+                                display: inline;
+                            }
+                        }
                     }
                 }
             }
