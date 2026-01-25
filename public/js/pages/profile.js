@@ -12,6 +12,7 @@ import { LegalEvent } from './legal.js';
 import { notify } from '/js/components/notification.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import { requireAuth } from '/js/utils/auth.js';
+import { getOrdinal } from '/js/utils/utils.js';
 import { BalanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from '/js/utils/modal.js';
 import { Sidebar, initSidebar } from '../widgets/sidebar.js';
@@ -152,18 +153,6 @@ let sidebarController = null;
 
 function showStatus(title, message, type) {
     notify(title, message, type, 3000, 'profile-status');
-}
-
-/**
- * Formats a number with its ordinal suffix.
- * 
- * @param {number|string} n 
- * @returns {string}
- */
-function getOrdinal(n) {
-    if (n === undefined || n === null || n === '-' || n < 1) return '-';
-    const s = ["th", "st", "nd", "rd"], v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 // --- Render Functions ---

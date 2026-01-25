@@ -1,12 +1,11 @@
 /**
- * utils.js (Admin User)
+ * utils.js
  * 
- * Shared utility functions for administrative user management views.
+ * Generic utility functions for the frontend.
  */
 
 /**
  * Formats a number with its corresponding ordinal suffix (e.g., 1 -> 1st, 22 -> 22nd).
- * Used for displaying swimming rank and other ordered statistics.
  * 
  * @param {number|string} n - The number to format.
  * @returns {string} - The formatted string (e.g., "1st") or "-" if the input is invalid.
