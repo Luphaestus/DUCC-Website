@@ -1,0 +1,59 @@
+@use "../mixins" as *;
+
+/* Standard Pagination Styles */
+.glass-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+
+    button {
+        @include common-element-size;
+        min-width: 6rem;
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        color: var(--theme-opposite);
+        border-radius: var(--border-radius-md);
+        transition: all 0.2s ease;
+        box-shadow: none;
+        margin-bottom: 0;
+
+        &:hover:not(:disabled) {
+            background: rgba(var(--pico-primary-rgb), 0.1);
+            color: var(--pico-primary);
+            border-color: var(--pico-primary);
+            transform: translateY(-2px);
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        &.active {
+            background: var(--pico-primary);
+            color: white !important;
+            border-color: var(--pico-primary);
+        }
+
+        /* Support for compact numeric buttons */
+        &.page-btn {
+            min-width: 3rem;
+            padding: 0 0.75rem;
+        }
+    }
+
+    .pagination-info {
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        min-width: 100px;
+        text-align: center;
+    }
+}
+
+/* Page-specific override for files if needed, or just use glass-pagination class */
+.pagination {
+    @extend .glass-pagination;
+}

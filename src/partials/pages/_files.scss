@@ -80,27 +80,6 @@
         }
     }
 
-    .pagination {
-        display: flex;
-        justify-content: center;
-        gap: 0.5rem;
-        margin-top: 2rem;
-
-        .page-btn {
-            @include common-element-size;
-            min-width: 2.5rem;
-            margin-bottom: 0;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-
-            &.active {
-                background: var(--pico-primary);
-                border-color: var(--pico-primary);
-            }
-        }
-    }
-
     /* Files Table */
     .files-table {
         @include scaling-table;

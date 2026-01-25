@@ -3493,19 +3493,6 @@ table tbody tr td {
   border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
 }
 
-/* Tags */
-.tag-badge {
-  background-color: var(--tag-color, var(--pico-primary));
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--border-radius-pill);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  display: inline-block;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
 /* Email Input Group */
 .durham-email-wrapper {
   position: relative;
@@ -4590,6 +4577,166 @@ nav.small-container ul.navbar-items li button#login-button {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
+}
+
+/* Standard Pagination Styles */
+.glass-pagination, .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.glass-pagination button, .pagination button {
+  min-height: 3rem !important;
+  height: auto;
+  padding: 0 1.5rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+@media (max-width: 1200px) {
+  .glass-pagination button, .pagination button {
+    min-height: 2.75rem !important;
+    padding: 0 1.25rem;
+  }
+}
+@media (max-width: 768px) {
+  .glass-pagination button, .pagination button {
+    min-height: 2.5rem !important;
+    padding: 0 1rem;
+    font-size: 0.9rem !important;
+  }
+  .glass-pagination button svg, .pagination button svg, .glass-pagination button img, .pagination button img {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+}
+@media (max-width: 480px) {
+  .glass-pagination button, .pagination button {
+    min-height: 2.25rem !important;
+    padding: 0 0.75rem;
+    font-size: 0.8rem !important;
+  }
+}
+.glass-pagination button, .pagination button {
+  min-width: 6rem;
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  color: var(--theme-opposite);
+  border-radius: var(--border-radius-md);
+  transition: all 0.2s ease;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+.glass-pagination button:hover:not(:disabled), .pagination button:hover:not(:disabled) {
+  background: rgba(var(--pico-primary-rgb), 0.1);
+  color: var(--pico-primary);
+  border-color: var(--pico-primary);
+  transform: translateY(-2px);
+}
+.glass-pagination button:disabled, .pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+.glass-pagination button.active, .pagination button.active {
+  background: var(--pico-primary);
+  color: white !important;
+  border-color: var(--pico-primary);
+}
+.glass-pagination button, .pagination button {
+  /* Support for compact numeric buttons */
+}
+.glass-pagination button.page-btn, .pagination button.page-btn {
+  min-width: 3rem;
+  padding: 0 0.75rem;
+}
+.glass-pagination .pagination-info, .pagination .pagination-info {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Page-specific override for files if needed, or just use glass-pagination class */
+/* Tag Badges */
+.tag-badge {
+  background-color: var(--tag-color, var(--pico-primary));
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: inline-block;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Toggle Group (Merged Buttons / Sliding look) */
+.toggle-group {
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  border-radius: var(--border-radius-pill);
+  padding: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  position: relative;
+  backdrop-filter: blur(12px);
+  width: fit-content;
+  gap: 0;
+}
+.toggle-group .toggle-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--pico-primary);
+  border-radius: var(--border-radius-pill);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  width: var(--tab-width, 0);
+  height: var(--tab-height, 0);
+  transform: translate(var(--tab-left, 0), var(--tab-top, 0));
+}
+.toggle-group button,
+.toggle-group .tab-btn {
+  background: transparent !important;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  color: var(--pico-muted-color);
+  font-weight: 600;
+  z-index: 2;
+  transition: color 0.3s ease;
+  box-shadow: none;
+  margin-bottom: 0;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.9rem;
+  position: relative;
+}
+.toggle-group button.active,
+.toggle-group .tab-btn.active {
+  color: white !important;
+}
+.toggle-group button:hover:not(.active),
+.toggle-group .tab-btn:hover:not(.active) {
+  color: var(--pico-contrast);
+  background: rgba(var(--pico-color-rgb), 0.05) !important;
+}
+@media (max-width: 600px) {
+  .toggle-group {
+    border-radius: var(--border-radius-lg);
+    width: 100%;
+  }
+  .toggle-group button,
+  .toggle-group .tab-btn {
+    flex: 1 1 auto;
+    text-align: center;
+  }
 }
 
 /* Accent Panel (formerly Membership Banner) */
@@ -6774,58 +6921,6 @@ footer .footer-bottom p {
 #files-view .files-table-wrapper th {
   background: rgba(var(--pico-primary-rgb), 0.05);
 }
-#files-view .pagination {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
-}
-#files-view .pagination .page-btn {
-  min-height: 3rem !important;
-  height: auto;
-  padding: 0 1.5rem;
-  font-size: 1rem;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-@media (max-width: 1200px) {
-  #files-view .pagination .page-btn {
-    min-height: 2.75rem !important;
-    padding: 0 1.25rem;
-  }
-}
-@media (max-width: 768px) {
-  #files-view .pagination .page-btn {
-    min-height: 2.5rem !important;
-    padding: 0 1rem;
-    font-size: 0.9rem !important;
-  }
-  #files-view .pagination .page-btn svg, #files-view .pagination .page-btn img {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
-}
-@media (max-width: 480px) {
-  #files-view .pagination .page-btn {
-    min-height: 2.25rem !important;
-    padding: 0 0.75rem;
-    font-size: 0.8rem !important;
-  }
-}
-#files-view .pagination .page-btn {
-  min-width: 2.5rem;
-  margin-bottom: 0;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-}
-#files-view .pagination .page-btn.active {
-  background: var(--pico-primary);
-  border-color: var(--pico-primary);
-}
 #files-view {
   /* Files Table */
 }
@@ -7085,7 +7180,6 @@ footer .footer-bottom p {
   padding: 0.45rem 2.5rem 0.45rem 1.25rem;
   margin-bottom: 0;
   background: rgba(var(--pico-background-color-rgb), 0.35);
-  border: 1px solid rgba(var(--pico-color-rgb), 0.1);
   border-radius: var(--border-radius-pill);
   font-size: 0.85rem;
   transition: all 0.3s ease;
@@ -7257,82 +7351,6 @@ footer .footer-bottom p {
   color: #8e44ad;
 }
 
-/* Pagination */
-.glass-pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-.glass-pagination button {
-  min-height: 3rem !important;
-  height: auto;
-  padding: 0 1.5rem;
-  font-size: 1rem;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-@media (max-width: 1200px) {
-  .glass-pagination button {
-    min-height: 2.75rem !important;
-    padding: 0 1.25rem;
-  }
-}
-@media (max-width: 768px) {
-  .glass-pagination button {
-    min-height: 2.5rem !important;
-    padding: 0 1rem;
-    font-size: 0.9rem !important;
-  }
-  .glass-pagination button svg, .glass-pagination button img {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
-}
-@media (max-width: 480px) {
-  .glass-pagination button {
-    min-height: 2.25rem !important;
-    padding: 0 0.75rem;
-    font-size: 0.8rem !important;
-  }
-}
-.glass-pagination button {
-  min-width: 6rem;
-  background: var(--glass-bg);
-  border: var(--glass-border);
-  color: var(--theme-opposite);
-  border-radius: var(--border-radius-md);
-  transition: all 0.2s ease;
-  box-shadow: none;
-  margin-bottom: 0;
-}
-.glass-pagination button:hover:not(:disabled) {
-  background: rgba(var(--pico-primary-rgb), 0.1);
-  color: var(--pico-primary);
-  border-color: var(--pico-primary);
-  transform: translateY(-2px);
-}
-.glass-pagination button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  filter: grayscale(1);
-}
-.glass-pagination button.active {
-  background: var(--pico-primary);
-  color: white;
-  border-color: var(--pico-primary);
-}
-.glass-pagination .pagination-info {
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  min-width: 100px;
-  text-align: center;
-}
-
 /* Header with Breadcrumb feel */
 .admin-header-modern {
   display: flex;
@@ -7386,15 +7404,6 @@ textarea[name=description] {
 /* Glass Toolbar Adjustments for Nav */
 .glass-toolbar .admin-nav-group {
   margin-bottom: 0 !important;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
-  padding: 0;
-}
-.glass-toolbar .admin-nav-group.toggle-group {
-  background: rgba(var(--pico-color-rgb), 0.03);
-  border: 1px solid rgba(var(--pico-color-rgb), 0.05);
 }
 .glass-toolbar .toolbar-content {
   display: flex;
@@ -7759,69 +7768,6 @@ textarea[name=description] {
   color: white;
 }
 
-/* Toggle Group (Merged Buttons / Sliding look) */
-.toggle-group {
-  background: var(--glass-bg);
-  border: var(--glass-border);
-  border-radius: var(--border-radius-pill);
-  padding: 0.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  position: relative;
-  backdrop-filter: blur(12px);
-  width: fit-content;
-  gap: 0;
-}
-.toggle-group .toggle-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: var(--pico-primary);
-  border-radius: var(--border-radius-pill);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  pointer-events: none;
-  width: var(--tab-width, 0);
-  height: var(--tab-height, 0);
-  transform: translate(var(--tab-left, 0), var(--tab-top, 0));
-}
-.toggle-group button,
-.toggle-group .tab-btn {
-  background: transparent !important;
-  border: none;
-  padding: 0.5rem 1.5rem;
-  color: var(--pico-muted-color);
-  font-weight: 600;
-  z-index: 2;
-  transition: color 0.3s ease;
-  box-shadow: none;
-  margin-bottom: 0;
-  border-radius: var(--border-radius-pill);
-  font-size: 0.9rem;
-  position: relative;
-}
-.toggle-group button.active,
-.toggle-group .tab-btn.active {
-  color: white !important;
-}
-.toggle-group button:hover:not(.active),
-.toggle-group .tab-btn:hover:not(.active) {
-  color: var(--pico-contrast);
-  background: rgba(var(--pico-color-rgb), 0.05) !important;
-}
-@media (max-width: 600px) {
-  .toggle-group {
-    border-radius: var(--border-radius-lg);
-    width: 100%;
-  }
-  .toggle-group button,
-  .toggle-group .tab-btn {
-    flex: 1 1 auto;
-    text-align: center;
-  }
-}
-
 /* Detail Info Boxes (for grouped fields) */
 .detail-info-group {
   display: flex;
@@ -7947,7 +7893,6 @@ textarea[name=description] {
 
 #admin-view .admin-nav-group {
   display: flex;
-  gap: 0.5rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
 }

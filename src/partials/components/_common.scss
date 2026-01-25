@@ -42,12 +42,6 @@
     &::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent; }
 }
 
-/* Tags */
-.tag-badge {
-    background-color: var(--tag-color, var(--pico-primary));
-    color: white; padding: 0.25rem 0.75rem; border-radius: var(--border-radius-pill); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
 /* Email Input Group */
 .durham-email-wrapper {
     position: relative;

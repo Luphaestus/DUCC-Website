@@ -121,7 +121,6 @@
             padding: 0.45rem 2.5rem 0.45rem 1.25rem;
             margin-bottom: 0;
             background: rgba(var(--pico-background-color-rgb), 0.35);
-            border: 1px solid rgba(var(--pico-color-rgb), 0.1);
             border-radius: var(--border-radius-pill);
             font-size: 0.85rem;
             transition: all 0.3s ease;
@@ -321,53 +320,6 @@
     }
 }
 
-/* Pagination */
-.glass-pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    margin-top: 2rem;
-
-    button {
-        @include common-element-size;
-        min-width: 6rem;
-        background: var(--glass-bg);
-        border: var(--glass-border);
-        color: var(--theme-opposite);
-        border-radius: var(--border-radius-md);
-        transition: all 0.2s ease;
-        box-shadow: none;
-        margin-bottom: 0;
-
-        &:hover:not(:disabled) {
-            background: rgba(var(--pico-primary-rgb), 0.1);
-            color: var(--pico-primary);
-            border-color: var(--pico-primary);
-            transform: translateY(-2px);
-        }
-
-        &:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            filter: grayscale(1);
-        }
-
-        &.active {
-            background: var(--pico-primary);
-            color: white;
-            border-color: var(--pico-primary);
-        }
-    }
-
-    .pagination-info {
-        font-weight: 600;
-        letter-spacing: 0.02em;
-        min-width: 100px;
-        text-align: center;
-    }
-}
-
 /* Header with Breadcrumb feel */
 .admin-header-modern {
     display: flex;
@@ -425,16 +377,6 @@ textarea[name="description"] {
 .glass-toolbar {
     .admin-nav-group {
         margin-bottom: 0 !important;
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        backdrop-filter: none;
-        padding: 0;
-
-        &.toggle-group {
-            background: rgba(var(--pico-color-rgb), 0.03);
-            border: 1px solid rgba(var(--pico-color-rgb), 0.05);
-        }
     }
 
     .toolbar-content {
@@ -822,71 +764,6 @@ textarea[name="description"] {
         &.active {
             background: var(--pico-primary);
             color: white;
-        }
-    }
-}
-
-/* Toggle Group (Merged Buttons / Sliding look) */
-.toggle-group {
-    background: var(--glass-bg);
-    border: var(--glass-border);
-    border-radius: var(--border-radius-pill);
-    padding: 0.25rem;
-    display: flex;
-    flex-wrap: wrap;
-    position: relative;
-    backdrop-filter: blur(12px);
-    width: fit-content;
-    gap: 0;
-
-    .toggle-bg {
-        position: absolute;
-        top: 0;
-        left: 0;
-        background: var(--pico-primary);
-        border-radius: var(--border-radius-pill);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        pointer-events: none;
-        width: var(--tab-width, 0);
-        height: var(--tab-height, 0);
-        transform: translate(var(--tab-left, 0), var(--tab-top, 0));
-    }
-
-    button,
-    .tab-btn {
-        background: transparent !important;
-        border: none;
-        padding: 0.5rem 1.5rem;
-        color: var(--pico-muted-color);
-        font-weight: 600;
-        z-index: 2;
-        transition: color 0.3s ease;
-        box-shadow: none;
-        margin-bottom: 0;
-        border-radius: var(--border-radius-pill);
-        font-size: 0.9rem;
-        position: relative;
-
-        &.active {
-            color: white !important;
-        }
-
-        &:hover:not(.active) {
-            color: var(--pico-contrast);
-            background: rgba(var(--pico-color-rgb), 0.05) !important;
-        }
-    }
-
-    @media (max-width: 600px) {
-        border-radius: var(--border-radius-lg);
-        width: 100%;
-
-        button,
-        .tab-btn {
-            flex: 1 1 auto;
-            text-align: center;
         }
     }
 }

@@ -26,6 +26,9 @@
 @use "partials/widgets/dashboard";
 @use "partials/widgets/status";
 @use "partials/widgets/stats";
+@use "partials/widgets/pagination";
+@use "partials/widgets/tag_badge";
+@use "partials/widgets/tab_nav";
 @use "partials/widgets/accent_panel";
 @use "partials/widgets/value_header";
 @use "partials/widgets/item_list";
