@@ -3,7 +3,6 @@
  * history.js
  * 
  * Manages an internal navigation history stack for the SPA.
- * Allows components (like the event modal) to determine if they can go back
  * in history or if they should perform a default navigation.
  */
 
