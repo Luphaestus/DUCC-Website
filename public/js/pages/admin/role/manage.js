@@ -1,4 +1,4 @@
-//todo refine
+//todo refine 
 /* manage.js (Role)
 * 
 * Logic for the administrative roles list view.
