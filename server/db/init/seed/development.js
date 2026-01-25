@@ -18,6 +18,37 @@ const path = require('path');
 async function seedDevelopment(db) {
     const userCount = await db.get('SELECT COUNT(*) as count FROM users');
 
+    // --- Seed Files for Slides & Fallbacks ---
+    const slidesDir = path.join(__dirname, '..', '..', '..', 'public', 'images', 'slides');
+    let slideFiles = [];
+    try {
+        if (fs.existsSync(slidesDir)) {
+            slideFiles = fs.readdirSync(slidesDir).filter(f => ['.png', '.jpg', '.jpeg'].includes(path.extname(f).toLowerCase()));
+        }
+    } catch (e) {}
+
+    const seedFile = async (filename) => {
+        const title = filename.split('.')[0];
+        await db.run(
+            'INSERT OR IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
+            [title, filename, 'public', filename] 
+        );
+        const row = await db.get('SELECT id FROM files WHERE filename = ?', [filename]);
+        return row ? row.id : null;
+    };
+
+    const seededFileIds = [];
+    for (const file of slideFiles) {
+        const id = await seedFile(file);
+        if (id) seededFileIds.push(id);
+    }
+
+    // Populate slides table
+    await db.run('DELETE FROM slides');
+    for (let i = 0; i < seededFileIds.length; i++) {
+        await db.run('INSERT INTO slides (file_id, display_order) VALUES (?, ?)', [seededFileIds[i], i]);
+    }
+
     // Only seed users if the table is nearly empty
     if (userCount.count < 5) {
         if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Inserting random users for development...'));
@@ -47,6 +78,7 @@ async function seedDevelopment(db) {
             const isMember = Math.random() > 0.5;
             const filledLegal = Math.random() > 0.2;
             const isInstructor = Math.random() > 0.9;
+            const profilePictureId = seededFileIds.length > 0 ? seededFileIds[Math.floor(Math.random() * seededFileIds.length)] : null;
 
             let firstAidExpiry = null;
             if (Math.random() > 0.7) {
@@ -56,8 +88,8 @@ async function seedDevelopment(db) {
             }
 
             const result = await db.run(
-                `INSERT INTO users (email, hashed_password, first_name, last_name, college_id, is_member, filled_legal_info, is_instructor, first_aid_expiry) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [email, hashedPassword, firstName, lastName, collegeId, isMember, filledLegal, isInstructor, firstAidExpiry]
+                `INSERT INTO users (email, hashed_password, first_name, last_name, college_id, is_member, filled_legal_info, is_instructor, first_aid_expiry, profile_picture_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [email, hashedPassword, firstName, lastName, collegeId, isMember, filledLegal, isInstructor, firstAidExpiry, profilePictureId]
             );
 
             const userId = result.lastID;
@@ -81,6 +113,11 @@ async function seedDevelopment(db) {
                 );
             }
             await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, userId]);
+            
+            // Randomly assign booties (up to total swims)
+            const numBooties = Math.floor(Math.random() * (totalSwims + 1));
+            await db.run(`UPDATE users SET booties = ? WHERE id = ?`, [numBooties, userId]);
+
             if (userProgressBar) userProgressBar.update(i + 1);
         }
         await db.run('COMMIT');
@@ -119,29 +156,13 @@ async function seedDevelopment(db) {
                     [user.id, 1, count, swimDate.toISOString()]
                 );
             }
-            await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, user.id]);
+            const numBooties = Math.floor(Math.random() * (totalSwims + 1));
+            await db.run(`UPDATE users SET swims = ?, booties = ? WHERE id = ?`, [totalSwims, numBooties, user.id]);
             if (swimProgressBar) swimProgressBar.update(i + 1);
         }
         await db.run('COMMIT');
         if (swimProgressBar) swimProgressBar.stop();
     }
-
-    // --- Seed Tag Images ---
-    const slidesDir = path.join(__dirname, '..', '..', '..', 'public', 'images', 'slides');
-    let slideFiles = [];
-    try {
-        slideFiles = fs.readdirSync(slidesDir).filter(f => ['.png', '.jpg', '.jpeg'].includes(path.extname(f).toLowerCase()));
-    } catch (e) {}
-
-    const seedFile = async (filename) => {
-        const title = filename.split('.')[0];
-        const res = await db.run(
-            'INSERT OR IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
-            [title, filename, 'public', filename] 
-        );
-        const row = await db.get('SELECT id FROM files WHERE filename = ?', [filename]);
-        return row ? row.id : null;
-    };
 
     const tags = [
         { name: 'slalom', color: '#e6194b', priority: 3 },
@@ -157,10 +178,7 @@ async function seedDevelopment(db) {
     const tagIds = {};
     for (let i = 0; i < tags.length; i++) {
         const t = tags[i];
-        let imageId = null;
-        if (slideFiles.length > 0) {
-            imageId = await seedFile(slideFiles[i % slideFiles.length]);
-        }
+        let imageId = seededFileIds.length > 0 ? seededFileIds[i % seededFileIds.length] : null;
 
         let row = await db.get('SELECT id FROM tags WHERE name = ?', [t.name]);
         if (!row) {
@@ -244,8 +262,8 @@ async function seedDevelopment(db) {
     };
     const createEvent = async (data) => {
         const res = await db.run(
-            `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [data.title, data.description, data.location, data.start, data.end, data.difficulty_level || 1, data.max_attendees !== undefined ? data.max_attendees : 20, data.upfront_cost, data.upfront_refund_cutoff || null]
+            `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff, image_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [data.title, data.description, data.location, data.start, data.end, data.difficulty_level || 1, data.max_attendees !== undefined ? data.max_attendees : 20, data.upfront_cost, data.upfront_refund_cutoff || null, data.image_id || null]
         );
         if (data.tags) {
             for (const tagId of data.tags) {
@@ -279,22 +297,23 @@ async function seedDevelopment(db) {
         const day = currentDate.getDay();
         let eventId = null;
         let maxAttendees = 20;
+        let imageId = seededFileIds.length > 0 ? seededFileIds[Math.floor(Math.random() * seededFileIds.length)] : null;
 
         if (day === 3) { // Wednesday: Social
             maxAttendees = 0; // Unlimited
-            eventId = await createEvent({ title: `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: 0, max_attendees: 0, tags: [tagIds['socials']] });
+            eventId = await createEvent({ title: `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: 0, max_attendees: 0, tags: [tagIds['socials']], image_id: imageId });
         } else if (day === 4) { // Thursday: River Trip
             const startT = new Date(currentDate); startT.setHours(14, 0, 0, 0);
             const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 48);
-            eventId = await createEvent({ title: "Slalom/White Water", description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: 12, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']] });
+            eventId = await createEvent({ title: "Slalom/White Water", description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: 12, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']], image_id: imageId });
         } else if (day === 5) { // Friday: Polo Pool Session
             const startT = new Date(currentDate); startT.setHours(19, 0, 0, 0);
             const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 24);
-            eventId = await createEvent({ title: "Polo Pool Session", description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: 6, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']] });
+            eventId = await createEvent({ title: "Polo Pool Session", description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: 6, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']], image_id: imageId });
         } else if ([1, 2].includes(day) && Math.random() < 0.7) { // Mon/Tue: Gym/Ergs
             const type = ['polo', 'white water', 'slalom'][Math.floor(Math.random() * 3)];
             maxAttendees = 5;
-            eventId = await createEvent({ title: `${type.toUpperCase()} Ergs`, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: 0, max_attendees: 5, tags: [tagIds['ergs'], tagIds[type]] });
+            eventId = await createEvent({ title: `${type.toUpperCase()} Ergs`, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: 0, max_attendees: 5, tags: [tagIds['ergs'], tagIds[type]], image_id: imageId });
         }
 
         // Randomly populate events with attendees and waitlists

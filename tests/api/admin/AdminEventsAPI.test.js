@@ -111,7 +111,7 @@ describe('api/admin/AdminEventsAPI', () => {
             expect(res2.statusCode).toBe(403);
         });
 
-        test('Event inherits highest priority tag image if no image_url provided', async () => {
+        test('Event inherits highest priority tag image if no image_id provided', async () => {
             const lowFileId = await world.createFile('LowImg');
             const highFileId = await world.createFile('HighImg');
             
@@ -131,18 +131,20 @@ describe('api/admin/AdminEventsAPI', () => {
 
             expect(res.statusCode).toBe(200);
             const eventId = res.body.data.id;
-            const event = await world.db.get('SELECT image_url FROM events WHERE id = ?', [eventId]);
-            expect(event.image_url).toBe(`/api/files/${highFileId}/download?view=true`);
+            
+            const getRes = await world.as('admin').get(`/api/admin/event/${eventId}`);
+            expect(getRes.body.image_url).toBe(`/api/files/${highFileId}/download?view=true`);
         });
 
         test('POST /api/admin/event/:id/reset-image - Clear event custom image', async () => {
-            const eventId = await world.createEvent('ImageEvent', { image_url: '/custom.png' });
+            const fileId = await world.createFile('TestImg');
+            const eventId = await world.createEvent('ImageEvent', { image_id: fileId });
             
             const res = await world.as('admin').post(`/api/admin/event/${eventId}/reset-image`);
             expect(res.statusCode).toBe(200);
 
-            const event = await world.db.get('SELECT image_url FROM events WHERE id = ?', [eventId]);
-            expect(event.image_url).toBeNull();
+            const event = await world.db.get('SELECT image_id FROM events WHERE id = ?', [eventId]);
+            expect(event.image_id).toBeNull();
         });
 
         test('Image Fallback Chain: Event -> Tag -> Global Default', async () => {
@@ -155,15 +157,15 @@ describe('api/admin/AdminEventsAPI', () => {
             const tagImageUrl = `/api/files/${tagFileId}/download?view=true`;
 
             // 2. Event with its own image
-            const eventImageUrl = '/event-own.png';
+            const eventFileId = await world.createFile('EventImg');
             const eventId = await world.createEvent('Hiking', { 
-                image_url: eventImageUrl
+                image_id: eventFileId
             });
             await world.assignTag('event', 'Hiking', 'Nature');
 
             // Step 1: Verify event image
             let res = await world.as('admin').get(`/api/admin/event/${eventId}`);
-            expect(res.body.image_url).toBe(eventImageUrl);
+            expect(res.body.image_url).toBe(`/api/files/${eventFileId}/download?view=true`);
 
             // Step 2: Remove event image, verify fallback to tag image
             await world.as('admin').post(`/api/admin/event/${eventId}/reset-image`);

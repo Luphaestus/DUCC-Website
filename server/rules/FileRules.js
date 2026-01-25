@@ -46,7 +46,7 @@ class FileRules {
             }
 
             // Identify all events using this file as their banner image
-            const events = await db.all("SELECT * FROM events WHERE image_url LIKE '%/api/files/' || ? || '/download%'", [file.id]);
+            const events = await db.all("SELECT * FROM events WHERE image_id = ?", [file.id]);
             
             // Also check if this file is a default image for any tags
             const tags = await db.all("SELECT id FROM tags WHERE image_id = ?", [file.id]);

@@ -181,12 +181,11 @@ class UserDB {
     static async getElements(db, userId, elements) {
         if (typeof elements === 'string') elements = [elements];
 
-        // Handle the 'balance' virtual column by mapping it to a sub-select
-        const mappedElements = elements.map(e =>
-            e === 'balance'
-                ? '(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = users.id) as balance'
-                : e
-        );
+        const mappedElements = elements.map(e => {
+            if (e === 'balance') return '(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = users.id) as balance';
+            if (e === 'profile_picture_path') return '(SELECT "/api/files/" || f.id || "/download?view=true" FROM files f WHERE f.id = users.profile_picture_id) as profile_picture_path';
+            return e;
+        });
 
         try {
             const user = await db.get(

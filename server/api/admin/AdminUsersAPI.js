@@ -150,9 +150,9 @@ class AdminUsers {
          */
         this.app.post('/api/admin/user/:id/role', check('perm:user.manage | perm:role.manage'), async (req, res) => {
             const roleId = req.body.roleId;
-            const role = await this.db.get('SELECT name FROM roles WHERE id = ?', [roleId]);
+            const roleName = await RolesDB.getRoleNameById(this.db, roleId);
             
-            if (role && role.name === 'President') {
+            if (roleName === 'President') {
                 const { password } = req.body;
                 if (!password) {
                     return res.status(400).json({ message: 'Password is required to transfer the President role.' });

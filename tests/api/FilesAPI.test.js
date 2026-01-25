@@ -146,7 +146,7 @@ describe('api/FilesAPI', () => {
             // Create an event that is too difficult for the current user
             await world.createEvent('Hard Event', {
                 difficulty_level: 5,
-                image_url: imageUrl
+                image_id: eventFileId
             });
 
             // Guests should be blocked
@@ -223,7 +223,7 @@ describe('api/FilesAPI', () => {
             const tagId = world.data.tags['SecretTag'];
 
             // Create an event with this tag and image
-            await world.createEvent('Secret Event', { image_url: imageUrl });
+            await world.createEvent('Secret Event', { image_id: secretFileId });
             await world.assignTag('event', 'Secret Event', 'SecretTag');
 
             // User not on whitelist should be blocked
@@ -236,6 +236,89 @@ describe('api/FilesAPI', () => {
             const resOk = await world.as('member').get(imageUrl);
             expect(resOk.statusCode).toBe(200);
             expect(resOk.text).toBe('secret content');
+        });
+    });
+
+    describe('Hashing & Deduplication', () => {
+        const testFile1 = path.join(os.tmpdir(), 'test_image.png');
+        
+        beforeAll(() => {
+            if (!fs.existsSync(testFile1)) {
+                fs.writeFileSync(testFile1, 'dummy image content');
+            }
+        });
+
+        /**
+         * Test logic: 
+         * 1. Upload a file.
+         * 2. Upload the same file again.
+         * 3. Verify that both DB records point to the same physical filename.
+         */
+        test('should reuse the same filename for identical content (deduplication)', async () => {
+            await world.createRole('admin_role', ['file.write']);
+            await world.createUser('admin_dedup', {}, ['admin_role']);
+            
+            // First upload
+            const res1 = await world.as('admin_dedup')
+                .post('/api/files')
+                .attach('files', testFile1)
+                .field('title', 'First Upload');
+            
+            expect(res1.status).toBe(201);
+            const fileId1 = res1.body.ids[0];
+            
+            const file1 = await world.db.get('SELECT * FROM files WHERE id = ?', fileId1);
+            const filename1 = file1.filename;
+
+            // Second upload (identical content)
+            const res2 = await world.as('admin_dedup')
+                .post('/api/files')
+                .attach('files', testFile1)
+                .field('title', 'Second Upload');
+            
+            expect(res2.status).toBe(201);
+            const fileId2 = res2.body.ids[0];
+            
+            const file2 = await world.db.get('SELECT * FROM files WHERE id = ?', fileId2);
+            const filename2 = file2.filename;
+
+            // Filenames should match, but IDs should be unique
+            expect(filename1).toBe(filename2);
+            expect(fileId1).not.toBe(fileId2);
+            expect(file1.hash).toBe(file2.hash);
+        });
+
+        /**
+         * Test logic:
+         * 1. Upload two different files.
+         * 2. Verify that they receive unique filenames and hashes.
+         */
+        test('should use unique filenames for different content', async () => {
+            const testFile2 = path.join(os.tmpdir(), 'test_image_2.png');
+            fs.writeFileSync(testFile2, 'different content');
+
+            await world.createRole('admin_role_2', ['file.write']);
+            await world.createUser('admin_dedup_2', {}, ['admin_role_2']);
+
+            const res1 = await world.as('admin_dedup_2')
+                .post('/api/files')
+                .attach('files', testFile1);
+            
+            const fileId1 = res1.body.ids[0];
+            const file1 = await world.db.get('SELECT * FROM files WHERE id = ?', fileId1);
+
+            const res2 = await world.as('admin_dedup_2')
+                .post('/api/files')
+                .attach('files', testFile2);
+            
+            const fileId2 = res2.body.ids[0];
+            const file2 = await world.db.get('SELECT * FROM files WHERE id = ?', fileId2);
+
+            expect(file1.filename).not.toBe(file2.filename);
+            expect(file1.hash).not.toBe(file2.hash);
+
+            // Cleanup
+            if (fs.existsSync(testFile2)) fs.unlinkSync(testFile2);
         });
     });
 });

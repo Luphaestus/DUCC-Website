@@ -40,7 +40,7 @@ describe('api/events/EventsAPI', () => {
 
     describe('GET /api/events/rweek/:offset (Listings)', () => {
         test('Returns a valid event list for the requested offset', async () => {
-            await world.createEvent('E1');
+            await world.createEvent('E1', { start: world.getCurrentWeekDate() });
             await world.createUser('user', { difficulty_level: 5 });
             
             const res = await world.as('user').get('/api/events/rweek/0');
@@ -53,8 +53,11 @@ describe('api/events/EventsAPI', () => {
          */
         test('Guest visibility is restricted by the global difficulty limit', async () => {
             world.mockGlobalInt('Unauthorized_max_difficulty', 1);
-            await world.createEvent('HardEvent', { difficulty_level: 5 });
-            await world.createEvent('EasyEvent', { difficulty_level: 1 });
+            
+            const start = world.getCurrentWeekDate();
+
+            await world.createEvent('HardEvent', { difficulty_level: 5, start });
+            await world.createEvent('EasyEvent', { difficulty_level: 1, start });
 
             const res = await world.request.get('/api/events/rweek/0');
             expect(res.statusCode).toBe(200);

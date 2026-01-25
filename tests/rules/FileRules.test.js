@@ -45,6 +45,7 @@ describe('rules/FileRules', () => {
 
     describe('Access Logic: visibility: events (Dynamic Lookups)', () => {
         let fileId;
+        let file;
 
         beforeEach(async () => {
             // Create a file marked with 'events' visibility
@@ -52,6 +53,7 @@ describe('rules/FileRules', () => {
                 ['Banner', 'banner.jpg', 'h', 'events']);
             const f = await world.db.get('SELECT id FROM files WHERE filename = "banner.jpg"');
             fileId = f.id;
+            file = { id: fileId, visibility: 'events' };
         });
 
         /**
@@ -63,40 +65,24 @@ describe('rules/FileRules', () => {
         });
 
         test('Allowed: if the user is authorized to view a linked event', async () => {
-            // Link file to a public event
-            await world.createEvent('E1', { difficulty_level: 1, image_url: `/api/files/${fileId}/download` });
-            const file = { id: fileId, visibility: 'events' };
-            const user = { difficulty_level: 1 };
-            
-            expect(await FileRules.canAccessFile(world.db, file, user, 'member')).toBe(true);
+            await world.createEvent('E1', { difficulty_level: 1, image_id: fileId });
+            expect(await FileRules.canAccessFile(world.db, file, { difficulty_level: 1 }, 'member')).toBe(true);
         });
 
         test('Denied: if the linked event difficulty is beyond user\'s level', async () => {
-            // Link file to a difficult event
-            await world.createEvent('Pro Only', { difficulty_level: 5, image_url: `/api/files/${fileId}/download` });
-            const file = { id: fileId, visibility: 'events' };
-            const user = { difficulty_level: 1 };
-            
-            expect(await FileRules.canAccessFile(world.db, file, user, 'member')).toBe(false);
+            await world.createEvent('Pro Only', { difficulty_level: 5, image_id: fileId });
+            expect(await FileRules.canAccessFile(world.db, file, { difficulty_level: 1 }, 'member')).toBe(false);
         });
 
-        /**
-         * Test logical OR: if a file is used by multiple events, one accessible event is enough.
-         */
         test('Logic OR: allowed if at least one of multiple linked events is viewable', async () => {
-            await world.createEvent('Hard', { difficulty_level: 5, image_url: `/api/files/${fileId}/download` });
-            await world.createEvent('Easy', { difficulty_level: 1, image_url: `/api/files/${fileId}/download` });
-            
-            const file = { id: fileId, visibility: 'events' };
-            const user = { difficulty_level: 1 };
-            expect(await FileRules.canAccessFile(world.db, file, user, 'member')).toBe(true);
+            await world.createEvent('Hard', { difficulty_level: 5, image_id: fileId });
+            await world.createEvent('Easy', { difficulty_level: 1, image_id: fileId });
+            expect(await FileRules.canAccessFile(world.db, file, { difficulty_level: 1 }, 'member')).toBe(true);
         });
 
         test('Exec Override: execs bypass difficulty checks for event images', async () => {
-            await world.createEvent('Pro Only', { difficulty_level: 5, image_url: `/api/files/${fileId}/download` });
-            const file = { id: fileId, visibility: 'events' };
-            
-            expect(await FileRules.canAccessFile(world.db, file, null, 'exec')).toBe(true);
+            await world.createEvent('Pro Only', { difficulty_level: 5, image_id: fileId });
+            expect(await FileRules.canAccessFile(world.db, file, { difficulty_level: 1 }, 'exec')).toBe(true);
         });
 
         test('Allowed: if the user can see an event that uses a tag which has this file as default', async () => {
@@ -128,8 +114,8 @@ describe('rules/FileRules', () => {
             const file = { id: fileId, visibility: 'events' };
             
             // 1. Create E1 (difficulty 1) and E2 (difficulty 5)
-            await world.createEvent('E1', { difficulty_level: 1, image_url: `/api/files/${fileId}/download` });
-            await world.createEvent('E2', { difficulty_level: 5, image_url: `/api/files/${fileId}/download` });
+            await world.createEvent('E1', { difficulty_level: 1, image_id: fileId });
+            await world.createEvent('E2', { difficulty_level: 5, image_id: fileId });
             const e1 = await world.db.get('SELECT id FROM events WHERE title = "E1"');
 
             // Viewable via E1 (diff 1) - Guest max is 2 by default in TestWorld/Globals

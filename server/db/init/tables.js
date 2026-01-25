@@ -53,9 +53,11 @@ async function createTables(db) {
         is_instructor BOOLEAN NOT NULL DEFAULT 0,
         first_aid_expiry DATE,
         swims INTEGER NOT NULL DEFAULT 0,
-        profile_picture_path TEXT,
+        booties INTEGER NOT NULL DEFAULT 0,
+        profile_picture_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (college_id) REFERENCES colleges(id)
+        FOREIGN KEY (college_id) REFERENCES colleges(id),
+        FOREIGN KEY (profile_picture_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {
@@ -74,8 +76,9 @@ async function createTables(db) {
         is_canceled BOOLEAN NOT NULL DEFAULT 0,
         enable_waitlist BOOLEAN NOT NULL DEFAULT 1,
         signup_required BOOLEAN NOT NULL DEFAULT 1,
-        image_url TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        image_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (image_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {
@@ -261,6 +264,15 @@ async function createTables(db) {
         expires_at DATETIME NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'slides',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_id INTEGER NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
       `
     }
   ];

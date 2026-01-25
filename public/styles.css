@@ -6455,11 +6455,30 @@ footer .footer-bottom p {
   color: var(--pico-primary);
   font-weight: 800;
   font-size: 1.1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
 }
 @media (max-width: 600px) {
   #swims-view .podium-container .podium-place .swim-count {
     font-size: 0.9rem;
+  }
+}
+#swims-view .podium-container .podium-place .bootie-count {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+#swims-view .podium-container .podium-place .bootie-count.bootie-green {
+  color: #2ecc71;
+}
+#swims-view .podium-container .podium-place .bootie-count.bootie-yellow {
+  color: #f1c40f;
+}
+#swims-view .podium-container .podium-place .bootie-count.bootie-red {
+  color: #e74c3c;
+}
+@media (max-width: 600px) {
+  #swims-view .podium-container .podium-place .bootie-count {
+    font-size: 0.8rem;
   }
 }
 #swims-view .podium-container .podium-place .podium-step {
@@ -6723,6 +6742,12 @@ footer .footer-bottom p {
   letter-spacing: 0.05em;
   font-weight: 700;
 }
+#swims-view .leaderboard-list .leaderboard-row .swims-count-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+}
 #swims-view .leaderboard-list .leaderboard-row .swims-count {
   font-weight: 700;
   font-size: 1.1rem;
@@ -6731,6 +6756,26 @@ footer .footer-bottom p {
 }
 #swims-view .leaderboard-list .leaderboard-row .swims-count span {
   font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  font-weight: 400;
+  margin-left: 0.25rem;
+}
+#swims-view .leaderboard-list .leaderboard-row .booties-count {
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: right;
+}
+#swims-view .leaderboard-list .leaderboard-row .booties-count.bootie-green {
+  color: #2ecc71;
+}
+#swims-view .leaderboard-list .leaderboard-row .booties-count.bootie-yellow {
+  color: #f1c40f;
+}
+#swims-view .leaderboard-list .leaderboard-row .booties-count.bootie-red {
+  color: #e74c3c;
+}
+#swims-view .leaderboard-list .leaderboard-row .booties-count span {
+  font-size: 0.75rem;
   color: var(--pico-muted-color);
   font-weight: 400;
   margin-left: 0.25rem;

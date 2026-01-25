@@ -43,12 +43,10 @@ class FilesAPI {
         this.db = db;
         this.uploadDir = uploadDir || path.join(__dirname, '../../data/files');
 
-        // Ensure upload directory exists
         if (!fs.existsSync(this.uploadDir)) {
             fs.mkdirSync(this.uploadDir, { recursive: true });
         }
 
-        // Configure storage for multer
         const storage = multer.diskStorage({
             destination: (req, file, cb) => {
                 cb(null, this.uploadDir);
@@ -60,7 +58,6 @@ class FilesAPI {
             }
         });
 
-        // Initialize multer with file type restrictions
         this.upload = multer({ 
             storage: storage,
             fileFilter: (req, file, cb) => {
@@ -115,7 +112,8 @@ class FilesAPI {
                 search: req.query.search,
                 sort: req.query.sort,
                 order: req.query.order,
-                categoryId: req.query.categoryId
+                categoryId: req.query.categoryId,
+                includeUsed: req.query.includeUsed === 'true'
             };
 
             const status = await FilesDB.getFiles(this.db, options, role);

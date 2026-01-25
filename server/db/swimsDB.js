@@ -35,6 +35,31 @@ class SwimsDB {
     }
 
     /**
+     * Add booties to a user's total.
+     * Cannot exceed the total number of swims.
+     * @param {object} db - Database connection.
+     * @param {number} userId - ID of the target user.
+     * @param {number} count - Number of booties to add.
+     * @returns {Promise<statusObject>}
+     */
+    static async addBooties(db, userId, count) {
+        try {
+            const user = await db.get('SELECT swims, booties FROM users WHERE id = ?', [userId]);
+            if (!user) return new statusObject(404, 'User not found');
+
+            if (user.booties + count > user.swims) {
+                return new statusObject(400, 'Booties cannot exceed swims');
+            }
+
+            await db.run('UPDATE users SET booties = booties + ? WHERE id = ?', [count, userId]);
+            return new statusObject(200, 'Booties added successfully');
+        } catch (error) {
+            console.error(error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Generate a leaderboard of users with the most swims.
      * Supports filtering by the current academic year.
      * @param {object} db - Database connection.
@@ -51,7 +76,7 @@ class SwimsDB {
                 // Fetch the start date of the current academic year
                 const start = Utils.getAcademicYearStart();
                 query = `
-                    SELECT u.id, u.first_name, u.last_name, SUM(sh.count) as swims
+                    SELECT u.id, u.first_name, u.last_name, SUM(sh.count) as swims, u.booties
                     FROM users u
                     JOIN swim_history sh ON u.id = sh.user_id
                     WHERE sh.created_at >= ?
@@ -61,7 +86,7 @@ class SwimsDB {
                 `;
                 params.push(start);
             } else {
-                query = 'SELECT id, first_name, last_name, swims FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC';
+                query = 'SELECT id, first_name, last_name, swims, booties FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC';
             }
 
             const users = await db.all(query, params);
@@ -91,7 +116,7 @@ class SwimsDB {
      * @param {object} db - Database connection.
      * @param {number} userId - Target user ID.
      * @param {boolean} [yearly=false] - If true, calculates rank based on current academic year.
-     * @returns {Promise<statusObject>} - Data contains { rank, swims }.
+     * @returns {Promise<statusObject>} - Data contains { rank, swims, booties }.
      */
     static async getUserSwimmerRank(db, userId, yearly = false) {
         try {
@@ -99,7 +124,7 @@ class SwimsDB {
             if (yearly) {
                 const start = Utils.getAcademicYearStart();
                 allSwimmers = await db.all(`
-                    SELECT u.id, SUM(sh.count) as swims
+                    SELECT u.id, SUM(sh.count) as swims, u.booties
                     FROM users u
                     JOIN swim_history sh ON u.id = sh.user_id
                     WHERE sh.created_at >= ?
@@ -107,13 +132,14 @@ class SwimsDB {
                     ORDER BY swims DESC
                 `, [start]);
             } else {
-                allSwimmers = await db.all('SELECT id, swims FROM users ORDER BY swims DESC');
+                allSwimmers = await db.all('SELECT id, swims, booties FROM users ORDER BY swims DESC');
             }
 
             let rank = 0;
             let lastSwims = -1;
             let userRank = -1;
             let userSwims = 0;
+            let userBooties = 0;
 
             if (allSwimmers && allSwimmers.length > 0) {
                 // Iterate through sorted list to find the user's position
@@ -125,12 +151,13 @@ class SwimsDB {
                     if (s.id === userId) {
                         userRank = rank;
                         userSwims = s.swims;
+                        userBooties = s.booties;
                         break;
                     }
                 }
             }
 
-            return new statusObject(200, null, { rank: userRank, swims: userSwims });
+            return new statusObject(200, null, { rank: userRank, swims: userSwims, booties: userBooties });
         } catch (error) {
             return new statusObject(500, 'Database error');
         }

@@ -66,7 +66,12 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             ${Panel({
                 title: 'Swimming Stats',
                 icon: POOL_SVG,
-                action: canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn icon-text-btn">${ADD_SVG} Log Swim</button>` : '',
+                action: canManageSwims ? `
+                    <div class="panel-actions-group">
+                        <button id="admin-add-swim-btn" class="small-btn icon-text-btn">${ADD_SVG} Log Swim</button>
+                        <button id="admin-add-bootie-btn" class="small-btn secondary icon-text-btn">${ADD_SVG} Log Bootie</button>
+                    </div>
+                ` : '',
                 content: `
                     <div class="stats-grid" id="admin-swimming-stats-grid">
                         <div class="stat-item">
@@ -74,16 +79,16 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                             <span class="stat-label">Yearly Swims</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value" id="admin-user-rank-yearly">${getOrdinal(user.swimmer_stats?.yearly?.rank)}</span>
-                            <span class="stat-label">Yearly Rank</span>
+                            <span class="stat-value" id="admin-user-booties-yearly">${user.swimmer_stats?.yearly?.booties || 0}</span>
+                            <span class="stat-label">Yearly Booties</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-value" id="admin-user-swims-total">${user.swimmer_stats?.allTime?.swims || 0}</span>
                             <span class="stat-label">Total Swims</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value" id="admin-user-rank-total">${getOrdinal(user.swimmer_stats?.allTime?.rank)}</span>
-                            <span class="stat-label">All Time Rank</span>
+                            <span class="stat-value" id="admin-user-booties-total">${user.swimmer_stats?.allTime?.booties || 0}</span>
+                            <span class="stat-label">Total Booties</span>
                         </div>
                     </div>
                 `
@@ -387,6 +392,27 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     notify('Success', 'Swim logged', 'success');
                 } catch (e) {
                     notify('Error', 'Failed to log swim', 'error');
+                }
+            };
+
+            document.getElementById('admin-add-bootie-btn').onclick = async () => {
+                try {
+                    await apiRequest('POST', `/api/user/${user.id}/booties`, { count: 1 });
+
+                    const statsRes = await apiRequest('GET', `/api/user/${user.id}/elements/swimmer_rank`);
+                    if (statsRes.swimmer_stats) {
+                        user.swimmer_stats = statsRes.swimmer_stats;
+                    }
+
+                    const yearlyEl = document.getElementById('admin-user-booties-yearly');
+                    const totalEl = document.getElementById('admin-user-booties-total');
+
+                    if (yearlyEl) yearlyEl.textContent = user.swimmer_stats.yearly.booties;
+                    if (totalEl) totalEl.textContent = user.swimmer_stats.allTime.booties;
+
+                    notify('Success', 'Bootie logged', 'success');
+                } catch (e) {
+                    notify('Error', e.message || 'Failed to log bootie', 'error');
                 }
             };
         }

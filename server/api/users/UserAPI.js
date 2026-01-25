@@ -19,6 +19,7 @@ const transactionsDB = require('../../db/transactionDB.js');
 const RolesDB = require('../../db/rolesDB.js');
 const CollegesDB = require('../../db/collegesDB.js');
 const Globals = require('../../misc/globals.js');
+const AuthDB = require('../../db/authDB.js');
 const check = require('../../misc/authentication.js');
 const bcrypt = require('bcrypt');
 const ValidationRules = require('../../rules/ValidationRules.js');
@@ -75,7 +76,7 @@ class User {
                 "takes_medication", "medication_details", "free_sessions", "is_member",
                 "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts",
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
-                "is_instructor", "first_aid_expiry", "profile_picture_path",
+                "is_instructor", "first_aid_expiry", "profile_picture_path", "profile_picture_id",
                 "created_at", "swims", "swimmer_rank", "permissions", "roles"
             ];
             const accessibleTransactionsDB = ['balance', 'transactions'];
@@ -87,7 +88,6 @@ class User {
         const userElements = [];
         const transactionElements = [];
 
-        // Distribute element requests to their respective database handlers
         for (const element of elements) {
             const [accessibleUserDB, accessibleTransactionsDB] = isElementAccessibleByNormalUser(element);
             if (!accessibleUserDB && !accessibleTransactionsDB) return new statusObject(403, 'Forbidden element: ' + element);
@@ -97,7 +97,6 @@ class User {
 
         let userResultData = {};
         if (userElements.length > 0) {
-            // Some "virtual" elements require additional logic beyond simple column lookups
             const needsRank = userElements.includes('swimmer_rank');
             const needsPerms = userElements.includes('permissions');
             const needsRoles = userElements.includes('roles');
@@ -110,7 +109,6 @@ class User {
                 userResultData = userResult.getData();
             }
 
-            // Handle swimmer rank and stats fetching
             if (needsRank) {
                 const [allTimeRes, yearlyRes] = await Promise.all([
                     SwimsDB.getUserSwimmerRank(db, req.user.id, false),
@@ -126,7 +124,6 @@ class User {
                 userResultData.swimmer_rank = allTimeData.rank;
             }
 
-            // Handle role and permission expansion
             if (needsPerms || needsRoles) {
                 if (needsRoles) {
                     const rolesRes = await RolesDB.getUserRoles(db, req.user.id);
@@ -172,7 +169,6 @@ class User {
         const errors = {};
         let legalUpdateNeeded = false;
 
-        // Perform validation for each field in the update batch
         for (const element in data) {
             const value = data[element];
             let error = null;
@@ -249,7 +245,6 @@ class User {
             return new statusObject(400, 'Validation failed', { errors });
         }
 
-        // Logic to automatically flag profile as "legal info complete"
         if (legalUpdateNeeded) {
             let allFilled = true;
             for (const element of User.legalElements) {
@@ -304,7 +299,6 @@ class User {
             if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
             
             const elements = req.params.elements.split(',').map(e => e.trim());
-            // Mock a request object for the target user to reuse access logic
             const targetReq = { ...req, user: { ...req.user, id: userId } };
             const status = await User.getAccessibleElements(targetReq, this.db, elements);
             if (status.isError()) return status.getResponse(res);
@@ -360,14 +354,12 @@ class User {
             if (!password) return res.status(400).json({ message: 'Password is required to delete account.' });
 
             try {
-                const user = await this.db.get('SELECT hashed_password FROM users WHERE id = ?', [req.user.id]);
+                const user = await AuthDB.getUserById(this.db, req.user.id);
                 if (!user || !user.hashed_password) return res.status(400).json({ message: 'User not found or invalid state.' });
 
-                // Verify identity before deletion
                 const isMatch = await bcrypt.compare(password, user.hashed_password);
                 if (!isMatch) return res.status(403).json({ message: 'Incorrect password.' });
 
-                // Prevent deletion if user owes money
                 const balance = await transactionsDB.get_balance(this.db, req.user.id);
                 if (balance.isError()) return balance.getResponse(res);
                 if (balance.getData() !== 0) return res.status(400).json({ message: 'Balance must be zero to delete account.' });

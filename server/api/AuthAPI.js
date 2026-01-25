@@ -24,6 +24,7 @@ const crypto = require('crypto');
 const checkAuthentication = require('../misc/authentication.js');
 const Utils = require('../misc/utils.js');
 const ValidationRules = require('../rules/ValidationRules.js');
+const AuthDB = require('../db/authDB.js');
 
 /**
  * API for authentication, registration, and session management.
@@ -42,13 +43,12 @@ class Auth {
         this.db = db;
         this.passport = passport;
 
-        // Configure Local Strategy for email/password login
         passport.use(new LocalStrategy(
             { usernameField: 'email' },
             async (email, password, done) => {
                 const formatedEmail = email.replace(/\s/g, '').toLowerCase();
                 try {
-                    const user = await this.db.get('SELECT * FROM users WHERE email = ?', [formatedEmail]);
+                    const user = await AuthDB.getUserByEmail(this.db, formatedEmail);
                     if (!user) return done(null, false, { message: 'Incorrect email.' });
 
                     const isMatch = await bcrypt.compare(password, user.hashed_password);
@@ -61,15 +61,13 @@ class Auth {
             }
         ));
 
-        // Serialize user ID into the session
         passport.serializeUser((user, done) => {
             done(null, user.id);
         });
 
-        // Deserialize user object from the ID in the session
         passport.deserializeUser(async (id, done) => {
             try {
-                const user = await this.db.get('SELECT * FROM users WHERE id = ?', [id]);
+                const user = await AuthDB.getUserById(this.db, id);
                 done(null, user);
             } catch (err) {
                 done(err);
@@ -94,7 +92,6 @@ class Auth {
 
             email = email.replace(/\s/g, '').toLowerCase();
 
-            // Validate input data
             const errors = {};
             const emailError = ValidationRules.validate('email', email);
             if (emailError) errors.email = emailError;
@@ -110,35 +107,20 @@ class Auth {
             }
 
             try {
-                // Check for soft-deleted account by looking for 'deleted:' prefix
                 const deletedEmail = 'deleted:' + email;
-                const existingUser = await this.db.get('SELECT id FROM users WHERE email = ?', [deletedEmail]);
+                const existingUser = await AuthDB.getUserByEmail(this.db, deletedEmail);
 
                 const hashedPassword = await bcrypt.hash(password, 10);
 
                 if (existingUser) {
-                    // Restore account by removing prefix and updating data
-                    await this.db.run(`
-                        UPDATE users SET 
-                            email = ?, 
-                            hashed_password = ?, 
-                            first_name = ?, 
-                            last_name = ?,
-                            created_at = CURRENT_TIMESTAMP 
-                        WHERE id = ?`, 
-                        [email, hashedPassword, first_name, last_name, existingUser.id]
-                    );
-                    res.status(200).json({ message: 'Account restored successfully.' });
+                    const status = await AuthDB.restoreUser(this.db, existingUser.id, email, hashedPassword, first_name, last_name);
+                    status.getResponse(res);
                 } else {
-                    // Insert fresh user
-                    await this.db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
-                    res.status(201).json({ message: 'User registered successfully.' });
+                    const status = await AuthDB.createUser(this.db, email, hashedPassword, first_name, last_name);
+                    status.getResponse(res);
                 }
             } catch (err) {
                 console.error(err);
-                if (err.message && err.message.includes('UNIQUE constraint failed')) {
-                     return res.status(400).json({ message: 'Registration failed', errors: { email: 'Email is already taken.' } });
-                }
                 res.status(500).json({ message: 'Registration failed.' });
             }
         });
@@ -188,7 +170,7 @@ class Auth {
             if (!email) return res.status(400).json({ message: 'Email is required.' });
 
             try {
-                const user = await this.db.get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+                const user = await AuthDB.getUserByEmail(this.db, email.toLowerCase());
                 if (!user) {
                     // Security best practice: don't reveal if user exists
                     return res.json({ message: 'If an account exists, a reset link has been sent.' });
@@ -197,16 +179,10 @@ class Auth {
                 const token = crypto.randomBytes(32).toString('hex');
                 const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour expiry
 
-                await this.db.run('DELETE FROM password_resets WHERE user_id = ?', [user.id]);
-
-                await this.db.run(
-                    'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
-                    [user.id, token, expiresAt]
-                );
+                await AuthDB.createPasswordReset(this.db, user.id, token, expiresAt);
 
                 const baseUrl = Utils.getBaseUrl(req);
 
-                // In a production environment, this would send an email
                 console.log(`[RESET] Password reset url for ${email}: ${baseUrl}/set-password?token=${token}`);
 
                 res.json({ message: 'If an account exists, a reset link has been sent.' });
@@ -224,10 +200,7 @@ class Auth {
             if (!token || !newPassword) return res.status(400).json({ message: 'Token and new password required.' });
 
             try {
-                const resetRecord = await this.db.get(
-                    'SELECT * FROM password_resets WHERE token = ? AND expires_at > CURRENT_TIMESTAMP',
-                    [token]
-                );
+                const resetRecord = await AuthDB.getValidPasswordReset(this.db, token);
 
                 if (!resetRecord) {
                     return res.status(400).json({ message: 'Invalid or expired token.' });
@@ -235,8 +208,7 @@ class Auth {
 
                 const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-                await this.db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, resetRecord.user_id]);
-                await this.db.run('DELETE FROM password_resets WHERE user_id = ?', [resetRecord.user_id]);
+                await AuthDB.resetPassword(this.db, resetRecord.user_id, hashedPassword);
 
                 res.json({ message: 'Password updated successfully.' });
             } catch (e) {
@@ -253,14 +225,14 @@ class Auth {
             if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Current and new password required.' });
 
             try {
-                const user = await this.db.get('SELECT * FROM users WHERE id = ?', [req.user.id]);
+                const user = await AuthDB.getUserById(this.db, req.user.id);
                 if (!user) return res.status(404).json({ message: 'User not found.' });
 
                 const isMatch = await bcrypt.compare(currentPassword, user.hashed_password);
                 if (!isMatch) return res.status(403).json({ message: 'Incorrect current password.' });
 
                 const hashedPassword = await bcrypt.hash(newPassword, 10);
-                await this.db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+                await AuthDB.updatePassword(this.db, req.user.id, hashedPassword);
 
                 res.json({ message: 'Password changed successfully.' });
             } catch (e) {

@@ -118,19 +118,18 @@ async function fetchAndRenderSlides() {
     try {
         grid.innerHTML = '<p class="loading-cell">Loading slides...</p>';
         const data = await apiRequest('GET', '/api/slides/images');
-        const images = data.images || [];
+        const slides = data.slides || [];
 
-        if (images.length === 0) {
+        if (slides.length === 0) {
             grid.innerHTML = '<p class="empty-cell">No slides found.</p>';
             return;
         }
 
-        grid.innerHTML = images.map(url => {
-            const filename = url.split('/').pop();
+        grid.innerHTML = slides.map(slide => {
             return `
-            <div class="image-item slide-item" style="background-image: url('${url}')">
+            <div class="image-item slide-item" style="background-image: url('${slide.url}')">
                 <div class="slide-actions">
-                    <button class="delete-slide-btn delete-icon-btn" data-filename="${filename}" title="Delete Slide">
+                    <button class="delete-slide-btn delete-icon-btn" data-file-id="${slide.id}" title="Delete Slide">
                         ${DELETE_SVG}
                     </button>
                 </div>
@@ -142,9 +141,9 @@ async function fetchAndRenderSlides() {
                 e.stopPropagation();
                 if (!await showConfirmModal('Delete Slide', 'Are you sure you want to delete this slide?')) return;
 
-                const filename = btn.dataset.filename;
+                const fileId = btn.dataset.fileId;
                 try {
-                    await apiRequest('DELETE', '/api/slides', { filename });
+                    await apiRequest('DELETE', '/api/slides', { fileId });
 
                     notify('Success', 'Slide deleted', NotificationTypes.SUCCESS);
                     await fetchAndRenderSlides();
@@ -155,7 +154,7 @@ async function fetchAndRenderSlides() {
         });
 
         if (slideUploadWidget) {
-            slideUploadWidget.options.exclude = images;
+            slideUploadWidget.options.exclude = slides.map(s => s.url);
         }
 
     } catch (e) {

@@ -265,6 +265,19 @@ class TestWorld {
          await this.db.run('INSERT INTO event_attendees (event_id, user_id) VALUES (?, ?)', [eventId, userId]);
     }
 
+    /**
+     * Returns an ISO string for a date that is definitely in the "current week" (Mon-Sun).
+     * Useful for testing paged/week listings.
+     */
+    getCurrentWeekDate() {
+        const now = new Date();
+        const day = now.getDay();
+        const diff = now.getDate() - (day === 0 ? 6 : day - 1); // diff to Monday
+        const monday = new Date(now.setDate(diff));
+        monday.setHours(12, 0, 0, 0); // Midday Monday
+        return monday.toISOString();
+    }
+
     // ---------------------------------------------------------
     // Supertest Proxies
     // ---------------------------------------------------------

@@ -57,4 +57,24 @@ describe('db/swimsDB', () => {
         expect(leaderboard[1].swims).toBe(10); // user1 should be second
         expect(leaderboard[1].is_me).toBe(true);
     });
+
+    test('addBooties updates count and enforces swim limit', async () => {
+        await world.createUser('user', { swims: 10 });
+        const userId = world.data.users['user'];
+
+        // Success
+        const res1 = await SwimsDB.addBooties(world.db, userId, 5);
+        expect(res1.status).toBe(200);
+        const user1 = await world.db.get('SELECT booties FROM users WHERE id = ?', [userId]);
+        expect(user1.booties).toBe(5);
+
+        // Fail: exceeding swims
+        const res2 = await SwimsDB.addBooties(world.db, userId, 6);
+        expect(res2.status).toBe(400);
+        expect(res2.message).toMatch(/cannot exceed swims/i);
+
+        // Fail: user not found
+        const res3 = await SwimsDB.addBooties(world.db, 9999, 1);
+        expect(res3.status).toBe(404);
+    });
 });

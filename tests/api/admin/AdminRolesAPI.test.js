@@ -26,7 +26,7 @@ describe('api/admin/AdminRolesAPI', () => {
         await world.tearDown();
     });
 
-    describe('GET /api/admin/permissions', () => {
+    describe('GET /api/admin/roles/permissions', () => {
         /**
          * System-managed scoped permissions should be hidden from the manual assignment UI.
          */
@@ -34,7 +34,7 @@ describe('api/admin/AdminRolesAPI', () => {
             await world.createPermission('user.manage');
             await world.createPermission('event.manage.scoped');
 
-            const res = await world.as('admin').get('/api/admin/permissions');
+            const res = await world.as('admin').get('/api/admin/roles/permissions');
             expect(res.statusCode).toBe(200);
             const slugs = res.body.map(p => p.slug);
             
@@ -49,20 +49,20 @@ describe('api/admin/AdminRolesAPI', () => {
          */
         test('Full CRUD flow for custom administrative roles', async () => {
             // Create
-            const res1 = await world.as('admin').post('/api/admin/role').send({
+            const res1 = await world.as('admin').post('/api/admin/roles').send({
                 name: 'TestRole', description: 'Desc', permissions: ['role.read']
             });
             expect(res1.statusCode).toBe(201);
             const roleId = res1.body.id;
 
             // Update
-            const res2 = await world.as('admin').put(`/api/admin/role/${roleId}`).send({
+            const res2 = await world.as('admin').put(`/api/admin/roles/${roleId}`).send({
                 name: 'UpdatedName', description: 'NewDesc', permissions: []
             });
             expect(res2.statusCode).toBe(200);
 
             // Delete
-            const res3 = await world.as('admin').delete(`/api/admin/role/${roleId}`);
+            const res3 = await world.as('admin').delete(`/api/admin/roles/${roleId}`);
             expect(res3.statusCode).toBe(200);
         });
 
@@ -74,11 +74,11 @@ describe('api/admin/AdminRolesAPI', () => {
             const pres = await world.db.get('SELECT id FROM roles WHERE name = "President"');
 
             // Attempt Update
-            const resUpdate = await world.as('admin').put(`/api/admin/role/${pres.id}`).send({ name: 'Hack' });
+            const resUpdate = await world.as('admin').put(`/api/admin/roles/${pres.id}`).send({ name: 'Hack' });
             expect(resUpdate.statusCode).toBe(403);
 
             // Attempt Delete
-            const resDelete = await world.as('admin').delete(`/api/admin/role/${pres.id}`);
+            const resDelete = await world.as('admin').delete(`/api/admin/roles/${pres.id}`);
             expect(resDelete.statusCode).toBe(403);
         });
     });

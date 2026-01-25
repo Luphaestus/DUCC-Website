@@ -2,7 +2,6 @@
  * SwimsAPI.js
  * 
  * This file handles user "swims" (disciplinary records/penalties).
- * It includes leaderboard viewing and administrative addition of swims.
  * 
  * Routes:
  * - GET /api/user/swims/leaderboard: Fetch the global swims leaderboard.
@@ -50,6 +49,19 @@ class SwimsAPI {
             if (isNaN(userId) || isNaN(count)) return res.status(400).json({ message: 'Invalid data' });
             
             const status = await SwimsDB.addSwims(this.db, userId, count, req.user.id);
+            return status.getResponse(res);
+        });
+
+        /**
+         * Add booties to a user account.
+         * Restricted to Execs only.
+         */
+        this.app.post('/api/user/:id/booties', check('perm:swims.manage'), async (req, res) => {
+            const userId = parseInt(req.params.id, 10);
+            const count = parseInt(req.body.count, 10);
+            if (isNaN(userId) || isNaN(count)) return res.status(400).json({ message: 'Invalid data' });
+
+            const status = await SwimsDB.addBooties(this.db, userId, count);
             return status.getResponse(res);
         });
     }

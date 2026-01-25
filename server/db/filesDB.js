@@ -21,7 +21,7 @@ class FilesDB {
      * @returns {Promise<statusObject>} - Data contains { files, totalPages, currentPage, totalFiles }.
      */
     static async getFiles(db, options, userRole = 'public') {
-        const { page = 1, limit = 20, search, sort, order, categoryId } = options;
+        const { page = 1, limit = 20, search, sort, order, categoryId, includeUsed = false } = options;
         const offset = (page - 1) * limit;
 
         const allowedSorts = ['title', 'author', 'date', 'size', 'category_name'];
@@ -55,18 +55,30 @@ class FilesDB {
 
         const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
+        const usageFilter = !includeUsed ? `
+            AND d.id NOT IN (SELECT image_id FROM events WHERE image_id IS NOT NULL)
+            AND d.id NOT IN (SELECT image_id FROM tags WHERE image_id IS NOT NULL)
+            AND d.id NOT IN (SELECT file_id FROM slides)
+        ` : '';
+
         try {
             const query = `
                 SELECT d.*, c.name as category_name 
                 FROM files d
                 LEFT JOIN file_categories c ON d.category_id = c.id
-                ${whereClause}
+                WHERE 1=1 ${usageFilter}
+                ${conditions.length > 0 ? 'AND ' + conditions.join(' AND ') : ''}
                 ORDER BY ${sortCol} ${sortOrder}
                 LIMIT ? OFFSET ?
             `;
             const files = await db.all(query, [...params, limit, offset]);
 
-            const countResult = await db.get(`SELECT COUNT(*) as count FROM files d ${whereClause}`, params);
+            const countQuery = `
+                SELECT COUNT(*) as count FROM files d 
+                WHERE 1=1 ${usageFilter}
+                ${conditions.length > 0 ? 'AND ' + conditions.join(' AND ') : ''}
+            `;
+            const countResult = await db.get(countQuery, params);
             const totalFiles = countResult ? countResult.count : 0;
             const totalPages = Math.ceil(totalFiles / limit);
 

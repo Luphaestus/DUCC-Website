@@ -14,6 +14,7 @@ import { adminContentID } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
 import { CLOSE_SVG, INFO_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
 import { showConfirmModal } from '/js/utils/modal.js';
+import { debounce } from '/js/utils/utils.js';
 
 /**
  * Main rendering function for the event editor form.
@@ -24,8 +25,7 @@ export async function renderEventDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     const isNew = id === 'new';
 
-    let event = { title: '', description: '', location: '', start: '', end: '', difficulty_level: 1, max_attendees: 0, upfront_cost: 0, upfront_refund_cutoff: '', signup_required: 1, image_url: '', tags: [] };
-    let rawImageUrl = null;
+    let event = { title: '', description: '', location: '', start: '', end: '', difficulty_level: 1, max_attendees: 0, upfront_cost: 0, upfront_refund_cutoff: '', signup_required: 1, image_url: '', image_id: null, tags: [] };
     let allTags = [];
 
     try {
@@ -40,7 +40,7 @@ export async function renderEventDetail(id) {
 
         if (!isNew) {
             event = eventData;
-            rawImageUrl = rawEventData.image_url;
+            event.image_id = rawEventData.image_id;
             event.end = new Date(event.end).toISOString().slice(0, 16);
             if (event.upfront_refund_cutoff) {
                 event.upfront_refund_cutoff = new Date(event.upfront_refund_cutoff).toISOString().slice(0, 16);
@@ -133,7 +133,7 @@ export async function renderEventDetail(id) {
                                     ${IMAGE_SVG} Event Image
                                 </h3>
                                 <div id="upload-widget-container"></div>
-                                <input type="hidden" name="image_url" id="image_url_input" value="${rawImageUrl || ''}">
+                                <input type="hidden" name="image_id" id="image_id_input" value="${event.image_id || ''}">
                             </div>
                         </div>
                         
@@ -157,8 +157,8 @@ export async function renderEventDetail(id) {
     // --- Interactive Logic Hooks ---
 
     const updateEffectiveImage = async () => {
-        if (imageUrlInput.value) {
-            widget.setPreview(imageUrlInput.value);
+        if (imageIdInput.value) {
+            widget.setPreview(`/api/files/${imageIdInput.value}/download?view=true`);
             return;
         }
 
@@ -173,7 +173,7 @@ export async function renderEventDetail(id) {
     };
 
     // --- Image Upload Widget ---
-    const imageUrlInput = document.getElementById('image_url_input');
+    const imageIdInput = document.getElementById('image_id_input');
 
     const getFormData = () => {
         const formData = new FormData(document.getElementById('event-form'));
@@ -184,6 +184,7 @@ export async function renderEventDetail(id) {
         data.upfront_cost = parseFloat(data.upfront_cost) || 0;
         data.max_attendees = parseInt(data.max_attendees) || 0;
         data.difficulty_level = parseInt(data.difficulty_level) || 1;
+        data.image_id = imageIdInput.value ? parseInt(imageIdInput.value) : null;
 
         if (!document.getElementById('allow-refunds').checked) {
             data.upfront_refund_cutoff = null;
@@ -208,13 +209,13 @@ export async function renderEventDetail(id) {
         selectMode: 'single',
         autoUpload: true,
         defaultPreview: event.image_url || globalDefaultUrl,
-        onImageSelect: async ({ url }) => {
-            imageUrlInput.value = url;
+        onImageSelect: async ({ id }) => {
+            imageIdInput.value = id;
             await updateEffectiveImage();
             if (!isNew) autoSave();
         },
         onRemove: async () => {
-            imageUrlInput.value = '';
+            imageIdInput.value = '';
             await updateEffectiveImage();
             
             if (isNew) return true;
@@ -227,7 +228,7 @@ export async function renderEventDetail(id) {
                 await apiRequest('POST', `/api/admin/event/${id}/reset-image`);
 
                 notify('Success', 'Image reset to default', 'success');
-                imageUrlInput.value = '';
+                imageIdInput.value = '';
                 await updateEffectiveImage();
                 autoSave();
                 return false;
@@ -284,18 +285,7 @@ export async function renderEventDetail(id) {
     // --- Form Submission ---
     document.getElementById('event-form').onsubmit = async (e) => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-
-        data.tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
-        data.signup_required = formData.get('signup_required') === 'on';
-        data.upfront_cost = parseFloat(data.upfront_cost) || 0;
-        data.max_attendees = parseInt(data.max_attendees) || 0;
-        data.difficulty_level = parseInt(data.difficulty_level) || 1;
-
-        if (!refundToggle.checked) {
-            data.upfront_refund_cutoff = null;
-        }
+        const data = getFormData();
 
         try {
             if (isNew) {

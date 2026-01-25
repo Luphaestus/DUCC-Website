@@ -11,7 +11,7 @@ const fs = require('fs');
 
 class FileCleanup {
     /**
-     * Checks if a file is still in use by any entity (Tags, Events, Globals, Users).
+     * Checks if a file is still in use by any entity (Tags, Events, Globals, Users, Slides).
      * If not, deletes it physically and from the database.
      * 
      * @param {object} db - Database connection.
@@ -41,11 +41,14 @@ class FileCleanup {
             const tagUsage = await db.get('SELECT 1 FROM tags WHERE image_id = ?', [fileId]);
             if (tagUsage) return;
 
-            const eventUsage = await db.get('SELECT 1 FROM events WHERE image_url LIKE ?', [`%/api/files/${fileId}/%`]);
+            const eventUsage = await db.get('SELECT 1 FROM events WHERE image_id = ?', [fileId]);
             if (eventUsage) return;
 
-            const userUsage = await db.get('SELECT 1 FROM users WHERE profile_picture_path LIKE ?', [`%/api/files/${fileId}/%`]);
+            const userUsage = await db.get('SELECT 1 FROM users WHERE profile_picture_id = ?', [fileId]);
             if (userUsage) return;
+
+            const slideUsage = await db.get('SELECT 1 FROM slides WHERE file_id = ?', [fileId]);
+            if (slideUsage) return;
 
             const Globals = require('./globals.js');
             const defaultImage = new Globals().get('DefaultEventImage').data;

@@ -11,7 +11,6 @@ const TagsDB = require('./tagsDB.js');
 const UserDB = require('./userDB.js');
 const EventRules = require('../rules/EventRules.js');
 const Globals = require('../misc/globals.js');
-const FileCleanup = require('../misc/FileCleanup.js');
 
 /**
  * Database operations for events, attendee management, and scheduling.
@@ -241,6 +240,32 @@ class eventsDB {
     }
 
     /**
+     * Fetch raw event details by ID.
+     * @param {object} db - Database connection.
+     * @param {number} id - Event ID.
+     * @returns {Promise<object|null>}
+     */
+    static async getEventById(db, id) {
+        return await db.get('SELECT * FROM events WHERE id = ?', [id]);
+    }
+
+    /**
+     * Reset event image to default.
+     * @param {object} db - Database connection.
+     * @param {number} id - Event ID.
+     * @returns {Promise<statusObject>}
+     */
+    static async resetImage(db, id) {
+        try {
+            await db.run('UPDATE events SET image_id = NULL WHERE id = ?', [id]);
+            return new statusObject(200, 'Image reset to default');
+        } catch (error) {
+            console.error(error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Create a new event record and link its tags.
      * @param {object} db - Database connection.
      * @param {object} data - Event data object.
@@ -248,25 +273,17 @@ class eventsDB {
      */
     static async createEvent(db, data) {
         try {
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_id, upfront_refund_cutoff } = data;
             
             // Logic validation: max_attendees requires signup
             if (!signup_required && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
-            // Final fallback logic
-            if (!image_url) {
-                // Fetch tag objects to calculate fallback if needed
-                const tagObjects = (tags && Array.isArray(tags)) ? 
-                    await db.all(`SELECT * FROM tags WHERE id IN (${tags.map(() => '?').join(',')})`, tags) : [];
-                image_url = await this._getFallbackImage(db, tagObjects);
-            }
-
             const result = await db.run(
-                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, image_url, upfront_refund_cutoff)
+                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, image_id, upfront_refund_cutoff)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_url, upfront_refund_cutoff]
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_id, upfront_refund_cutoff]
             );
             const eventId = result.lastID;
 
@@ -291,22 +308,16 @@ class eventsDB {
      */
     static async updateEvent(db, id, data) {
         try {
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_url, upfront_refund_cutoff } = data;
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_id, upfront_refund_cutoff } = data;
 
             if (!signup_required && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
-            const oldEvent = await db.get('SELECT image_url FROM events WHERE id = ?', [id]);
-
             await db.run(
-                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, image_url=?, upfront_refund_cutoff=? WHERE id=?`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_url, upfront_refund_cutoff, id]
+                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, image_id=?, upfront_refund_cutoff=? WHERE id=?`,
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_id, upfront_refund_cutoff, id]
             );
-
-            if (oldEvent && oldEvent.image_url !== image_url) {
-                await FileCleanup.checkAndDeleteIfUnused(db, oldEvent.image_url);
-            }
 
             // Sync tags: clear existing and re-insert new list
             if (tags && Array.isArray(tags)) {
@@ -402,13 +413,7 @@ class eventsDB {
      */
     static async deleteEvent(db, id) {
         try {
-            const event = await db.get('SELECT image_url FROM events WHERE id = ?', [id]);
             await db.run('DELETE FROM events WHERE id = ?', [id]);
-            
-            if (event) {
-                FileCleanup.checkAndDeleteIfUnused(db, event.image_url);
-            }
-
             return new statusObject(200, 'Event deleted');
         } catch (error) {
             return new statusObject(500, 'Database error');
@@ -421,7 +426,9 @@ class eventsDB {
      */
     static async _enrichEvent(db, event) {
         event.tags = await TagsDB.getTagsForEvent(db, event.id);
-        if (!event.image_url) {
+        if (event.image_id) {
+            event.image_url = `/api/files/${event.image_id}/download?view=true`;
+        } else {
             event.image_url = await this._getFallbackImage(db, event.tags);
         }
     }

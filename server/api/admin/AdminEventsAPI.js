@@ -86,7 +86,7 @@ class AdminEvents {
          */
         this.app.get('/api/admin/event/:id/raw', check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped'), async (req, res) => {
             try {
-                const event = await this.db.get('SELECT * FROM events WHERE id = ?', [req.params.id]);
+                const event = await EventsDB.getEventById(this.db, req.params.id);
                 if (!event) return res.status(404).json({ message: 'Event not found' });
                 res.json(event);
             } catch (error) {
@@ -126,16 +126,8 @@ class AdminEvents {
                 return res.status(403).json({ message: 'Not authorized for this event' });
             }
             
-            try {
-                const event = await this.db.get('SELECT image_url FROM events WHERE id = ?', [req.params.id]);
-                await this.db.run('UPDATE events SET image_url = NULL WHERE id = ?', [req.params.id]);
-                
-                if (event) await FileCleanup.checkAndDeleteIfUnused(this.db, event.image_url);
-                
-                res.json({ success: true, message: 'Image reset to default' });
-            } catch (error) {
-                res.status(500).json({ message: 'Database error' });
-            }
+            const result = await EventsDB.resetImage(this.db, req.params.id);
+            result.getResponse(res);
         });
 
         /**

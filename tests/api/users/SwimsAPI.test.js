@@ -47,4 +47,20 @@ describe('api/users/SwimsAPI', () => {
         const user = await world.db.get('SELECT swims FROM users WHERE id = ?', [userId]);
         expect(user.swims).toBe(5);
     });
+
+    test('POST /api/user/:id/booties - Success and validation', async () => {
+        const userId = world.data.users['user'];
+        // Setup some swims first
+        await world.db.run('UPDATE users SET swims = 10 WHERE id = ?', [userId]);
+
+        const res = await world.as('admin').post(`/api/user/${userId}/booties`).send({ count: 5 });
+        expect(res.statusCode).toBe(200);
+
+        const user = await world.db.get('SELECT booties FROM users WHERE id = ?', [userId]);
+        expect(user.booties).toBe(5);
+
+        // Fail validation
+        const resFail = await world.as('admin').post(`/api/user/${userId}/booties`).send({ count: 6 });
+        expect(resFail.statusCode).toBe(400);
+    });
 });

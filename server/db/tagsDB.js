@@ -44,6 +44,17 @@ class TagsDB {
     }
 
     /**
+     * Fetch a list of tags by their IDs.
+     * @param {object} db - Database connection.
+     * @param {number[]} ids - Array of tag IDs.
+     * @returns {Promise<object[]>} - Array of tag objects.
+     */
+    static async getTagListByIds(db, ids) {
+        const placeholders = ids.map(() => '?').join(',');
+        return await db.all(`SELECT * FROM tags WHERE id IN (${placeholders})`, ids);
+    }
+
+    /**
      * Create a new tag.
      * @param {object} db - Database connection.
      * @param {object} data - { name, color, description, min_difficulty, priority, join_policy, view_policy, image_id }.
@@ -82,6 +93,26 @@ class TagsDB {
             }
 
             return new statusObject(200, 'Tag updated');
+        } catch (error) {
+            console.error(error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
+     * Reset tag image to default (none).
+     * @param {object} db - Database connection.
+     * @param {number} id - Tag ID.
+     * @returns {Promise<statusObject>}
+     */
+    static async resetImage(db, id) {
+        try {
+            const tag = await db.get('SELECT image_id FROM tags WHERE id = ?', [id]);
+            await db.run('UPDATE tags SET image_id = NULL WHERE id = ?', [id]);
+            
+            if (tag) await FileCleanup.checkAndDeleteIfUnused(db, tag.image_id);
+            
+            return new statusObject(200, 'Image removed');
         } catch (error) {
             console.error(error);
             return new statusObject(500, 'Database error');

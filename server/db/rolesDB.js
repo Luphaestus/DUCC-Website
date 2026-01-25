@@ -11,6 +11,17 @@ const { SCOPED_PERMS, Permissions } = require('../misc/permissions.js');
 
 class RolesDB {
     /**
+     * Fetch the name of a role by its ID.
+     * @param {object} db - Database connection.
+     * @param {number} id - Role ID.
+     * @returns {Promise<string|null>} - Role name or null if not found.
+     */
+    static async getRoleNameById(db, id) {
+        const role = await db.get('SELECT name FROM roles WHERE id = ?', [id]);
+        return role ? role.name : null;
+    }
+
+    /**
      * Fetch all roles currently assigned to a user.
      * @param {object} db - Database connection.
      * @param {number} userId - User ID.

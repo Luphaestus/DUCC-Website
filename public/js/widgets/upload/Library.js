@@ -27,7 +27,7 @@ export async function renderLibrary(container, onSelect, options = {}) {
 
     try {
         const [filesRes, slidesRes] = await Promise.all([
-            apiRequest('GET', '/api/files?limit=50'),
+            apiRequest('GET', '/api/files?limit=50&includeUsed=true'),
             apiRequest('GET', '/api/slides/images')
         ]);
 

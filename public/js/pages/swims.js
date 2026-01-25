@@ -35,6 +35,18 @@ const HTML_TEMPLATE = /*html*/`
 let isYearly = true;
 
 /**
+ * Helper to determine the color class for booties based on delta from swims.
+ * @param {number} swims 
+ * @param {number} booties 
+ */
+function getBootieClass(swims, booties) {
+    const delta = swims - booties;
+    if (delta <= 0) return 'bootie-green';
+    if (delta <= 5) return 'bootie-yellow';
+    return 'bootie-red';
+}
+
+/**
  * Fetches swim data from the API and renders the podium and table.
  */
 async function populateLeaderboard() {
@@ -67,12 +79,14 @@ async function populateLeaderboard() {
                 const rank = idx + 1;
                 const icon = rank === 1 ? TROPHY_SVG : SOCIAL_LEADERBOARD_SVG;
                 const isMe = user.is_me;
+                const bootieClass = getBootieClass(user.swims, user.booties);
 
                 podiumHtml += `
                     <div class="podium-place ${style}">
                         ${rank === 1 ? `<div class="crown-icon">${CROWN_SVG}</div>` : ''}
                         <div class="swimmer-name">${user.first_name} ${isMe ? '(You)' : ''}</div>
                         <div class="swim-count">${user.swims} Swims</div>
+                        <div class="bootie-count ${bootieClass}">${user.booties} Booties</div>
                         <div class="podium-step">
                             <div class="rank-circle">${rank}</div>
                             <div class="medal-icon">${icon}</div>
@@ -86,6 +100,7 @@ async function populateLeaderboard() {
         let listHtml = '<div class="leaderboard-list glass-panel">';
         rest.forEach(user => {
             const isMe = user.is_me;
+            const bootieClass = getBootieClass(user.swims, user.booties);
             listHtml += `
                 <div class="leaderboard-row ${isMe ? 'highlight' : ''}">
                     <div class="rank-box">${user.rank}</div>
@@ -93,7 +108,10 @@ async function populateLeaderboard() {
                         ${user.first_name} ${user.last_name}
                         ${isMe ? '<span class="you-tag">YOU</span>' : ''}
                     </div>
-                    <div class="swims-count">${user.swims} <span>swims</span></div>
+                    <div class="swims-count-group">
+                        <div class="swims-count">${user.swims} <span>swims</span></div>
+                        <div class="booties-count ${bootieClass}">${user.booties} <span>booties</span></div>
+                    </div>
                 </div>`;
         });
         listHtml += '</div>';

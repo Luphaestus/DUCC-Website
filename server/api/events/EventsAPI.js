@@ -13,6 +13,7 @@
 
 const EventsDB = require('../../db/eventsDB.js');
 const UserDB = require('../../db/userDB.js');
+const TagsDB = require('../../db/tagsDB.js');
 const Globals = require('../../misc/globals.js');
 const check = require('../../misc/authentication.js');
 
@@ -189,8 +190,7 @@ class EventsAPI {
             try {
                 let tags = [];
                 if (tagIds.length > 0) {
-                    const placeholders = tagIds.map(() => '?').join(',');
-                    tags = await this.db.all(`SELECT * FROM tags WHERE id IN (${placeholders})`, tagIds);
+                    tags = await TagsDB.getTagListByIds(this.db, tagIds);
                 }
                 const url = await EventsDB._getFallbackImage(this.db, tags);
                 res.json({ url });

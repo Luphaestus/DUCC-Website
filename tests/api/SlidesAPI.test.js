@@ -1,59 +1,73 @@
 /**
  * SlidesAPI.test.js
  * 
- * Functional tests for the slideshow image scanner.
- * Verifies that the system correctly identifies images and provides paths for the home page slider.
+ * Functional tests for the slideshow image API.
+ * Verifies that the system correctly manages slide images in the database.
  */
 
-const request = require('supertest');
-const express = require('express');
-const fs = require('fs');
 const SlidesAPI = require('../../server/api/SlidesAPI');
+const TestWorld = require('../utils/TestWorld');
 
 describe('api/SlidesAPI', () => {
-    let app, slidesAPI;
+    let world;
+    let slidesAPI;
 
     beforeEach(async () => {
-        // Mock directory listing to simulate actual images
-        vi.spyOn(fs.promises, 'readdir').mockResolvedValue([
-            { isFile: () => true, name: 'slide1.png' },
-            { isFile: () => true, name: 'slide2.jpg' }
-        ]);
-        // Mock directory watcher to avoid real file system hooks
-        vi.spyOn(fs, 'watch').mockReturnValue({ on: vi.fn(), close: vi.fn() });
-
-        app = express();
-        slidesAPI = new SlidesAPI(app);
-        await slidesAPI.scan();
+        world = new TestWorld();
+        await world.setUp();
+        
+        slidesAPI = new SlidesAPI(world.app, world.db);
         slidesAPI.registerRoutes();
     });
 
-    afterEach(() => {
-        slidesAPI.close();
-        vi.restoreAllMocks();
+    afterEach(async () => {
+        await world.tearDown();
     });
 
-    /**
-     * Test that the count endpoint returns the correct number of files found in the scan.
-     */
     test('GET /api/slides/count', async () => {
-        const res = await request(app).get('/api/slides/count');
-        expect(res.body.count).toBe(2);
+        const fileId = await world.createFile('Slide1');
+        await world.db.run('INSERT INTO slides (file_id) VALUES (?)', [fileId]);
+
+        const res = await world.request.get('/api/slides/count');
+        expect(res.statusCode).toBe(200);
+        expect(res.body.data).toBe(1);
     });
 
-    /**
-     * Test that image paths are returned in the correct format for public access.
-     */
     test('GET /api/slides/images', async () => {
-        const res = await request(app).get('/api/slides/images');
-        expect(res.body.images).toContain('/images/slides/slide1.png');
+        const fileId = await world.createFile('Slide1');
+        await world.db.run('INSERT INTO slides (file_id) VALUES (?)', [fileId]);
+
+        const res = await world.request.get('/api/slides/images');
+        expect(res.statusCode).toBe(200);
+        expect(res.body.images).toContain(`/api/files/${fileId}/download?view=true`);
     });
 
-    /**
-     * Test random selection functionality.
-     */
     test('GET /api/slides/random', async () => {
-        const res = await request(app).get('/api/slides/random');
-        expect(res.body.image).toBeDefined();
+        const fileId = await world.createFile('Slide1');
+        await world.db.run('INSERT INTO slides (file_id) VALUES (?)', [fileId]);
+
+        const res = await world.request.get('/api/slides/random');
+        expect(res.statusCode).toBe(200);
+        expect(res.body.image).toBe(`/api/files/${fileId}/download?view=true`);
+    });
+
+    test('POST /api/slides/import and DELETE /api/slides', async () => {
+        await world.createRole('admin', ['file.write']);
+        await world.createUser('admin', {}, ['admin']);
+        const fileId = await world.createFile('Slide1');
+
+        // Import
+        const resImport = await world.as('admin').post('/api/slides/import').send({ fileId });
+        expect(resImport.statusCode).toBe(201);
+
+        const countRes = await world.request.get('/api/slides/count');
+        expect(countRes.body.data).toBe(1);
+
+        // Delete
+        const resDelete = await world.as('admin').delete('/api/slides').send({ fileId });
+        expect(resDelete.statusCode).toBe(200);
+
+        const countRes2 = await world.request.get('/api/slides/count');
+        expect(countRes2.body.data).toBe(0);
     });
 });

@@ -2,7 +2,6 @@
  * waitlistDB.js
  * 
  * This module manages the event waiting list system.
- * It tracks users waiting for full events and handles their position/ordering.
  */
 
 const { statusObject } = require('../misc/status.js');
@@ -98,7 +97,6 @@ class WaitlistDB {
 
             if (!userEntry) return new statusObject(404, 'User not on waiting list');
 
-            // Count entries joined BEFORE this user
             const posResult = await db.get(
                 `SELECT COUNT(*) as count FROM event_waiting_list WHERE event_id = ? AND joined_at < ?`,
                 [eventId, userEntry.joined_at]
