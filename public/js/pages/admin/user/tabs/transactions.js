@@ -41,8 +41,7 @@ export async function renderTransactionsTab(container, userId) {
                     title: 'Account Balance',
                     value: `£${currentBalance.toFixed(2)}`,
                     valueId: 'balance-amount',
-                    valueClass: balClass,
-                    classes: 'mb-1-5'
+                    valueClass: balClass
                 })}
 
                 ${Panel({
@@ -50,11 +49,11 @@ export async function renderTransactionsTab(container, userId) {
                     icon: WALLET_SVG,
                     content: `
                         <div class="card-body">
-                            <div class="transaction-item glass-panel new-entry-row mb-1-5">
+                            <div class="transaction-item glass-panel new-entry-row">
                                 <div class="tx-edit-grid">
-                                    <input id="new-tx-desc" type="text" placeholder="Description (e.g. Top Up)" class="compact-input mb-0">
-                                    <input id="new-tx-amount" type="number" step="0.01" placeholder="Amount" class="compact-input mb-0">
-                                    <button id="add-tx-btn" class="primary small-btn icon-text-btn mb-0 min-w-100">${ADD_SVG} Add</button>
+                                    <input id="new-tx-desc" type="text" placeholder="Description (e.g. Top Up)" class="compact-input">
+                                    <input id="new-tx-amount" type="number" step="0.01" placeholder="Amount" class="compact-input">
+                                    <button id="add-tx-btn" class="small-btn icon-text-btn min-w-100">${ADD_SVG} Add</button>
                                 </div>
                             </div>
 
@@ -77,8 +76,8 @@ export async function renderTransactionsTab(container, userId) {
                                         extra: `£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}`,
                                         content: `
                                             <div class="tx-edit-grid no-btn hidden">
-                                                <input class="tx-desc-input compact-input mb-0" value="${tx.description}">
-                                                <input type="number" step="0.01" class="tx-amount-input compact-input text-left mb-0" value="${tx.amount}">
+                                                <input class="tx-desc-input compact-input" value="${tx.description}">
+                                                <input type="number" step="0.01" class="tx-amount-input compact-input" value="${tx.amount}">
                                             </div>
                                         `,
                                         actions: `
