@@ -28,12 +28,7 @@ export async function renderManageGlobals() {
     imagePickerModal = new Modal({
         id: 'image-picker-modal',
         title: 'Choose Image',
-        content: `
-            <div class="image-picker-content">
-                <div id="modal-upload-widget"></div>
-                <div id="globals-library-container"></div>
-            </div>
-        `,
+        content: `<div id="modal-upload-widget"></div>`,
         contentClasses: 'glass-panel modal-lg'
     });
 
@@ -82,11 +77,9 @@ function setupModalListeners() {
         selectMode: 'single',
         autoUpload: true,
         enableLibrary: false,
+        inlineLibrary: true,
         enableRemove: false,
-        onUploadComplete: (fileId) => {
-            const url = typeof fileId === 'string' && fileId.startsWith('http') 
-                ? fileId 
-                : `/api/files/${fileId}/download?view=true`;
+        onImageSelect: ({ url, id }) => {
             selectImage(url);
         },
         onUploadError: (err) => {
@@ -178,9 +171,6 @@ async function fetchAndRenderGlobals() {
                     if (currentVal && modalUploadWidget) {
                         modalUploadWidget.setPreview(currentVal);
                     }
-
-                    const container = document.getElementById('globals-library-container');
-                    renderLibrary(container, (url) => selectImage(url));
                 }
             };
         });
