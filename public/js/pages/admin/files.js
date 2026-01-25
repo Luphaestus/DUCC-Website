@@ -1,3 +1,4 @@
+//todo refine
 /**
  * files.js
  * 
@@ -8,11 +9,15 @@
  * Registered Route: /admin/files
  */
 
-import { adminContentID, renderAdminNavBar } from './common.js';
-import { ajaxGet, ajaxPost, ajaxDelete, ajaxPut } from '../../utils/ajax.js';
+import { adminContentID, renderAdminNavBar } from './admin.js';
+import { apiRequest } from '../../utils/api.js';
 import { switchView } from '../../utils/view.js';
+import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { notify, NotificationTypes } from '../../components/notification.js';
+import { Panel } from '/js/widgets/panel.js';
 import { SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
+import { Modal } from '/js/widgets/Modal.js';
+import { Pagination } from '/js/widgets/Pagination.js';
 
 /** @type {object} Current filter and pagination state */
 let currentOptions = {
@@ -24,6 +29,10 @@ let currentOptions = {
     categoryId: ''
 };
 
+let uploadModal = null;
+let editModal = null;
+let categoriesModal = null;
+
 /**
  * Main rendering function for the admin files dashboard.
  * Sets up the layout, modals, and initial data fetch.
@@ -31,6 +40,88 @@ let currentOptions = {
 export async function renderAdminFiles() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
+
+    // Initialize Modals
+    uploadModal = new Modal({
+        id: 'upload-files-modal',
+        title: 'Upload Files',
+        contentClasses: 'glass-panel',
+        content: /*html*/`
+            <form id="multi-upload-form" class="modern-form">
+                <div id="bulk-upload-widget"></div>
+                <div class="grid-2-col">
+                    <label>Category
+                        <select class="category-select modern-select" name="categoryId" required></select>
+                    </label>
+                    <label>Visibility
+                        <select name="visibility" class="modern-select">
+                            <option value="members">Members</option>
+                            <option value="public">Public</option>
+                            <option value="execs">Execs Only</option>
+                        </select>
+                    </label>
+                </div>
+                <footer>
+                    <button type="submit" class="primary-btn wide-btn">Upload All</button>
+                </footer>
+            </form>
+        `       
+    });
+
+    editModal = new Modal({
+        id: 'edit-file-modal',
+        title: 'Edit File',
+        contentClasses: 'glass-panel',
+        content: /*html*/`
+            <form id="edit-file-form" class="modern-form">
+                <input type="hidden" name="id">
+                <label>Title
+                    <input type="text" name="title" required>
+                </label>
+                <div class="grid-2-col">
+                    <label>Author
+                        <input type="text" name="author" required>
+                    </label>
+                    <label>Date
+                        <input type="date" name="date" required>
+                    </label>
+                </div>
+                <div class="grid-2-col">
+                    <label>Category
+                        <select class="category-select modern-select" name="categoryId" required></select>
+                    </label>
+                    <label>Visibility
+                        <select name="visibility" class="modern-select">
+                            <option value="members">Members</option>
+                            <option value="public">Public</option>
+                            <option value="execs">Execs Only</option>
+                        </select>
+                    </label>
+                </div>
+                <footer>
+                    <button type="submit" class="primary-btn wide-btn">Save Changes</button>
+                </footer>
+            </form>
+        `       
+    });
+
+    categoriesModal = new Modal({
+        id: 'categories-modal',
+        title: 'Manage Categories',
+        contentClasses: 'glass-panel',
+        content: /*html*/`
+            <div id="categories-list-container" class="categories-list"></div>
+            <form id="new-category-form" class="inline-add-form">
+                <input type="text" name="name" placeholder="New Category Name" required class="flex-grow">
+                <select name="default_visibility" class="modern-select compact">
+                    <option value="members">Members</option>
+                    <option value="public">Public</option>
+                    <option value="execs">Execs</option>
+                </select>
+                <button type="submit" class="icon-btn primary">${UPLOAD_SVG}</button>
+            </form>
+        `       
+    });
 
     adminContent.innerHTML = /*html*/`
         <div class="glass-layout">
@@ -55,109 +146,27 @@ export async function renderAdminFiles() {
                 </div>
             </div>
 
-            <div id="files-admin-content" class="glass-table-container">
-                <div class="table-responsive">
-                    <table class="glass-table files-table">
-                        <thead id="files-table-head"></thead>
-                        <tbody id="admin-files-list">
-                            <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            ${Panel({
+                content: /*html*/`
+                    <div id="files-admin-content" class="glass-table-container">
+                        <div class="table-responsive">
+                            <table class="glass-table files-table">
+                                <thead id="files-table-head"></thead>
+                                <tbody id="admin-files-list">
+                                    <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-            <div id="admin-files-pagination" class="glass-pagination"></div>
+                    <div id="admin-files-pagination" class="pagination"></div>
+                `
+            })}
         </div>
 
-        <!-- Multi-Upload Modal -->
-        <dialog id="upload-files-modal" class="modern-modal">
-            <article class="modal-content glass-panel">
-                <header>
-                    <a href="#close" aria-label="Close" class="close-modal" id="close-upload-modal">${CLOSE_SVG}</a>
-                    <h3>Upload Files</h3>
-                </header>
-                <form id="multi-upload-form" class="modern-form">
-                    <label class="file-drop-area">
-                        <span class="file-msg">Drag and drop files here or click to select</span>
-                        <input type="file" id="upload-files" name="files" multiple required class="file-input">
-                    </label>
-                    <div class="grid-2-col">
-                        <label>Category
-                            <select class="category-select modern-select" name="categoryId" required></select>
-                        </label>
-                        <label>Visibility
-                            <select name="visibility" class="modern-select">
-                                <option value="members">Members</option>
-                                <option value="public">Public</option>
-                                <option value="execs">Execs Only</option>
-                            </select>
-                        </label>
-                    </div>
-                    <footer>
-                        <button type="submit" class="primary-btn wide-btn">Upload All</button>
-                    </footer>
-                </form>
-            </article>
-        </dialog>
-
-        <!-- Edit File Modal -->
-        <dialog id="edit-file-modal" class="modern-modal">
-            <article class="modal-content glass-panel">
-                <header>
-                    <a href="#close" aria-label="Close" class="close-modal" id="close-edit-modal">${CLOSE_SVG}</a>
-                    <h3>Edit File</h3>
-                </header>
-                <form id="edit-file-form" class="modern-form">
-                    <input type="hidden" name="id">
-                    <label>Title
-                        <input type="text" name="title" required>
-                    </label>
-                    <div class="grid-2-col">
-                        <label>Author
-                            <input type="text" name="author" required>
-                        </label>
-                        <label>Date
-                            <input type="date" name="date" required>
-                        </label>
-                    </div>
-                    <div class="grid-2-col">
-                        <label>Category
-                            <select class="category-select modern-select" name="categoryId" required></select>
-                        </label>
-                        <label>Visibility
-                            <select name="visibility" class="modern-select">
-                                <option value="members">Members</option>
-                                <option value="public">Public</option>
-                                <option value="execs">Execs Only</option>
-                            </select>
-                        </label>
-                    </div>
-                    <footer>
-                        <button type="submit" class="primary-btn wide-btn">Save Changes</button>
-                    </footer>
-                </form>
-            </article>
-        </dialog>
-
-        <!-- Category Management Modal -->
-        <dialog id="categories-modal" class="modern-modal">
-            <article class="modal-content glass-panel">
-                <header>
-                    <a href="#close" aria-label="Close" class="close-modal" id="close-categories-modal">${CLOSE_SVG}</a>
-                    <h3>Manage Categories</h3>
-                </header>
-                <div id="categories-list-container" class="categories-list"></div>
-                <form id="new-category-form" class="inline-add-form">
-                    <input type="text" name="name" placeholder="New Category Name" required class="flex-grow">
-                    <select name="default_visibility" class="modern-select compact">
-                        <option value="members">Members</option>
-                        <option value="public">Public</option>
-                        <option value="execs">Execs</option>
-                    </select>
-                    <button type="submit" class="icon-btn primary">${UPLOAD_SVG}</button>
-                </form>
-            </article>
-        </dialog>
+        ${uploadModal.getHTML()}
+        ${editModal.getHTML()}
+        ${categoriesModal.getHTML()}
     `;
 
     setupEventListeners();
@@ -183,12 +192,11 @@ async function loadAdminFiles() {
         { key: 'date', label: 'Date', sort: 'date' }
     ];
 
-    thead.innerHTML = `<tr>${columns.map(c => `
+    thead.innerHTML = /*html*/`<tr>${columns.map(c => `
         <th class="sortable" data-sort="${c.sort}" data-label="${c.label}">
             ${c.label} ${currentOptions.sort === c.sort ? (currentOptions.order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
         </th>
     `).join('')}<th data-label="Actions" class="action-col">Actions</th></tr>`;
-
     // Re-bind sort listeners
     thead.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {
@@ -205,15 +213,15 @@ async function loadAdminFiles() {
 
     const query = new URLSearchParams(currentOptions).toString();
     try {
-        const res = await ajaxGet(`/api/files?${query}`);
+        const res = await apiRequest('GET', `/api/files?${query}`);
         const { files, totalPages } = res.data;
-        
+
         if (files.length === 0) {
             list.innerHTML = '<tr><td colspan="6" class="empty-cell">No files found.</td></tr>';
             return;
         }
 
-        list.innerHTML = files.map(file => `
+        list.innerHTML = files.map(file => /*html*/`
             <tr>
                 <td data-label="Title" class="primary-text"><strong>${file.title}</strong></td>
                 <td data-label="Category"><span class="badge neutral">${file.category_name || 'Uncategorized'}</span></td>
@@ -231,25 +239,14 @@ async function loadAdminFiles() {
             </tr>
         `).join('');
 
-        renderAdminPagination(totalPages);
+        const pager = new Pagination(document.getElementById('admin-files-pagination'), (page) => {
+            currentOptions.page = page;
+            loadAdminFiles();
+        });
+        pager.render(currentOptions.page, totalPages);
     } catch (e) {
         list.innerHTML = '<tr><td colspan="6" class="error-cell">Error loading files.</td></tr>';
     }
-}
-
-/**
- * Renders the simple numeric pagination for the admin file table.
- * @param {number} totalPages 
- */
-function renderAdminPagination(totalPages) {
-    const container = document.getElementById('admin-files-pagination');
-    if (!container) return;
-
-    let html = '';
-    for (let i = 1; i <= totalPages; i++) {
-        html += `<button class="page-btn ${i === currentOptions.page ? 'active' : ''}" data-page="${i}">${i}</button>`;
-    }
-    container.innerHTML = html;
 }
 
 /**
@@ -260,9 +257,9 @@ async function loadAdminCategories() {
     if (!filter) return;
 
     try {
-        const res = await ajaxGet('/api/file-categories');
+        const res = await apiRequest('GET', '/api/file-categories');
         const categories = res.data || [];
-        filter.innerHTML = '<option value="">All Categories</option>' + 
+        filter.innerHTML = /*html*/`<option value="">All Categories</option>` +
             categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         filter.value = currentOptions.categoryId;
     } catch (e) {
@@ -275,13 +272,13 @@ async function loadAdminCategories() {
  */
 async function loadCategorySelects() {
     try {
-        const res = await ajaxGet('/api/file-categories');
+        const res = await apiRequest('GET', '/api/file-categories');
         const cats = res.data || [];
         const selects = document.querySelectorAll('.category-select');
         selects.forEach(sel => {
             sel.innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         });
-    } catch (e) {}
+    } catch (e) { }
 }
 
 /**
@@ -290,9 +287,9 @@ async function loadCategorySelects() {
 async function loadCategoriesList() {
     const container = document.getElementById('categories-list-container');
     try {
-        const res = await ajaxGet('/api/file-categories');
+        const res = await apiRequest('GET', '/api/file-categories');
         const cats = res.data || [];
-        container.innerHTML = cats.map(c => `
+        container.innerHTML = cats.map(c => /*html*/`
             <div class="category-item">
                 <input type="text" class="cat-name-input compact-input" value="${c.name}" data-id="${c.id}">
                 <select class="cat-visibility-select modern-select compact" data-id="${c.id}">
@@ -303,7 +300,7 @@ async function loadCategoriesList() {
                 <button class="icon-btn delete-cat delete" data-id="${c.id}" title="Delete">${DELETE_SVG}</button>
             </div>
         `).join('');
-    } catch (e) {}
+    } catch (e) { }
 }
 
 /**
@@ -337,64 +334,55 @@ function setupEventListeners() {
         };
     }
 
-    // --- Pagination ---
-    document.addEventListener('click', (e) => {
-        const pageBtn = e.target.closest('.page-btn');
-        if (pageBtn && e.target.closest('#admin-files-pagination')) {
-            currentOptions.page = parseInt(pageBtn.dataset.page);
-            loadAdminFiles();
-            return;
-        }
-    });
-
     // --- Modal Toggles ---
+    if (uploadModal) uploadModal.attachListeners();
+    if (editModal) editModal.attachListeners();
+    if (categoriesModal) categoriesModal.attachListeners();
+
     const uploadBtn = document.getElementById('upload-files-btn');
     if (uploadBtn) {
         uploadBtn.onclick = async () => {
             await loadCategorySelects();
-            document.getElementById('upload-files-modal').showModal();
+            uploadModal.show();
         };
     }
-    document.getElementById('close-upload-modal').onclick = () => document.getElementById('upload-files-modal').close();
 
     const manageCatsBtn = document.getElementById('manage-categories-btn');
     if (manageCatsBtn) {
         manageCatsBtn.onclick = async () => {
             await loadCategoriesList();
-            document.getElementById('categories-modal').showModal();
+            categoriesModal.show();
         };
     }
-    document.getElementById('close-categories-modal').onclick = () => document.getElementById('categories-modal').close();
-    document.getElementById('close-edit-modal').onclick = () => document.getElementById('edit-file-modal').close();
 
-    // --- Bulk File Upload ---
+    // --- Bulk File Upload Widget ---
+    const uploadWidget = new UploadWidget('bulk-upload-widget', {
+        mode: 'modal',
+        selectMode: 'multiple',
+        autoUpload: false,
+        onUploadComplete: async () => {
+            uploadModal.close();
+            await loadAdminFiles();
+            notify('Success', 'Files uploaded', 'success');
+            uploadWidget.reset();
+        }
+    });
+
+    // --- Bulk File Upload Submit ---
     const multiUploadForm = document.getElementById('multi-upload-form');
     if (multiUploadForm) {
         multiUploadForm.onsubmit = async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const files = document.getElementById('upload-files').files;
-            
-            const uploadData = new FormData();
-            for (let i = 0; i < files.length; i++) {
-                uploadData.append('files', files[i]);
+            if (uploadWidget.files.length === 0) {
+                notify('Warning', 'Please select files to upload', NotificationTypes.WARNING);
+                return;
             }
-            uploadData.append('categoryId', formData.get('categoryId'));
-            uploadData.append('visibility', formData.get('visibility'));
 
-            try {
-                const res = await fetch('/api/files', {
-                    method: 'POST',
-                    body: uploadData
-                });
-                if (res.ok) {
-                    document.getElementById('upload-files-modal').close();
-                    await loadAdminFiles();
-                    notify('Success', 'Files uploaded', 'success');
-                }
-            } catch (e) {
-                notify('Error', 'Upload failed', 'error');
-            }
+            const formData = new FormData(e.target);
+            uploadWidget.manualUpload({
+                categoryId: formData.get('categoryId'),
+                visibility: formData.get('visibility')
+            });
         };
     }
 
@@ -406,14 +394,14 @@ function setupEventListeners() {
             const formData = new FormData(e.target);
             const id = formData.get('id');
             try {
-                await ajaxPut(`/api/files/${id}`, {
+                await apiRequest('PUT', `/api/files/${id}`, {
                     title: formData.get('title'),
                     author: formData.get('author'),
                     date: formData.get('date'),
                     categoryId: formData.get('categoryId'),
                     visibility: formData.get('visibility')
                 });
-                document.getElementById('edit-file-modal').close();
+                editModal.close();
                 await loadAdminFiles();
                 notify('Success', 'File updated', 'success');
             } catch (e) {
@@ -429,7 +417,7 @@ function setupEventListeners() {
             e.preventDefault();
             const formData = new FormData(e.target);
             try {
-                await ajaxPost('/api/file-categories', {
+                await apiRequest('POST', '/api/file-categories', {
                     name: formData.get('name'),
                     default_visibility: formData.get('default_visibility')
                 });
@@ -450,9 +438,9 @@ function setupEventListeners() {
         if (editBtn) {
             const id = editBtn.dataset.id;
             await loadCategorySelects();
-            const res = await ajaxGet(`/api/files?limit=1000`); 
+            const res = await apiRequest('GET', `/api/files?limit=1000`);
             const file = res.data.files.find(f => f.id == id);
-            
+
             if (file) {
                 const form = document.getElementById('edit-file-form');
                 form.elements['id'].value = file.id;
@@ -461,7 +449,7 @@ function setupEventListeners() {
                 form.elements['date'].value = file.date.split('T')[0];
                 form.elements['categoryId'].value = file.category_id || '';
                 form.elements['visibility'].value = file.visibility;
-                document.getElementById('edit-file-modal').showModal();
+                editModal.show();
             }
         }
 
@@ -469,7 +457,7 @@ function setupEventListeners() {
         if (e.target.closest('.delete-file')) {
             const id = e.target.closest('.delete-file').dataset.id;
             if (confirm('Are you sure you want to delete this file?')) {
-                await ajaxDelete(`/api/files/${id}`);
+                await apiRequest('DELETE', `/api/files/${id}`);
                 await loadAdminFiles();
                 notify('Success', 'File deleted', 'success');
             }
@@ -479,32 +467,32 @@ function setupEventListeners() {
         if (e.target.closest('.delete-cat')) {
             const id = e.target.closest('.delete-cat').dataset.id;
             if (confirm('Delete category? Files in this category will be uncategorized.')) {
-                await ajaxDelete(`/api/file-categories/${id}`);
+                await apiRequest('DELETE', `/api/file-categories/${id}`);
                 await loadCategoriesList();
                 await loadAdminCategories();
                 notify('Success', 'Category removed', 'success');
             }
         }
     };
-    
+
     const list = document.getElementById('admin-files-list');
     if (list) list.onclick = handleActionClick;
 
     const catList = document.getElementById('categories-list-container');
     if (catList) {
         catList.onclick = handleActionClick;
-        
+
         // Auto-save changes to category names/visibility on change
         catList.onchange = async (e) => {
             const id = e.target.dataset.id;
             const container = e.target.closest('.category-item');
             if (!id || !container) return;
-            
+
             const name = container.querySelector('.cat-name-input').value;
             const visibility = container.querySelector('.cat-visibility-select').value;
-            
+
             try {
-                await ajaxPut(`/api/file-categories/${id}`, {
+                await apiRequest('PUT', `/api/file-categories/${id}`, {
                     name: name,
                     default_visibility: visibility
                 });

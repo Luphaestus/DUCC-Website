@@ -1,3 +1,4 @@
+//todo refine
 /**
  * detail.js (User)
  * 
@@ -8,10 +9,12 @@
  * Registered Route: /admin/user/:id
  */
 
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
-import { adminContentID, initToggleGroup } from '../common.js';
+import { adminContentID } from '../admin.js';
 import { ARROW_BACK_IOS_NEW_SVG } from '../../../../images/icons/outline/icons.js';
+import { TabNav } from '/js/widgets/TabNav.js';
+import { Panel } from '/js/widgets/panel.js';
 
 // Import sub-renderers for specific tabs
 import { renderProfileTab } from './tabs/profile.js';
@@ -37,8 +40,8 @@ export async function renderUserDetail(userId) {
 
     try {
         // Fetch detailed user record and current admin permissions
-        const user = await ajaxGet(`/api/admin/user/${userId}`);
-        const userData = await ajaxGet('/api/user/elements/permissions').catch(() => ({}));
+        const user = await apiRequest('GET', `/api/admin/user/${userId}`);
+        const userData = await apiRequest('GET', '/api/user/elements/permissions').catch(() => ({}));
         const userPerms = userData.permissions || [];
 
         // Check granular access levels
@@ -46,59 +49,55 @@ export async function renderUserDetail(userId) {
         const canManageTransactions = userPerms.includes('transaction.manage');
         const isExec = userPerms.length > 0;
 
-        // Build the dynamic tab bar based on permissions
-        let tabsHtml = '<div class="toggle-bg"></div><button data-tab="profile" class="tab-btn active">Profile</button>';
+        // Build the dynamic tab list
+        const tabs = [{ label: 'Profile', key: 'profile', data: { tab: 'profile' } }];
         if (canManageUsers) {
-            tabsHtml += `
-                <button data-tab="legal" class="tab-btn">Legal</button>
-                <button data-tab="tags" class="tab-btn">Tags</button>
-            `;
+            tabs.push({ label: 'Legal', key: 'legal', data: { tab: 'legal' } });
+            tabs.push({ label: 'Tags', key: 'tags', data: { tab: 'tags' } });
         }
         if (canManageTransactions) {
-            tabsHtml += `
-                <button data-tab="transactions" class="tab-btn">Transactions</button>
-            `;
+            tabs.push({ label: 'Transactions', key: 'transactions', data: { tab: 'transactions' } });
         }
 
-        adminContent.innerHTML = /*html*/`
+        const currentTab = new URLSearchParams(window.location.search).get('tab') || 'profile';
+
+        const tabNav = new TabNav({
+            id: 'admin-user-tabs',
+            tabs,
+            activeKey: currentTab
+        });
+
+        adminContent.innerHTML = `
             <div class="glass-layout">
-                <div class="glass-panel mb-1-5">
-                    <header class="user-detail-header">
-                        <div class="user-identity">
-                            <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
-                            <span class="user-id-badge">ID: ${user.id}</span>
-                        </div>
-                        <nav class="toggle-group" id="admin-user-tabs">
-                            ${tabsHtml}
-                        </nav>
-                    </header>
-                    <div id="admin-tab-content" class="tab-content-area"></div>
-                </div>
+                ${Panel({
+                    content: `
+                        <header class="user-detail-header">
+                            <div class="user-identity">
+                                <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
+                                <span class="user-id-badge">ID: ${user.id}</span>
+                            </div>
+                            ${tabNav.getHTML()}
+                        </header>
+                        <div id="admin-tab-content" class="tab-content-area"></div>
+                    `,
+                    classes: 'mb-1-5'
+                })}
             </div>
         `;
 
-        const tabsNav = adminContent.querySelector('#admin-user-tabs');
-        const tabs = tabsNav.querySelectorAll('button');
+        const tabsNavEl = document.getElementById('admin-user-tabs');
+        const tabButtons = tabsNavEl.querySelectorAll('button');
 
-        /**
-         * Standardized logic for switching the active tab.
-         * Updates visual state and history.
-         */
-        const updateActiveTab = (activeBtn) => {
-            tabs.forEach(t => t.classList.remove('active'));
-            activeBtn.classList.add('active');
-            // Re-sync the sliding background
-            initToggleGroup(tabsNav);
-        };
-
-        // Determine initial tab from URL or default to 'profile'
-        const currentTab = new URLSearchParams(window.location.search).get('tab') || 'profile';
-        const initialTabBtn = Array.from(tabs).find(t => t.dataset.tab === currentTab) || tabs[0];
+        tabNav.init();
 
         // Attach listeners to all generated tabs
-        tabs.forEach(btn => {
+        tabButtons.forEach(btn => {
             btn.onclick = () => {
-                updateActiveTab(btn);
+                // Update active class manually for immediate feedback (init() will sync BG)
+                tabButtons.forEach(t => t.classList.remove('active'));
+                btn.classList.add('active');
+                tabNav.init(); // Sync BG
+
                 // Update URL for deep linking without triggering a full router switch
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('tab', btn.dataset.tab);
@@ -108,13 +107,8 @@ export async function renderUserDetail(userId) {
             };
         });
 
-        // Bootstrap the initial view
-        if (initialTabBtn) {
-            updateActiveTab(initialTabBtn);
-            renderTab(initialTabBtn.dataset.tab, user, userPerms, canManageUsers, isExec);
-            // Delay initial background sync to ensure fonts/layout are stable
-            setTimeout(() => initToggleGroup(tabsNav), 50);
-        }
+        // Bootstrap initial view
+        renderTab(currentTab, user, userPerms, canManageUsers, isExec);
 
     } catch (e) {
         console.error(e);

@@ -12,7 +12,9 @@ import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { showPasswordModal } from '/js/utils/modal.js';
 import { renderUserDetail } from '../detail.js';
-import { getOrdinal } from '../utils.js';
+import { getOrdinal } from '/js/utils/utils.js';
+import { Panel } from '/js/widgets/panel.js';
+import { ValueHeader } from '/js/widgets/value_header.js';
 import { POOL_SVG, ADD_SVG, PERSON_SVG, EDIT_SVG, BOLT_SVG, ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG } from '../../../../../images/icons/outline/icons.js';
 
 /**
@@ -39,169 +41,172 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             
             <!-- Balance & Member Status -->
             <div class="dual-grid">
-                <div class="balance-header clickable" id="admin-profile-balance-card">
-                    <div class="balance-info">
-                        <span class="label">Account Balance</span>
-                        <span class="amount ${bal < 0 ? 'negative' : (bal > 0 ? 'positive' : '')}" id="balance-amount">
-                            £${bal.toFixed(2)}
-                        </span>
-                    </div>
-                </div>
+                ${ValueHeader({
+                    title: 'Account Balance',
+                    value: `£${bal.toFixed(2)}`,
+                    valueId: 'balance-amount',
+                    valueClass: bal < 0 ? 'negative' : (bal > 0 ? 'positive' : ''),
+                    classes: 'clickable',
+                    id: 'admin-profile-balance-card'
+                })}
                 
-                <div class="balance-header">
-                    <div class="balance-info">
-                        <span class="label">Member Status</span>
-                        <span class="amount ${user.is_member ? 'positive' : ''} large">
-                            ${user.is_member ? 'Active Member' : (user.free_sessions || 0)}
-                        </span>
-                        ${!user.is_member ? `<span class="label label-sub">free sessions remaining</span>` : ''}
-                    </div>
-                </div>
+                ${ValueHeader({
+                    title: 'Member Status',
+                    value: user.is_member ? 'Active Member' : (user.free_sessions || 0),
+                    valueClass: user.is_member ? 'positive' : '',
+                    actions: !user.is_member ? `<span class="label label-sub">free sessions remaining</span>` : ''
+                })}
             </div>
 
             <!-- Swimming Stats & Manual Log -->
-            <div class="glass-panel">
-                <div class="box-header">
-                    <h3>${POOL_SVG} Swimming Stats</h3>
-                    ${canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn primary icon-text-btn">${ADD_SVG} Log Swim</button>` : ''}
-                </div>
-                <div class="stats-grid" id="admin-swimming-stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-value" id="admin-user-swims-yearly">${user.swimmer_stats?.yearly?.swims || 0}</span>
-                        <span class="stat-label">Yearly Swims</span>
+            ${Panel({
+                title: 'Swimming Stats',
+                icon: POOL_SVG,
+                action: canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn primary icon-text-btn">${ADD_SVG} Log Swim</button>` : '',
+                content: `
+                    <div class="stats-grid" id="admin-swimming-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-value" id="admin-user-swims-yearly">${user.swimmer_stats?.yearly?.swims || 0}</span>
+                            <span class="stat-label">Yearly Swims</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="admin-user-rank-yearly">${getOrdinal(user.swimmer_stats?.yearly?.rank)}</span>
+                            <span class="stat-label">Yearly Rank</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="admin-user-swims-total">${user.swimmer_stats?.allTime?.swims || 0}</span>
+                            <span class="stat-label">Total Swims</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="admin-user-rank-total">${getOrdinal(user.swimmer_stats?.allTime?.rank)}</span>
+                            <span class="stat-label">All Time Rank</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="admin-user-rank-yearly">${getOrdinal(user.swimmer_stats?.yearly?.rank)}</span>
-                        <span class="stat-label">Yearly Rank</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="admin-user-swims-total">${user.swimmer_stats?.allTime?.swims || 0}</span>
-                        <span class="stat-label">Total Swims</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value" id="admin-user-rank-total">${getOrdinal(user.swimmer_stats?.allTime?.rank)}</span>
-                        <span class="stat-label">All Time Rank</span>
-                    </div>
-                </div>
-            </div>
+                `
+            })}
 
             <div class="dual-grid">
                 <!-- Account Metadata Editor -->
-                <div class="glass-panel" id="admin-account-details-panel">
-                    <div class="box-header">
-                        <h3>${PERSON_SVG} Account Details</h3>
-                        ${userPerms.includes('user.manage.advanced') ? `<button id="edit-account-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>` : ''}
-                    </div>
-                    <div id="account-info-display" class="info-rows">
-                        <div class="info-row-modern">
-                            <span class="label">Email</span>
-                            <span class="value">${user.email}</span>
-                        </div>
-                        <div class="info-row-modern">
-                            <span class="label">Phone</span>
-                            <span class="value">${user.phone_number || 'N/A'}</span>
-                        </div>
-                        <div class="info-row-modern">
-                            <span class="label">College</span>
-                            <span class="value">${collegeName}</span>
-                        </div>
-                    </div>
-                    <form id="account-info-form" class="hidden modern-form mt-1">
-                        <label>Email 
-                            <div class="durham-email-wrapper">
-                                <input type="text" id="input-email" value="${emailUsername}">
-                                <span class="email-suffix">@durham.ac.uk</span>
+                ${Panel({
+                    id: 'admin-account-details-panel',
+                    title: 'Account Details',
+                    icon: PERSON_SVG,
+                    action: userPerms.includes('user.manage.advanced') ? `<button id="edit-account-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>` : '',
+                    content: `
+                        <div id="account-info-display" class="info-rows">
+                            <div class="info-row-modern">
+                                <span class="label">Email</span>
+                                <span class="value">${user.email}</span>
                             </div>
-                        </label>
-                        <label>Phone <input type="tel" id="input-phone" value="${user.phone_number || ''}"></label>
-                        <label>College 
-                            <select id="input-college">
-                                <option value="">Select College</option>
-                                ${colleges.map(c => `<option value="${c.id}" ${c.id === user.college_id ? 'selected' : ''}>${c.name}</option>`).join('')}
-                            </select>
-                        </label>
-                        ${canManageUsers ? `
-                            <div class="grid-2-col">
-                                <label>Free Sessions <input type="number" id="input-free-sessions" value="${user.free_sessions}"></label>
-                                <label>Swims (Total) <input type="number" id="input-total-swims" value="${user.swims}"></label>
+                            <div class="info-row-modern">
+                                <span class="label">Phone</span>
+                                <span class="value">${user.phone_number || 'N/A'}</span>
                             </div>
-                            <div class="checkbox-group mt-0-5 flex gap-1">
-                                <label><input type="checkbox" id="input-is-member" ${user.is_member ? 'checked' : ''}> Is Member</label>
-                                <label><input type="checkbox" id="input-is-instructor" ${user.is_instructor ? 'checked' : ''}> Is Instructor</label>
+                            <div class="info-row-modern">
+                                <span class="label">College</span>
+                                <span class="value">${collegeName}</span>
                             </div>
-                        ` : ''}
-                        <div class="form-actions mt-1 flex gap-0-5">
-                            <button type="button" id="cancel-account-btn" class="secondary outline small-btn">Cancel</button>
-                            <button type="submit" class="primary small-btn">Save</button>
                         </div>
-                    </form>
-                </div>
+                        <form id="account-info-form" class="hidden modern-form mt-1">
+                            <label>Email 
+                                <div class="durham-email-wrapper">
+                                    <input type="text" id="input-email" value="${emailUsername}">
+                                    <span class="email-suffix">@durham.ac.uk</span>
+                                </div>
+                            </label>
+                            <label>Phone <input type="tel" id="input-phone" value="${user.phone_number || ''}"></label>
+                            <label>College 
+                                <select id="input-college">
+                                    <option value="">Select College</option>
+                                    ${colleges.map(c => `<option value="${c.id}" ${c.id === user.college_id ? 'selected' : ''}>${c.name}</option>`).join('')}
+                                </select>
+                            </label>
+                            ${canManageUsers ? `
+                                <div class="grid-2-col">
+                                    <label>Free Sessions <input type="number" id="input-free-sessions" value="${user.free_sessions}"></label>
+                                    <label>Swims (Total) <input type="number" id="input-total-swims" value="${user.swims}"></label>
+                                </div>
+                                <div class="checkbox-group mt-0-5 flex gap-1">
+                                    <label><input type="checkbox" id="input-is-member" ${user.is_member ? 'checked' : ''}> Is Member</label>
+                                    <label><input type="checkbox" id="input-is-instructor" ${user.is_instructor ? 'checked' : ''}> Is Instructor</label>
+                                </div>
+                            ` : ''}
+                            <div class="form-actions mt-1 flex gap-0-5">
+                                <button type="button" id="cancel-account-btn" class="secondary outline small-btn">Cancel</button>
+                                <button type="submit" class="primary small-btn">Save</button>
+                            </div>
+                        </form>
+                    `
+                })}
 
                 <!-- Instructor Status & Skill Level -->
-                <div class="glass-panel">
-                    <div class="box-header">
-                        <h3>${BOLT_SVG} Capabilities</h3>
-                    </div>
-                    <div class="role-toggle mb-1-5">
-                        <div class="role-info">
-                            <h4>Instructor Status</h4>
-                            <p class="font-size-0-85 muted-color mb-0">Authorized to lead club sessions</p>
+                ${Panel({
+                    title: 'Capabilities',
+                    icon: BOLT_SVG,
+                    content: `
+                        <div class="role-toggle mb-1-5">
+                            <div class="role-info">
+                                <h4>Instructor Status</h4>
+                                <p class="font-size-0-85 muted-color mb-0">Authorized to lead club sessions</p>
+                            </div>
+                            ${canManageUsers ? `
+                                <label class="switch">
+                                    <input type="checkbox" id="admin-user-instructor" ${user.is_instructor ? 'checked' : ''}>
+                                    <span class="slider round"></span>
+                                </label>
+                            ` : `<span class="badge ${user.is_instructor ? 'primary' : 'neutral'}">${user.is_instructor ? 'Yes' : 'No'}</span>`}
                         </div>
-                        ${canManageUsers ? `
-                            <label class="switch">
-                                <input type="checkbox" id="admin-user-instructor" ${user.is_instructor ? 'checked' : ''}>
-                                <span class="slider round"></span>
-                            </label>
-                        ` : `<span class="badge ${user.is_instructor ? 'primary' : 'neutral'}">${user.is_instructor ? 'Yes' : 'No'}</span>`}
-                    </div>
-                    <div class="difficulty-control">
-                        <label class="font-weight-600 font-size-0-9 mb-0-5 block">Difficulty Level (1-5)</label>
-                        <input type="range" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5" step="1" class="mb-0">
-                        <div class="flex justify-between font-size-0-75 muted-color mt-0-25">
-                            <span>Beginner</span>
-                            <span>Advanced</span>
+                        <div class="difficulty-control">
+                            <label class="font-weight-600 font-size-0-9 mb-0-5 block">Difficulty Level (1-5)</label>
+                            <input type="range" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5" step="1" class="mb-0">
+                            <div class="flex justify-between font-size-0-75 muted-color mt-0-25">
+                                <span>Beginner</span>
+                                <span>Advanced</span>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    `
+                })}
             </div>
 
             <div class="dual-grid">
                 <!-- RBAC: System Role Assignment -->
-                <div class="glass-panel">
-                    <div class="box-header">
-                        <h3>${ID_CARD_SVG} System Role</h3>
-                    </div>
-                    <div class="card-body">
-                        <p class="small-text mb-1">Defines base permissions and access levels.</p>
-                        <select id="admin-user-role-select" class="full-width-select mb-0">
-                            <option value="">No Role</option>
-                        </select>
-                    </div>
-                </div>
+                ${Panel({
+                    title: 'System Role',
+                    icon: ID_CARD_SVG,
+                    content: `
+                        <div class="card-body">
+                            <p class="small-text mb-1">Defines base permissions and access levels.</p>
+                            <select id="admin-user-role-select" class="full-width-select mb-0">
+                                <option value="">No Role</option>
+                            </select>
+                        </div>
+                    `
+                })}
 
                 <!-- Direct Permission Overrides -->
-                <div class="glass-panel">
-                    <div class="box-header">
-                        <h3>${SHIELD_SVG} Direct Permissions</h3>
-                    </div>
-                    <div class="card-body">
-                        <p class="small-text mb-1">Explicitly granted permissions (overrides role).</p>
-                        <div class="inline-add-form flex gap-0-5 mb-1">
-                            <select id="add-perm-select" class="mb-0">
-                                <option value="">Select Permission...</option>
-                            </select>
-                            <button id="add-perm-btn" class="icon-btn primary small-btn">${ADD_SVG}</button>
+                ${Panel({
+                    title: 'Direct Permissions',
+                    icon: SHIELD_SVG,
+                    content: `
+                        <div class="card-body">
+                            <p class="small-text mb-1">Explicitly granted permissions (overrides role).</p>
+                            <div class="inline-add-form flex gap-0-5 mb-1">
+                                <select id="add-perm-select" class="mb-0">
+                                    <option value="">Select Permission...</option>
+                                </select>
+                                <button id="add-perm-btn" class="icon-btn primary small-btn">${ADD_SVG}</button>
+                            </div>
+                            <div id="direct-perms-list" class="tags-cloud">
+                                ${(user.direct_permissions || []).map(p => `
+                                    <span class="tag-chip neutral">
+                                        ${p.slug} 
+                                        <button class="remove-perm-btn delete-icon-btn" data-id="${p.id}">${CLOSE_SVG}</button>
+                                    </span>
+                                `).join('')}
+                            </div>
                         </div>
-                        <div id="direct-perms-list" class="tags-cloud">
-                            ${(user.direct_permissions || []).map(p => `
-                                <span class="tag-chip neutral">
-                                    ${p.slug} 
-                                    <button class="remove-perm-btn delete-icon-btn" data-id="${p.id}">${CLOSE_SVG}</button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
+                    `
+                })}
             </div>
     `;
 

@@ -15,12 +15,13 @@ const TransactionsDB = require('../db/transactionDB.js');
 class EventRules {
     /**
      * Determine if a user is authorized to view an event.
-     * Checks based on event difficulty and individual tag difficulty restrictions.
+     * Checks based on event difficulty, individual tag difficulty restrictions, and view policies.
+     * @param {object} db - Database connection.
      * @param {object} event - Event object (must have tags attached).
      * @param {object|null} user - User object (null for guests).
-     * @returns {boolean} - True if viewable.
+     * @returns {Promise<boolean>} - True if viewable.
      */
-    static canViewEvent(event, user) {
+    static async canViewEvent(db, event, user) {
         // Difficulty Evaluation
         // Guests use the 'Unauthorized_max_difficulty' global setting
         const userDiff = user ? user.difficulty_level : new Globals().getInt("Unauthorized_max_difficulty");
@@ -29,10 +30,17 @@ class EventRules {
         if (event.difficulty_level > userDiff) return false;
 
         // Tag Visibility Policy
-        // Block if ANY tag assigned to the event has a minimum difficulty higher than the user's level
         if (event.tags) {
             for (const tag of event.tags) {
+                // Block if ANY tag assigned to the event has a minimum difficulty higher than the user's level
                 if (tag.min_difficulty && tag.min_difficulty > userDiff) return false;
+
+                // Whitelist enforcement for viewing
+                if (tag.view_policy === 'whitelist') {
+                    if (!user) return false;
+                    const whitelisted = await TagsDB.isWhitelisted(db, tag.id, user.id);
+                    if (!whitelisted) return false;
+                }
             }
         }
 

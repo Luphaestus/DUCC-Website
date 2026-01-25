@@ -1,3 +1,4 @@
+//todo refine
 /**
  * manage.js (Tag)
  * 
@@ -7,9 +8,10 @@
  * Registered Route: /admin/tags
  */
 
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
-import { adminContentID, renderAdminNavBar } from '../common.js';
+import { adminContentID, renderAdminNavBar } from '../admin.js';
+import { Panel } from '/js/widgets/panel.js';
 
 /**
  * Main rendering function for the tag management dashboard.
@@ -18,7 +20,7 @@ export async function renderManageTags() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    adminContent.innerHTML = /*html*/`
+    adminContent.innerHTML = `
         <div class="glass-layout">
             <div class="glass-toolbar">
                  ${await renderAdminNavBar('tags')}
@@ -30,23 +32,27 @@ export async function renderManageTags() {
                 </div>
             </div>
             
-            <div class="glass-table-container">
-                <div class="table-responsive">
-                    <table class="glass-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Color</th>
-                                <th>Min Difficulty</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tags-table-body">
-                            <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            ${Panel({
+                content: `
+                    <div class="glass-table-container">
+                        <div class="table-responsive">
+                            <table class="glass-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Color</th>
+                                        <th>Min Difficulty</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tags-table-body">
+                                    <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `
+            })}
         </div>
     `;
 
@@ -58,7 +64,7 @@ export async function renderManageTags() {
  */
 async function fetchAndRenderTags() {
     try {
-        const data = (await ajaxGet('/api/tags')).data;
+        const data = (await apiRequest('GET', '/api/tags')).data;
         const tags = data || [];
         const tbody = document.getElementById('tags-table-body');
 

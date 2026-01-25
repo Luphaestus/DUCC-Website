@@ -1,3 +1,4 @@
+//todo refine
 /**
  * globals.js
  * 
@@ -8,12 +9,16 @@
  * Registered Route: /admin/globals
  */
 
-import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
-import { adminContentID, renderAdminNavBar } from './common.js';
+import { apiRequest } from '/js/utils/api.js';
+import { adminContentID, renderAdminNavBar } from './admin.js';
 import { notify } from '/js/components/notification.js';
-import { uploadFile } from '/js/utils/ajax.js';
-import { library, loadLibrary } from './util/library.js';
+import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
+import { Panel } from '/js/widgets/panel.js';
+import { renderLibrary } from '../../widgets/upload/Library.js';
 import { SAVE_SVG, IMAGE_SVG, UPLOAD_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
+import { Modal } from '/js/widgets/Modal.js';
+
+let imagePickerModal = null;
 
 /**
  * Main rendering function for the globals management dashboard.
@@ -23,56 +28,48 @@ export async function renderManageGlobals() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    adminContent.innerHTML = /*html*/`
+    imagePickerModal = new Modal({
+        id: 'image-picker-modal',
+        title: 'Choose Image',
+        content: `
+            <div class="image-picker-content">
+                <div id="modal-upload-widget" class="mb-2"></div>
+                <div id="globals-library-container"></div>
+            </div>
+        `,
+        contentClasses: 'glass-panel'
+    });
+
+    adminContent.innerHTML = `
         <div class="glass-layout">
             <div class="glass-toolbar">
                  ${await renderAdminNavBar('globals')}
             </div>
             
-            <div class="glass-table-container">
-                <div class="table-responsive">
-                    <table class="glass-table">
-                        <thead>
-                            <tr>
-                                <th>Setting</th>
-                                <th>Description</th>
-                                <th>Value</th>
-                                <th class="action-col">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="globals-table-body">
-                            <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            ${Panel({
+                content: `
+                    <div class="glass-table-container">
+                        <div class="table-responsive">
+                            <table class="glass-table">
+                                <thead>
+                                    <tr>
+                                        <th>Setting</th>
+                                        <th>Description</th>
+                                        <th>Value</th>
+                                        <th class="action-col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="globals-table-body">
+                                    <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `
+            })}
         </div>
 
-        <dialog id="image-picker-modal" class="modern-modal">
-            <article class="modal-content glass-panel">
-                <button class="modal-close-btn" id="close-image-modal">${CLOSE_SVG}</button>
-                <header>
-                    <h3>Choose Image</h3>
-                </header>
-                
-                <div class="image-picker-content">
-                        <div class="image-upload-container glass-panel mb-2" id="modal-drop-zone">
-                            <div id="modal-upload-progress-container" class="hidden">
-                                <progress id="modal-upload-progress" value="0" max="100"></progress>
-                                <span id="modal-progress-text">0%</span>
-                            </div>
-                            <div class="image-actions-row">
-                                <label class="file-upload-btn small-btn primary flex-grow">
-                                    ${UPLOAD_SVG} <span>Choose or Drop Image</span>
-                                    <input type="file" id="modal-image-upload" accept="image/*" style="display:none;">
-                                </label>
-                            </div>
-                        </div>
-
-                        ${library()}
-                    </div>
-                </article>
-        </dialog>
+        ${imagePickerModal.getHTML()}
     `;
 
     setupModalListeners();
@@ -83,70 +80,24 @@ export async function renderManageGlobals() {
  * Sets up listeners for the image picker modal.
  */
 function setupModalListeners() {
-    const modal = document.getElementById('image-picker-modal');
-    const closeBtn = document.getElementById('close-image-modal');
+    if (!imagePickerModal) return;
 
-    closeBtn.onclick = (e) => {
-        e.preventDefault();
-        modal.close();
-    };
+    imagePickerModal.attachListeners();
 
-    // Close on click outside
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            modal.close();
-        }
-    };
-
-    // Handle upload in modal
-    const uploadInput = document.getElementById('modal-image-upload');
-    const dropZone = document.getElementById('modal-drop-zone');
-
-    const handleUpload = async (file) => {
-        if (!file) return;
-
-        const progressContainer = document.getElementById('modal-upload-progress-container');
-        const progressBar = document.getElementById('modal-upload-progress');
-        const progressText = document.getElementById('modal-progress-text');
-
-        try {
-            progressContainer.classList.remove('hidden');
-            const fileId = await uploadFile(file, {
-                visibility: 'public',
-                title: `Global Asset - ${Date.now()}`,
-                onProgress: (p) => {
-                    progressBar.value = p;
-                    progressText.textContent = `${p}%`;
-                }
-            });
+    // Initialize Upload Widget
+    new UploadWidget('modal-upload-widget', {
+        mode: 'inline',
+        selectMode: 'single',
+        autoUpload: true,
+        enableLibrary: false,
+        onUploadComplete: (fileId) => {
             const url = `/api/files/${fileId}/download?view=true`;
             selectImage(url);
-        } catch (err) {
+        },
+        onUploadError: (err) => {
             notify('Upload failed', err.message, 'error');
-        } finally {
-            progressContainer.classList.add('hidden');
         }
-    };
-
-    uploadInput.onchange = (e) => handleUpload(e.target.files[0]);
-
-    // Drag-and-drop listeners
-    dropZone.ondragover = (e) => {
-        e.preventDefault();
-        dropZone.classList.add('drag-over');
-    };
-
-    dropZone.ondragleave = () => {
-        dropZone.classList.remove('drag-over');
-    };
-
-    dropZone.ondrop = (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        if (e.dataTransfer.files.length > 0) {
-            handleUpload(e.dataTransfer.files[0]);
-        }
-    };
+    });
 }
 
 let activePickerKey = null;
@@ -166,11 +117,12 @@ async function selectImage(url) {
         });
 
         // Auto-save
-        const globals = await ajaxGet('/api/globals').then(res => res.res || {});
+        const globals = await apiRequest('GET', '/api/globals').then(res => res.res || {});
         const displayName = globals[activePickerKey]?.name || activePickerKey;
         await updateGlobal(activePickerKey, url, displayName);
     }
-    document.getElementById('image-picker-modal').close();
+
+    if (imagePickerModal) imagePickerModal.close();
 }
 
 /**
@@ -182,7 +134,7 @@ async function fetchAndRenderGlobals() {
     if (!tbody) return;
 
     try {
-        const globals = await ajaxGet('/api/globals').then(res => res.res || []).catch(() => []);
+        const globals = await apiRequest('GET', '/api/globals').then(res => res.res || []).catch(() => []);
 
         if (Object.keys(globals).length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No settings found.</td></tr>';
@@ -225,9 +177,11 @@ async function fetchAndRenderGlobals() {
         tbody.querySelectorAll('.picker-btn').forEach(btn => {
             btn.onclick = () => {
                 activePickerKey = btn.dataset.key;
-                const modal = document.getElementById('image-picker-modal');
-                modal.showModal();
-                loadLibrary(selectImage);
+                if (imagePickerModal) {
+                    imagePickerModal.show();
+                    const container = document.getElementById('globals-library-container');
+                    renderLibrary(container, (url) => selectImage(url));
+                }
             };
         });
 
@@ -283,7 +237,7 @@ async function updateGlobal(key, value, displayName) {
     let parsedValue = isNaN(value) || value.trim() === '' ? value : parseFloat(value);
     const payload = { value: parsedValue };
 
-    await ajaxPost(`/api/globals/${key}`, payload).then(() => {
+    await apiRequest('POST', `/api/globals/${key}`, payload).then(() => {
         notify("Success", `Updated ${displayName}`, 'success');
     }).catch((e) => {
         notify(`Failed to Update ${displayName}`, e, 'error');

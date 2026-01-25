@@ -1,112 +1,116 @@
+//todo refine
+
 /**
  * detail.js (Role)
  * 
- * Logic for the Role Creator and Editor form.
- * Allows managing role names, descriptions, and their associated permission slugs.
- * Roles are used to grant bulk access to administrative features.
+ * Detailed view for managing a single user role.
+ * Allows editing role name and assigning granular permissions.
  * 
- * Registered Routes: /admin/role/new, /admin/role/:id
+ * Registered Route: /admin/role/:id
  */
 
-import { ajaxGet, ajaxPost, ajaxPut, ajaxDelete } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
-import { adminContentID } from '../common.js';
+import { adminContentID } from '../admin.js';
+import { Panel } from '/js/widgets/panel.js';
+import { ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG } from '../../../../images/icons/outline/icons.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
-import { ARROW_BACK_IOS_NEW_SVG, DELETE_SVG } from "../../../../images/icons/outline/icons.js"
 
 /**
- * Main rendering function for the role editor.
+ * Main rendering function for role details.
  * 
- * @param {string} id - Database ID of the role, or 'new'.
+ * @param {string|number} roleId - Database ID of the role.
  */
-export async function renderRoleDetail(id) {
+export async function renderRoleDetail(roleId) {
     const adminContent = document.getElementById(adminContentID);
-    if (!adminContent) return;
+    adminContent.innerHTML = '<p class="loading-cell">Loading role details...</p>';
 
-    // Set up toolbar back button
+    // Toolbar actions
     const actionsEl = document.getElementById('admin-header-actions');
-    if (actionsEl) actionsEl.innerHTML = `<button data-nav="/admin/roles" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Roles</button>`;
-
-    const isNew = id === 'new';
-    let role = { name: '', description: '', permissions: [] };
-    let allPermissions = [];
-
-    try {
-        // Fetch all system permissions and the specific role data in parallel
-        allPermissions = await ajaxGet('/api/admin/permissions');
-        if (!isNew) {
-            const roles = await ajaxGet('/api/admin/roles');
-            role = roles.find(r => r.id == id);
-            if (!role) throw new Error('Role not found');
-        }
-    } catch (e) {
-        return adminContent.innerHTML = '<p>Error loading role data.</p>';
+    if (actionsEl) {
+        actionsEl.innerHTML = `
+            <button id="admin-delete-role-btn" class="small-btn outline danger icon-text-btn">${DELETE_SVG} Delete</button>
+            <button id="admin-back-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Roles</button>
+        `;
+        document.getElementById('admin-back-btn').onclick = () => switchView('/admin/roles');
+        document.getElementById('admin-delete-role-btn').onclick = () => handleDeleteRole(roleId);
     }
 
-    adminContent.innerHTML = /*html*/`
-        <div class="glass-layout">
-            <div class="glass-panel">
-                <header class="card-header-flex">
-                    <h2>${isNew ? 'Create New Role' : 'Edit Role'}</h2>
-                    ${!isNew ? `<button type="button" id="delete-role-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : ''}
-                </header>
-                
-                <form id="role-form" class="modern-form">
-                    <label>Name <input type="text" name="name" value="${role.name}" required placeholder="Role Name"></label>
-                    <label>Description <textarea name="description" rows="3">${role.description || ''}</textarea></label>
-                    
-                    <div class="form-divider"></div>
-                    
-                    <h3>Permissions</h3>
-                    <div class="permissions-grid">
-                        ${allPermissions.map(p => `
-                            <label class="permission-item">
-                                <input type="checkbox" name="permissions" value="${p.slug}" ${role.permissions && role.permissions.includes(p.slug) ? 'checked' : ''}>
-                                <span class="perm-label">${p.slug}</span>
-                            </label>
-                        `).join('')}
-                    </div>
+    try {
+        const isNew = roleId === 'new';
+        const role = isNew ? { name: '', permissions: [] } : await apiRequest('GET', `/api/admin/roles/${roleId}`);
+        const allPermissions = await apiRequest('GET', '/api/admin/roles/permissions');
 
-                    <div class="form-actions-footer">
-                        <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
-                    </div>
-                </form>
+        adminContent.innerHTML = `
+            <div class="glass-layout">
+                ${Panel({
+                    title: isNew ? 'Create New Role' : 'Edit Role',
+                    content: `
+                        <form id="role-form" class="modern-form">
+                            <div class="modern-form-group mb-2">
+                                <label class="form-label-top">Role Name
+                                    <input type="text" name="name" value="${role.name}" required class="full-width-input" placeholder="e.g. Moderator">
+                                </label>
+                            </div>
+
+                            <h3 class="mb-1">Permissions</h3>
+                            <div class="permissions-grid">
+                                ${allPermissions.map(perm => `
+                                    <label class="checkbox-label mb-0-5">
+                                        <input type="checkbox" name="permissions" value="${perm}" ${role.permissions.includes(perm) ? 'checked' : ''}>
+                                        ${perm}
+                                    </label>
+                                `).join('')}
+                            </div>
+
+                            <div class="form-actions-footer mt-2">
+                                <button type="submit" class="primary-btn wide-btn">${SAVE_SVG} ${isNew ? 'Create' : 'Save Changes'}</button>
+                            </div>
+                        </form>
+                    `
+                })}
             </div>
-        </div>`;
+        `;
 
-    // --- Form Submission Logic ---
-    document.getElementById('role-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = {
-            name: formData.get('name'),
-            description: formData.get('description'),
-            // Collect all checked permission slugs
-            permissions: Array.from(document.querySelectorAll('input[name="permissions"]:checked')).map(cb => cb.value)
-        };
+        document.getElementById('role-form').onsubmit = (e) => handleSaveRole(e, roleId);
 
-        try {
-            if (isNew) await ajaxPost('/api/admin/role', data);
-            else await ajaxPut(`/api/admin/role/${id}`, data);
-            
-            notify('Success', 'Role saved', NotificationTypes.SUCCESS);
-            switchView(`/admin/roles`);
-        } catch (err) {
-            notify('Error', 'Save failed', NotificationTypes.ERROR);
-        }
+    } catch (e) {
+        adminContent.innerHTML = '<p class="error-cell">Failed to load role.</p>';
+    }
+}
+
+async function handleSaveRole(e, id) {
+    e.preventDefault();
+    const isNew = id === 'new';
+    const formData = new FormData(e.target);
+    const data = {
+        name: formData.get('name'),
+        permissions: formData.getAll('permissions')
     };
 
-    // --- Deletion Logic ---
-    if (!isNew) {
-        document.getElementById('delete-role-btn').onclick = async () => {
-            if (!confirm('Delete role? This will remove it from all users.')) return;
-            try {
-                await fetch(`/api/admin/role/${id}`, { method: 'DELETE' });
-                notify('Success', 'Role deleted', NotificationTypes.SUCCESS);
-                switchView('/admin/roles');
-            } catch (e) {
-                notify('Error', 'Delete failed', NotificationTypes.ERROR);
-            }
-        };
+    try {
+        if (isNew) {
+            await apiRequest('POST', '/api/admin/roles', data);
+            notify('Success', 'Role created', NotificationTypes.SUCCESS);
+        } else {
+            await apiRequest('PUT', `/api/admin/roles/${id}`, data);
+            notify('Success', 'Role updated', NotificationTypes.SUCCESS);
+        }
+        switchView('/admin/roles');
+    } catch (err) {
+        notify('Error', err.message, NotificationTypes.ERROR);
+    }
+}
+
+async function handleDeleteRole(id) {
+    if (id === 'new') return switchView('/admin/roles');
+    if (!confirm('Are you sure you want to delete this role? This might affect many users.')) return;
+
+    try {
+        await apiRequest('DELETE', `/api/admin/roles/${id}`);
+        notify('Success', 'Role deleted', NotificationTypes.SUCCESS);
+        switchView('/admin/roles');
+    } catch (e) {
+        notify('Error', e.message, NotificationTypes.ERROR);
     }
 }

@@ -1,3 +1,4 @@
+//todo refine
 /**
  * manage.js
  * 
@@ -8,10 +9,12 @@
  * Registered Route: /admin/events
  */
 
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
-import { adminContentID, renderAdminNavBar, renderPaginationControls } from '../common.js';
+import { adminContentID, renderAdminNavBar } from '../admin.js';
+import { Panel } from '/js/widgets/panel.js';
 import { UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG } from '../../../../images/icons/outline/icons.js'
+import { Pagination } from '/js/widgets/Pagination.js';
 
 /**
  * Main rendering function for the admin events management dashboard.
@@ -33,7 +36,7 @@ export async function renderManageEvents() {
     const difficulty = urlParams.get('difficulty') || '';
     const location = urlParams.get('location') || '';
 
-    adminContent.innerHTML = /*html*/`
+    adminContent.innerHTML = `
         <div class="glass-layout">
             <div class="glass-toolbar">
                  ${await renderAdminNavBar('events')}
@@ -89,18 +92,22 @@ export async function renderManageEvents() {
                 </div>
             </div>
 
-            <!-- Events Table -->
-            <div class="glass-table-container">
-                <div class="table-responsive">
-                    <table class="glass-table">
-                        <thead id="events-table-head"></thead>
-                        <tbody id="events-table-body">
-                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div id="events-pagination"></div>
+            ${Panel({
+                content: `
+                    <!-- Events Table -->
+                    <div class="glass-table-container">
+                        <div class="table-responsive">
+                            <table class="glass-table">
+                                <thead id="events-table-head"></thead>
+                                <tbody id="events-table-body">
+                                    <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="events-pagination"></div>
+                `
+            })}
         </div>
     `;
 
@@ -170,7 +177,7 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
 
     try {
         const query = new URLSearchParams({ page, limit: 10, search, sort, order, showPast, minCost, maxCost, difficulty, location }).toString();
-        const data = await ajaxGet(`/api/admin/events?${query}`);
+        const data = await apiRequest('GET', `/api/admin/events?${query}`);
         const events = data.events || [];
         const totalPages = data.totalPages || 1;
 
@@ -220,8 +227,10 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
             });
         }
 
-        const pagination = document.getElementById('events-pagination');
-        renderPaginationControls(pagination, page, totalPages, (newPage) => updateEventParams({ page: newPage }));
+        const pager = new Pagination(document.getElementById('events-pagination'), (newPage) => {
+            updateEventParams({ page: newPage });
+        });
+        pager.render(page, totalPages);
 
     } catch (e) {
         if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="error-cell">Error loading events.</td></tr>';

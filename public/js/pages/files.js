@@ -11,6 +11,7 @@ import { apiRequest } from '/js/utils/api.js';
 import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, 
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG 
 } from '../../images/icons/outline/icons.js';
+import { Pagination } from '/js/widgets/Pagination.js';
 
 addRoute('/files', 'files');
 
@@ -181,54 +182,14 @@ async function fetchFiles() {
             `;
         }).join('');
 
-        renderPagination(totalPages);
+        const pager = new Pagination(document.getElementById('files-pagination'), (page) => {
+            currentOptions.page = page;
+            fetchFiles();
+        });
+        pager.render(currentOptions.page, totalPages);
     } catch (e) {
         list.innerHTML = '<tr><td colspan="5" class="text-center error">Failed to load files.</td></tr>';
     }
-}
-
-/**
- * Renders the pagination controls for the file table.
- * 
- * @param {number} totalPages 
- */
-function renderPagination(totalPages) {
-    const container = document.getElementById('files-pagination');
-    if (!container) return;
-
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-
-    // Determine range of visible page numbers
-    let startPage = currentOptions.page - 1;
-    if (startPage < 1) startPage = 1;
-    let endPage = startPage + 2;
-    if (endPage > totalPages) {
-        endPage = totalPages;
-        startPage = Math.max(1, endPage - 2);
-    }
-
-    let html = '';
-
-    // Prev Button
-    const prevDisabled = currentOptions.page === 1;
-    html += `<button class="page-btn" ${prevDisabled ? 'disabled' : ''} data-page="${currentOptions.page - 1}">
-        ${ARROW_BACK_IOS_NEW_SVG}
-    </button>`;
-
-    for (let i = startPage; i <= endPage; i++) {
-        html += `<button class="page-btn ${i === currentOptions.page ? 'active' : ''}" data-page="${i}">${i}</button>`;
-    }
-
-    // Next Button
-    const nextDisabled = currentOptions.page === totalPages;
-    html += `<button class="page-btn" ${nextDisabled ? 'disabled' : ''} data-page="${currentOptions.page + 1}">
-        ${ARROW_FORWARD_IOS_SVG}
-    </button>`;
-
-    container.innerHTML = html;
 }
 
 // Router subscription
@@ -256,14 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'category-filter') {
             currentOptions.categoryId = e.target.value;
             currentOptions.page = 1;
-            fetchFiles();
-        }
-    });
-
-    document.addEventListener('click', (e) => {
-        const pageBtn = e.target.closest('.page-btn');
-        if (pageBtn && e.target.closest('#files-pagination')) {
-            currentOptions.page = parseInt(pageBtn.dataset.page);
             fetchFiles();
         }
     });

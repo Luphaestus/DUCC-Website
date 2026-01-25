@@ -1,3 +1,4 @@
+//todo refine
 /**
  * tags.js (Admin User Tab)
  * 
@@ -6,8 +7,9 @@
  * "Designated Manager" status for specific event categories.
  */
 
-import { ajaxGet, ajaxPost, ajaxDelete } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
+import { Panel } from '/js/widgets/panel.js';
 import { LOCAL_ACTIVITY_SVG, SHIELD_SVG } from '../../../../../images/icons/outline/icons.js';
 
 /**
@@ -21,9 +23,9 @@ export async function renderTagsTab(container, userId) {
     try {
         // Fetch all available tags and the user's specific associations in parallel
         const [allTagsData, userWhitelistedTags, userDetails] = await Promise.all([
-            ajaxGet('/api/tags'),
-            ajaxGet(`/api/user/${userId}/tags`),
-            ajaxGet(`/api/admin/user/${userId}`)
+            apiRequest('GET', '/api/tags'),
+            apiRequest('GET', `/api/user/${userId}/tags`),
+            apiRequest('GET', `/api/admin/user/${userId}`)
         ]);
 
         const allTags = allTagsData.data || [];
@@ -33,56 +35,56 @@ export async function renderTagsTab(container, userId) {
         <div class="profile-layout-grid">
             <!-- Whitelist Management -->
             <div class="column">
-                <div class="detail-card">
-                    <header>
-                        ${LOCAL_ACTIVITY_SVG}
-                        <h3>Whitelisted Tags</h3>
-                    </header>
-                    <div class="card-body">
-                        <p class="helper-text">Tags this user is explicitly whitelisted for.</p>
-                        <div class="tags-selection-grid">
-                            ${allTags.map(tag => {
-                                const isWhitelisted = userWhitelistedTags.some(ut => ut.id === tag.id);
-                                return `
-                                    <label class="tag-checkbox">
-                                        <input type="checkbox" class="user-tag-cb" value="${tag.id}" ${isWhitelisted ? 'checked' : ''} style="display:none;">
-                                        <span class="tag-badge ${isWhitelisted ? 'selected' : ''}" 
-                                              style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
-                                            ${tag.name}
-                                        </span>
-                                    </label>
-                                `;
-                            }).join('')}
+                ${Panel({
+                    title: 'Whitelisted Tags',
+                    icon: LOCAL_ACTIVITY_SVG,
+                    content: `
+                        <div class="card-body">
+                            <p class="helper-text">Tags this user is explicitly whitelisted for.</p>
+                            <div class="tags-selection-grid">
+                                ${allTags.map(tag => {
+                                    const isWhitelisted = userWhitelistedTags.some(ut => ut.id === tag.id);
+                                    return `
+                                        <label class="tag-checkbox">
+                                            <input type="checkbox" class="user-tag-cb" value="${tag.id}" ${isWhitelisted ? 'checked' : ''} style="display:none;">
+                                            <span class="tag-badge ${isWhitelisted ? 'selected' : ''}" 
+                                                  style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
+                                                ${tag.name}
+                                            </span>
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    `
+                })}
             </div>
 
             <!-- Management Scope Management -->
             <div class="column">
-                <div class="detail-card">
-                    <header>
-                        ${SHIELD_SVG}
-                        <h3>Managed Tags (Scoped)</h3>
-                    </header>
-                    <div class="card-body">
-                        <p class="helper-text">Tags this user can manage events for.</p>
-                        <div class="tags-selection-grid">
-                            ${allTags.map(tag => {
-                                const isManaged = managedTags.some(t => t.id === tag.id);
-                                return `
-                                    <label class="tag-checkbox">
-                                        <input type="checkbox" class="managed-tag-cb" value="${tag.id}" ${isManaged ? 'checked' : ''} style="display:none;">
-                                        <span class="tag-badge ${isManaged ? 'selected' : ''}" 
-                                              style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
-                                            ${tag.name}
-                                        </span>
-                                    </label>
-                                `;
-                            }).join('')}
+                ${Panel({
+                    title: 'Managed Tags (Scoped)',
+                    icon: SHIELD_SVG,
+                    content: `
+                        <div class="card-body">
+                            <p class="helper-text">Tags this user can manage events for.</p>
+                            <div class="tags-selection-grid">
+                                ${allTags.map(tag => {
+                                    const isManaged = managedTags.some(t => t.id === tag.id);
+                                    return `
+                                        <label class="tag-checkbox">
+                                            <input type="checkbox" class="managed-tag-cb" value="${tag.id}" ${isManaged ? 'checked' : ''} style="display:none;">
+                                            <span class="tag-badge ${isManaged ? 'selected' : ''}" 
+                                                  style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
+                                                ${tag.name}
+                                            </span>
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    `
+                })}
             </div>
         </div>`;
 
@@ -95,10 +97,10 @@ export async function renderTagsTab(container, userId) {
 
                 try {
                     if (isAdding) {
-                        await ajaxPost(`/api/tags/${tagId}/whitelist`, { userId });
+                        await apiRequest('POST', `/api/tags/${tagId}/whitelist`, { userId });
                         span.classList.add('selected');
                     } else {
-                        await ajaxDelete(`/api/tags/${tagId}/whitelist/${userId}`);
+                        await apiRequest('DELETE', `/api/tags/${tagId}/whitelist/${userId}`);
                         span.classList.remove('selected');
                     }
                 } catch (e) {
@@ -117,11 +119,11 @@ export async function renderTagsTab(container, userId) {
 
                 try {
                     if (isAdding) {
-                        await ajaxPost(`/api/admin/user/${userId}/managed_tag`, { tagId });
+                        await apiRequest('POST', `/api/admin/user/${userId}/managed_tag`, { tagId });
                         span.classList.add('selected');
                         notify('Success', 'Tag scope added', 'success');
                     } else {
-                        await ajaxDelete(`/api/admin/user/${userId}/managed_tag/${tagId}`);
+                        await apiRequest('DELETE', `/api/admin/user/${userId}/managed_tag/${tagId}`);
                         span.classList.remove('selected');
                         notify('Success', 'Tag scope removed', 'success');
                     }

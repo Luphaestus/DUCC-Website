@@ -1,3 +1,4 @@
+//todo refine
 /**
  * transactions.js (Admin User Tab)
  * 
@@ -6,9 +7,10 @@
  * add credits/debits, edit existing records, and delete erroneous entries.
  */
 
-import { ajaxGet, ajaxPost } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { showConfirmModal } from '/js/utils/modal.js';
+import { Panel } from '/js/widgets/panel.js';
 import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_SVG } from '../../../../../images/icons/outline/icons.js';
 
 /**
@@ -20,17 +22,15 @@ import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_
 export async function renderTransactionsTab(container, userId) {
     container.innerHTML = '<p class="loading-text">Loading transactions...</p>';
     try {
-        const transactions = await ajaxGet(`/api/admin/user/${userId}/transactions`);
+        const transactions = await apiRequest('GET', `/api/admin/user/${userId}/transactions`);
 
-        let html = `
-            <div class="detail-card full-width">
-                <header>
-                    ${WALLET_SVG}
-                    <h3>Transaction History</h3>
-                </header>
+        container.innerHTML = Panel({
+            title: 'Transaction History',
+            icon: WALLET_SVG,
+            content: `
                 <div class="card-body">
                     <!-- Manual Transaction Insertion Form -->
-                    <div class="transaction-item glass-panel new-entry-row">
+                    <div class="transaction-item glass-panel new-entry-row mb-1-5">
                         <div class="tx-edit-grid">
                             <input id="new-tx-desc" type="text" placeholder="Description (e.g. Top Up)" class="compact-input mb-0">
                             <input id="new-tx-amount" type="number" step="0.01" placeholder="Amount" class="compact-input mb-0">
@@ -39,74 +39,69 @@ export async function renderTransactionsTab(container, userId) {
                     </div>
 
                     <div class="transaction-list" id="admin-tx-list">
-        `;
+                        ${(!transactions || transactions.length === 0) ? '<p class="empty-text">No transactions found.</p>' : transactions.map(tx => {
+                            const isNegative = tx.amount < 0;
+                            const icon = isNegative ? REMOVE_SVG : ADD_SVG;
+                            const iconClass = isNegative ? 'negative' : 'positive';
+                            const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-        if (!transactions || transactions.length === 0) {
-            html += '<p class="empty-text">No transactions found.</p>';
-        } else {
-            // Render existing transaction items
-            transactions.forEach(tx => {
-                const isNegative = tx.amount < 0;
-                const icon = isNegative ? REMOVE_SVG : ADD_SVG;
-                const iconClass = isNegative ? 'negative' : 'positive';
-                const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                            return `
+                                <div class="transaction-item glass-panel" data-id="${tx.id}">
+                                    <div class="tx-icon ${iconClass}">${icon}</div>
+                                    
+                                    <!-- Read-only Mode -->
+                                    <div class="tx-display-content">
+                                        <div class="tx-details">
+                                            <span class="tx-title">${tx.description}</span>
+                                            <span class="tx-date">${dateStr}</span>
+                                        </div>
+                                        <div class="tx-amount-group">
+                                            <span class="tx-amount ${iconClass}">${isNegative ? '' : '+'}${tx.amount.toFixed(2)}</span>
+                                            <span class="tx-balance-after">£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}</span>
+                                        </div>
+                                    </div>
 
-                html += `
-                    <div class="transaction-item glass-panel" data-id="${tx.id}">
-                        <div class="tx-icon ${iconClass}">${icon}</div>
-                        
-                        <!-- Read-only Mode -->
-                        <div class="tx-display-content">
-                            <div class="tx-details">
-                                <span class="tx-title">${tx.description}</span>
-                                <span class="tx-date">${dateStr}</span>
-                            </div>
-                            <div class="tx-amount-group">
-                                <span class="tx-amount ${iconClass}">${isNegative ? '' : '+'}${tx.amount.toFixed(2)}</span>
-                                <span class="tx-balance-after">£${tx.after !== undefined ? tx.after.toFixed(2) : 'N/A'}</span>
-                            </div>
-                        </div>
+                                    <!-- Inline Edit Mode (Hidden by default) -->
+                                    <div class="tx-edit-grid no-btn hidden">
+                                        <input class="tx-desc-input compact-input mb-0" value="${tx.description}">
+                                        <input type="number" step="0.01" class="tx-amount-input compact-input text-left mb-0" value="${tx.amount}">
+                                    </div>
 
-                        <!-- Inline Edit Mode (Hidden by default) -->
-                        <div class="tx-edit-grid no-btn hidden">
-                            <input class="tx-desc-input compact-input mb-0" value="${tx.description}">
-                            <input type="number" step="0.01" class="tx-amount-input compact-input text-left mb-0" value="${tx.amount}">
-                        </div>
-
-                        <!-- Row Actions -->
-                        <div class="tx-actions">
-                            <button class="icon-btn edit-tx-btn" data-id="${tx.id}" title="Edit">${EDIT_SVG}</button>
-                            <button class="icon-btn save-tx-btn hidden success" data-id="${tx.id}" title="Save">${SAVE_SVG}</button>
-                            <button class="icon-btn cancel-tx-btn hidden warning" data-id="${tx.id}" title="Cancel">${CLOSE_SVG}</button>
-                            <button class="icon-btn delete-tx-btn delete" data-id="${tx.id}" title="Delete">${DELETE_SVG}</button>
-                        </div>
+                                    <!-- Row Actions -->
+                                    <div class="tx-actions">
+                                        <button class="icon-btn edit-tx-btn" data-id="${tx.id}" title="Edit">${EDIT_SVG}</button>
+                                        <button class="icon-btn save-tx-btn hidden success" data-id="${tx.id}" title="Save">${SAVE_SVG}</button>
+                                        <button class="icon-btn cancel-tx-btn hidden warning" data-id="${tx.id}" title="Cancel">${CLOSE_SVG}</button>
+                                        <button class="icon-btn delete-tx-btn delete" data-id="${tx.id}" title="Delete">${DELETE_SVG}</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
-                `;
-            });
-        }
-
-        html += `   </div>
                 </div>
-            </div>`;
-        container.innerHTML = html;
+            `
+        });
 
         // --- Logic Binding ---
 
         // Add New Transaction Handler
-        document.getElementById('add-tx-btn').onclick = async () => {
-            const amount = document.getElementById('new-tx-amount').value;
-            const description = document.getElementById('new-tx-desc').value;
-            if (!amount || !description) return notify('Error', 'Please fill all fields', 'error');
-            
-            try {
-                await ajaxPost(`/api/admin/user/${userId}/transaction`, { amount, description });
-                notify('Success', 'Transaction added', 'success');
-                // Recursive refresh
-                renderTransactionsTab(container, userId);
-            } catch (e) {
-                notify('Error', 'Failed to add', 'error');
-            }
-        };
+        const addBtn = document.getElementById('add-tx-btn');
+        if (addBtn) {
+            addBtn.onclick = async () => {
+                const amount = document.getElementById('new-tx-amount').value;
+                const description = document.getElementById('new-tx-desc').value;
+                if (!amount || !description) return notify('Error', 'Please fill all fields', 'error');
+                
+                try {
+                    await apiRequest('POST', `/api/admin/user/${userId}/transaction`, { amount, description });
+                    notify('Success', 'Transaction added', 'success');
+                    // Recursive refresh
+                    renderTransactionsTab(container, userId);
+                } catch (e) {
+                    notify('Error', 'Failed to add', 'error');
+                }
+            };
+        }
 
         // Bulk Delete Handler
         container.querySelectorAll('.delete-tx-btn').forEach(btn => {
