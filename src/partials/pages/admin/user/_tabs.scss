@@ -90,6 +90,18 @@
             margin-bottom: 1rem;
             display: flex;
             gap: 0.5rem;
+
+            input, select {
+                flex: 1;
+                margin-bottom: 0;
+            }
+
+            button {
+                width: auto;
+                margin: 0;
+                padding: 0.5rem 1rem;
+                flex-shrink: 0;
+            }
         }
         select { margin-bottom: 0; }
     }

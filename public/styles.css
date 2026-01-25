@@ -8496,6 +8496,12 @@ textarea[name=description] {
   flex: 1;
   margin-bottom: 0;
 }
+#admin-view .permission-section .inline-add-form button {
+  width: auto;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  flex-shrink: 0;
+}
 #admin-view .small-btn {
   margin: 0;
 }
@@ -8672,6 +8678,16 @@ textarea[name=description] {
   margin-bottom: 1rem;
   display: flex;
   gap: 0.5rem;
+}
+#admin-view .card-body .inline-add-form input, #admin-view .card-body .inline-add-form select {
+  flex: 1;
+  margin-bottom: 0;
+}
+#admin-view .card-body .inline-add-form button {
+  width: auto;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  flex-shrink: 0;
 }
 #admin-view .card-body select {
   margin-bottom: 0;
