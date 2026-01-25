@@ -1,4 +1,3 @@
-//todo refine  
 /**
  * detail.js (User)
  * 
@@ -37,17 +36,14 @@ export async function renderUserDetail(userId) {
     }
 
     try {
-        // Fetch detailed user record and current admin permissions
         const user = await apiRequest('GET', `/api/admin/user/${userId}`);
         const userData = await apiRequest('GET', '/api/user/elements/permissions').catch(() => ({}));
         const userPerms = userData.permissions || [];
 
-        // Check granular access levels
         const canManageUsers = userPerms.includes('user.manage');
         const canManageTransactions = userPerms.includes('transaction.manage');
         const isExec = userPerms.length > 0;
 
-        // Build the dynamic tab list
         const tabs = [{ label: 'Profile', key: 'profile', data: { tab: 'profile' } }];
         if (canManageUsers) {
             tabs.push({ label: 'Legal', key: 'legal', data: { tab: 'legal' } });
@@ -68,7 +64,7 @@ export async function renderUserDetail(userId) {
         adminContent.innerHTML = `
             <div class="glass-layout">
                 ${Panel({
-            content: `
+                    content: `
                         <header class="user-detail-header">
                             <div class="user-identity">
                                 <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
@@ -77,9 +73,8 @@ export async function renderUserDetail(userId) {
                             ${tabNav.getHTML()}
                         </header>
                         <div id="admin-tab-content" class="tab-content-area"></div>
-                    `,
-            classes: 'mb-1-5'
-        })}
+                    `
+                })}
             </div>
         `;
 
@@ -93,7 +88,7 @@ export async function renderUserDetail(userId) {
             btn.onclick = () => {
                 tabButtons.forEach(t => t.classList.remove('active'));
                 btn.classList.add('active');
-                tabNav.init(); 
+                tabNav.init();
 
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('tab', btn.dataset.tab);
@@ -103,7 +98,7 @@ export async function renderUserDetail(userId) {
             };
         });
 
-       renderTab(currentTab, user, userPerms, canManageUsers, isExec);
+        renderTab(currentTab, user, userPerms, canManageUsers, isExec);
 
     } catch (e) {
         console.error(e);
