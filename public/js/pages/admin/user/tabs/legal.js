@@ -1,10 +1,7 @@
-//todo refine 
 /**
  * legal.js (Admin User Tab)
  * 
  * Renders the "Legal" tab within the administrative user management view.
- * Provides a read-only overview of the user's signed waiver status,
- * emergency contacts, and sensitive medical disclosures.
  */
 
 import { Panel } from '/js/widgets/panel.js';
@@ -18,7 +15,7 @@ import { CONTRACT_SVG, PERSON_SVG, ID_CARD_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL
  * @param {object} user - The detailed user data object.
  */
 export function renderLegalTab(container, user) {
-    // Format the signing date for display
+    const isSigned = !!user.filled_legal_info;
     const legalDate = user.legal_filled_at ? new Date(user.legal_filled_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Never';
 
     container.innerHTML = `
@@ -26,30 +23,31 @@ export function renderLegalTab(container, user) {
             <div class="column">
                 <!-- Legal Status Card -->
                 ${Panel({
-        title: 'Legal Status',
-        icon: CONTRACT_SVG,
-        content: `
+                    title: 'Legal Status',
+                    icon: CONTRACT_SVG,
+                    content: `
                         <div class="card-body">
                             ${StatusIndicator({
-            active: !!user.filled_legal_info,
-            activeText: 'Signed',
-            inactiveText: 'Missing',
-            content: `
+                                active: isSigned,
+                                activeText: 'Signed',
+                                inactiveText: 'Missing',
+                                content: `
                                     <div class="info-item-modern mt-1">
                                         <span class="label">Last Signed:</span> 
                                         <span class="value">${legalDate}</span>
                                     </div>
                                 `
-        })}
+                            })}
                         </div>
                     `
-    })}
+                })}
 
+                ${isSigned ? `
                 <!-- Personal & Emergency Card -->
                 ${Panel({
-        title: 'Identity & Contact',
-        icon: PERSON_SVG,
-        content: `
+                    title: 'Identity & Contact',
+                    icon: PERSON_SVG,
+                    content: `
                         <div class="card-body detail-info-group">
                             <!-- Identity Details -->
                             <div class="detail-info-box">
@@ -82,45 +80,48 @@ export function renderLegalTab(container, user) {
                             </div>
                         </div>
                     `
-    })}
+                })}
+                ` : ''}
             </div>
 
-            <div class="column">
-                <!-- Medical Details Card -->
-                ${Panel({
-        title: 'Health Information',
-        icon: MEDICAL_INFORMATION_SVG,
-        content: `
-                        <div class="card-body detail-info-group">
-                            <!-- Conditions -->
-                            <div class="medical-section">
-                                <div class="info-item-modern compact">
-                                    <span class="label">Medical Conditions:</span> 
-                                    <span class="badge ${user.has_medical_conditions ? 'warning' : 'success'}">${user.has_medical_conditions ? 'Yes' : 'None Reported'}</span>
+            ${isSigned ? `
+                <div class="column">
+                    <!-- Medical Details Card -->
+                    ${Panel({
+                        title: 'Health Information',
+                        icon: MEDICAL_INFORMATION_SVG,
+                        content: `
+                            <div class="card-body detail-info-group">
+                                <!-- Conditions -->
+                                <div class="medical-section">
+                                    <div class="info-item-modern compact">
+                                        <span class="label">Medical Conditions:</span> 
+                                        <span class="badge ${user.has_medical_conditions ? 'warning' : 'success'}">${user.has_medical_conditions ? 'Yes' : 'None Reported'}</span>
+                                    </div>
+                                    ${user.has_medical_conditions ? `<div class="detail-info-box">${user.medical_conditions_details}</div>` : ''}
                                 </div>
-                                ${user.has_medical_conditions ? `<div class="detail-info-box">${user.medical_conditions_details}</div>` : ''}
-                            </div>
 
-                            <!-- Medication -->
-                            <div class="medical-section">
-                                <div class="info-item-modern compact">
-                                    <span class="label">Medication:</span>
-                                    <span class="badge ${user.takes_medication ? 'warning' : 'success'}">${user.takes_medication ? 'Yes' : 'None Reported'}</span>
+                                <!-- Medication -->
+                                <div class="medical-section">
+                                    <div class="info-item-modern compact">
+                                        <span class="label">Medication:</span>
+                                        <span class="badge ${user.takes_medication ? 'warning' : 'success'}">${user.takes_medication ? 'Yes' : 'None Reported'}</span>
+                                    </div>
+                                    ${user.takes_medication ? `<div class="detail-info-box">${user.medication_details}</div>` : ''}
                                 </div>
-                                ${user.takes_medication ? `<div class="detail-info-box">${user.medication_details}</div>` : ''}
-                            </div>
 
-                            <!-- GDPR / Privacy Consent -->
-                            <div class="info-item-modern border-top">
-                                <span class="label">Data Consent:</span>
-                                <span class="badge ${user.agrees_to_keep_health_data ? 'success' : 'neutral'}">
-                                    ${user.agrees_to_keep_health_data ? 'Keep Health Data' : 'Wipe Medical on Exit'}
-                                </span>
+                                <!-- GDPR / Privacy Consent -->
+                                <div class="info-item-modern border-top">
+                                    <span class="label">Data Consent:</span>
+                                    <span class="badge ${user.agrees_to_keep_health_data ? 'success' : 'neutral'}">
+                                        ${user.agrees_to_keep_health_data ? 'Keep Health Data' : 'Wipe Medical on Exit'}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    `
-    })}
-            </div>
+                        `
+                    })}
+                </div>
+            ` : ''}
         </div>
     `;
 }
