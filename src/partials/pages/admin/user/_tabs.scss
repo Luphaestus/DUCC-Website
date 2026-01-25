@@ -27,6 +27,7 @@
 
         .amount {
             &.negative { color: #e74c3c; }
+            &.warning { color: #f39c12; }
             &.positive { color: #2ecc71; }
             &.large { font-size: 2.2rem; margin-bottom: 0.25rem; }
         }

@@ -30,15 +30,19 @@ const navEntries = [
 async function updateBalanceInNav() {
     const balanceButton = document.getElementById('balance-button');
     if (balanceButton) {
-        const data = await apiRequest('GET', '/api/user/elements/balance').catch(() => null);
-        if (data && data.balance !== undefined) {
-            const balance = Number(data.balance);
+        const [balanceData, globalData] = await Promise.all([
+            apiRequest('GET', '/api/user/elements/balance').catch(() => null),
+            apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
+        ]);
+
+        if (balanceData && balanceData.balance !== undefined) {
+            const balance = Number(balanceData.balance);
+            const minMoney = Number(globalData.res?.MinMoney?.data || -25);
             balanceButton.textContent = `Balance: £${balance.toFixed(2)}`;
 
             // Apply warning classes for low/negative balances
-            //todo base this off of the acctual debt limit. This was implemented before that existed and I can't be bothered to change it now :D
-            balanceButton.classList.toggle('balance-low', balance < -20);
-            balanceButton.classList.toggle('balance-warn', balance >= -20 && balance < -10);
+            balanceButton.classList.toggle('balance-low', balance < minMoney);
+            balanceButton.classList.toggle('balance-warn', balance >= minMoney && balance < 0);
         }
     }
 }

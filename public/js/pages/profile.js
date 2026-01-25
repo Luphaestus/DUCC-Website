@@ -318,10 +318,15 @@ function renderInstructor(profile) {
  * Updates the user's financial balance display.
  * 
  * @param {object} profile 
+ * @param {number} minMoney
  */
-function renderProfileBalance(profile) {
+function renderProfileBalance(profile, minMoney) {
     const bal = Number(profile.balance);
-    const valueClass = bal < 0 ? 'negative' : (bal > 0 ? 'positive' : '');
+    
+    let valueClass = 'balance-warning';
+    if (bal < minMoney) valueClass = 'balance-negative';
+    else if (bal >= 0) valueClass = 'balance-positive';
+    
     updateValueDisplay('balance-amount', `£${bal.toFixed(2)}`, valueClass);
 }
 
@@ -361,13 +366,15 @@ async function updateDashboard() {
     if (!await requireAuth()) return;
 
     try {
-        const [profile, globals, tags] = await Promise.all([
+        const [profile, globals, tags, minMoneyGlobal] = await Promise.all([
             apiRequest('GET', '/api/user/elements/email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank'),
             apiRequest('GET', '/api/globals/MembershipCost'),
-            apiRequest('GET', '/api/user/tags').catch(() => [])
+            apiRequest('GET', '/api/user/tags').catch(() => []),
+            apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
         ]);
 
         currentUser = profile;
+        const minMoney = Number(minMoneyGlobal.res?.MinMoney?.data || -25);
 
         if (currentUser) {
             renderMembershipBanner(profile, globals.res || {});
@@ -377,7 +384,7 @@ async function updateDashboard() {
             renderTags(tags);
             renderInstructor(profile);
         }
-        renderProfileBalance(profile);
+        renderProfileBalance(profile, minMoney);
         renderProfileTransactions();
 
     } catch (error) {
