@@ -1,4 +1,4 @@
-//todo  refine
+//todo refine
 
 /**
  * UploadWidget.js

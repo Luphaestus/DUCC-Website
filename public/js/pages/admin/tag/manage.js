@@ -1,9 +1,7 @@
-//todo  refine 
 /**
  * manage.js (Tag)
  * 
  * Logic for the administrative tags list view.
- * Displays all event tags, their associated colors, and any minimum difficulty requirements.
  * 
  * Registered Route: /admin/tags
  */
@@ -31,29 +29,23 @@ export async function renderManageTags() {
                     </div>
                 </div>
             </div>
-            
-            ${Panel({
-        content: `
-                    <div class="glass-table-container">
-                        <div class="table-responsive">
-                            <table class="glass-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Color</th>
-                                        <th>Min Difficulty</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tags-table-body">
-                                    <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="glass-table-container">
+                    <div class="table-responsive">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Color</th>
+                                    <th>Min Difficulty</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tags-table-body">
+                                <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                `
-    })}
-        </div>
+                </div>
     `;
 
     await fetchAndRenderTags();
@@ -85,7 +77,6 @@ async function fetchAndRenderTags() {
                 </tr>
             `).join('');
 
-            // Attach row click listeners for navigation
             tbody.querySelectorAll('.tag-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/tag/${row.dataset.id}`);
             });
