@@ -1,11 +1,7 @@
-//todo refine 
 /**
  * detail.js (Tag)
  * 
  * Logic for the Tag Creator and Editor form.
- * Beyond basic metadata (name, color), this module handles complex "Designated Manager"
- * and "Whitelist Access" logic, allowing admins to scope event management and visibility
- * to specific subsets of users.
  * 
  * Registered Routes: /admin/tag/new, /admin/tag/:id
  */
@@ -18,6 +14,7 @@ import { Panel } from '/js/widgets/panel.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, IMAGE_SVG, UPLOAD_SVG } from "../../../../images/icons/outline/icons.js"
 import { showConfirmModal } from '/js/utils/modal.js';
+import { debounce } from '/js/utils/utils.js';
 
 /**
  * Main rendering function for the tag editor.
@@ -28,12 +25,10 @@ export async function renderTagDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Set up toolbar
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = `<button id="admin-back-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Tags</button>`;
     document.getElementById('admin-back-btn').onclick = () => switchView('/admin/tags');
 
-    // Fetch user permissions to determine if management sections should be shown
     const userData = await apiRequest('GET', '/api/user/elements/permissions').catch(() => ({}));
     const userPerms = (userData.permissions || []).includes('user.manage');
 
@@ -44,7 +39,6 @@ export async function renderTagDetail(id) {
 
     if (!isNew) {
         try {
-            // Batch fetch tag metadata and associated user lists
             const tags = (await apiRequest('GET', '/api/tags')).data || [];
             tag = tags.find(t => t.id == id);
             if (!tag) throw new Error('Tag not found');
@@ -62,7 +56,10 @@ export async function renderTagDetail(id) {
         }
     }
 
-    const imageUrl = tag.image_id ? `/api/files/${tag.image_id}/download?view=true` : '/images/misc/ducc.png';
+    const globalDefaultRes = await apiRequest('GET', '/api/globals/DefaultEventImage');
+    const globalDefaultUrl = globalDefaultRes.res?.DefaultEventImage?.data || '/images/misc/ducc.png';
+
+    const imageUrl = tag.image_id ? `/api/files/${tag.image_id}/download?view=true` : globalDefaultUrl;
 
     adminContent.innerHTML = `
         <div class="glass-layout">
@@ -113,7 +110,7 @@ export async function renderTagDetail(id) {
                                 <input type="hidden" name="image_id" id="image_id_input" value="${tag.image_id || ''}">
                             </div>
                         </div>                    
-                        <div class="form-actions-footer">
+                        <div class="form-actions-footer ${!isNew ? 'hidden' : ''}">
                             <button type="submit" class="wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                         </div>
                     </form>
@@ -194,6 +191,7 @@ export async function renderTagDetail(id) {
             }
             imageIdInput.value = id || '';
             notify('Success', 'Image updated', 'success');
+            if (!isNew) autoSave();
         },
         onRemove: async () => {
             if (isNew) {
@@ -207,7 +205,7 @@ export async function renderTagDetail(id) {
 
                 notify('Success', 'Image removed', 'success');
                 imageIdInput.value = '';
-                widget.setPreview('/images/misc/ducc.png');
+                widget.setPreview(globalDefaultUrl);
                 return false;
             } catch (err) {
                 notify('Error', err.message, 'error');
@@ -219,20 +217,51 @@ export async function renderTagDetail(id) {
         }
     });
 
-    // --- Core Tag Form Submission ---
-    document.getElementById('tag-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
+    const getFormData = () => {
+        const formData = new FormData(document.getElementById('tag-form'));
         const data = Object.fromEntries(formData.entries());
         data.min_difficulty = data.min_difficulty === '' ? null : parseInt(data.min_difficulty);
         data.priority = parseInt(data.priority) || 0;
         data.image_id = data.image_id === '' ? null : parseInt(data.image_id);
+        return data;
+    }
+
+    const autoSave = async () => {
+        if (isNew) return;
+        const data = getFormData();
+        try {
+            await apiRequest('PUT', `/api/tags/${id}`, data);
+        } catch (err) {
+            notify('Auto-save failed', err.message, NotificationTypes.ERROR);
+        }
+    };
+
+    const debouncedAutoSave = debounce(autoSave, 1000);
+
+    if (!isNew) {
+        const form = document.getElementById('tag-form');
+        form.querySelectorAll('input, textarea, select').forEach(input => {
+            if (input.type === 'text' || input.tagName === 'TEXTAREA' || input.type === 'number') {
+                input.addEventListener('input', debouncedAutoSave);
+            } else {
+                input.addEventListener('change', autoSave);
+            }
+        });
+    }
+
+    // --- Core Tag Form Submission ---
+    document.getElementById('tag-form').onsubmit = async (e) => {
+        e.preventDefault();
+        if (!isNew) return;
+
+        const data = getFormData();
 
         try {
-            if (isNew) await apiRequest('POST', '/api/tags', data);
-            else await apiRequest('PUT', `/api/tags/${id}`, data);
-            notify('Success', 'Tag saved', NotificationTypes.SUCCESS);
-            switchView(`/admin/tags`);
+            if (isNew) {
+                await apiRequest('POST', '/api/tags', data);
+                notify('Success', 'Tag saved', NotificationTypes.SUCCESS);
+                switchView(`/admin/tags`);
+            }
         } catch (err) {
             notify('Error', 'Save failed', NotificationTypes.ERROR);
         }
@@ -251,21 +280,18 @@ export async function renderTagDetail(id) {
         }
 
         if (userPerms) {
-            // Load Whitelist Search Datalist (All users)
             apiRequest('GET', '/api/admin/users?limit=1000').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('users-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => { });
 
-            // Load Managers Search Datalist (Execs only - identified by is_exec virtual permission)
             apiRequest('GET', '/api/admin/users?limit=1000&permissions=perm:is_exec').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('managers-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => { });
 
-            // Add Manager Handler
             const managersForm = document.getElementById('managers-form');
             if (managersForm) {
                 managersForm.onsubmit = async (e) => {
@@ -285,7 +311,6 @@ export async function renderTagDetail(id) {
                 };
             }
 
-            // Add Whitelist User Handler
             const whitelistForm = document.getElementById('whitelist-form');
             if (whitelistForm) {
                 whitelistForm.onsubmit = async (e) => {
@@ -306,7 +331,6 @@ export async function renderTagDetail(id) {
             }
         }
 
-        // Initialize removal button listeners
         setupActionButtons(id, 'managers-table-body', 'remove-manager-btn', 'managers');
         setupActionButtons(id, 'whitelist-table-body', 'remove-whitelist-btn', 'whitelist');
     }
