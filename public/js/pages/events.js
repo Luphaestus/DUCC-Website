@@ -180,10 +180,9 @@ function formatEvent(event) {
     if (isCanceled) cardClasses.push('canceled-event');
     if (event.can_attend === false && !event.is_attending) cardClasses.push('unavailable-event');
 
-    const navLink = `event/${event.id}${currentPage !== 0 ? `?page=${currentPage}` : ''}`;
 
     return /*html*/`
-        <div class="${cardClasses.join(' ')}" data-nav="${navLink}" role="button" tabindex="0">
+        <div class="${cardClasses.join(' ')}" data-nav="${`event/${event.id}`}" role="button" tabindex="0">
             ${imageHtml}
             <div class="event-card-content">
                 <div class="event-info-block">
