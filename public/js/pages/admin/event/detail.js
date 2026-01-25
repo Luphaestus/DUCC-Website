@@ -1,4 +1,4 @@
-//todo  refine 
+//todo refine 
 /**
  * detail.js
  * 
@@ -27,7 +27,6 @@ export async function renderEventDetail(id) {
     const adminContent = document.getElementById(adminContentID);
     const isNew = id === 'new';
 
-    // Initial state
     let event = { title: '', description: '', location: '', start: '', end: '', difficulty_level: 1, max_attendees: 0, upfront_cost: 0, upfront_refund_cutoff: '', signup_required: 1, image_url: '', tags: [] };
     let allTags = [];
 
@@ -37,8 +36,6 @@ export async function renderEventDetail(id) {
 
         if (!isNew) {
             event = eventData;
-            // Format dates for datetime-local input fields
-            event.start = new Date(event.start).toISOString().slice(0, 16);
             event.end = new Date(event.end).toISOString().slice(0, 16);
             if (event.upfront_refund_cutoff) {
                 event.upfront_refund_cutoff = new Date(event.upfront_refund_cutoff).toISOString().slice(0, 16);
@@ -48,7 +45,6 @@ export async function renderEventDetail(id) {
         return adminContent.innerHTML = '<p>Error loading data.</p>';
     }
 
-    // Set up toolbar action
     const actionsEl = document.getElementById('admin-header-actions');
     if (actionsEl) actionsEl.innerHTML = ` <button id="back-to-events-btn" class="small-btn outline secondary icon-text-btn">${ARROW_BACK_IOS_NEW_SVG} Back to Events</button> `;
     document.getElementById('back-to-events-btn').onclick = () => switchView('/admin/events');
@@ -57,8 +53,8 @@ export async function renderEventDetail(id) {
         <div class="glass-layout">
             <form id="event-form">
                 ${Panel({
-        title: isNew ? 'Create Event' : 'Edit Event',
-        content: `
+                    title: isNew ? 'Create Event' : 'Edit Event',
+                    content: `
                         <!-- Title Field -->
                         <div class="modern-form-group">
                             <label class="form-label-top">Event Title
@@ -149,17 +145,15 @@ export async function renderEventDetail(id) {
                             <button type="submit" class="wide-btn">${isNew ? 'Create Event' : 'Save Changes'}</button>
                         </div>
                     `
-    })}
+                })}
             </form>
         </div>
     `;
 
-    // Set description separately to handle special characters safely
     document.querySelector('textarea[name="description"]').value = event.description;
 
     // --- Interactive Logic Hooks ---
 
-    // Tag Checkbox Selection Visuals
     adminContent.querySelectorAll('input[name="tags"]').forEach(input => {
         const updateSpan = (el) => {
             const span = el.nextElementSibling;
@@ -170,7 +164,6 @@ export async function renderEventDetail(id) {
         updateSpan(input);
     });
 
-    // Refund Cutoff Visibility Toggle
     const refundToggle = document.getElementById('allow-refunds');
     const cutoffWrapper = document.getElementById('refund-cutoff-wrapper');
     refundToggle.onchange = () => {
@@ -182,7 +175,6 @@ export async function renderEventDetail(id) {
         }
     };
 
-    // Signup Required Logic
     const signupToggle = document.getElementById('signup_required_toggle');
     const maxAttendeesInput = document.querySelector('input[name="max_attendees"]');
     const maxAttendeesWrapper = document.getElementById('max-attendees-wrapper');
@@ -225,10 +217,9 @@ export async function renderEventDetail(id) {
                 notify('Success', 'Image reset to default', 'success');
                 imageUrlInput.value = '';
 
-                // Fetch updated event to see what the new default is
                 const updatedEvent = await apiRequest('GET', `/api/admin/event/${id}`);
                 widget.setPreview(updatedEvent.image_url || '/images/misc/ducc.png');
-                return false; // Prevent widget reset since we set preview manually
+                return false; 
             } catch (err) {
                 notify('Error', err.message, 'error');
                 return false;
@@ -245,7 +236,6 @@ export async function renderEventDetail(id) {
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
-        // Parse complex fields
         data.tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
         data.signup_required = formData.get('signup_required') === 'on';
         data.upfront_cost = parseFloat(data.upfront_cost) || 0;
