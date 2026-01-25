@@ -210,8 +210,9 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                             </div>
                         </div>
                     `
-    })}
+                })}
             </div>
+        </div>
     `;
 
     // --- Interactive Logic Hooks ---
@@ -390,13 +391,14 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             };
         }
 
-        // --- Difficulty Range Input ---
+        // --- Difficulty Level Logic ---
         const difficultyInput = document.getElementById('admin-user-difficulty');
         if (difficultyInput) {
             difficultyInput.onchange = async () => {
                 try {
                     await apiRequest('POST', `/api/admin/user/${user.id}/elements`, { difficulty_level: difficultyInput.value });
                     notify('Success', 'Difficulty level updated', 'success');
+                    user.difficulty_level = difficultyInput.value;
                 } catch (e) {
                     notify('Error', 'Failed to update level', 'error');
                 }
