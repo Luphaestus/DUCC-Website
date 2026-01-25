@@ -20,3 +20,22 @@ export function getOrdinal(n) {
     // Apply special suffix logic for English ordinals
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
+
+/**
+ * Debounces a function call.
+ * 
+ * @param {Function} func - The function to debounce.
+ * @param {number} wait - Debounce time in milliseconds.
+ * @returns {Function} - The debounced function.
+ */
+export function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}

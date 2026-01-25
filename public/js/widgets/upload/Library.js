@@ -1,4 +1,4 @@
-//todo refine
+//todo refine 
 
 import { apiRequest } from '/js/utils/api.js';
 
@@ -7,9 +7,13 @@ import { apiRequest } from '/js/utils/api.js';
  * 
  * @param {HTMLElement} container - The container to render the grid into.
  * @param {Function} onSelect - Callback(url, id) when an image is selected.
+ * @param {object} options
+ * @param {string[]} [options.exclude=[]] - List of URLs or IDs to exclude from the library.
  */
-export async function renderLibrary(container, onSelect) {
+export async function renderLibrary(container, onSelect, options = {}) {
     if (!container) return;
+
+    const exclude = options.exclude || [];
 
     container.innerHTML = /*html*/`
         <div class="image-library-grid">
@@ -19,18 +23,24 @@ export async function renderLibrary(container, onSelect) {
 
     const grid = container.querySelector('.image-library-grid');
 
+    container._libraryParams = { onSelect, options };
+
     try {
         const [filesRes, slidesRes] = await Promise.all([
             apiRequest('GET', '/api/files?limit=50'),
             apiRequest('GET', '/api/slides/images')
         ]);
 
-        const files = (filesRes.data?.files || []).filter(f => f.filename.match(/\.(jpg|jpeg|png|webp|gif)$/i));
-        const slides = slidesRes.images || [];
+        const files = (filesRes.data?.files || []).filter(f => {
+            const isImage = f.filename.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+            const isExcluded = exclude.includes(f.id) || exclude.includes(`/api/files/${f.id}/download?view=true`);
+            return isImage && !isExcluded;
+        });
+        
+        const slides = (slidesRes.images || []).filter(url => !exclude.includes(url));
 
         grid.innerHTML = '';
 
-        // Custom slides
         slides.forEach(url => {
             const item = document.createElement('div');
             item.className = 'image-item';
@@ -40,7 +50,6 @@ export async function renderLibrary(container, onSelect) {
             grid.appendChild(item);
         });
 
-        // Uploaded files
         files.forEach(f => {
             const url = `/api/files/${f.id}/download?view=true`;
             const item = document.createElement('div');
@@ -58,5 +67,16 @@ export async function renderLibrary(container, onSelect) {
     } catch (e) {
         console.error(e);
         grid.innerHTML = '<p class="error-cell">Failed to load library.</p>';
+    }
+}
+
+/**
+ * Refreshes the library content if it was previously rendered in the container.
+ * @param {HTMLElement} container 
+ */
+export async function refreshLibrary(container) {
+    if (container && container._libraryParams) {
+        const { onSelect, options } = container._libraryParams;
+        return renderLibrary(container, onSelect, options);
     }
 }

@@ -195,11 +195,7 @@ export async function renderEventDetail(id) {
         if (isNew) return;
         const data = getFormData();
         try {
-            await fetch(`/api/admin/event/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            await apiRequest('PUT', `/api/admin/event/${id}`, data);
         } catch (err) {
             notify('Auto-save failed', err.message, 'error');
         }
@@ -228,8 +224,7 @@ export async function renderEventDetail(id) {
             }
 
             try {
-                const res = await fetch(`/api/admin/event/${id}/reset-image`, { method: 'POST' });
-                if (!res.ok) throw new Error('Failed to reset image');
+                await apiRequest('POST', `/api/admin/event/${id}/reset-image`);
 
                 notify('Success', 'Image reset to default', 'success');
                 imageUrlInput.value = '';
@@ -308,12 +303,7 @@ export async function renderEventDetail(id) {
                 notify('Success', 'Event created', 'success');
                 switchView('/admin/events');
             } else {
-                const res = await fetch(`/api/admin/event/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (!res.ok) throw new Error('Save failed');
+                await apiRequest('PUT', `/api/admin/event/${id}`, data);
                 notify('Success', 'Event updated', 'success');
             }
         } catch (err) {
@@ -326,8 +316,7 @@ export async function renderEventDetail(id) {
         document.getElementById('delete-event-btn').onclick = async () => {
             if (!await showConfirmModal('Delete Event', 'Delete event permanently? This cannot be undone.')) return;
             try {
-                const res = await fetch(`/api/admin/event/${id}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Delete failed');
+                await apiRequest('DELETE', `/api/admin/event/${id}`);
                 notify('Success', 'Event deleted', 'success');
                 switchView('/admin/events');
             } catch (err) {
@@ -340,8 +329,7 @@ export async function renderEventDetail(id) {
             cancelBtn.onclick = async () => {
                 if (!await showConfirmModal('Cancel Event', 'Cancel this event? This will notify attendees and process any refunds.')) return;
                 try {
-                    const res = await fetch(`/api/admin/event/${id}/cancel`, { method: 'POST' });
-                    if (!res.ok) throw new Error('Cancel failed');
+                    await apiRequest('POST', `/api/admin/event/${id}/cancel`);
                     notify('Success', 'Event canceled', 'success');
                     switchView('/admin/events');
                 } catch (e) {

@@ -200,7 +200,7 @@ export async function renderTagDetail(id) {
             }
             if (!await showConfirmModal('Remove Image', 'Remove tag image?')) return false;
             try {
-                const res = await fetch(`/api/tags/${id}/reset-image`, { method: 'POST' });
+                const res = await apiRequest('POST', `/api/tags/${id}/reset-image`);
                 if (!res.ok) throw new Error('Failed to reset image');
 
                 notify('Success', 'Image removed', 'success');

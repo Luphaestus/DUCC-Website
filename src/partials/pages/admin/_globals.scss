@@ -118,12 +118,56 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
 
             &:hover {
                 transform: scale(1.05);
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 border-color: var(--pico-primary);
+
+                .slide-actions {
+                    opacity: 1;
+                }
             }
+
+            .slide-actions {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                display: flex;
+                gap: 0.5rem;
+            }
+        }
+    }
+
+    .delete-icon-btn {
+        width: 32px !important;
+        height: 32px !important;
+        min-height: unset !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        background: #e74c3c !important;
+        color: white !important;
+        border: none !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+
+        &:hover {
+            background: #c0392b !important;
+            transform: scale(1.1);
+            color: white !important;
+        }
+
+        svg {
+            width: 1.1rem;
+            height: 1.1rem;
         }
     }
 
