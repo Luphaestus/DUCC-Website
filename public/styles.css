@@ -4172,7 +4172,7 @@ nav.small-container ul.navbar-items li button#login-button {
   box-shadow: var(--shadow-glass);
   border-radius: var(--border-radius-lg);
   width: 100%;
-  max-width: 500px; /* Default size */
+  max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -4196,14 +4196,8 @@ nav.small-container ul.navbar-items li button#login-button {
     height: 100%;
   }
 }
-.c-modal-content {
-  /* Size Modifiers */
-}
 .c-modal-content.modal-lg {
   max-width: 900px;
-}
-.c-modal-content {
-  /* Automatically widen modals that contain image pickers or libraries */
 }
 .c-modal-content:has(.image-picker-content), .c-modal-content:has(.image-library-grid) {
   max-width: 1000px;
@@ -4272,7 +4266,6 @@ nav.small-container ul.navbar-items li button#login-button {
 
 .c-modal-header {
   padding: 1.5rem 2rem 1rem 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 .c-modal-header h2, .c-modal-header h3 {
   margin: 0;
@@ -8167,11 +8160,50 @@ textarea[name=description] {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
 }
 #admin-view .image-grid .image-item:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   border-color: var(--pico-primary);
+}
+#admin-view .image-grid .image-item:hover .slide-actions {
+  opacity: 1;
+}
+#admin-view .image-grid .image-item .slide-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  gap: 0.5rem;
+}
+#admin-view .delete-icon-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-height: unset !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: #e74c3c !important;
+  color: white !important;
+  border: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+#admin-view .delete-icon-btn:hover {
+  background: #c0392b !important;
+  transform: scale(1.1);
+  color: white !important;
+}
+#admin-view .delete-icon-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 #admin-view {
   /* Modal Styling */

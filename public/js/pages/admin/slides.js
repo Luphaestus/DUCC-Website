@@ -16,6 +16,7 @@ import { Modal } from '/js/widgets/Modal.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 
 let slideModal = null;
+let slideUploadWidget = null;
 
 /**
  * Main rendering function for the slides management dashboard.
@@ -27,11 +28,8 @@ export async function renderManageSlides() {
     slideModal = new Modal({
         id: 'slide-upload-modal',
         title: 'Add Slide',
-        content: `
-            <p>Upload a new image or select from the library.</p>
-            <div id="slide-upload-widget"></div>
-        `,
-        contentClasses: 'glass-panel'
+        content: `<div id="slide-upload-widget"></div>`,
+        contentClasses: 'glass-panel modal-lg'
     });
 
     adminContent.innerHTML = `
@@ -72,32 +70,42 @@ function setupModal() {
         addBtn.onclick = () => slideModal.show();
     }
 
-    // Initialize Widget once
-    new UploadWidget('slide-upload-widget', {
+    slideUploadWidget = new UploadWidget('slide-upload-widget', {
         mode: 'inline',
         selectMode: 'single',
         autoUpload: true,
-        enableLibrary: true,
+        enableLibrary: false,
+        inlineLibrary: true,
         accept: 'image/*',
         onImageSelect: async ({ url, id }) => {
-            slideModal.close();
-
-            if (id) {
-                try {
-                    await apiRequest('POST', '/api/slides/import', { fileId: id });
-                    notify('Success', 'Slide added', NotificationTypes.SUCCESS);
-                    fetchAndRenderSlides();
-                } catch (e) {
-                    notify('Error', 'Failed to add slide', NotificationTypes.ERROR);
-                }
-            } else {
-                notify('Info', 'That image is already a slide (or URL only)', NotificationTypes.INFO);
-            }
+            await handleSlideChoice(url, id);
         },
         onUploadError: (err) => {
             notify('Error', err.message, NotificationTypes.ERROR);
         }
     });
+}
+
+/**
+ * Common handler for adding a slide from upload or library.
+ */
+async function handleSlideChoice(url, id) {
+    slideModal.close();
+
+    try {
+        if (id) {
+            await apiRequest('POST', '/api/slides/import', { fileId: id });
+        } else if (url) {
+            notify('Info', 'Direct URL slides are not supported via import. Please upload files.', NotificationTypes.INFO);
+            return;
+        }
+
+        notify('Success', 'Slide added', NotificationTypes.SUCCESS);
+        await fetchAndRenderSlides();
+        setTimeout(async () => await fetchAndRenderSlides(), 500); //todo fix this. For some reason it doesn't show up immediately
+    } catch (e) {
+        notify('Error', 'Failed to add slide', NotificationTypes.ERROR);
+    }
 }
 
 /**
@@ -108,6 +116,7 @@ async function fetchAndRenderSlides() {
     if (!grid) return;
 
     try {
+        grid.innerHTML = '<p class="loading-cell">Loading slides...</p>';
         const data = await apiRequest('GET', '/api/slides/images');
         const images = data.images || [];
 
@@ -130,27 +139,24 @@ async function fetchAndRenderSlides() {
 
         grid.querySelectorAll('.delete-slide-btn').forEach(btn => {
             btn.onclick = async (e) => {
-                e.stopPropagation(); 
+                e.stopPropagation();
                 if (!await showConfirmModal('Delete Slide', 'Are you sure you want to delete this slide?')) return;
 
                 const filename = btn.dataset.filename;
                 try {
-                    await fetch('/api/slides', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ filename })
-                    }).then(res => {
-                        if (!res.ok) throw new Error('Delete failed');
-                        return res.json();
-                    });
+                    await apiRequest('DELETE', '/api/slides', { filename });
 
                     notify('Success', 'Slide deleted', NotificationTypes.SUCCESS);
-                    fetchAndRenderSlides();
+                    await fetchAndRenderSlides();
                 } catch (e) {
                     notify('Error', 'Failed to delete slide', NotificationTypes.ERROR);
                 }
             };
         });
+
+        if (slideUploadWidget) {
+            slideUploadWidget.options.exclude = images;
+        }
 
     } catch (e) {
         grid.innerHTML = '<p class="error-cell">Failed to load slides.</p>';
