@@ -175,6 +175,38 @@ export async function renderEventDetail(id) {
     // --- Image Upload Widget ---
     const imageUrlInput = document.getElementById('image_url_input');
 
+    const getFormData = () => {
+        const formData = new FormData(document.getElementById('event-form'));
+        const data = Object.fromEntries(formData.entries());
+
+        data.tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => parseInt(cb.value));
+        data.signup_required = formData.get('signup_required') === 'on';
+        data.upfront_cost = parseFloat(data.upfront_cost) || 0;
+        data.max_attendees = parseInt(data.max_attendees) || 0;
+        data.difficulty_level = parseInt(data.difficulty_level) || 1;
+
+        if (!document.getElementById('allow-refunds').checked) {
+            data.upfront_refund_cutoff = null;
+        }
+        return data;
+    };
+
+    const autoSave = async () => {
+        if (isNew) return;
+        const data = getFormData();
+        try {
+            await fetch(`/api/admin/event/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } catch (err) {
+            notify('Auto-save failed', err.message, 'error');
+        }
+    };
+
+    const debouncedAutoSave = debounce(autoSave, 1000);
+
     const widget = new UploadWidget('upload-widget-container', {
         mode: 'inline',
         selectMode: 'single',
@@ -183,6 +215,7 @@ export async function renderEventDetail(id) {
         onImageSelect: async ({ url }) => {
             imageUrlInput.value = url;
             await updateEffectiveImage();
+            if (!isNew) autoSave();
         },
         onRemove: async () => {
             imageUrlInput.value = '';
@@ -201,6 +234,7 @@ export async function renderEventDetail(id) {
                 notify('Success', 'Image reset to default', 'success');
                 imageUrlInput.value = '';
                 await updateEffectiveImage();
+                autoSave();
                 return false;
             } catch (err) {
                 notify('Error', err.message, 'error');
