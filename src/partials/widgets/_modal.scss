@@ -45,7 +45,7 @@
     box-shadow: var(--shadow-glass);
     border-radius: var(--border-radius-lg);
     width: 100%;
-    max-width: 500px; /* Default size */
+    max-width: 500px; 
     max-height: 90vh;
     display: flex;
     flex-direction: column;
@@ -70,12 +70,10 @@
         height: 100%;
     }
 
-    /* Size Modifiers */
     &.modal-lg {
         max-width: 900px;
     }
 
-    /* Automatically widen modals that contain image pickers or libraries */
     &:has(.image-picker-content),
     &:has(.image-library-grid) {
         max-width: 1000px;
@@ -142,8 +140,7 @@
 
 .c-modal-header {
     padding: 1.5rem 2rem 1rem 2rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    
+
     h2, h3 {
         margin: 0;
         font-size: 1.5rem;
