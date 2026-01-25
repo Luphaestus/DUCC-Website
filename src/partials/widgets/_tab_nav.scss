@@ -1,0 +1,66 @@
+@use "../mixins" as *;
+
+/* Toggle Group (Merged Buttons / Sliding look) */
+.toggle-group {
+    background: var(--glass-bg);
+    border: var(--glass-border);
+    border-radius: var(--border-radius-pill);
+    padding: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    position: relative;
+    backdrop-filter: blur(12px);
+    width: fit-content;
+    gap: 0;
+
+    .toggle-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: var(--pico-primary);
+        border-radius: var(--border-radius-pill);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        pointer-events: none;
+        width: var(--tab-width, 0);
+        height: var(--tab-height, 0);
+        transform: translate(var(--tab-left, 0), var(--tab-top, 0));
+    }
+
+    button,
+    .tab-btn {
+        background: transparent !important;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        color: var(--pico-muted-color);
+        font-weight: 600;
+        z-index: 2;
+        transition: color 0.3s ease;
+        box-shadow: none;
+        margin-bottom: 0;
+        border-radius: var(--border-radius-pill);
+        font-size: 0.9rem;
+        position: relative;
+
+        &.active {
+            color: white !important;
+        }
+
+        &:hover:not(.active) {
+            color: var(--pico-contrast);
+            background: rgba(var(--pico-color-rgb), 0.05) !important;
+        }
+    }
+
+    @media (max-width: 600px) {
+        border-radius: var(--border-radius-lg);
+        width: 100%;
+
+        button,
+        .tab-btn {
+            flex: 1 1 auto;
+            text-align: center;
+        }
+    }
+}
