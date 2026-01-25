@@ -107,8 +107,13 @@ class GlobalsAPI {
             const key = req.params.key;
             const globals = new Globals();
             try {
+                const config = globals.get(key);
+                if (config.type === 'image' && (!req.body.value || req.body.value.trim() === '')) {
+                    throw new Error("Image settings cannot be empty.");
+                }
+
                 if (key === 'DefaultEventImage') {
-                    const oldVal = globals.get(key).data;
+                    const oldVal = config.data;
                     globals.set(key, req.body.value);
                     if (oldVal !== req.body.value) {
                         await FileCleanup.checkAndDeleteIfUnused(this.db, oldVal);

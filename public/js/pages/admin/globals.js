@@ -42,28 +42,23 @@ export async function renderManageGlobals() {
             <div class="glass-toolbar">
                  ${await renderAdminNavBar('globals')}
             </div>
-            
-            ${Panel({
-                content: `
-                    <div class="glass-table-container">
-                        <div class="table-responsive">
-                            <table class="glass-table">
-                                <thead>
-                                    <tr>
-                                        <th>Setting</th>
-                                        <th>Description</th>
-                                        <th>Value</th>
-                                        <th class="action-col">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="globals-table-body">
-                                    <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="glass-table-container">
+                    <div class="table-responsive">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th>Setting</th>
+                                    <th>Description</th>
+                                    <th>Value</th>
+                                    <th class="action-col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="globals-table-body">
+                                <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                `
-            })}
+                </div>
         </div>
 
         ${imagePickerModal.getHTML()}
@@ -87,6 +82,7 @@ function setupModalListeners() {
         selectMode: 'single',
         autoUpload: true,
         enableLibrary: false,
+        enableRemove: false,
         onUploadComplete: (fileId) => {
             const url = typeof fileId === 'string' && fileId.startsWith('http') 
                 ? fileId 
