@@ -36,6 +36,10 @@ export const ItemList = (items = [], renderItem) => {
  * @param {string} options.value - Primary value text.
  * @param {string} options.valueClass - Classes for the primary value.
  * @param {string} options.extra - Extra secondary value/text.
+ * @param {string} options.actions - HTML for action buttons/icons.
+ * @param {string} options.content - Custom HTML content to insert in the middle.
+ * @param {string} options.classes - Extra classes for the item container.
+ * @param {string} options.dataAttributes - Raw data attributes string (e.g. 'data-id="123"').
  * @returns {string} HTML string
  */
 export const StandardListItem = ({
@@ -45,17 +49,23 @@ export const StandardListItem = ({
     subtitle = '',
     value = '',
     valueClass = '',
-    extra = ''
+    extra = '',
+    actions = '',
+    content = '',
+    classes = '',
+    dataAttributes = ''
 }) => `
-    <div class="list-item glass-panel">
+    <div class="list-item glass-panel ${classes}" ${dataAttributes}>
         <div class="item-icon ${iconClass}">${icon}</div>
         <div class="item-details">
             <span class="item-title">${title}</span>
             <span class="item-subtitle">${subtitle}</span>
         </div>
+        ${content}
         <div class="item-value-group">
             <span class="item-value ${valueClass}">${value}</span>
             ${extra ? `<span class="item-extra">${extra}</span>` : ''}
         </div>
+        ${actions ? `<div class="item-actions">${actions}</div>` : ''}
     </div>
 `;
