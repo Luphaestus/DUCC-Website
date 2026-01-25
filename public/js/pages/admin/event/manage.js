@@ -1,4 +1,3 @@
-//todo refine 
 /**
  * manage.js
  * 
@@ -24,7 +23,6 @@ export async function renderManageEvents() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Load initial filter state from URL
     const urlParams = new URLSearchParams(window.location.search);
     const search = urlParams.get('search') || '';
     const sort = urlParams.get('sort') || 'start';
@@ -55,7 +53,7 @@ export async function renderManageEvents() {
                          <button id="toggle-filters-btn" class="small-btn outline secondary">
                             ${FILTER_LIST_SVG} Filters
                          </button>
-                         <button data-nav="/admin/event/new" class="small-btn primary">Create Event</button>
+                         <button data-nav="/admin/event/new" class="small-btn">Create Event</button>
                         
                         <!-- Advanced Filter Panel (Hidden by default) -->
                         <div id="advanced-filters-panel" class="glass-filter-panel hidden">
@@ -84,8 +82,8 @@ export async function renderManageEvents() {
                                     <input type="text" id="filter-location" value="${location}" placeholder="Contains...">
                                 </label>
                             </div>
-                            <div class="filter-actions text-right">
-                                <button id="apply-filters-btn" class="small-btn primary">Apply Filters</button>
+                            <div class="filter-actions">
+                                <button id="apply-filters-btn" class="small-btn">Apply Filters</button>
                             </div>
                         </div>
                     </div>
@@ -152,7 +150,6 @@ function updateEventParams(updates) {
     }
     window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
 
-    // Re-fetch with new state
     fetchAndRenderEvents({
         page: parseInt(params.get('page')) || 1,
         search: params.get('search') || '',
@@ -218,7 +215,6 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
                 </tr>
             `).join('');
 
-            // Re-attach row click listeners
             tbody.querySelectorAll('.event-row').forEach(row => {
                 row.onclick = (e) => {
                     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
