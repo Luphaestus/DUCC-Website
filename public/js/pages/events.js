@@ -9,9 +9,11 @@
 import { apiRequest } from '/js/utils/api.js';
 import { LoginEvent } from './login.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
-import { CHECK_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, 
-    REFRESH_SVG, SCHEDULE_SVG, GROUP_SVG, SETTINGS_SVG, CURRENCY_POUND_SVG 
+import {
+    ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG,
+    REFRESH_SVG, SETTINGS_SVG
 } from '../../images/icons/outline/icons.js';
+import { StandardCard } from '../widgets/StandardCard.js';
 import "./event.js";
 
 addRoute('/events', 'events');
@@ -87,7 +89,7 @@ function preloadPages(basePage) {
     offsetsToPreload.forEach(delta => {
         const page = basePage + delta;
         if (!pageCache.has(page)) {
-            getPageData(page).catch(() => {}); 
+            getPageData(page).catch(() => { });
         }
     });
 }
@@ -104,110 +106,22 @@ function getRangeText(startDateStr, endDateStr) {
     const formatDate = (d) => new Date(d).toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
 
     if (start.getTime() === today.getTime()) {
         return `Today - ${formatDate(end)}`;
-    } 
-    
+    }
+
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
-    
+
     if (end.toDateString() === yesterday.toDateString()) {
         return `${formatDate(start)} - Yesterday`;
     }
 
     return `${formatDate(start)} - ${formatDate(end)}`;
-}
-
-/**
- * Generates the HTML for a single event card.
- * @param {object} event 
- * @returns {string} HTML string
- */
-function formatEvent(event) {
-    const startDate = new Date(event.start);
-    const endDate = new Date(event.end);
-    const isPast = endDate < new Date();
-    const isCanceled = event.is_canceled;
-
-    const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const startTime = startDate.toLocaleTimeString('en-UK', timeOptions);
-    const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
-
-    const tagsHtml = (event.tags || [])
-        .map(tag => `<span class="tag-badge" style="--tag-color: ${tag.color};">${tag.name}</span>`)
-        .join('');
-
-    const imageUrl = event.image_url || '/images/misc/ducc.png';
-    const imageHtml = /*html*/`
-        <div class="event-image-container">
-            <div class="event-image" style="--event-image-url: url('${imageUrl}');"></div>
-            <div class="image-overlay"></div>
-            <div class="event-image-content">
-                <div class="event-tags">${tagsHtml}</div>
-                <h3 class="event-title-bold ${isCanceled ? 'strikethrough' : ''}">
-                    ${event.title || 'Untitled Event'}
-                </h3>
-            </div>
-        </div>`;
-
-    const count = event.attendee_count !== undefined ? event.attendee_count : '0';
-    const max = event.max_attendees;
-    const attendanceDisplay = max > 0 ? `${count}/${max}` : `${count}/∞`;
-    const attendanceTitle = max > 0 ? `${count}/${max} Attending` : `${count} / Unlimited Attending`;
-
-    const attendanceHtml = /*html*/`
-        <div class="attendance-count" title="${attendanceTitle}">
-            ${GROUP_SVG} <span>${attendanceDisplay}</span>
-        </div>`;
-
-    const costHtml = event.upfront_cost > 0 ? /*html*/`
-        <div class="info-item cost" title="Upfront Cost">
-            ${CURRENCY_POUND_SVG}
-            <span>£${event.upfront_cost.toFixed(2)}</span>
-        </div>` : '';
-
-    let statusLabel = '';
-    if (isCanceled) statusLabel = '<span class="status-badge error">Canceled</span>';
-    else if (isPast) statusLabel = '<span class="status-badge neutral">Unavailable</span>';
-    else if (event.can_attend === false && !event.is_attending) statusLabel = '<span class="status-badge neutral">Unavailable</span>';
-
-    const cardClasses = ['event-card', 'glass-panel'];
-    if (isPast) cardClasses.push('past-event');
-    if (isCanceled) cardClasses.push('canceled-event');
-    if (event.can_attend === false && !event.is_attending) cardClasses.push('unavailable-event');
-
-
-    return /*html*/`
-        <div class="${cardClasses.join(' ')}" data-nav="${`event/${event.id}`}" role="button" tabindex="0">
-            ${imageHtml}
-            <div class="event-card-content">
-                <div class="event-info-block">
-                    <div class="info-item time">
-                        ${SCHEDULE_SVG}
-                        <span>${startTime} - ${endTime}</span>
-                    </div>
-                    <div class="info-item location">
-                        ${LOCATION_ON_SVG}
-                        <span>${event.location || 'Location TBD'}</span>
-                    </div>
-                    ${costHtml}
-                </div>
-
-                <div class="card-footer">
-                    <div class="footer-left">
-                        ${attendanceHtml}
-                        ${event.is_attending ? `<div class="attendance-status">${CHECK_SVG} Attending</div>` : ''}
-                    </div>
-                    <div class="footer-right">
-                        ${statusLabel}
-                    </div>
-                </div>
-            </div>
-        </div>`;
 }
 
 /**
@@ -241,17 +155,25 @@ async function checkAdminAccess() {
     if (!btn) return;
 
     try {
+        const auth = await apiRequest('GET', '/api/auth/status', true);
+        if (!auth.authenticated) {
+            isAdmin = false;
+            btn.classList.add('hidden');
+            return;
+        }
+
         const data = await apiRequest('GET', '/api/user/elements/permissions');
         const perms = data.permissions || [];
-        
-        isAdmin = perms.includes('event.manage.all') 
-               || perms.includes('event.manage.scoped') 
-               || perms.includes('user.manage') 
-               || perms.length > 0;
+
+        isAdmin = perms.includes('event.manage.all')
+            || perms.includes('event.manage.scoped')
+            || perms.includes('user.manage')
+            || perms.length > 0;
 
         btn.classList.toggle('hidden', !isAdmin);
     } catch (e) {
-        console.warn('Failed to check admin access', e);
+        if (e.message && !e.message.includes('Unauthorized'))
+            console.warn('Failed to check admin access', e);
         isAdmin = false;
         btn.classList.add('hidden');
     }
@@ -298,7 +220,7 @@ async function renderPageContent(page, targetElement) {
             // Start a new day group if the date changes
             if (lastDay !== eventDay) {
                 if (lastDay !== null) html += '</div></div>';
-                
+
                 lastDay = eventDay;
                 const dayName = dateObj.toLocaleDateString('en-UK', { weekday: 'long' });
                 const dateNum = dateObj.getDate();
@@ -316,9 +238,9 @@ async function renderPageContent(page, targetElement) {
                         </div>
                         <div class="day-events-grid">`;
             }
-            html += formatEvent(event);
+            html += StandardCard.render(event);
         }
-        
+
         if (events.length > 0) html += '</div></div>';
         targetElement.innerHTML = html;
 
@@ -376,10 +298,10 @@ async function changePage(delta, animated = true) {
 
     slider.style.transition = 'none';
     if (direction > 0) {
-        slider.appendChild(nextView); 
+        slider.appendChild(nextView);
         slider.style.transform = `translateX(0)`;
     } else {
-        slider.insertBefore(nextView, currentView); 
+        slider.insertBefore(nextView, currentView);
         slider.style.transform = `translateX(-100%)`;
     }
 
@@ -399,11 +321,11 @@ async function changePage(delta, animated = true) {
         currentView.innerHTML = nextView.innerHTML;
         slider.style.transition = 'none';
         slider.style.transform = 'translateX(0%)';
-        
+
         if (nextView.parentNode === slider) {
             slider.removeChild(nextView);
         }
-        
+
         isAnimating = false;
         preloadPages(currentPage);
     }
@@ -416,13 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('click', (e) => {
         const target = e.target;
-        
+
         const btn = target.closest('.nav-btn, .today-btn, .admin-link-btn');
         if (btn) {
             btn.classList.add('click-animate');
             btn.addEventListener('animationend', () => btn.classList.remove('click-animate'), { once: true });
         }
-        
+
         // Navigation
         const todayBtn = target.closest('.today-btn');
         if (todayBtn) {
@@ -441,16 +363,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         const view = document.getElementById('events-view');
-        if (!view || view.classList.contains('hidden') || 
+        if (!view || view.classList.contains('hidden') ||
             ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
             return;
         }
 
         if (e.key === 'ArrowLeft') changePage(-1);
         else if (e.key === 'ArrowRight') changePage(1);
-        else if (e.key === ' ') { 
-            e.preventDefault(); 
-            changePage(0); 
+        else if (e.key === ' ') {
+            e.preventDefault();
+            changePage(0);
         }
     });
 

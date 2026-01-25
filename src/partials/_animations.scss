@@ -1,0 +1,27 @@
+/**
+ * _animations.scss
+ * 
+ * Global keyframe animations for buttons, cards, and loading states.
+ */
+
+@keyframes button-pop {
+    0% { transform: scale(var(--scale-base, 1)); }
+    50% { transform: scale(calc(var(--scale-base, 1) * 1.15)); }
+    100% { transform: scale(var(--scale-base, 1)); }
+}
+
+@keyframes spin-cycle {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+    0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); }
+}
+
+@keyframes card-pulse {
+    0%, 100% { transform: translateY(-6px) scale(1); }
+    50% { transform: translateY(-6px) scale(1.01); }
+}

@@ -9,6 +9,7 @@
 @use "pico" with ($theme-color: "purple");
 @use "partials/theme";
 @use "partials/mixins";
+@use "partials/animations";
 @use "partials/base";
 @use "partials/utilities";
 @use "partials/page_layouts";

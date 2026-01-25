@@ -21,6 +21,7 @@ import { StatusIndicator } from '../widgets/status.js';
 import { AccentPanel } from '../widgets/accent_panel.js';
 import { ValueHeader, updateValueDisplay } from '../widgets/value_header.js';
 import { ItemList, StandardListItem } from '../widgets/item_list.js';
+import { Tag } from '../widgets/Tag.js';
 import {
     SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
     LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, SAVE_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG
@@ -272,9 +273,7 @@ function renderSafetyInfo(profile) {
 function renderTags(tags) {
     const container = document.getElementById('tags-list-container');
     if (tags && tags.length > 0) {
-        container.innerHTML = tags.map(tag =>
-            `<span class="tag-badge" style="--tag-color: ${tag.color};">${tag.name}</span>`
-        ).join('');
+        container.innerHTML = Tag.renderList(tags);
     } else {
         const pannel = document.getElementById('groups-teams-panel');
         if (pannel) pannel.classList.add('hidden');

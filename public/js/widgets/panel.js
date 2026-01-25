@@ -18,7 +18,7 @@
  * @returns {string} HTML string
  */
 export const Panel = ({ id = '', title, icon = '', content = '', action = '', classes = '' }) => `
-    <div ${id ? `id="${id}"` : ''} class="glass-panel ${classes}">
+    <div ${id ? `id="${id}"` : ''} class="panel-widget ${classes}">
         ${title ? `
         <div class="box-header">
             <h3>${icon} ${title}</h3>
