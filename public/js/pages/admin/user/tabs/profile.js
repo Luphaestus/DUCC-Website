@@ -1,11 +1,7 @@
-//todo refine 
 /**
  * profile.js (Admin User Tab)
  * 
  * Renders the "Profile" tab within the administrative user management view.
- * Provides full CRUD capabilities for user metadata (email, college, etc.),
- * role assignment, and granular permission overrides.
- * Includes specialized logic for the "President" role transfer.
  */
 
 import { apiRequest } from '/js/utils/api.js';
@@ -40,7 +36,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
     const collegeName = colleges.find(c => c.id === user.college_id)?.name || 'N/A';
     const emailUsername = user.email ? user.email.split('@')[0] : '';
 
-    let balClass = '';
+    let balClass = 'warning';
     if (bal < minMoney) balClass = 'negative';
     else if (bal >= 0) balClass = 'positive';
 
@@ -50,28 +46,28 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             <!-- Balance & Member Status -->
             <div class="dual-grid">
                 ${ValueHeader({
-        title: 'Account Balance',
-        value: `£${bal.toFixed(2)}`,
-        valueId: 'balance-amount',
-        valueClass: balClass,
-        classes: 'clickable',
-        id: 'admin-profile-balance-card'
-    })}
+                    title: 'Account Balance',
+                    value: `£${bal.toFixed(2)}`,
+                    valueId: 'balance-amount',
+                    valueClass: balClass,
+                    classes: 'clickable',
+                    id: 'admin-profile-balance-card'
+                })}
                 
                 ${ValueHeader({
-        title: 'Member Status',
-        value: user.is_member ? 'Active Member' : (user.free_sessions || 0),
-        valueClass: user.is_member ? 'positive' : '',
-        actions: !user.is_member ? `<span class="label label-sub">free sessions remaining</span>` : ''
-    })}
+                    title: 'Member Status',
+                    value: user.is_member ? 'Active Member' : (user.free_sessions || 0),
+                    valueClass: user.is_member ? 'positive' : '',
+                    actions: !user.is_member ? `<span class="label label-sub">free sessions remaining</span>` : ''
+                })}
             </div>
 
             <!-- Swimming Stats & Manual Log -->
             ${Panel({
-        title: 'Swimming Stats',
-        icon: POOL_SVG,
-        action: canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn primary icon-text-btn">${ADD_SVG} Log Swim</button>` : '',
-        content: `
+                title: 'Swimming Stats',
+                icon: POOL_SVG,
+                action: canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn primary icon-text-btn">${ADD_SVG} Log Swim</button>` : '',
+                content: `
                     <div class="stats-grid" id="admin-swimming-stats-grid">
                         <div class="stat-item">
                             <span class="stat-value" id="admin-user-swims-yearly">${user.swimmer_stats?.yearly?.swims || 0}</span>
@@ -91,16 +87,16 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         </div>
                     </div>
                 `
-    })}
+            })}
 
             <div class="dual-grid">
                 <!-- Account Metadata Editor -->
                 ${Panel({
-        id: 'admin-account-details-panel',
-        title: 'Account Details',
-        icon: PERSON_SVG,
-        action: userPerms.includes('user.manage.advanced') ? `<button id="edit-account-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>` : '',
-        content: `
+                    id: 'admin-account-details-panel',
+                    title: 'Account Details',
+                    icon: PERSON_SVG,
+                    action: userPerms.includes('user.manage.advanced') ? `<button id="edit-account-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>` : '',
+                    content: `
                         <div id="account-info-display" class="info-rows">
                             <div class="info-row-modern">
                                 <span class="label">Email</span>
@@ -145,13 +141,13 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                             </div>
                         </form>
                     `
-    })}
+                })}
 
                 <!-- Instructor Status & Skill Level -->
                 ${Panel({
-        title: 'Capabilities',
-        icon: BOLT_SVG,
-        content: `
+                    title: 'Capabilities',
+                    icon: BOLT_SVG,
+                    content: `
                         <div class="role-toggle mb-1-5">
                             <div class="role-info">
                                 <h4>Instructor Status</h4>
@@ -173,15 +169,15 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                             </div>
                         </div>
                     `
-    })}
+                })}
             </div>
 
             <div class="dual-grid">
                 <!-- RBAC: System Role Assignment -->
                 ${Panel({
-        title: 'System Role',
-        icon: ID_CARD_SVG,
-        content: `
+                    title: 'System Role',
+                    icon: ID_CARD_SVG,
+                    content: `
                         <div class="card-body">
                             <p class="small-text mb-1">Defines base permissions and access levels.</p>
                             <select id="admin-user-role-select" class="full-width-select mb-0">
@@ -189,13 +185,13 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                             </select>
                         </div>
                     `
-    })}
+                })}
 
                 <!-- Direct Permission Overrides -->
                 ${Panel({
-        title: 'Direct Permissions',
-        icon: SHIELD_SVG,
-        content: `
+                    title: 'Direct Permissions',
+                    icon: SHIELD_SVG,
+                    content: `
                         <div class="card-body">
                             <p class="small-text mb-1">Explicitly granted permissions (overrides role).</p>
                             <div class="inline-add-form flex gap-0-5 mb-1">
@@ -221,7 +217,6 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
     // --- Interactive Logic Hooks ---
 
     if (canManageUsers) {
-        // --- Role Assignment with Security Interlock ---
         const roleSelect = document.getElementById('admin-user-role-select');
         if (roleSelect) {
             const allRoles = await apiRequest('GET', '/api/admin/roles').catch(() => []);
@@ -234,7 +229,6 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                 const isPresident = selectedRole?.name === 'President';
 
                 let password = null;
-                // Critical Interlock: Transferring "President" requires password confirmation
                 if (isPresident) {
                     password = await showPasswordModal(
                         'Transfer President Role',
@@ -250,7 +244,6 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     await apiRequest('POST', `/api/admin/user/${user.id}/role`, { roleId: roleSelect.value, password });
                     notify('Success', 'Role updated', 'success');
                     lastValue = roleSelect.value;
-                    // If presidency transferred, the current admin's own permissions may have been revoked
                     if (isPresident) renderUserDetail(user.id);
                 } catch (e) {
                     notify('Error', e.message || 'Failed to update role', 'error');
@@ -375,7 +368,6 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                 try {
                     await apiRequest('POST', `/api/user/${user.id}/swims`, { count: 1 });
 
-                    // Refresh stats to recalculate ranks
                     const statsRes = await apiRequest('GET', `/api/user/${user.id}/elements/swimmer_rank`);
                     if (statsRes.swimmer_stats) {
                         user.swimmer_stats = statsRes.swimmer_stats;

@@ -1,4 +1,4 @@
-//todo refine
+//todo refine     
 /**
  * files.js
  * 
@@ -65,7 +65,7 @@ export async function renderAdminFiles() {
                     <button type="submit" class="primary-btn wide-btn">Upload All</button>
                 </footer>
             </form>
-        `       
+        `
     });
 
     editModal = new Modal({
@@ -102,7 +102,7 @@ export async function renderAdminFiles() {
                     <button type="submit" class="primary-btn wide-btn">Save Changes</button>
                 </footer>
             </form>
-        `       
+        `
     });
 
     categoriesModal = new Modal({
@@ -120,7 +120,7 @@ export async function renderAdminFiles() {
                 </select>
                 <button type="submit" class="icon-btn primary">${UPLOAD_SVG}</button>
             </form>
-        `       
+        `
     });
 
     adminContent.innerHTML = /*html*/`
@@ -147,7 +147,7 @@ export async function renderAdminFiles() {
             </div>
 
             ${Panel({
-                content: /*html*/`
+        content: /*html*/`
                     <div id="files-admin-content" class="glass-table-container">
                         <div class="table-responsive">
                             <table class="glass-table files-table">
@@ -161,7 +161,7 @@ export async function renderAdminFiles() {
 
                     <div id="admin-files-pagination" class="pagination"></div>
                 `
-            })}
+    })}
         </div>
 
         ${uploadModal.getHTML()}

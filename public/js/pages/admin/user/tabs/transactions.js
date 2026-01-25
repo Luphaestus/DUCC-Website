@@ -1,4 +1,4 @@
-//todo refine
+//todo refine  
 /**
  * transactions.js (Admin User Tab)
  * 
@@ -40,12 +40,12 @@ export async function renderTransactionsTab(container, userId) {
 
                     <div class="transaction-list" id="admin-tx-list">
                         ${(!transactions || transactions.length === 0) ? '<p class="empty-text">No transactions found.</p>' : transactions.map(tx => {
-                            const isNegative = tx.amount < 0;
-                            const icon = isNegative ? REMOVE_SVG : ADD_SVG;
-                            const iconClass = isNegative ? 'negative' : 'positive';
-                            const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                const isNegative = tx.amount < 0;
+                const icon = isNegative ? REMOVE_SVG : ADD_SVG;
+                const iconClass = isNegative ? 'negative' : 'positive';
+                const dateStr = new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-                            return `
+                return `
                                 <div class="transaction-item glass-panel" data-id="${tx.id}">
                                     <div class="tx-icon ${iconClass}">${icon}</div>
                                     
@@ -76,7 +76,7 @@ export async function renderTransactionsTab(container, userId) {
                                     </div>
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
                     </div>
                 </div>
             `
@@ -91,7 +91,7 @@ export async function renderTransactionsTab(container, userId) {
                 const amount = document.getElementById('new-tx-amount').value;
                 const description = document.getElementById('new-tx-desc').value;
                 if (!amount || !description) return notify('Error', 'Please fill all fields', 'error');
-                
+
                 try {
                     await apiRequest('POST', `/api/admin/user/${userId}/transaction`, { amount, description });
                     notify('Success', 'Transaction added', 'success');
@@ -107,7 +107,7 @@ export async function renderTransactionsTab(container, userId) {
         container.querySelectorAll('.delete-tx-btn').forEach(btn => {
             btn.onclick = async () => {
                 if (!await showConfirmModal('Delete Transaction', 'Are you sure you want to delete this transaction? This action cannot be undone.')) return;
-                
+
                 try {
                     const res = await fetch(`/api/admin/transaction/${btn.dataset.id}`, { method: 'DELETE' });
                     if (res.ok) {

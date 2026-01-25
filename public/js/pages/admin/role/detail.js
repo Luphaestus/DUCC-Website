@@ -1,4 +1,4 @@
-//todo refine
+//todo refine 
 
 /**
  * detail.js (Role)
@@ -44,8 +44,8 @@ export async function renderRoleDetail(roleId) {
         adminContent.innerHTML = `
             <div class="glass-layout">
                 ${Panel({
-                    title: isNew ? 'Create New Role' : 'Edit Role',
-                    content: `
+            title: isNew ? 'Create New Role' : 'Edit Role',
+            content: `
                         <form id="role-form" class="modern-form">
                             <div class="modern-form-group mb-2">
                                 <label class="form-label-top">Role Name
@@ -68,7 +68,7 @@ export async function renderRoleDetail(roleId) {
                             </div>
                         </form>
                     `
-                })}
+        })}
             </div>
         `;
 

@@ -1,4 +1,4 @@
-//todo refine
+//todo refine  
 /**
  * globals.js
  * 
@@ -47,7 +47,7 @@ export async function renderManageGlobals() {
             </div>
             
             ${Panel({
-                content: `
+        content: `
                     <div class="glass-table-container">
                         <div class="table-responsive">
                             <table class="glass-table">
@@ -66,7 +66,7 @@ export async function renderManageGlobals() {
                         </div>
                     </div>
                 `
-            })}
+    })}
         </div>
 
         ${imagePickerModal.getHTML()}

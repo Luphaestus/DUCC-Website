@@ -14,6 +14,8 @@
  * @param {string} [options.valueId] - Optional ID for the value element (for dynamic updates).
  * @param {string} [options.actions=''] - HTML content for action buttons/elements.
  * @param {string} [options.valueClass=''] - Additional classes for the value element.
+ * @param {string} [options.classes=''] - Additional classes for the container.
+ * @param {string} [options.id=''] - Optional ID for the container.
  * @returns {string} HTML string
  */
 export const ValueHeader = ({
@@ -21,10 +23,12 @@ export const ValueHeader = ({
     value = '',
     valueId = '',
     actions = '',
-    valueClass = ''
+    valueClass = '',
+    classes = '',
+    id = ''
 } = {}) => {
     return `
-    <div class="value-header">
+    <div class="value-header ${classes}" ${id ? `id="${id}"` : ''}>
         <div class="value-info">
             <span class="value-title">${title}</span>
             <span class="value-display ${valueClass}" ${valueId ? `id="${valueId}"` : ''}>${value}</span>

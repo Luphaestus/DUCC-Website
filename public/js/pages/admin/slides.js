@@ -1,3 +1,5 @@
+//todo refine  
+
 /**
  * slides.js
  * 
@@ -42,15 +44,15 @@ export async function renderManageSlides() {
             </div>
             
             ${Panel({
-                title: 'Manage Slideshow',
-                icon: IMAGE_SVG,
-                action: `<button id="add-slide-btn" class="primary-btn small-btn">${ADD_SVG} Add Slide</button>`,
-                content: `
+        title: 'Manage Slideshow',
+        icon: IMAGE_SVG,
+        action: `<button id="add-slide-btn" class="primary-btn small-btn">${ADD_SVG} Add Slide</button>`,
+        content: `
                     <div id="slides-grid" class="image-grid mt-2">
                         <p class="loading-cell">Loading slides...</p>
                     </div>
                 `
-            })}
+    })}
         </div>
 
         ${slideModal.getHTML()}

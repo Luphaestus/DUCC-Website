@@ -1,4 +1,4 @@
-//todo refine
+//todo refine 
 /**
  * legal.js (Admin User Tab)
  * 
@@ -26,30 +26,30 @@ export function renderLegalTab(container, user) {
             <div class="column">
                 <!-- Legal Status Card -->
                 ${Panel({
-                    title: 'Legal Status',
-                    icon: CONTRACT_SVG,
-                    content: `
+        title: 'Legal Status',
+        icon: CONTRACT_SVG,
+        content: `
                         <div class="card-body">
                             ${StatusIndicator({
-                                active: !!user.filled_legal_info,
-                                activeText: 'Signed',
-                                inactiveText: 'Missing',
-                                content: `
+            active: !!user.filled_legal_info,
+            activeText: 'Signed',
+            inactiveText: 'Missing',
+            content: `
                                     <div class="info-item-modern mt-1">
                                         <span class="label">Last Signed:</span> 
                                         <span class="value">${legalDate}</span>
                                     </div>
                                 `
-                            })}
+        })}
                         </div>
                     `
-                })}
+    })}
 
                 <!-- Personal & Emergency Card -->
                 ${Panel({
-                    title: 'Identity & Contact',
-                    icon: PERSON_SVG,
-                    content: `
+        title: 'Identity & Contact',
+        icon: PERSON_SVG,
+        content: `
                         <div class="card-body detail-info-group">
                             <!-- Identity Details -->
                             <div class="detail-info-box">
@@ -82,15 +82,15 @@ export function renderLegalTab(container, user) {
                             </div>
                         </div>
                     `
-                })}
+    })}
             </div>
 
             <div class="column">
                 <!-- Medical Details Card -->
                 ${Panel({
-                    title: 'Health Information',
-                    icon: MEDICAL_INFORMATION_SVG,
-                    content: `
+        title: 'Health Information',
+        icon: MEDICAL_INFORMATION_SVG,
+        content: `
                         <div class="card-body detail-info-group">
                             <!-- Conditions -->
                             <div class="medical-section">
@@ -119,7 +119,7 @@ export function renderLegalTab(container, user) {
                             </div>
                         </div>
                     `
-                })}
+    })}
             </div>
         </div>
     `;

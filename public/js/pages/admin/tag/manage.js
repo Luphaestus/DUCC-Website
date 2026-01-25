@@ -1,4 +1,4 @@
-//todo refine
+//todo refine 
 /**
  * manage.js (Tag)
  * 
@@ -33,7 +33,7 @@ export async function renderManageTags() {
             </div>
             
             ${Panel({
-                content: `
+        content: `
                     <div class="glass-table-container">
                         <div class="table-responsive">
                             <table class="glass-table">
@@ -52,7 +52,7 @@ export async function renderManageTags() {
                         </div>
                     </div>
                 `
-            })}
+    })}
         </div>
     `;
 

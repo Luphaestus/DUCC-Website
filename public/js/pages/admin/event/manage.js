@@ -1,4 +1,4 @@
-//todo refine
+//todo refine 
 /**
  * manage.js
  * 
@@ -93,7 +93,7 @@ export async function renderManageEvents() {
             </div>
 
             ${Panel({
-                content: `
+        content: `
                     <!-- Events Table -->
                     <div class="glass-table-container">
                         <div class="table-responsive">
@@ -107,7 +107,7 @@ export async function renderManageEvents() {
                     </div>
                     <div id="events-pagination"></div>
                 `
-            })}
+    })}
         </div>
     `;
 
@@ -120,7 +120,7 @@ export async function renderManageEvents() {
 
     searchBtn.onclick = () => updateEventParams({ search: searchInput.value, page: 1 });
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
-    
+
     filterBtn.onclick = () => {
         filterPanel.classList.toggle('hidden');
     };
@@ -217,7 +217,7 @@ async function fetchAndRenderEvents({ page, search, sort, order, showPast, minCo
                     <td data-label="Cost">£${event.upfront_cost.toFixed(2)}</td>
                 </tr>
             `).join('');
-            
+
             // Re-attach row click listeners
             tbody.querySelectorAll('.event-row').forEach(row => {
                 row.onclick = (e) => {

@@ -7,6 +7,15 @@
     justify-content: space-between;
     align-items: center;
 
+    &.clickable {
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s ease;
+        &:hover { 
+            transform: scale(1.01); 
+            background: rgba(var(--pico-color-rgb), 0.05);
+        }
+    }
+
     .value-info {
         .value-title {
             font-size: 0.9rem;
@@ -22,6 +31,10 @@
             font-weight: 800;
             line-height: 1;
             color: var(--pico-color);
+
+            &.negative { color: #e74c3c; }
+            &.warning { color: #f39c12; }
+            &.positive { color: #2ecc71; }
         }
     }
 

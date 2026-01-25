@@ -1,10 +1,10 @@
-/**
- * manage.js (Role)
- * 
- * Logic for the administrative roles list view.
- * 
- * Registered Route: /admin/roles
- */
+//todo refine
+/* manage.js (Role)
+* 
+* Logic for the administrative roles list view.
+* 
+* Registered Route: /admin/roles
+*/
 
 import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';

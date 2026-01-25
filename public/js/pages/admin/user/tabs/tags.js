@@ -1,4 +1,4 @@
-//todo refine
+//todo refine 
 /**
  * tags.js (Admin User Tab)
  * 
@@ -36,15 +36,15 @@ export async function renderTagsTab(container, userId) {
             <!-- Whitelist Management -->
             <div class="column">
                 ${Panel({
-                    title: 'Whitelisted Tags',
-                    icon: LOCAL_ACTIVITY_SVG,
-                    content: `
+            title: 'Whitelisted Tags',
+            icon: LOCAL_ACTIVITY_SVG,
+            content: `
                         <div class="card-body">
                             <p class="helper-text">Tags this user is explicitly whitelisted for.</p>
                             <div class="tags-selection-grid">
                                 ${allTags.map(tag => {
-                                    const isWhitelisted = userWhitelistedTags.some(ut => ut.id === tag.id);
-                                    return `
+                const isWhitelisted = userWhitelistedTags.some(ut => ut.id === tag.id);
+                return `
                                         <label class="tag-checkbox">
                                             <input type="checkbox" class="user-tag-cb" value="${tag.id}" ${isWhitelisted ? 'checked' : ''} style="display:none;">
                                             <span class="tag-badge ${isWhitelisted ? 'selected' : ''}" 
@@ -53,25 +53,25 @@ export async function renderTagsTab(container, userId) {
                                             </span>
                                         </label>
                                     `;
-                                }).join('')}
+            }).join('')}
                             </div>
                         </div>
                     `
-                })}
+        })}
             </div>
 
             <!-- Management Scope Management -->
             <div class="column">
                 ${Panel({
-                    title: 'Managed Tags (Scoped)',
-                    icon: SHIELD_SVG,
-                    content: `
+            title: 'Managed Tags (Scoped)',
+            icon: SHIELD_SVG,
+            content: `
                         <div class="card-body">
                             <p class="helper-text">Tags this user can manage events for.</p>
                             <div class="tags-selection-grid">
                                 ${allTags.map(tag => {
-                                    const isManaged = managedTags.some(t => t.id === tag.id);
-                                    return `
+                const isManaged = managedTags.some(t => t.id === tag.id);
+                return `
                                         <label class="tag-checkbox">
                                             <input type="checkbox" class="managed-tag-cb" value="${tag.id}" ${isManaged ? 'checked' : ''} style="display:none;">
                                             <span class="tag-badge ${isManaged ? 'selected' : ''}" 
@@ -80,11 +80,11 @@ export async function renderTagsTab(container, userId) {
                                             </span>
                                         </label>
                                     `;
-                                }).join('')}
+            }).join('')}
                             </div>
                         </div>
                     `
-                })}
+        })}
             </div>
         </div>`;
 

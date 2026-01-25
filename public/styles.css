@@ -4816,6 +4816,14 @@ nav.small-container ul.navbar-items li button#login-button {
   justify-content: space-between;
   align-items: center;
 }
+.value-header.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.value-header.clickable:hover {
+  transform: scale(1.01);
+  background: rgba(var(--pico-color-rgb), 0.05);
+}
 .value-header .value-info .value-title {
   font-size: 0.9rem;
   text-transform: uppercase;
@@ -4829,6 +4837,15 @@ nav.small-container ul.navbar-items li button#login-button {
   font-weight: 800;
   line-height: 1;
   color: var(--pico-color);
+}
+.value-header .value-info .value-display.negative {
+  color: #e74c3c;
+}
+.value-header .value-info .value-display.warning {
+  color: #f39c12;
+}
+.value-header .value-info .value-display.positive {
+  color: #2ecc71;
 }
 .value-header .value-actions {
   display: flex;
@@ -6143,6 +6160,9 @@ body[data-theme=light] #event-view .event-modal-body .event-actions #edit-event-
 #profile-view .balance-negative {
   color: #e74c3c;
 }
+#profile-view .balance-warning {
+  color: #f39c12;
+}
 #profile-view .balance-positive {
   color: #2ecc71;
 }
@@ -7236,6 +7256,12 @@ footer .footer-bottom p {
   border-spacing: 0;
   margin-bottom: 0;
 }
+@media (max-width: 600px) {
+  .glass-table-container table.glass-table.users-table th:nth-child(2),
+  .glass-table-container table.glass-table.users-table td:nth-child(2) {
+    display: none;
+  }
+}
 .glass-table-container table.glass-table thead {
   background: rgba(var(--pico-color-rgb), 0.03);
   border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
@@ -7299,9 +7325,24 @@ footer .footer-bottom p {
   color: #e74c3c;
   font-weight: 600;
 }
+.glass-table-container table.glass-table tbody tr td.text-warning {
+  color: #f39c12;
+  font-weight: 600;
+}
 .glass-table-container table.glass-table tbody tr td.text-success {
   color: #2ecc71;
   font-weight: 600;
+}
+.glass-table-container table.glass-table tbody tr td.name-column .thin-name {
+  display: none;
+}
+@media (max-width: 600px) {
+  .glass-table-container table.glass-table tbody tr td.name-column .full-name {
+    display: none;
+  }
+  .glass-table-container table.glass-table tbody tr td.name-column .thin-name {
+    display: inline;
+  }
 }
 
 /* Badges */
@@ -8513,31 +8554,6 @@ textarea[name=description] {
   #admin-view .dual-grid {
     grid-template-columns: 1fr;
   }
-}
-#admin-view .balance-header {
-  padding: 1.5rem;
-}
-#admin-view .balance-header.clickable {
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-#admin-view .balance-header.clickable:hover {
-  transform: scale(1.02);
-}
-#admin-view .balance-header .amount.negative {
-  color: #e74c3c;
-}
-#admin-view .balance-header .amount.positive {
-  color: #2ecc71;
-}
-#admin-view .balance-header .amount.large {
-  font-size: 2.2rem;
-  margin-bottom: 0.25rem;
-}
-#admin-view .balance-header .label-sub {
-  text-transform: none;
-  font-weight: 600;
-  opacity: 0.8;
 }
 #admin-view .box-header {
   display: flex;
