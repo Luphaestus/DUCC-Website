@@ -117,7 +117,7 @@ const HTML_TEMPLATE = /*html*/`
                         title: 'Current Balance',
                         value: '£0.00',
                         valueId: 'balance-amount',
-                        actions: `<button id="top-up-btn" class="primary">Top Up Balance</button>`
+                        actions: `<button id="top-up-btn" class="small-btn">Top Up Balance</button>`
                     })}
 
                     ${Panel({

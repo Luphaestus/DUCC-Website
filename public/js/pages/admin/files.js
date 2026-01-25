@@ -1,4 +1,4 @@
-//todo refine     
+//todo  refine     
 /**
  * files.js
  * 
@@ -62,7 +62,7 @@ export async function renderAdminFiles() {
                     </label>
                 </div>
                 <footer>
-                    <button type="submit" class="primary-btn wide-btn">Upload All</button>
+                    <button type="submit" class="wide-btn">Upload All</button>
                 </footer>
             </form>
         `
@@ -99,7 +99,7 @@ export async function renderAdminFiles() {
                     </label>
                 </div>
                 <footer>
-                    <button type="submit" class="primary-btn wide-btn">Save Changes</button>
+                    <button type="submit" class="wide-btn">Save Changes</button>
                 </footer>
             </form>
         `
@@ -118,7 +118,7 @@ export async function renderAdminFiles() {
                     <option value="public">Public</option>
                     <option value="execs">Execs</option>
                 </select>
-                <button type="submit" class="icon-btn primary">${UPLOAD_SVG}</button>
+                <button type="submit" class="icon-btn">${UPLOAD_SVG}</button>
             </form>
         `
     });
@@ -141,7 +141,7 @@ export async function renderAdminFiles() {
                             <option value="">All Categories</option>
                         </select>
                         <button id="manage-categories-btn" class="small-btn outline secondary">${FOLDER_SVG} Categories</button>
-                        <button id="upload-files-btn" class="small-btn primary">${UPLOAD_SVG} Upload</button>
+                        <button id="upload-files-btn" class="small-btn">${UPLOAD_SVG} Upload</button>
                     </div>
                 </div>
             </div>

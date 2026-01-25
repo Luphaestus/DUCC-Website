@@ -15,16 +15,16 @@
         width: 100%;
     }
 
-    .mb-1-5 { margin-bottom: 1.5rem; }
-    .block { display: block; }
-    .mt-2 { margin-top: 2rem; }
-    .text-right { text-align: right; }
-    .mb-1 { margin-bottom: 1rem; }
-    .flex-1 { flex: 1; }
-    .mb-0 { margin-bottom: 0; }
-    .gap-0-5 { gap: 0.5rem; }
-    .font-size-1-25 { font-size: 1.25rem; }
-    .font-size-0-9 { font-size: 0.9rem; }
+    #tag-form {
+        label.block {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-actions-footer {
+            margin-top: 2rem;
+            text-align: right;
+        }
+    }
 
     .divider {
         height: 1px;
@@ -33,6 +33,12 @@
     }
 
     .permission-section {
+        .helper-text {
+            margin-bottom: 1rem;
+        }
+        .inline-add-form {
+            margin-bottom: 1rem;
+        }
         .section-header {
             margin-bottom: 1rem;
             h3 {

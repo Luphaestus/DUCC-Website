@@ -25,6 +25,8 @@ h3 {
 
 p { line-height: 1.625; font-size: 0.875rem; color: var(--pico-muted-color); }
 
+a[data-nav] { cursor: pointer; }
+
 main.container {
     display: block; margin: 0; padding: 0; padding-top: 5rem;
     padding-inline: 0; padding-block-end: 2rem; width: 100%; max-width: none; flex: 1;

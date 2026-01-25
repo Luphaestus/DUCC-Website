@@ -1,4 +1,10 @@
 #admin-view {
+    .detail-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
     .user-detail-header {
         display: flex;
         justify-content: space-between;
@@ -8,22 +14,20 @@
         border-bottom: 1px solid rgba(128, 128, 128, 0.2);
         padding-bottom: 1rem;
         margin-bottom: 1rem;
-    }
 
-    .user-identity {
-        display: flex;
-        flex-direction: column;
+        .user-identity {
+            display: flex;
+            flex-direction: column;
 
-        .user-name-header {
-            margin: 0;
-            font-size: 1.75rem;
+            .user-name-header {
+                margin: 0;
+                font-size: 1.75rem;
+            }
+
+            .user-id-badge {
+                font-size: 0.85rem;
+                color: var(--pico-muted-color);
+            }
         }
-
-        .user-id-badge {
-            font-size: 0.85rem;
-            color: var(--pico-muted-color);
-        }
     }
-
-    .mb-1-5 { margin-bottom: 1.5rem; }
 }

@@ -27,7 +27,7 @@ const HTML_TEMPLATE = /*html*/`
                     <div>
                         <label for="reset-email">Email:</label>
                         <div class="durham-email-wrapper">
-                            <input class="nobottommargin" id="reset-email" name="email" placeholder="username">
+                            <input id="reset-email" name="email" placeholder="username">
                             <span class="email-suffix">@durham.ac.uk</span>
                         </div>
                     </div>
@@ -35,7 +35,7 @@ const HTML_TEMPLATE = /*html*/`
                         <button type="submit">Send Reset Link</button>
                     </div>
                 </form>
-                <p class="nobottommargin">Remembered it? <a data-nav="/login" class="cursor-pointer">Login</a></p>
+                <p>Remembered it? <a data-nav="/login">Login</a></p>
             </article>
         </div>
     </div>

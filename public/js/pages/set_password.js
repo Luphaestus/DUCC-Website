@@ -27,14 +27,14 @@ const HTML_TEMPLATE = /*html*/`
                     <input type="hidden" id="set-password-token">
                     <div>
                         <label for="new-password">New Password:</label>
-                        <input class="nobottommargin" type="password" id="new-password" name="newPassword">
+                        <input type="password" id="new-password" name="newPassword">
                     </div>
                     <div>
                         <label for="confirm-password">Confirm Password:</label>
-                        <input class="nobottommargin" type="password" id="confirm-password" name="confirmPassword">
+                        <input type="password" id="confirm-password" name="confirmPassword">
                     </div>
                     <div id="set-password-footer">
-                        <button class="nobottommargin" id="set-password-submit" type="submit">Update Password</button>
+                        <button id="set-password-submit" type="submit">Update Password</button>
                     </div>
                 </form>
             </article>

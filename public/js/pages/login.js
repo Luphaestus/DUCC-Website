@@ -30,21 +30,21 @@ const HTML_TEMPLATE = /*html*/
                                 <div>
                                     <label for="email">Email:</label>
                                     <div class="durham-email-wrapper">
-                                        <input class="nobottommargin" id="email" name="email" placeholder="username" autocomplete="username">
+                                        <input id="email" name="email" placeholder="username" autocomplete="username">
                                         <span class="email-suffix">@durham.ac.uk</span>
                                     </div>
                                 </div>
                                 <div>
                                     <label for="password">Password:</label>
-                                    <input class="nobottommargin" type="password" id="password" name="password">
+                                    <input type="password" id="password" name="password">
                                 </div>
                             </div>
                             <div id="login-footer">
-                                <button class="nobottommargin" type="submit">Login</button>
+                                <button type="submit">Login</button>
                             </div>
                         </form>
-                        <p class="nobottommargin font-size-0-9 mt-0-5"><a data-nav="/reset-password" class="cursor-pointer">Forgot Password?</a></p>
-                        <p class="nobottommargin">Don't have an account? <a data-nav="/signup" class="cursor-pointer">Sign Up</a></p>
+                        <p><a data-nav="/reset-password">Forgot Password?</a></p>
+                        <p>Don't have an account? <a data-nav="/signup">Sign Up</a></p>
                     </article>
                 </div>
             </div>

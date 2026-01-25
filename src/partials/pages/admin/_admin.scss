@@ -180,6 +180,7 @@
 
         &.users-table {
             @media (max-width: 600px) {
+
                 th:nth-child(2),
                 td:nth-child(2) {
                     display: none;
@@ -282,6 +283,7 @@
                             .full-name {
                                 display: none;
                             }
+
                             .thin-name {
                                 display: inline;
                             }
@@ -321,6 +323,11 @@
     &.neutral {
         background: rgba(127, 140, 141, 0.15);
         color: #7f8c8d;
+    }
+
+    &.primary {
+        background: rgba(var(--pico-primary-rgb), 0.1);
+        color: var(--pico-primary);
     }
 
     &.difficulty-1 {
@@ -504,6 +511,10 @@ textarea[name="description"] {
                 font-size: 0.9rem;
             }
         }
+    }
+
+    .filter-actions {
+        text-align: right;
     }
 }
 
