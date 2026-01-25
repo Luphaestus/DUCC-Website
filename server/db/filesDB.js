@@ -1,24 +1,14 @@
 /**
  * filesDB.js
  * 
- * This module manages database operations for file metadata and file categories.
- * It handles visibility filtering, content deduplication via hashing, and pagination.
+ * This module manages database operations for file metadata and categories.
  */
 
 const { statusObject } = require('../misc/status.js');
 
-/**
- * Database operations for files and categories.
- */
 class FilesDB {
-
     /**
      * Fetch a paginated, searchable, and filterable list of files.
-     * Visibility filtering is applied at the SQL level based on the user's role.
-     * @param {object} db - Database connection.
-     * @param {object} options - Filter parameters (page, limit, search, sort, categoryId).
-     * @param {string} [userRole='public'] - Requesting user's role ('public', 'member', or 'exec').
-     * @returns {Promise<statusObject>} - Data contains { files, totalPages, currentPage, totalFiles }.
      */
     static async getFiles(db, options, userRole = 'public') {
         const { page = 1, limit = 20, search, sort, order, categoryId, includeUsed = false } = options;
@@ -34,13 +24,11 @@ class FilesDB {
         let conditions = [];
         const params = [];
 
-        // Apply RBAC visibility filters
         if (userRole === 'public') {
             conditions.push("d.visibility = 'public'");
         } else if (userRole === 'member') {
             conditions.push("d.visibility IN ('public', 'members')");
         }
-        // Execs bypass visibility filters (all files visible)
 
         if (search) {
             conditions.push("(d.title LIKE ? OR d.author LIKE ? OR d.filename LIKE ?)");
@@ -52,8 +40,6 @@ class FilesDB {
             conditions.push("d.category_id = ?");
             params.push(categoryId);
         }
-
-        const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
         const usageFilter = !includeUsed ? `
             AND d.id NOT IN (SELECT image_id FROM events WHERE image_id IS NOT NULL)
@@ -91,9 +77,6 @@ class FilesDB {
 
     /**
      * Create a new file entry in the database.
-     * @param {object} db - Database connection.
-     * @param {object} data - File metadata.
-     * @returns {Promise<statusObject>} - Data contains { id }.
      */
     static async createFile(db, data) {
         const { title, author, date, size, filename, hash, category_id, visibility } = data;
@@ -111,10 +94,6 @@ class FilesDB {
 
     /**
      * Find a file by its unique content hash.
-     * Used for storage deduplication.
-     * @param {object} db - Database connection.
-     * @param {string} hash - File hash.
-     * @returns {Promise<statusObject>}
      */
     static async getFileByHash(db, hash) {
         try {
@@ -129,9 +108,6 @@ class FilesDB {
 
     /**
      * Retrieve file metadata by ID.
-     * @param {object} db - Database connection.
-     * @param {number} id - File ID.
-     * @returns {Promise<statusObject>}
      */
     static async getFileById(db, id) {
         try {
@@ -146,17 +122,12 @@ class FilesDB {
 
     /**
      * Update an existing file's metadata.
-     * @param {object} db - Database connection.
-     * @param {number} id - File ID.
-     * @param {object} data - Partial metadata updates.
-     * @returns {Promise<statusObject>}
      */
     static async updateFile(db, id, data) {
         const { title, author, date, visibility, category_id } = data;
         const updates = [];
         const params = [];
 
-        // Build dynamic update query based on provided fields
         if (title !== undefined) { updates.push("title = ?"); params.push(title); }
         if (author !== undefined) { updates.push("author = ?"); params.push(author); }
         if (date !== undefined) { updates.push("date = ?"); params.push(date); }
@@ -178,9 +149,6 @@ class FilesDB {
 
     /**
      * Delete a file entry from the database.
-     * @param {object} db - Database connection.
-     * @param {number} id - File ID.
-     * @returns {Promise<statusObject>}
      */
     static async deleteFile(db, id) {
         try {
@@ -193,13 +161,8 @@ class FilesDB {
         }
     }
 
-    // --- Category Methods ---
-
     /**
      * Fetch categories, filtered by the user's role access level.
-     * @param {object} db - Database connection.
-     * @param {string} [userRole='public'] - 'public', 'member', or 'exec'.
-     * @returns {Promise<statusObject>}
      */
     static async getCategories(db, userRole = 'public') {
         let condition = "";
@@ -216,9 +179,6 @@ class FilesDB {
 
     /**
      * Create a new category for files.
-     * @param {object} db - Database connection.
-     * @param {object} data - { name, default_visibility }.
-     * @returns {Promise<statusObject>}
      */
     static async createCategory(db, data) {
         const { name, default_visibility } = data;
@@ -235,10 +195,6 @@ class FilesDB {
 
     /**
      * Update an existing category.
-     * @param {object} db - Database connection.
-     * @param {number} id - Category ID.
-     * @param {object} data - { name, default_visibility }.
-     * @returns {Promise<statusObject>}
      */
     static async updateCategory(db, id, data) {
         const { name, default_visibility } = data;
@@ -255,9 +211,6 @@ class FilesDB {
 
     /**
      * Delete a category.
-     * @param {object} db - Database connection.
-     * @param {number} id - Category ID.
-     * @returns {Promise<statusObject>}
      */
     static async deleteCategory(db, id) {
         try {

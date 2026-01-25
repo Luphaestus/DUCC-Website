@@ -1,20 +1,7 @@
 /**
  * FilesAPI.js
  * 
- * This file handles file management, uploads, and category organization.
- * 
- * Routes:
- * - GET /api/files: List files with pagination and filtering.
- * - POST /api/files: Upload one or more files.
- * - PUT /api/files/:id: Update file metadata.
- * - DELETE /api/files/:id: Delete a file and its physical data.
- * - GET /api/files/:id/download: Download or view a file.
- * 
- * Category Routes:
- * - GET /api/file-categories: Fetch all file categories.
- * - POST /api/file-categories: Create a new category.
- * - PUT /api/file-categories/:id: Update a category.
- * - DELETE /api/file-categories/:id: Delete a category.
+ * This file handles file management, uploads, and categories.
  */
 
 const { statusObject } = require('../misc/status.js');
@@ -27,16 +14,9 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-/**
- * API for file management and uploads.
- * @module FilesAPI
- */
 class FilesAPI {
     /**
-     * @param {object} app - Express app.
-     * @param {object} db - Database connection.
-     * @param {object} [passport=null] - Passport instance (optional).
-     * @param {string} [uploadDir=null] - Custom upload directory (optional).
+     * Initialize file upload directory and storage.
      */
     constructor(app, db, passport = null, uploadDir = null) {
         this.app = app;
@@ -52,7 +32,6 @@ class FilesAPI {
                 cb(null, this.uploadDir);
             },
             filename: (req, file, cb) => {
-                // Generate a unique filename to prevent collisions
                 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
                 cb(null, uniqueSuffix + path.extname(file.originalname));
             }
@@ -73,8 +52,6 @@ class FilesAPI {
 
     /**
      * Calculate file hash (SHA-256) to identify duplicate content.
-     * @param {string} filePath - Path to the file.
-     * @returns {Promise<string>} - The file hash.
      */
     async calculateHash(filePath) {
         return new Promise((resolve, reject) => {
@@ -88,8 +65,6 @@ class FilesAPI {
 
     /**
      * Get user role for visibility filtering.
-     * @param {object} req - Express request object.
-     * @returns {Promise<string>} - 'public', 'member', or 'exec'.
      */
     async getUserRole(req) {
         if (!req.isAuthenticated || !req.isAuthenticated()) return 'public';
@@ -122,7 +97,6 @@ class FilesAPI {
 
         /**
          * Upload multiple files.
-         * Checks for existing files with the same hash to save storage.
          */
         this.app.post('/api/files', check('file.write'), this.upload.array('files'), async (req, res) => {
             if (!req.files || req.files.length === 0) return res.status(400).json({ message: 'No files uploaded.' });
@@ -132,13 +106,11 @@ class FilesAPI {
                 const filePath = file.path;
                 const fileHash = await this.calculateHash(filePath);
 
-                // Check for existing file with same hash to deduplicate
                 const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
                 let finalFilename = file.filename;
 
                 if (!existingFileStatus.isError()) {
                     const existingFile = existingFileStatus.getData();
-                    // If file exists, we delete the newly uploaded one and reuse the existing record
                     if (fs.existsSync(filePath)) {
                         fs.unlinkSync(filePath);
                     }
@@ -200,7 +172,6 @@ class FilesAPI {
             const file = fileStatus.getData();
             const filePath = path.join(this.uploadDir, file.filename);
 
-            // Physically delete the file from storage
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
             }
@@ -211,7 +182,6 @@ class FilesAPI {
 
         /**
          * Download/View a file.
-         * Enforces visibility rules based on the user's role and event participation.
          */
         this.app.get('/api/files/:id/download', async (req, res) => {
             try {
@@ -222,7 +192,6 @@ class FilesAPI {
                 const file = fileStatus.getData();
                 const role = await this.getUserRole(req);
 
-                // Check if the user has access based on the file's visibility settings
                 if (!await FileRules.canAccessFile(this.db, file, req.user, role)) {
                     return res.status(403).json({ message: 'Forbidden' });
                 }
@@ -237,7 +206,6 @@ class FilesAPI {
                     downloadName += ext;
                 }
 
-                // 'view=true' query param triggers inline display instead of force download
                 if (req.query.view === 'true') {
                     return res.sendFile(filePath, (err) => {
                         if (err && !res.headersSent) {
@@ -256,8 +224,6 @@ class FilesAPI {
                 res.status(500).json({ message: 'Internal Server Error', error: error.message });
             }
         });
-
-        // --- Category Routes ---
 
         /**
          * List all file categories.

@@ -1,21 +1,15 @@
 /**
  * tagsDB.js
  * 
- * This module manages the lifecycle of event tags and their associated user whitelists.
- * Tags are used to categorize events and restrict visibility or joining based on policies.
+ * This module manages the lifecycle of event tags and user whitelists.
  */
 
 const { statusObject } = require('../misc/status.js');
 const FileCleanup = require('../misc/FileCleanup.js');
 
-/**
- * Database operations for event tags and user whitelists.
- */
 class TagsDB {
     /**
      * Fetch all tags registered in the system.
-     * @param {object} db - Database connection.
-     * @returns {Promise<statusObject>} - Data is an array of tag objects.
      */
     static async getAllTags(db) {
         try {
@@ -29,9 +23,6 @@ class TagsDB {
 
     /**
      * Fetch metadata for a specific tag by its ID.
-     * @param {object} db - Database connection.
-     * @param {number} id - Tag ID.
-     * @returns {Promise<statusObject>}
      */
     static async getTagById(db, id) {
         try {
@@ -45,9 +36,6 @@ class TagsDB {
 
     /**
      * Fetch a list of tags by their IDs.
-     * @param {object} db - Database connection.
-     * @param {number[]} ids - Array of tag IDs.
-     * @returns {Promise<object[]>} - Array of tag objects.
      */
     static async getTagListByIds(db, ids) {
         const placeholders = ids.map(() => '?').join(',');
@@ -56,9 +44,6 @@ class TagsDB {
 
     /**
      * Create a new tag.
-     * @param {object} db - Database connection.
-     * @param {object} data - { name, color, description, min_difficulty, priority, join_policy, view_policy, image_id }.
-     * @returns {Promise<statusObject>} - Data contains { id }.
      */
     static async createTag(db, data) {
         try {
@@ -101,9 +86,6 @@ class TagsDB {
 
     /**
      * Reset tag image to default (none).
-     * @param {object} db - Database connection.
-     * @param {number} id - Tag ID.
-     * @returns {Promise<statusObject>}
      */
     static async resetImage(db, id) {
         try {
@@ -139,9 +121,6 @@ class TagsDB {
 
     /**
      * Fetch a list of all users currently whitelisted for a specific tag.
-     * @param {object} db - Database connection.
-     * @param {number} tagId - Tag ID.
-     * @returns {Promise<statusObject>}
      */
     static async getWhitelist(db, tagId) {
         try {
@@ -249,7 +228,6 @@ class TagsDB {
 
     /**
      * Fetch all tags associated with a specific event.
-     * @returns {Promise<Array>} - List of tag objects.
      */
     static async getTagsForEvent(db, eventId) {
         return db.all(`

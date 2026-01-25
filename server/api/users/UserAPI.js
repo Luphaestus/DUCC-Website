@@ -2,14 +2,6 @@
  * UserAPI.js
  * 
  * This file handles user profile management, membership status, and account settings.
- * It features robust field-level validation and dynamic profile filtering.
- * 
- * Routes:
- * - GET /api/user/elements/:elements: Fetch specific profile fields for the current user.
- * - GET /api/user/:id/elements/:elements: Fetch specific profile fields for another user (Exec only).
- * - POST /api/user/elements: Update the current user's profile information.
- * - POST /api/user/join: Process membership signup and fee deduction.
- * - POST /api/user/deleteAccount: Self-deletion of account (requires password verification).
  */
 
 const { statusObject } = require('../../misc/status.js');
@@ -24,10 +16,6 @@ const check = require('../../misc/authentication.js');
 const bcrypt = require('bcrypt');
 const ValidationRules = require('../../rules/ValidationRules.js');
 
-/**
- * API for user profiles, validation, membership, and account management.
- * @module User
- */
 class User {
     /**
      * @param {object} app - Express app.
@@ -38,10 +26,6 @@ class User {
         this.db = db;
     }
 
-    /**
-     * Required fields for complete legal/medical information.
-     * The system identifies a profile as "legal info complete" when all these are populated.
-     */
     static legalElements = [
         "date_of_birth", "college_id", "emergency_contact_name", "emergency_contact_phone",
         "home_address", "phone_number", "has_medical_conditions", "medical_conditions_details",
@@ -51,23 +35,13 @@ class User {
 
     /**
      * Get authenticated user ID.
-     * @param {object} req - Express request.
-     * @returns {number|null}
      */
     static getID(req) { return req.user ? req.user.id : null; }
 
     /**
      * Fetch whitelisted profile elements for current user.
-     * Ensures users only request data they are allowed to see about themselves.
-     * @param {object} req - Express request.
-     * @param {object} db - Database connection.
-     * @param {string|string[]} elements - List of requested field names.
-     * @returns {Promise<statusObject>}
      */
     static async getAccessibleElements(req, db, elements) {
-        /**
-         * Internal helper to verify if an element key is accessible by a normal user.
-         */
         function isElementAccessibleByNormalUser(element) {
             const accessibleUserDB = [
                 "email", "first_name", "last_name", "date_of_birth", "college_id",
@@ -151,16 +125,8 @@ class User {
 
     /**
      * Validate and write profile updates.
-     * Enforces business rules and formatting (e.g. trimming emails).
-     * @param {object} req - Express request.
-     * @param {object} db - Database instance.
-     * @param {object} data - Field update map.
-     * @returns {Promise<statusObject>}
      */
     static async writeNormalElements(req, db, data) {
-        /**
-         * Fetch a field either from the current update batch or the database.
-         */
         async function getElement(element, data, db) {
             if (element in data) return new statusObject(200, null, data[element]);
             return await User.getAccessibleElements(req, db, element);
@@ -269,7 +235,6 @@ class User {
 
     /**
      * Internal helper to preprocess input data before database operations.
-     * @param {object} data - Input data object.
      */
     static preprocessData(data) {
         if (data.email) data.email = data.email.replace(/\s/g, '').toLowerCase();
@@ -281,7 +246,6 @@ class User {
     registerRoutes() {
         /**
          * Fetch profile elements for current user.
-         * Usage: /api/user/elements/email,first_name,balance
          */
         this.app.get('/api/user/elements/:elements', check(), async (req, res) => {
             const elements = req.params.elements.split(',').map(e => e.trim());
@@ -292,7 +256,6 @@ class User {
 
         /**
          * Fetch profile elements for a specific user.
-         * Restricted to Execs only.
          */
         this.app.get('/api/user/:id/elements/:elements', check('perm:is_exec'), async (req, res) => {
             const userId = parseInt(req.params.id);
@@ -322,7 +285,6 @@ class User {
 
         /**
          * Process membership joining.
-         * Deducts membership cost from user balance and sets membership flag.
          */
         this.app.post('/api/user/join', check(), async (req, res) => {
             try {
@@ -347,7 +309,6 @@ class User {
 
         /**
          * Permanently delete current user account.
-         * Denied if the user has an outstanding balance (debt).
          */
         this.app.post('/api/user/deleteAccount', check(), async (req, res) => {
             const { password } = req.body;

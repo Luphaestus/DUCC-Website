@@ -2,7 +2,6 @@
  * tables.js
  * 
  * Defines the entire SQLite schema for the application.
- * Contains definitions for users, events, RBAC, transactions, and files.
  */
 
 const { createTable } = require('./utils');
@@ -11,7 +10,6 @@ const colors = require('ansi-colors');
 
 /**
  * Executes the table creation sequence with a progress bar.
- * @param {object} db - SQLite connection.
  */
 async function createTables(db) {
   const tableDefinitions = [
@@ -296,7 +294,6 @@ async function createTables(db) {
     }
     progressBar.stop();
   } else {
-    // Silent creation for test mode
     for (const table of tableDefinitions) {
       await createTable(table.name, table.schema, db);
     }

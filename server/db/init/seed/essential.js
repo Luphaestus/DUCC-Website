@@ -2,8 +2,6 @@
  * essential.js
  * 
  * Seeds the database with mandatory system data.
- * This includes Durham colleges, the full list of system permissions, 
- * the default 'President' role, and the initial administrator account.
  */
 
 const bcrypt = require('bcrypt');
@@ -12,7 +10,6 @@ const colors = require('ansi-colors');
 
 /**
  * Seeds the database with the canonical list of Durham colleges.
- * @param {object} db - SQLite instance.
  */
 async function seedColleges(db) {
     const collegesExist = await db.get('SELECT COUNT(*) as count FROM colleges');
@@ -33,12 +30,10 @@ async function seedColleges(db) {
 
 /**
  * Seeds all essential system metadata and the default administrator.
- * @param {object} db - SQLite instance.
  */
 async function seedEssential(db) {
     await seedColleges(db);
 
-    // Canonical list of system permissions
     const permissions = [
         { slug: 'user.read', desc: 'View users' },
         { slug: 'user.write', desc: 'Edit users' },
@@ -76,7 +71,6 @@ async function seedEssential(db) {
         permIds[p.slug] = row.id;
     }
 
-    // Create the all-powerful President role
     const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage'];
     await db.run('INSERT OR IGNORE INTO roles (name, description) VALUES (?, ?)', ['President', 'The Club President with full administrative access.']);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
@@ -86,7 +80,6 @@ async function seedEssential(db) {
         }
     }
 
-    // Seed default file categories
     const categories = [
         { name: 'Minutes', visibility: 'members' },
         { name: 'Policies', visibility: 'public' },
@@ -97,14 +90,12 @@ async function seedEssential(db) {
         await db.run('INSERT OR IGNORE INTO file_categories (name, default_visibility) VALUES (?, ?)', [cat.name, cat.visibility]);
     }
 
-    // Create the initial Admin account if no President exists
     const presidentExists = await db.get("SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'President' LIMIT 1");
     if (!presidentExists) {
         let adminId = null;
 
         const adminExists = await db.get("SELECT id FROM users WHERE email = 'admin@durham.ac.uk'");
         if (!adminExists) {
-            // Safety: Clear existing sessions to force login if database was wiped
             try {
                 const sessionsExists = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'");
                 if (sessionsExists) {
@@ -121,7 +112,6 @@ async function seedEssential(db) {
                 [email, hashedPassword, 'Admin', 'User', 5]
             );
             adminId = adminResult.lastID;
-            // Crucial: Output the generated password to the console so the user can log in
             if (process.env.NODE_ENV !== 'test') console.log(colors.green(`Admin created. Email: ${email}, Password: ${password}`));
         } else {
             adminId = adminExists.id;

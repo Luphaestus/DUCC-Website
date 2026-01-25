@@ -1,36 +1,13 @@
 /**
  * TagsAPI.js
  * 
- * This file handles all event tag management routes, including metadata and user whitelists.
- * 
- * Routes:
- * - GET /api/tags: Fetch all available tags.
- * - POST /api/tags: Create a new tag (Exec only).
- * - PUT /api/tags/:id: Update tag metadata.
- * - POST /api/tags/:id/reset-image: Reset tag image to default.
- * - DELETE /api/tags/:id: Remove a tag.
- * 
- * Whitelist/Manager Routes:
- * - GET /api/tags/:id/whitelist: Fetch whitelisted users for a tag.
- * - POST /api/tags/:id/whitelist: Add user to tag whitelist.
- * - DELETE /api/tags/:id/whitelist/:userId: Remove user from whitelist.
- * - GET /api/tags/:id/managers: Fetch tag managers.
- * - POST /api/tags/:id/managers: Add tag manager.
- * - DELETE /api/tags/:id/managers/:userId: Remove tag manager.
- * 
- * User Tag Lookups:
- * - GET /api/user/:userId/tags: Fetch tags associated with a specific user.
- * - GET /api/user/tags: Fetch tags for the currently logged-in user.
+ * This file handles all event tag management routes.
  */
 
 const TagsDB = require('../db/tagsDB.js');
 const check = require('../misc/authentication.js');
 const FileCleanup = require('../misc/FileCleanup.js');
 
-/**
- * API for managing event tags and user whitelists.
- * @module TagsAPI
- */
 class TagsAPI {
     /**
      * @param {object} app - Express app instance.
@@ -55,7 +32,6 @@ class TagsAPI {
 
         /**
          * Create a new tag.
-         * Requires broad event or user management permissions.
          */
         this.app.post('/api/tags', check('perm:event.write.all | perm:manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.createTag(this.db, req.body);
@@ -122,7 +98,6 @@ class TagsAPI {
 
         /**
          * Fetch managers for a tag.
-         * Managers can potentially manage events associated with this specific tag.
          */
         this.app.get('/api/tags/:id/managers', check('perm:event.manage.all | perm:user.manage'), async (req, res) => {
             const result = await TagsDB.getManagers(this.db, req.params.id);
@@ -147,10 +122,8 @@ class TagsAPI {
 
         /**
          * Fetch tags for a specific user.
-         * Allows personal lookup or admin lookup.
          */
         this.app.get('/api/user/:userId/tags', check(), async (req, res) => {
-            // Only allow self-lookup unless user has 'user.manage' permission
             if (req.user.id != req.params.userId) {
                 const { Permissions } = require('../misc/permissions.js');
                 if (!await Permissions.hasPermission(this.db, req.user.id, 'user.manage')) {

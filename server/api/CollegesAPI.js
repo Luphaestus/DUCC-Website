@@ -2,17 +2,10 @@
  * CollegesAPI.js
  * 
  * This file handles routes for college-related data.
- * 
- * Routes:
- * - GET /api/colleges: Fetch a list of all colleges in the system.
  */
 
 const CollegesDB = require('../db/collegesDB.js');
 
-/**
- * API for fetching college names.
- * @module CollegesAPI
- */
 class CollegesAPI {
     /**
      * @param {object} app - The Express application instance.
@@ -29,7 +22,6 @@ class CollegesAPI {
     registerRoutes() {
         /**
          * List all colleges.
-         * Useful for populating dropdowns in signup and profile pages.
          */
         this.app.get('/api/colleges', async (req, res) => {
             const result = await CollegesDB.getAll(this.db);

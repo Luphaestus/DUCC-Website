@@ -1,13 +1,7 @@
 /**
  * WaitlistAPI.js
  * 
- * This file manages the waiting list functionality for events that have reached maximum capacity.
- * 
- * Routes:
- * - GET /api/event/:id/isOnWaitlist: Check if the current user is on the waiting list for an event.
- * - POST /api/event/:id/waitlist/join: Add the current user to the waiting list.
- * - POST /api/event/:id/waitlist/leave: Remove the current user from the waiting list.
- * - GET /api/event/:id/waitlist: Fetch waiting list info (count, position, and full list for Execs).
+ * This file manages the waiting list functionality for events.
  */
 
 const EventsDB = require('../../db/eventsDB.js');
@@ -17,10 +11,6 @@ const UserDB = require('../../db/userDB.js');
 const check = require('../../misc/authentication.js');
 const { Permissions } = require('../../misc/permissions.js');
 
-/**
- * API for managing event waitlists.
- * @module WaitlistAPI
- */
 class WaitlistAPI {
     /**
      * @param {object} app - Express app instance.
@@ -49,7 +39,6 @@ class WaitlistAPI {
 
         /**
          * Add the current user to the waiting list.
-         * Enforces eligibility: legal info must be complete and user must not already be attending.
          */
         this.app.post('/api/event/:id/waitlist/join', check(), async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
@@ -68,7 +57,6 @@ class WaitlistAPI {
             const isAttending = await AttendanceDB.is_user_attending_event(this.db, req.user.id, eventId);
             if (isAttending.getData()) return res.status(400).json({ message: 'Already attending' });
 
-            // Ensure the event is actually full before allowing waitlist entry
             const maxAttendance = event.max_attendees;
             if (maxAttendance !== null && maxAttendance > 0) {
                 const currentAttendance = await AttendanceDB.get_event_attendance_count(this.db, eventId);
@@ -95,9 +83,6 @@ class WaitlistAPI {
 
         /**
          * Get waiting list information for an event.
-         * Returns total count. 
-         * If authenticated, returns user's specific position.
-         * If Exec, returns the full list of names.
          */
         this.app.get('/api/event/:id/waitlist', async (req, res) => {
             const eventId = parseInt(req.params.id, 10);
@@ -117,14 +102,12 @@ class WaitlistAPI {
                 count: waitlistCount.getData()
             };
 
-            // Include full list for administrators
             if (isExec) {
                 const waitlist = await WaitlistDB.get_waiting_list(this.db, eventId);
                 if (waitlist.isError()) return waitlist.getResponse(res);
                 result.waitlist = waitlist.getData();
             }
 
-            // Calculate and include current user's position
             if (req.user) {
                 const onList = await WaitlistDB.is_user_on_waiting_list(this.db, req.user.id, eventId);
                 if (!onList.isError() && onList.getData()) {

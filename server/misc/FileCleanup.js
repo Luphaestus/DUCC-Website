@@ -2,7 +2,6 @@
  * FileCleanup.js
  * 
  * Utility for garbage collecting unused file uploads.
- * Checks references in tags, events, and global settings to prevent orphan files.
  */
 
 const FilesDB = require('../db/filesDB.js');
@@ -11,11 +10,7 @@ const fs = require('fs');
 
 class FileCleanup {
     /**
-     * Checks if a file is still in use by any entity (Tags, Events, Globals, Users, Slides).
-     * If not, deletes it physically and from the database.
-     * 
-     * @param {object} db - Database connection.
-     * @param {string|number} fileIdOrUrl - The ID of the file or its download URL.
+     * Checks if a file is still in use by any entity.
      */
     static async checkAndDeleteIfUnused(db, fileIdOrUrl) {
         if (!fileIdOrUrl) return;

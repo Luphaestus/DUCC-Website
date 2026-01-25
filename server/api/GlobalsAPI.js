@@ -2,13 +2,6 @@
  * GlobalsAPI.js
  * 
  * This file handles system-wide configuration settings and broad user queries.
- * 
- * Routes:
- * - GET /api/globals/status: Check if current user has president-level global management access.
- * - GET /api/globals/users: Fetch a paginated and filterable list of all users.
- * - GET /api/globals: Fetch all global settings (Exec only).
- * - GET /api/globals/:key: Fetch specific global settings (Keys separated by commas).
- * - POST /api/globals/:key: Update a specific global setting.
  */
 
 const Globals = require('../misc/globals.js');
@@ -18,10 +11,6 @@ const check = require('../misc/authentication.js');
 const { Permissions } = require('../misc/permissions.js');
 const FileCleanup = require('../misc/FileCleanup.js');
 
-/**
- * API for system-wide configuration.
- * @module GlobalsAPI
- */
 class GlobalsAPI {
     /**
      * @param {object} app - Express app.
@@ -38,7 +27,6 @@ class GlobalsAPI {
     registerRoutes() {
         /**
          * Get President status.
-         * Used to identify if the current user is the President (can manage all globals).
          */
         this.app.get('/api/globals/status', check("perm:globals.manage"), (req, res) => {
             res.json({ isPresident: true });
@@ -46,7 +34,6 @@ class GlobalsAPI {
 
         /**
          * Fetch paginated users list for global settings / admin overview.
-         * Allows searching, sorting, and filtering by debt, membership, and difficulty.
          */
         this.app.get('/api/globals/users', check('perm:globals.manage'), async (req, res) => {
             const page = parseInt(req.query.page) || 1;
@@ -73,7 +60,6 @@ class GlobalsAPI {
 
         /**
          * Fetch all global settings.
-         * Restrictive access: only for users with 'globals.manage' permission.
          */
         this.app.get('/api/globals', check('perm:globals.manage'), async (req, res) => {
             const globals = new Globals().getAll();
@@ -82,8 +68,6 @@ class GlobalsAPI {
 
         /**
          * Fetch specific global settings by key.
-         * Accepts multiple keys separated by commas (e.g. key1,key2).
-         * Visibility depends on user's authorization level (Guest, Authenticated, or President).
          */
         this.app.get('/api/globals/:key', async (req, res) => {
             let permission = 'Guest';
@@ -96,7 +80,6 @@ class GlobalsAPI {
                 }
             }
 
-            // globals.getKeys returns a filtered object based on provided keys and permission level
             res.json({ res: new Globals().getKeys(req.params.key.split(','), permission) });
         });
 

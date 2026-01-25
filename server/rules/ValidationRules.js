@@ -1,13 +1,12 @@
 /**
  * ValidationRules.js
  * 
- * Provides centralized input validation logic for common data types.
- * Used to ensure data integrity before database insertion or processing.
+ * Provides centralized input validation logic.
  */
 
 class ValidationRules {
     /**
-     * Predefined regular expression patterns and corresponding error messages.
+     * Predefined regular expression patterns and error messages.
      */
     static validation = {
         email: {
@@ -26,20 +25,13 @@ class ValidationRules {
 
     /**
      * Evaluates a value against a specific validation type.
-     * 
-     * @param {string} type - Validation type ('email', 'name', 'phone', 'date_of_birth', 'boolean', 'presence').
-     * @param {any} value - The input value to validate.
-     * @param {boolean} [required=true] - If false, permits null/empty values.
-     * @returns {string|null} - Human-readable error message or null if valid.
      */
     static validate(type, value, required = true) {
-        // Check for missing/empty values
         if (value === null || value === undefined || value === '') {
             if (required) return `${type} is required.`;
             return null;
         }
 
-        // Specialized Type Validations
         if (type === 'date_of_birth') {
             const d = new Date(value);
             if (isNaN(d.getTime())) return 'Invalid date format.';
@@ -56,10 +48,9 @@ class ValidationRules {
         }
 
         if (type === 'presence') {
-            return null; // Already checked above
+            return null;
         }
 
-        // Pattern-based Validations (Email, Name, Phone)
         const rule = this.validation[type];
         if (rule) {
             if (rule.pattern && !rule.pattern.test(value)) {

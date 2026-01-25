@@ -2,23 +2,12 @@
  * SlidesAPI.js
  * 
  * This file serves image paths for the home page slideshow from the database.
- * 
- * Routes:
- * - GET /api/slides/count: Fetch the total number of slide images.
- * - GET /api/slides/images: Fetch an array of all slide image paths.
- * - GET /api/slides/random: Fetch a random slide image path.
- * - POST /api/slides/import: Add a file from the library to slides.
- * - DELETE /api/slides: Remove a file from slides.
  */
 
 const { statusObject } = require('../misc/status.js');
 const SlidesDB = require('../db/slidesDB.js');
 const check = require('../misc/authentication.js');
 
-/**
- * API for managing and serving slideshow images.
- * @module SlidesAPI
- */
 class SlidesAPI {
     /**
      * @param {object} app - Express app.

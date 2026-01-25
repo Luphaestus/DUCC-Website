@@ -1,20 +1,12 @@
 /**
  * SwimsAPI.js
  * 
- * This file handles user "swims" (disciplinary records/penalties).
- * 
- * Routes:
- * - GET /api/user/swims/leaderboard: Fetch the global swims leaderboard.
- * - POST /api/user/:id/swims: Manually add swims to a specific user (Exec only).
+ * This file handles user "swims" records.
  */
 
 const SwimsDB = require('../../db/swimsDB.js');
 const check = require('../../misc/authentication');
 
-/**
- * API for swim management and leaderboard.
- * @module SwimsAPI
- */
 class SwimsAPI {
     /**
      * @param {object} app - Express application.
@@ -31,7 +23,6 @@ class SwimsAPI {
     registerRoutes() {
         /**
          * Fetch swim leaderboard.
-         * Support for all-time or yearly stats.
          */
         this.app.get('/api/user/swims/leaderboard', check(), async (req, res) => {
             const yearly = req.query.yearly === 'true';
@@ -41,7 +32,6 @@ class SwimsAPI {
 
         /**
          * Add swims to a user account.
-         * Typically used by Execs during training or events.
          */
         this.app.post('/api/user/:id/swims', check('perm:swims.manage'), async (req, res) => {
             const userId = parseInt(req.params.id, 10);
@@ -54,7 +44,6 @@ class SwimsAPI {
 
         /**
          * Add booties to a user account.
-         * Restricted to Execs only.
          */
         this.app.post('/api/user/:id/booties', check('perm:swims.manage'), async (req, res) => {
             const userId = parseInt(req.params.id, 10);

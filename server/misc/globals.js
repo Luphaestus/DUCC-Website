@@ -2,17 +2,11 @@
  * globals.js
  * 
  * Manages dynamic system-wide configuration settings stored in a JSON file.
- * These settings can be updated via the Admin API without restarting the server.
- * Includes validation logic and RBAC for visibility.
  */
 
 const path = require('path');
 const fs = require('fs');
 
-/**
- * Handles persistence and access control for system globals.
- * @module Globals
- */
 class Globals {
     /**
      * Initializes the instance and ensures 'globals.json' exists with default values.
@@ -21,17 +15,14 @@ class Globals {
         Globals.instance = this;
         Globals.validPermissions = ['Guest', 'Authenticated', 'President'];
 
-        // Determine path relative to the database location
         const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, "../../data/database.db");
         const dbDir = path.dirname(dbPath);
         this.path = path.join(dbDir, "globals.json");
 
-        // Ensure directory exists
         if (!fs.existsSync(dbDir)) {
             fs.mkdirSync(dbDir, { recursive: true });
         }
 
-        // Initialize with system defaults if file is missing
         if (!fs.existsSync(this.path)) {
             fs.writeFileSync(this.path, JSON.stringify({
                 Unauthorized_max_difficulty: {
@@ -70,14 +61,12 @@ class Globals {
                     error: "Value must be a valid path or file API URL.",
                     permission: "President",
                 },
-            }, null, 4)); // Pretty-print for easier manual editing
+            }, null, 4));
         }
     }
 
     /** 
-     * Retrieves a full global entry (metadata + current value) from the file.
-     * @param {string} key - Configuration key.
-     * @returns {object}
+     * Retrieves a full global entry from the file.
      */
     get(key) {
         const data = JSON.parse(fs.readFileSync(this.path, 'utf-8'));
@@ -100,7 +89,6 @@ class Globals {
 
     /**
      * Retrieves the entire raw configuration object.
-     * @returns {object}
      */
     getAll() {
         return JSON.parse(fs.readFileSync(this.path, 'utf-8'));
@@ -108,12 +96,8 @@ class Globals {
 
     /**
      * Retrieves a set of keys, filtered by the requester's permission level.
-     * @param {string[]} keys - Requested keys.
-     * @param {string} [permission='Guest'] - Requester's level ('Guest', 'Authenticated', 'President').
-     * @returns {object} - Filtered configuration object.
      */
     getKeys(keys, permission = Globals.validPermissions[0]) {
-        // Calculate which keys are visible based on priority level
         const allowedPermissions = Globals.validPermissions.slice(0, Globals.validPermissions.indexOf(permission) + 1);
 
         const data = this.getAll();
@@ -130,9 +114,6 @@ class Globals {
 
     /**
      * Updates a value in the configuration file.
-     * Enforces validation using the regular expression defined in the metadata.
-     * @param {string} key - Key to update.
-     * @param {any} value - New value.
      */
     set(key, value) {
         const data = this.getAll();
@@ -146,13 +127,11 @@ class Globals {
             throw new Error(`Global key '${key}' does not exist.`);
         }
 
-        // Validate using stored regex
         const regexp = new RegExp(valueContainer.regexp);
         if (!regexp.test(value.toString())) {
             throw new Error(valueContainer.error);
         }
 
-        // Update and save
         valueContainer.data = value;
         data[key] = valueContainer;
         fs.writeFileSync(this.path, JSON.stringify(data, null, 4));

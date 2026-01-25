@@ -1,9 +1,7 @@
 /**
  * attendanceDB.js
  * 
- * This module handles all database operations related to event attendance.
- * It tracks who is attending which event, handles joining/leaving logic,
- * and manages event-related refunds.
+ * This module handles database operations related to event attendance.
  */
 
 const { statusObject } = require('../misc/status.js');
@@ -13,10 +11,6 @@ const UserDB = require('./userDB.js');
 class AttendanceDB {
     /**
      * Check if a specific user is currently marked as attending an event.
-     * @param {object} db - Database connection.
-     * @param {number} userId - ID of the user.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<statusObject>} - Data contains a boolean.
      */
     static async is_user_attending_event(db, userId, eventId) {
         const isAttending = await db.get(
@@ -29,11 +23,6 @@ class AttendanceDB {
 
     /**
      * Register a user for an event.
-     * @param {object} db - Database connection.
-     * @param {number} userId - ID of the user.
-     * @param {number} eventId - ID of the event.
-     * @param {number|null} [transactionId=null] - ID of the payment transaction, if applicable.
-     * @returns {Promise<statusObject>}
      */
     static async attend_event(db, userId, eventId, transactionId = null) {
         const isAttending = await this.is_user_attending_event(db, userId, eventId);
@@ -50,11 +39,6 @@ class AttendanceDB {
 
     /**
      * Mark a user as no longer attending an event.
-     * Sets is_attending to 0 and records the leave time.
-     * @param {object} db - Database connection.
-     * @param {number} userId - ID of the user.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<statusObject>}
      */
     static async leave_event(db, userId, eventId) {
         const isAttending = await this.is_user_attending_event(db, userId, eventId);
@@ -71,10 +55,6 @@ class AttendanceDB {
 
     /**
      * Fetch the full attendance history for an event, including users who have left.
-     * Used primarily for administrative auditing.
-     * @param {object} db - Database connection.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<statusObject>} - Data contains a list of user objects with attendance status.
      */
     static async get_all_event_attendees_history(db, eventId) {
         try {
@@ -88,7 +68,6 @@ class AttendanceDB {
 
             const userMap = new Map();
 
-            // Consolidate multiple attendance records for the same user (e.g., if they joined, left, and joined again)
             for (const row of rows) {
                 if (!userMap.has(row.id)) {
                     userMap.set(row.id, {
@@ -119,7 +98,6 @@ class AttendanceDB {
 
             const result = Array.from(userMap.values());
 
-            // Sort: active attendees first (alphabetical), then past attendees (newest leave first)
             result.sort((a, b) => {
                 if (a.is_attending !== b.is_attending) {
                     return b.is_attending - a.is_attending;  
@@ -140,9 +118,6 @@ class AttendanceDB {
 
     /**
      * Fetch a list of all users currently attending an event.
-     * @param {object} db - Database connection.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<statusObject>}
      */
     static async get_users_attending_event(db, eventId) {
         const events = await db.all(
@@ -156,9 +131,6 @@ class AttendanceDB {
 
     /**
      * Get the total count of active attendees for an event.
-     * @param {object} db - Database connection.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<statusObject>}
      */
     static async get_event_attendance_count(db, eventId) {
         const result = await db.get(`SELECT COUNT(*) AS count FROM event_attendees WHERE event_id = ? AND is_attending = 1`, [eventId]);
@@ -167,14 +139,8 @@ class AttendanceDB {
 
     /**
      * Find a refundable transaction for an event spot.
-     * Searches for the user's own previous payment first, then any other orphaned payment.
-     * @param {object} db - Database connection.
-     * @param {number} userId - User attempting to join.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<statusObject>}
      */
     static async get_event_refund_id(db, userId, eventId) {
-        // Priority 1: User's own payment from a previous attendance session of this event
         const userRefund = await db.get(
             `SELECT payment_transaction_id FROM event_attendees 
              WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL 
@@ -182,7 +148,6 @@ class AttendanceDB {
         );
         if (userRefund && userRefund.payment_transaction_id) return new statusObject(200, null, userRefund);
 
-        // Priority 2: Any other orphaned payment from someone else who left (transfer of spot)
         const otherRefund = await db.get(
             `SELECT payment_transaction_id, user_id FROM event_attendees 
              WHERE event_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL 
@@ -195,11 +160,6 @@ class AttendanceDB {
 
     /**
      * Process a refund for a user who left an event.
-     * Adds a positive transaction and clears the reference in attendance.
-     * @param {object} db - Database connection.
-     * @param {number} eventId - ID of the event.
-     * @param {number} user_id - ID of the user to refund.
-     * @returns {Promise<statusObject>}
      */
     static async refundEvent(db, eventId, user_id) {
         const EventsDB = require('./eventsDB.js');
@@ -207,10 +167,8 @@ class AttendanceDB {
         if (eventRes.isError()) return eventRes;
         const event = eventRes.getData();
 
-        // Create the refund transaction
         TransactionsDB.add_transaction(db, user_id, event.upfront_cost, `Refund for ${event.title}`);
 
-        // Mark the attendance record as having been refunded
         await db.run(
             `UPDATE event_attendees SET payment_transaction_id = NULL 
              WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL`,
@@ -222,10 +180,6 @@ class AttendanceDB {
 
     /**
      * Check if a user has a linked payment transaction for a specific event.
-     * @param {object} db - Database connection.
-     * @param {number} userId - ID of the user.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<statusObject>}
      */
     static async isUserPayingForEvent(db, userId, eventId) {
         const paying = await db.get(
@@ -238,9 +192,6 @@ class AttendanceDB {
 
     /**
      * Count how many instructors are currently attending an event.
-     * @param {object} db - Database connection.
-     * @param {number} eventId - ID of the event.
-     * @returns {Promise<number>}
      */
     static async getCoachesAttendingCount(db, eventId) {
         const result = await db.get(
@@ -252,9 +203,6 @@ class AttendanceDB {
 
     /**
      * Mark all attendees as having left an event.
-     * Typically used when an event is canceled or deleted.
-     * @param {object} db - Database connection.
-     * @param {number} eventId - ID of the event.
      */
     static async removeAllAttendees(db, eventId) {
         await db.run(`UPDATE event_attendees SET is_attending = 0, left_at = ? WHERE event_id = ? AND is_attending = 1`, [new Date().toISOString(), eventId]);

@@ -9,9 +9,6 @@ const { statusObject } = require('../misc/status.js');
 class AuthDB {
     /**
      * Find a user by email.
-     * @param {object} db - Database connection.
-     * @param {string} email - User email.
-     * @returns {Promise<object|null>}
      */
     static async getUserByEmail(db, email) {
         return await db.get('SELECT * FROM users WHERE email = ?', [email]);
@@ -19,9 +16,6 @@ class AuthDB {
 
     /**
      * Find a user by ID.
-     * @param {object} db - Database connection.
-     * @param {number} id - User ID.
-     * @returns {Promise<object|null>}
      */
     static async getUserById(db, id) {
         return await db.get('SELECT * FROM users WHERE id = ?', [id]);
@@ -29,12 +23,6 @@ class AuthDB {
 
     /**
      * Register a new user.
-     * @param {object} db - Database connection.
-     * @param {string} email - User email.
-     * @param {string} hashedPassword - Hashed password.
-     * @param {string} first_name - First name.
-     * @param {string} last_name - Last name.
-     * @returns {Promise<statusObject>}
      */
     static async createUser(db, email, hashedPassword, first_name, last_name) {
         try {
@@ -51,13 +39,6 @@ class AuthDB {
 
     /**
      * Restore a deleted account.
-     * @param {object} db - Database connection.
-     * @param {number} id - User ID.
-     * @param {string} email - New email.
-     * @param {string} hashedPassword - New hashed password.
-     * @param {string} first_name - New first name.
-     * @param {string} last_name - New last name.
-     * @returns {Promise<statusObject>}
      */
     static async restoreUser(db, id, email, hashedPassword, first_name, last_name) {
         try {
@@ -80,10 +61,6 @@ class AuthDB {
 
     /**
      * Create a password reset token.
-     * @param {object} db - Database connection.
-     * @param {number} userId - User ID.
-     * @param {string} token - Reset token.
-     * @param {string} expiresAt - Expiration timestamp.
      */
     static async createPasswordReset(db, userId, token, expiresAt) {
         await db.run('DELETE FROM password_resets WHERE user_id = ?', [userId]);
@@ -95,9 +72,6 @@ class AuthDB {
 
     /**
      * Find a valid password reset record by token.
-     * @param {object} db - Database connection.
-     * @param {string} token - Reset token.
-     * @returns {Promise<object|null>}
      */
     static async getValidPasswordReset(db, token) {
         return await db.get(
@@ -108,9 +82,6 @@ class AuthDB {
 
     /**
      * Reset a user's password.
-     * @param {object} db - Database connection.
-     * @param {number} userId - User ID.
-     * @param {string} hashedPassword - New hashed password.
      */
     static async resetPassword(db, userId, hashedPassword) {
         await db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, userId]);
@@ -119,9 +90,6 @@ class AuthDB {
 
     /**
      * Update a user's password.
-     * @param {object} db - Database connection.
-     * @param {number} id - User ID.
-     * @param {string} hashedPassword - New hashed password.
      */
     static async updatePassword(db, id, hashedPassword) {
         await db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, id]);

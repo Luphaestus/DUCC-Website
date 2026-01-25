@@ -1,27 +1,16 @@
 /**
  * userDB.js
  * 
- * This module handles all core database operations for user profiles and management.
- * It manages user data fetching (including pagination and complex filtering),
- * profile updates, soft/hard deletion, and administrative permission resets.
+ * This module handles core database operations for user profiles and management.
  */
 
 const { statusObject } = require('../misc/status.js');
 const { Permissions } = require('../misc/permissions.js');
 const TransactionsDB = require('./transactionDB.js');
 
-/**
- * Database operations for user profiles, permissions, and administrative listings.
- */
 class UserDB {
-
     /**
      * Fetch a paginated, searchable, and filterable list of users.
-     * Restricts data visibility based on the requesting administrator's permissions.
-     * @param {object} db - Database connection.
-     * @param {object} userPerms - Mapping of the admin's management capabilities.
-     * @param {object} options - Search and pagination filters.
-     * @returns {Promise<statusObject>} - Data contains { users, totalPages, currentPage }.
      */
     static async getUsers(db, userPerms, options) {
         const { canManageUsers, canManageTrans, canManageEvents, isScopedExec } = userPerms;
@@ -29,7 +18,6 @@ class UserDB {
         const { page, limit, search, sort, order, inDebt, isMember, difficulty, permissions } = options;
         const offset = (page - 1) * limit;
 
-        // Scoped Execs who can't manage anything else have severely restricted data access
         const isOnlyExec = isScopedExec && !canManageUsers && !canManageTrans && !canManageEvents;
 
         const allowedSorts = ['first_name', 'last_name', 'email', 'balance', 'first_aid_expiry', 'filled_legal_info', 'is_member', 'difficulty_level'];
@@ -39,13 +27,11 @@ class UserDB {
         let conditions = [];
         const params = [];
 
-        // Handle multi-term searching
         if (search) {
             const terms = search.trim().split(/\s+/);
             const searchConds = terms.map(term => {
                 const termPattern = `%${term}%`;
                 params.push(termPattern, termPattern);
-                // Scoped execs can't search by email (PII protection)
                 if (isOnlyExec) return `(u.first_name LIKE ? OR u.last_name LIKE ? )`;
 
                 params.push(termPattern);
@@ -64,7 +50,6 @@ class UserDB {
             params.push(parseInt(difficulty));
         }
 
-        // Handle complex permission filtering (OR logic)
         if (permissions) {
             const permOrs = [];
             const permParts = permissions.split('|').map(p => p.trim());
@@ -108,7 +93,6 @@ class UserDB {
             let selectFields;
             let joinTransactions = '';
 
-            // Restrict returned columns based on admin role
             if (isOnlyExec) {
                 selectFields = `u.id, u.first_name, u.last_name`;
             } else {
@@ -143,7 +127,6 @@ class UserDB {
 
             const users = await db.all(query, [...params, limit, offset]);
 
-            // Total count calculation (including debt sub-query if needed)
             let countQuery;
             if (havingClause) {
                 countQuery = `
@@ -173,10 +156,6 @@ class UserDB {
 
     /**
      * Fetch a specific set of columns for a user.
-     * @param {object} db - Database connection.
-     * @param {number} userId - ID of the user.
-     * @param {string|string[]} elements - Keys to fetch.
-     * @returns {Promise<statusObject>} - Data is an object with requested fields.
      */
     static async getElements(db, userId, elements) {
         if (typeof elements === 'string') elements = [elements];
@@ -201,7 +180,7 @@ class UserDB {
     }
 
     /**
-     * Fetch specific columns for a user by ID. Identical to getElements but intended for internal system usage.
+     * Fetch specific columns for a user by ID.
      */
     static async getElementsById(db, id, elements) {
         return this.getElements(db, id, elements);
@@ -209,17 +188,12 @@ class UserDB {
 
     /**
      * Update user fields based on their ID.
-     * @param {object} db - Database connection.
-     * @param {number} id - User ID.
-     * @param {object} data - Map of field names to new values.
-     * @returns {Promise<statusObject>}
      */
     static async writeElementsById(db, id, data) {
         if (data.email) {
             data.email = data.email.replace(/\s/g, '').toLowerCase();
         }
         try {
-            // Build dynamic update query keys
             await db.run(
                 `UPDATE users SET
                     ${Object.keys(data).map(el => `${el} = ?`).join(', ')}
@@ -234,7 +208,7 @@ class UserDB {
     }
 
     /**
-     * Update user fields. Identical to writeElementsById.
+     * Update user fields.
      */
     static async writeElements(db, userId, data) {
         return this.writeElementsById(db, userId, data);
@@ -242,7 +216,6 @@ class UserDB {
 
     /**
      * Explicitly toggle a user's membership status.
-     * @returns {Promise<statusObject>}
      */
     static async setMembershipStatus(db, userId, is_member) {
         return db.run(
@@ -257,17 +230,11 @@ class UserDB {
 
     /**
      * Remove a user from the system.
-     * Defaults to a "soft delete" which anonymizes PII and prefixes the email but keeps history.
-     * @param {object} db - Database connection.
-     * @param {number} userId - Target user ID.
-     * @param {boolean} [real=false] - If true, performs a destructive hard delete.
-     * @returns {Promise<statusObject>}
      */
     static async removeUser(db, userId, real = false) {
         const targetId = userId;
 
         try {
-            // Identify all tables that have a foreign key to the user
             const allTables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
             const tablesWithUserId = [];
             for (const tbl of allTables) {
@@ -276,11 +243,6 @@ class UserDB {
             }
 
             if (!real) {
-                // Soft delete logic:
-                // Prefix email with 'deleted:' to free up the unique constraint
-                // Clear all PII fields (medical, address, phone, etc.)
-                // Keep first/last name and historical record links (attendance, transactions)
-                
                 const user = await db.get('SELECT email FROM users WHERE id = ?', [targetId]);
                 if (!user) return new statusObject(404, 'User not found');
 
@@ -293,7 +255,6 @@ class UserDB {
                     if (col.name === 'email') continue;
                     if (keepCols.includes(col.name)) continue;
 
-                    // Clear column based on its type and nullability
                     if (col.notnull) {
                         if (col.dflt_value !== null) {
                             updates.push(`${col.name} = ${col.dflt_value}`);
@@ -307,7 +268,6 @@ class UserDB {
 
                 await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, [targetId]);
 
-                // Wipe rows in auxiliary tables that don't need to be kept for auditing
                 const softDeleteSafeTables = ['users', 'swim_history', 'event_attendees', 'transactions'];
                 for (const tbl of tablesWithUserId) {
                     if (!softDeleteSafeTables.includes(tbl)) {
@@ -315,7 +275,6 @@ class UserDB {
                     }
                 }
             } else {
-                // Destructive hard delete
                 for (const tbl of tablesWithUserId) {
                     if (tbl !== 'users') {
                         await db.run(`DELETE FROM ${tbl} WHERE user_id = ?`, [targetId]);
@@ -332,11 +291,6 @@ class UserDB {
 
     /**
      * Fetch a comprehensive user profile, including college data and balance.
-     * @param {object} db - Database connection.
-     * @param {number} userId - User ID.
-     * @param {string[]} elements - Keys to include in the output.
-     * @param {boolean} includeBalance - If true, calculates and attaches the balance.
-     * @returns {Promise<statusObject>} - Data contains filtered user object.
      */
     static async getUserProfile(db, userId, elements, includeBalance) {
         try {
@@ -349,7 +303,6 @@ class UserDB {
             const user = await db.get(query, userId);
             if (!user) return new statusObject(404, 'User not found');
 
-            // Strip any fields not requested
             const filteredUser = {};
             elements.forEach(key => {
                 if (user[key] !== undefined) filteredUser[key] = user[key];
@@ -370,22 +323,15 @@ class UserDB {
 
     /** 
      * Perform a total system permission reset and assign a new President.
-     * Also scrubs legal/medical data for users who have not opted-in to long-term storage.
-     * This is a sensitive operation wrapped in a transaction.
-     * @param {object} db - Database connection.
-     * @param {number} newPresidentId - User ID to grant President role.
-     * @returns {Promise<statusObject>}
      */
     static async resetPermissions(db, newPresidentId) {
         try {
             await db.run('BEGIN TRANSACTION');
 
-            // Wipe all assigned roles, direct permissions, and scopes
             await db.run(`DELETE FROM user_roles`);
             await db.run(`DELETE FROM user_permissions`);
             await db.run(`DELETE FROM user_managed_tags`);
 
-            // GDPR Logic: Scrub data for users who didn't explicitly agree to keep health data
             const legalFields = [
                 "date_of_birth", "college_id", "emergency_contact_name", "emergency_contact_phone",
                 "home_address", "phone_number", "has_medical_conditions", "medical_conditions_details",
@@ -396,7 +342,6 @@ class UserDB {
             
             await db.run(`UPDATE users SET ${setClause} WHERE agrees_to_keep_health_data = 0 OR agrees_to_keep_health_data IS NULL`);
 
-            // Assign the new President
             const presidentRole = await db.get('SELECT id FROM roles WHERE name = ?', ['President']);
             if (presidentRole) {
                 await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [newPresidentId, presidentRole.id]);

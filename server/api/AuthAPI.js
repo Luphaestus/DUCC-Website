@@ -1,21 +1,7 @@
 /**
  * AuthAPI.js
  * 
- * This file handles all authentication-related routes, including:
- * - User signup and account restoration
- * - User login and logout
- * - Password reset requests and execution
- * - Password changes for authenticated users
- * - Authentication status checks
- * 
- * Routes:
- * - POST /api/auth/signup: Register a new user or restore a deleted account.
- * - POST /api/auth/login: Authenticate a user and start a session.
- * - GET /api/auth/logout: End the user's session and clear cookies.
- * - GET /api/auth/status: Check if the current user is authenticated.
- * - POST /api/auth/reset-password-request: Request a password reset email (logged to console).
- * - POST /api/auth/reset-password: Reset password using a valid token.
- * - POST /api/auth/change-password: Change password for the currently logged-in user.
+ * This file handles all authentication-related routes.
  */
 
 const LocalStrategy = require('passport-local').Strategy;
@@ -26,17 +12,9 @@ const Utils = require('../misc/utils.js');
 const ValidationRules = require('../rules/ValidationRules.js');
 const AuthDB = require('../db/authDB.js');
 
-/**
- * API for authentication, registration, and session management.
- * @module Auth
- */
 class Auth {
-
     /**
      * Initialize Passport strategies and serialization.
-     * @param {object} app - The Express application instance.
-     * @param {object} db - The database connection instance.
-     * @param {object} passport - The Passport.js instance.
      */
     constructor(app, db, passport) {
         this.app = app;
@@ -80,8 +58,7 @@ class Auth {
      */
     registerRoutes() {
         /**
-         * Register a new user with Durham email validation.
-         * Handles both fresh signups and restoring previously deleted accounts.
+         * Register a new user or restore a deleted account.
          */
         this.app.post('/api/auth/signup', async (req, res) => {
             let { email, password, first_name, last_name } = req.body;
@@ -163,7 +140,6 @@ class Auth {
 
         /**
          * Request password reset.
-         * Generates a token and logs the reset URL to the console.
          */
         this.app.post('/api/auth/reset-password-request', async (req, res) => {
             const { email } = req.body;
@@ -172,12 +148,11 @@ class Auth {
             try {
                 const user = await AuthDB.getUserByEmail(this.db, email.toLowerCase());
                 if (!user) {
-                    // Security best practice: don't reveal if user exists
                     return res.json({ message: 'If an account exists, a reset link has been sent.' });
                 }
 
                 const token = crypto.randomBytes(32).toString('hex');
-                const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour expiry
+                const expiresAt = new Date(Date.now() + 3600000).toISOString();
 
                 await AuthDB.createPasswordReset(this.db, user.id, token, expiresAt);
 
@@ -244,10 +219,6 @@ class Auth {
 
     /**
      * Authentication middleware proxy.
-     * @param {object} req - Express request object.
-     * @param {object} res - Express response object.
-     * @param {function} next - Express next function.
-     * @returns {void}
      */
     isAuthenticated(req, res, next) {
         return checkAuthentication()(req, res, next);
@@ -255,8 +226,6 @@ class Auth {
 
     /**
      * Permission middleware proxy.
-     * @param {...string} requirements - Permission requirements to check.
-     * @returns {function} - Middleware function.
      */
     check(...requirements) {
         return checkAuthentication(...requirements);

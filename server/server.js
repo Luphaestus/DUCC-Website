@@ -1,15 +1,13 @@
 /**
  * server.js
  * 
- * Main application entry point. 
- * This file configures the Express server, establishes the SQLite database connection,
- * sets up security middleware, manages user sessions, and dynamic API route registration.
- * It also serves as the host for the SPA frontend.
+ * Main application entry point that configures Express, connects to SQLite, 
+ * handles security headers, sessions, and dynamically registers API routes.
  */
 
 const PORT = process.env.PORT || 3000;
 
-// Catch and log unhandled promise rejections for debugging
+/** Catch and log unhandled promise rejections for debugging. */
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
@@ -28,12 +26,12 @@ const app = express();
 
 const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
 
-// Trust proxy for header-based auth if behind a load balancer
+/** Trust proxy for header-based auth if behind a load balancer. */
 app.set('trust proxy', 1);
-// Disable header for mild obfuscation
+/** Disable header for mild obfuscation. */
 app.disable('x-powered-by');
 
-// LiveReload configuration for faster frontend development
+/** Configure LiveReload for faster frontend development in dev mode. */
 if (isDev) {
   const liveReloadServer = livereload.createServer();
   liveReloadServer.watch(path.join(__dirname, '..', 'public'));
@@ -56,11 +54,8 @@ if (isDev) {
   }));
 }
 
-/**
- * Security Middleware: Sets CSP and other security-related HTTP headers.
- */
+/** Security Middleware: Sets CSP and other security-related HTTP headers. */
 app.use((req, res, next) => {
-  // Bypass security headers for file downloads to prevent browser plugin issues (e.g., PDF viewer)
   if (req.path.startsWith('/api/files/') && req.path.endsWith('/download')) {
     return next();
   }
@@ -68,7 +63,6 @@ app.use((req, res, next) => {
   let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
   
   if (isDev) {
-    // Inject LiveReload script permission in dev mode
     csp = csp.replace("script-src 'self'", "script-src 'self' 'unsafe-inline' http://localhost:35729");
     csp = csp.replace("connect-src 'self'", "connect-src 'self' ws://localhost:35729");
   }
@@ -80,23 +74,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Standard body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/**
- * Static file serving with appropriate caching policies.
- */
+/** Static file serving with appropriate caching policies. */
 app.use(express.static('public', {
   maxAge: isDev ? '0' : '1h',
   setHeaders: (res, path) => {
     if (isDev) {
-      // Disable caching in dev
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.set('Pragma', 'no-cache');
       res.set('Expires', '0');
     } else if (path.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
-      // Long-term caching for assets in production
       res.set('Cache-Control', 'public, max-age=86400');
     }
   }
@@ -110,10 +99,7 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
-/**
- * Session Management:
- * Uses connect-sqlite3 to store session data in the same database.
- */
+/** Session Management using connect-sqlite3. */
 app.use(session({
   store: new SQLiteStore({
     db: dbFile,
@@ -123,25 +109,21 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'prod', // Require HTTPS in production
-    httpOnly: true, // Prevent XSS session theft
-    maxAge: 1000 * 60 * 60 * 24 // 1-day session lifespan
+    secure: process.env.NODE_ENV === 'prod',
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24
   }
 }));
 
-// Initialize Passport.js for authentication
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Initialize global system configuration
 const Globals = require('./misc/globals.js');
 new Globals();
 
 let db;
 
-/**
- * Bootstraps the server: connects to DB, registers routes, and starts listening.
- */
+/** Bootstraps the server: connects to DB, registers routes, and starts listening. */
 const startServer = async () => {
   try {
     db = await open({
@@ -149,7 +131,6 @@ const startServer = async () => {
       driver: sqlite3.Database
     });
 
-    // Database optimizations
     await db.exec('PRAGMA journal_mode = WAL;');
     await db.exec('PRAGMA busy_timeout = 5000;');
 
@@ -157,25 +138,20 @@ const startServer = async () => {
       console.log(`Connected to the SQLite database at ${dbPath}.`);
     }
 
-    // Inject database instance into request object for API handlers
     app.use((req, res, next) => {
       req.db = db;
       next();
     });
 
-    // Basic health check route
     app.get('/api/health', (req, res) => {
       res.status(200).json({ ok: true });
     });
 
-    // Register Auth API first (priority)
     const Auth = require('./api/AuthAPI.js');
     const auth = new Auth(app, db, passport);
     auth.registerRoutes();
 
-    /**
-     * Recursive helper to find all API definition files.
-     */
+    /** Recursive helper to find all API definition files. */
     const getAllApiFiles = (dir, fileList = []) => {
         const files = fs.readdirSync(dir, { withFileTypes: true });
         for (const dirent of files) {
@@ -192,7 +168,7 @@ const startServer = async () => {
     const apiDir = path.join(__dirname, 'api');
     const apiFiles = getAllApiFiles(apiDir);
     
-    // Dynamically register all API modules with a CLI progress bar
+    /** Dynamically register all API modules. */
     if (process.env.NODE_ENV !== 'test' && apiFiles.length > 0) {
         const cliProgress = require('cli-progress');
         const colors = require('ansi-colors');
@@ -218,7 +194,6 @@ const startServer = async () => {
         }
         progressBar.stop();
     } else {
-        // Simple registration for tests/minimal envs
         for (const fullPath of apiFiles) {
             const ApiClass = require(fullPath);
             const apiInstance = new ApiClass(app, db, passport);
@@ -226,15 +201,11 @@ const startServer = async () => {
         }
     }
 
-    /**
-     * Catch-all route for SPA.
-     * Any route not matching an API endpoint serves the main index.html.
-     */
+    /** Catch-all route for SPA. */
     app.get(/.*/, (req, res) => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    // Start listening on the configured port
     if (require.main === module) {
       app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
@@ -249,7 +220,6 @@ const startServer = async () => {
   }
 };
 
-// Export app and serverReady promise for use in integration tests
 const serverReady = startServer();
 
 module.exports = app;

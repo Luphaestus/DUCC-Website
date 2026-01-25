@@ -2,19 +2,13 @@
  * status.js
  * 
  * Standardizes operation results across the application.
- * Encapsulates HTTP status codes, human-readable messages, and response data.
- * Provides a uniform way to send responses from API controllers.
  */
 
-/**
- * Encapsulation of a business logic result and its corresponding HTTP response data.
- * @module statusObject
- */
 class statusObject {
     /**
-     * @param {number} status - HTTP status code (e.g. 200, 404, 500).
+     * @param {number} status - HTTP status code.
      * @param {string} [message=null] - Success or error message.
-     * @param {any} [data=null] - Payload data to be returned.
+     * @param {any} [data=null] - Payload data.
      */
     constructor(status, message = null, data = null) {
         this.status = status;
@@ -24,7 +18,6 @@ class statusObject {
 
     /**
      * Retrieve the numerical HTTP status.
-     * @returns {number}
      */
     getStatus() {
         return this.status;
@@ -32,7 +25,6 @@ class statusObject {
 
     /**
      * Retrieve the descriptive message.
-     * @returns {string|null}
      */
     getMessage() {
         return this.message;
@@ -40,8 +32,6 @@ class statusObject {
 
     /**
      * Sends the object state as a JSON response using an Express response object.
-     * @param {object} res - Express response object.
-     * @returns {object} - The response object.
      */
     getResponse(res) {
         if (this.isError()) {
@@ -52,8 +42,7 @@ class statusObject {
     }
 
     /**
-     * Determine if the current state represents an error based on HTTP status code.
-     * @returns {boolean} - True if status is 400 or greater.
+     * Determine if the current state represents an error.
      */
     isError() {
         return this.status >= 400;
@@ -61,7 +50,6 @@ class statusObject {
 
     /**
      * Retrieve the attached payload data.
-     * @returns {any}
      */
     getData() {
         return this.data;

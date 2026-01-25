@@ -2,20 +2,6 @@
  * AdminUsersAPI.js
  * 
  * This file handles administrative actions for user management.
- * It includes routes for searching users, viewing detailed profiles, and managing user roles and permissions.
- * 
- * Routes:
- * - GET /api/admin/users: List all users with pagination and administrative filters.
- * - GET /api/admin/user/:id: Fetch a comprehensive user profile (metadata, balance, stats, roles).
- * - POST /api/admin/user/:id/elements: Update user profile fields (admin-level).
- * - POST /api/admin/user/:id/role: Assign a role to a user.
- * - DELETE /api/admin/user/:id/role/:roleId: Remove a role from a user.
- * 
- * Advanced Permission Routes:
- * - POST /api/admin/user/:id/permission: Add a direct permission override to a user.
- * - DELETE /api/admin/user/:id/permission/:permId: Remove a direct permission override.
- * - POST /api/admin/user/:id/managed_tag: Add a managed tag scope to a user.
- * - DELETE /api/admin/user/:id/managed_tag/:tagId: Remove a managed tag scope.
  */
 
 const UserDB = require('../../db/userDB.js');
@@ -28,10 +14,6 @@ const { Permissions, SCOPED_PERMS } = require('../../misc/permissions.js');
 
 const bcrypt = require('bcrypt');
 
-/**
- * Admin API for managing users.
- * @module AdminUsers
- */
 class AdminUsers {
     /**
      * @param {object} app - Express application instance.
@@ -48,7 +30,6 @@ class AdminUsers {
     registerRoutes() {
         /**
          * Fetch paginated users list for admin tables.
-         * Identifies the current admin's management capabilities to restrict search results.
          */
         this.app.get('/api/admin/users', check('perm:is_exec'), async (req, res) => {
             const page = parseInt(req.query.page) || 1;
@@ -62,7 +43,6 @@ class AdminUsers {
             const difficulty = req.query.difficulty;
             const permissions = req.query.permissions;
 
-            // Determine admin permissions to pass to the database layer
             const userPerms = {
                 canManageUsers: await Permissions.hasPermission(this.db, req.user.id, 'user.manage'),
                 canManageTrans: await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage'),
@@ -77,7 +57,6 @@ class AdminUsers {
 
         /**
          * Fetch full user profile, balance, and authorization details.
-         * Data returned is filtered based on the admin's specific permissions.
          */
         this.app.get('/api/admin/user/:id', check('perm:user.read | perm:user.manage | perm:transaction.read | perm:transaction.manage | perm:is_exec'), async (req, res) => {
             const userId = parseInt(req.params.id);
@@ -86,7 +65,6 @@ class AdminUsers {
             const canManageUsers = await Permissions.hasPermission(this.db, req.user.id, 'user.manage') || await Permissions.hasPermission(this.db, req.user.id, 'user.read');
             const canManageTransactions = await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage') || await Permissions.hasPermission(this.db, req.user.id, 'transaction.read');
 
-            // Define which fields the current admin is allowed to see
             let elements;
             if (canManageUsers) {
                 elements = [
@@ -109,7 +87,6 @@ class AdminUsers {
 
             const filteredUser = profileRes.getData();
 
-            // Fetch and attach swimmer statistics (all-time and yearly)
             const [allTimeRes, yearlyRes] = await Promise.all([
                 SwimsDB.getUserSwimmerRank(this.db, userId, false),
                 SwimsDB.getUserSwimmerRank(this.db, userId, true)
@@ -122,7 +99,6 @@ class AdminUsers {
 
             filteredUser.swimmer_stats = { allTime: allTimeData, yearly: yearlyData };
 
-            // Fetch and attach roles, direct permissions, and managed tags
             const rolesRes = await RolesDB.getUserRoles(this.db, userId);
             if (!rolesRes.isError()) filteredUser.roles = rolesRes.getData();
 
@@ -146,7 +122,6 @@ class AdminUsers {
 
         /**
          * Assign a role to a user.
-         * Includes special logic for transferring the 'President' role (requires current admin's password).
          */
         this.app.post('/api/admin/user/:id/role', check('perm:user.manage | perm:role.manage'), async (req, res) => {
             const roleId = req.body.roleId;
@@ -158,13 +133,11 @@ class AdminUsers {
                     return res.status(400).json({ message: 'Password is required to transfer the President role.' });
                 }
 
-                // Verify the current admin's password before performing high-stakes transfer
                 const isMatch = await bcrypt.compare(password, req.user.hashed_password);
                 if (!isMatch) {
                     return res.status(403).json({ message: 'Incorrect password.' });
                 }
 
-                // Reset everyone's permissions and assign new President (atomic transfer)
                 const result = await UserDB.resetPermissions(this.db, req.params.id);
                 return result.getResponse(res);
             }
@@ -181,10 +154,8 @@ class AdminUsers {
             result.getResponse(res);
         });
 
-        // --- Advanced User Permissions ---
-
         /**
-         * Add a direct permission override to a user (independent of roles).
+         * Add a direct permission override to a user.
          */
         this.app.post('/api/admin/user/:id/permission', check('perm:user.manage | perm:role.manage'), async (req, res) => {
             const result = await RolesDB.addUserPermission(this.db, req.params.id, req.body.permissionId);

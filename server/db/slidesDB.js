@@ -2,7 +2,6 @@
  * slidesDB.js
  * 
  * This module manages the homepage slideshow images.
- * Slides are stored in the database as references to the central files table.
  */
 
 const { statusObject } = require('../misc/status.js');
@@ -10,8 +9,6 @@ const { statusObject } = require('../misc/status.js');
 class SlidesDB {
     /**
      * Fetch all slide images.
-     * @param {object} db - Database connection.
-     * @returns {Promise<statusObject>} - Data contains an array of slide objects { id, url }.
      */
     static async getSlides(db) {
         try {
@@ -34,9 +31,6 @@ class SlidesDB {
 
     /**
      * Add a file to the slideshow.
-     * @param {object} db - Database connection.
-     * @param {number} fileId - ID of the file to add.
-     * @returns {Promise<statusObject>}
      */
     static async addSlide(db, fileId) {
         try {
@@ -56,9 +50,6 @@ class SlidesDB {
 
     /**
      * Remove a slide from the slideshow.
-     * @param {object} db - Database connection.
-     * @param {number} fileId - ID of the file to remove.
-     * @returns {Promise<statusObject>}
      */
     static async removeSlide(db, fileId) {
         try {
@@ -73,8 +64,6 @@ class SlidesDB {
 
     /**
      * Count the number of slides.
-     * @param {object} db - Database connection.
-     * @returns {Promise<statusObject>}
      */
     static async getSlideCount(db) {
         try {

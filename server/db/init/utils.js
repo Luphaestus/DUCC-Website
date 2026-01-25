@@ -1,13 +1,11 @@
 /**
  * utils.js
  * 
- * Helper functions for database initialization and seeding.
+ * Helper functions for database initialization and seeding. 
  */
 
 /**
  * Generate a random cryptographically non-secure password for development accounts.
- * @param {number} length - Desired length.
- * @returns {string} - Random password string.
  */
 function generateRandomPassword(length) {
     var upperChars = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "M", "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
@@ -27,10 +25,6 @@ function generateRandomPassword(length) {
 
 /**
  * Utility to create a table if it doesn't already exist in the schema.
- * @param {string} tableName - Target table name.
- * @param {string} createStatement - SQL column definitions.
- * @param {object} db - SQLite instance.
- * @returns {Promise<boolean>} - True if it already existed, false if it was created.
  */
 async function createTable(tableName, createStatement, db) {
     const tableExists = await db.get(`

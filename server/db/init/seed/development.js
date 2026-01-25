@@ -1,8 +1,7 @@
 /**
  * development.js
  * 
- * Generates a rich set of dummy data for development and testing.
- * Creates random users, transaction history, swim records, roles, and a schedule of events.
+ * Generates dummy data for development and testing.
  */
 
 const bcrypt = require('bcrypt');
@@ -13,12 +12,10 @@ const path = require('path');
 
 /**
  * Main development seeding function.
- * @param {object} db - SQLite database instance.
  */
 async function seedDevelopment(db) {
     const userCount = await db.get('SELECT COUNT(*) as count FROM users');
 
-    // --- Seed Files for Slides & Fallbacks ---
     const slidesDir = path.join(__dirname, '..', '..', '..', 'public', 'images', 'slides');
     let slideFiles = [];
     try {
@@ -43,13 +40,11 @@ async function seedDevelopment(db) {
         if (id) seededFileIds.push(id);
     }
 
-    // Populate slides table
     await db.run('DELETE FROM slides');
     for (let i = 0; i < seededFileIds.length; i++) {
         await db.run('INSERT INTO slides (file_id, display_order) VALUES (?, ?)', [seededFileIds[i], i]);
     }
 
-    // Only seed users if the table is nearly empty
     if (userCount.count < 5) {
         if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Inserting random users for development...'));
         const password = 'password';
@@ -93,13 +88,11 @@ async function seedDevelopment(db) {
             );
 
             const userId = result.lastID;
-            // Generate random financial history
             for (let j = 0; j < Math.floor(Math.random() * 4); j++) {
                 const amount = (Math.random() * 100 - 50).toFixed(2);
                 await db.run(`INSERT INTO transactions (user_id, amount, description) VALUES (?, ?, ?)`, [userId, amount, `Random transaction ${j + 1}`]);
             }
 
-            // Generate random swim history
             const numSwims = Math.floor(Math.random() * 15);
             let totalSwims = 0;
             for (let j = 0; j < numSwims; j++) {
@@ -114,7 +107,6 @@ async function seedDevelopment(db) {
             }
             await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, userId]);
             
-            // Randomly assign booties (up to total swims)
             const numBooties = Math.floor(Math.random() * (totalSwims + 1));
             await db.run(`UPDATE users SET booties = ? WHERE id = ?`, [numBooties, userId]);
 
@@ -124,7 +116,6 @@ async function seedDevelopment(db) {
         if (userProgressBar) userProgressBar.stop();
     }
 
-    // Ensure swim history is populated for existing users
     const swimHistoryCount = await db.get('SELECT COUNT(*) as count FROM swim_history');
     if (swimHistoryCount.count === 0) {
         if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Seeding swim history for existing users...'));
@@ -196,7 +187,6 @@ async function seedDevelopment(db) {
         permIds[row.slug] = row.id;
     }
 
-    // Seed realistic Exec roles with scoped permissions
     const roles = [
         { name: 'Vice Captain (Durham)', perms: ['user.manage', 'event.manage.all', 'swims.manage', 'file.write'] },
         { name: 'Club Coach', perms: ['event.manage.all', 'swims.manage'] },
@@ -234,14 +224,12 @@ async function seedDevelopment(db) {
         }
     }
 
-    // Whitelist the default admin for team tags
     const adminUser = await db.get("SELECT id FROM users WHERE email = 'admin@durham.ac.uk'");
     if (adminUser) {
         await db.run('INSERT OR IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagIds['slalom-team'], adminUser.id]);
         await db.run('INSERT OR IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagIds['polo-team'], adminUser.id]);
     }
 
-    // Wipe and regenerate sample events
     await db.run('DELETE FROM events');
     await db.run('DELETE FROM event_tags');
 
@@ -292,31 +280,29 @@ async function seedDevelopment(db) {
 
     let dayCount = 0;
     await db.run('BEGIN TRANSACTION');
-    // Iterate through calendar days and create scheduled events
     while (currentDate <= endDate) {
         const day = currentDate.getDay();
         let eventId = null;
         let maxAttendees = 20;
         let imageId = seededFileIds.length > 0 ? seededFileIds[Math.floor(Math.random() * seededFileIds.length)] : null;
 
-        if (day === 3) { // Wednesday: Social
-            maxAttendees = 0; // Unlimited
+        if (day === 3) {
+            maxAttendees = 0;
             eventId = await createEvent({ title: `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: 0, max_attendees: 0, tags: [tagIds['socials']], image_id: imageId });
-        } else if (day === 4) { // Thursday: River Trip
+        } else if (day === 4) {
             const startT = new Date(currentDate); startT.setHours(14, 0, 0, 0);
             const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 48);
             eventId = await createEvent({ title: "Slalom/White Water", description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: 12, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']], image_id: imageId });
-        } else if (day === 5) { // Friday: Polo Pool Session
+        } else if (day === 5) {
             const startT = new Date(currentDate); startT.setHours(19, 0, 0, 0);
             const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 24);
             eventId = await createEvent({ title: "Polo Pool Session", description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: 6, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']], image_id: imageId });
-        } else if ([1, 2].includes(day) && Math.random() < 0.7) { // Mon/Tue: Gym/Ergs
+        } else if ([1, 2].includes(day) && Math.random() < 0.7) {
             const type = ['polo', 'white water', 'slalom'][Math.floor(Math.random() * 3)];
             maxAttendees = 5;
             eventId = await createEvent({ title: `${type.toUpperCase()} Ergs`, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: 0, max_attendees: 5, tags: [tagIds['ergs'], tagIds[type]], image_id: imageId });
         }
 
-        // Randomly populate events with attendees and waitlists
         if (eventId) {
             let numAttendees = 0;
             const isPopular = Math.random() > 0.8;
@@ -334,7 +320,6 @@ async function seedDevelopment(db) {
 
             const shuffledUsers = allUsers.sort(() => 0.5 - Math.random());
 
-            // Ensure a coach joins if possible
             if (instructors.length > 0 && Math.random() > 0.2) {
                 await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [eventId, instructors[0].id, 1]);
             }
@@ -349,7 +334,6 @@ async function seedDevelopment(db) {
                         currentCount++;
                     }
                 } else if (currentCount < numAttendees) {
-                    // Over capacity: move to waitlist
                     await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, user.id]);
                     currentCount++;
                 }
