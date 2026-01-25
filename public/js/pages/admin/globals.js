@@ -1,10 +1,7 @@
-//todo refine  
 /**
  * globals.js
  * 
  * Administrative interface for managing system-wide global variables.
- * Allows "President" level users to modify critical configuration settings
- * such as membership costs, trial session limits, and API keys.
  * 
  * Registered Route: /admin/globals
  */
@@ -19,10 +16,10 @@ import { SAVE_SVG, IMAGE_SVG, UPLOAD_SVG, CLOSE_SVG } from '../../../images/icon
 import { Modal } from '/js/widgets/Modal.js';
 
 let imagePickerModal = null;
+let modalUploadWidget = null;
 
 /**
  * Main rendering function for the globals management dashboard.
- * Builds the layout table and triggers the initial data fetch.
  */
 export async function renderManageGlobals() {
     const adminContent = document.getElementById(adminContentID);
@@ -33,11 +30,11 @@ export async function renderManageGlobals() {
         title: 'Choose Image',
         content: `
             <div class="image-picker-content">
-                <div id="modal-upload-widget" class="mb-2"></div>
+                <div id="modal-upload-widget"></div>
                 <div id="globals-library-container"></div>
             </div>
         `,
-        contentClasses: 'glass-panel'
+        contentClasses: 'glass-panel modal-lg'
     });
 
     adminContent.innerHTML = `
@@ -47,7 +44,7 @@ export async function renderManageGlobals() {
             </div>
             
             ${Panel({
-        content: `
+                content: `
                     <div class="glass-table-container">
                         <div class="table-responsive">
                             <table class="glass-table">
@@ -66,7 +63,7 @@ export async function renderManageGlobals() {
                         </div>
                     </div>
                 `
-    })}
+            })}
         </div>
 
         ${imagePickerModal.getHTML()}
@@ -85,13 +82,15 @@ function setupModalListeners() {
     imagePickerModal.attachListeners();
 
     // Initialize Upload Widget
-    new UploadWidget('modal-upload-widget', {
+    modalUploadWidget = new UploadWidget('modal-upload-widget', {
         mode: 'inline',
         selectMode: 'single',
         autoUpload: true,
         enableLibrary: false,
         onUploadComplete: (fileId) => {
-            const url = `/api/files/${fileId}/download?view=true`;
+            const url = typeof fileId === 'string' && fileId.startsWith('http') 
+                ? fileId 
+                : `/api/files/${fileId}/download?view=true`;
             selectImage(url);
         },
         onUploadError: (err) => {
@@ -108,7 +107,7 @@ async function selectImage(url) {
     const input = document.querySelector(`.global-input[data-key="${activePickerKey}"]`);
     if (input) {
         input.value = url;
-        // Update previews
+
         const previews = document.querySelectorAll(`.image-preview-global[data-key="${activePickerKey}"]`);
         previews.forEach(preview => {
             preview.style.backgroundImage = `url('${url}')`;
@@ -116,7 +115,6 @@ async function selectImage(url) {
             if (img) img.src = url;
         });
 
-        // Auto-save
         const globals = await apiRequest('GET', '/api/globals').then(res => res.res || {});
         const displayName = globals[activePickerKey]?.name || activePickerKey;
         await updateGlobal(activePickerKey, url, displayName);
@@ -158,10 +156,10 @@ async function fetchAndRenderGlobals() {
                         <input type="hidden" class="global-input" data-key="${key}" value="${value?.data}">
                     </div>
                 `;
-                actionHtml = `<button class="small-btn picker-btn primary" data-key="${key}" title="Change Image">${IMAGE_SVG}</button>`;
+                actionHtml = `<button class="small-btn picker-btn" data-key="${key}" title="Change Image">${IMAGE_SVG}</button>`;
             } else {
                 valueHtml = `<input type="${type}" class="global-input modern-input" data-key="${key}" value="${value?.data}">`;
-                actionHtml = `<button class="save-global-btn icon-btn primary" data-key="${key}" title="Save">${SAVE_SVG}</button>`;
+                actionHtml = `<button class="save-global-btn icon-btn" data-key="${key}" title="Save">${SAVE_SVG}</button>`;
             }
 
             return `
@@ -173,25 +171,29 @@ async function fetchAndRenderGlobals() {
                     </tr>`;
         }).join('');
 
-        // Attach event listeners
         tbody.querySelectorAll('.picker-btn').forEach(btn => {
             btn.onclick = () => {
                 activePickerKey = btn.dataset.key;
                 if (imagePickerModal) {
                     imagePickerModal.show();
+
+                    // Provide current value as preview
+                    const currentVal = tbody.querySelector(`.global-input[data-key="${activePickerKey}"]`)?.value;
+                    if (currentVal && modalUploadWidget) {
+                        modalUploadWidget.setPreview(currentVal);
+                    }
+
                     const container = document.getElementById('globals-library-container');
                     renderLibrary(container, (url) => selectImage(url));
                 }
             };
         });
 
-        // Toggle large preview on click
         tbody.querySelectorAll('.image-preview-global').forEach(el => {
             el.onclick = (e) => {
                 e.stopPropagation();
                 const wasVisible = el.classList.contains('preview-open');
 
-                // Close all other previews first
                 document.querySelectorAll('.image-preview-global.preview-open').forEach(p => p.classList.remove('preview-open'));
 
                 if (!wasVisible) {
@@ -200,7 +202,6 @@ async function fetchAndRenderGlobals() {
             };
         });
 
-        // Global click to close previews
         document.addEventListener('click', () => {
             document.querySelectorAll('.image-preview-global.preview-open').forEach(el => {
                 el.classList.remove('preview-open');

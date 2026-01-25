@@ -72,7 +72,13 @@
 
     /* Size Modifiers */
     &.modal-lg {
-        max-width: 800px;
+        max-width: 900px;
+    }
+
+    /* Automatically widen modals that contain image pickers or libraries */
+    &:has(.image-picker-content),
+    &:has(.image-library-grid) {
+        max-width: 1000px;
     }
     
     &.modal-full {
