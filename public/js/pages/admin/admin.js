@@ -8,7 +8,7 @@
 
 import { ViewChangedEvent, switchView, addRoute } from '/js/utils/view.js';
 import { apiRequest } from '/js/utils/api.js';
-import { adminContentID } from './common.js';
+import { TabNav } from '/js/widgets/TabNav.js';
 import { renderManageUsers } from './user/manage.js';
 import { renderUserDetail } from './user/detail.js';
 import { renderManageEvents } from './event/manage.js';
@@ -24,6 +24,57 @@ import { requireAuth } from '/js/utils/auth.js';
 import { GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG, 
     ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG 
 } from '../../../images/icons/outline/icons.js';
+
+export const adminContentID = 'admin-content';
+
+/**
+ * Dynamically renders the administrative navigation bar based on the current user's permissions.
+ * 
+ * @param {string} activeSection - Key of the section to highlight (e.g. 'users', 'events').
+ * @returns {Promise<string>} - HTML string for the navigation bar.
+ */
+export async function renderAdminNavBar(activeSection) {
+    const existingNav = document.getElementById('admin-main-nav');
+    if (existingNav && existingNav._syncToggleGroup) {
+        existingNav._syncToggleGroup();
+    }
+
+    const [userData, statusData] = await Promise.all([
+        apiRequest('GET', '/api/user/elements/permissions', true).catch(() => ({})),
+        apiRequest('GET', '/api/globals/status', true).catch(() => null)
+    ]);
+
+    const perms = userData.permissions || [];
+    const isPresident = !!statusData;
+
+    const canManageUsers = perms.includes('user.manage');
+    const canManageEvents = perms.includes('event.manage.all') || perms.includes('event.manage.scoped');
+    const canManageTransactions = perms.includes('transaction.manage');
+    const canManageRoles = perms.includes('role.manage');
+    const canManageFiles = perms.includes('document.write') || perms.includes('document.edit');
+    const isExec = perms.length > 0;
+
+    const navItem = (link, label, key) => `
+        <button data-nav="${link}" class="tab-btn ${activeSection === key ? 'active' : ''}">
+            ${label}
+        </button>
+    `;
+
+    setTimeout(() => TabNav.initElement(document.getElementById('admin-main-nav')), 50);
+
+    return /*html*/`
+        <nav class="toggle-group admin-nav-group" id="admin-main-nav">
+            <div class="toggle-bg"></div>
+            ${(canManageUsers || canManageTransactions || isExec) ? navItem('/admin/users', 'Users', 'users') : ''}
+            ${isExec ? navItem('/admin/slides', 'Slides', 'slides') : ''}
+            ${canManageEvents ? navItem('/admin/events', 'Events', 'events') : ''}
+            ${canManageEvents ? navItem('/admin/tags', 'Tags', 'tags') : ''}
+            ${canManageFiles ? navItem('/admin/files', 'Files', 'files') : ''}
+            ${canManageRoles ? navItem('/admin/roles', 'Roles', 'roles') : ''}
+            ${isPresident ? navItem('/admin/globals', 'Globals', 'globals') : ''}
+        </nav>
+    `;
+}
 
 addRoute('/admin/*', 'admin');
 
