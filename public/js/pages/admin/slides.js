@@ -1,10 +1,7 @@
-//todo refine  
-
 /**
  * slides.js
  * 
  * Logic for managing homepage slideshow images.
- * Allows admins to view current slides, add new ones (upload or library), and delete them.
  * 
  * Registered Route: /admin/slides
  */
@@ -27,7 +24,6 @@ export async function renderManageSlides() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Create modal instance if not already created (or recreate to ensure fresh state)
     slideModal = new Modal({
         id: 'slide-upload-modal',
         title: 'Add Slide',
@@ -87,7 +83,6 @@ function setupModal() {
             slideModal.close();
 
             if (id) {
-                // Imported from Library or Uploaded to FilesAPI
                 try {
                     await apiRequest('POST', '/api/slides/import', { fileId: id });
                     notify('Success', 'Slide added', NotificationTypes.SUCCESS);
@@ -133,15 +128,13 @@ async function fetchAndRenderSlides() {
             </div>
         `}).join('');
 
-        // Attach delete listeners
         grid.querySelectorAll('.delete-slide-btn').forEach(btn => {
             btn.onclick = async (e) => {
-                e.stopPropagation(); // Prevent clicking the image background if we add logic there
+                e.stopPropagation(); 
                 if (!await showConfirmModal('Delete Slide', 'Are you sure you want to delete this slide?')) return;
 
                 const filename = btn.dataset.filename;
                 try {
-                    // Send JSON body for DELETE
                     await fetch('/api/slides', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
