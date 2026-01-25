@@ -1,5 +1,5 @@
 /**
- * EventCard.js
+ * StandardCard.js
  * 
  * Widget for rendering a standardized event card.
  */
