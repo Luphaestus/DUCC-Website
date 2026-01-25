@@ -29,26 +29,21 @@ export async function renderManageRoles() {
                     </div>
                 </div>
             </div>
-            
-            ${Panel({
-        content: `
-                    <div class="glass-table-container">
-                        <div class="table-responsive">
-                            <table class="glass-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Permissions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="roles-table-body">
-                                    <tr><td colspan="2" class="loading-cell">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `
-    })}
+            <div class="glass-table-container">
+                <div class="table-responsive">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Permissions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-table-body">
+                            <tr><td colspan="2" class="loading-cell">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     `;
 
