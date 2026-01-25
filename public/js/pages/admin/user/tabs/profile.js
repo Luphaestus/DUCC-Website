@@ -41,7 +41,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
     else if (bal >= 0) balClass = 'positive';
 
     container.innerHTML = `
-        <div class="dashboard-section active gap-1-5">
+        <div class="dashboard-section active">
             
             <!-- Balance & Member Status -->
             <div class="dual-grid">
@@ -66,7 +66,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             ${Panel({
                 title: 'Swimming Stats',
                 icon: POOL_SVG,
-                action: canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn primary icon-text-btn">${ADD_SVG} Log Swim</button>` : '',
+                action: canManageSwims ? `<button id="admin-add-swim-btn" class="small-btn icon-text-btn">${ADD_SVG} Log Swim</button>` : '',
                 content: `
                     <div class="stats-grid" id="admin-swimming-stats-grid">
                         <div class="stat-item">
@@ -111,7 +111,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                                 <span class="value">${collegeName}</span>
                             </div>
                         </div>
-                        <form id="account-info-form" class="hidden modern-form mt-1">
+                        <form id="account-info-form" class="hidden modern-form">
                             <label>Email 
                                 <div class="durham-email-wrapper">
                                     <input type="text" id="input-email" value="${emailUsername}">
@@ -130,14 +130,14 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                                     <label>Free Sessions <input type="number" id="input-free-sessions" value="${user.free_sessions}"></label>
                                     <label>Swims (Total) <input type="number" id="input-total-swims" value="${user.swims}"></label>
                                 </div>
-                                <div class="checkbox-group mt-0-5 flex gap-1">
+                                <div class="checkbox-group">
                                     <label><input type="checkbox" id="input-is-member" ${user.is_member ? 'checked' : ''}> Is Member</label>
                                     <label><input type="checkbox" id="input-is-instructor" ${user.is_instructor ? 'checked' : ''}> Is Instructor</label>
                                 </div>
                             ` : ''}
-                            <div class="form-actions mt-1 flex gap-0-5">
+                            <div class="form-actions">
                                 <button type="button" id="cancel-account-btn" class="secondary outline small-btn">Cancel</button>
-                                <button type="submit" class="primary small-btn">Save</button>
+                                <button type="submit" class="small-btn">Save</button>
                             </div>
                         </form>
                     `
@@ -148,10 +148,10 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     title: 'Capabilities',
                     icon: BOLT_SVG,
                     content: `
-                        <div class="role-toggle mb-1-5">
+                        <div class="role-toggle">
                             <div class="role-info">
                                 <h4>Instructor Status</h4>
-                                <p class="font-size-0-85 muted-color mb-0">Authorized to lead club sessions</p>
+                                <p class="font-size-0-85 muted-color">Authorized to lead club sessions</p>
                             </div>
                             ${canManageUsers ? `
                                 <label class="switch">
@@ -161,9 +161,9 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                             ` : `<span class="badge ${user.is_instructor ? 'primary' : 'neutral'}">${user.is_instructor ? 'Yes' : 'No'}</span>`}
                         </div>
                         <div class="difficulty-control">
-                            <label class="font-weight-600 font-size-0-9 mb-0-5 block">Difficulty Level (1-5)</label>
-                            <input type="range" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5" step="1" class="mb-0">
-                            <div class="flex justify-between font-size-0-75 muted-color mt-0-25">
+                            <label class="font-weight-600 font-size-0-9">Difficulty Level (1-5)</label>
+                            <input type="range" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5" step="1">
+                            <div class="range-labels font-size-0-75 muted-color">
                                 <span>Beginner</span>
                                 <span>Advanced</span>
                             </div>
@@ -179,8 +179,8 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     icon: ID_CARD_SVG,
                     content: `
                         <div class="card-body">
-                            <p class="small-text mb-1">Defines base permissions and access levels.</p>
-                            <select id="admin-user-role-select" class="full-width-select mb-0">
+                            <p class="small-text">Defines base permissions and access levels.</p>
+                            <select id="admin-user-role-select" class="full-width-select">
                                 <option value="">No Role</option>
                             </select>
                         </div>
@@ -193,12 +193,12 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     icon: SHIELD_SVG,
                     content: `
                         <div class="card-body">
-                            <p class="small-text mb-1">Explicitly granted permissions (overrides role).</p>
-                            <div class="inline-add-form flex gap-0-5 mb-1">
-                                <select id="add-perm-select" class="mb-0">
+                            <p class="small-text">Explicitly granted permissions (overrides role).</p>
+                            <div class="inline-add-form">
+                                <select id="add-perm-select">
                                     <option value="">Select Permission...</option>
                                 </select>
-                                <button id="add-perm-btn" class="icon-btn primary small-btn">${ADD_SVG}</button>
+                                <button id="add-perm-btn" class="icon-btn small-btn">${ADD_SVG}</button>
                             </div>
                             <div id="direct-perms-list" class="tags-cloud">
                                 ${(user.direct_permissions || []).map(p => `

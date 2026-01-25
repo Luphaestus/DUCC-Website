@@ -32,7 +32,7 @@ export function renderLegalTab(container, user) {
                                 activeText: 'Signed',
                                 inactiveText: 'Missing',
                                 content: `
-                                    <div class="info-item-modern mt-1">
+                                    <div class="info-item-modern">
                                         <span class="label">Last Signed:</span> 
                                         <span class="value">${legalDate}</span>
                                     </div>
