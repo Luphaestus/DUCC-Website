@@ -2,14 +2,12 @@
  * admin.js
  * 
  * Central entry point and secondary router for the Admin Dashboard.
- * Handles sub-route management within /admin/*, permission-based access control,
- * and layout rendering for the admin interface.
  * 
  * Registered Route: /admin/*
  */
 
 import { ViewChangedEvent, switchView, addRoute } from '/js/utils/view.js';
-import { ajaxGet } from '/js/utils/ajax.js';
+import { apiRequest } from '/js/utils/api.js';
 import { adminContentID } from './common.js';
 import { renderManageUsers } from './user/manage.js';
 import { renderUserDetail } from './user/detail.js';
@@ -21,13 +19,14 @@ import { renderManageRoles } from './role/manage.js';
 import { renderRoleDetail } from './role/detail.js';
 import { renderManageGlobals } from './globals.js';
 import { renderAdminFiles } from './files.js';
+import { renderManageSlides } from './slides.js';
 import { requireAuth } from '/js/utils/auth.js';
-import { GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG, ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG } from '../../../images/icons/outline/icons.js';
+import { GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG, 
+    ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG 
+} from '../../../images/icons/outline/icons.js';
 
-// Register wildcard route
 addRoute('/admin/*', 'admin');
 
-/** HTML Template for the admin view container */
 const HTML_TEMPLATE = /*html*/`
 <div id="admin-view" class="view hidden small-container">
     <div class="admin-header-modern">
@@ -56,24 +55,20 @@ function updateAdminTitle(section) {
 
 /**
  * Primary navigation listener for the admin module.
- * Performs a fresh permission check on every sub-route change and
- * delegates rendering to specific section modules.
  * 
  * @param {object} eventData - Router event data.
  */
 async function AdminNavigationListener({ viewId, path }) {
     if (viewId !== "admin") return;
 
-    // Sync toggle group positions before DOM is replaced to enable animation
     document.querySelectorAll('.toggle-group[id]').forEach(el => {
         if (el._syncToggleGroup) el._syncToggleGroup();
     });
 
-    // Parallelize authentication and system status checks
     const [authOk, userData, statusData] = await Promise.all([
         requireAuth(),
-        ajaxGet('/api/user/elements/permissions', true),
-        ajaxGet('/api/globals/status', true).catch(() => ({}))
+        apiRequest('GET', '/api/user/elements/permissions', true),
+        apiRequest('GET', '/api/globals/status', true).catch(() => ({}))
     ]);
 
     if (!authOk) return;
@@ -158,11 +153,18 @@ async function AdminNavigationListener({ viewId, path }) {
         updateAdminTitle('Globals');
         await renderManageGlobals();
 
+    // Slides Module
+    } else if (cleanPath === '/admin/slides') {
+        if (!isExec) return switchView('/unauthorized');
+        updateAdminTitle('Slides');
+        await renderManageSlides();
+
     // Dashboard Home
     } else if (cleanPath === '/admin' || cleanPath === '/admin/') {
         let cardsHtml = '';
         
         if (canAccessUsers) cardsHtml += createDashboardCard('Users', 'Manage members & permissions', GROUP_SVG, '/admin/users');
+        if (isExec) cardsHtml += createDashboardCard('Slides', 'Homepage slideshow', IMAGE_SVG, '/admin/slides');
         if (canAccessEvents) cardsHtml += createDashboardCard('Events', 'Schedule & attendance', CALENDAR_TODAY_SVG, '/admin/events');
         if (canAccessTags) cardsHtml += createDashboardCard('Tags', 'Event categories & styles', LOCAL_ACTIVITY_SVG, '/admin/tags');
         if (canAccessDocs) cardsHtml += createDashboardCard('Files', 'Documents & resources', FOLDER_SVG, '/admin/files');
