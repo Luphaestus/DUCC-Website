@@ -1,4 +1,4 @@
-//todo refine 
+//todo  refine 
 /**
  * manage.js (Tag)
  * 
@@ -27,7 +27,7 @@ export async function renderManageTags() {
                  <div class="toolbar-content">
                     <div class="toolbar-left hidden"></div>
                     <div class="toolbar-right">
-                        <button data-nav="/admin/tag/new" class="small-btn primary">Create New Tag</button>
+                        <button data-nav="/admin/tag/new" class="small-btn">Create New Tag</button>
                     </div>
                 </div>
             </div>

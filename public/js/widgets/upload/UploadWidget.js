@@ -1,4 +1,4 @@
-//todo refine
+//todo  refine
 
 /**
  * UploadWidget.js
@@ -8,8 +8,9 @@
 
 import { uploadFile } from '/js/utils/api.js';
 import { renderLibrary } from './Library.js';
-import { UPLOAD_SVG, CLOSE_SVG, IMAGE_SVG } from '/images/icons/outline/icons.js';
+import { UPLOAD_SVG, CLOSE_SVG, IMAGE_SVG, INFO_SVG } from '/images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
+import { notify } from '/js/components/notification.js';
 
 export class UploadWidget {
     /**
@@ -21,10 +22,13 @@ export class UploadWidget {
      * @param {string} [options.accept='image/*'] - File accept attribute.
      * @param {string} [options.defaultPreview=null] - URL for initial preview (single mode only).
      * @param {boolean} [options.enableLibrary=true] - Show library button.
+     * @param {boolean} [options.enableUrl=true] - Show URL input button.
+     * @param {boolean} [options.enableRemove=true] - Show remove button.
      * @param {Function} [options.onUploadComplete] - Callback(result) where result is file ID (single) or array of IDs (multi).
      * @param {Function} [options.onUploadError] - Callback(error).
      * @param {Function} [options.onFileSelect] - Callback(files) when files are selected (useful if autoUpload=false).
      * @param {Function} [options.onRemove] - Callback() when image is removed (single mode).
+     * @param {Function} [options.onImageSelect] - Callback({url, id}) when an image is chosen.
      */
     constructor(container, options = {}) {
         this.container = typeof container === 'string' ? document.getElementById(container) : container;
@@ -37,6 +41,8 @@ export class UploadWidget {
             accept: 'image/*',
             defaultPreview: null,
             enableLibrary: true,
+            enableUrl: true,
+            enableRemove: true,
             ...options
         };
 
@@ -86,11 +92,24 @@ export class UploadWidget {
                         </button>
                     ` : ''}
 
-                    ${this.options.selectMode === 'single' ? `
+                    ${this.options.enableUrl && this.options.selectMode === 'single' ? `
+                        <button type="button" class="small-btn outline url-btn" title="Provide Image URL">
+                            ${INFO_SVG} URL
+                        </button>
+                    ` : ''}
+
+                    ${this.options.selectMode === 'single' && this.options.enableRemove ? `
                          <button type="button" class="small-btn delete outline remove-btn hidden" title="Remove">
                             ${CLOSE_SVG} Remove
                         </button>
                     ` : ''}
+                </div>
+
+                <div class="url-input-container hidden">
+                    <div class="glass-input-group">
+                        <input type="text" placeholder="https://example.com/image.jpg" class="modern-input url-input-field">
+                        <button type="button" class="small-btn apply-url-btn">Apply</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -104,7 +123,11 @@ export class UploadWidget {
         this.progressText = this.widgetEl.querySelector('.progress-text');
         this.inputEl = this.widgetEl.querySelector('input[type="file"]');
         this.libraryBtn = this.widgetEl.querySelector('.library-btn');
+        this.urlBtn = this.widgetEl.querySelector('.url-btn');
         this.removeBtn = this.widgetEl.querySelector('.remove-btn');
+        this.urlInputContainer = this.widgetEl.querySelector('.url-input-container');
+        this.urlInputField = this.widgetEl.querySelector('.url-input-field');
+        this.applyUrlBtn = this.widgetEl.querySelector('.apply-url-btn');
 
         if (this.options.defaultPreview && this.options.selectMode === 'single') {
             this.removeBtn?.classList.remove('hidden');
@@ -138,6 +161,35 @@ export class UploadWidget {
         // Library Button
         if (this.libraryBtn) {
             this.libraryBtn.addEventListener('click', () => this.openLibraryModal());
+        }
+
+        // URL Button
+        if (this.urlBtn) {
+            this.urlBtn.addEventListener('click', () => {
+                this.urlInputContainer.classList.toggle('hidden');
+                if (!this.urlInputContainer.classList.contains('hidden')) {
+                    this.urlInputField.focus();
+                }
+            });
+        }
+
+        // Apply URL Button
+        if (this.applyUrlBtn) {
+            this.applyUrlBtn.addEventListener('click', () => {
+                const url = this.urlInputField.value.trim();
+                if (url) {
+                    this.setPreview(url);
+                    if (this.options.onImageSelect) {
+                        this.options.onImageSelect({ url, id: null });
+                    } else if (this.options.onUploadComplete) {
+                        this.options.onUploadComplete(url);
+                    }
+                    this.urlInputContainer.classList.add('hidden');
+                }
+            });
+            this.urlInputField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.applyUrlBtn.click();
+            });
         }
 
         // Remove Button
@@ -290,7 +342,7 @@ export class UploadWidget {
             if (this.options.onUploadError) {
                 this.options.onUploadError(error);
             } else {
-                alert('Upload Failed: ' + error.message);
+                notify('Upload Failed', error.message, 'error');
             }
         } finally {
             this.isUploading = false;

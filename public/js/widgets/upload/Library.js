@@ -1,4 +1,4 @@
-//todo refine
+//todo  refine
 
 import { apiRequest } from '/js/utils/api.js';
 
@@ -29,7 +29,7 @@ export async function renderLibrary(container, onSelect) {
         const slides = slidesRes.images || [];
 
         grid.innerHTML = '';
-        
+
         // Custom slides
         slides.forEach(url => {
             const item = document.createElement('div');

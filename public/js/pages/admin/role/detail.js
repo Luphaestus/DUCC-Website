@@ -1,4 +1,4 @@
-//todo refine 
+//todo  refine 
 
 /**
  * detail.js (Role)
@@ -15,6 +15,7 @@ import { adminContentID } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
 import { ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG } from '../../../../images/icons/outline/icons.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
+import { showConfirmModal } from '/js/utils/modal.js';
 
 /**
  * Main rendering function for role details.
@@ -47,21 +48,20 @@ export async function renderRoleDetail(roleId) {
             title: isNew ? 'Create New Role' : 'Edit Role',
             content: `
                         <form id="role-form" class="modern-form">
-                            <div class="modern-form-group mb-2">
+                            <div class="modern-form-group">
                                 <label class="form-label-top">Role Name
                                     <input type="text" name="name" value="${role.name}" required class="full-width-input" placeholder="e.g. Moderator">
                                 </label>
                             </div>
 
-                            <h3 class="mb-1">Permissions</h3>
-                            <div class="permissions-grid">
-                                ${allPermissions.map(perm => `
-                                    <label class="checkbox-label mb-0-5">
-                                        <input type="checkbox" name="permissions" value="${perm}" ${role.permissions.includes(perm) ? 'checked' : ''}>
-                                        ${perm}
-                                    </label>
-                                `).join('')}
-                            </div>
+                            <h3>Permissions</h3>
+                        <div class="tag-cloud">
+                            ${allPermissions.map(p => `
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="permissions" value="${p.id}" ${rolePerms.find(rp => rp.id === p.id) ? 'checked' : ''}> ${p.key}
+                                </label>
+                            `).join('')}
+                        </div>
 
                             <div class="form-actions-footer mt-2">
                                 <button type="submit" class="primary-btn wide-btn">${SAVE_SVG} ${isNew ? 'Create' : 'Save Changes'}</button>
@@ -104,7 +104,7 @@ async function handleSaveRole(e, id) {
 
 async function handleDeleteRole(id) {
     if (id === 'new') return switchView('/admin/roles');
-    if (!confirm('Are you sure you want to delete this role? This might affect many users.')) return;
+    if (!await showConfirmModal('Delete Role', 'Are you sure you want to delete this role? This might affect many users.')) return;
 
     try {
         await apiRequest('DELETE', `/api/admin/roles/${id}`);

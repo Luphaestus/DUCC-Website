@@ -1,4 +1,4 @@
-//todo refine 
+//todo  refine 
 /**
  * detail.js
  * 
@@ -16,6 +16,7 @@ import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { adminContentID } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
 import { CALENDAR_TODAY_SVG, DESCRIPTION_SVG, BOLT_SVG, GROUP_SVG, CLOSE_SVG, INFO_SVG, LOCATION_ON_SVG, ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, UPLOAD_SVG, IMAGE_SVG } from '../../../../images/icons/outline/icons.js';
+import { showConfirmModal } from '/js/utils/modal.js';
 
 /**
  * Main rendering function for the event editor form.
@@ -59,7 +60,7 @@ export async function renderEventDetail(id) {
         title: isNew ? 'Create Event' : 'Edit Event',
         content: `
                         <!-- Title Field -->
-                        <div class="modern-form-group mb-2">
+                        <div class="modern-form-group">
                             <label class="form-label-top">Event Title
                                 <input type="text" name="title" value="${event.title}" required class="full-width-input title-input" placeholder="e.g. Weekly Training">
                             </label>
@@ -72,16 +73,16 @@ export async function renderEventDetail(id) {
                                     ${INFO_SVG} Basic Details
                                 </h3>
                                 
-                                <div class="grid-2-col mb-1-5">
+                                <div class="grid-2-col">
                                     <label>Start Time <input type="datetime-local" name="start" value="${event.start}" required></label>
                                     <label>End Time <input type="datetime-local" name="end" value="${event.end}" required></label>
                                 </div>
                                 
-                                <label class="mb-1-5 block">Location <input type="text" name="location" value="${event.location}" placeholder="Where is it happening?"></label>
+                                <label>Location <input type="text" name="location" value="${event.location}" placeholder="Where is it happening?"></label>
                                 
-                                <label class="mb-1-5 block">Description <textarea name="description" rows="5" placeholder="What's the plan?"></textarea></label>
+                                <label>Description <textarea name="description" rows="5" placeholder="What's the plan?"></textarea></label>
                                 
-                                <div class="grid-2-col mb-1-5">
+                                <div class="grid-2-col">
                                     <label>Difficulty (1-5) <input type="number" name="difficulty_level" min="1" max="5" value="${event.difficulty_level}" required></label>
                                     <label>Cost (£) <input type="number" step="0.01" name="upfront_cost" value="${event.upfront_cost}"></label>
                                 </div>
@@ -89,13 +90,13 @@ export async function renderEventDetail(id) {
                                 <div class="form-divider"></div>
 
                                 <!-- Policy Settings -->
-                                <div class="settings-group mb-2">
+                                <div class="settings-group">
                                     <div class="signup-policy">
                                         <label class="checkbox-label">
                                             <input type="checkbox" id="signup_required_toggle" name="signup_required" ${event.signup_required ? 'checked' : ''}> 
                                             Signup Required
                                         </label>
-                                        <div id="max-attendees-wrapper" class="conditional-input pl-1-8 ${event.signup_required ? '' : 'hidden'}">
+                                        <div id="max-attendees-wrapper" class="conditional-input ${event.signup_required ? '' : 'hidden'}">
                                             <label>Max Attendees
                                                 <input type="number" name="max_attendees" value="${event.max_attendees}" placeholder="0 = Unlimited">
                                             </label>
@@ -107,7 +108,7 @@ export async function renderEventDetail(id) {
                                             <input type="checkbox" id="allow-refunds" ${event.upfront_refund_cutoff ? 'checked' : ''}> 
                                             Allow Refunds
                                         </label>
-                                        <div id="refund-cutoff-wrapper" class="conditional-input pl-1-8 ${event.upfront_refund_cutoff ? '' : 'hidden'}">
+                                        <div id="refund-cutoff-wrapper" class="conditional-input ${event.upfront_refund_cutoff ? '' : 'hidden'}">
                                             <label>Refund Cutoff Date
                                                 <input type="datetime-local" name="upfront_refund_cutoff" value="${event.upfront_refund_cutoff || ''}">
                                             </label>
@@ -116,7 +117,7 @@ export async function renderEventDetail(id) {
                                 </div>
 
                                 <!-- Tag Selection -->
-                                <h3 class="mb-1">Tags</h3>
+                                <h3>Tags</h3>
                                 <div class="tags-selection-grid">
                                     ${allTags.map(tag => `
                                         <label class="tag-checkbox">
@@ -138,14 +139,14 @@ export async function renderEventDetail(id) {
                         </div>
                         
                         <!-- Form Footer Actions -->
-                        <div class="form-actions-footer mt-3 pt-2">
-                            <div class="destructive-actions mb-1">
+                        <div class="form-actions-footer">
+                            <div class="destructive-actions">
                                 ${!isNew ? `
-                                    <button type="button" id="cancel-event-btn" class="small-btn warning outline no-margin" style="flex: 1;">${CLOSE_SVG} Cancel Event</button>
-                                    <button type="button" id="delete-event-btn" class="small-btn delete outline no-margin" style="flex: 1;">${DELETE_HISTORY_SVG} Delete</button>
+                                    <button type="button" id="cancel-event-btn" class="small-btn warning outline">${CLOSE_SVG} Cancel Event</button>
+                                    <button type="button" id="delete-event-btn" class="small-btn delete outline">${DELETE_HISTORY_SVG} Delete</button>
                                 ` : ''}
                             </div>
-                            <button type="submit" class="primary-btn wide-btn min-w-200">${isNew ? 'Create Event' : 'Save Changes'}</button>
+                            <button type="submit" class="wide-btn">${isNew ? 'Create Event' : 'Save Changes'}</button>
                         </div>
                     `
     })}
@@ -215,7 +216,7 @@ export async function renderEventDetail(id) {
                 return true;
             }
 
-            if (!confirm('Remove manual image and reset to default?')) return false;
+            if (!await showConfirmModal('Remove Image', 'Remove manual image and reset to default?')) return false;
 
             try {
                 const res = await fetch(`/api/admin/event/${id}/reset-image`, { method: 'POST' });
@@ -277,7 +278,7 @@ export async function renderEventDetail(id) {
     // --- Destructive Action Handlers ---
     if (!isNew) {
         document.getElementById('delete-event-btn').onclick = async () => {
-            if (!confirm('Delete event permanently? This cannot be undone.')) return;
+            if (!await showConfirmModal('Delete Event', 'Delete event permanently? This cannot be undone.')) return;
             try {
                 const res = await fetch(`/api/admin/event/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Delete failed');
@@ -291,7 +292,7 @@ export async function renderEventDetail(id) {
         const cancelBtn = document.getElementById('cancel-event-btn');
         if (cancelBtn) {
             cancelBtn.onclick = async () => {
-                if (!confirm('Cancel this event? This will notify attendees and process any refunds.')) return;
+                if (!await showConfirmModal('Cancel Event', 'Cancel this event? This will notify attendees and process any refunds.')) return;
                 try {
                     const res = await fetch(`/api/admin/event/${id}/cancel`, { method: 'POST' });
                     if (!res.ok) throw new Error('Cancel failed');

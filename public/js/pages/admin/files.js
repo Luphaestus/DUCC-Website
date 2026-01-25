@@ -18,6 +18,7 @@ import { Panel } from '/js/widgets/panel.js';
 import { SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { Pagination } from '/js/widgets/Pagination.js';
+import { showConfirmModal } from '/js/utils/modal.js';
 
 /** @type {object} Current filter and pagination state */
 let currentOptions = {
@@ -456,7 +457,7 @@ function setupEventListeners() {
         // Delete File
         if (e.target.closest('.delete-file')) {
             const id = e.target.closest('.delete-file').dataset.id;
-            if (confirm('Are you sure you want to delete this file?')) {
+            if (await showConfirmModal('Delete File', 'Are you sure you want to delete this file?')) {
                 await apiRequest('DELETE', `/api/files/${id}`);
                 await loadAdminFiles();
                 notify('Success', 'File deleted', 'success');
@@ -466,7 +467,7 @@ function setupEventListeners() {
         // Delete Category
         if (e.target.closest('.delete-cat')) {
             const id = e.target.closest('.delete-cat').dataset.id;
-            if (confirm('Delete category? Files in this category will be uncategorized.')) {
+            if (await showConfirmModal('Delete Category', 'Delete category? Files in this category will be uncategorized.')) {
                 await apiRequest('DELETE', `/api/file-categories/${id}`);
                 await loadCategoriesList();
                 await loadAdminCategories();

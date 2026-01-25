@@ -1,4 +1,4 @@
-//todo refine
+//todo  refine
 /* manage.js (Role)
 * 
 * Logic for the administrative roles list view.
@@ -25,13 +25,13 @@ export async function renderManageRoles() {
                  <div class="toolbar-content">
                     <div class="toolbar-left hidden"></div>
                     <div class="toolbar-right">
-                        <button data-nav="/admin/role/new" class="small-btn primary">Create New Role</button>
+                        <button data-nav="/admin/role/new" class="small-btn">Create New Role</button>
                     </div>
                 </div>
             </div>
             
             ${Panel({
-                content: `
+        content: `
                     <div class="glass-table-container">
                         <div class="table-responsive">
                             <table class="glass-table">
@@ -48,7 +48,7 @@ export async function renderManageRoles() {
                         </div>
                     </div>
                 `
-            })}
+    })}
         </div>
     `;
 

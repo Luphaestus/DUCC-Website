@@ -39,22 +39,17 @@ export async function renderManageUsers() {
                     </div>
                  </div>
             </div>
-            
-            ${Panel({
-                content: `
-                    <div class="glass-table-container">
-                        <div class="table-responsive">
-                            <table class="glass-table users-table">
-                                <thead id="users-table-head"></thead>
-                                <tbody id="users-table-body">
-                                    <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div id="users-pagination"></div>
-                `
-            })}
+            <div class="glass-table-container">
+                <div class="table-responsive">
+                    <table class="glass-table users-table">
+                        <thead id="users-table-head"></thead>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="users-pagination"></div>
         </div>
     `;
 

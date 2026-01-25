@@ -1,4 +1,4 @@
-//todo refine  
+//todo  refine  
 
 /**
  * slides.js
@@ -16,6 +16,7 @@ import { notify, NotificationTypes } from '/js/components/notification.js';
 import { Panel } from '/js/widgets/panel.js';
 import { IMAGE_SVG, DELETE_SVG, ADD_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
+import { showConfirmModal } from '/js/utils/modal.js';
 
 let slideModal = null;
 
@@ -46,7 +47,7 @@ export async function renderManageSlides() {
             ${Panel({
         title: 'Manage Slideshow',
         icon: IMAGE_SVG,
-        action: `<button id="add-slide-btn" class="primary-btn small-btn">${ADD_SVG} Add Slide</button>`,
+        action: `<button id="add-slide-btn" class="main-btn small-btn">${ADD_SVG} Add Slide</button>`,
         content: `
                     <div id="slides-grid" class="image-grid mt-2">
                         <p class="loading-cell">Loading slides...</p>
@@ -136,7 +137,7 @@ async function fetchAndRenderSlides() {
         grid.querySelectorAll('.delete-slide-btn').forEach(btn => {
             btn.onclick = async (e) => {
                 e.stopPropagation(); // Prevent clicking the image background if we add logic there
-                if (!confirm('Delete this slide?')) return;
+                if (!await showConfirmModal('Delete Slide', 'Are you sure you want to delete this slide?')) return;
 
                 const filename = btn.dataset.filename;
                 try {

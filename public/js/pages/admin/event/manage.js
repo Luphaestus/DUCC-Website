@@ -55,7 +55,6 @@ export async function renderManageEvents() {
                          </button>
                          <button data-nav="/admin/event/new" class="small-btn">Create Event</button>
                         
-                        <!-- Advanced Filter Panel (Hidden by default) -->
                         <div id="advanced-filters-panel" class="glass-filter-panel hidden">
                             <div class="filter-grid">
                                     <label>
@@ -89,23 +88,17 @@ export async function renderManageEvents() {
                     </div>
                 </div>
             </div>
-
-            ${Panel({
-        content: `
-                    <!-- Events Table -->
-                    <div class="glass-table-container">
-                        <div class="table-responsive">
-                            <table class="glass-table">
-                                <thead id="events-table-head"></thead>
-                                <tbody id="events-table-body">
-                                    <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div id="events-pagination"></div>
-                `
-    })}
+            <div class="glass-table-container">
+                <div class="table-responsive">
+                    <table class="glass-table">
+                        <thead id="events-table-head"></thead>
+                        <tbody id="events-table-body">
+                            <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="events-pagination"></div>
         </div>
     `;
 

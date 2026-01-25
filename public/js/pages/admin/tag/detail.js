@@ -1,4 +1,4 @@
-//todo refine 
+//todo  refine 
 /**
  * detail.js (Tag)
  * 
@@ -17,6 +17,7 @@ import { adminContentID } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, IMAGE_SVG, UPLOAD_SVG } from "../../../../images/icons/outline/icons.js"
+import { showConfirmModal } from '/js/utils/modal.js';
 
 /**
  * Main rendering function for the tag editor.
@@ -78,14 +79,14 @@ export async function renderTagDetail(id) {
                                     <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input"></label>
                                 </div>
                                 
-                                <label class="mb-1-5 block">Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
+                                <label>Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
                                 
                                 <div class="grid-2-col">
                                     <label>Min Difficulty Requirement <input type="number" name="min_difficulty" value="${tag.min_difficulty ?? ''}" min="1" max="5" placeholder="Optional (1-5)"></label>
                                     <label>Priority <input type="number" name="priority" value="${tag.priority || 0}" placeholder="Default 0"></label>
                                 </div>
 
-                                <div class="grid-2-col mt-1">
+                                <div class="grid-2-col">
                                     <label>Join Policy
                                         <select name="join_policy" class="modern-select">
                                             <option value="open" ${tag.join_policy === 'open' ? 'selected' : ''}>Open</option>
@@ -112,8 +113,8 @@ export async function renderTagDetail(id) {
                                 <input type="hidden" name="image_id" id="image_id_input" value="${tag.image_id || ''}">
                             </div>
                         </div>                    
-                        <div class="form-actions-footer mt-2 text-right">
-                            <button type="submit" class="primary-btn wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
+                        <div class="form-actions-footer">
+                            <button type="submit" class="wide-btn">${isNew ? 'Create' : 'Save Changes'}</button>
                         </div>
                     </form>
                 `
@@ -128,16 +129,15 @@ export async function renderTagDetail(id) {
         title: 'Designated Managers',
         icon: SHIELD_SVG,
         content: `
-                            <div class="permission-section">
-                                <p class="helper-text mb-1">Users allowed to manage (create/edit/read) events with this tag.</p>
-                                
-                                <form id="managers-form" class="inline-add-form mb-1">
-                                    <input list="managers-datalist" id="managers-user-input" placeholder="Search by name or email..." autocomplete="off">
-                                    <datalist id="managers-datalist"></datalist>
-                                    <button type="submit" class="small-btn primary" title="Add Manager">${ADD_SVG}</button>
-                                </form>
-                                
-                                <div class="glass-table-container">
+                                    <div class="permission-section">
+                                        <p class="helper-text">Users allowed to manage (create/edit/read) events with this tag.</p>
+                                        
+                                        <form id="managers-form" class="inline-add-form">
+                                            <input list="managers-datalist" id="managers-user-input" placeholder="Search by name or email..." autocomplete="off">
+                                            <datalist id="managers-datalist"></datalist>
+                                            <button type="submit" class="small-btn" title="Add Manager">${ADD_SVG}</button>
+                                        </form>
+                                        <div class="glass-table-container">
                                     <div class="table-responsive">
                                         <table class="glass-table">
                                             <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
@@ -154,16 +154,15 @@ export async function renderTagDetail(id) {
         title: 'Whitelist Access',
         icon: LOCAL_ACTIVITY_SVG,
         content: `
-                            <div class="permission-section">
-                                <p class="helper-text mb-1">Restricts event visibility/joining to specific users.</p>
-                                
-                                <form id="whitelist-form" class="inline-add-form mb-1">
-                                    <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
-                                    <datalist id="users-datalist"></datalist>
-                                    <button type="submit" class="small-btn primary" title="Add User">${ADD_SVG}</button>
-                                </form>
-                                
-                                <div class="glass-table-container">
+                                    <div class="permission-section">
+                                        <p class="helper-text">Restricts event visibility/joining to specific users.</p>
+                                        
+                                        <form id="whitelist-form" class="inline-add-form">
+                                            <input list="users-datalist" id="whitelist-user-input" placeholder="Search by name or email..." autocomplete="off">
+                                            <datalist id="users-datalist"></datalist>
+                                            <button type="submit" class="small-btn" title="Add User">${ADD_SVG}</button>
+                                        </form>
+                                        <div class="glass-table-container">
                                     <div class="table-responsive">
                                         <table class="glass-table">
                                             <thead><tr><th>Name</th><th>Email</th><th class="action-col">Remove</th></tr></thead>
@@ -201,7 +200,7 @@ export async function renderTagDetail(id) {
                 imageIdInput.value = '';
                 return true;
             }
-            if (!confirm('Remove tag image?')) return false;
+            if (!await showConfirmModal('Remove Image', 'Remove tag image?')) return false;
             try {
                 const res = await fetch(`/api/tags/${id}/reset-image`, { method: 'POST' });
                 if (!res.ok) throw new Error('Failed to reset image');
@@ -244,7 +243,7 @@ export async function renderTagDetail(id) {
         const deleteBtn = document.getElementById('delete-tag-btn');
         if (deleteBtn) {
             deleteBtn.onclick = async () => {
-                if (!confirm('Delete tag?')) return;
+                if (!await showConfirmModal('Delete Tag', 'Delete tag?')) return;
                 await apiRequest('DELETE', `/api/tags/${id}`);
                 notify('Success', 'Tag deleted', NotificationTypes.SUCCESS);
                 switchView('/admin/tags');
