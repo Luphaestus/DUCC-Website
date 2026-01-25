@@ -2,9 +2,32 @@
  * modal.js
  * 
  * Provides utility functions for displaying custom glassmorphic modals.
- * Supports standard confirmations, password entry for sensitive actions,
- * and change-password dialogs.
  */
+
+import { Modal } from '/js/widgets/Modal.js';
+
+/**
+ * Helper to mount and show a modal, returning a cleanup function.
+ */
+function mountModal(modal) {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = modal.getHTML();
+    const modalEl = wrapper.firstElementChild;
+    document.body.appendChild(modalEl);
+
+    modal.attachListeners();
+    modal.show();
+
+    return {
+        element: modalEl,
+        cleanup: () => {
+            modal.hide();
+            setTimeout(() => {
+                if (document.body.contains(modalEl)) document.body.removeChild(modalEl);
+            }, 300);
+        }
+    };
+}
 
 /**
  * Displays a custom confirmation modal with "Confirm" and "Cancel" buttons.
@@ -15,34 +38,33 @@
  */
 export function showConfirmModal(title, message) {
     return new Promise((resolve) => {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'custom-modal-overlay';
-
-        modalOverlay.innerHTML = /*html*/`
-            <div class="custom-modal-content">
-                <h3>${title}</h3>
+        const modal = new Modal({
+            id: `confirm-modal-${Date.now()}`,
+            title: title,
+            content: `
                 <p>${message}</p>
                 <div class="modal-actions">
                     <button class="btn-cancel" id="confirm-cancel">Cancel</button>
                     <button class="btn-confirm" id="confirm-ok">Confirm</button>
                 </div>
-            </div>
-        `;
+            `,
+            onClose: () => {
+                mount.cleanup();
+                resolve(false);
+            }
+        });
 
-        document.body.appendChild(modalOverlay);
-        requestAnimationFrame(() => modalOverlay.classList.add('visible'));
+        const mount = mountModal(modal);
 
-        const cleanup = (val) => {
-            modalOverlay.classList.remove('visible');
-            setTimeout(() => {
-                if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
-                resolve(val);
-            }, 300);
+        mount.element.querySelector('#confirm-ok').onclick = () => {
+            mount.cleanup();
+            resolve(true);
         };
 
-        modalOverlay.querySelector('#confirm-ok').onclick = () => cleanup(true);
-        modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(false);
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(false); };
+        mount.element.querySelector('#confirm-cancel').onclick = () => {
+            mount.cleanup();
+            resolve(false);
+        };
     });
 }
 
@@ -55,43 +77,40 @@ export function showConfirmModal(title, message) {
  */
 export function showPasswordModal(title, message) {
     return new Promise((resolve) => {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'custom-modal-overlay';
-
-        modalOverlay.innerHTML = /*html*/`
-            <div class="custom-modal-content">
-                <h3>${title}</h3>
+        const modal = new Modal({
+            id: `password-modal-${Date.now()}`,
+            title: title,
+            content: `
                 <p>${message}</p>
                 <input type="password" id="confirm-password" placeholder="Enter your password">
                 <div class="modal-actions">
                     <button class="btn-cancel" id="confirm-cancel">Cancel</button>
                     <button class="btn-confirm" id="confirm-ok">Confirm</button>
                 </div>
-            </div>
-        `;
+            `,
+            onClose: () => {
+                mount.cleanup();
+                resolve(null);
+            }
+        });
 
-        document.body.appendChild(modalOverlay);
-        requestAnimationFrame(() => modalOverlay.classList.add('visible'));
-
-        const input = modalOverlay.querySelector('#confirm-password');
+        const mount = mountModal(modal);
+        const input = mount.element.querySelector('#confirm-password');
         input.focus();
-
-        const cleanup = (val) => {
-            modalOverlay.classList.remove('visible');
-            setTimeout(() => {
-                if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
-                resolve(val);
-            }, 300);
-        };
 
         const confirm = () => {
             const password = input.value;
-            if (password) cleanup(password);
+            if (password) {
+                mount.cleanup();
+                resolve(password);
+            }
         };
 
-        modalOverlay.querySelector('#confirm-ok').onclick = confirm;
-        modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(null);
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(false); };
+        mount.element.querySelector('#confirm-ok').onclick = confirm;
+        mount.element.querySelector('#confirm-cancel').onclick = () => {
+            mount.cleanup();
+            resolve(null);
+        };
         input.onkeydown = (e) => { if (e.key === 'Enter') confirm(); };
     });
 }
@@ -103,12 +122,10 @@ export function showPasswordModal(title, message) {
  */
 export function showChangePasswordModal() {
     return new Promise((resolve) => {
-        const modalOverlay = document.createElement('div');
-        modalOverlay.className = 'custom-modal-overlay';
-
-        modalOverlay.innerHTML = /*html*/`
-            <div class="custom-modal-content">
-                <h3>Change Password</h3>
+        const modal = new Modal({
+            id: `change-pw-modal-${Date.now()}`,
+            title: 'Change Password',
+            content: `
                 <p>Please enter your current password and a new password.</p>
                 <input type="password" id="current-password" placeholder="Current Password">
                 <input type="password" id="new-password" placeholder="New Password">
@@ -116,33 +133,33 @@ export function showChangePasswordModal() {
                     <button class="btn-cancel" id="confirm-cancel">Cancel</button>
                     <button class="btn-confirm" id="confirm-ok">Change Password</button>
                 </div>
-            </div>
-        `;
+            `,
+            onClose: () => {
+                mount.cleanup();
+                resolve(null);
+            }
+        });
 
-        document.body.appendChild(modalOverlay);
-        requestAnimationFrame(() => modalOverlay.classList.add('visible'));
+        const mount = mountModal(modal);
 
-        const currentInput = modalOverlay.querySelector('#current-password');
-        const newInput = modalOverlay.querySelector('#new-password');
+        const currentInput = mount.element.querySelector('#current-password');
+        const newInput = mount.element.querySelector('#new-password');
         currentInput.focus();
-
-        const cleanup = (val) => {
-            modalOverlay.classList.remove('visible');
-            setTimeout(() => {
-                if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
-                resolve(val);
-            }, 300);
-        };
 
         const confirm = () => {
             const currentPassword = currentInput.value;
             const newPassword = newInput.value;
-            if (currentPassword && newPassword) cleanup({ currentPassword, newPassword });
+            if (currentPassword && newPassword) {
+                mount.cleanup();
+                resolve({ currentPassword, newPassword });
+            }
         };
 
-        modalOverlay.querySelector('#confirm-ok').onclick = confirm;
-        modalOverlay.querySelector('#confirm-cancel').onclick = () => cleanup(null);
-        modalOverlay.onclick = (e) => { if (e.target === modalOverlay) cleanup(false); };
+        mount.element.querySelector('#confirm-ok').onclick = confirm;
+        mount.element.querySelector('#confirm-cancel').onclick = () => {
+            mount.cleanup();
+            resolve(null);
+        };
         newInput.onkeydown = (e) => { if (e.key === 'Enter') confirm(); };
     });
 }
