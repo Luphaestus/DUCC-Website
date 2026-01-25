@@ -1,10 +1,7 @@
-//todo refine 
-
 /**
  * detail.js (Role)
  * 
  * Detailed view for managing a single user role.
- * Allows editing role name and assigning granular permissions.
  * 
  * Registered Route: /admin/role/:id
  */
