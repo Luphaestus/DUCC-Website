@@ -8,8 +8,8 @@ import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderAdminNavBar } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
-import { 
-    UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG 
+import {
+    UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG
 } from '../../../../images/icons/outline/icons.js'
 import { Pagination } from '/js/widgets/Pagination.js';
 
@@ -39,12 +39,12 @@ export async function renderManageUsers() {
                     </div>
                  </div>
             </div>
-
+            
             ${Panel({
                 content: `
                     <div class="glass-table-container">
                         <div class="table-responsive">
-                            <table class="glass-table">
+                            <table class="glass-table users-table">
                                 <thead id="users-table-head"></thead>
                                 <tbody id="users-table-body">
                                     <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
@@ -87,18 +87,26 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
     const tbody = document.getElementById('users-table-body');
 
     try {
-        const query = new URLSearchParams({ page, limit: 15, search, sort, order }).toString();
-        const data = await apiRequest('GET', `/api/admin/users?${query}`);
-        const users = data.users || [];
-        const totalPages = data.totalPages || 1;
+        const [userData, globalData] = await Promise.all([
+            apiRequest('GET', `/api/admin/users?${new URLSearchParams({ page, limit: 15, search, sort, order }).toString()}`),
+            apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
+        ]);
+
+        const users = userData.users || [];
+        const totalPages = userData.totalPages || 1;
+        const minMoney = Number(globalData.res?.MinMoney?.data || -25);
+
+        const hasBalance = users.length > 0 && users[0].balance !== undefined;
 
         const columns = [
-            { key: 'first_name', label: 'First Name', sort: 'first_name' },
-            { key: 'last_name', label: 'Last Name', sort: 'last_name' },
-            { key: 'email', label: 'Email', sort: 'email' },
+            { key: 'name', label: 'Name', sort: 'last_name' },
             { key: 'college', label: 'College', sort: 'college_id' },
-            { key: 'role', label: 'Role' }
+            { key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' },
         ];
+
+        if (hasBalance) {
+            columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
+        }
 
         thead.innerHTML = `<tr>${columns.map(c => `
             <th class="${c.sort ? 'sortable' : ''}" data-sort="${c.sort || ''}">
@@ -116,17 +124,31 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
         });
 
         if (users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No users found.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${columns.length}" class="empty-cell">No users found.</td></tr>`;
         } else {
-            tbody.innerHTML = users.map(user => `
-                <tr class="user-row clickable-row" data-id="${user.id}">
-                    <td data-label="First Name">${user.first_name}</td>
-                    <td data-label="Last Name">${user.last_name}</td>
-                    <td data-label="Email">${user.email}</td>
-                    <td data-label="College">${user.college_name || 'N/A'}</td>
-                    <td data-label="Role"><span class="badge role-${user.role_name?.toLowerCase()}">${user.role_name}</span></td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = users.map(user => {
+                const bal = Number(user.balance || 0);
+                
+                let balClass = 'text-success';
+                if (bal < minMoney) balClass = 'text-danger';
+                else if (bal < 0) balClass = 'text-warning';
+
+                const lastInitial = user.last_name ? user.last_name.charAt(0) + '.' : '';
+
+                return `
+                    <tr class="user-row clickable-row" data-id="${user.id}">
+                        <td data-label="Name" class="primary-text name-column">
+                            <span class="full-name">${user.first_name} ${user.last_name}</span>
+                            <span class="thin-name">${user.first_name} ${lastInitial}</span>
+                        </td>
+                        <td data-label="College">${user.college_name || 'N/A'}</td>
+                        <td data-label="Difficulty">
+                            <span class="badge difficulty-${user.difficulty_level || 1}">${user.difficulty_level || 1}</span>
+                        </td>
+                        ${hasBalance ? `<td data-label="Balance" class="${balClass}">£${bal.toFixed(2)}</td>` : ''}
+                    </tr>
+                `;
+            }).join('');
             
             tbody.querySelectorAll('.user-row').forEach(row => {
                 row.onclick = () => switchView(`/admin/user/${row.dataset.id}`);
