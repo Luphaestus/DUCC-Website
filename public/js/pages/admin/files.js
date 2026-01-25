@@ -1,10 +1,7 @@
-//todo refine     
 /**
  * files.js
  * 
  * Administrative interface for managing club files and categories.
- * Provides a comprehensive dashboard for file CRUD operations, category management,
- * and bulk file uploading with real-time progress tracking.
  * 
  * Registered Route: /admin/files
  */
@@ -20,7 +17,6 @@ import { Modal } from '/js/widgets/Modal.js';
 import { Pagination } from '/js/widgets/Pagination.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 
-/** @type {object} Current filter and pagination state */
 let currentOptions = {
     page: 1,
     limit: 15,
@@ -42,7 +38,6 @@ export async function renderAdminFiles() {
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
 
-    // Initialize Modals
     uploadModal = new Modal({
         id: 'upload-files-modal',
         title: 'Upload Files',
@@ -198,7 +193,6 @@ async function loadAdminFiles() {
             ${c.label} ${currentOptions.sort === c.sort ? (currentOptions.order === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG}
         </th>
     `).join('')}<th data-label="Actions" class="action-col">Actions</th></tr>`;
-    // Re-bind sort listeners
     thead.querySelectorAll('th.sortable').forEach(th => {
         th.onclick = () => {
             const field = th.dataset.sort;
@@ -483,7 +477,6 @@ function setupEventListeners() {
     if (catList) {
         catList.onclick = handleActionClick;
 
-        // Auto-save changes to category names/visibility on change
         catList.onchange = async (e) => {
             const id = e.target.dataset.id;
             const container = e.target.closest('.category-item');
