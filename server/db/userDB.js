@@ -248,7 +248,7 @@ class UserDB {
 
                 const cols = await db.all('PRAGMA table_info(users)');
                 const keepCols = ['id', 'first_name', 'last_name', 'swims', 'created_at', 'free_sessions', 'difficulty_level'];
-                
+
                 const updates = ["email = 'deleted:' || email"];
 
                 for (const col of cols) {
@@ -295,7 +295,12 @@ class UserDB {
     static async getUserProfile(db, userId, elements, includeBalance) {
         try {
             const query = `
-                SELECT u.*, c.name as college_name 
+                SELECT u.id, u.email, u.first_name, u.last_name, u.date_of_birth, u.college_id, 
+                       u.emergency_contact_name, u.emergency_contact_phone, u.home_address, u.phone_number,
+                       u.has_medical_conditions, u.medical_conditions_details, u.takes_medication, u.medication_details,
+                       u.free_sessions, u.is_member, u.filled_legal_info, u.legal_filled_at, u.difficulty_level,
+                       u.is_instructor, u.first_aid_expiry, u.swims, u.profile_picture_id, u.created_at,
+                       c.name as college_name 
                 FROM users u 
                 LEFT JOIN colleges c ON u.college_id = c.id 
                 WHERE u.id = ?
@@ -339,7 +344,7 @@ class UserDB {
                 "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data"
             ];
             const setClause = legalFields.map(f => `${f} = NULL`).join(', ') + ", filled_legal_info = 0, legal_filled_at = NULL";
-            
+
             await db.run(`UPDATE users SET ${setClause} WHERE agrees_to_keep_health_data = 0 OR agrees_to_keep_health_data IS NULL`);
 
             const presidentRole = await db.get('SELECT id FROM roles WHERE name = ?', ['President']);

@@ -112,7 +112,17 @@ class Auth {
 
                 req.logIn(user, (err) => {
                     if (err) return res.status(500).json({ message: 'Login error.' });
-                    return res.status(200).json({ message: 'Login successful.', user });
+                    
+                    const { hashed_password, ...safeUser } = user;
+                    return res.status(200).json({ 
+                        message: 'Login successful.', 
+                        user: {
+                            id: safeUser.id,
+                            email: safeUser.email,
+                            first_name: safeUser.first_name,
+                            last_name: safeUser.last_name
+                        }
+                    });
                 });
             })(req, res, next);
         });
