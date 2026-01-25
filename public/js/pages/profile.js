@@ -39,38 +39,38 @@ const sidebarItems = [
 
 /** HTML Template for the dashboard */
 const HTML_TEMPLATE = /*html*/`
-        <div id="profile-view" class="view hidden">
-            <div class="dashboard-container">
-                ${Sidebar(sidebarItems)}
+    <div id="profile-view" class="view hidden">
+        <div class="dashboard-container">
+            ${Sidebar(sidebarItems)}
 
-                <!-- Main Content Area -->
-                <main class="dashboard-content">
-            
+            <!-- Main Content Area -->
+            <main class="dashboard-content">
+        
                 <!-- Overview Tab -->
                 <section id="tab-overview" class="dashboard-section active">
                     <div id="membership-banner-container"></div>
 
                     ${Panel({
-    title: 'Swimming Stats',
-    icon: POOL_SVG,
-    action: `<button class="small-btn secondary" data-nav="/swims">${SOCIAL_LEADERBOARD_SVG} View Leaderboard</button>`,
-    content: `<div id="swim-stats-grid" class="stats-grid"><p>Loading stats...</p></div>`
-})}
+                        title: 'Swimming Stats',
+                        icon: POOL_SVG,
+                        action: `<button class="small-btn secondary" data-nav="/swims">${SOCIAL_LEADERBOARD_SVG} View Leaderboard</button>`,
+                        content: `<div id="swim-stats-grid" class="stats-grid"><p>Loading stats...</p></div>`
+                    })}
 
                     <!-- Legal & Safety Row -->
                     <div class="dual-grid">
                         ${Panel({
-    title: 'Legal Waiver',
-    icon: CONTRACT_SVG,
-    action: `<button class="small-btn secondary" data-nav="/legal">${EDIT_SVG} Update</button>`,
-    content: `<div id="legal-status-content"><p>Loading...</p></div>`
-})}
+                            title: 'Legal Waiver',
+                            icon: CONTRACT_SVG,
+                            action: `<button class="small-btn secondary" data-nav="/legal">${EDIT_SVG} Update</button>`,
+                            content: `<div id="legal-status-content"><p>Loading...</p></div>`
+                        })}
 
                         ${Panel({
-    title: 'Safety Info',
-    icon: MEDICAL_INFORMATION_SVG,
-    action: `<button id="edit-safety-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>`,
-    content: `
+                            title: 'Safety Info',
+                            icon: MEDICAL_INFORMATION_SVG,
+                            action: `<button id="edit-safety-btn" class="small-btn secondary">${EDIT_SVG} Edit</button>`,
+                            content: `
                                 <div id="safety-info-display">
                                     <div class="info-rows">
                                         <div class="info-row"><span>First Aid Expiry</span><span id="display-first-aid">Not Set</span></div>
@@ -88,18 +88,18 @@ const HTML_TEMPLATE = /*html*/`
                                     </div>
                                 </form>
                             `
-})}
+                        })}
                     </div>
 
                     ${Panel({
-    id: 'groups-teams-panel',
-    title: 'Groups & Teams',
-    icon: GROUP_SVG,
-    content: `<div id="tags-list-container" class="tags-list"><p>Loading tags...</p></div>`
-})}
+                        id: 'groups-teams-panel',
+                        title: 'Groups & Teams',
+                        icon: GROUP_SVG,
+                        content: `<div id="tags-list-container" class="tags-list"><p>Loading tags...</p></div>`
+                    })}
 
                     ${Panel({
-    content: `
+                        content: `
                             <div class="role-toggle">
                                 <div class="role-info">
                                     <h4>${BOLT_SVG} Instructor Status</h4>
@@ -108,38 +108,38 @@ const HTML_TEMPLATE = /*html*/`
                                 <button id="toggle-instructor-btn" class="small-btn secondary">Apply</button>
                             </div>
                         `
-})}
+                    })}
                 </section>
 
                 <section id="tab-balance" class="dashboard-section">
                     <!-- Balance Overview -->
                     ${ValueHeader({
-    title: 'Current Balance',
-    value: '£0.00',
-    valueId: 'balance-amount',
-    actions: `<button id="top-up-btn" class="primary">Top Up Balance</button>`
-})}
+                        title: 'Current Balance',
+                        value: '£0.00',
+                        valueId: 'balance-amount',
+                        actions: `<button id="top-up-btn" class="primary">Top Up Balance</button>`
+                    })}
 
                     ${Panel({
-    title: 'Transaction History',
-    content: `<div id="transactions-list-container"></div>`
-})}
+                        title: 'Transaction History',
+                        content: `<div id="transactions-list-container"></div>`
+                    })}
                 </section>
 
                 <section id="tab-settings" class="dashboard-section">
                     <div class="settings-grid">
                         ${Panel({
-    title: 'Security',
-    icon: ID_CARD_SVG,
-    content: `<button id="change-password-btn" class="outline">Change Password</button>`
-})}
+                            title: 'Security',
+                            icon: ID_CARD_SVG,
+                            content: `<button id="change-password-btn" class="outline">Change Password</button>`
+                        })}
 
                         ${Panel({
-    title: 'Danger Zone',
-    icon: BRIGHTNESS_ALERT_SVG,
-    classes: 'danger-zone',
-    content: `<button id="delete-account-btn" class="delete outline">Delete Account</button>`
-})}
+                            title: 'Danger Zone',
+                            icon: BRIGHTNESS_ALERT_SVG,
+                            classes: 'danger-zone',
+                            content: `<button id="delete-account-btn" class="delete outline">Delete Account</button>`
+                        })}
                     </div>
                 </section>
             </main>
@@ -322,11 +322,11 @@ function renderInstructor(profile) {
  */
 function renderProfileBalance(profile, minMoney) {
     const bal = Number(profile.balance);
-    
+
     let valueClass = 'balance-warning';
     if (bal < minMoney) valueClass = 'balance-negative';
     else if (bal >= 0) valueClass = 'balance-positive';
-    
+
     updateValueDisplay('balance-amount', `£${bal.toFixed(2)}`, valueClass);
 }
 
