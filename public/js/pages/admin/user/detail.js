@@ -1,10 +1,8 @@
-//todo refine
+//todo refine  
 /**
  * detail.js (User)
  * 
  * Main logic for the detailed user management view in the Admin Dashboard.
- * Implements a tabbed interface (Profile, Legal, Tags, Transactions) with
- * synchronized URL query parameters for deep linking.
  * 
  * Registered Route: /admin/user/:id
  */
@@ -70,7 +68,7 @@ export async function renderUserDetail(userId) {
         adminContent.innerHTML = `
             <div class="glass-layout">
                 ${Panel({
-                    content: `
+            content: `
                         <header class="user-detail-header">
                             <div class="user-identity">
                                 <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
@@ -80,8 +78,8 @@ export async function renderUserDetail(userId) {
                         </header>
                         <div id="admin-tab-content" class="tab-content-area"></div>
                     `,
-                    classes: 'mb-1-5'
-                })}
+            classes: 'mb-1-5'
+        })}
             </div>
         `;
 
@@ -93,22 +91,19 @@ export async function renderUserDetail(userId) {
         // Attach listeners to all generated tabs
         tabButtons.forEach(btn => {
             btn.onclick = () => {
-                // Update active class manually for immediate feedback (init() will sync BG)
                 tabButtons.forEach(t => t.classList.remove('active'));
                 btn.classList.add('active');
-                tabNav.init(); // Sync BG
+                tabNav.init(); 
 
-                // Update URL for deep linking without triggering a full router switch
                 const newUrl = new URL(window.location);
                 newUrl.searchParams.set('tab', btn.dataset.tab);
                 window.history.replaceState({}, '', newUrl);
-                
+
                 renderTab(btn.dataset.tab, user, userPerms, canManageUsers, isExec);
             };
         });
 
-        // Bootstrap initial view
-        renderTab(currentTab, user, userPerms, canManageUsers, isExec);
+       renderTab(currentTab, user, userPerms, canManageUsers, isExec);
 
     } catch (e) {
         console.error(e);
