@@ -21,8 +21,9 @@ import { renderManageGlobals } from './globals.js';
 import { renderAdminFiles } from './files.js';
 import { renderManageSlides } from './slides.js';
 import { requireAuth } from '/js/utils/auth.js';
-import { GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG, 
-    ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG 
+import {
+    GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG,
+    ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG
 } from '../../../images/icons/outline/icons.js';
 
 export const adminContentID = 'admin-content';
@@ -125,7 +126,7 @@ async function AdminNavigationListener({ viewId, path }) {
     if (!authOk) return;
 
     const perms = userData.permissions || [];
-    
+
     // Redirect if user has no administrative roles
     if (perms.length === 0) {
         switchView('/unauthorized');
@@ -139,7 +140,7 @@ async function AdminNavigationListener({ viewId, path }) {
     const canManageRoles = perms.includes('role.manage');
     const canManageDocs = perms.includes('document.write') || perms.includes('document.edit');
     const isExec = perms.length > 0;
-    const isPresident = !!statusData; 
+    const isPresident = !!statusData;
 
     const adminContent = document.getElementById(adminContentID);
     if (!adminContent) return;
@@ -153,7 +154,7 @@ async function AdminNavigationListener({ viewId, path }) {
     // Determine access eligibility for specific modules
     const canAccessUsers = canManageUsers || canManageTransactions || isExec;
     const canAccessEvents = canManageEvents;
-    const canAccessTags = canManageEvents; 
+    const canAccessTags = canManageEvents;
     const canAccessRoles = canManageRoles;
     const canAccessGlobals = isPresident;
     const canAccessDocs = canManageDocs;
@@ -164,56 +165,56 @@ async function AdminNavigationListener({ viewId, path }) {
     if (cleanPath === '/admin/users' || cleanPath.match(/^\/admin\/user\/\d+$/)) {
         if (!canAccessUsers) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/\d+$/) ? 'User Details' : 'Users');
-        
+
         if (cleanPath === '/admin/users') await renderManageUsers();
         else await renderUserDetail(cleanPath.split('/').pop());
 
-    // Events Module
+        // Events Module
     } else if (cleanPath === '/admin/events' || cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {
         if (!canAccessEvents) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Event Details' : 'Events');
-        
+
         if (cleanPath === '/admin/events') await renderManageEvents();
         else await renderEventDetail(cleanPath.split('/').pop());
 
-    // Tags Module
+        // Tags Module
     } else if (cleanPath === '/admin/tags' || cleanPath.match(/^\/admin\/tag\/(new|\d+)$/)) {
         if (!canAccessTags) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Tag Details' : 'Tags');
-        
+
         if (cleanPath === '/admin/tags') await renderManageTags();
         else await renderTagDetail(cleanPath.split('/').pop());
 
-    // Roles Module
+        // Roles Module
     } else if (cleanPath === '/admin/roles' || cleanPath.match(/^\/admin\/role\/(new|\d+)$/)) {
         if (!canAccessRoles) return switchView('/unauthorized');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Role Details' : 'Roles');
-        
+
         if (cleanPath === '/admin/roles') await renderManageRoles();
         else await renderRoleDetail(cleanPath.split('/').pop());
 
-    // Files Module
+        // Files Module
     } else if (cleanPath === '/admin/files') {
         if (!canAccessDocs) return switchView('/unauthorized');
         updateAdminTitle('Files');
         await renderAdminFiles();
 
-    // Global Settings
+        // Global Settings
     } else if (cleanPath === '/admin/globals') {
         if (!canAccessGlobals) return switchView('/unauthorized');
         updateAdminTitle('Globals');
         await renderManageGlobals();
 
-    // Slides Module
+        // Slides Module
     } else if (cleanPath === '/admin/slides') {
         if (!isExec) return switchView('/unauthorized');
         updateAdminTitle('Slides');
         await renderManageSlides();
 
-    // Dashboard Home
+        // Dashboard Home
     } else if (cleanPath === '/admin' || cleanPath === '/admin/') {
         let cardsHtml = '';
-        
+
         if (canAccessUsers) cardsHtml += createDashboardCard('Users', 'Manage members & permissions', GROUP_SVG, '/admin/users');
         if (isExec) cardsHtml += createDashboardCard('Slides', 'Homepage slideshow', IMAGE_SVG, '/admin/slides');
         if (canAccessEvents) cardsHtml += createDashboardCard('Events', 'Schedule & attendance', CALENDAR_TODAY_SVG, '/admin/events');

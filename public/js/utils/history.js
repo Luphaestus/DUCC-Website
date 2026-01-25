@@ -1,4 +1,3 @@
-//todo refine
 /**
  * history.js
  * 
