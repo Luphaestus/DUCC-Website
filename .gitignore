@@ -142,6 +142,10 @@ database.db
 
 # macOS
 **/.DS_Store
+
+
 .env.deploy
 data/
 .data/
+openapi.html
+

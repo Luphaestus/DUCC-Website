@@ -22,7 +22,8 @@
     "dev": "cross-env NODE_ENV=dev npm run --silent db:init && cross-env NODE_ENV=dev run-p --silent sass dev:server",
     "pretest": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db npm run --silent db:init",
     "test": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest run",
-    "test:watch": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest"
+    "test:watch": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest",
+    "apidoc": "npx openapi-generate-html -i public/openapi.json --theme=dark --ui stoplight --theme dark -o openapi.html"
   },
   "nodemonConfig": {
     "watch": [
