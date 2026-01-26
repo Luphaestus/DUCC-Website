@@ -2834,7 +2834,7 @@ body {
   --glass-highlight: rgba(0, 0, 0, 0.1);
   --glass-border: 1px solid var(--glass-highlight);
   --nav-bg: rgba(255, 255, 255, 0.85);
-  --glass-text-color: #373c44;
+  --glass-text-colour: #373c44;
   --theme: white;
   --theme-opposite: black;
   --colour-good: #2ecc71;
@@ -2846,11 +2846,11 @@ body {
   --table-bg-body: rgba(255, 255, 255, 0.4);
   --table-bg-hover-body: rgba(255, 255, 255, 0.6);
   /* Light Mode Blobs */
-  --blob-color-1: rgba(170, 64, 191, 0.19);
-  --blob-color-2: rgba(188, 203, 235, 0.303);
-  --blob-color-3: rgba(89, 186, 255, 0.245);
-  --blob-color-4: rgba(65, 249, 249, 0.161);
-  --blob-color-5: rgba(58, 243, 151, 0.155);
+  --blob-colour-1: rgba(170, 64, 191, 0.19);
+  --blob-colour-2: rgba(188, 203, 235, 0.303);
+  --blob-colour-3: rgba(89, 186, 255, 0.245);
+  --blob-colour-4: rgba(65, 249, 249, 0.161);
+  --blob-colour-5: rgba(58, 243, 151, 0.155);
 }
 body #animated-background {
   opacity: 0.6;
@@ -2878,18 +2878,18 @@ body .bg-icon {
     --glass-highlight: rgba(255, 255, 255, 0.1);
     --glass-border: 1px solid var(--glass-highlight);
     --nav-bg: rgba(20, 20, 25, 0.85);
-    --glass-text-color: #ffffff;
+    --glass-text-colour: #ffffff;
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
     --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.5);
     --table-border: 1px solid rgba(255, 255, 255, 0.05);
     --table-bg-body: rgba(30, 30, 35, 0.4);
     --table-bg-hover-body: rgba(40, 40, 45, 0.6);
     /* Dark Mode Blobs */
-    --blob-color-1: rgba(155, 89, 182, 0.12);
-    --blob-color-2: rgba(52, 152, 219, 0.12);
-    --blob-color-3: rgba(41, 128, 185, 0.12);
-    --blob-color-4: rgba(26, 188, 156, 0.12);
-    --blob-color-5: rgba(46, 204, 113, 0.12);
+    --blob-colour-1: rgba(155, 89, 182, 0.12);
+    --blob-colour-2: rgba(52, 152, 219, 0.12);
+    --blob-colour-3: rgba(41, 128, 185, 0.12);
+    --blob-colour-4: rgba(26, 188, 156, 0.12);
+    --blob-colour-5: rgba(46, 204, 113, 0.12);
   }
   body:not([data-theme=light]) #animated-background {
     opacity: 0.4;
@@ -2906,18 +2906,18 @@ body[data-theme=dark] {
   --glass-highlight: rgba(255, 255, 255, 0.1);
   --glass-border: 1px solid var(--glass-highlight);
   --nav-bg: rgba(20, 20, 25, 0.85);
-  --glass-text-color: #ffffff;
+  --glass-text-colour: #ffffff;
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
   --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.5);
   --table-border: 1px solid rgba(255, 255, 255, 0.05);
   --table-bg-body: rgba(30, 30, 35, 0.4);
   --table-bg-hover-body: rgba(40, 40, 45, 0.6);
   /* Dark Mode Blobs */
-  --blob-color-1: rgba(155, 89, 182, 0.12);
-  --blob-color-2: rgba(52, 152, 219, 0.12);
-  --blob-color-3: rgba(41, 128, 185, 0.12);
-  --blob-color-4: rgba(26, 188, 156, 0.12);
-  --blob-color-5: rgba(46, 204, 113, 0.12);
+  --blob-colour-1: rgba(155, 89, 182, 0.12);
+  --blob-colour-2: rgba(52, 152, 219, 0.12);
+  --blob-colour-3: rgba(41, 128, 185, 0.12);
+  --blob-colour-4: rgba(26, 188, 156, 0.12);
+  --blob-colour-5: rgba(46, 204, 113, 0.12);
 }
 body[data-theme=dark] #animated-background {
   opacity: 0.4;
@@ -3253,6 +3253,10 @@ table tbody tr td {
 
 .hidden {
   display: none !important;
+}
+
+.text-centre {
+  text-align: center;
 }
 
 .fade-out {
@@ -3932,7 +3936,7 @@ nav.small-container ul.navbar-items li button#login-button {
   position: absolute;
   width: var(--blob-size);
   height: var(--blob-size);
-  background-color: var(--blob-color);
+  background-color: var(--blob-colour);
   filter: blur(30px);
   top: var(--blob-top);
   left: var(--blob-left);
@@ -4698,15 +4702,14 @@ nav.small-container ul.navbar-items li button#login-button {
 /* Page-specific override for files if needed, or just use glass-pagination class */
 /* Tag Badges */
 .tag-badge {
-  background-color: var(--tag-color, var(--pico-primary));
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--border-radius-pill);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
   display: inline-block;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 0.35rem 0.85rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background-color: var(--tag-colour, var(--pico-primary));
+  color: var(--tag-text-colour, white);
+  white-space: nowrap;
 }
 
 /* Toggle Group (Merged Buttons / Sliding look) */
@@ -5312,7 +5315,7 @@ nav.small-container ul.navbar-items li button#login-button {
   padding: 0.25rem !important;
   height: auto !important;
   width: auto !important;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
   opacity: 0.7;
   transition: all 0.2s ease;
   --scale-base: 1;
@@ -5336,7 +5339,7 @@ nav.small-container ul.navbar-items li button#login-button {
   font-weight: 600;
   font-size: 1.1rem;
   white-space: nowrap;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
 }
 #events-view .events-controls-modern .controls-group {
   position: absolute;
@@ -5352,7 +5355,7 @@ nav.small-container ul.navbar-items li button#login-button {
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: transparent;
   border: none;
@@ -5386,7 +5389,7 @@ nav.small-container ul.navbar-items li button#login-button {
 }
 #events-view .events-controls-modern .controls-group .today-btn.disabled-hover {
   background: transparent;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
   transform: scale(1);
   cursor: default;
 }
@@ -5435,7 +5438,7 @@ nav.small-container ul.navbar-items li button#login-button {
   font-size: 2.5rem;
   font-weight: 800;
   line-height: 1;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
 }
 #events-view .day-group .date-strip .date-text-group {
   display: flex;
@@ -5461,7 +5464,7 @@ nav.small-container ul.navbar-items li button#login-button {
 #events-view .day-group .date-strip .date-text-group .month-name {
   font-size: 0.85rem;
   opacity: 0.7;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
   line-height: 1;
 }
 #events-view .day-events-grid {
@@ -5580,7 +5583,7 @@ nav.small-container ul.navbar-items li button#login-button {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
   opacity: 0.8;
   text-align: left;
 }
@@ -5806,7 +5809,7 @@ nav.small-container ul.navbar-items li button#login-button {
 #event-view .event-modal-body .event-info-boxes .info-box .box-value {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
 }
 #event-view .event-modal-body .difficulty-container {
   display: flex;
@@ -5881,7 +5884,7 @@ nav.small-container ul.navbar-items li button#login-button {
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  color: var(--glass-text-color);
+  color: var(--glass-text-colour);
   font-size: 0.9rem;
 }
 #event-view .event-modal-body .attendees-section .waitlist-info svg {
@@ -6106,7 +6109,7 @@ body[data-theme=light] #event-view .event-modal-body .event-actions #edit-event-
   }
 }
 #profile-view .tag-badge {
-  background-color: var(--tag-color, var(--pico-primary));
+  background-color: var(--tag-colour, var(--pico-primary));
 }
 #profile-view .instructor-active {
   color: #2ecc71;
@@ -6771,27 +6774,27 @@ footer .footer-bottom p {
   }
 }
 
-/* Shared Error View Styles (Default: Unauthorized Style) */
+/* Shared Error View Styles (Default: Unauthorised Style) */
 #error-view .container,
-#unauthorized-view .container,
+#unauthorised-view .container,
 #no-connection-view .container {
   text-align: center;
   padding-top: 4rem;
 }
 #error-view .error-icon,
-#unauthorized-view .error-icon,
+#unauthorised-view .error-icon,
 #no-connection-view .error-icon {
   color: var(--pico-secondary);
   margin-bottom: 1.5rem;
 }
 #error-view .error-icon svg,
-#unauthorized-view .error-icon svg,
+#unauthorised-view .error-icon svg,
 #no-connection-view .error-icon svg {
   height: 64px;
   width: 64px;
 }
 #error-view .error-actions,
-#unauthorized-view .error-actions,
+#unauthorised-view .error-actions,
 #no-connection-view .error-actions {
   display: flex;
   gap: 1rem;
@@ -8413,13 +8416,10 @@ textarea[name=description] {
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
-#admin-view .color-input {
-  height: 3rem;
+#admin-view .colour-input {
   padding: 0;
-  border: none;
-  background: none;
+  height: 50px;
   cursor: pointer;
-  width: 100%;
 }
 #admin-view #tag-form label.block {
   margin-bottom: 1.5rem;
@@ -8574,7 +8574,7 @@ textarea[name=description] {
 #admin-view .min-w-100 {
   min-width: 100px;
 }
-#admin-view .muted-color {
+#admin-view .muted-colour {
   color: var(--pico-muted-color);
 }
 #admin-view .font-size-0-85 {
@@ -8754,7 +8754,7 @@ textarea[name=description] {
   margin-top: 1.5rem;
 }
 #admin-view .tag-badge {
-  background-color: var(--tag-color, var(--pico-primary));
+  background-color: var(--tag-colour, var(--pico-primary));
   opacity: 0.4;
   transition: all 0.2s;
   border: 2px solid transparent;

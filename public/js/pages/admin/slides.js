@@ -58,7 +58,7 @@ export async function renderManageSlides() {
 }
 
 /**
- * Initializes the upload modal and widget.
+ * Initialises the upload modal and widget.
  */
 function setupModal() {
     if (!slideModal) return;

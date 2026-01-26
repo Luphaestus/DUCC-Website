@@ -162,7 +162,7 @@ function setRadioBoolean(yesId, noId, value) {
 /**
  * Attaches standard input listeners to clear errors on user interaction.
  */
-function initializeInteractivity() {
+function initialiseInteractivity() {
     const inputs = document.querySelectorAll(`#${DOM_IDS.container} input, #${DOM_IDS.container} select, #${DOM_IDS.container} textarea`);
     inputs.forEach(input => input.addEventListener('input', () => clearError(input)));
 
@@ -249,7 +249,7 @@ async function renderLegalPage(page) {
             applyFormData(userData);
         }
 
-        initializeInteractivity();
+        initialiseInteractivity();
 
     } catch (e) {
         console.error("Legal page load error", e);
@@ -296,7 +296,7 @@ function setupFormSubmission() {
     });
 }
 
-// --- Initialization ---
+// --- Initialisation ---
 
 document.addEventListener('DOMContentLoaded', () => {
     setupFormSubmission();

@@ -11,7 +11,7 @@ import { BalanceChangedEvent, FirstNameChangedEvent } from '/js/utils/events/eve
 
 /**
  * Navigation configuration.
- * Groups: 'main' (left/center) and 'user' (right).
+ * Groups: 'main' (left/centre) and 'user' (right).
  */
 const navEntries = [
     { name: 'Events', group: 'main', id: 'nav-events', classes: "contrast", action: { run: () => switchView('/events') } },
@@ -161,12 +161,12 @@ async function updateNavOnLoginState(data) {
 
 /** 
  * Closes or opens the mobile side-menu. 
- * Initialized in setupMobileMenu.
+ * Initialised in setupMobileMenu.
  */
 let toggleMobileMenu = () => { };
 
 /**
- * Initializes the mobile hamburger menu and overlay.
+ * Initialises the mobile hamburger menu and overlay.
  */
 function setupMobileMenu() {
     const nav = document.querySelector('nav.small-container');

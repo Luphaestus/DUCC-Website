@@ -7,12 +7,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     const body = document.body;
 
-    const colors = [
-        'var(--blob-color-1)',
-        'var(--blob-color-2)',
-        'var(--blob-color-3)',
-        'var(--blob-color-4)',
-        'var(--blob-color-5)'
+    const colours = [
+        'var(--blob-colour-1)',
+        'var(--blob-colour-2)',
+        'var(--blob-colour-3)',
+        'var(--blob-colour-4)',
+        'var(--blob-colour-5)'
     ];
 
     const kayakSvg = /*html*/`
@@ -26,12 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
     container.id = 'animated-background';
     body.prepend(container);
 
-    colors.forEach((color, i) => {
+    colours.forEach((colour, i) => {
         const blob = document.createElement('div');
         blob.className = 'bg-blob';
         const size = 40 + (i * 10);
         blob.style.setProperty('--blob-size', `${size}vmax`);
-        blob.style.setProperty('--blob-color', color);
+        blob.style.setProperty('--blob-colour', colour);
 
         const positions = [
             { top: '-20%', left: '-20%' },

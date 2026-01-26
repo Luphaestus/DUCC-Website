@@ -40,7 +40,6 @@ export async function renderManageEvents() {
                  ${await renderAdminNavBar('events')}
                  <div class="toolbar-content">
                     <div class="toolbar-left">
-                        <!-- Search Input -->
                         <div class="search-bar">
                             <input type="text" id="event-search-input" placeholder="Search events..." value="${search}">
                             <button id="event-search-btn" class="search-icon-btn" title="Search">

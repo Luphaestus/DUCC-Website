@@ -129,7 +129,7 @@ async function AdminNavigationListener({ viewId, path }) {
 
     // Redirect if user has no administrative roles
     if (perms.length === 0) {
-        switchView('/unauthorized');
+        switchView('/unauthorised');
         return;
     }
 
@@ -163,7 +163,7 @@ async function AdminNavigationListener({ viewId, path }) {
 
     // Users Module
     if (cleanPath === '/admin/users' || cleanPath.match(/^\/admin\/user\/\d+$/)) {
-        if (!canAccessUsers) return switchView('/unauthorized');
+        if (!canAccessUsers) return switchView('/unauthorised');
         updateAdminTitle(cleanPath.match(/\d+$/) ? 'User Details' : 'Users');
 
         if (cleanPath === '/admin/users') await renderManageUsers();
@@ -171,7 +171,7 @@ async function AdminNavigationListener({ viewId, path }) {
 
         // Events Module
     } else if (cleanPath === '/admin/events' || cleanPath.match(/^\/admin\/event\/(new|\d+)$/)) {
-        if (!canAccessEvents) return switchView('/unauthorized');
+        if (!canAccessEvents) return switchView('/unauthorised');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Event Details' : 'Events');
 
         if (cleanPath === '/admin/events') await renderManageEvents();
@@ -179,7 +179,7 @@ async function AdminNavigationListener({ viewId, path }) {
 
         // Tags Module
     } else if (cleanPath === '/admin/tags' || cleanPath.match(/^\/admin\/tag\/(new|\d+)$/)) {
-        if (!canAccessTags) return switchView('/unauthorized');
+        if (!canAccessTags) return switchView('/unauthorised');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Tag Details' : 'Tags');
 
         if (cleanPath === '/admin/tags') await renderManageTags();
@@ -187,7 +187,7 @@ async function AdminNavigationListener({ viewId, path }) {
 
         // Roles Module
     } else if (cleanPath === '/admin/roles' || cleanPath.match(/^\/admin\/role\/(new|\d+)$/)) {
-        if (!canAccessRoles) return switchView('/unauthorized');
+        if (!canAccessRoles) return switchView('/unauthorised');
         updateAdminTitle(cleanPath.match(/(new|\d+)$/) ? 'Role Details' : 'Roles');
 
         if (cleanPath === '/admin/roles') await renderManageRoles();
@@ -195,19 +195,19 @@ async function AdminNavigationListener({ viewId, path }) {
 
         // Files Module
     } else if (cleanPath === '/admin/files') {
-        if (!canAccessDocs) return switchView('/unauthorized');
+        if (!canAccessDocs) return switchView('/unauthorised');
         updateAdminTitle('Files');
         await renderAdminFiles();
 
         // Global Settings
     } else if (cleanPath === '/admin/globals') {
-        if (!canAccessGlobals) return switchView('/unauthorized');
+        if (!canAccessGlobals) return switchView('/unauthorised');
         updateAdminTitle('Globals');
         await renderManageGlobals();
 
         // Slides Module
     } else if (cleanPath === '/admin/slides') {
-        if (!isExec) return switchView('/unauthorized');
+        if (!isExec) return switchView('/unauthorised');
         updateAdminTitle('Slides');
         await renderManageSlides();
 

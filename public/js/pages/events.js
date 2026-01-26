@@ -331,7 +331,7 @@ async function changePage(delta, animated = true) {
     }
 }
 
-// --- Initialization ---
+// --- Initialisation ---
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAdminAccess();

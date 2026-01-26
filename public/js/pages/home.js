@@ -79,8 +79,8 @@ let slideImages = [];
 let currentIdx = 0;
 
 /**
- * Initializes the Google Maps iframe by setting its src attribute.
- * Deferred until the home view is active to improve initial page load performance.
+ * Initialises the Google Maps iframe by setting its src attribute.
+ * Only loads if not already loaded.
  */
 function initMap() {
     const mapIframe = document.querySelector('.map-container iframe');

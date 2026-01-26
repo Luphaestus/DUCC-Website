@@ -24,9 +24,9 @@ export const Sidebar = (items = []) => `
 `;
 
 /**
- * Initializes sidebar navigation logic.
- * @param {string} defaultTab - The tab ID to show by default.
- * @param {function} onTabChange - Optional callback when tab changes.
+ * Initialises sidebar navigation logic.
+ * 
+ * @param {string} initialActiveId - ID of the initially active item.
  */
 export function initSidebar(defaultTab = 'overview', onTabChange) {
     const tabs = document.querySelectorAll('.nav-item[data-tab]');

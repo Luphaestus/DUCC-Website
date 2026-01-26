@@ -71,7 +71,7 @@ function setupModalListeners() {
 
     imagePickerModal.attachListeners();
 
-    // Initialize Upload Widget
+    // Initialise Upload Widget
     modalUploadWidget = new UploadWidget('modal-upload-widget', {
         mode: 'inline',
         selectMode: 'single',

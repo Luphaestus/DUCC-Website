@@ -37,7 +37,7 @@ const HTML_TEMPLATE = /*html*/`
         <table class="files-table">
             <thead id="files-table-head"></thead>
             <tbody id="files-list">
-                <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                <tr><td colspan="5" class="text-centre">Loading...</td></tr>
             </tbody>
         </table>
     </div>
@@ -144,7 +144,7 @@ async function fetchFiles() {
         const { files, totalPages } = res.data;
 
         if (files.length === 0) {
-            list.innerHTML = '<tr><td colspan="5" class="text-center">No files found.</td></tr>';
+            list.innerHTML = '<tr><td colspan="5" class="text-centre">No files found.</td></tr>';
             return;
         }
 
@@ -160,7 +160,7 @@ async function fetchFiles() {
                     <td data-label="Title">
                         <div class="file-title">
                             <strong>${file.title}</strong>
-                            <span class="file-category">${file.category_name || 'Uncategorized'}</span>
+                            <span class="file-category">${file.category_name || 'Uncategorised'}</span>
                         </div>
                     </td>
                     <td data-label="Author">${file.author}</td>
@@ -188,7 +188,7 @@ async function fetchFiles() {
         });
         pager.render(currentOptions.page, totalPages);
     } catch (e) {
-        list.innerHTML = '<tr><td colspan="5" class="text-center error">Failed to load files.</td></tr>';
+        list.innerHTML = '<tr><td colspan="5" class="text-centre error">Failed to load files.</td></tr>';
     }
 }
 

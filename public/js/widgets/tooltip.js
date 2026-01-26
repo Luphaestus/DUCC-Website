@@ -6,11 +6,8 @@
  */
 
 /**
- * Attaches tooltip behavior to a target element.
- * 
- * @param {HTMLElement} target - The element to attach the tooltip to.
- * @param {string} text - The text to display in the tooltip.
- * @param {string} [className='attendee-name-tooltip'] - CSS class for styling.
+ * Attaches tooltip behaviour to a target element.
+ * @param {HTMLElement} element 
  */
 export function attachTooltip(target, text, className = 'attendee-name-tooltip') {
     if (!target || !text) return;
@@ -41,10 +38,8 @@ export function attachTooltip(target, text, className = 'attendee-name-tooltip')
 }
 
 /**
- * Helper to initialize tooltips on a list of elements.
- * 
- * @param {NodeList|HTMLElement[]} elements - Collection of elements.
- * @param {string} [dataAttribute='name'] - Dataset key to read text from (e.g. data-name).
+ * Helper to initialise tooltips on a list of elements.
+ * @param {NodeList|Array} elements 
  */
 export function initTooltips(elements, dataAttribute = 'name') {
     elements.forEach(el => {

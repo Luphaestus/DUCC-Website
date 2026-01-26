@@ -122,7 +122,7 @@ export async function renderEventDetail(id) {
                                     ${allTags.map(tag => `
                                         <label class="tag-checkbox">
                                             <input type="checkbox" name="tags" value="${tag.id}" ${event.tags?.find(t => t.id === tag.id) ? 'checked' : ''} style="display:none;">
-                                            <span class="tag-badge ${event.tags?.find(t => t.id === tag.id) ? 'selected' : ''}" style="--tag-color: ${tag.color}; background-color: var(--tag-color);">${tag.name}</span>
+                                            <span class="tag-badge ${event.tags?.find(t => t.id === tag.id) ? 'selected' : ''}" style="--tag-colour: ${tag.color}; background-color: var(--tag-colour);">${tag.name}</span>
                                         </label>
                                     `).join('')}
                                 </div>

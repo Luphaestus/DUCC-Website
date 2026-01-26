@@ -37,7 +37,7 @@
     }
 
     .min-w-100 { min-width: 100px; }
-    .muted-color { color: var(--pico-muted-color); }
+    .muted-colour { color: var(--pico-muted-color); }
     .font-size-0-85 { font-size: 0.85rem; }
     .font-size-0-75 { font-size: 0.75rem; }
     .font-weight-600 { font-weight: 600; }
@@ -220,7 +220,7 @@
     }
 
     .tag-badge {
-        background-color: var(--tag-color, var(--pico-primary));
+        background-color: var(--tag-colour, var(--pico-primary));
         opacity: 0.4;
         transition: all 0.2s;
         border: 2px solid transparent;

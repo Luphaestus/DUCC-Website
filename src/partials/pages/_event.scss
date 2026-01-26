@@ -16,6 +16,7 @@
         ::-webkit-scrollbar {
             display: none;
         }
+
         -ms-overflow-style: none;
         scrollbar-width: none;
 
@@ -138,7 +139,7 @@
                 .box-value {
                     font-size: 1rem;
                     font-weight: 600;
-                    color: var(--glass-text-color);
+                    color: var(--glass-text-colour);
                 }
             }
         }
@@ -179,7 +180,7 @@
                 display: flex;
                 flex-wrap: wrap;
                 gap: 0.5rem;
-                
+
                 &.waitlist-members {
                     margin-top: 0.75rem;
                 }
@@ -227,7 +228,7 @@
                     align-items: center;
                     gap: 0.5rem;
                     font-weight: 600;
-                    color: var(--glass-text-color);
+                    color: var(--glass-text-colour);
                     font-size: 0.9rem;
                 }
 

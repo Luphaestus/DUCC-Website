@@ -58,13 +58,13 @@ export class TabNav {
     }
 
     /**
-     * Initializes the sliding background logic.
+     * Initialises the sliding background logic.
      */
     init() {
         const element = document.getElementById(this.id);
         if (!element) return;
 
-        if (element.dataset.initialized === 'true') {
+        if (element.dataset.initialised === 'true') {
             if (element._syncToggleGroup) element._syncToggleGroup();
             return;
         }
@@ -102,7 +102,7 @@ export class TabNav {
         };
 
         element._syncToggleGroup = sync;
-        element.dataset.initialized = 'true';
+        element.dataset.initialised = 'true';
 
         const savedPos = element.id ? (window.__lastTogglePositions && window.__lastTogglePositions[element.id]) : null;
         
@@ -124,7 +124,7 @@ export class TabNav {
     }
 
     /**
-     * Static helper to initialize any .toggle-group elements already in the DOM.
+     * Static helper to initialise any .toggle-group elements already in the DOM.
      * Useful for elements not created via this class.
      */
     static initElement(element) {

@@ -3,7 +3,7 @@
  * 
  * Registered Routes:
  * - /error (404)
- * - /unauthorized (403)
+ * - /unauthorised (403)
  * - /no-internet (Offline)
  */
 
@@ -12,7 +12,7 @@ import { apiRequest } from '/js/utils/api.js';
 import { BRIGHTNESS_ALERT_SVG, SHIELD_SVG, SIGNAL_DISCONNECTED_SVG } from '../../images/icons/outline/icons.js';
 
 addRoute('/error', 'error');
-addRoute('/unauthorized', 'unauthorized');
+addRoute('/unauthorised', 'unauthorised');
 addRoute('/no-internet', 'no-connection', { isOverlay: true });
 
 /**
@@ -49,9 +49,9 @@ main.insertAdjacentHTML('beforeend', createErrorView(
     'Oops! The page you are looking for does not exist.<br>It might have been moved, deleted, or you may have typed the address incorrectly.'
 ));
 
-// Unauthorized View
+// Unauthorised View
 main.insertAdjacentHTML('beforeend', createErrorView(
-    'unauthorized-view', 
+    'unauthorised-view', 
     SHIELD_SVG, 
     'Access Denied',
     'You do not have permission to view this page.'
@@ -79,7 +79,7 @@ async function handleErrorNavigation({ viewId }) {
     }
     
     if (viewId !== 'no-connection') {
-        const view = viewId === 'unauthorized' ? 'unauthorized-view' : 'error-view';
+        const view = viewId === 'unauthorised' ? 'unauthorised-view' : 'error-view';
         const actions = document.querySelector(`#${view} .error-actions`);
         if (!actions) return;
 

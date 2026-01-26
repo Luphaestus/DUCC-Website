@@ -34,7 +34,7 @@ export async function renderTagsTab(container, userId) {
                             <label class="tag-checkbox">
                                 <input type="checkbox" class="${inputClass}" value="${tag.id}" ${isActive ? 'checked' : ''} style="display:none;">
                                 <span class="tag-badge ${isActive ? 'selected' : ''}" 
-                                      style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
+                                      style="--tag-colour: ${tag.color}; background-color: var(--tag-colour);">
                                     ${tag.name}
                                 </span>
                             </label>`;

@@ -219,7 +219,7 @@ async function loadAdminFiles() {
         list.innerHTML = files.map(file => /*html*/`
             <tr>
                 <td data-label="Title" class="primary-text"><strong>${file.title}</strong></td>
-                <td data-label="Category"><span class="badge neutral">${file.category_name || 'Uncategorized'}</span></td>
+                <td data-label="Category"><span class="badge neutral">${file.category_name || 'Uncategorised'}</span></td>
                 <td data-label="Author">${file.author}</td>
                 <td data-label="Visibility"><span class="tag-badge ${file.visibility}">${file.visibility}</span></td>
                 <td data-label="Date">
@@ -461,7 +461,7 @@ function setupEventListeners() {
         // Delete Category
         if (e.target.closest('.delete-cat')) {
             const id = e.target.closest('.delete-cat').dataset.id;
-            if (await showConfirmModal('Delete Category', 'Delete category? Files in this category will be uncategorized.')) {
+            if (await showConfirmModal('Delete Category', 'Delete category? Files in this category will be uncategorised.')) {
                 await apiRequest('DELETE', `/api/file-categories/${id}`);
                 await loadCategoriesList();
                 await loadAdminCategories();

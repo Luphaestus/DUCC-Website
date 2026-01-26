@@ -3,13 +3,14 @@
  */
 
 @mixin dark-mode-vars {
-    --theme: black; --theme-opposite: white;
+    --theme: black;
+    --theme-opposite: white;
     --translucent-bg: rgba(20, 20, 25, 0.65);
     --glass-bg: rgba(30, 30, 35, 0.6);
     --glass-highlight: rgba(255, 255, 255, 0.1);
     --glass-border: 1px solid var(--glass-highlight);
     --nav-bg: rgba(20, 20, 25, 0.85);
-    --glass-text-color: #ffffff;
+    --glass-text-colour: #ffffff;
     --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
     --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.5);
     --table-border: 1px solid rgba(255, 255, 255, 0.05);
@@ -17,24 +18,33 @@
     --table-bg-hover-body: rgba(40, 40, 45, 0.6);
 
     /* Dark Mode Blobs */
-    --blob-color-1: rgba(155, 89, 182, 0.12);
-    --blob-color-2: rgba(52, 152, 219, 0.12);
-    --blob-color-3: rgba(41, 128, 185, 0.12);
-    --blob-color-4: rgba(26, 188, 156, 0.12);
-    --blob-color-5: rgba(46, 204, 113, 0.12);
+    --blob-colour-1: rgba(155, 89, 182, 0.12);
+    --blob-colour-2: rgba(52, 152, 219, 0.12);
+    --blob-colour-3: rgba(41, 128, 185, 0.12);
+    --blob-colour-4: rgba(26, 188, 156, 0.12);
+    --blob-colour-5: rgba(46, 204, 113, 0.12);
 
-    #animated-background { opacity: 0.4; }
-    .bg-icon { opacity: 0.06; }
+    #animated-background {
+        opacity: 0.4;
+    }
+
+    .bg-icon {
+        opacity: 0.06;
+    }
 }
 
 body {
     /* Font Stacks */
     --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-family-display: 'Outfit', var(--font-family-sans);
-    
+
     /* Design Tokens */
-    --border-radius-sm: 0.5rem; --border-radius-md: 1rem; --border-radius-lg: 1.5rem; --border-radius-pill: 9999px;
-    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05); --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
+    --border-radius-sm: 0.5rem;
+    --border-radius-md: 1rem;
+    --border-radius-lg: 1.5rem;
+    --border-radius-pill: 9999px;
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
     --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 
     /* Light Mode Defaults */
@@ -43,9 +53,12 @@ body {
     --glass-highlight: rgba(0, 0, 0, 0.1);
     --glass-border: 1px solid var(--glass-highlight);
     --nav-bg: rgba(255, 255, 255, 0.85);
-    --glass-text-color: #373c44;
-    --theme: white; --theme-opposite: black;
-    --colour-good: #2ecc71; --colour-warning: #f39c12; --colour-bad: #e74c3c;
+    --glass-text-colour: #373c44;
+    --theme: white;
+    --theme-opposite: black;
+    --colour-good: #2ecc71;
+    --colour-warning: #f39c12;
+    --colour-bad: #e74c3c;
     --table-border: 1px solid rgba(0, 0, 0, 0.05);
     --table-bg-head: rgba(var(--pico-primary-rgb), 0.05);
     --table-bg-hover-head: rgba(var(--pico-primary-rgb), 0.1);
@@ -53,17 +66,38 @@ body {
     --table-bg-hover-body: rgba(255, 255, 255, 0.6);
 
     /* Light Mode Blobs */
-    --blob-color-1: rgba(170, 64, 191, 0.19);
-    --blob-color-2: rgba(188, 203, 235, 0.303);
-    --blob-color-3: rgba(89, 186, 255, 0.245);
-    --blob-color-4: rgba(65, 249, 249, 0.161);
-    --blob-color-5: rgba(58, 243, 151, 0.155);
+    --blob-colour-1: rgba(170, 64, 191, 0.19);
+    --blob-colour-2: rgba(188, 203, 235, 0.303);
+    --blob-colour-3: rgba(89, 186, 255, 0.245);
+    --blob-colour-4: rgba(65, 249, 249, 0.161);
+    --blob-colour-5: rgba(58, 243, 151, 0.155);
 
-    #animated-background { opacity: 0.6; }
-    .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); }
-    .bg-icon { position: absolute; opacity: 0.12; color: var(--pico-color); pointer-events: none; z-index: 1; }
+    #animated-background {
+        opacity: 0.6;
+    }
+
+    .bg-blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+    }
+
+    .bg-icon {
+        position: absolute;
+        opacity: 0.12;
+        color: var(--pico-color);
+        pointer-events: none;
+        z-index: 1;
+    }
 }
 
 /* Dark Mode Activation */
-@media (prefers-color-scheme: dark) { body:not([data-theme="light"]) { @include dark-mode-vars; } }
-body[data-theme="dark"] { @include dark-mode-vars; }
+@media (prefers-color-scheme: dark) {
+    body:not([data-theme="light"]) {
+        @include dark-mode-vars;
+    }
+}
+
+body[data-theme="dark"] {
+    @include dark-mode-vars;
+}

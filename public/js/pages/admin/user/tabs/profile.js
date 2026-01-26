@@ -156,7 +156,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         <div class="role-toggle">
                             <div class="role-info">
                                 <h4>Instructor Status</h4>
-                                <p class="font-size-0-85 muted-color">Authorized to lead club sessions</p>
+                                <p class="font-size-0-85 muted-colour">Authorised to lead club sessions</p>
                             </div>
                             ${canManageUsers ? `
                                 <label class="switch">
@@ -168,7 +168,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         <div class="difficulty-control">
                             <label class="font-weight-600 font-size-0-9">Difficulty Level (1-5)</label>
                             <input type="range" id="admin-user-difficulty" value="${user.difficulty_level || 1}" min="1" max="5" step="1">
-                            <div class="range-labels font-size-0-75 muted-color">
+                            <div class="range-labels font-size-0-75 muted-colour">
                                 <span>Beginner</span>
                                 <span>Advanced</span>
                             </div>

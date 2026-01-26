@@ -35,7 +35,7 @@ const HTML_TEMPLATE = /*html*/`
 let isYearly = true;
 
 /**
- * Helper to determine the color class for booties based on delta from swims.
+ * Helper to determine the colour class for booties based on delta from swims.
  * @param {number} swims 
  * @param {number} booties 
  */

@@ -67,13 +67,12 @@ export async function renderTagDetail(id) {
         title: isNew ? 'Create New Tag' : 'Edit Tag',
         action: !isNew ? `<button type="button" id="delete-tag-btn" class="small-btn delete outline" title="Delete">${DELETE_SVG} Delete</button>` : '',
         content: `
-                    <!-- Main Metadata Form -->
                     <form id="tag-form" class="modern-form">
                         <div class="event-content-split">
                             <div class="event-details-section">
                                 <div class="grid-2-col">
                                     <label>Name <input type="text" name="name" value="${tag.name}" required placeholder="Tag Name"></label>
-                                    <label>Color <input type="color" name="color" value="${tag.color}" required class="color-input"></label>
+                                    <label>Colour <input type="color" name="color" value="${tag.color}" required class="colour-input"></label>
                                 </div>
                                 
                                 <label>Description <textarea name="description" rows="3">${tag.description || ''}</textarea></label>
@@ -356,7 +355,7 @@ function renderUserRows(users, tagId, btnClass) {
 }
 
 /**
- * Initializes the deletion logic for user association tables.
+ * Initialises the deletion logic for user association tables.
  * 
  * @param {string|number} tagId 
  * @param {string} tableId 

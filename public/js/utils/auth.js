@@ -18,14 +18,14 @@ export async function requireAuth() {
         
         if (!data.authenticated) {
             sessionStorage.setItem('redirect_after_login', window.location.pathname + window.location.search);
-            switchView('/unauthorized');
+            switchView('/unauthorised');
             return false;
         }
         
         return true;
     } catch (error) {
         console.error("Auth check failed:", error);
-        switchView('/unauthorized');
+        switchView('/unauthorised');
         return false;
     }
 }

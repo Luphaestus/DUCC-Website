@@ -31,11 +31,10 @@ export const ConditionalRadio = ({ legend, groupName, yesId, noId, detailId, det
 `;
 
 /**
- * Initializes the toggle logic for a conditional radio group.
- * 
- * @param {string} yesId - ID of the 'Yes' radio button.
- * @param {string} noId - ID of the 'No' radio button.
- * @param {string} detailId - ID of the detail input field.
+ * Initialises the toggle logic for a conditional radio group.
+ * @param {string} yesId 
+ * @param {string} noId 
+ * @param {string} detailId 
  */
 export function initConditionalRadio(yesId, noId, detailId) {
     const yesBtn = document.getElementById(yesId);

@@ -35,7 +35,7 @@ export async function renderManageTags() {
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Color</th>
+                                    <th>Colour</th>
                                     <th>Min Difficulty</th>
                                     <th>Description</th>
                                 </tr>
@@ -66,9 +66,9 @@ async function fetchAndRenderTags() {
             tbody.innerHTML = tags.map(tag => `
                 <tr class="tag-row clickable-row" data-id="${tag.id}">
                     <td data-label="Name" class="primary-text">${tag.name}</td>
-                    <td data-label="Color">
-                        <!-- Preview the color badge -->
-                        <span class="tag-badge" style="--tag-color: ${tag.color}; background-color: var(--tag-color);">
+                    <td data-label="Colour">
+                        <!-- Preview the colour badge -->
+                        <span class="tag-badge" style="--tag-colour: ${tag.color}; background-color: var(--tag-colour);">
                             ${tag.color}
                         </span>
                     </td>

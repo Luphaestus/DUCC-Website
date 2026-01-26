@@ -193,7 +193,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
         let isDisabled = false;
         let isDeleteStyle = false;
 
-        // Determine state and button behavior
+        // Determine state and button behaviour
         if (event.is_canceled) {
             buttonText = 'Event Canceled';
             isDisabled = true;
@@ -316,7 +316,7 @@ async function NavigationEventListner({ viewId, path, resolvedPath }) {
         const eventResponse = await apiRequest('GET', "/api" + apiPath);
         const { event } = eventResponse;
 
-        const tagsHtml = (event.tags || []).map(tag => Tag.render(tag, '', `--tag-color: ${tag.color}65;`)).join('');
+        const tagsHtml = (event.tags || []).map(tag => Tag.render(tag, '', `--tag-colour: ${tag.color}65;`)).join('');
 
         const durationMs = new Date(event.end) - new Date(event.start);
         const hours = Math.floor(durationMs / (1000 * 60 * 60));

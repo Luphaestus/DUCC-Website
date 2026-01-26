@@ -118,7 +118,7 @@ const HTML_TEMPLATE = /*html*/`
                         title: 'Current Balance',
                         value: '£0.00',
                         valueId: 'balance-amount',
-                        actions: `<button id="top-up-btn" class="small-btn">Top Up Balance</button>`
+                        actions: `<button id="top-up-btn" class="small-btn">Top Up</button>`
                     })}
 
                     ${Panel({
@@ -275,8 +275,8 @@ function renderTags(tags) {
     if (tags && tags.length > 0) {
         container.innerHTML = Tag.renderList(tags);
     } else {
-        const pannel = document.getElementById('groups-teams-panel');
-        if (pannel) pannel.classList.add('hidden');
+        const panel = document.getElementById('groups-teams-panel');
+        if (panel) panel.classList.add('hidden');
     }
 }
 
@@ -441,7 +441,7 @@ function bindEvents() {
     const topUpBtn = document.getElementById('top-up-btn');
     if (topUpBtn) {
         topUpBtn.onclick = () => {
-            const refrense = currentUser.first_name.charAt(0).toUpperCase() + currentUser.last_name.toUpperCase() + "WEBSITE";
+            const reference = currentUser.first_name.charAt(0).toUpperCase() + currentUser.last_name.toUpperCase() + "WEBSITE";
 
             showConfirmModal(
                 "Top Up Balance",
@@ -449,7 +449,7 @@ function bindEvents() {
                 <strong>Bank:</strong> Durham University<br>
                 <strong>Sort Code:</strong> 20-27-66<br>
                 <strong>Account:</strong> 53770109<br>
-                <strong>Reference:</strong> ${refrense}<br><br>
+                <strong>Reference:</strong> ${reference}<br><br>
                 <p>Pressing the confirm button will notify the finance team to credit your account once the transfer is verified. Please press cancel if you have not made a transfer.</p>`
             );
         };

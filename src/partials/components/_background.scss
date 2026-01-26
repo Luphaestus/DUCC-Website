@@ -12,7 +12,7 @@
         position: absolute;
         width: var(--blob-size);
         height: var(--blob-size);
-        background-color: var(--blob-color);
+        background-color: var(--blob-colour);
         filter: blur(30px);
         top: var(--blob-top);
         left: var(--blob-left);
@@ -37,13 +37,29 @@
 }
 
 @keyframes floatAround {
-    0% { transform: translate(0, 0); }
-    33% { transform: translate(40vw, -40vh); }
-    66% { transform: translate(-40vw, 40vh); }
-    100% { transform: translate(0, 0); }
+    0% {
+        transform: translate(0, 0);
+    }
+
+    33% {
+        transform: translate(40vw, -40vh);
+    }
+
+    66% {
+        transform: translate(-40vw, 40vh);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
 }
 
 @keyframes driftAcross {
-    from { transform: translateX(-200px) rotate(0deg); }
-    to { transform: translateX(calc(100vw + 200px)) rotate(15deg); }
+    from {
+        transform: translateX(-200px) rotate(0deg);
+    }
+
+    to {
+        transform: translateX(calc(100vw + 200px)) rotate(15deg);
+    }
 }
