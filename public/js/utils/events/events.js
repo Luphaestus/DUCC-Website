@@ -38,4 +38,10 @@ const LoginEvent = new Event();
  */
 const ViewChangedEvent = new Event();
 
-export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent };
+/**
+ * Event fired when the user changes their attendance / waitlist status.
+ * @type {Event}
+ */
+const EventAttendanceChangedEvent = new Event();
+
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent };

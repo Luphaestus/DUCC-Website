@@ -8,7 +8,7 @@
 
 import { ViewChangedEvent, switchView, addRoute } from "/js/utils/view.js";
 import { apiRequest } from "/js/utils/api.js";
-import { BalanceChangedEvent } from '/js/utils/events/events.js';
+import { BalanceChangedEvent, EventAttendanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 import { Tag } from '../widgets/Tag.js';
 import {
@@ -287,6 +287,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
 
                     await apiRequest('POST', url, {});
                     BalanceChangedEvent.notify();
+                    EventAttendanceChangedEvent.notify({ eventId: event.id });
                     await fillAttendeesList(eventId, canManage);
                     await setupEventButtons(eventId, path, resolvedPath, canManage);
                 } catch (error) {

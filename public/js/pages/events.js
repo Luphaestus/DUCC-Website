@@ -14,6 +14,7 @@ import {
     REFRESH_SVG, SETTINGS_SVG
 } from '../../images/icons/outline/icons.js';
 import { StandardCard } from '../widgets/StandardCard.js';
+import { EventAttendanceChangedEvent } from '/js/utils/events/events.js';
 import "./event.js";
 
 addRoute('/events', 'events');
@@ -389,6 +390,23 @@ document.addEventListener('DOMContentLoaded', () => {
     LoginEvent.subscribe(() => {
         checkAdminAccess();
         changePage(0, false);
+    });
+
+    EventAttendanceChangedEvent.subscribe(async ({ eventId }) => {
+        if (!eventId) return;
+        const card = document.querySelector(`.event-card[data-nav="event/${eventId}"]`);
+        if (!card) return;
+
+        try {
+            const { event } = await apiRequest('GET', `/api/event/${eventId}`);
+            const newHtml = StandardCard.render(event);
+            const temp = document.createElement('div');
+            temp.innerHTML = newHtml;
+            const newCard = temp.firstElementChild;
+            card.replaceWith(newCard);
+        } catch (e) {
+            console.error('Failed to update event card', e);
+        }
     });
 
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
