@@ -150,17 +150,21 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
         }
 
         // Batch fetch required state
-        const [isAttendingRes, isOnWaitlistRes, attendeesResponse, eventResponse, canJoinRes, coachCountRes] = await Promise.all([
+        const [isAttendingRes, isOnWaitlistRes, attendeesResponse, eventResponse, canJoinRes, coachCountRes, userStatusRes, minMoneyRes] = await Promise.all([
             apiRequest('GET', `/api/event/${eventId}/isAttending`),
             apiRequest('GET', `/api/event/${eventId}/isOnWaitlist`).catch(() => ({ isOnWaitlist: false })),
             apiRequest('GET', `/api/event/${eventId}/attendees`).catch(() => ({ attendees: [] })),
             apiRequest('GET', `/api/event/${eventId}`),
             apiRequest('GET', `/api/event/${eventId}/canJoin`).catch(e => ({ canJoin: false, reason: e.message || 'Error' })),
-            apiRequest('GET', `/api/event/${eventId}/coachCount`).catch(() => ({ count: 0 }))
+            apiRequest('GET', `/api/event/${eventId}/coachCount`).catch(() => ({ count: 0 })),
+            apiRequest('GET', '/api/user/elements/filled_legal_info,balance,is_member,free_sessions,is_instructor').catch(() => ({})),
+            apiRequest('GET', '/api/globals/MinMoney').catch(() => ({}))
         ]);
 
         const { event } = eventResponse;
         const coachCount = coachCountRes.count;
+        const userStatus = userStatusRes || {};
+        const minMoney = minMoneyRes?.res?.MinMoney?.data !== undefined ? parseFloat(minMoneyRes.res.MinMoney.data) : -25;
 
         // Skip signup logic for non-joining events
         if (!event.signup_required) {
@@ -212,9 +216,25 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
             buttonText = 'Leave Waiting List';
             isDeleteStyle = true;
             buttonAction = 'waitlist_leave';
+        } else if (!userStatus.filled_legal_info) {
+            buttonText = 'Complete Legal Form';
+            warningHtml = `<div class="glass-warning">${INFO_SVG} You must fill out the legal form before joining.</div>`;
+            buttonAction = () => switchView('/legal');
+        } else if (userStatus.balance < minMoney) {
+            buttonText = 'View Balance';
+            warningHtml = `<div class="glass-warning">${INFO_SVG} You have outstanding debts. Please clear them before joining.</div>`;
+            buttonAction = () => switchView('profile?tab=balance');
+        } else if (!userStatus.is_instructor && coachCount === 0) {
+            buttonText = 'Cannot Join';
+            warningHtml = `<div class="glass-warning">${CLOSE_SVG} No coach attending.</div>`;
+            isDisabled = true;
+        } else if (!userStatus.is_member && userStatus.free_sessions <= 0) {
+            buttonText = 'Join Club';
+            warningHtml = `<div class="glass-warning">${INFO_SVG} You have used all your free sessions. Please join the club to continue.</div>`;
+            buttonAction = () => switchView('/profile');
         } else if (!canJoinRes.canJoin) {
             isDisabled = false;
-            if (canJoinRes.reason.includes('Legal info')) {
+            if (canJoinRes.reason.includes('Legal info')) { 
                 buttonText = 'Complete Legal Form';
                 warningHtml = `<div class="glass-warning">${INFO_SVG} You must fill out the legal form before joining.</div>`;
                 buttonAction = () => switchView('/legal');

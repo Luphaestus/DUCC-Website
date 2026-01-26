@@ -34,7 +34,7 @@ export class StandardCard {
                 <div class="image-overlay"></div>
                 <div class="event-image-content">
                     <div class="event-tags">${tagsHtml}</div>
-                    <h3 class="event-title-bold ${isCanceled ? 'strikethrough' : ''}">
+                    <h3 class="event-title-bold ${isCanceled ? 'strikethrough error' : ''}">
                         ${event.title || 'Untitled Event'}
                     </h3>
                 </div>
@@ -45,8 +45,11 @@ export class StandardCard {
         const attendanceDisplay = max > 0 ? `${count}/${max}` : `${count}/∞`;
         const attendanceTitle = max > 0 ? `${count}/${max} Attending` : `${count} / Unlimited Attending`;
 
+        const isFull = max > 0 && count >= max;
+        const isWaitlistActive = isFull && event.enable_waitlist;
+
         const attendanceHtml = /*html*/`
-            <div class="attendance-count" title="${attendanceTitle}">
+            <div class="attendance-count ${isWaitlistActive ? 'highlight' : ''}" title="${attendanceTitle}">
                 ${GROUP_SVG} <span>${attendanceDisplay}</span>
             </div>`;
 
@@ -59,12 +62,14 @@ export class StandardCard {
         let statusLabel = '';
         if (isCanceled) statusLabel = '<span class="status-badge error">Canceled</span>';
         else if (isPast) statusLabel = '<span class="status-badge neutral">Unavailable</span>';
+        else if (isWaitlistActive) statusLabel = '<span class="status-badge warning">Waitlist</span>';
         else if (event.can_attend === false && !event.is_attending) statusLabel = '<span class="status-badge neutral">Unavailable</span>';
 
         const cardClasses = ['event-card', 'glass-panel'];
         if (isPast) cardClasses.push('past-event');
-        if (isCanceled) cardClasses.push('canceled-event');
-        if (event.can_attend === false && !event.is_attending) cardClasses.push('unavailable-event');
+        else if (isCanceled) cardClasses.push('canceled-event');
+        else if (isWaitlistActive) cardClasses.push('waitlist-active');
+        else if (event.can_attend === false && !event.is_attending) cardClasses.push('unavailable-event');
 
         return /*html*/`
             <div class="${cardClasses.join(' ')}" data-nav="${`event/${event.id}`}" role="button" tabindex="0">

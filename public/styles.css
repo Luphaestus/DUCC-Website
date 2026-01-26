@@ -5283,6 +5283,11 @@ nav.small-container ul.navbar-items li button#login-button {
   flex-direction: column;
   align-items: center;
   padding-top: 2vh;
+}
+#events-view .error {
+  color: #e74c3c;
+}
+#events-view {
   /* Week Navigation & Admin Controls */
 }
 #events-view .events-controls-modern {
@@ -5568,6 +5573,9 @@ nav.small-container ul.navbar-items li button#login-button {
   text-decoration: line-through;
   opacity: 0.7;
 }
+#events-view .event-card .event-image-content .event-title-bold.error {
+  color: #e74c3c;
+}
 #events-view .event-card .event-card-content {
   padding: 0.75rem;
   display: flex;
@@ -5642,6 +5650,12 @@ nav.small-container ul.navbar-items li button#login-button {
   border-color: #9b59b6;
   animation: pulse-glow 1.5s infinite;
 }
+#events-view .event-card .card-footer .attendance-status.highlight,
+#events-view .event-card .card-footer .attendance-count.highlight {
+  color: #f39c12;
+  border-color: rgba(243, 156, 18, 0.3);
+  background: rgba(243, 156, 18, 0.1);
+}
 #events-view .event-card .card-footer .attendance-status {
   color: #2ecc71;
 }
@@ -5652,10 +5666,6 @@ nav.small-container ul.navbar-items li button#login-button {
   letter-spacing: 0.05em;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
-}
-#events-view .event-card .card-footer .status-badge.error {
-  color: #e74c3c;
-  background: rgba(231, 76, 60, 0.1);
 }
 #events-view .event-card .card-footer .status-badge.neutral {
   color: var(--pico-muted-color);
@@ -5670,6 +5680,9 @@ nav.small-container ul.navbar-items li button#login-button {
   #events-view .event-card.past-event, #events-view .event-card.unavailable-event {
     background: rgba(255, 255, 255, 0.02);
   }
+}
+#events-view .event-card.waitlist-active {
+  filter: saturate(0.5) !important;
 }
 #events-view .event-card.canceled-event {
   border-color: rgba(231, 76, 60, 0.2);
@@ -8803,5 +8816,3 @@ textarea[name=description] {
 #admin-view .border-top {
   border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
 }
-
-/*# sourceMappingURL=styles.css.map */
