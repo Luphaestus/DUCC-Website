@@ -10,6 +10,7 @@ import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID, renderAdminNavBar } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
+import { Tag } from '/js/widgets/Tag.js';
 
 /**
  * Main rendering function for the tag management dashboard.
@@ -68,9 +69,7 @@ async function fetchAndRenderTags() {
                     <td data-label="Name" class="primary-text">${tag.name}</td>
                     <td data-label="Colour">
                         <!-- Preview the colour badge -->
-                        <span class="tag-badge" style="--tag-colour: ${tag.color}; background-color: var(--tag-colour);">
-                            ${tag.color}
-                        </span>
+                        ${Tag.render({ name: tag.color, color: tag.color })}
                     </td>
                     <td data-label="Min Difficulty"><span class="badge ${tag.min_difficulty ? `difficulty-${tag.min_difficulty}` : 'neutral'}">${tag.min_difficulty || '-'}</span></td>
                     <td data-label="Description" class="description-cell">${tag.description || '-'}</td>
