@@ -7,12 +7,13 @@
  */
 
 import { ViewChangedEvent, switchView, addRoute } from "/js/utils/view.js";
-import { apiRequest } from "/js/utils/api.js";  
+import { apiRequest } from "/js/utils/api.js";
 import { BalanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 import { Tag } from '../widgets/Tag.js';
-import { BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG, 
-    CLOSE_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, WALLET_SVG, SCHEDULE_SVG 
+import {
+    BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG,
+    CLOSE_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, WALLET_SVG, SCHEDULE_SVG
 } from '../../images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { notify } from '../components/notification.js';
@@ -71,7 +72,7 @@ async function fillAttendeesList(eventId, canManage) {
         if (container) {
             const bubblesHtml = renderUserBubbles(attendees, canManage, true);
             container.innerHTML = bubblesHtml || '<p class="no-attendees">No attendees yet.</p>';
-            
+
             if (bubblesHtml) {
                 initTooltips(container.querySelectorAll('.attendee-bubble'), 'name');
             }
@@ -224,7 +225,7 @@ async function setupEventButtons(eventId, path, resolvedPath, canManage) {
             } else if (canJoinRes.reason.includes('debts')) {
                 buttonText = 'View Balance';
                 warningHtml = `<div class="glass-warning">${INFO_SVG} You have outstanding debts. Please clear them before joining.</div>`;
-                buttonAction = () => switchView('/transactions');
+                buttonAction = () => switchView('profile?tab=balance');
             } else if (isFull && event.enable_waitlist && canJoinRes.reason === 'Event is full') {
                 buttonText = 'Join Waiting List';
                 warningHtml = `<div class="glass-warning">${INFO_SVG} This event is full. You can join the waiting list.</div>`;
