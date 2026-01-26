@@ -11,9 +11,9 @@ import { addRoute, ViewChangedEvent } from '/js/utils/view.js';
 import { apiRequest } from '/js/utils/api.js';
 import { BRIGHTNESS_ALERT_SVG, SHIELD_SVG, SIGNAL_DISCONNECTED_SVG } from '../../images/icons/outline/icons.js';
 
-addRoute('/error', 'error');
-addRoute('/unauthorised', 'unauthorised');
-addRoute('/no-internet', 'no-connection', { isOverlay: true });
+addRoute('/error', 'error', { changeURL: false, titleFunc: () => 'Error - Page Not Found' });
+addRoute('/unauthorised', 'unauthorised', { titleFunc: () => 'Error - Access Denied', changeURL: false });
+addRoute('/no-internet', 'no-connection', { isOverlay: true, titleFunc: () => 'Error - No Internet Connection', changeURL: false });
 
 /**
  * Generates the HTML structure for an error view.
@@ -43,24 +43,24 @@ const main = document.querySelector('main');
 
 // 404 Error View
 main.insertAdjacentHTML('beforeend', createErrorView(
-    'error-view', 
-    BRIGHTNESS_ALERT_SVG, 
+    'error-view',
+    BRIGHTNESS_ALERT_SVG,
     '404 - Page Not Found',
     'Oops! The page you are looking for does not exist.<br>It might have been moved, deleted, or you may have typed the address incorrectly.'
 ));
 
 // Unauthorised View
 main.insertAdjacentHTML('beforeend', createErrorView(
-    'unauthorised-view', 
-    SHIELD_SVG, 
+    'unauthorised-view',
+    SHIELD_SVG,
     'Access Denied',
     'You do not have permission to view this page.'
 ));
 
 // No Internet View (Overlay)
 main.insertAdjacentHTML('beforeend', createErrorView(
-    'no-connection-view', 
-    SIGNAL_DISCONNECTED_SVG, 
+    'no-connection-view',
+    SIGNAL_DISCONNECTED_SVG,
     'No Internet Connection',
     'Please check your network settings.<br>We\'ll try to reconnect automatically...'
 ));
@@ -77,14 +77,14 @@ async function handleErrorNavigation({ viewId }) {
             actions.innerHTML = `<button data-nav="/home">Go to Homepage</button>`;
         }
     }
-    
+
     if (viewId !== 'no-connection') {
         const view = viewId === 'unauthorised' ? 'unauthorised-view' : 'error-view';
         const actions = document.querySelector(`#${view} .error-actions`);
         if (!actions) return;
 
         actions.innerHTML = '<button disabled aria-busy="true" class="secondary outline">Checking...</button>';
-        
+
         try {
             const auth = await apiRequest('GET', '/api/auth/status');
             if (auth.authenticated) {
@@ -99,7 +99,7 @@ async function handleErrorNavigation({ viewId }) {
                 `;
             }
         } catch {
-             actions.innerHTML = `<button data-nav="/home">Go to Home</button>`;
+            actions.innerHTML = `<button data-nav="/home">Go to Home</button>`;
         }
     }
 }

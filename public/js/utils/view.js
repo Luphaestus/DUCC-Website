@@ -20,6 +20,7 @@ let openURL = null;
  * @param {Object} [options={}]
  * @param {boolean} [options.isOverlay=false] - If true, previous views are not hidden. (optional)
  * @param {lambda} [options.titleFunc(path)=>String) - function to set document title dynamically. (optional) 
+ * @param {boolean} [options.changeURL=false] - If true, changes the browser URL. (optional)
  */
 export function addRoute(pattern, viewId, options = {}) {
     const regexString = '^' + pattern
@@ -32,7 +33,8 @@ export function addRoute(pattern, viewId, options = {}) {
         regex: new RegExp(regexString),
         viewId,
         isOverlay: options.isOverlay || false,
-        titleFunc: options.titleFunc || null
+        titleFunc: options.titleFunc || null,
+        changeURL: options.changeURL == null ? true : options.changeURL
     });
 }
 
@@ -83,7 +85,7 @@ function switchView(path, force = false) {
 
     if (!route) return switchView('/error');
 
-    if (!isCurrentPath(path)) {
+    if (!isCurrentPath(path) && route.changeURL) {
         window.history.pushState(null, '', path);
     }
 
@@ -109,7 +111,9 @@ function switchView(path, force = false) {
     });
 
     if (route.titleFunc !== null) {
-        document.title = route.titleFunc(path);
+        const title = route.titleFunc(path);
+        if (title && title.length > 0)
+            document.title = title;
     } else {
         const baseLocation = path.match(/\/([a-zA-Z]*)/);
         const formatedBase = baseLocation[1].charAt(0).toUpperCase() + baseLocation[1].slice(1);
@@ -132,20 +136,19 @@ function closeModal(fallbackPath = '/') {
         const viewEl = document.getElementById(route.viewId + '-view');
         if (viewEl) {
             viewEl.classList.add('closing');
-            
+
             const onAnimationEnd = () => {
                 viewEl.classList.remove('closing');
                 viewEl.removeEventListener('animationend', onAnimationEnd);
-                
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const explicitBack = urlParams.get('back') || urlParams.get('return');
 
                 if (openURL) {
-                    console.log(`Switching to openURL: ${openURL}`);
                     switchView(openURL);
                     openURL = null;
                 }
-                
+
                 if (explicitBack) {
                     switchView(explicitBack);
                 } else if (hasHistory()) {
@@ -154,12 +157,12 @@ function closeModal(fallbackPath = '/') {
                     switchView(fallbackPath);
                 }
             };
-            
+
             viewEl.addEventListener('animationend', onAnimationEnd, { once: true });
             return;
         }
     }
-    
+
     if (hasHistory()) window.history.back();
     else switchView(fallbackPath);
 }
