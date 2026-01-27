@@ -461,13 +461,56 @@
             "responses": { "200": { "description": "Random image path" } }
         }
     },
-    "/api/slides/{index}": {
-        "get": {
-            "summary": "Get slide image by index",
-            "description": "Returns the image path for a specific slide index.",
+    "/api/slides/import": {
+        "post": {
+            "summary": "Import slide",
+            "description": "Imports a file from the central library into the slideshow.",
             "tags": ["Slides"],
-            "parameters": [{ "name": "index", "in": "path", "required": true, "description": "The index of the slide to retrieve.", "schema": { "type": "integer" } }],
-            "responses": { "200": { "description": "Image path" } }
+            "security": [{ "cookieAuth": [] }],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "fileId": { "type": "integer", "description": "ID of the file to import." }
+                            },
+                            "required": ["fileId"]
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": { "description": "Slide imported" },
+                "400": { "description": "Missing fileId" }
+            }
+        }
+    },
+    "/api/slides": {
+        "delete": {
+            "summary": "Remove slide",
+            "description": "Removes a slide from the slideshow.",
+            "tags": ["Slides"],
+            "security": [{ "cookieAuth": [] }],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "fileId": { "type": "integer", "description": "ID of the file (slide) to remove." }
+                            },
+                            "required": ["fileId"]
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": { "description": "Slide removed" },
+                "400": { "description": "Missing fileId" }
+            }
         }
     },
     "/api/admin/users": {
@@ -661,6 +704,16 @@
             "responses": { "200": { "description": "Event deleted" } }
         }
     },
+    "/api/admin/event/{id}/raw": {
+        "get": {
+            "summary": "Get raw event details (Admin)",
+            "description": "Retrieves raw event details.",
+            "tags": ["Admin"],
+            "security": [{ "cookieAuth": [] }],
+            "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The ID of the event.", "schema": { "type": "integer" } }],
+            "responses": { "200": { "description": "Raw event details" }, "404": { "description": "Event not found" } }
+        }
+    },
     "/api/admin/event": {
         "post": {
             "summary": "Create event",
@@ -689,6 +742,33 @@
             "security": [{ "cookieAuth": [] }],
             "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The ID of the event to cancel.", "schema": { "type": "integer" } }],
             "responses": { "200": { "description": "Event canceled" } }
+        }
+    },
+    "/api/admin/events/calculate-fallback-image": {
+        "post": {
+            "summary": "Calculate fallback image",
+            "description": "Calculates the fallback image for an event based on its tags.",
+            "tags": ["Events"],
+            "security": [{ "cookieAuth": [] }],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "tagIds": { 
+                                    "type": "array", 
+                                    "items": { "type": "integer" },
+                                    "description": "Array of tag IDs." 
+                                }
+                            },
+                            "required": ["tagIds"]
+                        }
+                    }
+                }
+            },
+            "responses": { "200": { "description": "Image URL returned" }, "400": { "description": "Invalid input" } }
         }
     },
     "/api/admin/user/{id}/transactions": {
@@ -775,6 +855,28 @@
             "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The ID of the user.", "schema": { "type": "integer" } }],
             "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "count": { "type": "integer", "description": "Number of swims to add." } } } } } },
             "responses": { "200": { "description": "Swims added" } }
+        }
+    },
+    "/api/user/{id}/booties": {
+        "post": {
+            "summary": "Add booties to user",
+            "description": "Adds booties to a user's account.",
+            "tags": ["Users"],
+            "security": [{ "cookieAuth": [] }],
+            "parameters": [{ "name": "id", "in": "path", "required": true, "description": "The ID of the user.", "schema": { "type": "integer" } }],
+            "requestBody": { 
+                "content": { 
+                    "application/json": { 
+                        "schema": { 
+                            "type": "object", 
+                            "properties": { 
+                                "count": { "type": "integer", "description": "Number of booties to add." } 
+                            } 
+                        } 
+                    } 
+                } 
+            },
+            "responses": { "200": { "description": "Booties added" }, "400": { "description": "Invalid data" } }
         }
     },
     "/api/user/elements/{elements}": {

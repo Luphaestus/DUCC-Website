@@ -2981,6 +2981,25 @@ body[data-theme=dark] .bg-icon {
     transform: translateY(-6px) scale(1.01);
   }
 }
+@keyframes box-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+@keyframes border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 /**
  * _base.scss
  */
@@ -5188,6 +5207,7 @@ nav.small-container ul.navbar-items li button#login-button {
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--border-radius-lg);
   padding: 1.25rem;
+  position: relative;
   margin-right: 2vh;
   flex: 1;
   width: calc(33.333% - 2vh);
@@ -5196,11 +5216,38 @@ nav.small-container ul.navbar-items li button#login-button {
   align-items: center;
   flex-direction: column;
   text-align: center;
-  transition: transform 0.3s ease, background 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+#home-view .hero .hero-offer .hero-offer-boxes .hero-offer-box.mos-active {
+  animation: box-pulse 4s infinite ease-in-out;
+  animation-delay: var(--mos-delay, 0s);
+}
+#home-view .hero .hero-offer .hero-offer-boxes .hero-offer-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, transparent, transparent, var(--colour-primary), var(--colour-secondary), transparent, transparent);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
 }
 #home-view .hero .hero-offer .hero-offer-boxes .hero-offer-box:hover {
-  transform: translateY(-5px);
+  transform: translateY(-8px) scale(1.05) !important;
   background: var(--glass-highlight);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  animation-play-state: paused;
+}
+#home-view .hero .hero-offer .hero-offer-boxes .hero-offer-box:hover::before {
+  opacity: 1;
+  animation: border-flow 3s infinite linear;
 }
 #home-view .hero .hero-offer .hero-offer-boxes .hero-offer-box svg {
   height: 3rem;
@@ -8816,3 +8863,5 @@ textarea[name=description] {
 #admin-view .border-top {
   border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
 }
+
+/*# sourceMappingURL=styles.css.map */

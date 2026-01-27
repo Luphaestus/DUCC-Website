@@ -65,7 +65,7 @@ class AdminEvents {
         });
 
         /**
-         * Fetch raw event details (no enrichment).
+         * Fetch raw event details.
          */
         this.app.get('/api/admin/event/:id/raw', check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped'), async (req, res) => {
             try {
