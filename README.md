@@ -45,7 +45,7 @@ Deployment requires a `.env.deploy` file containing `SERVER_IP`, `SERVER_PASSWOR
 
 ## API Documentation
 The API documentation is generated from `public/openapi.json`.
-- View the documentation: [public/openapi.html](https://luphaestus.github.io/DUCC-Website/public/openapi.html#/paths/api-auth-login/post)
+- View the documentation: [public/openapi.html](https://luphaestus.github.io/DUCC-Website/public/openapi.html)
 - Regenerate documentation: `npm run apidoc`
 
 ## License
