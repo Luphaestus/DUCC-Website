@@ -112,7 +112,8 @@ describe('api/users/UserAPI', () => {
                     first_name: 'Hacker',
                     difficulty_level: 5,
                     swims: 9999,
-                    free_sessions: 9999
+                    free_sessions: 9999,
+                    is_instructor: true
                 });
                 
                 expect(res.statusCode).toBe(200); 
@@ -123,7 +124,9 @@ describe('api/users/UserAPI', () => {
                 
                 expect(user.difficulty_level).toBe(1);
                 expect(user.swims).toBe(0); 
-                expect(user.free_sessions).toBe(3); 
+                expect(user.free_sessions).toBe(3);
+
+                expect(user.is_instructor).toBe(1);
             });
         });
     });

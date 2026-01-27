@@ -27,6 +27,8 @@ import { fileURLToPath } from 'url';
 import Globals from './misc/globals.js';
 import cliProgress from 'cli-progress';
 import colors from 'ansi-colors';
+import csurf from 'csurf';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +36,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
+const isProd = process.env.NODE_ENV === 'prod' || process.env.NODE_ENV === 'production';
+
+if (isProd && !process.env.SESSION_SECRET) {
+  console.error(colors.red('FATAL: SESSION_SECRET must be defined in production environment.'));
+  process.exit(1);
+}
 
 /** Trust proxy for header-based auth if behind a load balancer. */
 app.set('trust proxy', 1);
@@ -62,6 +70,15 @@ if (isDev) {
     ]
   }));
 }
+
+/** Rate Limiting */
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false, 
+});
+app.use(limiter);
 
 /** Security Middleware: Sets CSP and other security-related HTTP headers. */
 app.use((req, res, next) => {
@@ -126,6 +143,17 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+/** CSRF Protection */
+if (process.env.NODE_ENV !== 'test') {
+    app.use(csurf());
+    app.use((req, res, next) => {
+        const token = req.csrfToken();
+        res.cookie('XSRF-TOKEN', token);
+        res.locals.csrfToken = token;
+        next();
+    });
+}
 
 new Globals();
 

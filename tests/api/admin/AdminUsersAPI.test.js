@@ -95,6 +95,15 @@ describe('api/admin/AdminUsersAPI', () => {
             
             await world.db.run('INSERT INTO roles (name) VALUES ("President")');
             const presRole = await world.db.get('SELECT id FROM roles WHERE name = "President"');
+            
+            const userManagePerm = await world.db.get('SELECT id FROM permissions WHERE slug = "user.manage"');
+            const roleManagePerm = await world.db.get('SELECT id FROM permissions WHERE slug = "role.manage"');
+            await world.db.run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presRole.id, userManagePerm.id]);
+            await world.db.run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presRole.id, roleManagePerm.id]);
+
+            await world.db.run('DELETE FROM user_roles WHERE user_id = ?', [world.data.users['admin']]);
+            await world.db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [world.data.users['admin'], presRole.id]);
+
             const targetId = world.data.users['user'];
 
             // Inject the hashed password into the session object for the test agent
@@ -131,6 +140,14 @@ describe('api/admin/AdminUsersAPI', () => {
             await world.db.run('INSERT INTO roles (name) VALUES ("President")');
             const presRole = await world.db.get('SELECT id FROM roles WHERE name = "President"');
             
+            const userManagePerm = await world.db.get('SELECT id FROM permissions WHERE slug = "user.manage"');
+            const roleManagePerm = await world.db.get('SELECT id FROM permissions WHERE slug = "role.manage"');
+            await world.db.run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presRole.id, userManagePerm.id]);
+            await world.db.run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presRole.id, roleManagePerm.id]);
+
+            await world.db.run('DELETE FROM user_roles WHERE user_id = ?', [world.data.users['admin']]);
+            await world.db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [world.data.users['admin'], presRole.id]);
+
             const targetId = world.data.users['user'];
 
             // Setup User A: hasn't agreed to long-term storage
@@ -184,6 +201,67 @@ describe('api/admin/AdminUsersAPI', () => {
             // Target user is now President
             const targetRole = await world.db.get('SELECT r.name FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?', [targetId]);
             expect(targetRole.name).toBe('President');
+        });
+
+        test('Attacker with user.manage should NOT be able to take over President role using their own password', async () => {
+            const presidentRoleId = await world.createRole('President', ['user.manage', 'role.manage']);
+            const managerRoleId = await world.createRole('Manager', ['user.manage']);
+
+            const adminPassword = 'adminpassword';
+            const adminHash = await bcrypt.hash(adminPassword, 10);
+            await world.createUser('real_president', { hashed_password: adminHash }, ['President']);
+
+            const attackerPassword = 'attackerpassword';
+            const attackerHash = await bcrypt.hash(attackerPassword, 10);
+            const attackerId = await world.createUser('attacker', { hashed_password: attackerHash }, ['Manager']);
+
+            new AdminUsersAPI(world.app, world.db).registerRoutes();
+
+            const res = await world.as('attacker').post(`/api/admin/user/${attackerId}/role`).send({
+                roleId: presidentRoleId,
+                password: attackerPassword
+            });
+
+            expect(res.statusCode).toBe(403);
+        });
+    });
+
+    describe('Role Assignment Authorization (Privilege Escalation Prevention)', () => {
+        test('User cannot assign a role containing permissions they do not possess', async () => {
+            new AdminUsersAPI(world.app, world.db).registerRoutes();
+
+            await world.createRole('ManagerRole', ['user.manage', 'role.manage']);
+            const managerId = await world.createUser('manager', {}, ['ManagerRole']);
+
+            await world.createRole('SuperRole', ['user.manage', 'event.manage.all']);
+            const superRoleId = world.data.roles['SuperRole'];
+
+            const targetId = await world.createUser('target', {});
+
+            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`).send({
+                roleId: superRoleId
+            });
+
+            expect(res.statusCode).toBe(403);
+            expect(res.body.message).toMatch(/cannot assign a role with permission/i);
+        });
+
+        test('User CAN assign a role if they possess all permissions in that role', async () => {
+            new AdminUsersAPI(world.app, world.db).registerRoutes();
+
+            await world.createRole('ManagerRole', ['user.manage', 'role.manage']);
+            const managerId = await world.createUser('manager', {}, ['ManagerRole']);
+
+            await world.createRole('SubRole', ['user.manage']);
+            const subRoleId = world.data.roles['SubRole'];
+
+            const targetId = await world.createUser('target', {});
+
+            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`).send({
+                roleId: subRoleId
+            });
+
+            expect(res.statusCode).toBe(200);
         });
     });
 

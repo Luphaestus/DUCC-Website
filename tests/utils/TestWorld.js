@@ -43,12 +43,14 @@ export default class TestWorld {
          * Auth Simulation Middleware:
          * Uses the 'x-test-user' header to identify which mock user is "logged in".
          */
-        this.app.use((req, res, next) => {
+        this.app.use(async (req, res, next) => {
             req.db = this.db;
             const userAlias = req.headers['x-test-user'];
             if (userAlias && this.data.users[userAlias]) {
                 req.isAuthenticated = () => true;
-                req.user = { id: this.data.users[userAlias], email: `${userAlias}@test.com` };
+                const userId = this.data.users[userAlias];
+                const user = await this.db.get('SELECT * FROM users WHERE id = ?', [userId]);
+                req.user = user || { id: userId, email: `${userAlias}@test.com` };
             } else {
                 req.isAuthenticated = () => false;
             }

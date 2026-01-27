@@ -125,9 +125,17 @@ export default class AdminUsers {
          */
         this.app.post('/api/admin/user/:id/role', check('perm:user.manage | perm:role.manage'), async (req, res) => {
             const roleId = req.body.roleId;
-            const roleName = await RolesDB.getRoleNameById(this.db, roleId);
+            const roleRes = await RolesDB.getRoleById(this.db, roleId);
+            if (roleRes.isError()) return roleRes.getResponse(res);
             
-            if (roleName === 'President') {
+            const role = roleRes.getData();
+            
+            if (role.name === 'President') {
+                const isPresident = await Permissions.hasRole(this.db, req.user.id, 'President');
+                if (!isPresident) {
+                    return res.status(403).json({ message: 'Only the current President can transfer this role.' });
+                }
+
                 const { password } = req.body;
                 if (!password) {
                     return res.status(400).json({ message: 'Password is required to transfer the President role.' });
@@ -140,6 +148,17 @@ export default class AdminUsers {
 
                 const result = await UserDB.resetPermissions(this.db, req.params.id);
                 return result.getResponse(res);
+            }
+
+       
+            if (role.permissions) {
+                for (const permSlug of role.permissions) {
+                    if (!await Permissions.hasPermission(this.db, req.user.id, permSlug)) {
+                        return res.status(403).json({ 
+                            message: `You cannot assign a role with permission '${permSlug}' because you do not have it.` 
+                        });
+                    }
+                }
             }
 
             const result = await RolesDB.assignRole(this.db, req.params.id, roleId);
