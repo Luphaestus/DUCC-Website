@@ -4,10 +4,10 @@
  * This file provides administrative access to user transactions.
  */
 
-const transactionsDB = require('../../db/transactionDB.js');
-const check = require('../../misc/authentication.js');
+import transactionsDB from '../../db/transactionDB.js';
+import check from '../../misc/authentication.js';
 
-class AdminTransactions {
+export default class AdminTransactions {
     /**
      * @param {object} app - Express application instance.
      * @param {object} db - Database connection instance.
@@ -55,5 +55,3 @@ class AdminTransactions {
         });
     }
 }
-
-module.exports = AdminTransactions;

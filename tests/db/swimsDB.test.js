@@ -5,8 +5,8 @@
  * Covers swim addition with historical logging and leaderboard generation.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const SwimsDB = require('../../server/db/swimsDB');
+import TestWorld from '../utils/TestWorld.js';
+import SwimsDB from '../../server/db/swimsDB.js';
 
 describe('db/swimsDB', () => {
     let world;

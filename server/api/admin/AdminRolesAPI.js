@@ -4,10 +4,10 @@
  * This file handles management of roles and their associated permissions.
  */
 
-const check = require('../../misc/authentication.js');
-const RolesDB = require('../../db/rolesDB.js');
+import check from '../../misc/authentication.js';
+import RolesDB from '../../db/rolesDB.js';
 
-class AdminRoles {
+export default class AdminRoles {
     /**
      * @param {object} app - Express application instance.
      * @param {object} db - Database connection instance.
@@ -77,5 +77,3 @@ class AdminRoles {
         });
     }
 }
-
-module.exports = AdminRoles;

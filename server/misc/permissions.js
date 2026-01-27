@@ -4,9 +4,9 @@
  * Provides logic for evaluating user permissions and administrative scoping.
  */
 
-const SCOPED_PERMS = ['event.manage.scoped', 'event.read.scoped', 'event.write.scoped'];
+export const SCOPED_PERMS = ['event.manage.scoped', 'event.read.scoped', 'event.write.scoped'];
 
-class Permissions {
+export class Permissions {
     /**
      * Check if a user possesses a specific permission slug.
      */
@@ -129,5 +129,3 @@ class Permissions {
         return permissions.filter(p => !SCOPED_PERMS.includes(p));
     }
 }
-
-module.exports = { Permissions, SCOPED_PERMS };

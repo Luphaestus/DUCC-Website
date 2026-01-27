@@ -5,7 +5,7 @@
  * Verifies error detection logic and Express response formatting.
  */
 
-const { statusObject } = require('../../server/misc/status');
+import { statusObject } from '../../server/misc/status.js';
 
 describe('misc/status', () => {
     /**

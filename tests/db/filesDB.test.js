@@ -5,8 +5,8 @@
  * Verifies insertion, retrieval by ID, and role-based visibility filtering.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const FilesDB = require('../../server/db/filesDB');
+import TestWorld from '../utils/TestWorld.js';
+import FilesDB from '../../server/db/filesDB.js';
 
 describe('db/filesDB', () => {
     let world;

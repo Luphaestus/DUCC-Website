@@ -4,19 +4,19 @@
  * This file handles user profile management, membership status, and account settings.
  */
 
-const { statusObject } = require('../../misc/status.js');
-const UserDB = require('../../db/userDB.js');
-const SwimsDB = require('../../db/swimsDB.js');
-const transactionsDB = require('../../db/transactionDB.js');
-const RolesDB = require('../../db/rolesDB.js');
-const CollegesDB = require('../../db/collegesDB.js');
-const Globals = require('../../misc/globals.js');
-const AuthDB = require('../../db/authDB.js');
-const check = require('../../misc/authentication.js');
-const bcrypt = require('bcrypt');
-const ValidationRules = require('../../rules/ValidationRules.js');
+import { statusObject } from '../../misc/status.js';
+import UserDB from '../../db/userDB.js';
+import SwimsDB from '../../db/swimsDB.js';
+import transactionsDB from '../../db/transactionDB.js';
+import RolesDB from '../../db/rolesDB.js';
+import CollegesDB from '../../db/collegesDB.js';
+import Globals from '../../misc/globals.js';
+import AuthDB from '../../db/authDB.js';
+import check from '../../misc/authentication.js';
+import bcrypt from 'bcrypt';
+import ValidationRules from '../../rules/ValidationRules.js';
 
-class User {
+export default class User {
     /**
      * @param {object} app - Express app.
      * @param {object} db - SQLite database.
@@ -257,7 +257,7 @@ class User {
         /**
          * Fetch profile elements for a specific user.
          */
-        this.app.get('/api/user/:id/elements/:elements', check('perm:is_exec'), async (req, res) => {
+        this.app.get('/api/user/:id/elements/:elements', check('perm:user.read'), async (req, res) => {
             const userId = parseInt(req.params.id);
             if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
             
@@ -336,5 +336,3 @@ class User {
         });
     }
 }
-
-module.exports = User;

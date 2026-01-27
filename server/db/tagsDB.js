@@ -4,10 +4,10 @@
  * This module manages the lifecycle of event tags and user whitelists.
  */
 
-const { statusObject } = require('../misc/status.js');
-const FileCleanup = require('../misc/FileCleanup.js');
+import { statusObject } from '../misc/status.js';
+import FileCleanup from '../misc/FileCleanup.js';
 
-class TagsDB {
+export default class TagsDB {
     /**
      * Fetch all tags registered in the system.
      */
@@ -250,5 +250,3 @@ class TagsDB {
         `, [userId]);
     }
 }
-
-module.exports = TagsDB;

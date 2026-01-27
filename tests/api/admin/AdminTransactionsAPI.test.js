@@ -5,8 +5,8 @@
  * Verifies that administrators can view and manually adjust user balances.
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const AdminTransactionsAPI = require('../../../server/api/admin/AdminTransactionsAPI');
+import TestWorld from '../../utils/TestWorld.js';
+import AdminTransactionsAPI from '../../../server/api/admin/AdminTransactionsAPI.js';
 
 describe('api/admin/AdminTransactionsAPI', () => {
     let world;

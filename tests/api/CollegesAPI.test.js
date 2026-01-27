@@ -5,8 +5,8 @@
  * Verifies that the system returns the correct list of colleges.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const CollegesAPI = require('../../server/api/CollegesAPI');
+import TestWorld from '../utils/TestWorld.js';
+import CollegesAPI from '../../server/api/CollegesAPI.js';
 
 describe('api/CollegesAPI', () => {
     let world;

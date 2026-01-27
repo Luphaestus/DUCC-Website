@@ -4,14 +4,14 @@
  * Seeds the database with mandatory system data.
  */
 
-const bcrypt = require('bcrypt');
-const { generateRandomPassword } = require('../utils');
-const colors = require('ansi-colors');
+import bcrypt from 'bcrypt';
+import { generateRandomPassword } from '../utils.js';
+import colors from 'ansi-colors';
 
 /**
  * Seeds the database with the canonical list of Durham colleges.
  */
-async function seedColleges(db) {
+export async function seedColleges(db) {
     const collegesExist = await db.get('SELECT COUNT(*) as count FROM colleges');
     if (collegesExist.count === 0) {
         if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Inserting Durham colleges...'));
@@ -31,7 +31,7 @@ async function seedColleges(db) {
 /**
  * Seeds all essential system metadata and the default administrator.
  */
-async function seedEssential(db) {
+export async function seedEssential(db) {
     await seedColleges(db);
 
     const permissions = [
@@ -122,5 +122,3 @@ async function seedEssential(db) {
         }
     }
 }
-
-module.exports = { seedEssential, seedColleges };

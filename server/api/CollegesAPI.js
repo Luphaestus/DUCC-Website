@@ -4,9 +4,9 @@
  * This file handles routes for college-related data.
  */
 
-const CollegesDB = require('../db/collegesDB.js');
+import CollegesDB from '../db/collegesDB.js';
 
-class CollegesAPI {
+export default class CollegesAPI {
     /**
      * @param {object} app - The Express application instance.
      * @param {object} db - The database connection instance.
@@ -30,5 +30,3 @@ class CollegesAPI {
         });
     }
 }
-
-module.exports = CollegesAPI;

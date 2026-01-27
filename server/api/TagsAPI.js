@@ -4,11 +4,11 @@
  * This file handles all event tag management routes.
  */
 
-const TagsDB = require('../db/tagsDB.js');
-const check = require('../misc/authentication.js');
-const FileCleanup = require('../misc/FileCleanup.js');
+import TagsDB from '../db/tagsDB.js';
+import check from '../misc/authentication.js';
+import { Permissions } from '../misc/permissions.js';
 
-class TagsAPI {
+export default class TagsAPI {
     /**
      * @param {object} app - Express app instance.
      * @param {object} db - Database connection.
@@ -42,7 +42,6 @@ class TagsAPI {
          * Update an existing tag.
          */
         this.app.put('/api/tags/:id', check(), async (req, res) => {
-            const { Permissions } = require('../misc/permissions.js');
             if (!await Permissions.canManageTag(this.db, req.user.id, req.params.id)) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
@@ -55,7 +54,6 @@ class TagsAPI {
          * Reset tag image to default (none).
          */
         this.app.post('/api/tags/:id/reset-image', check(), async (req, res) => {
-            const { Permissions } = require('../misc/permissions.js');
             if (!await Permissions.canManageTag(this.db, req.user.id, req.params.id)) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
@@ -125,7 +123,6 @@ class TagsAPI {
          */
         this.app.get('/api/user/:userId/tags', check(), async (req, res) => {
             if (req.user.id != req.params.userId) {
-                const { Permissions } = require('../misc/permissions.js');
                 if (!await Permissions.hasPermission(this.db, req.user.id, 'user.manage')) {
                     return res.status(403).json({ message: 'Forbidden' });
                 }
@@ -152,5 +149,3 @@ class TagsAPI {
         });
     }
 }
-
-module.exports = TagsAPI;

@@ -5,8 +5,8 @@
  * Covers field-level fetching, updates, administrative listings, and soft-deletion.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const UserDB = require('../../server/db/userDB');
+import TestWorld from '../utils/TestWorld.js';
+import UserDB from '../../server/db/userDB.js';
 
 describe('db/userDB', () => {
     let world;

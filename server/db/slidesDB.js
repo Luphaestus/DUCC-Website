@@ -4,9 +4,9 @@
  * This module manages the homepage slideshow images.
  */
 
-const { statusObject } = require('../misc/status.js');
+import { statusObject } from '../misc/status.js';
 
-class SlidesDB {
+export default class SlidesDB {
     /**
      * Fetch all slide images.
      */
@@ -74,5 +74,3 @@ class SlidesDB {
         }
     }
 }
-
-module.exports = SlidesDB;

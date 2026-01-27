@@ -5,8 +5,8 @@
  * Covers slide addition, retrieval, and removal.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const SlidesDB = require('../../server/db/slidesDB');
+import TestWorld from '../utils/TestWorld.js';
+import SlidesDB from '../../server/db/slidesDB.js';
 
 describe('db/slidesDB', () => {
     let world;

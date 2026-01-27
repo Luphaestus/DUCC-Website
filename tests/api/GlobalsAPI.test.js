@@ -5,8 +5,8 @@
  * Verifies RBAC for viewing/editing keys and regular expression validation for updates.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const GlobalsAPI = require('../../server/api/GlobalsAPI');
+import TestWorld from '../utils/TestWorld.js';
+import GlobalsAPI from '../../server/api/GlobalsAPI.js';
 
 describe('api/GlobalsAPI', () => {
     let world;

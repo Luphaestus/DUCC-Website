@@ -12,7 +12,7 @@
   },
   "license": "Apache-2.0",
   "author": "Luphaestus",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "db:init": "cross-env-shell \"node server/db/init/init.js $NODE_ENV\"",
     "start": "cross-env NODE_ENV=prod npm run --silent db:init && cross-env NODE_ENV=prod node server/server.js",
@@ -47,6 +47,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
+    "file-type": "^21.3.0",
     "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",

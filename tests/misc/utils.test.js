@@ -4,7 +4,7 @@
  * Unit tests for general server-side utility functions.
  */
 
-const Utils = require('../../server/misc/utils');
+import Utils from '../../server/misc/utils.js';
 
 describe('misc/utils', () => {
     /**

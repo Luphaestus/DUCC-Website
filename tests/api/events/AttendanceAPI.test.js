@@ -5,10 +5,10 @@
  * Covers joining/leaving events, coach requirements, payment logic, and automatic waitlist promotion.
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const AttendanceAPI = require('../../../server/api/events/AttendanceAPI');
-const EventsAPI = require('../../../server/api/events/EventsAPI');
-const WaitlistAPI = require('../../../server/api/events/WaitlistAPI');
+import TestWorld from '../../utils/TestWorld.js';
+import AttendanceAPI from '../../../server/api/events/AttendanceAPI.js';
+import EventsAPI from '../../../server/api/events/EventsAPI.js';
+import WaitlistAPI from '../../../server/api/events/WaitlistAPI.js';
 
 describe('api/events/AttendanceAPI', () => {
     let world;

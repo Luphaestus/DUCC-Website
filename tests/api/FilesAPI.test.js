@@ -5,12 +5,12 @@
  * Covers visibility filtering, metadata management, and event-linked image access.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const FilesAPI = require('../../server/api/FilesAPI');
-const FilesDB = require('../../server/db/filesDB');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import TestWorld from '../utils/TestWorld.js';
+import FilesAPI from '../../server/api/FilesAPI.js';
+import FilesDB from '../../server/db/filesDB.js';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 
 describe('api/FilesAPI', () => {
     let world;
@@ -241,11 +241,11 @@ describe('api/FilesAPI', () => {
 
     describe('Hashing & Deduplication', () => {
         const testFile1 = path.join(os.tmpdir(), 'test_image.png');
+        const pngHeader = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
         
         beforeAll(() => {
-            if (!fs.existsSync(testFile1)) {
-                fs.writeFileSync(testFile1, 'dummy image content');
-            }
+            const content = Buffer.concat([pngHeader, Buffer.from('dummy image content')]);
+            fs.writeFileSync(testFile1, content);
         });
 
         /**
@@ -295,7 +295,8 @@ describe('api/FilesAPI', () => {
          */
         test('should use unique filenames for different content', async () => {
             const testFile2 = path.join(os.tmpdir(), 'test_image_2.png');
-            fs.writeFileSync(testFile2, 'different content');
+            const content = Buffer.concat([pngHeader, Buffer.from('different content')]);
+            fs.writeFileSync(testFile2, content);
 
             await world.createRole('admin_role_2', ['file.write']);
             await world.createUser('admin_dedup_2', {}, ['admin_role_2']);

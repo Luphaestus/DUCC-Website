@@ -5,8 +5,8 @@
  * Covers user retrieval, creation, restoration, and reset token management.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const AuthDB = require('../../server/db/authDB');
+import TestWorld from '../utils/TestWorld.js';
+import AuthDB from '../../server/db/authDB.js';
 
 describe('db/authDB', () => {
     let world;

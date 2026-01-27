@@ -4,14 +4,14 @@
  * Defines the entire SQLite schema for the application.
  */
 
-const { createTable } = require('./utils');
-const cliProgress = require('cli-progress');
-const colors = require('ansi-colors');
+import { createTable } from './utils.js';
+import cliProgress from 'cli-progress';
+import colors from 'ansi-colors';
 
 /**
  * Executes the table creation sequence with a progress bar.
  */
-async function createTables(db) {
+export async function createTables(db) {
   const tableDefinitions = [
     {
       name: 'colleges',
@@ -292,12 +292,15 @@ async function createTables(db) {
       await createTable(table.name, table.schema, db);
       progressBar.update(i + 1, { table: table.name });
     }
+
+    // Add partial unique index for event attendees to prevent duplicate active signups
+    await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_event_attendees_unique_active ON event_attendees(event_id, user_id) WHERE is_attending = 1;');
+
     progressBar.stop();
   } else {
     for (const table of tableDefinitions) {
       await createTable(table.name, table.schema, db);
     }
+    await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_event_attendees_unique_active ON event_attendees(event_id, user_id) WHERE is_attending = 1;');
   }
 }
-
-module.exports = { createTables };

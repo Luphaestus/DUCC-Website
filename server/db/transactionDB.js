@@ -4,10 +4,10 @@
  * This module handles database operations related to user financial transactions.
  */
 
-const { statusObject } = require('../misc/status.js');
-const { Permissions } = require('../misc/permissions.js');
+import { statusObject } from '../misc/status.js';
+import { Permissions } from '../misc/permissions.js';
 
-class TransactionsDB {
+export default class TransactionsDB {
     /**
      * Fetch requested transaction-related elements for a user.
      */
@@ -136,5 +136,3 @@ class TransactionsDB {
         return new statusObject(200, null, transaction);
     }
 }
-
-module.exports = TransactionsDB;

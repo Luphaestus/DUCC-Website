@@ -5,8 +5,8 @@
  * Extensively covers event visibility (difficulty/tags) and participation (joining) requirements.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const EventRules = require('../../server/rules/EventRules');
+import TestWorld from '../utils/TestWorld.js';
+import EventRules from '../../server/rules/EventRules.js';
 
 describe('rules/EventRules', () => {
     let world;

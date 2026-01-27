@@ -5,8 +5,8 @@
  * Verifies retrieval of college metadata and lookup by ID.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const CollegesDB = require('../../server/db/collegesDB');
+import TestWorld from '../utils/TestWorld.js';
+import CollegesDB from '../../server/db/collegesDB.js';
 
 describe('db/collegesDB', () => {
     let world;

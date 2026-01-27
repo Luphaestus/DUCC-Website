@@ -5,8 +5,8 @@
  * Verifies joining, FIFO (First-In-First-Out) ordering, and position calculation.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const WaitlistDB = require('../../server/db/waitlistDB');
+import TestWorld from '../utils/TestWorld.js';
+import WaitlistDB from '../../server/db/waitlistDB.js';
 
 describe('db/waitlistDB', () => {
     let world;

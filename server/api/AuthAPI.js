@@ -4,15 +4,15 @@
  * This file handles all authentication-related routes.
  */
 
-const LocalStrategy = require('passport-local').Strategy;
-const bcrypt = require('bcrypt');
-const crypto = require('crypto');
-const checkAuthentication = require('../misc/authentication.js');
-const Utils = require('../misc/utils.js');
-const ValidationRules = require('../rules/ValidationRules.js');
-const AuthDB = require('../db/authDB.js');
+import { Strategy as LocalStrategy } from 'passport-local';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import checkAuthentication from '../misc/authentication.js';
+import Utils from '../misc/utils.js';
+import ValidationRules from '../rules/ValidationRules.js';
+import AuthDB from '../db/authDB.js';
 
-class Auth {
+export default class Auth {
     /**
      * Initialize Passport strategies and serialization.
      */
@@ -241,5 +241,3 @@ class Auth {
         return checkAuthentication(...requirements);
     }
 }
-
-module.exports = Auth;

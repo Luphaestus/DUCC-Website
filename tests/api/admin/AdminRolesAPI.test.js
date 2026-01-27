@@ -5,8 +5,8 @@
  * Verifies the lifecycle of custom roles and protects critical system roles (President).
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const AdminRolesAPI = require('../../../server/api/admin/AdminRolesAPI');
+import TestWorld from '../../utils/TestWorld.js';
+import AdminRolesAPI from '../../../server/api/admin/AdminRolesAPI.js';
 
 describe('api/admin/AdminRolesAPI', () => {
     let world;

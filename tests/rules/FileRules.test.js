@@ -5,8 +5,8 @@
  * Covers visibility levels (public, member, exec) and dynamic event-linked visibility logic.
  */
 
-const FileRules = require('../../server/rules/FileRules');
-const TestWorld = require('../utils/TestWorld');
+import FileRules from '../../server/rules/FileRules.js';
+import TestWorld from '../utils/TestWorld.js';
 
 describe('rules/FileRules', () => {
     let world;

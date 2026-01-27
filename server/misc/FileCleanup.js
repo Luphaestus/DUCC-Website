@@ -4,11 +4,16 @@
  * Utility for garbage collecting unused file uploads.
  */
 
-const FilesDB = require('../db/filesDB.js');
-const path = require('path');
-const fs = require('fs');
+import FilesDB from '../db/filesDB.js';
+import path from 'path';
+import fs from 'fs';
+import Globals from './globals.js';
+import { fileURLToPath } from 'url';
 
-class FileCleanup {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default class FileCleanup {
     /**
      * Checks if a file is still in use by any entity.
      */
@@ -45,7 +50,6 @@ class FileCleanup {
             const slideUsage = await db.get('SELECT 1 FROM slides WHERE file_id = ?', [fileId]);
             if (slideUsage) return;
 
-            const Globals = require('./globals.js');
             const defaultImage = new Globals().get('DefaultEventImage').data;
             if (defaultImage && defaultImage.includes(`/api/files/${fileId}/`)) return;
 
@@ -66,5 +70,3 @@ class FileCleanup {
         }
     }
 }
-
-module.exports = FileCleanup;

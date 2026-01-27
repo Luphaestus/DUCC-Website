@@ -5,13 +5,13 @@
  * creates tables, and triggers data seeding.
  */
 
-const { open } = require('sqlite');
-const sqlite3 = require('sqlite3');
-const { createTables } = require('./tables');
-const { seedData } = require('./seed');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
+import { createTables } from './tables.js';
+import { seedData } from './seed.js';
+import fs from 'fs';
+import path from 'path';
+import 'dotenv/config';
 
 const env = process.env.NODE_ENV || 'development';
 console.log(`Running in ${env} mode`);

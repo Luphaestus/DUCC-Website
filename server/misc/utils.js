@@ -4,7 +4,7 @@
  * General-purpose utility functions.
  */
 
-class Utils {
+export default class Utils {
     /**
      * Calculate the start of the current academic year (September 1st).
      */
@@ -21,5 +21,3 @@ class Utils {
         return `${req.protocol}://${req.get('host')}`;
     }
 }
-
-module.exports = Utils;

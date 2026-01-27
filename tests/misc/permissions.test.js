@@ -5,8 +5,8 @@
  * Verifies role-based perms, direct overrides, and dynamic scoping for events.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const { Permissions } = require('../../server/misc/permissions');
+import TestWorld from '../utils/TestWorld.js';
+import { Permissions } from '../../server/misc/permissions.js';
 
 describe('misc/permissions', () => {
     let world;

@@ -5,14 +5,14 @@
  * Covers signup, account restoration, login, status checks, and password resets.
  */
 
-const request = require('supertest');
-const express = require('express');
-const session = require('express-session');
-const passportModule = require('passport');
-const TestWorld = require('../utils/TestWorld');
-const AuthAPI = require('../../server/api/AuthAPI');
-const UserAPI = require('../../server/api/users/UserAPI');
-const bcrypt = require('bcrypt');
+import request from 'supertest';
+import express from 'express';
+import session from 'express-session';
+import { Authenticator } from 'passport';
+import TestWorld from '../utils/TestWorld.js';
+import AuthAPI from '../../server/api/AuthAPI.js';
+import UserAPI from '../../server/api/users/UserAPI.js';
+import bcrypt from 'bcrypt';
 
 describe('api/AuthAPI', () => {
     let app, db, passport, auth;
@@ -24,7 +24,7 @@ describe('api/AuthAPI', () => {
         db = world.db;
         
         // Manual Express setup to inject the test database
-        passport = new passportModule.Authenticator();
+        passport = new Authenticator();
         app = express();
         app.use(express.json());
         app.use(session({ secret: 'test', resave: false, saveUninitialized: false }));

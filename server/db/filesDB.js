@@ -4,9 +4,9 @@
  * This module manages database operations for file metadata and categories.
  */
 
-const { statusObject } = require('../misc/status.js');
+import { statusObject } from '../misc/status.js';
 
-class FilesDB {
+export default class FilesDB {
     /**
      * Fetch a paginated, searchable, and filterable list of files.
      */
@@ -221,5 +221,3 @@ class FilesDB {
         }
     }
 }
-
-module.exports = FilesDB;

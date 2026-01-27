@@ -5,8 +5,8 @@
  * Verifies that the server boots correctly and serves the core SPA entry point.
  */
 
-const request = require('supertest');
-const { serverReady } = require('../server/server');
+import request from 'supertest';
+import { serverReady } from '../server/server.js';
 
 describe('Main Express Application', () => {
     let app;

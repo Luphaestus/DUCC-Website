@@ -4,17 +4,22 @@
  * This file handles file management, uploads, and categories.
  */
 
-const { statusObject } = require('../misc/status.js');
-const FilesDB = require('../db/filesDB.js');
-const check = require('../misc/authentication.js');
-const { Permissions } = require('../misc/permissions.js');
-const FileRules = require('../rules/FileRules.js');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
+import { statusObject } from '../misc/status.js';
+import FilesDB from '../db/filesDB.js';
+import check from '../misc/authentication.js';
+import { Permissions } from '../misc/permissions.js';
+import FileRules from '../rules/FileRules.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+import { fileTypeFromFile } from 'file-type';
 
-class FilesAPI {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default class FilesAPI {
     /**
      * Initialize file upload directory and storage.
      */
@@ -33,20 +38,13 @@ class FilesAPI {
             },
             filename: (req, file, cb) => {
                 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                cb(null, uniqueSuffix + path.extname(file.originalname));
+                cb(null, uniqueSuffix); // Save without extension first
             }
         });
 
         this.upload = multer({ 
-            storage: storage,
-            fileFilter: (req, file, cb) => {
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-                if (allowedTypes.includes(file.mimetype)) {
-                    cb(null, true);
-                } else {
-                    cb(new Error('Invalid file type.'), false);
-                }
-            }
+            storage: storage
+            // Removed fileFilter that trusted mimetype
         });
     }
 
@@ -102,25 +100,49 @@ class FilesAPI {
             if (!req.files || req.files.length === 0) return res.status(400).json({ message: 'No files uploaded.' });
 
             const results = [];
+            const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+
             for (const file of req.files) {
                 const filePath = file.path;
-                const fileHash = await this.calculateHash(filePath);
+                let fileTypeResult;
+                try {
+                    fileTypeResult = await fileTypeFromFile(filePath);
+                } catch (e) {
+                    fileTypeResult = null;
+                }
+
+                if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    return res.status(400).json({ message: 'Invalid file content or type not allowed.' });
+                }
+
+                // Rename file to include correct extension
+                const ext = `.${fileTypeResult.ext}`;
+                const newFilename = file.filename + ext;
+                const newPath = filePath + ext;
+                fs.renameSync(filePath, newPath);
+                
+                // Update file object references
+                file.filename = newFilename;
+                file.path = newPath;
+
+                const fileHash = await this.calculateHash(newPath);
 
                 const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
                 let finalFilename = file.filename;
 
                 if (!existingFileStatus.isError()) {
                     const existingFile = existingFileStatus.getData();
-                    if (fs.existsSync(filePath)) {
-                        fs.unlinkSync(filePath);
+                    if (fs.existsSync(newPath)) {
+                        fs.unlinkSync(newPath);
                     }
                     finalFilename = existingFile.filename;
                 }
 
                 let defaultTitle = file.originalname;
-                const ext = path.extname(file.originalname);
-                if (ext && defaultTitle.endsWith(ext)) {
-                    defaultTitle = defaultTitle.slice(0, -ext.length);
+                const originalExt = path.extname(file.originalname);
+                if (originalExt && defaultTitle.endsWith(originalExt)) {
+                    defaultTitle = defaultTitle.slice(0, -originalExt.length);
                 }
 
                 const data = {
@@ -259,5 +281,3 @@ class FilesAPI {
         });
     }
 }
-
-module.exports = FilesAPI;

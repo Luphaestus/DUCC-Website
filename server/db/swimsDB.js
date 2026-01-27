@@ -4,11 +4,11 @@
  * This module manages "swims" records and leaderboard data.
  */
 
-const { statusObject } = require('../misc/status.js');
-const Utils = require('../misc/utils.js');
-const { Permissions } = require('../misc/permissions.js');
+import { statusObject } from '../misc/status.js';
+import Utils from '../misc/utils.js';
+import { Permissions } from '../misc/permissions.js';
 
-class SwimsDB {
+export default class SwimsDB {
     /**
      * Add swims to a user's total and record the entry in swim history.
      */
@@ -137,5 +137,3 @@ class SwimsDB {
         }
     }
 }
-
-module.exports = SwimsDB;

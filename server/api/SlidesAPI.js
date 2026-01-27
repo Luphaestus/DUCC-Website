@@ -4,11 +4,11 @@
  * This file serves image paths for the home page slideshow from the database.
  */
 
-const { statusObject } = require('../misc/status.js');
-const SlidesDB = require('../db/slidesDB.js');
-const check = require('../misc/authentication.js');
+import { statusObject } from '../misc/status.js';
+import SlidesDB from '../db/slidesDB.js';
+import check from '../misc/authentication.js';
 
-class SlidesAPI {
+export default class SlidesAPI {
     /**
      * @param {object} app - Express app.
      * @param {object} db - Database connection.
@@ -80,5 +80,3 @@ class SlidesAPI {
         });
     }
 }
-
-module.exports = SlidesAPI;

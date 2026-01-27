@@ -5,16 +5,16 @@
  * Ensures each test suite runs in total isolation.
  */
 
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const { createTables } = require('../../server/db/init/tables');
-const { seedColleges } = require('../../server/db/init/seed/essential');
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import { createTables } from '../../server/db/init/tables.js';
+import { seedColleges } from '../../server/db/init/seed/essential.js';
 
 /**
  * Creates and initializes an in-memory SQLite connection.
  * @returns {Promise<object>} - The SQLite database instance.
  */
-async function setupTestDb() {
+export async function setupTestDb() {
     const db = await open({
         filename: ':memory:', // Transient storage
         driver: sqlite3.Database
@@ -32,5 +32,3 @@ async function setupTestDb() {
 
     return db;
 }
-
-module.exports = { setupTestDb };

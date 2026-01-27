@@ -4,7 +4,7 @@
  * Provides centralized input validation logic.
  */
 
-class ValidationRules {
+export default class ValidationRules {
     /**
      * Predefined regular expression patterns and error messages.
      */
@@ -61,5 +61,3 @@ class ValidationRules {
         return null;
     }
 }
-
-module.exports = ValidationRules;

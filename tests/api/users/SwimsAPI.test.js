@@ -5,8 +5,8 @@
  * Verifies leaderboard visibility and administrative swim addition.
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const SwimsAPI = require('../../../server/api/users/SwimsAPI');
+import TestWorld from '../../utils/TestWorld.js';
+import SwimsAPI from '../../../server/api/users/SwimsAPI.js';
 
 describe('api/users/SwimsAPI', () => {
     let world;

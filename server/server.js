@@ -12,16 +12,25 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-const path = require('path');
-const express = require('express');
-const { open } = require('sqlite');
-const sqlite3 = require('sqlite3');
-const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
-const passport = require('passport');
-const fs = require('fs');
-const livereload = require("livereload");
-const connectLiveReload = require("connect-livereload");
+import path from 'path';
+import express from 'express';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
+import session from 'express-session';
+import connectSqlite3 from 'connect-sqlite3';
+const SQLiteStore = connectSqlite3(session);
+import passport from 'passport';
+import fs from 'fs';
+import livereload from "livereload";
+import connectLiveReload from "connect-livereload";
+import { fileURLToPath } from 'url';
+import Globals from './misc/globals.js';
+import cliProgress from 'cli-progress';
+import colors from 'ansi-colors';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
@@ -118,7 +127,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-const Globals = require('./misc/globals.js');
 new Globals();
 
 let db;
@@ -147,7 +155,7 @@ const startServer = async () => {
       res.status(200).json({ ok: true });
     });
 
-    const Auth = require('./api/AuthAPI.js');
+    const Auth = (await import('./api/AuthAPI.js')).default;
     const auth = new Auth(app, db, passport);
     auth.registerRoutes();
 
@@ -170,9 +178,6 @@ const startServer = async () => {
     
     /** Dynamically register all API modules. */
     if (process.env.NODE_ENV !== 'test' && apiFiles.length > 0) {
-        const cliProgress = require('cli-progress');
-        const colors = require('ansi-colors');
-
         console.log(colors.cyan('Registering API modules...'));
         const progressBar = new cliProgress.SingleBar({
             format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
@@ -188,14 +193,14 @@ const startServer = async () => {
             const fileName = path.basename(fullPath);
             progressBar.update(i + 1, { file: fileName });
             
-            const ApiClass = require(fullPath);
+            const ApiClass = (await import(fullPath)).default;
             const apiInstance = new ApiClass(app, db, passport);
             apiInstance.registerRoutes();
         }
         progressBar.stop();
     } else {
         for (const fullPath of apiFiles) {
-            const ApiClass = require(fullPath);
+            const ApiClass = (await import(fullPath)).default;
             const apiInstance = new ApiClass(app, db, passport);
             apiInstance.registerRoutes();
         }
@@ -206,7 +211,7 @@ const startServer = async () => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    if (require.main === module) {
+    if (import.meta.url === `file://${process.argv[1]}`) {
       app.listen(PORT, () => {
         console.log(`Server is running on http://localhost:${PORT}`);
         console.log('Press Ctrl+C to stop the server.');
@@ -222,5 +227,4 @@ const startServer = async () => {
 
 const serverReady = startServer();
 
-module.exports = app;
-module.exports.serverReady = serverReady;
+export { app, serverReady };

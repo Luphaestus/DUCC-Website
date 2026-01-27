@@ -4,14 +4,14 @@
  * This file handles system-wide configuration settings and broad user queries.
  */
 
-const Globals = require('../misc/globals.js');
-const UserDB = require('../db/userDB.js');
-const RolesDB = require('../db/rolesDB.js');
-const check = require('../misc/authentication.js');
-const { Permissions } = require('../misc/permissions.js');
-const FileCleanup = require('../misc/FileCleanup.js');
+import Globals from '../misc/globals.js';
+import UserDB from '../db/userDB.js';
+import RolesDB from '../db/rolesDB.js';
+import check from '../misc/authentication.js';
+import { Permissions } from '../misc/permissions.js';
+import FileCleanup from '../misc/FileCleanup.js';
 
-class GlobalsAPI {
+export default class GlobalsAPI {
     /**
      * @param {object} app - Express app.
      * @param {object} db - Database connection.
@@ -111,5 +111,3 @@ class GlobalsAPI {
         });
     }
 }
-
-module.exports = GlobalsAPI;

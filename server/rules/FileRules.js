@@ -4,10 +4,10 @@
  * Defines logic for evaluating access rights to uploaded files.
  */
 
-const EventRules = require('./EventRules.js');
-const Globals = require('../misc/globals.js');
+import EventRules from './EventRules.js';
+import Globals from '../misc/globals.js';
 
-class FileRules {
+export default class FileRules {
     /**
      * Determine if a specific user is authorized to access a file.
      */
@@ -35,5 +35,3 @@ class FileRules {
         return false;
     }
 }
-
-module.exports = FileRules;

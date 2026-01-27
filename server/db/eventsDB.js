@@ -4,14 +4,14 @@
  * This module handles core database operations for events.
  */
 
-const { statusObject } = require('../misc/status.js');
-const TransactionsDB = require('./transactionDB.js');
-const TagsDB = require('./tagsDB.js');
-const UserDB = require('./userDB.js');
-const EventRules = require('../rules/EventRules.js');
-const Globals = require('../misc/globals.js');
+import { statusObject } from '../misc/status.js';
+import TransactionsDB from './transactionDB.js';
+import TagsDB from './tagsDB.js';
+import UserDB from './userDB.js';
+import EventRules from '../rules/EventRules.js';
+import Globals from '../misc/globals.js';
 
-class eventsDB {
+export default class eventsDB {
     /**
      * Fetch events for a specific week, filtered by the maximum difficulty the user is allowed to see.
      */
@@ -379,9 +379,6 @@ class eventsDB {
             }
         }
         
-        const Globals = require('../misc/globals.js');
         return new Globals().get('DefaultEventImage').data;
     }
 }
-
-module.exports = eventsDB;

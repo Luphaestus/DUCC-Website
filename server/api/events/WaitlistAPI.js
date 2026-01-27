@@ -4,14 +4,14 @@
  * This file manages the waiting list functionality for events.
  */
 
-const EventsDB = require('../../db/eventsDB.js');
-const WaitlistDB = require('../../db/waitlistDB.js');
-const AttendanceDB = require('../../db/attendanceDB.js');
-const UserDB = require('../../db/userDB.js');
-const check = require('../../misc/authentication.js');
-const { Permissions } = require('../../misc/permissions.js');
+import EventsDB from '../../db/eventsDB.js';
+import WaitlistDB from '../../db/waitlistDB.js';
+import AttendanceDB from '../../db/attendanceDB.js';
+import UserDB from '../../db/userDB.js';
+import check from '../../misc/authentication.js';
+import { Permissions } from '../../misc/permissions.js';
 
-class WaitlistAPI {
+export default class WaitlistAPI {
     /**
      * @param {object} app - Express app instance.
      * @param {object} db - Database connection.
@@ -122,5 +122,3 @@ class WaitlistAPI {
         });
     }
 }
-
-module.exports = WaitlistAPI;

@@ -5,8 +5,8 @@
  * Covers tag CRUD operations, whitelist management, and user-specific tag visibility.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const TagsAPI = require('../../server/api/TagsAPI');
+import TestWorld from '../utils/TestWorld.js';
+import TagsAPI from '../../server/api/TagsAPI.js';
 
 describe('api/TagsAPI', () => {
     let world;

@@ -4,11 +4,11 @@
  * This module handles core database operations for user profiles and management.
  */
 
-const { statusObject } = require('../misc/status.js');
-const { Permissions } = require('../misc/permissions.js');
-const TransactionsDB = require('./transactionDB.js');
+import { statusObject } from '../misc/status.js';
+import { Permissions } from '../misc/permissions.js';
+import TransactionsDB from './transactionDB.js';
 
-class UserDB {
+export default class UserDB {
     /**
      * Fetch a paginated, searchable, and filterable list of users.
      */
@@ -361,5 +361,3 @@ class UserDB {
         }
     }
 }
-
-module.exports = UserDB;

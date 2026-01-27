@@ -4,16 +4,20 @@
  * Generates dummy data for development and testing.
  */
 
-const bcrypt = require('bcrypt');
-const cliProgress = require('cli-progress');
-const colors = require('ansi-colors');
-const fs = require('fs');
-const path = require('path');
+import bcrypt from 'bcrypt';
+import cliProgress from 'cli-progress';
+import colors from 'ansi-colors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Main development seeding function.
  */
-async function seedDevelopment(db) {
+export async function seedDevelopment(db) {
     const userCount = await db.get('SELECT COUNT(*) as count FROM users');
 
     const slidesDir = path.join(__dirname, '..', '..', '..', 'public', 'images', 'slides');
@@ -250,8 +254,21 @@ async function seedDevelopment(db) {
     };
     const createEvent = async (data) => {
         const res = await db.run(
-            `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff, image_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [data.title, data.description, data.location, data.start, data.end, data.difficulty_level || 1, data.max_attendees !== undefined ? data.max_attendees : 20, data.upfront_cost, data.upfront_refund_cutoff || null, data.image_id || null]
+            `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff, image_id, is_canceled, enable_waitlist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.title, 
+                data.description, 
+                data.location, 
+                data.start, 
+                data.end, 
+                data.difficulty_level || 1, 
+                data.max_attendees !== undefined ? data.max_attendees : 20, 
+                data.upfront_cost, 
+                data.upfront_refund_cutoff || null, 
+                data.image_id || null,
+                data.is_canceled !== undefined ? (data.is_canceled ? 1 : 0) : 0,
+                data.enable_waitlist !== undefined ? (data.enable_waitlist ? 1 : 0) : 1
+            ]
         );
         if (data.tags) {
             for (const tagId of data.tags) {
@@ -266,6 +283,9 @@ async function seedDevelopment(db) {
 
     if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Generating development events...'));
     
+    const specialDate = new Date(now);
+    specialDate.setDate(now.getDate() + 3);
+
     const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
     let eventProgressBar;
     if (process.env.NODE_ENV !== 'test') {
@@ -285,6 +305,72 @@ async function seedDevelopment(db) {
         let eventId = null;
         let maxAttendees = 20;
         let imageId = seededFileIds.length > 0 ? seededFileIds[Math.floor(Math.random() * seededFileIds.length)] : null;
+
+        const isSpecialDay = currentDate.getDate() === specialDate.getDate() && 
+                             currentDate.getMonth() === specialDate.getMonth() && 
+                             currentDate.getFullYear() === specialDate.getFullYear();
+
+        if (isSpecialDay) {
+            await createEvent({
+                title: "Elite Slalom Training",
+                description: "Advanced training for the team.",
+                location: "Tees Barrage",
+                start: setTime(currentDate, 10, 0),
+                end: setTime(currentDate, 13, 0),
+                difficulty_level: 3,
+                max_attendees: 10,
+                upfront_cost: 0,
+                tags: [tagIds['slalom-team']], 
+                image_id: imageId
+            });
+
+            await createEvent({
+                title: "Canceled Social",
+                description: "This event has been canceled.",
+                location: "The Pub",
+                start: setTime(currentDate, 18, 0),
+                end: setTime(currentDate, 20, 0),
+                difficulty_level: 1,
+                max_attendees: 20,
+                upfront_cost: 0,
+                tags: [tagIds['socials']],
+                image_id: imageId,
+                is_canceled: true
+            });
+
+            const waitlistEventId = await createEvent({
+                title: "Popular Workshop (Waitlist)",
+                description: "This event is full, join the waitlist!",
+                location: "Classroom",
+                start: setTime(currentDate, 14, 0),
+                end: setTime(currentDate, 15, 0),
+                difficulty_level: 1,
+                max_attendees: 5,
+                upfront_cost: 5,
+                image_id: imageId
+            });
+            for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [waitlistEventId, allUsers[k].id, 1]);
+            for (let k = 5; k < 8; k++) await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [waitlistEventId, allUsers[k].id]);
+
+            const noWaitlistEventId = await createEvent({
+                title: "Exclusive Session (No Waitlist)",
+                description: "Full and no waitlist available.",
+                location: "Private Room",
+                start: setTime(currentDate, 16, 0),
+                end: setTime(currentDate, 17, 0),
+                difficulty_level: 2,
+                max_attendees: 5,
+                upfront_cost: 10,
+                image_id: imageId,
+                enable_waitlist: false
+            });
+            for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [noWaitlistEventId, allUsers[k+10].id, 1]);
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+            dayCount++;
+            if (eventProgressBar) eventProgressBar.update(dayCount);
+            continue;
+        }
 
         if (day === 3) {
             maxAttendees = 0;
@@ -348,5 +434,3 @@ async function seedDevelopment(db) {
     if (eventProgressBar) eventProgressBar.stop();
     if (process.env.NODE_ENV !== 'test') console.log(colors.green('Sample events generated successfully.'));
 }
-
-module.exports = { seedDevelopment };

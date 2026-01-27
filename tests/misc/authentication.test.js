@@ -6,8 +6,8 @@
  * and special meta-permissions (perm:is_exec).
  */
 
-const checkAuthentication = require('../../server/misc/authentication');
-const { Permissions } = require('../../server/misc/permissions');
+import checkAuthentication from '../../server/misc/authentication.js';
+import { Permissions } from '../../server/misc/permissions.js';
 
 describe('misc/authentication', () => {
     let req, res, next;

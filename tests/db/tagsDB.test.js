@@ -5,8 +5,8 @@
  * Verifies tag management, user whitelisting, and event-tag associations.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const TagsDB = require('../../server/db/tagsDB');
+import TestWorld from '../utils/TestWorld.js';
+import TagsDB from '../../server/db/tagsDB.js';
 
 describe('db/tagsDB', () => {
     let world;

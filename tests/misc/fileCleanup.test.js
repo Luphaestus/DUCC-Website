@@ -14,15 +14,17 @@
  * - Verifying physical and database deletion when file is truly unused.
  */
 
-const fs = require('fs');
-const FileCleanup = require('../../server/misc/FileCleanup.js');
-const FilesDB = require('../../server/db/filesDB.js');
+import fs from 'fs';
+import FileCleanup from '../../server/misc/FileCleanup.js';
+import FilesDB from '../../server/db/filesDB.js';
 
 // Mock Globals
 vi.mock('../../server/misc/globals.js', () => {
-    return class {
-        get(key) {
-            return { data: '/api/files/999/download' }; // Mock default image
+    return {
+        default: class {
+            get(key) {
+                return { data: '/api/files/999/download' }; // Mock default image
+            }
         }
     };
 });

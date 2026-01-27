@@ -4,11 +4,12 @@
  * This module handles database operations related to event attendance.
  */
 
-const { statusObject } = require('../misc/status.js');
-const TransactionsDB = require('./transactionDB.js');
-const UserDB = require('./userDB.js');
+import { statusObject } from '../misc/status.js';
+import TransactionsDB from './transactionDB.js';
+import UserDB from './userDB.js';
+import EventsDB from './eventsDB.js';
 
-class AttendanceDB {
+export default class AttendanceDB {
     /**
      * Check if a specific user is currently marked as attending an event.
      */
@@ -162,7 +163,6 @@ class AttendanceDB {
      * Process a refund for a user who left an event.
      */
     static async refundEvent(db, eventId, user_id) {
-        const EventsDB = require('./eventsDB.js');
         const eventRes = await EventsDB.getEventByIdAdmin(db, eventId);
         if (eventRes.isError()) return eventRes;
         const event = eventRes.getData();
@@ -208,5 +208,3 @@ class AttendanceDB {
         await db.run(`UPDATE event_attendees SET is_attending = 0, left_at = ? WHERE event_id = ? AND is_attending = 1`, [new Date().toISOString(), eventId]);
     }
 }
-
-module.exports = AttendanceDB;

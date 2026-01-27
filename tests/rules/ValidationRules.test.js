@@ -5,7 +5,7 @@
  * Covers emails, names, phone numbers, ages, and presence checks.
  */
 
-const ValidationRules = require('../../server/rules/ValidationRules');
+import ValidationRules from '../../server/rules/ValidationRules.js';
 
 describe('rules/ValidationRules', () => {
     describe('validate(email)', () => {

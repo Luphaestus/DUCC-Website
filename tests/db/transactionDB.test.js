@@ -5,8 +5,8 @@
  * Verifies balance calculation and history generation with running balances.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const TransactionsDB = require('../../server/db/transactionDB');
+import TestWorld from '../utils/TestWorld.js';
+import TransactionsDB from '../../server/db/transactionDB.js';
 
 describe('db/transactionDB', () => {
     let world;

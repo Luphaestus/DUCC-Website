@@ -4,10 +4,14 @@
  * Manages dynamic system-wide configuration settings stored in a JSON file.
  */
 
-const path = require('path');
-const fs = require('fs');
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-class Globals {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default class Globals {
     /**
      * Initializes the instance and ensures 'globals.json' exists with default values.
      */
@@ -138,5 +142,3 @@ class Globals {
     }
 
 }
-
-module.exports = Globals;

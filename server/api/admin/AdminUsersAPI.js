@@ -4,17 +4,17 @@
  * This file handles administrative actions for user management.
  */
 
-const UserDB = require('../../db/userDB.js');
-const RolesDB = require('../../db/rolesDB.js');
-const SwimsDB = require('../../db/swimsDB.js');
-const transactionsDB = require('../../db/transactionDB.js');
-const check = require('../../misc/authentication.js');
-const { statusObject } = require('../../misc/status.js');
-const { Permissions, SCOPED_PERMS } = require('../../misc/permissions.js');
+import UserDB from '../../db/userDB.js';
+import RolesDB from '../../db/rolesDB.js';
+import SwimsDB from '../../db/swimsDB.js';
+import transactionsDB from '../../db/transactionDB.js';
+import check from '../../misc/authentication.js';
+import { statusObject } from '../../misc/status.js';
+import { Permissions, SCOPED_PERMS } from '../../misc/permissions.js';
 
-const bcrypt = require('bcrypt');
+import bcrypt from 'bcrypt';
 
-class AdminUsers {
+export default class AdminUsers {
     /**
      * @param {object} app - Express application instance.
      * @param {object} db - Database connection instance.
@@ -187,5 +187,3 @@ class AdminUsers {
         });
     }
 }
-
-module.exports = AdminUsers;

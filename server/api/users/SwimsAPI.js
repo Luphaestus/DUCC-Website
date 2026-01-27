@@ -4,10 +4,10 @@
  * This file handles user "swims" records.
  */
 
-const SwimsDB = require('../../db/swimsDB.js');
-const check = require('../../misc/authentication');
+import SwimsDB from '../../db/swimsDB.js';
+import check from '../../misc/authentication.js';
 
-class SwimsAPI {
+export default class SwimsAPI {
     /**
      * @param {object} app - Express application.
      * @param {object} db - Database connection.
@@ -55,5 +55,3 @@ class SwimsAPI {
         });
     }
 }
-
-module.exports = SwimsAPI;

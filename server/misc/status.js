@@ -4,7 +4,7 @@
  * Standardizes operation results across the application.
  */
 
-class statusObject {
+export class statusObject {
     /**
      * @param {number} status - HTTP status code.
      * @param {string} [message=null] - Success or error message.
@@ -55,5 +55,3 @@ class statusObject {
         return this.data;
     }
 }
-
-module.exports = { statusObject };

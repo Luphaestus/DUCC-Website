@@ -4,16 +4,17 @@
  * This file handles user participation in events.
  */
 
-const EventsDB = require('../../db/eventsDB.js');
-const AttendanceDB = require('../../db/attendanceDB.js');
-const TransactionsDB = require('../../db/transactionDB.js');
-const UserDB = require('../../db/userDB.js');
-const EventRules = require('../../rules/EventRules.js');
-const check = require('../../misc/authentication.js');
-const { statusObject } = require('../../misc/status.js');
-const { Permissions } = require('../../misc/permissions.js');
+import EventsDB from '../../db/eventsDB.js';
+import AttendanceDB from '../../db/attendanceDB.js';
+import TransactionsDB from '../../db/transactionDB.js';
+import UserDB from '../../db/userDB.js';
+import EventRules from '../../rules/EventRules.js';
+import check from '../../misc/authentication.js';
+import { statusObject } from '../../misc/status.js';
+import { Permissions } from '../../misc/permissions.js';
+import WaitlistDB from '../../db/waitlistDB.js';
 
-class AttendanceAPI {
+export default class AttendanceAPI {
     /**
      * @param {object} app - Express app.
      * @param {object} db - SQLite database.
@@ -97,51 +98,76 @@ class AttendanceAPI {
                 return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            const eventRes = await EventsDB.get_event_by_id(this.db, req.user.id, eventId)
-            if (eventRes.isError()) return res.status(404).json({ message: 'Event not found' });
-            const event = eventRes.getData();
+            try {
+                await this.db.run('BEGIN IMMEDIATE');
 
-            const user = await UserDB.getElementsById(this.db, req.user.id, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level']);
-            if (user.isError()) return user.getResponse(res);
+                const eventRes = await EventsDB.get_event_by_id(this.db, req.user.id, eventId)
+                if (eventRes.isError()) {
+                    await this.db.run('ROLLBACK');
+                    return res.status(404).json({ message: 'Event not found' });
+                }
+                const event = eventRes.getData();
 
-            const canJoin = await EventRules.canJoinEvent(this.db, event, user.getData());
-            if (canJoin.isError()) return canJoin.getResponse(res);
-
-            const membershipStatus = user.getData();
-            let usedFreeSession = false;
-
-            if (membershipStatus.is_instructor && event.is_canceled) {
-                await EventsDB.setEventCancellation(this.db, eventId, false);
-            }
-
-            if (!membershipStatus.is_member) {
-                const updateStatus = await UserDB.writeElementsById(this.db, req.user.id, { free_sessions: membershipStatus.free_sessions - 1 });
-                if (updateStatus.isError()) return updateStatus.getResponse(res);
-                usedFreeSession = true;
-            }
-
-            let transactionStatus = new statusObject(200, null, null);
-            if (event.upfront_cost > 0) {
-                transactionStatus = await TransactionsDB.add_transaction(this.db, req.user.id, -event.upfront_cost, `${event.title} upfront cost`, eventId);
-                if (transactionStatus.isError()) {
-                    if (usedFreeSession) {
-                        await UserDB.writeElementsById(this.db, req.user.id, { free_sessions: membershipStatus.free_sessions });
-                    }
-                    return transactionStatus.getResponse(res);
+                const user = await UserDB.getElementsById(this.db, req.user.id, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level']);
+                if (user.isError()) {
+                    await this.db.run('ROLLBACK');
+                    return user.getResponse(res);
                 }
 
-                if (event.upfront_refund_cutoff && (new Date() > new Date(event.upfront_refund_cutoff))) {
-                    const refundIdRes = await AttendanceDB.get_event_refund_id(this.db, req.user.id, eventId);
-                    if (!refundIdRes.isError()) {
-                        const refundData = refundIdRes.getData();
-                        if (refundData.user_id) await AttendanceDB.refundEvent(this.db, eventId, refundData.user_id);
-                        else await TransactionsDB.delete_transaction(this.db, refundData.payment_transaction_id);
-                    }
+                const canJoin = await EventRules.canJoinEvent(this.db, event, user.getData());
+                if (canJoin.isError()) {
+                    await this.db.run('ROLLBACK');
+                    return canJoin.getResponse(res);
                 }
-            };
 
-            const status = await AttendanceDB.attend_event(this.db, req.user.id, eventId, transactionStatus.getData());
-            return status.getResponse(res);
+                const membershipStatus = user.getData();
+                let usedFreeSession = false;
+
+                if (membershipStatus.is_instructor && event.is_canceled) {
+                    await EventsDB.setEventCancellation(this.db, eventId, false);
+                }
+
+                if (!membershipStatus.is_member) {
+                    const updateStatus = await UserDB.writeElementsById(this.db, req.user.id, { free_sessions: membershipStatus.free_sessions - 1 });
+                    if (updateStatus.isError()) {
+                        await this.db.run('ROLLBACK');
+                        return updateStatus.getResponse(res);
+                    }
+                    usedFreeSession = true;
+                }
+
+                let transactionStatus = new statusObject(200, null, null);
+                if (event.upfront_cost > 0) {
+                    transactionStatus = await TransactionsDB.add_transaction(this.db, req.user.id, -event.upfront_cost, `${event.title} upfront cost`, eventId);
+                    if (transactionStatus.isError()) {
+                        // UserDB write will be rolled back by transaction rollback
+                        await this.db.run('ROLLBACK');
+                        return transactionStatus.getResponse(res);
+                    }
+
+                    if (event.upfront_refund_cutoff && (new Date() > new Date(event.upfront_refund_cutoff))) {
+                        const refundIdRes = await AttendanceDB.get_event_refund_id(this.db, req.user.id, eventId);
+                        if (!refundIdRes.isError()) {
+                            const refundData = refundIdRes.getData();
+                            if (refundData.user_id) await AttendanceDB.refundEvent(this.db, eventId, refundData.user_id);
+                            else await TransactionsDB.delete_transaction(this.db, refundData.payment_transaction_id);
+                        }
+                    }
+                };
+
+                const status = await AttendanceDB.attend_event(this.db, req.user.id, eventId, transactionStatus.getData());
+                if (status.isError()) {
+                    await this.db.run('ROLLBACK');
+                    return status.getResponse(res);
+                }
+
+                await this.db.run('COMMIT');
+                return status.getResponse(res);
+            } catch (error) {
+                await this.db.run('ROLLBACK');
+                console.error(error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
         });
 
         /**
@@ -193,7 +219,6 @@ class AttendanceAPI {
                 }
             }
 
-            const WaitlistDB = require('../../db/waitlistDB.js'); 
             const nextUserRes = await WaitlistDB.get_next_on_waiting_list(this.db, eventId);
             const nextUserId = nextUserRes.getData();
 
@@ -256,5 +281,3 @@ class AttendanceAPI {
         });
     }
 }
-
-module.exports = AttendanceAPI;

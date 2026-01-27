@@ -5,8 +5,8 @@
  * Verifies low-level CRUD operations for event participation and instructor auditing.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const AttendanceDB = require('../../server/db/attendanceDB');
+import TestWorld from '../utils/TestWorld.js';
+import AttendanceDB from '../../server/db/attendanceDB.js';
 
 describe('db/attendanceDB', () => {
     let world;

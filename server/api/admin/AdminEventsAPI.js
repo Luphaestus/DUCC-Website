@@ -4,12 +4,12 @@
  * This file handles administrative actions for events.
  */
 
-const EventsDB = require('../../db/eventsDB.js');
-const check = require('../../misc/authentication.js');
-const { Permissions } = require('../../misc/permissions.js');
-const FileCleanup = require('../../misc/FileCleanup.js');
+import EventsDB from '../../db/eventsDB.js';
+import check from '../../misc/authentication.js';
+import { Permissions } from '../../misc/permissions.js';
+import FileCleanup from '../../misc/FileCleanup.js';
 
-class AdminEvents {
+export default class AdminEvents {
     /**
      * @param {object} app - Express application instance.
      * @param {object} db - Database connection instance.
@@ -141,5 +141,3 @@ class AdminEvents {
         });
     }
 }
-
-module.exports = AdminEvents;

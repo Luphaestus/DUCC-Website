@@ -7,7 +7,7 @@
 /**
  * Generate a random cryptographically non-secure password for development accounts.
  */
-function generateRandomPassword(length) {
+export function generateRandomPassword(length) {
     var upperChars = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "M", "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
     var lowerChars = ["a", "b", "c", "d", "e", "f", "g", "h", "j", "k", "m", "n", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
     var numbers = ["2", "3", "4", "5", "6", "7", "8", "9"];
@@ -26,7 +26,7 @@ function generateRandomPassword(length) {
 /**
  * Utility to create a table if it doesn't already exist in the schema.
  */
-async function createTable(tableName, createStatement, db) {
+export async function createTable(tableName, createStatement, db) {
     const tableExists = await db.get(`
       SELECT name FROM sqlite_master WHERE type='table' AND name=?;
     `, [tableName]);
@@ -36,5 +36,3 @@ async function createTable(tableName, createStatement, db) {
     await db.exec(`CREATE TABLE IF NOT EXISTS ${tableName} (${createStatement});`);
     return false;
 }
-
-module.exports = { generateRandomPassword, createTable };

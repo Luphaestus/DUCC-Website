@@ -4,9 +4,9 @@
  * This module manages database operations for authentication and password resets.
  */
 
-const { statusObject } = require('../misc/status.js');
+import { statusObject } from '../misc/status.js';
 
-class AuthDB {
+export default class AuthDB {
     /**
      * Find a user by email.
      */
@@ -95,5 +95,3 @@ class AuthDB {
         await db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, id]);
     }
 }
-
-module.exports = AuthDB;

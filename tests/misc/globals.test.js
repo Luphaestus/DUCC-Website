@@ -6,8 +6,8 @@
  * and regular expression validation without affecting the actual 'globals.json' file.
  */
 
-const Globals = require('../../server/misc/globals');
-const fs = require('fs');
+import Globals from '../../server/misc/globals.js';
+import fs from 'fs';
 
 describe('misc/globals', () => {
     let globals;

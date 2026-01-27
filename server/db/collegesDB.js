@@ -4,9 +4,9 @@
  * This module manages database operations for Durham colleges.
  */
 
-const { statusObject } = require('../misc/status.js');
+import { statusObject } from '../misc/status.js';
 
-class CollegesDB {
+export default class CollegesDB {
     /**
      * Fetch a list of all colleges in the system.
      */
@@ -33,5 +33,3 @@ class CollegesDB {
         }
     }
 }
-
-module.exports = CollegesDB;

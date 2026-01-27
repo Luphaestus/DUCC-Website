@@ -4,9 +4,9 @@
  * This module manages the event waiting list system.
  */
 
-const { statusObject } = require('../misc/status.js');
+import { statusObject } from '../misc/status.js';
 
-class WaitlistDB {
+export default class WaitlistDB {
     /**
      * Check if a user is currently on the waitlist for a specific event.
      */
@@ -109,5 +109,3 @@ class WaitlistDB {
         }
     }
 }
-
-module.exports = WaitlistDB;

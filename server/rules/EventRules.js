@@ -4,14 +4,15 @@
  * Defines the core business logic for event interaction.
  */
 
-const { statusObject } = require('../misc/status.js');
-const Globals = require('../misc/globals.js');
-const AttendanceDB = require('../db/attendanceDB.js');
-const TagsDB = require('../db/tagsDB.js');
-const RolesDB = require('../db/rolesDB.js');
-const TransactionsDB = require('../db/transactionDB.js');
+import { statusObject } from '../misc/status.js';
+import Globals from '../misc/globals.js';
+import AttendanceDB from '../db/attendanceDB.js';
+import TagsDB from '../db/tagsDB.js';
+import RolesDB from '../db/rolesDB.js';
+import TransactionsDB from '../db/transactionDB.js';
+import UserDB from '../db/userDB.js';
 
-class EventRules {
+export default class EventRules {
     /**
      * Determine if a user is authorized to view an event.
      */
@@ -110,7 +111,6 @@ class EventRules {
 
         let userObj = user;
         if (user && user.id && user.difficulty_level === undefined) {
-            const UserDB = require('../db/userDB.js');
             const userRes = await UserDB.getElementsById(db, user.id, ['difficulty_level', 'id']);
             if (!userRes.isError()) userObj = userRes.getData();
         }
@@ -123,5 +123,3 @@ class EventRules {
         return false;
     }
 }
-
-module.exports = EventRules;

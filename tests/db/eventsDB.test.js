@@ -6,10 +6,10 @@
  * and business logic related to signup requirements and capacity.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const EventsDB = require('../../server/db/eventsDB');
-const TransactionsDB = require('../../server/db/transactionDB');
-const EventRules = require('../../server/rules/EventRules');
+import TestWorld from '../utils/TestWorld.js';
+import EventsDB from '../../server/db/eventsDB.js';
+import TransactionsDB from '../../server/db/transactionDB.js';
+import EventRules from '../../server/rules/EventRules.js';
 
 describe('db/eventsDB', () => {
     let world;

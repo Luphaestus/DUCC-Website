@@ -5,8 +5,8 @@
  * Verifies role creation, user assignment, and permission resolution.
  */
 
-const TestWorld = require('../utils/TestWorld');
-const RolesDB = require('../../server/db/rolesDB');
+import TestWorld from '../utils/TestWorld.js';
+import RolesDB from '../../server/db/rolesDB.js';
 
 describe('db/rolesDB', () => {
     let world;

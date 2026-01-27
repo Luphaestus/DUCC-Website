@@ -5,10 +5,10 @@
  * Verifies eligibility checks for joining, leaving, and administrative visibility.
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const WaitlistAPI = require('../../../server/api/events/WaitlistAPI');
-const AttendanceAPI = require('../../../server/api/events/AttendanceAPI');
-const EventsAPI = require('../../../server/api/events/EventsAPI');
+import TestWorld from '../../utils/TestWorld.js';
+import WaitlistAPI from '../../../server/api/events/WaitlistAPI.js';
+import AttendanceAPI from '../../../server/api/events/AttendanceAPI.js';
+import EventsAPI from '../../../server/api/events/EventsAPI.js';
 
 describe('api/events/WaitlistAPI', () => {
     let world;

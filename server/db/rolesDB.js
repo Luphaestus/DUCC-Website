@@ -4,10 +4,10 @@
  * This module manages the Role-Based Access Control (RBAC) database tables.
  */
 
-const { statusObject } = require('../misc/status.js');
-const { SCOPED_PERMS, Permissions } = require('../misc/permissions.js');
+import { statusObject } from '../misc/status.js';
+import { SCOPED_PERMS, Permissions } from '../misc/permissions.js';
 
-class RolesDB {
+export default class RolesDB {
     /**
      * Fetch the name of a role by its ID.
      */
@@ -354,5 +354,3 @@ class RolesDB {
         }
     }
 }
-
-module.exports = RolesDB;

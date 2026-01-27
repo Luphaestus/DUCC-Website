@@ -4,7 +4,7 @@
  * Provides middleware for verifying user sessions and enforcing RBAC.
  */
 
-const { Permissions } = require('./permissions.js');
+import { Permissions } from './permissions.js';
 
 /**
  * Extracts the core permission name from a tagged permission string.
@@ -67,4 +67,4 @@ const checkAuthentication = (...requirements) => {
     };
 };
 
-module.exports = checkAuthentication;
+export default checkAuthentication;

@@ -5,8 +5,8 @@
  * Verifies that the system correctly manages slide images in the database.
  */
 
-const SlidesAPI = require('../../server/api/SlidesAPI');
-const TestWorld = require('../utils/TestWorld');
+import SlidesAPI from '../../server/api/SlidesAPI.js';
+import TestWorld from '../utils/TestWorld.js';
 
 describe('api/SlidesAPI', () => {
     let world;

@@ -7,13 +7,13 @@
  * and handles mock authentication sessions.
  */
 
-const request = require('supertest');
-const express = require('express');
-const { setupTestDb } = require('./db');
-const Globals = require('../../server/misc/globals');
-const TransactionsDB = require('../../server/db/transactionDB');
+import request from 'supertest';
+import express from 'express';
+import { setupTestDb } from './db.js';
+import Globals from '../../server/misc/globals.js';
+import TransactionsDB from '../../server/db/transactionDB.js';
 
-class TestWorld {
+export default class TestWorld {
     constructor() {
         this.db = null;
         this.app = null;
@@ -302,5 +302,3 @@ class TestWorld {
         return request(this.app);
     }
 }
-
-module.exports = TestWorld;

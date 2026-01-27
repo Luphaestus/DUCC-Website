@@ -5,8 +5,8 @@
  * Verifies difficulty-based filtering for both guest and authenticated users.
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const EventsAPI = require('../../../server/api/events/EventsAPI');
+import TestWorld from '../../utils/TestWorld.js';
+import EventsAPI from '../../../server/api/events/EventsAPI.js';
 
 describe('api/events/EventsAPI', () => {
     let world;

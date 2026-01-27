@@ -6,9 +6,9 @@
  * and the complex "President Role Transfer" logic.
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const AdminUsersAPI = require('../../../server/api/admin/AdminUsersAPI');
-const bcrypt = require('bcrypt');
+import TestWorld from '../../utils/TestWorld.js';
+import AdminUsersAPI from '../../../server/api/admin/AdminUsersAPI.js';
+import bcrypt from 'bcrypt';
 
 describe('api/admin/AdminUsersAPI', () => {
     let world;

@@ -6,9 +6,9 @@
  * and automatic attendee refunds upon event cancellation.
  */
 
-const TestWorld = require('../../utils/TestWorld');
-const AdminEventsAPI = require('../../../server/api/admin/AdminEventsAPI');
-const TagsAPI = require('../../../server/api/TagsAPI');
+import TestWorld from '../../utils/TestWorld.js';
+import AdminEventsAPI from '../../../server/api/admin/AdminEventsAPI.js';
+import TagsAPI from '../../../server/api/TagsAPI.js';
 
 describe('api/admin/AdminEventsAPI', () => {
     let world;

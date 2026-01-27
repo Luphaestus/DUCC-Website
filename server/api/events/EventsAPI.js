@@ -4,13 +4,14 @@
  * This file handles public and member event listing routes.
  */
 
-const EventsDB = require('../../db/eventsDB.js');
-const UserDB = require('../../db/userDB.js');
-const TagsDB = require('../../db/tagsDB.js');
-const Globals = require('../../misc/globals.js');
-const check = require('../../misc/authentication.js');
+import EventsDB from '../../db/eventsDB.js';
+import UserDB from '../../db/userDB.js';
+import TagsDB from '../../db/tagsDB.js';
+import Globals from '../../misc/globals.js';
+import check from '../../misc/authentication.js';
+import { Permissions } from '../../misc/permissions.js';
 
-class EventsAPI {
+export default class EventsAPI {
     /**
      * @param {object} app - Express application instance.
      * @param {object} db - Database connection instance.
@@ -146,7 +147,6 @@ class EventsAPI {
                 return res.status(400).json({ message: 'Event ID must be an integer' });
             }
 
-            const { Permissions } = require('../../misc/permissions.js');
             const canManage = await Permissions.canManageEvent(this.db, req.user.id, eventId);
             res.json({ canManage });
         });
@@ -174,5 +174,3 @@ class EventsAPI {
         });
     }
 }
-
-module.exports = EventsAPI;
