@@ -23,7 +23,14 @@
     "pretest": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db npm run --silent db:init",
     "test": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest run",
     "test:watch": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest",
-    "apidoc": "npx openapi-generate-html -i public/openapi.json --theme=dark --ui stoplight --theme dark -o openapi.html"
+    "apidoc": "npx openapi-generate-html -i public/openapi.json --theme=dark --ui stoplight --theme dark -o public/openapi.html",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "public/openapi.json": [
+      "npm run apidoc",
+      "git add public/openapi.html"
+    ]
   },
   "nodemonConfig": {
     "watch": [
@@ -54,6 +61,8 @@
     "@types/passport-local": "^1.0.38",
     "connect-livereload": "^0.6.1",
     "cross-env": "^10.1.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^13.2.0",
     "livereload": "^0.10.3",
     "nodemon": "^3.1.11",
     "npm-run-all": "^4.1.5",

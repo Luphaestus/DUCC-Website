@@ -18,6 +18,7 @@ npm run db:init
 - `npm run dev`: Sass Wactcher, Nodemon, and seeded data.
 - `npm test`: Executes Jest test suite (initializes database.test.db).
 - `npm run sass:build`: Compiles SASS to public directory.
+- `npm run apidoc`: Generates the API documentation html file from the openapi.json file.
 
 ## Deployment
 This is optional and is only intended for deploying to a remote server (It mean I can test locally, and only push to server when ready).
@@ -41,6 +42,11 @@ Deployment requires a `.env.deploy` file containing `SERVER_IP`, `SERVER_PASSWOR
 - `Caddyfile`: Reverse proxy and TLS configuration.
 - `Dockerfile`: Container image definition.
 - `docker-compose.yml`: Service definitions.
+
+## API Documentation
+The API documentation is generated from `public/openapi.json`.
+- View the documentation: [public/openapi.html](public/openapi.html) (open in browser)
+- Regenerate documentation: `npm run apidoc`
 
 ## License
 Apache-2.0

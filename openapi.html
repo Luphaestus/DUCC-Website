@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html data-theme="dark">
+<head>
+  <title>OpenAPI Docs</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&icon_names=search" />
+  <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.9/dist/css/autoComplete.02.min.css">
+  <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.9/dist/autoComplete.min.js"></script>
+  <style>#search-button {
+  position: fixed;
+  top: 28px;
+  right: 28px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  padding: 4px 12px 4px 8px;
+  cursor: pointer;
+
+  .icon {
+    font-size: 18px;
+    margin-right: 4px;
+  }
+}
+
+#search-dialog {
+  position: fixed;
+  top: 10px;
+  margin: 0 auto;
+  height: 100%;
+  background: transparent;
+  border: none;
+
+  .auto-complete-list {
+    max-height: 265px;
+  }
+}
+
+#auto-complete {
+  background-color: #fff;
+}
+
+.auto-complete-list {
+  .auto-complete-list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    border-radius: 0;
+  }
+}
+
+.method-tag {
+  display: inline-block;
+  padding: 2px 0;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+  min-width: 54px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.endpoint-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.endpoint-path {
+  font-size: 13px;
+}
+
+.endpoint-summary {
+  font-size: 11px;
+  color: #666;
+}
+
+[data-theme=dark] {
+  #search-dialog::backdrop {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  #search-button {
+    background-color: #1f1f1f;
+    border: 1px solid #444;
+    color: #fff;
+  }
+
+  #auto-complete {
+    background-color: #1f1f1f;
+    border: 1px solid #444;
+    color: #fff;
+  }
+
+  .auto-complete-list {
+    background-color: #1f1f1f;
+    border: 1px solid #444;
+
+    .auto-complete-list-item {
+      background-color: #1f1f1f;
+      border-bottom: 1px solid #444;
+      color: #fff;
+
+      &:hover {
+        background-color: #333;
+      }
+    }
+
+    .auto-complete-list-item[aria-selected="true"] {
+      background-color: #333;
+    }
+  }
+
+  .endpoint-path {
+    color: #ccc;
+  }
+
+  .endpoint-summary {
+    color: #888;
+  }
+}</style>
+  <style>.elements-api {
+  > div {
+    height: 100vh !important;
+  }
+}
+
+[data-theme=dark] {
+  .sl-code-highlight {
+    .token {
+      color: #fff !important;
+    }
+  }
+  .sl-elements-api {
+    background-color: var(--color-canvas-pure);
+  }
+}
+
+.method-get {
+  background-color: #05b870;
+}
+
+.method-post {
+  background-color: #19abff;
+}
+
+.method-put {
+  background-color: #f46d2a;
+}
+
+.method-patch {
+  background-color: #f46d2a;
+}
+
+.method-delete {
+  background-color: #f05151;
+}
+
+.method-head {
+  background-color: rgb(144, 97, 249);
+}
+
+.method-options {
+  background-color: rgb(13, 90, 167);
+}
+
+.method-trace {
+  background-color: rgb(13, 11, 40);
+}</style>
+  <script>window.apiDocs = {"openapi":"3.0.0","info":{"title":"DUCC Website API","description":"API documentation for the Durham University Canoe Club website.","version":"1.0.0"},"servers":[{"url":"http://localhost:3000","description":"Local Development Server"}],"components":{"securitySchemes":{"cookieAuth":{"type":"apiKey","in":"cookie","name":"connect.sid","description":"Session cookie used for authentication."}}},"paths":{"/api/auth/signup":{"post":{"summary":"Register a new user","description":"Creates a new user account with the provided email, password, and name details.","tags":["Auth"],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"email":{"type":"string","format":"email","description":"The user's email address."},"password":{"type":"string","format":"password","description":"The user's password."},"first_name":{"type":"string","description":"The user's first name."},"last_name":{"type":"string","description":"The user's last name."}},"required":["email","password","first_name","last_name"]}}}},"responses":{"201":{"description":"User registered successfully"},"400":{"description":"Validation failed"}}}},"/api/auth/login":{"post":{"summary":"Login user","description":"Authenticates a user and starts a new session.","tags":["Auth"],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"email":{"type":"string","format":"email","description":"User email address."},"password":{"type":"string","format":"password","description":"User password."}},"required":["email","password"]}}}},"responses":{"200":{"description":"Login successful"},"401":{"description":"Authentication failed"}}}},"/api/auth/logout":{"get":{"summary":"Logout user","description":"Ends the current user session and clears the authentication cookie.","tags":["Auth"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"Logged out"}}}},"/api/auth/status":{"get":{"summary":"Check authentication status","description":"Returns whether the current requester is authenticated.","tags":["Auth"],"responses":{"200":{"description":"Status returned","content":{"application/json":{"schema":{"type":"object","properties":{"authenticated":{"type":"boolean","description":"True if the user is logged in."}}}}}}}}},"/api/auth/reset-password-request":{"post":{"summary":"Request password reset","description":"Sends a password reset link to the user's email if the account exists.","tags":["Auth"],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"email":{"type":"string","format":"email","description":"Email to send reset link to."}},"required":["email"]}}}},"responses":{"200":{"description":"Reset link sent (if account exists)"},"400":{"description":"Email is required"}}}},"/api/auth/reset-password":{"post":{"summary":"Reset password with token","description":"Updates the user's password using a valid reset token from an email link.","tags":["Auth"],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"token":{"type":"string","description":"The password reset token."},"newPassword":{"type":"string","format":"password","description":"The new password to set."}},"required":["token","newPassword"]}}}},"responses":{"200":{"description":"Password updated successfully"},"400":{"description":"Invalid token or missing data"}}}},"/api/auth/change-password":{"post":{"summary":"Change password","description":"Allows an authenticated user to change their current password.","tags":["Auth"],"security":[{"cookieAuth":[]}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"currentPassword":{"type":"string","format":"password","description":"User's current password."},"newPassword":{"type":"string","format":"password","description":"The new password to set."}},"required":["currentPassword","newPassword"]}}}},"responses":{"200":{"description":"Password changed successfully"},"403":{"description":"Incorrect current password"}}}},"/api/globals/status":{"get":{"summary":"Check global manager status","description":"Checks if the current user has global manager permissions.","tags":["Globals"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"Status returned"}}}},"/api/globals/users":{"get":{"summary":"List all users (Global Manager)","description":"Returns a paginated list of all users for global administration.","tags":["Globals"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"page","in":"query","description":"Page number to retrieve.","schema":{"type":"integer"}},{"name":"limit","in":"query","description":"Number of users per page.","schema":{"type":"integer"}},{"name":"search","in":"query","description":"Search term to filter users by name or email.","schema":{"type":"string"}}],"responses":{"200":{"description":"List of users"}}}},"/api/globals":{"get":{"summary":"Get all global settings","description":"Retrieves all global configuration settings for the website.","tags":["Globals"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"All settings"}}}},"/api/globals/{key}":{"get":{"summary":"Get specific global setting(s)","description":"Retrieves the value of a specific global setting key.","tags":["Globals"],"parameters":[{"name":"key","in":"path","required":true,"description":"The setting key to retrieve.","schema":{"type":"string"}}],"responses":{"200":{"description":"Global settings","content":{"application/json":{"schema":{"type":"object","properties":{"res":{"type":"object","description":"The value of the requested setting."}}}}}}}},"post":{"summary":"Update global setting","description":"Updates the value of a specific global setting.","tags":["Globals"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"key","in":"path","required":true,"description":"The setting key to update.","schema":{"type":"string"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"value":{"description":"The new value for the setting."}}}}}},"responses":{"200":{"description":"Setting updated"}}}},"/api/tags":{"get":{"summary":"Get all tags","description":"Retrieves a list of all tags used for categorizing events or users.","tags":["Tags"],"responses":{"200":{"description":"List of tags","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"integer","description":"Tag ID."},"name":{"type":"string","description":"Tag name."}}}}}}}}},"post":{"summary":"Create tag","description":"Creates a new tag with a specified name and color.","tags":["Tags"],"security":[{"cookieAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"name":{"type":"string","description":"Name of the tag."},"color":{"type":"string","description":"Hex color code for the tag."}}}}}},"responses":{"200":{"description":"Tag created"}}}},"/api/tags/{id}":{"put":{"summary":"Update tag","description":"Updates the details of an existing tag.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag to update.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Updated tag fields."}}}},"responses":{"200":{"description":"Tag updated"}}},"delete":{"summary":"Delete tag","description":"Removes a tag from the system.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag to delete.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Tag deleted"}}}},"/api/tags/{id}/reset-image":{"post":{"summary":"Reset tag image","description":"Resets the icon or image associated with a tag to the default.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Image reset"}}}},"/api/tags/{id}/whitelist":{"get":{"summary":"Get tag whitelist","description":"Retrieves the list of users whitelisted for a specific tag.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Whitelist returned"}}},"post":{"summary":"Add to whitelist","description":"Adds a user to the whitelist for a specific tag.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"userId":{"type":"integer","description":"ID of the user to whitelist."}}}}}},"responses":{"200":{"description":"User added"}}}},"/api/tags/{id}/whitelist/{userId}":{"delete":{"summary":"Remove from whitelist","description":"Removes a user from the whitelist for a specific tag.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag.","schema":{"type":"integer"}},{"name":"userId","in":"path","required":true,"description":"The ID of the user to remove.","schema":{"type":"integer"}}],"responses":{"200":{"description":"User removed"}}}},"/api/tags/{id}/managers":{"get":{"summary":"Get tag managers","description":"Retrieves the list of users who can manage a specific tag.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Managers returned"}}},"post":{"summary":"Add tag manager","description":"Adds a user as a manager for a specific tag.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"userId":{"type":"integer","description":"ID of the user to add as manager."}}}}}},"responses":{"200":{"description":"Manager added"}}}},"/api/tags/{id}/managers/{userId}":{"delete":{"summary":"Remove tag manager","description":"Removes a user from the managers list of a specific tag.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the tag.","schema":{"type":"integer"}},{"name":"userId","in":"path","required":true,"description":"The ID of the user to remove.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Manager removed"}}}},"/api/user/{userId}/tags":{"get":{"summary":"Get specific user tags","description":"Retrieves the tags associated with a specific user ID.","tags":["Tags"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"userId","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"responses":{"200":{"description":"User tags"}}}},"/api/user/tags":{"get":{"summary":"Get current user tags","description":"Retrieves the tags associated with the currently authenticated user.","tags":["Tags"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"List of user tags","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"integer","description":"Tag ID."},"name":{"type":"string","description":"Tag name."}}}}}}}}}},"/api/slides/count":{"get":{"summary":"Get total slide count","description":"Returns the total number of images available in the home page slideshow.","tags":["Slides"],"responses":{"200":{"description":"Count returned","content":{"application/json":{"schema":{"type":"object","properties":{"count":{"type":"integer","description":"Total number of slides."}}}}}}}}},"/api/slides/images":{"get":{"summary":"Get all slide images","description":"Returns a list of all image paths used in the home page slideshow.","tags":["Slides"],"responses":{"200":{"description":"List of image paths","content":{"application/json":{"schema":{"type":"object","properties":{"images":{"type":"array","items":{"type":"string"},"description":"Array of image URL paths."}}}}}}}}},"/api/slides/random":{"get":{"summary":"Get random slide image","description":"Returns a random image path from the slideshow collection.","tags":["Slides"],"responses":{"200":{"description":"Random image path"}}}},"/api/slides/{index}":{"get":{"summary":"Get slide image by index","description":"Returns the image path for a specific slide index.","tags":["Slides"],"parameters":[{"name":"index","in":"path","required":true,"description":"The index of the slide to retrieve.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Image path"}}}},"/api/admin/users":{"get":{"summary":"List users (Admin)","description":"Retrieves a list of all users with administrative details.","tags":["Admin"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"List of users"}}}},"/api/admin/user/{id}":{"get":{"summary":"Get user details (Admin)","description":"Retrieves detailed information about a specific user for administration.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"responses":{"200":{"description":"User details"}}}},"/api/admin/user/{id}/elements":{"post":{"summary":"Update user elements (Admin)","description":"Updates specific profile elements of a user as an administrator.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Object containing fields to update."}}}},"responses":{"200":{"description":"User updated"}}}},"/api/admin/user/{id}/role":{"post":{"summary":"Assign role to user","description":"Assigns a specific role (e.g., Exec, Coach) to a user.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"roleId":{"type":"integer","description":"The ID of the role to assign."}}}}}},"responses":{"200":{"description":"Role assigned"}}}},"/api/admin/user/{id}/role/{roleId}":{"delete":{"summary":"Remove role from user","description":"Removes a specific role from a user.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}},{"name":"roleId","in":"path","required":true,"description":"The ID of the role to remove.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Role removed"}}}},"/api/admin/user/{id}/permission":{"post":{"summary":"Add permission to user","description":"Grants a specific permission directly to a user.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"permissionId":{"type":"integer","description":"The ID of the permission to add."}}}}}},"responses":{"200":{"description":"Permission added"}}}},"/api/admin/user/{id}/permission/{permId}":{"delete":{"summary":"Remove permission from user","description":"Revokes a specific permission from a user.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}},{"name":"permId","in":"path","required":true,"description":"The ID of the permission to remove.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Permission removed"}}}},"/api/admin/user/{id}/managed_tag":{"post":{"summary":"Add managed tag scope","description":"Grants a user the ability to manage a specific tag.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"tagId":{"type":"integer","description":"The ID of the tag to manage."}}}}}},"responses":{"200":{"description":"Scope added"}}}},"/api/admin/user/{id}/managed_tag/{tagId}":{"delete":{"summary":"Remove managed tag scope","description":"Revokes a user's ability to manage a specific tag.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}},{"name":"tagId","in":"path","required":true,"description":"The ID of the tag to remove.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Scope removed"}}}},"/api/admin/roles/permissions":{"get":{"summary":"List all permissions","description":"Retrieves a list of all available permissions in the system.","tags":["Admin"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"List of permissions"}}}},"/api/admin/roles":{"get":{"summary":"List all roles","description":"Retrieves a list of all defined roles in the system.","tags":["Admin"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"List of roles"}}},"post":{"summary":"Create role","description":"Creates a new role definition with assigned permissions.","tags":["Admin"],"security":[{"cookieAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Role definition object."}}}},"responses":{"200":{"description":"Role created"}}}},"/api/admin/roles/{id}":{"get":{"summary":"Get specific role details","description":"Retrieves the details of a specific role, including its permissions.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the role.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Role details"}}},"put":{"summary":"Update role","description":"Updates an existing role's name or permissions.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the role.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Updated role fields."}}}},"responses":{"200":{"description":"Role updated"}}},"delete":{"summary":"Delete role","description":"Deletes a role definition from the system.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the role to delete.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Role deleted"}}}},"/api/admin/events":{"get":{"summary":"List events (Admin)","description":"Retrieves a list of all events, including private or hidden ones, for administration.","tags":["Admin"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"List of events"}}}},"/api/admin/event/{id}":{"get":{"summary":"Get event details (Admin)","description":"Retrieves full details of an event for administrative purposes.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Event details"}}},"put":{"summary":"Update event","description":"Updates an event's details as an administrator.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event to update.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Updated event fields."}}}},"responses":{"200":{"description":"Event updated"}}},"delete":{"summary":"Delete event","description":"Permanently deletes an event from the system.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event to delete.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Event deleted"}}}},"/api/admin/event":{"post":{"summary":"Create event","description":"Creates a new event as an administrator.","tags":["Admin"],"security":[{"cookieAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Event creation object."}}}},"responses":{"200":{"description":"Event created"}}}},"/api/admin/event/{id}/reset-image":{"post":{"summary":"Reset event image","description":"Resets an event's banner image to the default.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Image reset"}}}},"/api/admin/event/{id}/cancel":{"post":{"summary":"Cancel event","description":"Marks an event as cancelled and notifies all signed-up attendees.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event to cancel.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Event canceled"}}}},"/api/admin/user/{id}/transactions":{"get":{"summary":"Get user transactions (Admin)","description":"Retrieves the financial transaction history for a specific user.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Transactions list"}}}},"/api/admin/user/{id}/transaction":{"post":{"summary":"Add transaction","description":"Adds a new credit or debit transaction to a user's account.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"amount":{"type":"number","description":"Amount to add (positive) or subtract (negative)."},"description":{"type":"string","description":"Reason for the transaction."}}}}}},"responses":{"200":{"description":"Transaction added"}}}},"/api/admin/transaction/{id}":{"put":{"summary":"Update transaction","description":"Updates an existing transaction record.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the transaction.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Updated transaction fields."}}}},"responses":{"200":{"description":"Transaction updated"}}},"delete":{"summary":"Delete transaction","description":"Permanently deletes a transaction record.","tags":["Admin"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the transaction to delete.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Transaction deleted"}}}},"/api/colleges":{"get":{"summary":"List all colleges","description":"Retrieves a list of all Durham University colleges available for selection.","tags":["Colleges"],"responses":{"200":{"description":"List of colleges","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"integer","description":"College ID."},"name":{"type":"string","description":"College name."}}}}}}}}}},"/api/user/swims/leaderboard":{"get":{"summary":"Get swims leaderboard","description":"Retrieves the swim leaderboard data, optionally filtered by the current year.","tags":["Users"],"parameters":[{"name":"yearly","in":"query","description":"If true, returns data for the current year only.","schema":{"type":"boolean"}}],"responses":{"200":{"description":"Leaderboard data"}}}},"/api/user/{id}/swims":{"post":{"summary":"Add swims to user","description":"Logs a new number of swims for a user.","tags":["Users"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"count":{"type":"integer","description":"Number of swims to add."}}}}}},"responses":{"200":{"description":"Swims added"}}}},"/api/user/elements/{elements}":{"get":{"summary":"Get user profile elements","description":"Retrieves specific profile fields (comma-separated list) for the currently authenticated user.","tags":["Users"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"elements","in":"path","required":true,"description":"Comma-separated list of profile fields to retrieve.","schema":{"type":"string"}}],"responses":{"200":{"description":"User elements"}}}},"/api/user/{id}/elements/{elements}":{"get":{"summary":"Get specific user profile elements (Exec)","description":"Retrieves specific profile fields for another user. Requires Exec permissions.","tags":["Users"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the user.","schema":{"type":"integer"}},{"name":"elements","in":"path","required":true,"description":"Comma-separated list of profile fields to retrieve.","schema":{"type":"string"}}],"responses":{"200":{"description":"User elements"}}}},"/api/user/elements":{"post":{"summary":"Update user profile","description":"Updates the profile information for the currently authenticated user.","tags":["Users"],"security":[{"cookieAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","description":"Object containing profile fields to update."}}}},"responses":{"200":{"description":"Profile updated"}}}},"/api/user/join":{"post":{"summary":"Join membership","description":"Signs the authenticated user up for club membership.","tags":["Users"],"security":[{"cookieAuth":[]}],"responses":{"200":{"description":"Joined successfully"}}}},"/api/user/deleteAccount":{"post":{"summary":"Delete account","description":"Permanently deletes the user's account after verifying their password.","tags":["Users"],"security":[{"cookieAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"password":{"type":"string","description":"User's current password for verification."}}}}}},"responses":{"200":{"description":"Account deleted"}}}},"/api/event/{id}/isAttending":{"get":{"summary":"Check attendance status","description":"Returns whether the current user is signed up for the specified event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Status returned"}}}},"/api/event/{id}/isPaying":{"get":{"summary":"Check paying status","description":"Returns whether the current user has paid for the specified event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Status returned"}}}},"/api/event/{id}/coachCount":{"get":{"summary":"Get coach count","description":"Returns the number of coaches attending the specified event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Count returned"}}}},"/api/event/{id}/canJoin":{"get":{"summary":"Check if user can join","description":"Checks if the current user meets the requirements (e.g., membership, tags) to join the event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Status returned"}}}},"/api/event/{id}/attend":{"post":{"summary":"Attend event","description":"Signs up the current user for an event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Attended successfully"}}}},"/api/event/{id}/leave":{"post":{"summary":"Leave event","description":"Removes the current user from an event's attendee list.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Left successfully"}}}},"/api/event/{id}/attendees":{"get":{"summary":"Get event attendees","description":"Retrieves the list of users currently signed up for the event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"List of attendees"}}}},"/api/events/rweek/{offset}":{"get":{"summary":"Get events for a relative week","description":"Retrieves events scheduled for a week relative to the current one.","tags":["Events"],"parameters":[{"name":"offset","in":"path","required":true,"schema":{"type":"integer"},"description":"Offset from current week (0 = current week, 1 = next week, etc.)"}],"responses":{"200":{"description":"List of events","content":{"application/json":{"schema":{"type":"object","properties":{"events":{"type":"array","items":{"type":"object","description":"Event summary object."}}}}}}}}}},"/api/events/paged/{page}":{"get":{"summary":"Get events by page","description":"Retrieves events in a paginated format, grouped by specific date ranges.","tags":["Events"],"parameters":[{"name":"page","in":"path","required":true,"schema":{"type":"integer"},"description":"Page number (0 = today to Sunday, -1 = past Monday to yesterday, etc.)"}],"responses":{"200":{"description":"List of events with date range","content":{"application/json":{"schema":{"type":"object","properties":{"events":{"type":"array","items":{"type":"object"},"description":"Array of events."},"startDate":{"type":"string","format":"date-time","description":"Start of the date range."},"endDate":{"type":"string","format":"date-time","description":"End of the date range."}}}}}}}}},"/api/event/{id}":{"get":{"summary":"Get event details","description":"Retrieves public information and full details for a specific event.","tags":["Events"],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Event details","content":{"application/json":{"schema":{"type":"object","properties":{"event":{"type":"object","description":"The event details object."}}}}}}}}},"/api/event/{id}/canManage":{"get":{"summary":"Check if user can manage event","description":"Checks if the current user has permission to manage this specific event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Permission status","content":{"application/json":{"schema":{"type":"object","properties":{"canManage":{"type":"boolean","description":"True if the user can manage the event."}}}}}}}}},"/api/event/{id}/isOnWaitlist":{"get":{"summary":"Check waitlist status","description":"Returns whether the current user is on the waitlist for the event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Status returned"}}}},"/api/event/{id}/waitlist/join":{"post":{"summary":"Join waitlist","description":"Adds the current user to the waitlist for a full event.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Joined successfully"}}}},"/api/event/{id}/waitlist/leave":{"post":{"summary":"Leave waitlist","description":"Removes the current user from the event's waitlist.","tags":["Events"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Left successfully"}}}},"/api/event/{id}/waitlist":{"get":{"summary":"Get waitlist info","description":"Retrieves the current waitlist for an event.","tags":["Events"],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the event.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Waitlist data"}}}},"/api/files":{"get":{"summary":"List files","description":"Retrieves a paginated list of uploaded files, with optional filtering.","tags":["Files"],"parameters":[{"name":"page","in":"query","description":"Page number to retrieve.","schema":{"type":"integer"}},{"name":"limit","in":"query","description":"Number of files per page.","schema":{"type":"integer"}},{"name":"search","in":"query","description":"Search term to filter files by title.","schema":{"type":"string"}},{"name":"categoryId","in":"query","description":"Filter files by category ID.","schema":{"type":"integer"}}],"responses":{"200":{"description":"List of files","content":{"application/json":{"schema":{"type":"object","properties":{"files":{"type":"array","items":{"type":"object"},"description":"Array of file objects."},"totalPages":{"type":"integer","description":"Total number of pages."},"currentPage":{"type":"integer","description":"Current page number."},"totalFiles":{"type":"integer","description":"Total number of files matching criteria."}}}}}}}},"post":{"summary":"Upload files","description":"Uploads one or more files to the system with a title and category.","tags":["Files"],"security":[{"cookieAuth":[]}],"requestBody":{"content":{"multipart/form-data":{"schema":{"type":"object","properties":{"files":{"type":"array","items":{"type":"string","format":"binary"},"description":"The files to upload."},"title":{"type":"string","description":"A title for the file upload."},"categoryId":{"type":"integer","description":"The category ID for the files."}}}}}},"responses":{"201":{"description":"Files uploaded"}}}},"/api/files/{id}":{"put":{"summary":"Update file metadata","description":"Updates file metadata such as title, category, or visibility.","tags":["Files"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the file.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"title":{"type":"string","description":"New title for the file."},"categoryId":{"type":"integer","description":"New category ID."},"visibility":{"type":"string","description":"Visibility level (e.g., 'public', 'private')."}}}}}},"responses":{"200":{"description":"File updated"}}},"delete":{"summary":"Delete file","description":"Permanently deletes a file from the server.","tags":["Files"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the file to delete.","schema":{"type":"integer"}}],"responses":{"200":{"description":"File deleted"}}}},"/api/files/{id}/download":{"get":{"summary":"Download file","description":"Serves the file content for download or inline viewing.","tags":["Files"],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the file.","schema":{"type":"integer"}},{"name":"view","in":"query","schema":{"type":"boolean"},"description":"If true, attempts to display the file inline instead of downloading."}],"responses":{"200":{"description":"File content"}}}},"/api/file-categories":{"get":{"summary":"List file categories","description":"Retrieves all categories used for organizing uploaded files.","tags":["Files"],"responses":{"200":{"description":"List of categories","content":{"application/json":{"schema":{"type":"array","items":{"type":"object","properties":{"id":{"type":"integer","description":"Category ID."},"name":{"type":"string","description":"Category name."}}}}}}}}},"post":{"summary":"Create file category","description":"Creates a new category for organizing files.","tags":["Files"],"security":[{"cookieAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"name":{"type":"string","description":"Name of the category."}}}}}},"responses":{"200":{"description":"Category created"}}}},"/api/file-categories/{id}":{"put":{"summary":"Update file category","description":"Updates the name of an existing file category.","tags":["Files"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the category.","schema":{"type":"integer"}}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"name":{"type":"string","description":"New name for the category."}}}}}},"responses":{"200":{"description":"Category updated"}}},"delete":{"summary":"Delete file category","description":"Deletes an existing file category.","tags":["Files"],"security":[{"cookieAuth":[]}],"parameters":[{"name":"id","in":"path","required":true,"description":"The ID of the category to delete.","schema":{"type":"integer"}}],"responses":{"200":{"description":"Category deleted"}}}}}}</script>
+</head>
+<body>
+  <button id="search-button">
+    <span class="icon material-symbols-outlined">search</span>
+    <span class="text"></span>
+  </button>
+  <dialog id="search-dialog">
+    <input id="auto-complete" autocomplete="off">
+  </dialog>
+  <elements-api router="hash" class="elements-api"></elements-api>
+  <script>// eslint-disable-next-line no-unused-vars
+class SearchDialog {
+  dialog
+  autocomplete
+
+  constructor(dialogId, inputId, openapi) {
+    this.dialog = document.getElementById(dialogId)
+    if (!this.dialog) {
+      throw new Error(`Dialog with id "${dialogId}" not found`)
+    }
+
+    this.autocomplete = new autoComplete({
+      selector: `#${inputId}`,
+      placeHolder: 'Search endpoints',
+      data: {
+        src: this.filterEndpoints(openapi),
+        keys: ['searchKey'],
+      },
+      searchEngine: 'loose',
+      threshold: 0,
+      resultsList: {
+        maxResults: undefined,
+        class: 'auto-complete-list',
+        element: (list, data) => {
+          if (data.results.length > 0) {
+            list.innerHTML = ''
+            data.results.forEach((item) => {
+              const li = document.createElement('li')
+              li.className = 'auto-complete-list-item'
+              li.innerHTML = `
+              <div class="method-tag method-${item.value.method.toLowerCase()}">${item.value.method}</div>
+              <div class="endpoint-info">
+                <div class="endpoint-path">${item.value.path}</div>
+                <div class="endpoint-summary">${item.value.summary}</div>
+              </div>
+            `
+              list.appendChild(li)
+            })
+          }
+        },
+      },
+    })
+
+    this.dialog.addEventListener('click', (event) => {
+      if (event.target === this.dialog) {
+        this.hide()
+      }
+    })
+  }
+
+  on(event, callback) {
+    if (event === 'select') {
+      this.autocomplete.input.addEventListener('selection', (event) => {
+        callback(event.detail.selection.value)
+      })
+    } else {
+      throw new Error(`Unsupported event: ${event}`)
+    }
+  }
+
+  show() {
+    this.autocomplete.input.value = ''
+    this.autocomplete.start()
+    this.dialog.showModal()
+  }
+
+  hide() {
+    this.dialog.close()
+  }
+
+  filterEndpoints(openapi) {
+    const endpoints = []
+    const paths = openapi.paths
+    for (const path in paths) {
+      const methods = Object.keys(paths[path])
+      for (const method of methods) {
+        if (method === 'parameters') {
+          continue
+        }
+        const summary = paths[path][method].summary || ''
+        endpoints.push({
+          searchKey: `${method} ${path} ${summary}`,
+          method: method.toUpperCase(),
+          path,
+          operationId: paths[path][method].operationId,
+          tag: paths[path][method].tags
+            ? paths[path][method].tags[0]
+            : 'default',
+          summary,
+        })
+      }
+    }
+    return endpoints
+  }
+}
+</script>
+  <script>const THEMES = ['light', 'dark']
+const themeParam = new URLSearchParams(window.location.search).get('theme')
+if (THEMES.includes(themeParam)) {
+  document.documentElement.setAttribute('data-theme', themeParam)
+}
+
+// ref. https://developer.mozilla.org/en-US/docs/Web/API/Navigator/platform#examples
+const modifierKeyPrefix =
+  navigator.platform.startsWith('Mac') || navigator.platform === 'iPhone'
+    ? '⌘' // command key
+    : '^' // control key
+
+/* ref. https://github.com/stoplightio/elements/blob/main/docs/getting-started/elements/html.md#examples */
+;(async () => {
+  const docs = document.querySelector('.elements-api')
+  docs.apiDescriptionDocument = window.apiDocs
+
+  const searchButton = document.querySelector('#search-button')
+  searchButton.addEventListener('click', () => searchDialog.show())
+  searchButton.querySelector('.text').textContent =
+    `Search ${modifierKeyPrefix}+K`
+
+  // eslint-disable-next-line no-undef
+  const searchDialog = new SearchDialog(
+    'search-dialog',
+    'auto-complete',
+    window.apiDocs,
+  )
+  searchDialog.on('select', (selection) => {
+    const operationId = selection.operationId
+    const url = new URL(location.href)
+    url.hash = `#/operations/${operationId}`
+    location.href = url.toString()
+    searchDialog.hide()
+  })
+
+  document.addEventListener('keydown', function (e) {
+    const isCmdOrCtrl = modifierKeyPrefix === '⌘' ? e.metaKey : e.ctrlKey
+    if (isCmdOrCtrl && e.key.toLowerCase() === 'k') {
+      searchDialog.show()
+      e.preventDefault()
+    }
+  })
+})()
+</script>
+</body>
+</html>

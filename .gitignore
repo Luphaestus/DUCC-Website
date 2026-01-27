@@ -147,5 +147,5 @@ database.db
 .env.deploy
 data/
 .data/
-openapi.html
+
 
