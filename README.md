@@ -21,7 +21,7 @@ npm run db:init
 - `npm run apidoc`: Generates the API documentation html file from the openapi.json file.
 
 ## Deployment
-This is optional and is only intended for deploying to a remote server (It mean I can test locally, and only push to server when ready).
+This is optional and is only intended for deploying to a remote server (It allows local testing, without pushing to the server).
 
 Deployment requires a `.env.deploy` file containing `SERVER_IP`, `SERVER_PASSWORD`, and `DOMAIN_NAME`.
 
@@ -33,7 +33,7 @@ Deployment requires a `.env.deploy` file containing `SERVER_IP`, `SERVER_PASSWOR
 
 ## Directory Structure
 - `public/`: Frontend assets and client-side logic.
-  - `js/widgets/`: Reusable UI components (e.g., StandardCard, Tag).
+  - `js/widgets/`: Reusable UI components.
   - `js/pages/`: Page-specific logic.
 - `server/`: Express application and API routes.
 - `server/db/`: SQLite drivers and initialization scripts.
@@ -45,7 +45,7 @@ Deployment requires a `.env.deploy` file containing `SERVER_IP`, `SERVER_PASSWOR
 
 ## API Documentation
 The API documentation is generated from `public/openapi.json`.
-- View the documentation: [public/openapi.html](public/openapi.html) (open in browser)
+- View the documentation: [public/openapi.html](https://luphaestus.github.io/DUCC-Website/public/openapi.html#/paths/api-auth-login/post)
 - Regenerate documentation: `npm run apidoc`
 
 ## License
