@@ -105,6 +105,27 @@ describe('api/users/UserAPI', () => {
             const user = await world.db.get('SELECT filled_legal_info FROM users WHERE id = ?', [world.data.users['user']]);
             expect(user.filled_legal_info).toBe(1);
         });
+
+        describe('Security: Privilege Escalation', () => {
+            test('Security: prevents mass assignment of restricted fields', async () => {
+                const res = await world.as('user').post('/api/user/elements').send({
+                    first_name: 'Hacker',
+                    difficulty_level: 5,
+                    swims: 9999,
+                    free_sessions: 9999
+                });
+                
+                expect(res.statusCode).toBe(200); 
+
+                const user = await world.db.get('SELECT * FROM users WHERE id = ?', [world.data.users['user']]);
+                
+                expect(user.first_name).toBe('Hacker');
+                
+                expect(user.difficulty_level).toBe(1);
+                expect(user.swims).toBe(0); 
+                expect(user.free_sessions).toBe(3); 
+            });
+        });
     });
 
     describe('POST /api/user/join (Membership Logic)', () => {

@@ -126,7 +126,23 @@ export default class User {
     /**
      * Validate and write profile updates.
      */
-    static async writeNormalElements(req, db, data) {
+    static async writeNormalElements(req, db, inputData) {
+        const ALLOWED_FIELDS = [
+            "email", "first_name", "last_name", "date_of_birth", "college_id",
+            "emergency_contact_name", "emergency_contact_phone", "home_address",
+            "phone_number", "has_medical_conditions", "medical_conditions_details",
+            "takes_medication", "medication_details", "agrees_to_fitness_statement",
+            "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage",
+            "agrees_to_keep_health_data", "first_aid_expiry", "is_instructor"
+        ];
+
+        const data = {};
+        for (const key of ALLOWED_FIELDS) {
+            if (inputData[key] !== undefined) {
+                data[key] = inputData[key];
+            }
+        }
+
         async function getElement(element, data, db) {
             if (element in data) return new statusObject(200, null, data[element]);
             return await User.getAccessibleElements(req, db, element);
