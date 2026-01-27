@@ -6,6 +6,7 @@
 
 import { statusObject } from '../misc/status.js';
 import { SCOPED_PERMS, Permissions } from '../misc/permissions.js';
+import Logger from '../misc/Logger.js';
 
 export default class RolesDB {
     /**
@@ -24,7 +25,7 @@ export default class RolesDB {
             const roles = await db.all('SELECT r.id, r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?', [userId]);
             return new statusObject(200, 'Success', roles);
         } catch (e) {
-            console.error('Database error fetching user roles:', e);
+            Logger.error('Database error fetching user roles:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -38,7 +39,7 @@ export default class RolesDB {
             await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleId]);
             return new statusObject(200, 'Role assigned');
         } catch (e) {
-            console.error('Database error assigning role:', e);
+            Logger.error('Database error assigning role:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -55,7 +56,7 @@ export default class RolesDB {
             await db.run('DELETE FROM user_roles WHERE user_id = ? AND role_id = ?', [userId, roleId]);
             return new statusObject(200, 'Role removed');
         } catch (e) {
-            console.error('Database error removing role:', e);
+            Logger.error('Database error removing role:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -73,7 +74,7 @@ export default class RolesDB {
             );
             return new statusObject(200, 'Success', perms);
         } catch (e) {
-            console.error('Database error fetching user permissions:', e);
+            Logger.error('Database error fetching user permissions:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -105,7 +106,7 @@ export default class RolesDB {
             
             return new statusObject(200, 'Success', Array.from(allSlugs));
         } catch (e) {
-            console.error('Database error fetching all user permissions:', e);
+            Logger.error('Database error fetching all user permissions:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -126,7 +127,7 @@ export default class RolesDB {
             await db.run('INSERT OR IGNORE INTO user_permissions (user_id, permission_id) VALUES (?, ?)', [userId, permissionId]);
             return new statusObject(200, 'Permission added');
         } catch (e) {
-            console.error('Database error adding user permission:', e);
+            Logger.error('Database error adding user permission:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -139,7 +140,7 @@ export default class RolesDB {
             await db.run('DELETE FROM user_permissions WHERE user_id = ? AND permission_id = ?', [userId, permissionId]);
             return new statusObject(200, 'Permission removed');
         } catch (e) {
-            console.error('Database error removing user permission:', e);
+            Logger.error('Database error removing user permission:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -157,7 +158,7 @@ export default class RolesDB {
             );
             return new statusObject(200, 'Success', tags);
         } catch (e) {
-            console.error('Database error fetching user managed tags:', e);
+            Logger.error('Database error fetching user managed tags:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -170,7 +171,7 @@ export default class RolesDB {
             await db.run('INSERT OR IGNORE INTO user_managed_tags (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
             return new statusObject(200, 'Tag scope added');
         } catch (e) {
-            console.error('Database error adding managed tag:', e);
+            Logger.error('Database error adding managed tag:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -183,7 +184,7 @@ export default class RolesDB {
             await db.run('DELETE FROM user_managed_tags WHERE user_id = ? AND tag_id = ?', [userId, tagId]);
             return new statusObject(200, 'Tag scope removed');
         } catch (e) {
-            console.error('Database error removing managed tag:', e);
+            Logger.error('Database error removing managed tag:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -210,7 +211,7 @@ export default class RolesDB {
             perms = Permissions.filterScopedPerms(perms.map(p => p.slug)).map(slug => perms.find(p => p.slug === slug));
             return new statusObject(200, 'Success', perms);
         } catch (e) {
-            console.error('Database error fetching permissions:', e);
+            Logger.error('Database error fetching permissions:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -232,7 +233,7 @@ export default class RolesDB {
             }
             return new statusObject(200, 'Success', roles);
         } catch (e) {
-            console.error('Database error fetching roles:', e);
+            Logger.error('Database error fetching roles:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -255,7 +256,7 @@ export default class RolesDB {
             
             return new statusObject(200, 'Success', role);
         } catch (e) {
-            console.error('Database error fetching role by ID:', e);
+            Logger.error('Database error fetching role by ID:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -284,7 +285,7 @@ export default class RolesDB {
             }
             return new statusObject(201, 'Role created', { id: roleId });
         } catch (e) {
-            console.error('Database error creating role:', e);
+            Logger.error('Database error creating role:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -313,7 +314,7 @@ export default class RolesDB {
             }
             return new statusObject(200, 'Role updated');
         } catch (e) {
-            console.error('Database error updating role:', e);
+            Logger.error('Database error updating role:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -331,7 +332,7 @@ export default class RolesDB {
             await db.run('DELETE FROM roles WHERE id = ?', [id]);
             return new statusObject(200, 'Role deleted');
         } catch (e) {
-            console.error('Database error deleting role:', e);
+            Logger.error('Database error deleting role:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -349,7 +350,7 @@ export default class RolesDB {
 
             return new statusObject(200, 'Success', result.user_id);
         } catch (e) {
-            console.error('Database error fetching first user by role name:', e);
+            Logger.error('Database error fetching first user by role name:', e);
             return new statusObject(500, 'Database error');
         }
     }

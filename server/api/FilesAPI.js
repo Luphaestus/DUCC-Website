@@ -13,11 +13,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
 import { fileTypeFromFile } from 'file-type';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import config from '../config.js';
+import Logger from '../misc/Logger.js';
 
 export default class FilesAPI {
     /**
@@ -26,7 +24,7 @@ export default class FilesAPI {
     constructor(app, db, passport = null, uploadDir = null) {
         this.app = app;
         this.db = db;
-        this.uploadDir = uploadDir || path.join(__dirname, '../../data/files');
+        this.uploadDir = uploadDir || config.paths.files;
 
         if (!fs.existsSync(this.uploadDir)) {
             fs.mkdirSync(this.uploadDir, { recursive: true });
@@ -112,7 +110,11 @@ export default class FilesAPI {
                 }
 
                 if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
-                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    try {
+                        await fs.promises.unlink(filePath);
+                    } catch (err) {
+                        Logger.error('Failed to delete invalid file:', err);
+                    }
                     return res.status(400).json({ message: 'Invalid file content or type not allowed.' });
                 }
 
@@ -120,7 +122,12 @@ export default class FilesAPI {
                 const ext = `.${fileTypeResult.ext}`;
                 const newFilename = file.filename + ext;
                 const newPath = filePath + ext;
-                fs.renameSync(filePath, newPath);
+                try {
+                    await fs.promises.rename(filePath, newPath);
+                } catch (err) {
+                    Logger.error('Failed to rename uploaded file:', err);
+                    return res.status(500).json({ message: 'File processing error.' });
+                }
                 
                 // Update file object references
                 file.filename = newFilename;
@@ -133,8 +140,10 @@ export default class FilesAPI {
 
                 if (!existingFileStatus.isError()) {
                     const existingFile = existingFileStatus.getData();
-                    if (fs.existsSync(newPath)) {
-                        fs.unlinkSync(newPath);
+                    try {
+                        await fs.promises.unlink(newPath);
+                    } catch (err) {
+                        // Ignore if file doesn't exist, though it should
                     }
                     finalFilename = existingFile.filename;
                 }
@@ -194,8 +203,10 @@ export default class FilesAPI {
             const file = fileStatus.getData();
             const filePath = path.join(this.uploadDir, file.filename);
 
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+            try {
+                await fs.promises.unlink(filePath);
+            } catch (err) {
+                // Ignore if file not found
             }
 
             const status = await FilesDB.deleteFile(this.db, id);
@@ -219,7 +230,13 @@ export default class FilesAPI {
                 }
 
                 const filePath = path.join(this.uploadDir, file.filename);
-                if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found' });
+
+                
+                try {
+                    await fs.promises.access(filePath);
+                } catch {
+                     return res.status(404).json({ message: 'File not found' });
+                }
 
                 const ext = path.extname(file.filename);
 
@@ -242,7 +259,7 @@ export default class FilesAPI {
                     }
                 });
             } catch (error) {
-                console.error('Error in download route:', error);
+                Logger.error('Error in download route:', error);
                 res.status(500).json({ message: 'Internal Server Error', error: error.message });
             }
         });

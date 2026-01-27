@@ -10,6 +10,7 @@ import colors from 'ansi-colors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import Logger from '../../../misc/Logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,13 +27,13 @@ export async function seedDevelopment(db) {
         if (fs.existsSync(slidesDir)) {
             slideFiles = fs.readdirSync(slidesDir).filter(f => ['.png', '.jpg', '.jpeg'].includes(path.extname(f).toLowerCase()));
         }
-    } catch (e) {}
+    } catch (e) { }
 
     const seedFile = async (filename) => {
         const title = filename.split('.')[0];
         await db.run(
             'INSERT OR IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
-            [title, filename, 'public', filename] 
+            [title, filename, 'public', filename]
         );
         const row = await db.get('SELECT id FROM files WHERE filename = ?', [filename]);
         return row ? row.id : null;
@@ -50,7 +51,7 @@ export async function seedDevelopment(db) {
     }
 
     if (userCount.count < 5) {
-        if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Inserting random users for development...'));
+        if (process.env.NODE_ENV !== 'test') Logger.info('Inserting random users for development...');
         const password = 'password';
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -110,7 +111,7 @@ export async function seedDevelopment(db) {
                 );
             }
             await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, userId]);
-            
+
             const numBooties = Math.floor(Math.random() * (totalSwims + 1));
             await db.run(`UPDATE users SET booties = ? WHERE id = ?`, [numBooties, userId]);
 
@@ -122,9 +123,9 @@ export async function seedDevelopment(db) {
 
     const swimHistoryCount = await db.get('SELECT COUNT(*) as count FROM swim_history');
     if (swimHistoryCount.count === 0) {
-        if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Seeding swim history for existing users...'));
+        if (process.env.NODE_ENV !== 'test') Logger.info('Seeding swim history for existing users...');
         const users = await db.all('SELECT id FROM users');
-        
+
         let swimProgressBar;
         if (process.env.NODE_ENV !== 'test') {
             swimProgressBar = new cliProgress.SingleBar({
@@ -224,7 +225,7 @@ export async function seedDevelopment(db) {
                 }
             }
         } catch (err) {
-            console.error(`Error seeding role ${r.name}:`, err);
+            Logger.error(`Error seeding role ${r.name}:`, err);
         }
     }
 
@@ -256,15 +257,15 @@ export async function seedDevelopment(db) {
         const res = await db.run(
             `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff, image_id, is_canceled, enable_waitlist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                data.title, 
-                data.description, 
-                data.location, 
-                data.start, 
-                data.end, 
-                data.difficulty_level || 1, 
-                data.max_attendees !== undefined ? data.max_attendees : 20, 
-                data.upfront_cost, 
-                data.upfront_refund_cutoff || null, 
+                data.title,
+                data.description,
+                data.location,
+                data.start,
+                data.end,
+                data.difficulty_level || 1,
+                data.max_attendees !== undefined ? data.max_attendees : 20,
+                data.upfront_cost,
+                data.upfront_refund_cutoff || null,
                 data.image_id || null,
                 data.is_canceled !== undefined ? (data.is_canceled ? 1 : 0) : 0,
                 data.enable_waitlist !== undefined ? (data.enable_waitlist ? 1 : 0) : 1
@@ -281,8 +282,8 @@ export async function seedDevelopment(db) {
     const allUsers = await db.all('SELECT id FROM users');
     const instructors = await db.all('SELECT id FROM users WHERE is_instructor = 1');
 
-    if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Generating development events...'));
-    
+    if (process.env.NODE_ENV !== 'test') console.info('Generating development events...');
+
     const specialDate = new Date(now);
     specialDate.setDate(now.getDate() + 3);
 
@@ -306,9 +307,9 @@ export async function seedDevelopment(db) {
         let maxAttendees = 20;
         let imageId = seededFileIds.length > 0 ? seededFileIds[Math.floor(Math.random() * seededFileIds.length)] : null;
 
-        const isSpecialDay = currentDate.getDate() === specialDate.getDate() && 
-                             currentDate.getMonth() === specialDate.getMonth() && 
-                             currentDate.getFullYear() === specialDate.getFullYear();
+        const isSpecialDay = currentDate.getDate() === specialDate.getDate() &&
+            currentDate.getMonth() === specialDate.getMonth() &&
+            currentDate.getFullYear() === specialDate.getFullYear();
 
         if (isSpecialDay) {
             await createEvent({
@@ -320,7 +321,7 @@ export async function seedDevelopment(db) {
                 difficulty_level: 3,
                 max_attendees: 10,
                 upfront_cost: 0,
-                tags: [tagIds['slalom-team']], 
+                tags: [tagIds['slalom-team']],
                 image_id: imageId
             });
 
@@ -364,8 +365,8 @@ export async function seedDevelopment(db) {
                 image_id: imageId,
                 enable_waitlist: false
             });
-            for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [noWaitlistEventId, allUsers[k+10].id, 1]);
-            
+            for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [noWaitlistEventId, allUsers[k + 10].id, 1]);
+
             currentDate.setDate(currentDate.getDate() + 1);
             dayCount++;
             if (eventProgressBar) eventProgressBar.update(dayCount);
@@ -432,5 +433,5 @@ export async function seedDevelopment(db) {
     }
     await db.run('COMMIT');
     if (eventProgressBar) eventProgressBar.stop();
-    if (process.env.NODE_ENV !== 'test') console.log(colors.green('Sample events generated successfully.'));
+    if (process.env.NODE_ENV !== 'test') console.info('Sample events generated successfully.');
 }

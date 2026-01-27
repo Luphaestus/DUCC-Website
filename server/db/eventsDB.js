@@ -10,6 +10,7 @@ import TagsDB from './tagsDB.js';
 import UserDB from './userDB.js';
 import EventRules from '../rules/EventRules.js';
 import Globals from '../misc/globals.js';
+import Logger from '../misc/Logger.js';
 
 export default class eventsDB {
     /**
@@ -167,7 +168,7 @@ export default class eventsDB {
 
             return new statusObject(200, null, { events, totalPages, currentPage: page });
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -218,7 +219,7 @@ export default class eventsDB {
             await db.run('UPDATE events SET image_id = NULL WHERE id = ?', [id]);
             return new statusObject(200, 'Image reset to default');
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -247,7 +248,7 @@ export default class eventsDB {
 
             return new statusObject(200, null, { id: eventId });
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -275,7 +276,7 @@ export default class eventsDB {
 
             return new statusObject(200, 'Event updated');
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error: ' + error.message);
         }
     }
@@ -288,7 +289,7 @@ export default class eventsDB {
             await db.run("UPDATE events SET is_canceled = ? WHERE id = ?", [isCanceled ? 1 : 0, id]);
             return new statusObject(200, 'Event cancellation status updated');
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -336,7 +337,7 @@ export default class eventsDB {
             return new statusObject(200, 'Event canceled and refunds processed');
         } catch (error) {
             await db.run('ROLLBACK');
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error during cancellation');
         }
     }

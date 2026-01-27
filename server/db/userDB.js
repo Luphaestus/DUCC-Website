@@ -7,6 +7,7 @@
 import { statusObject } from '../misc/status.js';
 import { Permissions } from '../misc/permissions.js';
 import TransactionsDB from './transactionDB.js';
+import Logger from '../misc/Logger.js';
 
 export default class UserDB {
     /**
@@ -149,7 +150,7 @@ export default class UserDB {
 
             return new statusObject(200, null, { users, totalPages, currentPage: page });
         } catch (error) {
-            console.error('Database error in getUsers:', error);
+            Logger.error('Database error in getUsers:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -174,7 +175,7 @@ export default class UserDB {
             if (!user) return new statusObject(404, 'User not found');
             return new statusObject(200, null, user);
         } catch (error) {
-            console.error(`Database error in getElements (${elements.join(', ')}):`, error);
+            Logger.error(`Database error in getElements (${elements.join(', ')}):`, error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -202,7 +203,7 @@ export default class UserDB {
             );
             return new statusObject(200, null);
         } catch (error) {
-            console.error('Database error in writeElementsById:', error);
+            Logger.error('Database error in writeElementsById:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -223,7 +224,7 @@ export default class UserDB {
             [is_member ? 1 : 0, userId]
         ).then(() => new statusObject(200, null))
             .catch((error) => {
-                console.error('Database error in setMembershipStatus:', error);
+                Logger.error('Database error in setMembershipStatus:', error);
                 return new statusObject(500, 'Database error');
             });
     }
@@ -259,7 +260,16 @@ export default class UserDB {
                         if (col.dflt_value !== null) {
                             updates.push(`${col.name} = ${col.dflt_value}`);
                         } else {
-                            updates.push(`${col.name} = 0`);
+                            const type = col.type.toUpperCase();
+                            if (type.includes('INT') || type.includes('REAL') || type.includes('FLOA') || type.includes('DOUB')) {
+                                updates.push(`${col.name} = 0`);
+                            } else if (type.includes('CHAR') || type.includes('TEXT') || type.includes('CLOB')) {
+                                updates.push(`${col.name} = 'deleted'`);
+                            } else if (type.includes('BOOL')) {
+                                updates.push(`${col.name} = 0`);
+                            } else {
+                                updates.push(`${col.name} = 0`);
+                            }
                         }
                     } else {
                         updates.push(`${col.name} = NULL`);
@@ -284,7 +294,7 @@ export default class UserDB {
             }
             return new statusObject(200, null);
         } catch (error) {
-            console.error('Database error in removeUser:', error);
+            Logger.error('Database error in removeUser:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -321,7 +331,7 @@ export default class UserDB {
 
             return new statusObject(200, null, filteredUser);
         } catch (error) {
-            console.error('Database error fetching user profile:', error);
+            Logger.error('Database error fetching user profile:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -356,7 +366,7 @@ export default class UserDB {
             return new statusObject(200);
         } catch (error) {
             await db.run('ROLLBACK');
-            console.error('Database error in resetPermissions:', error);
+            Logger.error('Database error in resetPermissions:', error);
             return new statusObject(500, 'Database error');
         }
     }

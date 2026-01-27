@@ -7,6 +7,7 @@
 import { statusObject } from '../misc/status.js';
 import Utils from '../misc/utils.js';
 import { Permissions } from '../misc/permissions.js';
+import Logger from '../misc/Logger.js';
 
 export default class SwimsDB {
     /**
@@ -21,6 +22,7 @@ export default class SwimsDB {
             return new statusObject(200, 'Swims added successfully');
         } catch (error) {
             await db.run('ROLLBACK');
+            Logger.error('Database error in addSwims:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -40,7 +42,7 @@ export default class SwimsDB {
             await db.run('UPDATE users SET booties = booties + ? WHERE id = ?', [count, userId]);
             return new statusObject(200, 'Booties added successfully');
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -85,7 +87,7 @@ export default class SwimsDB {
 
             return new statusObject(200, null, leaderboard);
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -133,6 +135,7 @@ export default class SwimsDB {
 
             return new statusObject(200, null, { rank: userRank, swims: userSwims, booties: userBooties });
         } catch (error) {
+            Logger.error('Database error in getUserSwimmerRank:', error);
             return new statusObject(500, 'Database error');
         }
     }

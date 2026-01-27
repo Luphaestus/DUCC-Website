@@ -5,6 +5,7 @@
  */
 
 import { statusObject } from '../misc/status.js';
+import Logger from '../misc/Logger.js';
 
 export default class CollegesDB {
     /**
@@ -15,7 +16,7 @@ export default class CollegesDB {
             const colleges = await db.all('SELECT * FROM colleges ORDER BY name ASC');
             return new statusObject(200, 'Success', colleges);
         } catch (e) {
-            console.error('Database error fetching colleges:', e);
+            Logger.error('Database error fetching colleges:', e);
             return new statusObject(500, 'Database error');
         }
     }
@@ -28,7 +29,7 @@ export default class CollegesDB {
             const college = await db.get('SELECT * FROM colleges WHERE id = ?', [id]);
             return college;
         } catch (e) {
-            console.error('Database error fetching college by ID:', e);
+            Logger.error('Database error fetching college by ID:', e);
             return null;
         }
     }

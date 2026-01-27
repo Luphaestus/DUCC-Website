@@ -7,6 +7,7 @@
 import { createTable } from './utils.js';
 import cliProgress from 'cli-progress';
 import colors from 'ansi-colors';
+import Logger from '../../misc/Logger.js';
 
 /**
  * Executes the table creation sequence with a progress bar.
@@ -276,7 +277,7 @@ export async function createTables(db) {
   ];
 
   if (process.env.NODE_ENV !== 'test') {
-    console.log(colors.cyan('Creating database tables...'));
+    Logger.info('Creating database tables...');
     const progressBar = new cliProgress.SingleBar({
       format: colors.cyan('Tables |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Tables || {table}',
       barCompleteChar: '\u2588',

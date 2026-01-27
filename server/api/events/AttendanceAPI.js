@@ -13,6 +13,7 @@ import check from '../../misc/authentication.js';
 import { statusObject } from '../../misc/status.js';
 import { Permissions } from '../../misc/permissions.js';
 import WaitlistDB from '../../db/waitlistDB.js';
+import Logger from '../../misc/Logger.js';
 
 export default class AttendanceAPI {
     /**
@@ -165,7 +166,7 @@ export default class AttendanceAPI {
                 return status.getResponse(res);
             } catch (error) {
                 await this.db.run('ROLLBACK');
-                console.error(error);
+                Logger.error(error);
                 res.status(500).json({ message: 'Internal server error' });
             }
         });
@@ -250,7 +251,7 @@ export default class AttendanceAPI {
                         }
                     }
                 } catch (e) {
-                    console.error("Error promoting user from waitlist:", e);
+                    Logger.error("Error promoting user from waitlist:", e);
                 }
             }
 

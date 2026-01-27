@@ -10,6 +10,7 @@ import TagsDB from '../../db/tagsDB.js';
 import Globals from '../../misc/globals.js';
 import check from '../../misc/authentication.js';
 import { Permissions } from '../../misc/permissions.js';
+import Logger from '../../misc/Logger.js';
 
 export default class EventsAPI {
     /**
@@ -168,7 +169,7 @@ export default class EventsAPI {
                 const url = await EventsDB._getFallbackImage(this.db, tags);
                 res.json({ url });
             } catch (error) {
-                console.error(error);
+                Logger.error(error);
                 res.status(500).json({ message: 'Internal error' });
             }
         });

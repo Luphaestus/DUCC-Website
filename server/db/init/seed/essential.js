@@ -7,6 +7,7 @@
 import bcrypt from 'bcrypt';
 import { generateRandomPassword } from '../utils.js';
 import colors from 'ansi-colors';
+import Logger from '../../../misc/Logger.js';
 
 /**
  * Seeds the database with the canonical list of Durham colleges.
@@ -14,7 +15,7 @@ import colors from 'ansi-colors';
 export async function seedColleges(db) {
     const collegesExist = await db.get('SELECT COUNT(*) as count FROM colleges');
     if (collegesExist.count === 0) {
-        if (process.env.NODE_ENV !== 'test') console.log(colors.cyan('Inserting Durham colleges...'));
+        if (process.env.NODE_ENV !== 'test') Logger.info('Inserting Durham colleges...');
         const colleges = [
             'castle', 'collingwood', 'grey', 'hatfield', 'johnsnow', 'jb',
             'south', 'aidans', 'stchads', 'stcuthberts', 'hildbede',
@@ -103,7 +104,7 @@ export async function seedEssential(db) {
                 }
             } catch (e) { }
 
-            if (process.env.NODE_ENV !== 'test') console.log(colors.yellow('Inserting default admin user...'));
+            if (process.env.NODE_ENV !== 'test') console.info('Inserting default admin user...');
             const email = 'admin@durham.ac.uk'.toLowerCase();
             const password = generateRandomPassword(12);
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -112,11 +113,10 @@ export async function seedEssential(db) {
                 [email, hashedPassword, 'Admin', 'User', 5]
             );
             adminId = adminResult.lastID;
-            if (process.env.NODE_ENV !== 'test') console.log(colors.green(`Admin created. Email: ${email}, Password: ${password}`));
+            if (process.env.NODE_ENV !== 'test') console.info(`========== Admin created. ==========\nEmail: ${email}\nPassword: ${password}\n====================================`);
         } else {
             adminId = adminExists.id;
         }
-
         if (presidentRole) {
             await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);
         }

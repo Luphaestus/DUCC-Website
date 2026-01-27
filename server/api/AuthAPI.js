@@ -11,6 +11,8 @@ import checkAuthentication from '../misc/authentication.js';
 import Utils from '../misc/utils.js';
 import ValidationRules from '../rules/ValidationRules.js';
 import AuthDB from '../db/authDB.js';
+import Logger from '../misc/Logger.js';
+import config from '../config.js';
 
 export default class Auth {
     /**
@@ -97,7 +99,7 @@ export default class Auth {
                     status.getResponse(res);
                 }
             } catch (err) {
-                console.error(err);
+                Logger.error(err);
                 res.status(500).json({ message: 'Registration failed.' });
             }
         });
@@ -135,7 +137,7 @@ export default class Auth {
                 if (err) return next(err);
                 req.session.destroy((err) => {
                     if (err) return res.status(500).json({ message: 'Logout failed.' });
-                    res.clearCookie('connect.sid');
+                    res.clearCookie(config.session.cookieName);
                     res.status(200).json({ message: 'Logged out.' });
                 });
             });
@@ -168,11 +170,11 @@ export default class Auth {
 
                 const baseUrl = Utils.getBaseUrl(req);
 
-                console.log(`[RESET] Password reset url for ${email}: ${baseUrl}/set-password?token=${token}`);
+                Logger.info(`[RESET] Password reset url for ${email}: ${baseUrl}/set-password?token=${token}`);
 
                 res.json({ message: 'If an account exists, a reset link has been sent.' });
             } catch (e) {
-                console.error(e);
+                Logger.error(e);
                 res.status(500).json({ message: 'Server error.' });
             }
         });
@@ -197,7 +199,7 @@ export default class Auth {
 
                 res.json({ message: 'Password updated successfully.' });
             } catch (e) {
-                console.error(e);
+                Logger.error(e);
                 res.status(500).json({ message: 'Server error.' });
             }
         });
@@ -221,7 +223,7 @@ export default class Auth {
 
                 res.json({ message: 'Password changed successfully.' });
             } catch (e) {
-                console.error(e);
+                Logger.error(e);
                 res.status(500).json({ message: 'Server error.' });
             }
         });

@@ -15,6 +15,7 @@ import AuthDB from '../../db/authDB.js';
 import check from '../../misc/authentication.js';
 import bcrypt from 'bcrypt';
 import ValidationRules from '../../rules/ValidationRules.js';
+import Logger from '../../misc/Logger.js';
 
 export default class User {
     /**
@@ -318,7 +319,7 @@ export default class User {
                 if (update.isError()) return update.getResponse(res);
                 res.json({ success: true });
             } catch (err) {
-                console.error(err);
+                Logger.error(err);
                 res.status(500).json({ message: 'Internal error' });
             }
         });
@@ -346,7 +347,7 @@ export default class User {
 
                 req.logout((err) => { res.json({ success: true }); });
             } catch (err) {
-                console.error(err);
+                Logger.error(err);
                 res.status(500).json({ message: 'Internal server error.' });
             }
         });

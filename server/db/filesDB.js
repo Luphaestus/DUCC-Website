@@ -5,6 +5,7 @@
  */
 
 import { statusObject } from '../misc/status.js';
+import Logger from '../misc/Logger.js';
 
 export default class FilesDB {
     /**
@@ -70,7 +71,7 @@ export default class FilesDB {
 
             return new statusObject(200, null, { files, totalPages, currentPage: page, totalFiles });
         } catch (error) {
-            console.error('Database error in getFiles:', error);
+            Logger.error('Database error in getFiles:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -87,7 +88,7 @@ export default class FilesDB {
             );
             return new statusObject(201, null, { id: result.lastID });
         } catch (error) {
-            console.error('Database error in createFile:', error);
+            Logger.error('Database error in createFile:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -101,7 +102,7 @@ export default class FilesDB {
             if (!file) return new statusObject(404, 'File not found');
             return new statusObject(200, null, file);
         } catch (error) {
-            console.error('Database error in getFileByHash:', error);
+            Logger.error('Database error in getFileByHash:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -115,7 +116,7 @@ export default class FilesDB {
             if (!file) return new statusObject(404, 'File not found');
             return new statusObject(200, null, file);
         } catch (error) {
-            console.error('Database error in getFileById:', error);
+            Logger.error('Database error in getFileById:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -142,7 +143,7 @@ export default class FilesDB {
             if (result.changes === 0) return new statusObject(404, 'File not found');
             return new statusObject(200, 'File updated');
         } catch (error) {
-            console.error('Database error in updateFile:', error);
+            Logger.error('Database error in updateFile:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -156,7 +157,7 @@ export default class FilesDB {
             if (result.changes === 0) return new statusObject(404, 'File not found');
             return new statusObject(200, 'File deleted');
         } catch (error) {
-            console.error('Database error in deleteFile:', error);
+            Logger.error('Database error in deleteFile:', error);
             return new statusObject(500, 'Database error');
         }
     }

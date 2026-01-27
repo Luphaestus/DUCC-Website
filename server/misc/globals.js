@@ -4,14 +4,13 @@
  * Manages dynamic system-wide configuration settings stored in a JSON file.
  */
 
-import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import config from '../config.js';
+import Logger from './Logger.js';
 
 export default class Globals {
+    static cache = null;
+
     /**
      * Initializes the instance and ensures 'globals.json' exists with default values.
      */
@@ -19,16 +18,15 @@ export default class Globals {
         Globals.instance = this;
         Globals.validPermissions = ['Guest', 'Authenticated', 'President'];
 
-        const dbPath = process.env.DATABASE_PATH || path.resolve(__dirname, "../../data/database.db");
-        const dbDir = path.dirname(dbPath);
-        this.path = path.join(dbDir, "globals.json");
+        this.path = config.paths.globals;
+        const dbDir = config.paths.data;
 
         if (!fs.existsSync(dbDir)) {
             fs.mkdirSync(dbDir, { recursive: true });
         }
 
         if (!fs.existsSync(this.path)) {
-            fs.writeFileSync(this.path, JSON.stringify({
+            const defaults = {
                 Unauthorized_max_difficulty: {
                     data: 1,
                     name: "Unauthorized Max Difficulty",
@@ -65,7 +63,16 @@ export default class Globals {
                     error: "Value must be a valid path or file API URL.",
                     permission: "President",
                 },
-            }, null, 4));
+            };
+            fs.writeFileSync(this.path, JSON.stringify(defaults, null, 4));
+            Globals.cache = defaults;
+        } else if (!Globals.cache) {
+            try {
+                Globals.cache = JSON.parse(fs.readFileSync(this.path, 'utf-8'));
+            } catch (error) {
+                Logger.error('Failed to load globals.json:', error);
+                Globals.cache = {}; 
+            }
         }
     }
 
@@ -73,29 +80,39 @@ export default class Globals {
      * Retrieves a full global entry from the file.
      */
     get(key) {
-        const data = JSON.parse(fs.readFileSync(this.path, 'utf-8'));
-        return data[key];
+        if (!Globals.cache) {
+             try {
+                Globals.cache = JSON.parse(fs.readFileSync(this.path, 'utf-8'));
+            } catch (error) {
+                Logger.error('Failed to load globals.json:', error);
+                return null;
+            }
+        }
+        return Globals.cache[key];
     }
 
     /**
      * Helper to retrieve a value and cast it to an integer.
      */
     getInt(key) {
-        return parseInt(this.get(key).data, 10);
+        const item = this.get(key);
+        return item ? parseInt(item.data, 10) : 0;
     }
 
     /**
      * Helper to retrieve a value and cast it to a float.
      */
     getFloat(key) {
-        return parseFloat(this.get(key).data);
+        const item = this.get(key);
+        return item ? parseFloat(item.data) : 0.0;
     }
 
     /**
      * Retrieves the entire raw configuration object.
      */
     getAll() {
-        return JSON.parse(fs.readFileSync(this.path, 'utf-8'));
+        if (!Globals.cache) this.get('dummy'); 
+        return Globals.cache;
     }
 
     /**
@@ -138,7 +155,11 @@ export default class Globals {
 
         valueContainer.data = value;
         data[key] = valueContainer;
-        fs.writeFileSync(this.path, JSON.stringify(data, null, 4));
+        Globals.cache = data; 
+
+        fs.writeFile(this.path, JSON.stringify(data, null, 4), (err) => {
+            if (err) Logger.error('Failed to save globals.json:', err);
+        });
     }
 
 }

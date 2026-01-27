@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 /** Catch and log unhandled promise rejections for debugging. */
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 import path from 'path';
@@ -29,6 +29,8 @@ import cliProgress from 'cli-progress';
 import colors from 'ansi-colors';
 import csurf from 'csurf';
 import rateLimit from 'express-rate-limit';
+import Logger from './misc/Logger.js';
+import config from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,8 +40,8 @@ const app = express();
 const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
 const isProd = process.env.NODE_ENV === 'prod' || process.env.NODE_ENV === 'production';
 
-if (isProd && !process.env.SESSION_SECRET) {
-  console.error(colors.red('FATAL: SESSION_SECRET must be defined in production environment.'));
+if (isProd && !config.session.secret) {
+  Logger.error(colors.red('FATAL: SESSION_SECRET must be defined in production environment.'));
   process.exit(1);
 }
 
@@ -117,7 +119,7 @@ app.use(express.static('public', {
   }
 }));
 
-const dbPath = process.env.DATABASE_PATH || 'data/database.db';
+const dbPath = config.paths.db;
 const dbDir = path.dirname(dbPath);
 const dbFile = path.basename(dbPath);
 
@@ -127,11 +129,12 @@ if (!fs.existsSync(dbDir)) {
 
 /** Session Management using connect-sqlite3. */
 app.use(session({
+  name: config.session.cookieName,
   store: new SQLiteStore({
     db: dbFile,
     dir: dbDir
   }),
-  secret: process.env.SESSION_SECRET || 'dev-secret-key-change-me-in-prod',
+  secret: config.session.secret,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -171,7 +174,7 @@ const startServer = async () => {
     await db.exec('PRAGMA busy_timeout = 5000;');
 
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`Connected to the SQLite database at ${dbPath}.`);
+      Logger.info(`Connected to the SQLite database at ${dbPath}.`);
     }
 
     app.use((req, res, next) => {
@@ -206,7 +209,7 @@ const startServer = async () => {
     
     /** Dynamically register all API modules. */
     if (process.env.NODE_ENV !== 'test' && apiFiles.length > 0) {
-        console.log(colors.cyan('Registering API modules...'));
+        Logger.info('Registering API modules...');
         const progressBar = new cliProgress.SingleBar({
             format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
             barCompleteChar: '\u2588',
@@ -241,14 +244,14 @@ const startServer = async () => {
 
     if (import.meta.url === `file://${process.argv[1]}`) {
       app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
-        console.log('Press Ctrl+C to stop the server.');
+        Logger.info(`Server is running on http://localhost:${PORT}`);
+        Logger.info('Press Ctrl+C to stop the server.');
       });
     }
 
     return { app, db };
   } catch (err) {
-    console.error(err.message);
+    Logger.error(err.message);
     throw err;
   }
 };

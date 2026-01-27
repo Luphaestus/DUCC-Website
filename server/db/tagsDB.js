@@ -6,6 +6,7 @@
 
 import { statusObject } from '../misc/status.js';
 import FileCleanup from '../misc/FileCleanup.js';
+import Logger from '../misc/Logger.js';
 
 export default class TagsDB {
     /**
@@ -16,7 +17,7 @@ export default class TagsDB {
             const tags = await db.all('SELECT * FROM tags ORDER BY name ASC');
             return new statusObject(200, null, tags);
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -54,7 +55,7 @@ export default class TagsDB {
             );
             return new statusObject(200, null, { id: result.lastID });
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -79,7 +80,7 @@ export default class TagsDB {
 
             return new statusObject(200, 'Tag updated');
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -96,7 +97,7 @@ export default class TagsDB {
             
             return new statusObject(200, 'Image removed');
         } catch (error) {
-            console.error(error);
+            Logger.error(error);
             return new statusObject(500, 'Database error');
         }
     }

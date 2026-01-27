@@ -8,10 +8,8 @@ import FilesDB from '../db/filesDB.js';
 import path from 'path';
 import fs from 'fs';
 import Globals from './globals.js';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import config from '../config.js';
+import Logger from './Logger.js';
 
 export default class FileCleanup {
     /**
@@ -56,17 +54,19 @@ export default class FileCleanup {
             const fileRes = await FilesDB.getFileById(db, fileId);
             if (!fileRes.isError()) {
                 const file = fileRes.getData();
-                const uploadDir = path.join(__dirname, '../../data/files');
+                const uploadDir = config.paths.files;
                 const filePath = path.join(uploadDir, file.filename);
                 
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
+                try {
+                    await fs.promises.unlink(filePath);
+                } catch (err) {
+                    // Ignore if file missing
                 }
                 
                 await FilesDB.deleteFile(db, fileId);
             }
         } catch (error) {
-            console.error('[FileCleanup] Error during cleanup:', error);
+            Logger.error('[FileCleanup] Error during cleanup:', error);
         }
     }
 }

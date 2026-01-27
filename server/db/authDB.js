@@ -5,6 +5,7 @@
  */
 
 import { statusObject } from '../misc/status.js';
+import Logger from '../misc/Logger.js';
 
 export default class AuthDB {
     /**
@@ -29,7 +30,7 @@ export default class AuthDB {
             await db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
             return new statusObject(201, 'User registered successfully.');
         } catch (err) {
-            console.error(err);
+            Logger.error(err);
             if (err.message && err.message.includes('UNIQUE constraint failed')) {
                 return new statusObject(400, 'Email is already taken.');
             }
@@ -54,7 +55,7 @@ export default class AuthDB {
             );
             return new statusObject(200, 'Account restored successfully.');
         } catch (err) {
-            console.error(err);
+            Logger.error(err);
             return new statusObject(500, 'Account restoration failed.');
         }
     }

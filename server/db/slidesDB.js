@@ -5,6 +5,7 @@
  */
 
 import { statusObject } from '../misc/status.js';
+import Logger from '../misc/Logger.js';
 
 export default class SlidesDB {
     /**
@@ -24,7 +25,7 @@ export default class SlidesDB {
             }));
             return new statusObject(200, null, data);
         } catch (error) {
-            console.error('Database error in getSlides:', error);
+            Logger.error('Database error in getSlides:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -43,7 +44,7 @@ export default class SlidesDB {
             );
             return new statusObject(201, 'Slide added');
         } catch (error) {
-            console.error('Database error in addSlide:', error);
+            Logger.error('Database error in addSlide:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -57,7 +58,7 @@ export default class SlidesDB {
             if (result.changes === 0) return new statusObject(404, 'Slide not found');
             return new statusObject(200, 'Slide removed');
         } catch (error) {
-            console.error('Database error in removeSlide:', error);
+            Logger.error('Database error in removeSlide:', error);
             return new statusObject(500, 'Database error');
         }
     }
