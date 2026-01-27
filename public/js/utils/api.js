@@ -5,6 +5,7 @@
  */
 
 import { updateConnectionStatus } from '../connection.js';
+import { getCookie } from './utils.js';
 
 /**
  * Cache for GET requests to reduce redundant network traffic.
@@ -70,6 +71,15 @@ function apiRequest(method, url, data = null) {
         };
 
         xhr.open(method, url, true);
+
+        // Add CSRF token for non-GET requests
+        if (method !== 'GET') {
+            const csrfToken = getCookie('XSRF-TOKEN');
+            if (csrfToken) {
+                xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+            }
+        }
+
         if (method !== 'GET' && data) {
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.send(JSON.stringify(data));
@@ -118,6 +128,11 @@ async function uploadFile(file, options = {}) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/files', true);
+
+        const csrfToken = getCookie('XSRF-TOKEN');
+        if (csrfToken) {
+            xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+        }
 
         if (options.onProgress) {
             xhr.upload.onprogress = (e) => {

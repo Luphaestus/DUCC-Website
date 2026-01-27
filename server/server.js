@@ -74,13 +74,23 @@ if (isDev) {
 }
 
 /** Rate Limiting */
-const limiter = rateLimit({
+const standardLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 100,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false, 
 });
-app.use(limiter);
+
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, 
+  message: { message: 'Too many attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(standardLimiter);
+app.use('/api/auth/', strictLimiter);
 
 /** Security Middleware: Sets CSP and other security-related HTTP headers. */
 app.use((req, res, next) => {
@@ -152,7 +162,7 @@ if (process.env.NODE_ENV !== 'test') {
     app.use(csurf());
     app.use((req, res, next) => {
         const token = req.csrfToken();
-        res.cookie('XSRF-TOKEN', token);
+        res.cookie('XSRF-TOKEN', token, { httpOnly: false });
         res.locals.csrfToken = token;
         next();
     });

@@ -39,3 +39,16 @@ export function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
+
+/**
+ * Retrieves the value of a specific cookie by name.
+ * 
+ * @param {string} name - The name of the cookie to retrieve.
+ * @returns {string|null} - The cookie value, or null if not found.
+ */
+export function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
