@@ -108,6 +108,7 @@ export async function renderTransactionsTab(container, userId) {
 
                 try {
                     await apiRequest('POST', `/api/admin/user/${userId}/transaction`, { amount, description });
+                    BalanceChangedEvent.notify();
                     notify('Success', 'Transaction added', 'success');
                     renderTransactionsTab(container, userId);
                 } catch (e) {
@@ -122,6 +123,7 @@ export async function renderTransactionsTab(container, userId) {
 
                 try {
                     await apiRequest('DELETE', `/api/admin/transaction/${btn.dataset.id}`);
+                    BalanceChangedEvent.notify();
                     notify('Success', 'Transaction deleted', 'success');
                     renderTransactionsTab(container, userId);
                 } catch (e) {
@@ -187,6 +189,7 @@ function setupTransactionEditHandlers(container, userId) {
 
             try {
                 await apiRequest('PUT', `/api/admin/transaction/${id}`, { amount, description });
+                BalanceChangedEvent.notify();
                 notify('Success', 'Transaction updated', 'success');
                 renderTransactionsTab(container, userId);
             } catch (e) {
