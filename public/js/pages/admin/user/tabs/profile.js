@@ -27,11 +27,11 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
     const bal = Number(user.balance || 0);
 
     const [collegesRes, globalData] = await Promise.all([
-        apiRequest('GET', '/api/colleges').catch(() => ({ data: [] })),
+        apiRequest('GET', '/api/colleges').catch(() => []),
         apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
     ]);
 
-    const colleges = collegesRes.data || [];
+    const colleges = collegesRes || [];
     const minMoney = Number(globalData.res?.MinMoney?.data || -25);
     const collegeName = colleges.find(c => c.id === user.college_id)?.name || 'N/A';
     const emailUsername = user.email ? user.email.split('@')[0] : '';
@@ -276,7 +276,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
         // --- Direct Permission Management ---
         const permSelect = document.getElementById('add-perm-select');
         if (permSelect) {
-            const allPerms = await apiRequest('GET', '/api/admin/permissions').catch(() => []);
+            const allPerms = await apiRequest('GET', '/api/admin/roles/permissions').catch(() => []);
             permSelect.innerHTML += allPerms.map(p => `<option value="${p.id}">${p.slug}</option>`).join('');
 
             document.getElementById('add-perm-btn').onclick = async () => {
