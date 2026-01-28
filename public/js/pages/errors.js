@@ -13,7 +13,7 @@ import { BRIGHTNESS_ALERT_SVG, SHIELD_SVG, SIGNAL_DISCONNECTED_SVG } from '../..
 
 addRoute('/error', 'error', { changeURL: false, titleFunc: () => 'Error - Page Not Found' });
 addRoute('/unauthorised', 'unauthorised', { titleFunc: () => 'Error - Access Denied', changeURL: false });
-addRoute('/no-internet', 'no-connection', { isOverlay: true, titleFunc: () => 'Error - No Internet Connection', changeURL: false });
+addRoute('/no-internet', 'no-connection', { isOverlay: true, titleFunc: () => 'Error - No Internet Connection' });
 
 /**
  * Generates the HTML structure for an error view.
