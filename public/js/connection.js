@@ -10,6 +10,7 @@ import { notify, NotificationTypes } from '/js/components/notification.js';
 import { ViewChangedEvent, switchView, isCurrentPath } from '/js/utils/view.js';
 import { getPreviousPath } from '/js/utils/history.js';
 import { apiRequest } from '/js/utils/api.js';
+import { NoInternetEvent } from '/js/utils/events/events.js';
 
 let isServerConnected = true;
 let currentNotification = null;
@@ -54,6 +55,7 @@ async function updateConnectionStatus(newStatus) {
         }
 
         currentNotification = notify('Connection Lost', 'Disconnected from server.', NotificationTypes.ERROR, 10000);
+        NoInternetEvent.notify();
         switchView('/no-internet');
     }
 }

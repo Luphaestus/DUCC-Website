@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 /**
  * Main development seeding function.
  */
-export async function seedDevelopment(db) {
+export async function seedDevelopment(db, newlyCreatedTables = []) {
     const userCount = await db.get('SELECT COUNT(*) as count FROM users');
 
     const slidesDir = path.join(__dirname, '..', '..', '..', 'public', 'images', 'slides');
@@ -45,12 +45,14 @@ export async function seedDevelopment(db) {
         if (id) seededFileIds.push(id);
     }
 
-    await db.run('DELETE FROM slides');
-    for (let i = 0; i < seededFileIds.length; i++) {
-        await db.run('INSERT INTO slides (file_id, display_order) VALUES (?, ?)', [seededFileIds[i], i]);
+    if (newlyCreatedTables.includes('slides')) {
+        await db.run('DELETE FROM slides');
+        for (let i = 0; i < seededFileIds.length; i++) {
+            await db.run('INSERT INTO slides (file_id, display_order) VALUES (?, ?)', [seededFileIds[i], i]);
+        }
     }
 
-    if (userCount.count < 5) {
+    if (userCount.count < 5 || newlyCreatedTables.includes('users')) {
         if (process.env.NODE_ENV !== 'test') Logger.info('Inserting random users for development...');
         const password = 'password';
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -122,7 +124,7 @@ export async function seedDevelopment(db) {
     }
 
     const swimHistoryCount = await db.get('SELECT COUNT(*) as count FROM swim_history');
-    if (swimHistoryCount.count === 0) {
+    if (newlyCreatedTables.includes('swim_history') || swimHistoryCount.count === 0) {
         if (process.env.NODE_ENV !== 'test') Logger.info('Seeding swim history for existing users...');
         const users = await db.all('SELECT id FROM users');
 
@@ -235,320 +237,322 @@ export async function seedDevelopment(db) {
         await db.run('INSERT OR IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagIds['polo-team'], adminUser.id]);
     }
 
-    await db.run('DELETE FROM events');
-    await db.run('DELETE FROM event_tags');
+    if (newlyCreatedTables.includes('events')) {
+        await db.run('DELETE FROM events');
+        await db.run('DELETE FROM event_tags');
 
-    const now = new Date();
-    const startDate = new Date(now);
-    startDate.setDate(now.getDate() - (6 * 7));
-    const endDate = new Date(now);
-    endDate.setDate(endDate.getDate() + (12 * 7));
+        const now = new Date();
+        const startDate = new Date(now);
+        startDate.setDate(now.getDate() - (6 * 7));
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + (12 * 7));
 
-    const topicalNames = ["Pub Night", "Board Games", "Quiz Night", "Karaoke", "Bar Crawl"];
-    let currentDate = new Date(startDate);
+        const topicalNames = ["Pub Night", "Board Games", "Quiz Night", "Karaoke", "Bar Crawl"];
+        let currentDate = new Date(startDate);
 
-    const formatDate = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
-    const setTime = (date, h, m) => {
-        const d = new Date(date);
-        d.setHours(h, m, 0, 0);
-        return formatDate(d);
-    };
-    const createEvent = async (data) => {
-        const res = await db.run(
-            `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff, image_id, is_canceled, enable_waitlist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                data.title,
-                data.description,
-                data.location,
-                data.start,
-                data.end,
-                data.difficulty_level || 1,
-                data.max_attendees !== undefined ? data.max_attendees : 20,
-                data.upfront_cost,
-                data.upfront_refund_cutoff || null,
-                data.image_id || null,
-                data.is_canceled !== undefined ? (data.is_canceled ? 1 : 0) : 0,
-                data.enable_waitlist !== undefined ? (data.enable_waitlist ? 1 : 0) : 1
-            ]
-        );
-        if (data.tags) {
-            for (const tagId of data.tags) {
-                await db.run('INSERT INTO event_tags (event_id, tag_id) VALUES (?, ?)', [res.lastID, tagId]);
-            }
-        }
-        return res.lastID;
-    };
-
-    const allUsers = await db.all('SELECT id FROM users');
-    const instructors = await db.all('SELECT id FROM users WHERE is_instructor = 1');
-
-    if (process.env.NODE_ENV !== 'test') console.info('Generating development events...');
-
-    const specialDate = new Date(now);
-    specialDate.setDate(now.getDate() + 3);
-
-    const refundTestDate = new Date(now);
-    refundTestDate.setDate(now.getDate() + 2);
-
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-
-    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-    let eventProgressBar;
-    if (process.env.NODE_ENV !== 'test') {
-        eventProgressBar = new cliProgress.SingleBar({
-            format: colors.cyan('Events |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Days',
-            barCompleteChar: '\u2588',
-            barIncompleteChar: '\u2591',
-            hideCursor: true
-        });
-        eventProgressBar.start(totalDays, 0);
-    }
-
-    let dayCount = 0;
-    await db.run('BEGIN TRANSACTION');
-    while (currentDate <= endDate) {
-        const day = currentDate.getDay();
-        let eventId = null;
-        let maxAttendees = 20;
-        let imageId = seededFileIds.length > 0 ? seededFileIds[Math.floor(Math.random() * seededFileIds.length)] : null;
-
-        const isTomorrow = currentDate.getDate() === tomorrow.getDate() &&
-            currentDate.getMonth() === tomorrow.getMonth() &&
-            currentDate.getFullYear() === tomorrow.getFullYear();
-
-        if (isTomorrow) {
-            const ev1 = await createEvent({
-                title: "Pub Social",
-                description: "A social at the pub.",
-                location: "The Swan",
-                start: setTime(currentDate, 19, 0),
-                end: setTime(currentDate, 22, 0),
-                upfront_cost: 0,
-                tags: [tagIds['socials']],
-                image_id: imageId
-            });
-
-            const ev2 = await createEvent({
-                title: "Morning Ergs",
-                description: "Morning ergs session.",
-                location: "Boathouse Gym",
-                start: setTime(currentDate, 7, 0),
-                end: setTime(currentDate, 8, 30),
-                upfront_cost: 0,
-                tags: [tagIds['ergs']],
-                image_id: imageId
-            });
-
-            const ev3 = await createEvent({
-                title: "Chill Paddle",
-                description: "Chill paddle session.",
-                location: "Boathouse",
-                start: setTime(currentDate, 12, 0),
-                end: setTime(currentDate, 13, 30),
-                upfront_cost: 0,
-                tags: [tagIds['chill']],
-                image_id: imageId
-            });
-
-            if (instructors.length > 0) {
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev1, instructors[0].id, 1]);
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev2, instructors[0].id, 1]);
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev3, instructors[0].id, 1]);
-            }
-
-            currentDate.setDate(currentDate.getDate() + 1);
-            dayCount++;
-            if (eventProgressBar) eventProgressBar.update(dayCount);
-            continue;
-        }
-
-        const isRefundTestDay = currentDate.getDate() === refundTestDate.getDate() &&
-            currentDate.getMonth() === refundTestDate.getMonth() &&
-            currentDate.getFullYear() === refundTestDate.getFullYear();
-
-        if (isRefundTestDay) {
-            const ev1 = await createEvent({
-                title: "Refund Test (No Deadline)",
-                description: "Event costing £5 with no refund deadline.",
-                location: "River Wear",
-                start: setTime(currentDate, 14, 0),
-                end: setTime(currentDate, 16, 0),
-                upfront_cost: 5,
-                upfront_refund_cutoff: null,
-                image_id: imageId
-            });
-
-            const passedDeadline = new Date(now);
-            passedDeadline.setHours(now.getHours() - 1);
-
-            const ev2 = await createEvent({
-                title: "Refund Test (Deadline Passed)",
-                description: "Event costing £6 with a deadline that has already passed.",
-                location: "River Wear",
-                start: setTime(currentDate, 16, 0),
-                end: setTime(currentDate, 18, 0),
-                upfront_cost: 6,
-                upfront_refund_cutoff: formatDate(passedDeadline),
-                image_id: imageId
-            });
-
-            if (instructors.length > 0) {
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev1, instructors[0].id, 1]);
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev2, instructors[0].id, 1]);
-            }
-
-            currentDate.setDate(currentDate.getDate() + 1);
-            dayCount++;
-            if (eventProgressBar) eventProgressBar.update(dayCount);
-            continue;
-        }
-
-        const isSpecialDay = currentDate.getDate() === specialDate.getDate() &&
-            currentDate.getMonth() === specialDate.getMonth() &&
-            currentDate.getFullYear() === specialDate.getFullYear();
-
-        if (isSpecialDay) {
-            const ev1 = await createEvent({
-                title: "Elite Slalom Training",
-                description: "Advanced training for the team.",
-                location: "Tees Barrage",
-                start: setTime(currentDate, 10, 0),
-                end: setTime(currentDate, 13, 0),
-                difficulty_level: 3,
-                max_attendees: 10,
-                upfront_cost: 0,
-                tags: [tagIds['slalom-team']],
-                image_id: imageId
-            });
-
-            const ev2 = await createEvent({
-                title: "Canceled Social",
-                description: "This event has been canceled.",
-                location: "The Pub",
-                start: setTime(currentDate, 18, 0),
-                end: setTime(currentDate, 20, 0),
-                difficulty_level: 1,
-                max_attendees: 20,
-                upfront_cost: 0,
-                tags: [tagIds['socials']],
-                image_id: imageId,
-                is_canceled: true
-            });
-
-            const waitlistEventId = await createEvent({
-                title: "Popular Workshop (Waitlist)",
-                description: "This event is full, join the waitlist!",
-                location: "Classroom",
-                start: setTime(currentDate, 14, 0),
-                end: setTime(currentDate, 15, 0),
-                difficulty_level: 1,
-                max_attendees: 5,
-                upfront_cost: 5,
-                image_id: imageId
-            });
-            for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [waitlistEventId, allUsers[k].id, 1]);
-            for (let k = 5; k < 8; k++) await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [waitlistEventId, allUsers[k].id]);
-
-            const noWaitlistEventId = await createEvent({
-                title: "Exclusive Session (No Waitlist)",
-                description: "Full and no waitlist available.",
-                location: "Private Room",
-                start: setTime(currentDate, 16, 0),
-                end: setTime(currentDate, 17, 0),
-                difficulty_level: 2,
-                max_attendees: 5,
-                upfront_cost: 10,
-                image_id: imageId,
-                enable_waitlist: false
-            });
-            for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [noWaitlistEventId, allUsers[k + 10].id, 1]);
-
-            await createEvent({
-                title: "No Coach Attending",
-                description: "An event with nobody attending.",
-                location: "River Wear",
-                start: setTime(currentDate, 8, 0),
-                end: setTime(currentDate, 9, 0),
-                difficulty_level: 1,
-                max_attendees: 10,
-                upfront_cost: 0,
-                image_id: imageId
-            });
-
-            if (instructors.length > 0) {
-                const coachId = instructors[0].id;
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev1, coachId, 1]);
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev2, coachId, 1]);
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [waitlistEventId, coachId, 1]);
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [noWaitlistEventId, coachId, 1]);
-            }
-
-            currentDate.setDate(currentDate.getDate() + 1);
-            dayCount++;
-            if (eventProgressBar) eventProgressBar.update(dayCount);
-            continue;
-        }
-
-        if (day === 3) {
-            maxAttendees = 0;
-            eventId = await createEvent({ title: `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: 0, max_attendees: 0, tags: [tagIds['socials']], image_id: imageId });
-        } else if (day === 4) {
-            const startT = new Date(currentDate); startT.setHours(14, 0, 0, 0);
-            const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 48);
-            eventId = await createEvent({ title: "Slalom/White Water", description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: 12, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']], image_id: imageId });
-        } else if (day === 5) {
-            const startT = new Date(currentDate); startT.setHours(19, 0, 0, 0);
-            const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 24);
-            eventId = await createEvent({ title: "Polo Pool Session", description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: 6, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']], image_id: imageId });
-        } else if ([1, 2].includes(day) && Math.random() < 0.7) {
-            const type = ['polo', 'white water', 'slalom'][Math.floor(Math.random() * 3)];
-            maxAttendees = 5;
-            eventId = await createEvent({ title: `${type.toUpperCase()} Ergs`, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: 0, max_attendees: 5, tags: [tagIds['ergs'], tagIds[type]], image_id: imageId });
-        }
-
-        if (eventId) {
-            let numAttendees = 0;
-            const isPopular = Math.random() > 0.8;
-
-            if (maxAttendees === 0) {
-                numAttendees = Math.floor(Math.random() * 15);
-                if (isPopular) numAttendees += 20;
-            } else if (maxAttendees === 5) {
-                numAttendees = Math.floor(Math.random() * 4);
-                if (isPopular) numAttendees = 5 + Math.floor(Math.random() * 3);
-            } else {
-                numAttendees = Math.floor(Math.random() * 10);
-                if (isPopular) numAttendees = 20 + Math.floor(Math.random() * 5);
-            }
-
-            const shuffledUsers = allUsers.sort(() => 0.5 - Math.random());
-
-            if (instructors.length > 0 && Math.random() > 0.2) {
-                await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [eventId, instructors[0].id, 1]);
-            }
-
-            let currentCount = 1;
-            for (const user of shuffledUsers) {
-                if (user.id === (instructors[0] ? instructors[0].id : -1)) continue;
-
-                if (maxAttendees === 0 || currentCount < maxAttendees) {
-                    if (currentCount < numAttendees) {
-                        await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [eventId, user.id, 1]);
-                        currentCount++;
-                    }
-                } else if (currentCount < numAttendees) {
-                    await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, user.id]);
-                    currentCount++;
+        const formatDate = (d) => d.toISOString().slice(0, 19).replace('T', ' ');
+        const setTime = (date, h, m) => {
+            const d = new Date(date);
+            d.setHours(h, m, 0, 0);
+            return formatDate(d);
+        };
+        const createEvent = async (data) => {
+            const res = await db.run(
+                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, upfront_refund_cutoff, image_id, is_canceled, enable_waitlist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    data.title,
+                    data.description,
+                    data.location,
+                    data.start,
+                    data.end,
+                    data.difficulty_level || 1,
+                    data.max_attendees !== undefined ? data.max_attendees : 20,
+                    data.upfront_cost,
+                    data.upfront_refund_cutoff || null,
+                    data.image_id || null,
+                    data.is_canceled !== undefined ? (data.is_canceled ? 1 : 0) : 0,
+                    data.enable_waitlist !== undefined ? (data.enable_waitlist ? 1 : 0) : 1
+                ]
+            );
+            if (data.tags) {
+                for (const tagId of data.tags) {
+                    await db.run('INSERT INTO event_tags (event_id, tag_id) VALUES (?, ?)', [res.lastID, tagId]);
                 }
             }
+            return res.lastID;
+        };
+
+        const allUsers = await db.all('SELECT id FROM users');
+        const instructors = await db.all('SELECT id FROM users WHERE is_instructor = 1');
+
+        if (process.env.NODE_ENV !== 'test') console.info('Generating development events...');
+
+        const specialDate = new Date(now);
+        specialDate.setDate(now.getDate() + 3);
+
+        const refundTestDate = new Date(now);
+        refundTestDate.setDate(now.getDate() + 2);
+
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+
+        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        let eventProgressBar;
+        if (process.env.NODE_ENV !== 'test') {
+            eventProgressBar = new cliProgress.SingleBar({
+                format: colors.cyan('Events |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Days',
+                barCompleteChar: '\u2588',
+                barIncompleteChar: '\u2591',
+                hideCursor: true
+            });
+            eventProgressBar.start(totalDays, 0);
         }
 
-        currentDate.setDate(currentDate.getDate() + 1);
-        dayCount++;
-        if (eventProgressBar) eventProgressBar.update(dayCount);
+        let dayCount = 0;
+        await db.run('BEGIN TRANSACTION');
+        while (currentDate <= endDate) {
+            const day = currentDate.getDay();
+            let eventId = null;
+            let maxAttendees = 20;
+            let imageId = seededFileIds.length > 0 ? seededFileIds[Math.floor(Math.random() * seededFileIds.length)] : null;
+
+            const isTomorrow = currentDate.getDate() === tomorrow.getDate() &&
+                currentDate.getMonth() === tomorrow.getMonth() &&
+                currentDate.getFullYear() === tomorrow.getFullYear();
+
+            if (isTomorrow) {
+                const ev1 = await createEvent({
+                    title: "Pub Social",
+                    description: "A social at the pub.",
+                    location: "The Swan",
+                    start: setTime(currentDate, 19, 0),
+                    end: setTime(currentDate, 22, 0),
+                    upfront_cost: 0,
+                    tags: [tagIds['socials']],
+                    image_id: imageId
+                });
+
+                const ev2 = await createEvent({
+                    title: "Morning Ergs",
+                    description: "Morning ergs session.",
+                    location: "Boathouse Gym",
+                    start: setTime(currentDate, 7, 0),
+                    end: setTime(currentDate, 8, 30),
+                    upfront_cost: 0,
+                    tags: [tagIds['ergs']],
+                    image_id: imageId
+                });
+
+                const ev3 = await createEvent({
+                    title: "Chill Paddle",
+                    description: "Chill paddle session.",
+                    location: "Boathouse",
+                    start: setTime(currentDate, 12, 0),
+                    end: setTime(currentDate, 13, 30),
+                    upfront_cost: 0,
+                    tags: [tagIds['chill']],
+                    image_id: imageId
+                });
+
+                if (instructors.length > 0) {
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev1, instructors[0].id, 1]);
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev2, instructors[0].id, 1]);
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev3, instructors[0].id, 1]);
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+                dayCount++;
+                if (eventProgressBar) eventProgressBar.update(dayCount);
+                continue;
+            }
+
+            const isRefundTestDay = currentDate.getDate() === refundTestDate.getDate() &&
+                currentDate.getMonth() === refundTestDate.getMonth() &&
+                currentDate.getFullYear() === refundTestDate.getFullYear();
+
+            if (isRefundTestDay) {
+                const ev1 = await createEvent({
+                    title: "Refund Test (No Deadline)",
+                    description: "Event costing £5 with no refund deadline.",
+                    location: "River Wear",
+                    start: setTime(currentDate, 14, 0),
+                    end: setTime(currentDate, 16, 0),
+                    upfront_cost: 5,
+                    upfront_refund_cutoff: null,
+                    image_id: imageId
+                });
+
+                const passedDeadline = new Date(now);
+                passedDeadline.setHours(now.getHours() - 1);
+
+                const ev2 = await createEvent({
+                    title: "Refund Test (Deadline Passed)",
+                    description: "Event costing £6 with a deadline that has already passed.",
+                    location: "River Wear",
+                    start: setTime(currentDate, 16, 0),
+                    end: setTime(currentDate, 18, 0),
+                    upfront_cost: 6,
+                    upfront_refund_cutoff: formatDate(passedDeadline),
+                    image_id: imageId
+                });
+
+                if (instructors.length > 0) {
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev1, instructors[0].id, 1]);
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev2, instructors[0].id, 1]);
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+                dayCount++;
+                if (eventProgressBar) eventProgressBar.update(dayCount);
+                continue;
+            }
+
+            const isSpecialDay = currentDate.getDate() === specialDate.getDate() &&
+                currentDate.getMonth() === specialDate.getMonth() &&
+                currentDate.getFullYear() === specialDate.getFullYear();
+
+            if (isSpecialDay) {
+                const ev1 = await createEvent({
+                    title: "Elite Slalom Training",
+                    description: "Advanced training for the team.",
+                    location: "Tees Barrage",
+                    start: setTime(currentDate, 10, 0),
+                    end: setTime(currentDate, 13, 0),
+                    difficulty_level: 3,
+                    max_attendees: 10,
+                    upfront_cost: 0,
+                    tags: [tagIds['slalom-team']],
+                    image_id: imageId
+                });
+
+                const ev2 = await createEvent({
+                    title: "Canceled Social",
+                    description: "This event has been canceled.",
+                    location: "The Pub",
+                    start: setTime(currentDate, 18, 0),
+                    end: setTime(currentDate, 20, 0),
+                    difficulty_level: 1,
+                    max_attendees: 20,
+                    upfront_cost: 0,
+                    tags: [tagIds['socials']],
+                    image_id: imageId,
+                    is_canceled: true
+                });
+
+                const waitlistEventId = await createEvent({
+                    title: "Popular Workshop (Waitlist)",
+                    description: "This event is full, join the waitlist!",
+                    location: "Classroom",
+                    start: setTime(currentDate, 14, 0),
+                    end: setTime(currentDate, 15, 0),
+                    difficulty_level: 1,
+                    max_attendees: 5,
+                    upfront_cost: 5,
+                    image_id: imageId
+                });
+                for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [waitlistEventId, allUsers[k].id, 1]);
+                for (let k = 5; k < 8; k++) await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [waitlistEventId, allUsers[k].id]);
+
+                const noWaitlistEventId = await createEvent({
+                    title: "Exclusive Session (No Waitlist)",
+                    description: "Full and no waitlist available.",
+                    location: "Private Room",
+                    start: setTime(currentDate, 16, 0),
+                    end: setTime(currentDate, 17, 0),
+                    difficulty_level: 2,
+                    max_attendees: 5,
+                    upfront_cost: 10,
+                    image_id: imageId,
+                    enable_waitlist: false
+                });
+                for (let k = 0; k < 5; k++) await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [noWaitlistEventId, allUsers[k + 10].id, 1]);
+
+                await createEvent({
+                    title: "No Coach Attending",
+                    description: "An event with nobody attending.",
+                    location: "River Wear",
+                    start: setTime(currentDate, 8, 0),
+                    end: setTime(currentDate, 9, 0),
+                    difficulty_level: 1,
+                    max_attendees: 10,
+                    upfront_cost: 0,
+                    image_id: imageId
+                });
+
+                if (instructors.length > 0) {
+                    const coachId = instructors[0].id;
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev1, coachId, 1]);
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [ev2, coachId, 1]);
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [waitlistEventId, coachId, 1]);
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [noWaitlistEventId, coachId, 1]);
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+                dayCount++;
+                if (eventProgressBar) eventProgressBar.update(dayCount);
+                continue;
+            }
+
+            if (day === 3) {
+                maxAttendees = 0;
+                eventId = await createEvent({ title: `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: 0, max_attendees: 0, tags: [tagIds['socials']], image_id: imageId });
+            } else if (day === 4) {
+                const startT = new Date(currentDate); startT.setHours(14, 0, 0, 0);
+                const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 48);
+                eventId = await createEvent({ title: "Slalom/White Water", description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: 12, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']], image_id: imageId });
+            } else if (day === 5) {
+                const startT = new Date(currentDate); startT.setHours(19, 0, 0, 0);
+                const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 24);
+                eventId = await createEvent({ title: "Polo Pool Session", description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: 6, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']], image_id: imageId });
+            } else if ([1, 2].includes(day) && Math.random() < 0.7) {
+                const type = ['polo', 'white water', 'slalom'][Math.floor(Math.random() * 3)];
+                maxAttendees = 5;
+                eventId = await createEvent({ title: `${type.toUpperCase()} Ergs`, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: 0, max_attendees: 5, tags: [tagIds['ergs'], tagIds[type]], image_id: imageId });
+            }
+
+            if (eventId) {
+                let numAttendees = 0;
+                const isPopular = Math.random() > 0.8;
+
+                if (maxAttendees === 0) {
+                    numAttendees = Math.floor(Math.random() * 15);
+                    if (isPopular) numAttendees += 20;
+                } else if (maxAttendees === 5) {
+                    numAttendees = Math.floor(Math.random() * 4);
+                    if (isPopular) numAttendees = 5 + Math.floor(Math.random() * 3);
+                } else {
+                    numAttendees = Math.floor(Math.random() * 10);
+                    if (isPopular) numAttendees = 20 + Math.floor(Math.random() * 5);
+                }
+
+                const shuffledUsers = allUsers.sort(() => 0.5 - Math.random());
+
+                if (instructors.length > 0 && Math.random() > 0.2) {
+                    await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [eventId, instructors[0].id, 1]);
+                }
+
+                let currentCount = 1;
+                for (const user of shuffledUsers) {
+                    if (user.id === (instructors[0] ? instructors[0].id : -1)) continue;
+
+                    if (maxAttendees === 0 || currentCount < maxAttendees) {
+                        if (currentCount < numAttendees) {
+                            await db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, ?)', [eventId, user.id, 1]);
+                            currentCount++;
+                        }
+                    } else if (currentCount < numAttendees) {
+                        await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, user.id]);
+                        currentCount++;
+                    }
+                }
+            }
+
+            currentDate.setDate(currentDate.getDate() + 1);
+            dayCount++;
+            if (eventProgressBar) eventProgressBar.update(dayCount);
+        }
+        await db.run('COMMIT');
+        if (eventProgressBar) eventProgressBar.stop();
+        if (process.env.NODE_ENV !== 'test') console.info('Sample events generated successfully.');
     }
-    await db.run('COMMIT');
-    if (eventProgressBar) eventProgressBar.stop();
-    if (process.env.NODE_ENV !== 'test') console.info('Sample events generated successfully.');
 }

@@ -13,6 +13,7 @@ import Logger from '../../misc/Logger.js';
  * Executes the table creation sequence with a progress bar.
  */
 export async function createTables(db) {
+  const newlyCreatedTables = [];
   const tableDefinitions = [
     {
       name: 'colleges',
@@ -291,7 +292,8 @@ export async function createTables(db) {
     for (let i = 0; i < tableDefinitions.length; i++) {
       const table = tableDefinitions[i];
       progressBar.update(i, { table: table.name });
-      await createTable(table.name, table.schema, db);
+      const existed = await createTable(table.name, table.schema, db);
+      if (!existed) newlyCreatedTables.push(table.name);
       progressBar.update(i + 1, { table: table.name });
     }
 
@@ -321,7 +323,8 @@ export async function createTables(db) {
     progressBar.stop();
   } else {
     for (const table of tableDefinitions) {
-      await createTable(table.name, table.schema, db);
+      const existed = await createTable(table.name, table.schema, db);
+      if (!existed) newlyCreatedTables.push(table.name);
     }
     await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_event_attendees_unique_active ON event_attendees(event_id, user_id) WHERE is_attending = 1;');
 
@@ -346,4 +349,6 @@ export async function createTables(db) {
       END;
     `);
   }
+
+  return newlyCreatedTables;
 }

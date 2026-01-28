@@ -43,8 +43,8 @@ Logger.info(`Running in ${env} mode`);
 
     Logger.info('Initializing database schema...');
 
-    await createTables(db);
-    await seedData(db, env);
+    const newlyCreatedTables = await createTables(db);
+    await seedData(db, env, newlyCreatedTables);
 
     Logger.info('Database initialized successfully.');
 

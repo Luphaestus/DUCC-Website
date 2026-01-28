@@ -12,9 +12,9 @@ import Logger from '../../../misc/Logger.js';
 /**
  * Seeds the database with the canonical list of Durham colleges.
  */
-export async function seedColleges(db) {
+export async function seedColleges(db, newlyCreatedTables = []) {
     const collegesExist = await db.get('SELECT COUNT(*) as count FROM colleges');
-    if (collegesExist.count === 0) {
+    if (collegesExist.count === 0 || newlyCreatedTables.includes('colleges')) {
         if (process.env.NODE_ENV !== 'test') Logger.info('Inserting Durham colleges...');
         const colleges = [
             'castle', 'collingwood', 'grey', 'hatfield', 'johnsnow', 'jb',
@@ -32,8 +32,8 @@ export async function seedColleges(db) {
 /**
  * Seeds all essential system metadata and the default administrator.
  */
-export async function seedEssential(db) {
-    await seedColleges(db);
+export async function seedEssential(db, newlyCreatedTables = []) {
+    await seedColleges(db, newlyCreatedTables);
 
     const permissions = [
         { slug: 'user.read', desc: 'View users' },

@@ -44,4 +44,10 @@ const ViewChangedEvent = new Event();
  */
 const EventAttendanceChangedEvent = new Event();
 
-export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent };
+/**
+ * Event fired when the connection to the server is lost.
+ * @type {Event}
+ */
+const NoInternetEvent = new Event();
+
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, NoInternetEvent };

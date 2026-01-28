@@ -6,6 +6,7 @@
 
 import { updateConnectionStatus } from '../connection.js';
 import { getCookie } from './utils.js';
+import { NoInternetEvent } from './events/events.js';
 
 /**
  * Cache for GET requests to reduce redundant network traffic.
@@ -21,6 +22,10 @@ function clearApiCache(url) {
     if (url && typeof url === 'string') cache.delete(url);
     else cache.clear();
 }
+
+NoInternetEvent.subscribe(() => {
+    clearApiCache();
+});
 
 /**
  * @param {string} method - HTTP method (GET, POST, PUT, DELETE).
@@ -72,7 +77,6 @@ function apiRequest(method, url, data = null) {
 
         xhr.open(method, url, true);
 
-        // Add CSRF token for non-GET requests
         if (method !== 'GET') {
             const csrfToken = getCookie('XSRF-TOKEN');
             if (csrfToken) {

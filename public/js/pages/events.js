@@ -17,7 +17,8 @@ import {
     EventAttendanceChangedEvent, 
     LoginEvent, 
     LegalEvent, 
-    BalanceChangedEvent 
+    BalanceChangedEvent,
+    NoInternetEvent
 } from '/js/utils/events/events.js';
 import "./event.js";
 
@@ -430,6 +431,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('Failed to update event card', e);
         }
+    });
+
+    NoInternetEvent.subscribe(() => {
+        clearCache();
     });
 
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
