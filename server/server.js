@@ -75,15 +75,15 @@ if (isDev) {
 
 /** Rate Limiting */
 const standardLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
+  windowMs: 15 * 60 * 1000,
   max: 1000,
   standardHeaders: true,
-  legacyHeaders: false, 
+  legacyHeaders: false,
 });
 
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, 
+  max: 200,
   message: { message: 'Too many attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -99,7 +99,7 @@ app.use((req, res, next) => {
   }
 
   let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
-  
+
   if (isDev) {
     csp = csp.replace("script-src 'self'", "script-src 'self' 'unsafe-inline' http://localhost:35729");
     csp = csp.replace("connect-src 'self'", "connect-src 'self' ws://localhost:35729");
@@ -159,13 +159,13 @@ app.use(passport.session());
 
 /** CSRF Protection */
 if (process.env.NODE_ENV !== 'test') {
-    app.use(csurf());
-    app.use((req, res, next) => {
-        const token = req.csrfToken();
-        res.cookie('XSRF-TOKEN', token, { httpOnly: false });
-        res.locals.csrfToken = token;
-        next();
-    });
+  app.use(csurf());
+  app.use((req, res, next) => {
+    const token = req.csrfToken();
+    res.cookie('XSRF-TOKEN', token, { httpOnly: false });
+    res.locals.csrfToken = token;
+    next();
+  });
 }
 
 new Globals();
@@ -202,49 +202,49 @@ const startServer = async () => {
 
     /** Recursive helper to find all API definition files. */
     const getAllApiFiles = (dir, fileList = []) => {
-        const files = fs.readdirSync(dir, { withFileTypes: true });
-        for (const dirent of files) {
-            const fullPath = path.join(dir, dirent.name);
-            if (dirent.isDirectory()) {
-                getAllApiFiles(fullPath, fileList);
-            } else if (dirent.isFile() && dirent.name.endsWith('.js') && dirent.name !== 'AuthAPI.js') {
-                fileList.push(fullPath);
-            }
+      const files = fs.readdirSync(dir, { withFileTypes: true });
+      for (const dirent of files) {
+        const fullPath = path.join(dir, dirent.name);
+        if (dirent.isDirectory()) {
+          getAllApiFiles(fullPath, fileList);
+        } else if (dirent.isFile() && dirent.name.endsWith('.js') && dirent.name !== 'AuthAPI.js') {
+          fileList.push(fullPath);
         }
-        return fileList;
+      }
+      return fileList;
     };
 
     const apiDir = path.join(__dirname, 'api');
     const apiFiles = getAllApiFiles(apiDir);
-    
+
     /** Dynamically register all API modules. */
     if (process.env.NODE_ENV !== 'test' && apiFiles.length > 0) {
-        Logger.info('Registering API modules...');
-        const progressBar = new cliProgress.SingleBar({
-            format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
-            barCompleteChar: '\u2588',
-            barIncompleteChar: '\u2591',
-            hideCursor: true
-        });
+      Logger.info('Registering API modules...');
+      const progressBar = new cliProgress.SingleBar({
+        format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
+        barCompleteChar: '\u2588',
+        barIncompleteChar: '\u2591',
+        hideCursor: true
+      });
 
-        progressBar.start(apiFiles.length, 0, { file: 'Initializing...' });
+      progressBar.start(apiFiles.length, 0, { file: 'Initializing...' });
 
-        for (let i = 0; i < apiFiles.length; i++) {
-            const fullPath = apiFiles[i];
-            const fileName = path.basename(fullPath);
-            progressBar.update(i + 1, { file: fileName });
-            
-            const ApiClass = (await import(fullPath)).default;
-            const apiInstance = new ApiClass(app, db, passport);
-            apiInstance.registerRoutes();
-        }
-        progressBar.stop();
+      for (let i = 0; i < apiFiles.length; i++) {
+        const fullPath = apiFiles[i];
+        const fileName = path.basename(fullPath);
+        progressBar.update(i + 1, { file: fileName });
+
+        const ApiClass = (await import(fullPath)).default;
+        const apiInstance = new ApiClass(app, db, passport);
+        apiInstance.registerRoutes();
+      }
+      progressBar.stop();
     } else {
-        for (const fullPath of apiFiles) {
-            const ApiClass = (await import(fullPath)).default;
-            const apiInstance = new ApiClass(app, db, passport);
-            apiInstance.registerRoutes();
-        }
+      for (const fullPath of apiFiles) {
+        const ApiClass = (await import(fullPath)).default;
+        const apiInstance = new ApiClass(app, db, passport);
+        apiInstance.registerRoutes();
+      }
     }
 
     /** Catch-all route for SPA. */

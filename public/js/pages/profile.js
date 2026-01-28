@@ -191,6 +191,7 @@ function renderMembershipBanner(profile, globals) {
                     await apiRequest('POST', '/api/user/join');
                     showStatus('Welcome!', 'You are now a club member.', 'success');
                     updateDashboard();
+                    BalanceChangedEvent.notify();
                 } catch (err) {
                     showStatus('Error', err.message || 'Failed to join.', 'error');
                 }
