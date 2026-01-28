@@ -7,14 +7,18 @@
  */
 
 import { apiRequest } from '/js/utils/api.js';
-import { LoginEvent } from './login.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import {
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG,
     REFRESH_SVG, SETTINGS_SVG
 } from '../../images/icons/outline/icons.js';
 import { StandardCard } from '../widgets/StandardCard.js';
-import { EventAttendanceChangedEvent } from '/js/utils/events/events.js';
+import { 
+    EventAttendanceChangedEvent, 
+    LoginEvent, 
+    LegalEvent, 
+    BalanceChangedEvent 
+} from '/js/utils/events/events.js';
 import "./event.js";
 
 addRoute('/events', 'events');
@@ -61,6 +65,13 @@ let currentPage = 0;
 let isAnimating = false;
 let isAdmin = false;
 const pageCache = new Map();
+
+/**
+ * Clears the internal page cache, forcing a re-fetch of event data.
+ */
+function clearCache() {
+    pageCache.clear();
+}
 
 // --- Data Fetching ---
 
@@ -388,11 +399,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Subscriptions
     LoginEvent.subscribe(() => {
+        clearCache();
         checkAdminAccess();
         changePage(0, false);
     });
 
+    LegalEvent.subscribe(() => {
+        clearCache();
+        changePage(currentPage, false);
+    });
+
+    BalanceChangedEvent.subscribe(() => {
+        clearCache();
+        changePage(currentPage, false);
+    });
+
     EventAttendanceChangedEvent.subscribe(async ({ eventId }) => {
+        clearCache();
         if (!eventId) return;
         const card = document.querySelector(`.event-card[data-nav="event/${eventId}"]`);
         if (!card) return;
