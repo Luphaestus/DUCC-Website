@@ -11,6 +11,7 @@ import { Panel } from '/js/widgets/panel.js';
 import { ItemList, StandardListItem } from '/js/widgets/item_list.js';
 import { ValueHeader, updateValueDisplay } from '/js/widgets/value_header.js';
 import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_SVG } from '../../../../../images/icons/outline/icons.js';
+import { BalanceChangedEvent } from '/js/utils/events/events.js';
 
 /**
  * Main rendering and logic binding function for the Admin Transactions tab.

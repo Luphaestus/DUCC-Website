@@ -143,7 +143,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'prod',
+    secure: isProd,
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24
   }
@@ -153,7 +153,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 /** CSRF Protection */
-if (process.env.NODE_ENV !== 'test') {
+if (isProd) {
   app.use(csurf());
   app.use((req, res, next) => {
     const token = req.csrfToken();
@@ -178,7 +178,7 @@ const startServer = async () => {
     await db.exec('PRAGMA journal_mode = WAL;');
     await db.exec('PRAGMA busy_timeout = 5000;');
 
-    if (process.env.NODE_ENV !== 'test') {
+    if (isProd) {
       Logger.info(`Connected to the SQLite database at ${dbPath}.`);
     }
 
@@ -213,7 +213,7 @@ const startServer = async () => {
     const apiFiles = getAllApiFiles(apiDir);
 
     /** Dynamically register all API modules. */
-    if (process.env.NODE_ENV !== 'test' && apiFiles.length > 0) {
+    if (isProd && apiFiles.length > 0) {
       Logger.info('Registering API modules...');
       const progressBar = new cliProgress.SingleBar({
         format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
