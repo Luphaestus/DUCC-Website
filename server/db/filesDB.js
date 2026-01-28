@@ -31,10 +31,32 @@ export default class FilesDB {
             conditions.push("d.visibility IN ('public', 'members')");
         }
 
+        let ftsJoin = "";
         if (search) {
-            conditions.push("(d.title LIKE ? OR d.author LIKE ? OR d.filename LIKE ?)");
-            const term = `%${search}%`;
-            params.push(term, term, term);
+            let searchTerm = search;
+            let useFts = true;
+
+            if (search.startsWith('filename:')) {
+                searchTerm = search.substring(9).trim();
+                conditions.push("d.filename LIKE ?");
+                params.push(`%${searchTerm}%`);
+                useFts = false;
+            } else if (search.startsWith('content:')) {
+                searchTerm = search.substring(8).trim();
+                conditions.push("d.content LIKE ?");
+                params.push(`%${searchTerm}%`);
+                useFts = false;
+            }
+
+            if (useFts && searchTerm) {
+                ftsJoin = "JOIN files_fts f ON d.id = f.rowid";
+                
+                const cleanedSearch = searchTerm.replace(/"/g, '""');
+                const ftsQuery = cleanedSearch.split(/\s+/).filter(s => s).map(s => `"${s}"*`).join(' ');
+                
+                conditions.push("files_fts MATCH ?");
+                params.push(ftsQuery);
+            }
         }
 
         if (categoryId) {
@@ -52,6 +74,7 @@ export default class FilesDB {
             const query = `
                 SELECT d.*, c.name as category_name 
                 FROM files d
+                ${ftsJoin}
                 LEFT JOIN file_categories c ON d.category_id = c.id
                 WHERE 1=1 ${usageFilter}
                 ${conditions.length > 0 ? 'AND ' + conditions.join(' AND ') : ''}
@@ -61,7 +84,9 @@ export default class FilesDB {
             const files = await db.all(query, [...params, limit, offset]);
 
             const countQuery = `
-                SELECT COUNT(*) as count FROM files d 
+                SELECT COUNT(*) as count 
+                FROM files d 
+                ${ftsJoin}
                 WHERE 1=1 ${usageFilter}
                 ${conditions.length > 0 ? 'AND ' + conditions.join(' AND ') : ''}
             `;
@@ -72,6 +97,10 @@ export default class FilesDB {
             return new statusObject(200, null, { files, totalPages, currentPage: page, totalFiles });
         } catch (error) {
             Logger.error('Database error in getFiles:', error);
+            // Fallback for FTS errors (e.g. syntax)
+            if (ftsJoin) {
+                return this.getFiles(db, { ...options, search: null }, userRole); // Try without search or handle differently
+            }
             return new statusObject(500, 'Database error');
         }
     }
@@ -80,11 +109,11 @@ export default class FilesDB {
      * Create a new file entry in the database.
      */
     static async createFile(db, data) {
-        const { title, author, date, size, filename, hash, category_id, visibility } = data;
+        const { title, author, date, size, filename, hash, category_id, visibility, content } = data;
         try {
             const result = await db.run(
-                `INSERT INTO files (title, author, date, size, filename, hash, category_id, visibility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, author, date || new Date().toISOString(), size, filename, hash, category_id, visibility || 'members']
+                `INSERT INTO files (title, author, date, size, filename, hash, category_id, visibility, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, author, date || new Date().toISOString(), size, filename, hash, category_id, visibility || 'members', content]
             );
             return new statusObject(201, null, { id: result.lastID });
         } catch (error) {
@@ -125,7 +154,7 @@ export default class FilesDB {
      * Update an existing file's metadata.
      */
     static async updateFile(db, id, data) {
-        const { title, author, date, visibility, category_id } = data;
+        const { title, author, date, visibility, category_id, content } = data;
         const updates = [];
         const params = [];
 
@@ -134,6 +163,7 @@ export default class FilesDB {
         if (date !== undefined) { updates.push("date = ?"); params.push(date); }
         if (visibility !== undefined) { updates.push("visibility = ?"); params.push(visibility); }
         if (category_id !== undefined) { updates.push("category_id = ?"); params.push(category_id); }
+        if (content !== undefined) { updates.push("content = ?"); params.push(content); }
 
         if (updates.length === 0) return new statusObject(400, 'No fields to update');
 

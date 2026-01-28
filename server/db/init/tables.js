@@ -251,6 +251,7 @@ export async function createTables(db) {
         hash TEXT,
         category_id INTEGER,
         visibility TEXT CHECK(visibility IN ('public', 'members', 'execs', 'events')) NOT NULL DEFAULT 'members',
+        content TEXT,
         FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL
       `
     },
@@ -295,7 +296,27 @@ export async function createTables(db) {
     }
 
     // Add partial unique index for event attendees to prevent duplicate active signups
-    await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_event_attendees_unique_active ON event_attendees(event_id, user_id) WHERE is_attending = 1;');
+    await db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
+        title, filename, content,
+        content='files',
+        content_rowid='id',
+        tokenize='porter unicode61'
+      );
+    `);
+
+    await db.exec(`
+      CREATE TRIGGER IF NOT EXISTS files_ai AFTER INSERT ON files BEGIN
+        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
+      END;
+      CREATE TRIGGER IF NOT EXISTS files_ad AFTER DELETE ON files BEGIN
+        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
+      END;
+      CREATE TRIGGER IF NOT EXISTS files_au AFTER UPDATE ON files BEGIN
+        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
+        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
+      END;
+    `);
 
     progressBar.stop();
   } else {
@@ -303,5 +324,26 @@ export async function createTables(db) {
       await createTable(table.name, table.schema, db);
     }
     await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_event_attendees_unique_active ON event_attendees(event_id, user_id) WHERE is_attending = 1;');
+
+    // Setup FTS for tests
+    await db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
+        title, filename, content,
+        content='files',
+        content_rowid='id'
+      );
+    `);
+    await db.exec(`
+      CREATE TRIGGER IF NOT EXISTS files_ai AFTER INSERT ON files BEGIN
+        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
+      END;
+      CREATE TRIGGER IF NOT EXISTS files_ad AFTER DELETE ON files BEGIN
+        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
+      END;
+      CREATE TRIGGER IF NOT EXISTS files_au AFTER UPDATE ON files BEGIN
+        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
+        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
+      END;
+    `);
   }
 }

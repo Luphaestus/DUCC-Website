@@ -239,6 +239,46 @@ describe('api/FilesAPI', () => {
         });
     });
 
+    describe('Search capabilities', () => {
+        beforeEach(async () => {
+            await FilesDB.createFile(world.db, { title: 'Technical Guide', author: 'Coach', filename: 'guide.txt', visibility: 'public', content: 'This is a guide about canoeing techniques.' });
+            await FilesDB.createFile(world.db, { title: 'Safety Protocol', author: 'Officer', filename: 'safety.pdf', visibility: 'public', content: 'Always wear a buoyancy aid.' });
+            await FilesDB.createFile(world.db, { title: 'Meeting Minutes', author: 'Sec', filename: 'minutes_2023.txt', visibility: 'public', content: 'Discussed club finances and upcoming trips.' });
+        });
+
+        test('Search matches title, filename, and content by default', async () => {
+            let res = await world.request.get('/api/files?search=Technical');
+            expect(res.body.data.files).toHaveLength(1);
+            expect(res.body.data.files[0].title).toBe('Technical Guide');
+
+            res = await world.request.get('/api/files?search=buoyancy');
+            expect(res.body.data.files).toHaveLength(1);
+            expect(res.body.data.files[0].title).toBe('Safety Protocol');
+
+            res = await world.request.get('/api/files?search=minutes_2023');
+            expect(res.body.data.files).toHaveLength(1);
+            expect(res.body.data.files[0].filename).toBe('minutes_2023.txt');
+        });
+
+        test('Prefix filename: searches only by filename', async () => {
+            let res = await world.request.get('/api/files?search=filename:safety');
+            expect(res.body.data.files).toHaveLength(1);
+            expect(res.body.data.files[0].filename).toBe('safety.pdf');
+
+            res = await world.request.get('/api/files?search=filename:Technical');
+            expect(res.body.data.files).toHaveLength(0);
+        });
+
+        test('Prefix content: searches only by content', async () => {
+            let res = await world.request.get('/api/files?search=content:canoeing');
+            expect(res.body.data.files).toHaveLength(1);
+            expect(res.body.data.files[0].title).toBe('Technical Guide');
+
+            res = await world.request.get('/api/files?search=content:Safety');
+            expect(res.body.data.files).toHaveLength(0);
+        });
+    });
+
     describe('Hashing & Deduplication', () => {
         const testFile1 = path.join(os.tmpdir(), 'test_image.png');
         const pngHeader = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
@@ -248,12 +288,6 @@ describe('api/FilesAPI', () => {
             fs.writeFileSync(testFile1, content);
         });
 
-        /**
-         * Test logic: 
-         * 1. Upload a file.
-         * 2. Upload the same file again.
-         * 3. Verify that both DB records point to the same physical filename.
-         */
         test('should reuse the same filename for identical content (deduplication)', async () => {
             await world.createRole('admin_role', ['file.write']);
             await world.createUser('admin_dedup', {}, ['admin_role']);
@@ -288,11 +322,6 @@ describe('api/FilesAPI', () => {
             expect(file1.hash).toBe(file2.hash);
         });
 
-        /**
-         * Test logic:
-         * 1. Upload two different files.
-         * 2. Verify that they receive unique filenames and hashes.
-         */
         test('should use unique filenames for different content', async () => {
             const testFile2 = path.join(os.tmpdir(), 'test_image_2.png');
             const content = Buffer.concat([pngHeader, Buffer.from('different content')]);

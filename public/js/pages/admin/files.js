@@ -126,7 +126,7 @@ export async function renderAdminFiles() {
                 <div class="toolbar-content">
                     <div class="toolbar-left">
                         <div class="search-bar">
-                            <input type="text" id="admin-file-search-input" placeholder="Search files..." value="${currentOptions.search}">
+                            <input type="text" id="admin-file-search-input" placeholder="Search title, content or filename: content:" value="${currentOptions.search}">
                             <button id="admin-file-search-btn" class="search-icon-btn" title="Search">
                                 ${SEARCH_SVG}
                             </button>

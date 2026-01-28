@@ -16,6 +16,11 @@ import crypto from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import config from '../config.js';
 import Logger from '../misc/Logger.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pdf = require('pdf-parse');
+const mammoth = require('mammoth');
 
 export default class FilesAPI {
     /**
@@ -98,7 +103,11 @@ export default class FilesAPI {
             if (!req.files || req.files.length === 0) return res.status(400).json({ message: 'No files uploaded.' });
 
             const results = [];
-            const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+            const allowedMimes = [
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp', 
+                'application/pdf', 'text/plain',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
 
             for (const file of req.files) {
                 const filePath = file.path;
@@ -107,6 +116,10 @@ export default class FilesAPI {
                     fileTypeResult = await fileTypeFromFile(filePath);
                 } catch (e) {
                     fileTypeResult = null;
+                }
+
+                if (!fileTypeResult && file.originalname.endsWith('.txt')) {
+                    fileTypeResult = { mime: 'text/plain', ext: 'txt' };
                 }
 
                 if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
@@ -154,6 +167,30 @@ export default class FilesAPI {
                     defaultTitle = defaultTitle.slice(0, -originalExt.length);
                 }
 
+                let content = null;
+                if (fileTypeResult.mime === 'text/plain') {
+                    try {
+                        content = await fs.promises.readFile(newPath, 'utf8');
+                    } catch (err) {
+                        Logger.error('Failed to read text file content:', err);
+                    }
+                } else if (fileTypeResult.mime === 'application/pdf') {
+                    try {
+                        const dataBuffer = await fs.promises.readFile(newPath);
+                        const pdfData = await pdf(dataBuffer);
+                        content = pdfData.text;
+                    } catch (err) {
+                        Logger.error('Failed to extract PDF content:', err);
+                    }
+                } else if (fileTypeResult.mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                    try {
+                        const result = await mammoth.extractRawText({ path: newPath });
+                        content = result.value;
+                    } catch (err) {
+                        Logger.error('Failed to extract DOCX content:', err);
+                    }
+                }
+
                 const data = {
                     title: req.body.title || defaultTitle,
                     author: req.body.author || (req.user.first_name + ' ' + req.user.last_name),
@@ -162,7 +199,8 @@ export default class FilesAPI {
                     filename: finalFilename,
                     hash: fileHash,
                     category_id: req.body.categoryId,
-                    visibility: req.body.visibility || 'members'
+                    visibility: req.body.visibility || 'members',
+                    content: content
                 };
                 const status = await FilesDB.createFile(this.db, data);
                 if (status.isError()) {

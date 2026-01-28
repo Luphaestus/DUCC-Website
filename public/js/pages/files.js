@@ -25,7 +25,7 @@ const HTML_TEMPLATE = /*html*/`
             <button id="manage-files-btn" class="hidden secondary" data-nav="/admin/files">Manage Files</button>
             <div class="search-box">
                 <span class="icon">${SEARCH_SVG}</span>
-                <input type="text" id="file-search" placeholder="Search files...">
+                <input type="text" id="file-search" placeholder="Search title, content or filename: content:">
             </div>
             <select id="category-filter">
                 <option value="">All Categories</option>
