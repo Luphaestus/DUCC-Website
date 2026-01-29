@@ -1,8 +1,7 @@
 /**
  * SwimsAPI.test.js
  * 
- * Functional tests for the Swim Management API.
- * Verifies leaderboard visibility and administrative swim addition.
+ * Swim Management API tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -26,18 +25,14 @@ describe('api/users/SwimsAPI', () => {
         await world.tearDown();
     });
 
-    /**
-     * Test that the leaderboard is accessible to authenticated users.
-     */
+    /** Test leaderboard access. */
     test('GET /api/user/swims/leaderboard', async () => {
         const res = await world.as('user').get('/api/user/swims/leaderboard');
         expect(res.statusCode).toBe(200);
         expect(Array.isArray(res.body.data)).toBe(true);
     });
 
-    /**
-     * Test administrative addition of swims to a user account.
-     */
+    /** Test admin swim addition. */
     test('POST /api/user/:id/swims - Success for authorized Exec', async () => {
         const userId = world.data.users['user'];
         const res = await world.as('admin').post(`/api/user/${userId}/swims`).send({ count: 5 });

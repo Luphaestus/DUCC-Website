@@ -1,9 +1,7 @@
 /**
  * AdminUsersAPI.test.js
  * 
- * Functional tests for the Admin User Management API.
- * Covers user listing, detailed profile filtering based on admin role,
- * and the complex "President Role Transfer" logic.
+ * Admin User Management API tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -38,9 +36,7 @@ describe('api/admin/AdminUsersAPI', () => {
             expect(res.body.users.every(u => u.is_member === 1)).toBe(true);
         });
 
-        /**
-         * System-wide PII protection: Scoped Execs should not see sensitive columns like email or balance.
-         */
+        /** Test dynamic field visibility. */
         test('Dynamic field visibility: Admins see all, Scoped Execs see restricted data', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
             
@@ -63,9 +59,7 @@ describe('api/admin/AdminUsersAPI', () => {
     });
 
     describe('GET /api/admin/user/:id (Detail View)', () => {
-        /**
-         * Detailed profiles should also be filtered based on the requester's management permissions.
-         */
+        /** RBAC-based data filtering in detailed user profiles. */
         test('RBAC-based data filtering in detailed user profiles', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
             const userId = world.data.users['user'];
@@ -85,9 +79,7 @@ describe('api/admin/AdminUsersAPI', () => {
     });
 
     describe('President Role Transfer (High-Security Operation)', () => {
-        /**
-         * Transferring the President role is a sensitive action that requires password confirmation from the current admin.
-         */
+        /** Test President role transfer password verification. */
         test('President role transfer requires current user\'s password verification', async () => {
             const password = 'current-password';
             const hashed = await bcrypt.hash(password, 10);
@@ -127,11 +119,7 @@ describe('api/admin/AdminUsersAPI', () => {
             expect(res2.statusCode).toBe(200);
         });
 
-        /**
-         * President transfer has system-wide side effects:
-         * Wipes all existing role assignments and direct permissions (clean slate for new Captain).
-         * Scrubs PII for users who didn't opt-in to long-term data storage.
-         */
+        /** Test President transfer side-effects. */
         test('Side-effects of President transfer: wipes permissions and scrubs PII', async () => {
             const password = 'password';
             const hashed = await bcrypt.hash(password, 10);
@@ -181,7 +169,6 @@ describe('api/admin/AdminUsersAPI', () => {
             // Perform the transfer
             await world.as('admin').post(`/api/admin/user/${targetId}/role`).send({ roleId: presRole.id, password });
 
-            // Verify logic
             // Roles and direct permissions are wiped
             const rolesCount = await world.db.get('SELECT COUNT(*) as c FROM user_roles WHERE user_id != ?', [targetId]);
             expect(rolesCount.c).toBe(0);
@@ -203,6 +190,7 @@ describe('api/admin/AdminUsersAPI', () => {
             expect(targetRole.name).toBe('President');
         });
 
+        /** Test President takeover prevention. */
         test('Attacker with user.manage should NOT be able to take over President role using their own password', async () => {
             const presidentRoleId = await world.createRole('President', ['user.manage', 'role.manage']);
             const managerRoleId = await world.createRole('Manager', ['user.manage']);
@@ -227,18 +215,22 @@ describe('api/admin/AdminUsersAPI', () => {
     });
 
     describe('Role Assignment Authorization (Privilege Escalation Prevention)', () => {
+        /** Test role assignment escalation prevention. */
         test('User cannot assign a role containing permissions they do not possess', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
 
             await world.createRole('ManagerRole', ['user.manage', 'role.manage']);
             const managerId = await world.createUser('manager', {}, ['ManagerRole']);
 
-            await world.createRole('SuperRole', ['user.manage', 'event.manage.all']);
+            await world.createRole('LimitedRole', ['role.manage', 'event.read.all']);
+            const limitedId = await world.createUser('limited', {}, ['LimitedRole']);
+
+            await world.createRole('SuperRole', ['event.manage.all']);
             const superRoleId = world.data.roles['SuperRole'];
 
             const targetId = await world.createUser('target', {});
 
-            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`).send({
+            const res = await world.as('limited').post(`/api/admin/user/${targetId}/role`).send({
                 roleId: superRoleId
             });
 
@@ -246,6 +238,26 @@ describe('api/admin/AdminUsersAPI', () => {
             expect(res.body.message).toMatch(/cannot assign a role with permission/i);
         });
 
+        /** Test hierarchy check. */
+        test('User CAN assign a role if they possess an implying higher-level permission (Hierarchy Check)', async () => {
+            new AdminUsersAPI(world.app, world.db).registerRoutes();
+
+            await world.createRole('ManagerRole', ['user.manage', 'event.manage.all']);
+            const managerId = await world.createUser('manager', {}, ['ManagerRole']);
+
+            await world.createRole('SubRole', ['event.read.all']);
+            const subRoleId = world.data.roles['SubRole'];
+
+            const targetId = await world.createUser('target', {});
+
+            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`).send({
+                roleId: subRoleId
+            });
+
+            expect(res.statusCode).toBe(200);
+        });
+
+        /** Test role assignment with full permissions. */
         test('User CAN assign a role if they possess all permissions in that role', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
 
@@ -266,9 +278,7 @@ describe('api/admin/AdminUsersAPI', () => {
     });
 
     describe('Direct Permissions & Tags', () => {
-        /**
-         * Admins can grant permissions and management scopes directly to users, independent of roles.
-         */
+        /** Test direct permission overrides. */
         test('Management of direct user-specific permission and tag scope overrides', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
             const userId = world.data.users['user'];

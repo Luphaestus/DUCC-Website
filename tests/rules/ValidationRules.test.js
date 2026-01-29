@@ -1,8 +1,7 @@
 /**
  * ValidationRules.test.js
  * 
- * Unit tests for data validation logic.
- * Covers emails, names, phone numbers, ages, and presence checks.
+ * Data validation tests.
  */
 
 import ValidationRules from '../../server/rules/ValidationRules.js';
@@ -19,16 +18,16 @@ describe('rules/ValidationRules', () => {
             expect(ValidationRules.validate('email', 'test@gmail.com')).toBeDefined();
             expect(ValidationRules.validate('email', 'test.user@durham.com')).toBeDefined();
             expect(ValidationRules.validate('email', 'not-an-email')).toBeDefined();
-            // Requirement: Must be a departmental email (e.g. name.name@durham.ac.uk)
+            // Requirement: Must be a durham email
             expect(ValidationRules.validate('email', 'test@durham.ac.uk')).toBeDefined(); 
         });
 
         test('Required vs optional field handling', () => {
-            // Required: null is an error
+            // null is an error
             expect(ValidationRules.validate('email', null, true)).toBeDefined();
             expect(ValidationRules.validate('email', '', true)).toBeDefined();
             
-            // Optional: null is valid
+            // null is valid
             expect(ValidationRules.validate('email', null, false)).toBeNull();
             expect(ValidationRules.validate('email', '', false)).toBeNull();
         });

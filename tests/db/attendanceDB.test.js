@@ -1,8 +1,7 @@
 /**
  * attendanceDB.test.js
  * 
- * Database layer tests for event attendance.
- * Verifies low-level CRUD operations for event participation and instructor auditing.
+ * Event attendance DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -22,9 +21,7 @@ describe('db/attendanceDB', () => {
         await world.tearDown();
     });
 
-    /**
-     * Test the toggle-join workflow.
-     */
+    /** Test attend event toggle. */
     test('attend_event correctly records participation and is_user_attending_event detects it', async () => {
         const userId = world.data.users['user'];
         const eventId = world.data.events['Event1'];
@@ -41,9 +38,7 @@ describe('db/attendanceDB', () => {
         expect(res.getData()).toBe(true);
     });
 
-    /**
-     * Test the exit workflow.
-     */
+    /** Test leave event. */
     test('leave_event correctly marks the user as no longer attending', async () => {
         const userId = world.data.users['user'];
         const eventId = world.data.events['Event1'];
@@ -55,9 +50,7 @@ describe('db/attendanceDB', () => {
         expect(res.getData()).toBe(false);
     });
 
-    /**
-     * Test coach count aggregation logic.
-     */
+    /** Test coach count. */
     test('getCoachesAttendingCount correctly filters and counts instructors', async () => {
         const eventId = world.data.events['Event1'];
         

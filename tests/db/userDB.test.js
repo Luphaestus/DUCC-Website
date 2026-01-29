@@ -1,8 +1,7 @@
 /**
  * userDB.test.js
  * 
- * Database layer tests for user profiles.
- * Covers field-level fetching, updates, administrative listings, and soft-deletion.
+ * User DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -38,9 +37,7 @@ describe('db/userDB', () => {
         expect(user.first_name).toBe('New Name');
     });
 
-    /**
-     * Verifies complex JOIN query for user listings with balances.
-     */
+    /** Test user listings with balance. */
     test('getUsers correctly calculates and returns balances in the listing', async () => {
         await world.createUser('user', { first_name: 'John' });
         const userId = world.data.users['user'];
@@ -54,18 +51,16 @@ describe('db/userDB', () => {
         expect(user.balance).toBe(50.0);
     });
 
-    /**
-     * Test the GDPR-compliant soft-delete logic.
-     */
+    /** Test soft-delete logic. */
     test('removeUser successfully performs a soft-delete (anonymization)', async () => {
         await world.createUser('user', { first_name: 'Gone', email: 'gone@test.com' });
         const userId = world.data.users['user'];
 
-        // Action: soft delete
+        // soft delete
         await UserDB.removeUser(world.db, userId, false);
         
         const user = await world.db.get('SELECT * FROM users WHERE id = ?', [userId]);
-        // Verification: unique constraint freed via prefix, but data kept for auditing
+        // unique constraint freed via prefix, but data kept for auditing
         expect(user.email).toBe('deleted:gone@test.com');
         expect(user.first_name).toBe('Gone');
     });

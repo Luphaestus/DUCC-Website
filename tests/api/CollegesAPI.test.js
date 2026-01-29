@@ -1,8 +1,7 @@
 /**
  * CollegesAPI.test.js
  * 
- * Functional tests for the Colleges API.
- * Verifies that the system returns the correct list of colleges.
+ * Colleges API tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -23,9 +22,7 @@ describe('api/CollegesAPI', () => {
         await world.tearDown();
     });
 
-    /**
-     * Test that anyone (public or member) can fetch the college list.
-     */
+    /** Test that anyone can fetch the college list. */
     test('GET /api/colleges works for everyone', async () => {
         // As authenticated user
         const res1 = await world.as('user').get('/api/colleges');

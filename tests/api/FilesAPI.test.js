@@ -1,8 +1,7 @@
 /**
  * FilesAPI.test.js
  * 
- * Integration tests for file management and access control.
- * Covers visibility filtering, metadata management, and event-linked image access.
+ * File management tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -126,10 +125,7 @@ describe('api/FilesAPI', () => {
             expect(res.text).toBe('content');
         });
 
-        /**
-         * Complex test case for 'visibility: events' logic.
-         * Access should be granted if the user is authorized to view an event that uses the file.
-         */
+        /** Test visibility: events logic. */
         test('Event image visibility is restricted by the user\'s event access', async () => {
             const filename = 'event_img.txt';
             const filePath = path.join(testUploadDir, filename);
@@ -165,9 +161,7 @@ describe('api/FilesAPI', () => {
             expect((await world.as('exec').get(imageUrl)).statusCode).toBe(200);
         });
 
-        /**
-         * Test for images not currently linked to any active event.
-         */
+        /** Test orphaned event images. */
         test('Orphaned event images are accessible only to execs', async () => {
             const filename = 'orphan.jpg';
             const filePath = path.join(testUploadDir, filename);

@@ -1,8 +1,7 @@
 /**
  * FileRules.test.js
  * 
- * Logic tests for file access authorization.
- * Covers visibility levels (public, member, exec) and dynamic event-linked visibility logic.
+ * File access rule tests.
  */
 
 import FileRules from '../../server/rules/FileRules.js';
@@ -56,9 +55,7 @@ describe('rules/FileRules', () => {
             file = { id: fileId, visibility: 'events' };
         });
 
-        /**
-         * System requirement: event images are private unless they are actually being used by an event.
-         */
+        /** Test event image privacy. */
         test('Denied: if the file is not currently used by any viewable event', async () => {
             const file = { id: fileId, visibility: 'events' };
             expect(await FileRules.canAccessFile(world.db, file, { id: 1 }, 'member')).toBe(false);
@@ -107,13 +104,11 @@ describe('rules/FileRules', () => {
             expect(await FileRules.canAccessFile(world.db, file, user, 'member')).toBe(false);
         });
 
-        /**
-         * Test integration with the Guest difficulty limit global.
-         */
+        /** Test guest difficulty limit integration. */
         test('should deny access if guest user level is below all associated event difficulties', async () => {
             const file = { id: fileId, visibility: 'events' };
             
-            // 1. Create E1 (difficulty 1) and E2 (difficulty 5)
+            // Create E1 (difficulty 1) and E2 (difficulty 5)
             await world.createEvent('E1', { difficulty_level: 1, image_id: fileId });
             await world.createEvent('E2', { difficulty_level: 5, image_id: fileId });
             const e1 = await world.db.get('SELECT id FROM events WHERE title = "E1"');

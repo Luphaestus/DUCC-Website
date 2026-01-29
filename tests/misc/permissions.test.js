@@ -1,8 +1,7 @@
 /**
  * permissions.test.js
  * 
- * Logic tests for RBAC evaluation and scoping.
- * Verifies role-based perms, direct overrides, and dynamic scoping for events.
+ * RBAC evaluation tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -47,10 +46,48 @@ describe('misc/permissions', () => {
         expect(has).toBe(true);
     });
 
-    /**
-     * Scoped permissions (e.g. event.manage.scoped) are dynamic.
-     * Possession is defined as "having at least one entry in the management scope tables".
-     */
+    describe('Hierarchical Permissions', () => {
+        test('manage implies write and read', async () => {
+            await world.createRole('Manager', ['event.manage.all']);
+            await world.createUser('user', {}, ['Manager']);
+            const userId = world.data.users['user'];
+
+            expect(await Permissions.hasPermission(world.db, userId, 'event.manage.all')).toBe(true);
+            expect(await Permissions.hasPermission(world.db, userId, 'event.write.all')).toBe(true);
+            expect(await Permissions.hasPermission(world.db, userId, 'event.read.all')).toBe(true);
+        });
+
+        test('write implies read', async () => {
+            await world.createRole('Writer', ['event.write.all']);
+            await world.createUser('user', {}, ['Writer']);
+            const userId = world.data.users['user'];
+
+            expect(await Permissions.hasPermission(world.db, userId, 'event.write.all')).toBe(true);
+            expect(await Permissions.hasPermission(world.db, userId, 'event.read.all')).toBe(true);
+            expect(await Permissions.hasPermission(world.db, userId, 'event.manage.all')).toBe(false);
+        });
+
+        test('all implies scoped', async () => {
+            await world.createRole('GlobalManager', ['event.manage.all']);
+            await world.createUser('user', {}, ['GlobalManager']);
+            const userId = world.data.users['user'];
+
+            expect(await Permissions.hasPermission(world.db, userId, 'event.manage.scoped')).toBe(true);
+            expect(await Permissions.hasPermission(world.db, userId, 'event.read.scoped')).toBe(true);
+        });
+
+        test('user.manage implies everything', async () => {
+            await world.createRole('SuperAdmin', ['user.manage']);
+            await world.createUser('user', {}, ['SuperAdmin']);
+            const userId = world.data.users['user'];
+
+            expect(await Permissions.hasPermission(world.db, userId, 'event.manage.all')).toBe(true);
+            expect(await Permissions.hasPermission(world.db, userId, 'transaction.read')).toBe(true);
+            expect(await Permissions.hasPermission(world.db, userId, 'any.custom.permission')).toBe(true);
+        });
+    });
+
+    /** Test dynamic scoping. */
     test('Dynamic scoping: hasPermission evaluates scoped perms based on managed tag entries', async () => {
         await world.createUser('exec', {});
         const userId = world.data.users['exec'];
@@ -66,9 +103,7 @@ describe('misc/permissions', () => {
         expect(await Permissions.hasPermission(world.db, userId, 'event.manage.scoped')).toBe(true);
     });
 
-    /**
-     * Test global vs scoped management logic.
-     */
+    /** Test global vs scoped management. */
     test('canManageEvent: global access grants management of any event', async () => {
         await world.createRole('Admin', ['event.manage.all']);
         await world.createUser('admin', {}, ['Admin']);

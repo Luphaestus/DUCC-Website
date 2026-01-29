@@ -1,8 +1,7 @@
 /**
  * AttendanceAPI.test.js
  * 
- * Functional tests for the Event Attendance API.
- * Covers joining/leaving events, coach requirements, payment logic, and automatic waitlist promotion.
+ * Event Attendance API tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -31,9 +30,7 @@ describe('api/events/AttendanceAPI', () => {
         await world.tearDown();
     });
 
-    /**
-     * Helper to test authentication requirements for specific routes.
-     */
+    /** Test authentication requirements. */
     const itRequiresAuth = (method, pathTemplate) => {
         test(`${method.toUpperCase()} ${pathTemplate} - Fail if guest user`, async () => {
             const res = await world.request[method](pathTemplate.replace(':id', '1'));
@@ -41,9 +38,7 @@ describe('api/events/AttendanceAPI', () => {
         });
     };
 
-    /**
-     * Helper to test standard :id parameter validation logic.
-     */
+    /** Test ID validation. */
     const itValidatesIdParam = (method, pathTemplate, notFoundStatus = 404) => {
         test(`${method.toUpperCase()} ${pathTemplate} - Fail if ID is non-numeric`, async () => {
             const res = await world.as('user')[method](pathTemplate.replace(':id', 'abc'));
@@ -142,9 +137,7 @@ describe('api/events/AttendanceAPI', () => {
     });
 
     describe('GET /api/event/:id/canJoin (Pre-check Logic)', () => {
-        /**
-         * Verifies that the canJoin endpoint correctly previews business rules.
-         */
+        /** Test join preview rules. */
         it('should enforce coach safety requirements', async () => {
             await world.createEvent('SafetyEvent');
             const eventId = world.data.events['SafetyEvent'];
@@ -153,16 +146,16 @@ describe('api/events/AttendanceAPI', () => {
             await world.createUser('member_b', { is_instructor: 0, filled_legal_info: 1, is_member: 1 });
             await world.createUser('member_c', { is_instructor: 0, filled_legal_info: 0, is_member: 1 });
 
-            // Blocked: No coach attending
+            // No coach attending
             const res1 = await world.as('member_b').post(`/api/event/${eventId}/attend`);
             expect(res1.status).toBe(403);
 
-            // Allowed: Coach added
+            // Coach added
             await world.as('coach_a').post(`/api/event/${eventId}/attend`);
             const res2 = await world.as('member_b').post(`/api/event/${eventId}/attend`);
-            expect(res2.status).toBe(200);
+            expect(res2.status).toBe(201);
 
-            // Blocked: Incomplete legal info
+            //  Incomplete legal info
             const res3 = await world.as('member_c').post(`/api/event/${eventId}/attend`);
             expect(res3.status).toBe(403);
         });
@@ -175,7 +168,7 @@ describe('api/events/AttendanceAPI', () => {
             await world.joinEvent('coach', 'E1');
 
             const res = await world.as('user').post(`/api/event/${world.data.events['E1']}/attend`);
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
         });
 
         test('Blocked: cannot join canceled events', async () => {
@@ -224,7 +217,7 @@ describe('api/events/AttendanceAPI', () => {
             await world.joinEvent('coach', 'WhitelistedEvent');
 
             const res = await world.as('user_ok').post(`/api/event/${world.data.events['WhitelistedEvent']}/attend`);
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
         });
 
         test('Blocked: non-instructors require at least one instructor present', async () => {
@@ -240,7 +233,7 @@ describe('api/events/AttendanceAPI', () => {
             await world.createUser('coach_alone', { is_instructor: 1, filled_legal_info: 1, is_member: 1 });
 
             const res = await world.as('coach_alone').post(`/api/event/${world.data.events['EmptyEvent']}/attend`);
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
         });
 
         test('Automatic credit consumption for non-members', async () => {
@@ -250,7 +243,7 @@ describe('api/events/AttendanceAPI', () => {
             await world.createUser('nonmember', { filled_legal_info: 1, is_member: 0, free_sessions: 3 });
 
             const res = await world.as('nonmember').post(`/api/event/${world.data.events['FreeEvent']}/attend`);
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
 
             // Verification: session count decreased
             const user = await world.db.get('SELECT free_sessions FROM users WHERE first_name = "nonmember"');
@@ -263,7 +256,7 @@ describe('api/events/AttendanceAPI', () => {
             await world.joinEvent('coach_p', 'PaidEvent');
 
             const res = await world.as('user').post(`/api/event/${world.data.events['PaidEvent']}/attend`);
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
 
             // Verification: negative transaction recorded
             const balance = await world.db.get('SELECT SUM(amount) as b FROM transactions WHERE user_id = ?', [world.data.users['user']]);
@@ -297,9 +290,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(bal3.b).toBe(-10.0);
         });
 
-        /**
-         * Transfer logic: If User A pays but leaves, and User B takes their spot, User A gets a refund.
-         */
+        /** Test refund on slot transfer. */
         test('Balance is restored if a spot is effectively "purchased" by another user', async () => {
             const pastCutoff = new Date(Date.now() - 3600000).toISOString(); 
             await world.createEvent('RefundReplacementEvent', { upfront_cost: 10.0, upfront_refund_cutoff: pastCutoff });
@@ -326,7 +317,7 @@ describe('api/events/AttendanceAPI', () => {
 
             // User A joins again (now they must pay again as their previous slot was transferred)
             const res = await world.as('user').post(`/api/event/${eventId}/attend`);
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
             
             balanceA = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [userIdA]);
             expect(balanceA.b).toBe(-10.0);
@@ -414,9 +405,7 @@ describe('api/events/AttendanceAPI', () => {
             expect(event.is_canceled).toBe(1);
         });
 
-        /**
-         * Waitlist promotion logic: if someone leaves a full event, the next person in line should join.
-         */
+        /** Test waitlist promotion logic. */
         test('Waitlist: automatically promotes and charges the next user when a spot opens', async () => {
             await world.createEvent('FullPaidEvent', { max_attendees: 1, upfront_cost: 15.0 });
             const eventId = world.data.events['FullPaidEvent'];
@@ -434,16 +423,16 @@ describe('api/events/AttendanceAPI', () => {
             const res = await world.as('attendee').post(`/api/event/${eventId}/leave`);
             expect(res.statusCode).toBe(200);
 
-            // Verification 1: Waitlist user is now an attendee
+            // Waitlist user is now an attendee
             const attendeeRecord = await world.db.get('SELECT payment_transaction_id FROM event_attendees WHERE event_id = ? AND user_id = ? AND is_attending = 1', [eventId, waitUserId]);
             expect(attendeeRecord).toBeDefined();
             expect(attendeeRecord.payment_transaction_id).not.toBeNull();
 
-            // Verification 2: Waitlist user is removed from waiting list
+            // Waitlist user is removed from waiting list
             const onWaitlist = await world.db.get('SELECT 1 FROM event_waiting_list WHERE event_id = ? AND user_id = ?', [eventId, waitUserId]);
             expect(onWaitlist).toBeUndefined();
 
-            // Verification 3: Waitlist user was automatically charged
+            // Waitlist user was automatically charged
             const balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [waitUserId]);
             expect(balance.b).toBe(-15.0);
         });

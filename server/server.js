@@ -1,8 +1,7 @@
 /**
  * server.js
  * 
- * Main application entry point that configures Express, connects to SQLite, 
- * handles security headers, sessions, and dynamically registers API routes.
+* Main application entry point. Configures Express, SQLite, security, sessions, and API routes.
  */
 
 const PORT = process.env.PORT || 3000;
@@ -21,9 +20,7 @@ import connectSqlite3 from 'connect-sqlite3';
 const SQLiteStore = connectSqlite3(session);
 import passport from 'passport';
 import fs from 'fs';
-import livereload from "livereload";
-import connectLiveReload from "connect-livereload";
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import Globals from './misc/globals.js';
 import cliProgress from 'cli-progress';
 import colors from 'ansi-colors';
@@ -45,32 +42,38 @@ if (isProd && !config.session.secret) {
   process.exit(1);
 }
 
-/** Trust proxy for header-based auth if behind a load balancer. */
-app.set('trust proxy', 1);
+
 /** Disable header for mild obfuscation. */
 app.disable('x-powered-by');
 
 /** Configure LiveReload for faster frontend development in dev mode. */
 if (isDev) {
-  const liveReloadServer = livereload.createServer();
-  liveReloadServer.watch(path.join(__dirname, '..', 'public'));
-  app.use(connectLiveReload({
-    ignore: [
-      /^\/api\/.*/,
-      /\.js$/,
-      /\.css$/,
-      /\.svg$/,
-      /\.ico$/,
-      /\.jpg$/,
-      /\.jpeg$/,
-      /\.png$/,
-      /\.pdf$/,
-      /\.docx?$/,
-      /\.xlsx?$/,
-      /\.zip$/,
-      /\.mp4$/
-    ]
-  }));
+  try {
+    const livereload = (await import('livereload')).default;
+    const connectLiveReload = (await import('connect-livereload')).default;
+
+    const liveReloadServer = livereload.createServer();
+    liveReloadServer.watch(path.join(__dirname, '..', 'public'));
+    app.use(connectLiveReload({
+      ignore: [
+        /^\/api\/.*/,
+        /\.js$/,
+        /\.css$/,
+        /\.svg$/,
+        /\.ico$/,
+        /\.jpg$/,
+        /\.jpeg$/,
+        /\.png$/,
+        /\.pdf$/,
+        /\.docx?$/,
+        /\.xlsx?$/,
+        /\.zip$/,
+        /\.mp4$/
+      ]
+    }));
+  } catch (e) {
+    Logger.warn('LiveReload not available.');
+  }
 }
 
 /** Rate Limiting */
@@ -110,7 +113,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/** Static file serving with appropriate caching policies. */
+/** Static file serving with caching policies. */
 app.use(express.static('public', {
   maxAge: isDev ? '0' : '1h',
   setHeaders: (res, path) => {
@@ -143,7 +146,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: isProd,
+    secure: false,
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24
   }
@@ -167,7 +170,7 @@ new Globals();
 
 let db;
 
-/** Bootstraps the server: connects to DB, registers routes, and starts listening. */
+/** Bootstraps server: connects DB, registers routes, starts listening. */
 const startServer = async () => {
   try {
     db = await open({
@@ -229,14 +232,14 @@ const startServer = async () => {
         const fileName = path.basename(fullPath);
         progressBar.update(i + 1, { file: fileName });
 
-        const ApiClass = (await import(fullPath)).default;
+        const ApiClass = (await import(pathToFileURL(fullPath).href)).default;
         const apiInstance = new ApiClass(app, db, passport);
         apiInstance.registerRoutes();
       }
       progressBar.stop();
     } else {
       for (const fullPath of apiFiles) {
-        const ApiClass = (await import(fullPath)).default;
+        const ApiClass = (await import(pathToFileURL(fullPath).href)).default;
         const apiInstance = new ApiClass(app, db, passport);
         apiInstance.registerRoutes();
       }
@@ -247,12 +250,10 @@ const startServer = async () => {
       res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
     });
 
-    if (import.meta.url === `file://${process.argv[1]}`) {
-      app.listen(PORT, () => {
-        Logger.info(`Server is running on http://localhost:${PORT}`);
-        Logger.info('Press Ctrl+C to stop the server.');
-      });
-    }
+    app.listen(PORT, () => {
+      Logger.info(`Server is running on http://localhost:${PORT}`);
+      Logger.info('Press Ctrl+C to stop the server.');
+    });
 
     return { app, db };
   } catch (err) {

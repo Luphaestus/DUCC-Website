@@ -1,13 +1,26 @@
 /**
  * globals.test.js
  * 
- * Unit tests for the Global Configuration manager.
- * Mocks the file system to verify CRUD operations, RBAC filtering, 
- * and regular expression validation without affecting the actual 'globals.json' file.
+ * Global Configuration manager tests.
  */
 
 import Globals from '../../server/misc/globals.js';
 import fs from 'fs';
+import path from 'path';
+
+const TEST_GLOBALS_PATH = path.join(process.cwd(), 'data', 'test_globals.json');
+
+vi.mock('../../server/config.js', async () => {
+    const path = await import('path');
+    return {
+        default: {
+            paths: {
+                globals: path.join(process.cwd(), 'data', 'test_globals.json'),
+                data: path.join(process.cwd(), 'data')
+            }
+        }
+    };
+});
 
 describe('misc/globals', () => {
     let globals;
@@ -19,15 +32,16 @@ describe('misc/globals', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         
-        // Mocking fs to prevent real file writes
-        vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify(defaultData));
-        vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-        vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+        fs.writeFileSync(TEST_GLOBALS_PATH, JSON.stringify(defaultData));
         
         globals = new Globals();
     });
 
     afterEach(() => {
+        // Clean up test file
+        if (fs.existsSync(TEST_GLOBALS_PATH)) {
+            fs.unlinkSync(TEST_GLOBALS_PATH);
+        }
         vi.restoreAllMocks();
     });
 
@@ -39,16 +53,14 @@ describe('misc/globals', () => {
         expect(globals.getInt('Key1')).toBe(10);
     });
 
-    /**
-     * RBAC Check: Ensure sensitive configuration keys are hidden from low-privilege users.
-     */
+    /** Test RBAC filtering. */
     test('getKeys correctly filters results by permission level', () => {
-        // 1. Guest level: Key2 (President) should be missing
+        // Guest level: Key2 (President) should be missing
         const res = globals.getKeys(['Key1', 'Key2'], 'Guest');
         expect(res).toHaveProperty('Key1');
         expect(res).not.toHaveProperty('Key2');
 
-        // 2. President level: everything visible
+        // President level: everything visible
         const res2 = globals.getKeys(['Key1', 'Key2'], 'President');
         expect(res2).toHaveProperty('Key1');
         expect(res2).toHaveProperty('Key2');
@@ -57,15 +69,11 @@ describe('misc/globals', () => {
     test('set correctly updates value and writes to persistent storage', () => {
         globals.set('Key1', 20);
         
-        // Verify file write
-        expect(fs.writeFileSync).toHaveBeenCalled();
-        const callArg = JSON.parse(fs.writeFileSync.mock.calls[0][1]);
-        expect(callArg.Key1.data).toBe(20);
+        const fileContent = JSON.parse(fs.readFileSync(TEST_GLOBALS_PATH, 'utf-8'));
+        expect(fileContent.Key1.data).toBe(20);
     });
 
-    /**
-     * Validation Check: 'set' should reject values that don't match the key's regex.
-     */
+    /** Test regex validation failure. */
     test('set correctly throws an error upon regex validation failure', () => {
         // Key1 expects a digit string
         expect(() => globals.set('Key1', 'invalid-string')).toThrow();

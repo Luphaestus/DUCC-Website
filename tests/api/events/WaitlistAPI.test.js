@@ -1,8 +1,7 @@
 /**
  * WaitlistAPI.test.js
  * 
- * Functional tests for the Event Waitlist system.
- * Verifies eligibility checks for joining, leaving, and administrative visibility.
+ * Event Waitlist tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -39,7 +38,7 @@ describe('api/events/WaitlistAPI', () => {
             await world.joinEvent('other', 'FullEvent');
 
             const res = await world.as('user').post(`/api/event/${eventId}/waitlist/join`);
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
         });
 
         test('Blocked: legal info must be complete to join waitlist', async () => {

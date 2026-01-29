@@ -1,8 +1,7 @@
 /**
  * EventRules.test.js
  * 
- * Logic tests for event-related business rules.
- * Extensively covers event visibility (difficulty/tags) and participation (joining) requirements.
+ * Event business rule tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -21,9 +20,7 @@ describe('rules/EventRules', () => {
     });
 
     describe('canViewEvent (Visibility Logic)', () => {
-        /**
-         * System Logic: guests are restricted by the 'Unauthorized_max_difficulty' setting.
-         */
+        /** Test guest unauthorized limit. */
         test('Guest visibility is bounded by the global unauthorized limit', async () => {
             world.mockGlobalInt('Unauthorized_max_difficulty', 2);
             
@@ -37,9 +34,7 @@ describe('rules/EventRules', () => {
             expect(await EventRules.canViewEvent(world.db, { difficulty_level: 4 }, user)).toBe(false);
         });
 
-        /**
-         * System Logic: even if event difficulty is OK, tags can impose stricter limits.
-         */
+        /** Test tag difficulty constraints. */
         test('Tag difficulty constraints can override event-level accessibility', async () => {
             const user = { difficulty_level: 2 };
             
@@ -74,7 +69,7 @@ describe('rules/EventRules', () => {
             await world.createUser('member', { filled_legal_info: 1, is_member: 1 });
             user = await world.db.get('SELECT * FROM users WHERE first_name = "member"');
 
-            // Default: add a coach so members can join
+            // add a coach so members can join
             await world.createUser('coach', { is_instructor: 1 });
             await world.joinEvent('coach', 'Joinable');
         });
@@ -107,9 +102,7 @@ describe('rules/EventRules', () => {
             expect(status.getMessage()).toMatch(/canceled/i);
         });
 
-        /**
-         * Ensures users can only join future events.
-         */
+        /** Test future event requirement. */
         test('Denied: joining events that have already started or ended', async () => {
             // Started
             await world.db.run('UPDATE events SET start = ? WHERE id = ?', [new Date(Date.now() - 1000).toISOString(), event.id]);
@@ -135,9 +128,7 @@ describe('rules/EventRules', () => {
             expect(status.getMessage()).toMatch(/full/i);
         });
 
-        /**
-         * Safety Rule: Non-instructors cannot attend if no instructor is signed up.
-         */
+        /** Test safety constraint - no coach. */
         test('Denied: safety constraint - no coach attending', async () => {
             await world.db.run('DELETE FROM event_attendees');
             const status = await EventRules.canJoinEvent(world.db, event, user);
@@ -158,9 +149,7 @@ describe('rules/EventRules', () => {
             expect(status.getMessage()).toMatch(/legal/i);
         });
 
-        /**
-         * Standing Rule: users with high debt are blocked from joining new events.
-         */
+        /** Test user standing - debt limit. */
         test('Denied: user standing - outstanding debts exceed limit', async () => {
             world.mockGlobalFloat('MinMoney', -10.0);
             await world.addTransaction('member', -15.0);
@@ -171,9 +160,7 @@ describe('rules/EventRules', () => {
             expect(status.getMessage()).toMatch(/debts/i);
         });
 
-        /**
-         * Credit Rule: non-members must have remaining free session credits.
-         */
+        /** Test credit rule - free sessions. */
         test('Denied: non-member has exhausted all free session credits', async () => {
             await world.createUser('nonmember_empty', { is_member: 0, free_sessions: 0, filled_legal_info: 1 });
             const nmUser = await world.db.get('SELECT * FROM users WHERE first_name = "nonmember_empty"');
@@ -183,9 +170,7 @@ describe('rules/EventRules', () => {
             expect(status.getMessage()).toMatch(/sessions/i);
         });
 
-        /**
-         * Verifies whitelist enforcement for restricted tags.
-         */
+        /** Test restricted tag whitelist. */
         test('Restricted Tags: correctly enforces whitelist joining policy', async () => {
             await world.createTag('SecretTeam', { join_policy: 'whitelist' });
             const tag = await world.db.get('SELECT id FROM tags WHERE name = "SecretTeam"');
@@ -199,7 +184,6 @@ describe('rules/EventRules', () => {
             expect(status.getStatus()).toBe(403);
             expect(status.getMessage()).toMatch(/Restricted/i);
 
-            // Add user to whitelist
             await world.db.run('INSERT INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tag.id, user.id]);
             
             // Now allowed

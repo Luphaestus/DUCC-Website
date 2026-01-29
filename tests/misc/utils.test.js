@@ -1,15 +1,13 @@
 /**
  * utils.test.js
  * 
- * Unit tests for general server-side utility functions.
+ * Server utility tests.
  */
 
 import Utils from '../../server/misc/utils.js';
 
 describe('misc/utils', () => {
-    /**
-     * Requirement: Academic year always starts on September 1st.
-     */
+    /** Test academic year start. */
     test('getAcademicYearStart always returns September 1st of the relevant year', () => {
         const start = Utils.getAcademicYearStart();
         const date = new Date(start);
@@ -18,9 +16,7 @@ describe('misc/utils', () => {
         expect(date.getUTCDate()).toBe(1);
     });
 
-    /**
-     * Requirement: Correctly identifies protocol and host from Express request.
-     */
+    /** Test base URL reconstruction. */
     test('getBaseUrl correctly reconstructs the root URL from an Express request object', () => {
         const req = {
             protocol: 'https',

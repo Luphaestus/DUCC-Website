@@ -1,8 +1,7 @@
 /**
  * filesDB.test.js
  * 
- * Database layer tests for file metadata and categories.
- * Verifies insertion, retrieval by ID, and role-based visibility filtering.
+ * File DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -35,9 +34,7 @@ describe('db/filesDB', () => {
         expect(getRes.getData().title).toBe('Test File');
     });
 
-    /**
-     * Verifies that the SQL filtering correctly applies role-based visibility.
-     */
+    /** Test visibility filtering. */
     test('getFiles correctly applies role-based visibility filters', async () => {
         await FilesDB.createFile(world.db, { title: 'Public', filename: 'pub.txt', visibility: 'public' });
         await FilesDB.createFile(world.db, { title: 'Member', filename: 'mem.txt', visibility: 'members' });

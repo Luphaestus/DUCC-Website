@@ -1,8 +1,7 @@
 /**
  * AuthAPI.test.js
  * 
- * Integration tests for the Authentication API.
- * Covers signup, account restoration, login, status checks, and password resets.
+ * Authentication API tests.
  */
 
 import request from 'supertest';
@@ -47,9 +46,7 @@ describe('api/AuthAPI', () => {
     });
 
     describe('Signup & Registration', () => {
-        /**
-         * Test standard successful signup.
-         */
+        /** Test standard successful signup. */
         test('POST /api/auth/signup - Success', async () => {
             const res = await request(app)
                 .post('/api/auth/signup')
@@ -62,11 +59,7 @@ describe('api/AuthAPI', () => {
             expect(res.statusCode).toBe(201);
         });
 
-        /**
-         * Test account restoration logic.
-         * When a user deletes their account and then signs up again with the same email,
-         * their old ID and historical data should be preserved.
-         */
+        /** Test account restoration logic. */
         test('Account Restoration: Actually calling deleteAccount then re-signing up', async () => {
             const agent = request.agent(app);
             const email = 'rejoiner.real@durham.ac.uk';
@@ -134,9 +127,7 @@ describe('api/AuthAPI', () => {
             await db.run('INSERT INTO users (email, first_name, last_name) VALUES (?,?,?)', [email, 'R', 'T']);
         });
 
-        /**
-         * Test token generation.
-         */
+        /** Test token generation. */
         test('POST /api/auth/reset-password-request creates token', async () => {
             const res = await request(app).post('/api/auth/reset-password-request').send({ email });
             expect(res.statusCode).toBe(200);
@@ -146,9 +137,7 @@ describe('api/AuthAPI', () => {
             expect(reset.token).toBeDefined();
         });
 
-        /**
-         * Test password update using token.
-         */
+        /** Test password update using token. */
         test('POST /api/auth/reset-password updates password', async () => {
             await request(app).post('/api/auth/reset-password-request').send({ email });
             const { token } = await db.get('SELECT token FROM password_resets');

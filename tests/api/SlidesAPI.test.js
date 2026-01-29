@@ -1,8 +1,7 @@
 /**
  * SlidesAPI.test.js
  * 
- * Functional tests for the slideshow image API.
- * Verifies that the system correctly manages slide images in the database.
+ * Slideshow image API tests.
  */
 
 import SlidesAPI from '../../server/api/SlidesAPI.js';

@@ -1,8 +1,7 @@
 /**
  * rolesDB.test.js
  * 
- * Database layer tests for RBAC (Role-Based Access Control).
- * Verifies role creation, user assignment, and permission resolution.
+ * Role DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -27,9 +26,7 @@ describe('db/rolesDB', () => {
         expect(roles.some(r => r.name === 'NewRole')).toBe(true);
     });
 
-    /**
-     * Verifies that assigning a role correctly allows subsequent lookup.
-     */
+    /** Test role assignment. */
     test('assignRole successfully links a role to a user', async () => {
         await world.createUser('user', {});
         const userId = world.data.users['user'];
@@ -43,9 +40,7 @@ describe('db/rolesDB', () => {
         expect(res.getData()[0].name).toBe('TestRole');
     });
 
-    /**
-     * Test direct permission overrides (independent of roles).
-     */
+    /** Test direct permission overrides. */
     test('addUserPermission adds a direct override that is included in user permissions', async () => {
         await world.createUser('user', {});
         const userId = world.data.users['user'];

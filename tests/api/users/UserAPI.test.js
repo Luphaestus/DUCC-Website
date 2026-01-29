@@ -1,9 +1,7 @@
 /**
  * UserAPI.test.js
  * 
- * Functional tests for user profile management.
- * Covers whitelisted element fetching, profile updates with validation,
- * membership joining, and PII anonymization during account deletion.
+ * User profile tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -44,6 +42,7 @@ describe('api/users/UserAPI', () => {
             });
         });
 
+        /** Test forbidden field fetch. */
         test('Denied: attempting to fetch forbidden fields (hashed_password)', async () => {
             const res = await world.as('user').get('/api/user/elements/hashed_password');
             expect(res.statusCode).toBe(403);
@@ -77,9 +76,7 @@ describe('api/users/UserAPI', () => {
             expect(res.body.errors).toHaveProperty('email');
         });
 
-        /**
-         * System Logic: filling all required fields should automatically mark the user as 'legal info complete'.
-         */
+        /** Test legal info completion. */
         test('Logic: correctly flags filled_legal_info when all required fields are set', async () => {
             const dob = new Date(); dob.setFullYear(dob.getFullYear() - 20);
             const legalData = {
@@ -138,11 +135,11 @@ describe('api/users/UserAPI', () => {
             const res = await world.as('user').post('/api/user/join');
             expect(res.statusCode).toBe(200);
 
-            // Verification 1: Membership status updated
+            // Membership status updated
             const user = await world.db.get('SELECT is_member FROM users WHERE id = ?', [world.data.users['user']]);
             expect(user.is_member).toBe(1);
 
-            // Verification 2: Payment transaction recorded
+            // Payment transaction recorded
             const balance = await world.db.get('SELECT COALESCE(SUM(amount), 0) as b FROM transactions WHERE user_id = ?', [world.data.users['user']]);
             expect(balance.b).toBe(-50.0);
         });
@@ -183,25 +180,22 @@ describe('api/users/UserAPI', () => {
             expect(res.body.message).toMatch(/zero/i);
         });
 
-        /**
-         * GDPR Compliance Check:
-         * Soft delete must anonymize sensitive fields while preserving links for auditing (financial/attendance).
-         */
+        /** Test soft-delete success. */
         test('Success: soft-deletion anonymizes PII but preserves historical record links', async () => {
             const res = await world.as('user').post('/api/user/deleteAccount').send({ password });
             expect(res.statusCode).toBe(200);
 
             const user = await world.db.get('SELECT * FROM users WHERE id = ?', [userId]);
-            // Verification 1: Email is freed up but kept with prefix
+            // Email is freed up but kept with prefix
             expect(user.email).toMatch(/^deleted:/);
-            // Verification 2: PII fields are nulled out
+            // PII fields are nulled out
             expect(user.medical_conditions_details).toBeNull();
             expect(user.home_address).toBeNull();
-            // Verification 3: Non-PII fields kept for ID purposes
+            // Non-PII fields kept for ID purposes
             expect(user.first_name).toBe('John');
             expect(user.last_name).toBe('Doe');
 
-            // Verification 4: Attendance record link remains intact
+            // Attendance record link remains intact
             const attendance = await world.db.get('SELECT 1 FROM event_attendees WHERE user_id = ?', [userId]);
             expect(attendance).toBeDefined();
         });

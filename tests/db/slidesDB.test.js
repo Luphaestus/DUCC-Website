@@ -1,8 +1,7 @@
 /**
  * slidesDB.test.js
  * 
- * Database layer tests for slideshow images.
- * Covers slide addition, retrieval, and removal.
+ * Slide DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';

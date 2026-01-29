@@ -1,9 +1,7 @@
 /**
  * eventsDB.test.js
  * 
- * Database layer tests for event management.
- * Covers event creation, cancellation with automatic attendee refunds,
- * and business logic related to signup requirements and capacity.
+ * Event DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -32,15 +30,13 @@ describe('db/eventsDB', () => {
             upfront_cost: 0
         };
         const result = await EventsDB.createEvent(world.db, eventData);
-        expect(result.getStatus()).toBe(200);
+        expect(result.getStatus()).toBe(201);
 
         const eventRes = await EventsDB.getEventByIdAdmin(world.db, result.getData().id);
         expect(eventRes.getData().title).toBe('Test Event');
     });
 
-    /**
-     * Critical functionality: canceling an event must restore user sessions and balances.
-     */
+    /** Test cancelEvent refunds. */
     test('cancelEvent automatically refunds transactions and restores free sessions', async () => {
         await world.createUser('user', { is_member: 0, free_sessions: 1 });
         const userId = world.data.users['user'];
@@ -59,23 +55,21 @@ describe('db/eventsDB', () => {
         const transactionId = txRes.getData();
         await world.db.run('INSERT INTO event_attendees (event_id, user_id, payment_transaction_id) VALUES (?, ?, ?)', [eventId, userId, transactionId]);
 
-        // Action: Cancel the event
+        // Cancel the event
         const result = await EventsDB.cancelEvent(world.db, eventId);
         expect(result.getStatus()).toBe(200);
 
-        // Verification 1: Refund transaction exists and balance is back to zero
+        // Refund transaction exists and balance is back to zero
         const balanceRes = await TransactionsDB.get_balance(world.db, userId);
         expect(balanceRes.getData()).toBe(0);
 
-        // Verification 2: Consumed session credit is restored to the non-member
+        // Consumed session credit is restored to the non-member
         const user = await world.db.get('SELECT free_sessions FROM users WHERE id = ?', [userId]);
         expect(user.free_sessions).toBe(2);
     });
 
     describe('Business Logic: signup_required vs max_attendees', () => {
-        /**
-         * Rule: It doesn't make sense to have a capacity limit if signup is disabled.
-         */
+        /** Test invalid capacity with no signup. */
         test('cannot create event with max_attendees > 0 if signup_required is false', async () => {
             const eventData = {
                 title: 'Invalid Logic Event',
@@ -102,7 +96,7 @@ describe('db/eventsDB', () => {
                 upfront_cost: 0
             };
             const result = await EventsDB.createEvent(world.db, eventData);
-            expect(result.getStatus()).toBe(200);
+            expect(result.getStatus()).toBe(201);
         });
 
         test('cannot update existing event to state with max_attendees > 0 and no signup', async () => {
@@ -127,9 +121,7 @@ describe('db/eventsDB', () => {
             expect(result.getStatus()).toBe(400);
         });
 
-        /**
-         * Test how the rule layer handles events where signup is disabled.
-         */
+        /** Test signup requirement logic. */
         test('EventRules.canJoinEvent correctly blocks joining if signup_required is false', async () => {
             const eventData = {
                 title: 'No Signup Event',

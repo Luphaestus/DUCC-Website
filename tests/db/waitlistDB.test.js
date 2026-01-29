@@ -1,8 +1,7 @@
 /**
  * waitlistDB.test.js
  * 
- * Database layer tests for the event waitlist system.
- * Verifies joining, FIFO (First-In-First-Out) ordering, and position calculation.
+ * Waitlist DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -27,19 +26,14 @@ describe('db/waitlistDB', () => {
         const userId = world.data.users['user1'];
         const eventId = world.data.events['Event1'];
 
-        // Initial state
         expect((await WaitlistDB.is_user_on_waiting_list(world.db, userId, eventId)).getData()).toBe(false);
 
-        // Join
         await WaitlistDB.join_waiting_list(world.db, userId, eventId);
         
-        // Verify
         expect((await WaitlistDB.is_user_on_waiting_list(world.db, userId, eventId)).getData()).toBe(true);
     });
 
-    /**
-     * Critical: promotions must be fair based on the time joined.
-     */
+    /** Test FIFO ordering. */
     test('get_next_on_waiting_list correctly follows FIFO (First-In-First-Out) logic', async () => {
         const u1 = world.data.users['user1'];
         const u2 = world.data.users['user2'];
@@ -57,9 +51,7 @@ describe('db/waitlistDB', () => {
         expect((await WaitlistDB.get_next_on_waiting_list(world.db, eventId)).getData()).toBe(u2);
     });
 
-    /**
-     * Test calculation of numerical rank within the list.
-     */
+    /** Test rank calculation. */
     test('get_waiting_list_position correctly calculates user rank', async () => {
         const u1 = world.data.users['user1'];
         const u2 = world.data.users['user2'];

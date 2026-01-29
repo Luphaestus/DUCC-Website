@@ -1,8 +1,7 @@
 /**
  * TagsAPI.test.js
  * 
- * Functional tests for the Tag Management API.
- * Covers tag CRUD operations, whitelist management, and user-specific tag visibility.
+ * Tag Management API tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -50,7 +49,7 @@ describe('api/TagsAPI', () => {
 
             // Admin should succeed
             const resAdmin = await world.as('admin').post('/api/tags').send(tagData);
-            expect(resAdmin.statusCode).toBe(200);
+            expect(resAdmin.statusCode).toBe(201);
             expect(resAdmin.body.data).toHaveProperty('id');
         });
 

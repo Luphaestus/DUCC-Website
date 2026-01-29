@@ -1,9 +1,7 @@
 /**
  * AdminEventsAPI.test.js
  * 
- * Functional tests for the Admin Event Management API.
- * Covers scoped visibility, creation authorization (tag matches), deletion restrictions,
- * and automatic attendee refunds upon event cancellation.
+ * Admin Event Management API tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -35,9 +33,7 @@ describe('api/admin/AdminEventsAPI', () => {
     });
 
     describe('GET /api/admin/events (Administrative Scoping)', () => {
-        /**
-         * Admins with 'event.read.all' should see every event in the system.
-         */
+        /** Global admin sees all events. */
         test('Global admin sees all events', async () => {
             await world.createEvent('Event1');
             await world.createEvent('Event2');
@@ -49,9 +45,7 @@ describe('api/admin/AdminEventsAPI', () => {
             expect(res.body).toHaveProperty('currentPage');
         });
 
-        /**
-         * Scoped admins should only see events linked to tags they manage.
-         */
+        /** Scoped admin sees only events within their managed tags. */
         test('Scoped admin sees only events within their managed tags', async () => {
             await world.createTag('T1');
             await world.assignTag('user_managed', 'scoped', 'T1');
@@ -85,12 +79,10 @@ describe('api/admin/AdminEventsAPI', () => {
                 upfront_cost: 0,
                 tags: [tagId]
             });
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
         });
 
-        /**
-         * Scoped admins can only create events if they manage the tags they are assigning.
-         */
+        /** Scoped admin restricted to creating events with tags they manage. */
         test('Scoped admin restricted to creating events with tags they manage', async () => {
             await world.createTag('ManagedTag');
             await world.createTag('SecretTag');
@@ -101,7 +93,7 @@ describe('api/admin/AdminEventsAPI', () => {
                 title: 'Ok Event', start: '2025-01-01', end: '2025-01-01', difficulty_level: 1, upfront_cost: 0,
                 tags: [world.data.tags['ManagedTag']]
             });
-            expect(res1.statusCode).toBe(200);
+            expect(res1.statusCode).toBe(201);
 
             // Failure case: using an unmanaged tag
             const res2 = await world.as('scoped').post('/api/admin/event').send({
@@ -129,7 +121,7 @@ describe('api/admin/AdminEventsAPI', () => {
                 tags: [lowId, highId]
             });
 
-            expect(res.statusCode).toBe(200);
+            expect(res.statusCode).toBe(201);
             const eventId = res.body.data.id;
             
             const getRes = await world.as('admin').get(`/api/admin/event/${eventId}`);
@@ -150,29 +142,29 @@ describe('api/admin/AdminEventsAPI', () => {
         test('Image Fallback Chain: Event -> Tag -> Global Default', async () => {
             const globalDefault = '/images/misc/ducc.png';
 
-            // 1. Tag with image
+            //  Tag with image
             const tagFileId = await world.createFile('TagImg');
             await world.createTag('Nature', { priority: 10, image_id: tagFileId });
             const tagId = world.data.tags['Nature'];
             const tagImageUrl = `/api/files/${tagFileId}/download?view=true`;
 
-            // 2. Event with its own image
+            // Event with its own image
             const eventFileId = await world.createFile('EventImg');
             const eventId = await world.createEvent('Hiking', { 
                 image_id: eventFileId
             });
             await world.assignTag('event', 'Hiking', 'Nature');
 
-            // Step 1: Verify event image
+            //  Verify event image
             let res = await world.as('admin').get(`/api/admin/event/${eventId}`);
             expect(res.body.image_url).toBe(`/api/files/${eventFileId}/download?view=true`);
 
-            // Step 2: Remove event image, verify fallback to tag image
+            // Remove event image, verify fallback to tag image
             await world.as('admin').post(`/api/admin/event/${eventId}/reset-image`);
             res = await world.as('admin').get(`/api/admin/event/${eventId}`);
             expect(res.body.image_url).toBe(tagImageUrl);
 
-            // Step 3: Remove tag image, verify fallback to global default
+            // Remove tag image, verify fallback to global default
             await world.as('admin').post(`/api/tags/${tagId}/reset-image`);
             res = await world.as('admin').get(`/api/admin/event/${eventId}`);
             expect(res.body.image_url).toBe(globalDefault);
@@ -188,9 +180,7 @@ describe('api/admin/AdminEventsAPI', () => {
             expect(res.statusCode).toBe(403);
         });
 
-        /**
-         * To maintain data integrity and financial records, events that have passed cannot be deleted.
-         */
+        /** Cannot delete events that have already started/happened. */
         test('Cannot delete events that have already started/happened', async () => {
             const past = new Date(Date.now() - 86400000).toISOString();
             await world.createEvent('PastEvent', { start: past });
@@ -212,24 +202,17 @@ describe('api/admin/AdminEventsAPI', () => {
     });
 
     describe('POST /api/admin/event/:id/cancel (Refund Logic)', () => {
-        /**
-         * Complex workflow test:
-         * Create paid event.
-         * Enroll a guest (uses free session).
-         * Enroll a member (pays upfront cost).
-         * Admin cancels event.
-         * Verify guest gets session back and member gets money back.
-         */
+        /** Automatically refunds all active attendees upon administrative cancellation. */
         test('Automatically refunds all active attendees upon administrative cancellation', async () => {
             const eventId = await world.createEvent('PaidEvent', { upfront_cost: 15 });
             
-            // Enrollment 1: Non-member guest
+            // Non-member guest
             await world.createUser('guest_user', { is_member: 0, free_sessions: 3 });
             const guestId = world.data.users['guest_user'];
             await world.db.run('UPDATE users SET free_sessions = 2 WHERE id = ?', [guestId]);
             await world.db.run('INSERT INTO event_attendees (event_id, user_id, is_attending) VALUES (?, ?, 1)', [eventId, guestId]);
 
-            // Enrollment 2: Member with upfront payment
+            // Member with upfront payment
             await world.createUser('member_user', { is_member: 1 });
             const memberId = world.data.users['member_user'];
             const txRes = await world.db.run('INSERT INTO transactions (user_id, amount, description, event_id) VALUES (?, ?, ?, ?)', 
@@ -238,19 +221,19 @@ describe('api/admin/AdminEventsAPI', () => {
             await world.db.run('INSERT INTO event_attendees (event_id, user_id, is_attending, payment_transaction_id) VALUES (?, ?, 1, ?)', 
                 [eventId, memberId, txId]);
 
-            // Action: Admin cancellation
+            // Admin cancellation
             const res = await world.as('admin').post(`/api/admin/event/${eventId}/cancel`);
             expect(res.statusCode).toBe(200);
 
-            // Verification 1: Guest session restored
+            // Guest session restored
             const guest = await world.db.get('SELECT free_sessions FROM users WHERE id = ?', [guestId]);
             expect(guest.free_sessions).toBe(3);
 
-            // Verification 2: Member balance restored
+            // Member balance restored
             const balance = await world.db.get('SELECT SUM(amount) as b FROM transactions WHERE user_id = ?', [memberId]);
             expect(balance.b).toBe(0);
             
-            // Verification 3: Refund record exists
+            // Refund record exists
             const refundTx = await world.db.get('SELECT * FROM transactions WHERE user_id = ? AND amount = 15', [memberId]);
             expect(refundTx).toBeDefined();
             expect(refundTx.description).toMatch(/refund/i);

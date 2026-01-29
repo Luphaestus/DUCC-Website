@@ -1,8 +1,7 @@
 /**
  * swimsDB.test.js
  * 
- * Database layer tests for swim records.
- * Covers swim addition with historical logging and leaderboard generation.
+ * Swim DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -20,9 +19,7 @@ describe('db/swimsDB', () => {
         await world.tearDown();
     });
 
-    /**
-     * Test swim addition and the side-effect of creating a history log.
-     */
+    /** Test swim addition and history. */
     test('addSwims updates aggregate count and creates individual history entry', async () => {
         await world.createUser('user', {});
         const userId = world.data.users['user'];
@@ -39,9 +36,7 @@ describe('db/swimsDB', () => {
         expect(history[0].count).toBe(5);
     });
 
-    /**
-     * Test leaderboard sorting and 'is_me' flagging.
-     */
+    /** Test leaderboard sorting. */
     test('getSwimsLeaderboard correctly sorts and flags the requesting user', async () => {
         await world.createUser('user1', { first_name: 'A' });
         await SwimsDB.addSwims(world.db, world.data.users['user1'], 10, 1);
@@ -62,18 +57,17 @@ describe('db/swimsDB', () => {
         await world.createUser('user', { swims: 10 });
         const userId = world.data.users['user'];
 
-        // Success
         const res1 = await SwimsDB.addBooties(world.db, userId, 5);
         expect(res1.status).toBe(200);
         const user1 = await world.db.get('SELECT booties FROM users WHERE id = ?', [userId]);
         expect(user1.booties).toBe(5);
 
-        // Fail: exceeding swims
+        // exceeding swims
         const res2 = await SwimsDB.addBooties(world.db, userId, 6);
         expect(res2.status).toBe(400);
         expect(res2.message).toMatch(/cannot exceed swims/i);
 
-        // Fail: user not found
+        // user not found
         const res3 = await SwimsDB.addBooties(world.db, 9999, 1);
         expect(res3.status).toBe(404);
     });

@@ -1,8 +1,7 @@
 /**
  * AdminTransactionsAPI.test.js
  * 
- * Functional tests for the Admin Transaction Management API.
- * Verifies that administrators can view and manually adjust user balances.
+ * Admin Transaction Management API tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -27,9 +26,7 @@ describe('api/admin/AdminTransactionsAPI', () => {
     });
 
     describe('Administrative Transaction Workflow', () => {
-        /**
-         * Verify the complete cycle of manual balance adjustment.
-         */
+        /** Full CRUD cycle for user transactions. */
         test('Full CRUD cycle for user transactions', async () => {
             const userId = world.data.users['user'];
 
@@ -37,7 +34,7 @@ describe('api/admin/AdminTransactionsAPI', () => {
             const res1 = await world.as('admin').post(`/api/admin/user/${userId}/transaction`).send({
                 amount: 50, description: 'Initial adjustment'
             });
-            expect(res1.statusCode).toBe(200);
+            expect(res1.statusCode).toBe(201);
 
             // Fetch and verify
             const res2 = await world.as('admin').get(`/api/admin/user/${userId}/transactions`);

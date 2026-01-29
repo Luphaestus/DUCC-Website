@@ -1,8 +1,7 @@
 /**
  * AdminRolesAPI.test.js
  * 
- * Functional tests for the Role and Permission Management API.
- * Verifies the lifecycle of custom roles and protects critical system roles (President).
+ * Role and Permission Management API tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -27,9 +26,7 @@ describe('api/admin/AdminRolesAPI', () => {
     });
 
     describe('GET /api/admin/roles/permissions', () => {
-        /**
-         * System-managed scoped permissions should be hidden from the manual assignment UI.
-         */
+        /** Test manually-assignable permissions. */
         test('Returns only manually-assignable (non-scoped) permissions', async () => {
             await world.createPermission('user.manage');
             await world.createPermission('event.manage.scoped');
@@ -44,9 +41,7 @@ describe('api/admin/AdminRolesAPI', () => {
     });
 
     describe('Role Lifecycle Management', () => {
-        /**
-         * Verify full creation, update, and deletion flow for standard roles.
-         */
+        /** Full CRUD flow for custom administrative roles. */
         test('Full CRUD flow for custom administrative roles', async () => {
             // Create
             const res1 = await world.as('admin').post('/api/admin/roles').send({
@@ -66,9 +61,7 @@ describe('api/admin/AdminRolesAPI', () => {
             expect(res3.statusCode).toBe(200);
         });
 
-        /**
-         * The President role is critical for system operation and must not be modified or removed via standard API routes.
-         */
+        /** Test President role protection. */
         test('Modification or deletion of the President role is strictly forbidden', async () => {
             await world.db.run('INSERT INTO roles (name) VALUES ("President")');
             const pres = await world.db.get('SELECT id FROM roles WHERE name = "President"');

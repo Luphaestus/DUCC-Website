@@ -1,8 +1,7 @@
 /**
  * GlobalsAPI.test.js
  * 
- * Functional tests for system-wide configuration (Globals).
- * Verifies RBAC for viewing/editing keys and regular expression validation for updates.
+ * Global configuration tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -71,27 +70,21 @@ describe('api/GlobalsAPI', () => {
     });
 
     describe('GET /api/globals/:key (Scoped Access Control)', () => {
-        /**
-         * Test that Guests cannot see keys restricted to 'Authenticated' or 'President'.
-         */
+        /** Test Guest restricted keys. */
         test('Guest can only see Guest-level globals', async () => {
             const res = await world.request.get('/api/globals/MinMoney,Unauthorized_max_difficulty');
             expect(res.body.res).not.toHaveProperty('MinMoney');
             expect(res.body.res).not.toHaveProperty('Unauthorized_max_difficulty');
         });
 
-        /**
-         * Test that Authenticated users can see 'Authenticated' level but not 'President' level keys.
-         */
+        /** Test Authenticated user keys. */
         test('Authenticated user can see Authenticated-level keys', async () => {
             const res = await world.as('user').get('/api/globals/MinMoney,Unauthorized_max_difficulty');
             expect(res.body.res).toHaveProperty('MinMoney');
             expect(res.body.res).not.toHaveProperty('Unauthorized_max_difficulty');
         });
 
-        /**
-         * Test that Presidents can see all keys.
-         */
+        /** Test President keys. */
         test('President can see all configuration keys', async () => {
             const res = await world.as('president').get('/api/globals/MinMoney,Unauthorized_max_difficulty');
             expect(res.body.res).toHaveProperty('MinMoney');
@@ -100,9 +93,7 @@ describe('api/GlobalsAPI', () => {
     });
 
     describe('POST /api/globals/:key (Write Verification)', () => {
-        /**
-         * Test successful update.
-         */
+        /** Test successful update. */
         test('President can update a global and it persists', async () => {
             const newValue = 100;
             const res = await world.as('president')
@@ -115,9 +106,7 @@ describe('api/GlobalsAPI', () => {
             expect(getRes.body.res.MembershipCost.data).toBe(newValue);
         });
 
-        /**
-         * Test update failure when input violates regex rules.
-         */
+        /** Test update regex failure. */
         test('Update fails if value does not match regex rule', async () => {
             const res = await world.as('president')
                 .post('/api/globals/MembershipCost')
@@ -141,9 +130,7 @@ describe('api/GlobalsAPI', () => {
             expect(res.body.message).toMatch(/valid path or file API URL/i);
         });
 
-        /**
-         * Test unauthorized update attempt.
-         */
+        /** Test unauthorized update attempt. */
         test('Standard authenticated user cannot update global settings', async () => {
             const res = await world.as('user')
                 .post('/api/globals/MembershipCost')

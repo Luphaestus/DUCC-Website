@@ -1,22 +1,26 @@
 /**
  * fileCleanup.test.js
  * 
- * Tests for the FileCleanup utility service.
- * 
- * Scenarios covered:
- * - Handling of non-file URLs (should be ignored).
- * - Parsing of file IDs from API URLs.
- * - preventing deletion if file is used in:
- *   - Tags (image_id)
- *   - Events (image_url)
- *   - Users (profile_picture_path)
- *   - Globals (DefaultEventImage)
- * - Verifying physical and database deletion when file is truly unused.
+ * FileCleanup service tests.
  */
 
 import fs from 'fs';
+import path from 'path';
 import FileCleanup from '../../server/misc/FileCleanup.js';
 import FilesDB from '../../server/db/filesDB.js';
+
+const TEST_FILES_DIR = path.join(process.cwd(), 'data', 'test_files');
+
+vi.mock('../../server/config.js', () => {
+    return {
+        default: {
+            paths: {
+                files: path.join(process.cwd(), 'data', 'test_files'),
+                globals: path.join(process.cwd(), 'data', 'globals.json')
+            }
+        }
+    };
+});
 
 // Mock Globals
 vi.mock('../../server/misc/globals.js', () => {
@@ -43,12 +47,17 @@ describe('FileCleanup', () => {
         vi.spyOn(FilesDB, 'getFileById').mockResolvedValue({ isError: () => true });
         vi.spyOn(FilesDB, 'deleteFile').mockResolvedValue({ isError: () => false });
         
-        vi.spyOn(fs, 'existsSync').mockReturnValue(false);
-        vi.spyOn(fs, 'unlinkSync').mockImplementation(() => {});
+        if (!fs.existsSync(TEST_FILES_DIR)) {
+            fs.mkdirSync(TEST_FILES_DIR, { recursive: true });
+        }
+        fs.writeFileSync(path.join(TEST_FILES_DIR, 'test.jpg'), 'dummy content');
     });
     
     afterEach(() => {
         vi.restoreAllMocks();
+        if (fs.existsSync(TEST_FILES_DIR)) {
+            fs.rmSync(TEST_FILES_DIR, { recursive: true, force: true });
+        }
     });
 
     it('should ignore non-file URLs', async () => {
@@ -57,7 +66,6 @@ describe('FileCleanup', () => {
     });
 
     it('should parse file ID from URL', async () => {
-        // Force tags/events/globals to return null (unused)
         mockDb.get.mockResolvedValue(null);
         FilesDB.getFileById.mockResolvedValue({ 
             isError: () => false, 
@@ -100,7 +108,7 @@ describe('FileCleanup', () => {
     });
 
     it('should not delete if used in globals (DefaultEventImage)', async () => {
-        // Our mock global returns ID 999
+        // The mock global returns ID 999
         await FileCleanup.checkAndDeleteIfUnused(mockDb, '/api/files/999/download');
         expect(FilesDB.deleteFile).not.toHaveBeenCalled();
     });
@@ -113,11 +121,10 @@ describe('FileCleanup', () => {
             getData: () => ({ filename: 'test.jpg' }) 
         });
         
-        fs.existsSync.mockReturnValue(true);
-
         await FileCleanup.checkAndDeleteIfUnused(mockDb, 123);
         
-        expect(fs.unlinkSync).toHaveBeenCalled();
+        const filePath = path.join(TEST_FILES_DIR, 'test.jpg');
+        expect(fs.existsSync(filePath)).toBe(false);
         expect(FilesDB.deleteFile).toHaveBeenCalledWith(mockDb, 123);
     });
 });

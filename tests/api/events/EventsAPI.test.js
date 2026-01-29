@@ -1,8 +1,7 @@
 /**
  * EventsAPI.test.js
  * 
- * Functional tests for public and member event listing endpoints.
- * Verifies difficulty-based filtering for both guest and authenticated users.
+ * Event listing tests.
  */
 
 import TestWorld from '../../utils/TestWorld.js';
@@ -24,9 +23,7 @@ describe('api/events/EventsAPI', () => {
         await world.tearDown();
     });
 
-    /**
-     * Helper to test basic route protection.
-     */
+    /** Test route protection. */
     const itRequiresAuth = (method, pathTemplate) => {
         test(`${method.toUpperCase()} ${pathTemplate} - Blocked for guests`, async () => {
             const res = await world.request[method](pathTemplate.replace(':id', '1').replace(':offset', '0'));
@@ -48,9 +45,7 @@ describe('api/events/EventsAPI', () => {
             expect(res.body.events).toBeDefined();
         });
 
-        /**
-         * System Requirement: Guests should only see events up to the 'Unauthorized_max_difficulty' setting.
-         */
+        /** Test guest difficulty limit. */
         test('Guest visibility is restricted by the global difficulty limit', async () => {
             world.mockGlobalInt('Unauthorized_max_difficulty', 1);
             
@@ -145,6 +140,7 @@ describe('api/events/EventsAPI', () => {
             expect(res.body.canManage).toBe(true);
         });
 
+        /** Test scoped management permission. */
         test('Returns true if user has scoped management for this event\'s tag', async () => {
             await world.createRole('ScopedRole', ['event.manage.scoped']);
             await world.createUser('scoped_user', {}, ['ScopedRole']);
@@ -158,6 +154,7 @@ describe('api/events/EventsAPI', () => {
             expect(res.body.canManage).toBe(true);
         });
 
+        /** Test scoped management denial. */
         test('Returns false if scoped user lacks management for this event\'s specific tags', async () => {
             await world.createRole('ScopedRole', ['event.manage.scoped']);
             await world.createUser('scoped_user_wrong', {}, ['ScopedRole']);

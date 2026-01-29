@@ -1,9 +1,7 @@
 /**
  * authentication.test.js
  * 
- * Unit tests for the authentication and RBAC middleware.
- * Verifies standard session checks, single and multi-permission evaluation, 
- * and special meta-permissions (perm:is_exec).
+ * Authentication middleware tests.
  */
 
 import checkAuthentication from '../../server/misc/authentication.js';
@@ -58,12 +56,9 @@ describe('misc/authentication', () => {
         expect(next).not.toHaveBeenCalled();
     });
 
-    /**
-     * Test logic for requirement strings like 'user.read | user.manage'.
-     */
+    /** Test OR permission logic. */
     test('Check OR permission logic (| pipe symbol)', async () => {
         // user.read OR user.manage
-        // Mocking: fail first check, pass second
         vi.spyOn(Permissions, 'hasPermission')
             .mockImplementation(async (db, id, perm) => perm === 'user.manage');
         
@@ -72,9 +67,7 @@ describe('misc/authentication', () => {
         expect(next).toHaveBeenCalled();
     });
 
-    /**
-     * 'perm:is_exec' is a special meta-permission that returns true if the user has ANY assigned role.
-     */
+    /** Test special meta-permission: perm:is_exec. */
     test('Check special meta-permission: perm:is_exec', async () => {
         vi.spyOn(Permissions, 'hasAnyPermission').mockResolvedValue(true);
         const middleware = checkAuthentication('perm:is_exec');

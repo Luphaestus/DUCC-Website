@@ -1,8 +1,7 @@
 /**
  * transactionDB.test.js
  * 
- * Database layer tests for user transactions and balances.
- * Verifies balance calculation and history generation with running balances.
+ * Transaction DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';
@@ -20,9 +19,7 @@ describe('db/transactionDB', () => {
         await world.tearDown();
     });
 
-    /**
-     * Test aggregate balance calculation.
-     */
+    /** Test balance calculation. */
     test('add_transaction successfully updates the user\'s total balance', async () => {
         await world.createUser('user', {});
         const userId = world.data.users['user'];
@@ -34,9 +31,7 @@ describe('db/transactionDB', () => {
         expect(balanceRes.getData()).toBe(30);
     });
 
-    /**
-     * Test chronological history with running balance.
-     */
+    /** Test transaction history. */
     test('get_transactions returns full history with correctly calculated running balance', async () => {
         await world.createUser('user', {});
         const userId = world.data.users['user'];

@@ -1,8 +1,7 @@
 /**
  * authDB.test.js
  * 
- * Database layer tests for authentication and password resets.
- * Covers user retrieval, creation, restoration, and reset token management.
+ * Authentication DB tests.
  */
 
 import TestWorld from '../utils/TestWorld.js';

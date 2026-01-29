@@ -1,8 +1,7 @@
 /**
  * server.test.js
  * 
- * High-level integration tests for the Express server.
- * Verifies that the server boots correctly and serves the core SPA entry point.
+ * Express server tests.
  */
 
 import request from 'supertest';
@@ -26,27 +25,21 @@ describe('Main Express Application', () => {
         }
     });
 
-    /**
-     * Test the basic health check endpoint used by monitors and deployments.
-     */
+    /** Test health check endpoint. */
     test('GET /api/health returns 200 OK', async () => {
         const res = await request(app).get('/api/health');
         expect(res.statusCode).toBe(200);
         expect(res.body).toEqual({ ok: true });
     });
 
-    /**
-     * Test SPA behavior: index.html should be served for the root path.
-     */
+    /** Test SPA root entry. */
     test('GET / returns index.html (SPA Entry)', async () => {
         const res = await request(app).get('/');
         expect(res.statusCode).toBe(200);
         expect(res.headers['content-type']).toContain('text/html');
     });
 
-    /**
-     * Test SPA behavior: any non-API route should serve index.html (client-side routing).
-     */
+    /** Test SPA fallback. */
     test('GET /arbitrary-route returns index.html (SPA fallback)', async () => {
         const res = await request(app).get('/arbitrary-route');
         expect(res.statusCode).toBe(200);
