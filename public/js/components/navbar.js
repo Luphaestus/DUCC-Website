@@ -7,7 +7,7 @@
 import { switchView, ViewChangedEvent } from '/js/utils/view.js';
 import { apiRequest } from '/js/utils/api.js';
 import { LoginEvent } from '../pages/login.js';
-import { BalanceChangedEvent, FirstNameChangedEvent } from '/js/utils/events/events.js';
+import { BalanceChangedEvent, FirstNameChangedEvent, MembershipChangedEvent } from '/js/utils/events/events.js';
 
 /**
  * Navigation configuration.
@@ -17,6 +17,7 @@ const navEntries = [
     { name: 'Events', group: 'main', id: 'nav-events', classes: "contrast", action: { run: () => switchView('/events') } },
     { name: 'Files', group: 'main', id: 'nav-files', classes: "contrast", action: { run: () => switchView('/files') } },
     { name: 'Swims', group: 'main', id: 'nav-swims', classes: "contrast", action: { run: () => switchView('/swims') } },
+    { name: 'Quotes', group: 'main', id: 'nav-quotes', classes: "contrast", action: { run: () => switchView('/quotes') } },
 
     { name: 'Admin', group: 'user', id: 'admin-button', classes: "contrast", action: { run: () => switchView('/admin/') } },
     { name: 'Balance: £0.00', group: 'user', id: 'balance-button', classes: "contrast", action: { run: () => switchView('/profile?tab=balance') } },
@@ -67,6 +68,7 @@ function updateActiveNav(path) {
         else if (item.id === 'nav-events' && path.startsWith('/events')) match = true;
         else if (item.id === 'nav-files' && path.startsWith('/files')) match = true;
         else if (item.id === 'nav-swims' && path.startsWith('/swims')) match = true;
+        else if (item.id === 'nav-quotes' && path.startsWith('/quotes')) match = true;
 
         // Differentiate Balance vs Profile based on query param
         else if (item.id === 'balance-button' && path.startsWith('/profile') && isBalanceTab) match = true;
@@ -121,8 +123,9 @@ function create_item(entry) {
 async function updateNavOnLoginState(data) {
     const isLoggedIn = data.authenticated;
 
-    // Auth-only vs Guest-only items
+    // Auth-only vs Member-only vs Guest-only items
     const authIds = ['profile-button', 'balance-button', 'nav-swims'];
+    const memberIds = ['nav-quotes'];
     const guestIds = ['login-button'];
 
     authIds.forEach(id => {
@@ -136,26 +139,48 @@ async function updateNavOnLoginState(data) {
     });
 
     if (isLoggedIn) {
-        const [userData, swimData] = await Promise.all([
-            apiRequest('GET', '/api/user/elements/permissions').catch(() => ({})),
-            apiRequest('GET', '/api/user/elements/swims').catch(() => ({ swims: 0 })),
-            updateBalanceInNav()
-        ]);
+        try {
+            const [userData, swimData] = await Promise.all([
+                apiRequest('GET', '/api/user/elements/permissions,is_member,id').catch(err => {
+                    console.error("Auth elements fetch failed", err);
+                    return {};
+                }),
+                apiRequest('GET', '/api/user/elements/swims').catch(() => ({ swims: 0 })),
+                updateBalanceInNav().catch(() => {})
+            ]);
 
-        const perms = userData.permissions || [];
-        const profileButton = document.getElementById('profile-button');
-        if (profileButton && swimData?.swims !== undefined) {
-            profileButton.textContent = `Profile (${swimData.swims})`;
-        }
+            const perms = userData.permissions || [];
+            const isMember = userData.is_member || false;
+            window.currentUser = { id: userData.id, permissions: perms, is_member: isMember };
 
-        // Show admin button only if user has any administrative permissions
-        const adminLi = document.getElementById('admin-button')?.parentElement;
-        if (adminLi) {
-            adminLi.classList.toggle('hidden', perms.length === 0);
+            memberIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.parentElement.classList.toggle('hidden', !isMember);
+            });
+
+            const profileButton = document.getElementById('profile-button');
+            if (profileButton && swimData?.swims !== undefined) {
+                profileButton.textContent = `Profile (${swimData.swims})`;
+            }
+
+            // Show admin button only if user has any administrative permissions
+            const adminLi = document.getElementById('admin-button')?.parentElement;
+            if (adminLi) {
+                const hasAdmin = perms.length > 0;
+                adminLi.classList.toggle('hidden', !hasAdmin);
+            }
+        } catch (e) {
+            console.error("Failed to fully update nav", e);
         }
     } else {
+        window.currentUser = null;
         const adminLi = document.getElementById('admin-button')?.parentElement;
         if (adminLi) adminLi.classList.add('hidden');
+
+        memberIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.parentElement.classList.add('hidden');
+        });
     }
 }
 
@@ -231,6 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     LoginEvent.subscribe(updateNavOnLoginState);
     BalanceChangedEvent.subscribe(updateBalanceInNav);
+    MembershipChangedEvent.subscribe(() => {
+        apiRequest('GET', '/api/auth/status', true).then(updateNavOnLoginState).catch(() => updateNavOnLoginState({ authenticated: false }));
+    });
 
     ViewChangedEvent.subscribe(({ resolvedPath }) => {
         toggleMobileMenu(false);

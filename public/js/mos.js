@@ -6,8 +6,6 @@
 // Taken from https://motion-on-scroll.netlify.app/mos.js Downloaded as I did not want to rely on an external CDN. (Why should I have to? And why is that the recommended way to use it??)
 
 document.addEventListener("DOMContentLoaded", () => {
-    const elements = document.querySelectorAll("[data-mos]");
-  
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -24,6 +22,23 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }, { threshold: 0.2 });
   
-    elements.forEach(el => observer.observe(el));
+    // Observe existing elements
+    document.querySelectorAll("[data-mos]").forEach(el => observer.observe(el));
+
+    // Watch for new elements added to the DOM
+    const mutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1) { // Element node
+                    if (node.hasAttribute("data-mos")) {
+                        observer.observe(node);
+                    }
+                    node.querySelectorAll("[data-mos]").forEach(el => observer.observe(el));
+                }
+            });
+        });
+    });
+
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
   });
   

@@ -3230,6 +3230,18 @@ button.delete:hover, [type=button].delete:hover, [type=submit].delete:hover, [ty
   box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
 }
 
+.small-btn {
+  min-height: 2.25rem !important;
+  padding: 0 1rem !important;
+  font-size: 0.85rem !important;
+}
+@media (max-width: 768px) {
+  .small-btn {
+    min-height: 2rem !important;
+    padding: 0 0.75rem !important;
+  }
+}
+
 /* Global Table Styling */
 table {
   width: 100%;
@@ -3274,8 +3286,83 @@ table tbody tr td {
   display: none !important;
 }
 
+.text-right {
+  text-align: right !important;
+}
+
 .text-centre {
-  text-align: center;
+  text-align: center !important;
+}
+
+.mt-1 {
+  margin-top: 0.25rem !important;
+}
+
+.mt-2 {
+  margin-top: 0.5rem !important;
+}
+
+.mt-3 {
+  margin-top: 0.75rem !important;
+}
+
+.mt-4 {
+  margin-top: 1rem !important;
+}
+
+.mt-5 {
+  margin-top: 1.25rem !important;
+}
+
+.mt-6 {
+  margin-top: 1.5rem !important;
+}
+
+.mt-7 {
+  margin-top: 1.75rem !important;
+}
+
+.mt-8 {
+  margin-top: 2rem !important;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem !important;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem !important;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem !important;
+}
+
+.mb-4 {
+  margin-bottom: 1rem !important;
+}
+
+.mb-5 {
+  margin-bottom: 1.25rem !important;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem !important;
+}
+
+.mb-7 {
+  margin-bottom: 1.75rem !important;
+}
+
+.mb-8 {
+  margin-bottom: 2rem !important;
+}
+
+.mini-input {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.85rem !important;
+  height: auto !important;
+  margin-bottom: 0 !important;
 }
 
 .fade-out {
@@ -5891,15 +5978,45 @@ nav.small-container ul.navbar-items li button#login-button {
 #event-view .event-modal-body .difficulty-bar.active {
   background: #9b59b6;
 }
-#event-view .event-modal-body .attendees-section.nomargin {
-  margin-top: 0;
+#event-view .event-modal-body .event-main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
 }
-#event-view .event-modal-body .attendees-section .section-title {
+@media (min-width: 992px) {
+  #event-view .event-modal-body .event-main-grid {
+    grid-template-columns: 1.5fr 1fr;
+    align-items: start;
+  }
+}
+#event-view .event-modal-body .event-secondary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+#event-view .event-modal-body .event-details-content, #event-view .event-modal-body .drivers-section, #event-view .event-modal-body .expenses-section {
+  padding: 1.5rem;
+  margin: 0 !important;
+  border-top: none !important;
+}
+#event-view .event-modal-body .description-section .section-title, #event-view .event-modal-body .attendees-section .section-title, #event-view .event-modal-body .drivers-section .section-title, #event-view .event-modal-body .expenses-section .section-title {
   font-size: 0.8rem !important;
   font-weight: 800 !important;
   letter-spacing: 0.075em !important;
   color: var(--pico-muted-color) !important;
   margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+}
+#event-view .event-modal-body .description-section .section-title svg, #event-view .event-modal-body .attendees-section .section-title svg, #event-view .event-modal-body .drivers-section .section-title svg, #event-view .event-modal-body .expenses-section .section-title svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+#event-view .event-modal-body .attendees-section.nomargin {
+  margin-top: 1.5rem;
 }
 #event-view .event-modal-body .attendees-section .attendee-bubbles {
   display: flex;
@@ -5959,6 +6076,123 @@ nav.small-container ul.navbar-items li button#login-button {
 #event-view .event-modal-body .attendees-section .waitlist-info .highlight-text {
   color: #f39c12;
   font-size: 1rem;
+}
+#event-view .event-modal-body .drivers-section .volunteer-status {
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+#event-view .event-modal-body .drivers-section .volunteer-status.pending {
+  background: rgba(243, 156, 18, 0.1);
+  color: #f39c12;
+}
+#event-view .event-modal-body .drivers-section .volunteer-status.accepted {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+#event-view .event-modal-body .drivers-section .volunteer-status.declined {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+#event-view .event-modal-body .drivers-section .mileage-submission-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+#event-view .event-modal-body .drivers-section .mileage-submission-grid .mileage-box {
+  padding: 1rem;
+  background: rgba(var(--pico-background-color-rgb), 0.3);
+  border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+}
+#event-view .event-modal-body .drivers-section .mileage-submission-grid .mileage-box h4 {
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  color: var(--pico-muted-color);
+}
+#event-view .event-modal-body .drivers-section .mileage-submission-grid .mileage-box p {
+  margin: 0;
+  font-weight: 600;
+}
+#event-view .event-modal-body .drivers-section .mileage-submission-grid .mileage-box.completed {
+  border-color: #2ecc71;
+  background: rgba(46, 204, 113, 0.05);
+}
+#event-view .event-modal-body .drivers-section .mileage-submission-grid .mileage-box.late {
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.05);
+}
+#event-view .event-modal-body .drivers-section .mileage-submission-grid .mileage-box.late h4, #event-view .event-modal-body .drivers-section .mileage-submission-grid .mileage-box.late p {
+  color: #e74c3c;
+}
+#event-view .event-modal-body .drivers-section .volunteer-action {
+  background: rgba(var(--pico-primary-rgb), 0.05);
+  padding: 1.25rem;
+  border-radius: var(--border-radius-md);
+  border: 1px dashed var(--pico-primary);
+}
+#event-view .event-modal-body .drivers-section .volunteer-action p {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+#event-view .event-modal-body .drivers-section .volunteer-action .inline-form {
+  display: flex;
+  gap: 0.5rem;
+}
+#event-view .event-modal-body .drivers-section .volunteer-action .inline-form select {
+  margin-bottom: 0;
+  flex: 1;
+}
+#event-view .event-modal-body .drivers-section .volunteer-action .inline-form button {
+  width: auto;
+  margin-bottom: 0;
+}
+#event-view .event-modal-body .expenses-section .expense-item {
+  background: rgba(var(--pico-background-color-rgb), 0.3);
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(var(--pico-color-rgb), 0.05);
+  flex: 1;
+}
+#event-view .event-modal-body .expenses-section .expense-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+#event-view .event-modal-body .expenses-section .expense-action {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+#event-view .event-modal-body .trip-card {
+  background: rgba(var(--pico-background-color-rgb), 0.4);
+  border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+}
+#event-view .event-modal-body .trip-card .trip-header {
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.05);
+  padding-bottom: 0.5rem;
+}
+#event-view .event-modal-body .trip-card .driver-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 #event-view .event-modal-body .event-actions {
   display: flex;
@@ -6287,6 +6521,24 @@ footer .small-container {
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
+}
+footer .footer-quote {
+  text-align: center;
+  max-width: 600px;
+  margin-bottom: 1rem;
+}
+footer .footer-quote p {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+  color: var(--pico-contrast);
+}
+footer .footer-quote cite {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+  font-style: normal;
+  font-weight: 600;
 }
 footer .footer-content .social-links {
   display: flex;
@@ -6895,6 +7147,165 @@ footer .footer-bottom p {
 }
 #no-connection-view .container p {
   color: rgba(255, 255, 255, 0.8);
+}
+
+/**
+ * _quotes.scss
+ * 
+ * Styles for the quotes page and components.
+ */
+#quotes-view {
+  width: 100%;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+#quotes-view .quotes-header {
+  margin-bottom: 2rem;
+}
+#quotes-view .quotes-header .quotes-title-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+#quotes-view .quotes-header .quotes-title-row h1 {
+  margin-bottom: 0;
+}
+#quotes-view .quotes-controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+#quotes-view .quotes-controls .search-box {
+  min-height: 3rem !important;
+  height: auto;
+  padding: 0 1.5rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+@media (max-width: 1200px) {
+  #quotes-view .quotes-controls .search-box {
+    min-height: 2.75rem !important;
+    padding: 0 1.25rem;
+  }
+}
+@media (max-width: 768px) {
+  #quotes-view .quotes-controls .search-box {
+    min-height: 2.5rem !important;
+    padding: 0 1rem;
+    font-size: 0.9rem !important;
+  }
+  #quotes-view .quotes-controls .search-box svg, #quotes-view .quotes-controls .search-box img {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+}
+@media (max-width: 480px) {
+  #quotes-view .quotes-controls .search-box {
+    min-height: 2.25rem !important;
+    padding: 0 0.75rem;
+    font-size: 0.8rem !important;
+  }
+}
+#quotes-view .quotes-controls .search-box {
+  padding: 0 !important;
+  position: relative;
+  flex: 1 1 300px;
+  max-width: 500px;
+}
+#quotes-view .quotes-controls .search-box .icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+  display: flex;
+  z-index: 2;
+}
+#quotes-view .quotes-controls .search-box .icon svg {
+  width: 1.5em;
+  height: 1.5em;
+}
+#quotes-view .quotes-controls .search-box input {
+  padding-left: 2.8em;
+  margin-bottom: 0;
+}
+#quotes-view .quotes-controls select {
+  width: auto;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.quotes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.quote-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.quote-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+.quote-card .quote-text {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-style: italic;
+}
+.quote-card .quote-author {
+  font-weight: 500;
+  color: var(--primary);
+  text-align: right;
+  margin-bottom: 0.25rem;
+}
+.quote-card .quote-submitter {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: right;
+  font-style: normal;
+}
+
+.status-badge.status-public {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.status-badge.status-private {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.status-badge.status-hidden {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.quote-cell {
+  max-width: 400px;
+  white-space: normal;
+  font-style: italic;
 }
 
 /* Files View Layout */
@@ -7945,6 +8356,139 @@ textarea[name=description] {
 .destructive-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+/* Admin Finance Section */
+.admin-finance-transport-section .finance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 1024px) {
+  .admin-finance-transport-section .finance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.admin-finance-transport-section .finance-grid .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.admin-finance-transport-section .finance-grid .header-row h4 {
+  margin: 0;
+}
+.admin-finance-transport-section .trip-admin-card, .admin-finance-transport-section .expense-admin-card {
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--border-radius-lg);
+  padding: 1.25rem;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.admin-finance-transport-section .trip-admin-card .trip-info, .admin-finance-transport-section .trip-admin-card .expense-info, .admin-finance-transport-section .expense-admin-card .trip-info, .admin-finance-transport-section .expense-admin-card .expense-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.admin-finance-transport-section .trip-admin-card .trip-info .capacity-tag, .admin-finance-transport-section .trip-admin-card .expense-info .capacity-tag, .admin-finance-transport-section .expense-admin-card .trip-info .capacity-tag, .admin-finance-transport-section .expense-admin-card .expense-info .capacity-tag {
+  font-size: 0.75rem;
+  background: rgba(var(--pico-primary-rgb), 0.1);
+  color: var(--pico-primary);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  width: fit-content;
+}
+.admin-finance-transport-section .trip-admin-card .trip-info .payer, .admin-finance-transport-section .trip-admin-card .expense-info .payer, .admin-finance-transport-section .expense-admin-card .trip-info .payer, .admin-finance-transport-section .expense-admin-card .expense-info .payer {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+}
+.admin-finance-transport-section .trip-admin-card .trip-info .desc, .admin-finance-transport-section .trip-admin-card .expense-info .desc, .admin-finance-transport-section .expense-admin-card .trip-info .desc, .admin-finance-transport-section .expense-admin-card .expense-info .desc {
+  margin: 0;
+  color: var(--pico-muted-color);
+  line-height: 1.2;
+}
+.admin-finance-transport-section .trip-admin-card .trip-actions, .admin-finance-transport-section .trip-admin-card .expense-actions, .admin-finance-transport-section .expense-admin-card .trip-actions, .admin-finance-transport-section .expense-admin-card .expense-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.admin-finance-transport-section .cost-release-box {
+  background: rgba(var(--pico-primary-rgb), 0.03);
+  border: 1px solid rgba(var(--pico-primary-rgb), 0.1);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Admin Finance Section */
+.admin-finance-transport-section .finance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 1024px) {
+  .admin-finance-transport-section .finance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.admin-finance-transport-section .finance-grid .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.admin-finance-transport-section .finance-grid .header-row h4 {
+  margin: 0;
+}
+.admin-finance-transport-section .trip-admin-card, .admin-finance-transport-section .expense-admin-card {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.admin-finance-transport-section .trip-admin-card .trip-info, .admin-finance-transport-section .trip-admin-card .expense-info, .admin-finance-transport-section .expense-admin-card .trip-info, .admin-finance-transport-section .expense-admin-card .expense-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.admin-finance-transport-section .trip-admin-card .trip-info .capacity-tag, .admin-finance-transport-section .trip-admin-card .expense-info .capacity-tag, .admin-finance-transport-section .expense-admin-card .trip-info .capacity-tag, .admin-finance-transport-section .expense-admin-card .expense-info .capacity-tag {
+  font-size: 0.75rem;
+  background: rgba(var(--pico-primary-rgb), 0.1);
+  color: var(--pico-primary);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  width: fit-content;
+}
+.admin-finance-transport-section .trip-admin-card .trip-info .payer, .admin-finance-transport-section .trip-admin-card .expense-info .payer, .admin-finance-transport-section .expense-admin-card .trip-info .payer, .admin-finance-transport-section .expense-admin-card .expense-info .payer {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+}
+.admin-finance-transport-section .trip-admin-card .trip-info .desc, .admin-finance-transport-section .trip-admin-card .expense-info .desc, .admin-finance-transport-section .expense-admin-card .trip-info .desc, .admin-finance-transport-section .expense-admin-card .expense-info .desc {
+  margin: 0;
+  color: var(--pico-muted-color);
+  line-height: 1.2;
+}
+.admin-finance-transport-section .trip-admin-card .trip-actions, .admin-finance-transport-section .trip-admin-card .expense-actions, .admin-finance-transport-section .expense-admin-card .trip-actions, .admin-finance-transport-section .expense-admin-card .expense-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.admin-finance-transport-section .cost-release-box {
+  background: rgba(var(--pico-primary-rgb), 0.03);
+  border: 1px solid rgba(var(--pico-primary-rgb), 0.1);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 #admin-view {
