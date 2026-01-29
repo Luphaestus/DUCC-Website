@@ -45,9 +45,15 @@ const ViewChangedEvent = new Event();
 const EventAttendanceChangedEvent = new Event();
 
 /**
+ * Event fired when a user's membership status is updated.
+ * @type {Event}
+ */
+const MembershipChangedEvent = new Event();
+
+/**
  * Event fired when the connection to the server is lost.
  * @type {Event}
  */
 const NoInternetEvent = new Event();
 
-export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, NoInternetEvent };
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, NoInternetEvent };

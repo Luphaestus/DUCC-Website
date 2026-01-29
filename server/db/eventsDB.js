@@ -10,6 +10,7 @@ import TagsDB from './tagsDB.js';
 import UserDB from './userDB.js';
 import EventRules from '../rules/EventRules.js';
 import Globals from '../misc/globals.js';
+import Utils from '../misc/utils.js';
 import Logger from '../misc/Logger.js';
 
 export default class eventsDB {
@@ -35,7 +36,7 @@ export default class eventsDB {
              FROM events e 
              WHERE e.start BETWEEN ? AND ?
              ORDER BY e.start ASC`,
-            [userId, startOfWeek.toISOString(), endOfWeek.toISOString()]
+            [userId, Utils.formatDateForSQLite(startOfWeek), Utils.formatDateForSQLite(endOfWeek)]
         );
 
         const visibleEvents = [];
@@ -77,7 +78,7 @@ export default class eventsDB {
              FROM events e 
              WHERE e.start >= ? AND e.start <= ?
              ORDER BY e.start ASC`,
-            [userId, startDate.toISOString(), endDate.toISOString()]
+            [userId, Utils.formatDateForSQLite(startDate), Utils.formatDateForSQLite(endDate)]
         );
 
         const visibleEvents = [];
@@ -124,8 +125,10 @@ export default class eventsDB {
         }
 
         if (!showPast) {
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
             conditions.push(`start >= ?`);
-            params.push(new Date().toISOString());
+            params.push(Utils.formatDateForSQLite(startOfToday));
         }
 
         if (minCost !== undefined && minCost !== '') {
@@ -174,13 +177,23 @@ export default class eventsDB {
     }
 
     /**
-     * Fetch event by ID, enforcing user-specific visibility rules.
+     * Fetch specific event details by ID.
      */
     static async get_event_by_id(db, userId, eventId) {
         const event = await db.get('SELECT * FROM events WHERE id = ?', [eventId]);
         if (!event) return new statusObject(404, 'Event not found');
 
         await this._enrichEvent(db, event);
+
+        if (userId) {
+            const driverInfo = await db.get(`
+                SELECT ed.id, ed.status, ed.start_mileage, ed.end_mileage, t.name as trip_name
+                FROM event_drivers ed
+                JOIN trips t ON ed.trip_id = t.id
+                WHERE t.event_id = ? AND ed.user_id = ?
+            `, [eventId, userId]);
+            event.driver_info = driverInfo || null;
+        }
 
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
         if (!await EventRules.canViewEvent(db, event, user)) {
@@ -225,61 +238,61 @@ export default class eventsDB {
     }
 
     /**
-     * Create a new event record and link its tags.
-     */
-    static async createEvent(db, data) {
-        try {
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_id, upfront_refund_cutoff } = data;
-            
-            if (!signup_required && max_attendees > 0) {
-                return new statusObject(400, 'Max attendees cannot be set if signup is not required');
-            }
-
-            const result = await db.run(
-                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, image_id, upfront_refund_cutoff)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_id, upfront_refund_cutoff]
-            );
-            const eventId = result.lastID;
-
-            if (tags && Array.isArray(tags)) {
-                for (const tagId of tags) await TagsDB.associateTag(db, eventId, tagId);
-            }
-
-            return new statusObject(201, null, { id: eventId });
-        } catch (error) {
-            Logger.error(error);
-            return new statusObject(500, 'Database error');
+ * Create a new event record and link its tags.
+ */
+static async createEvent(db, data) {
+    try {
+        let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff } = data;
+        
+        if (!signup_required && max_attendees > 0) {
+            return new statusObject(400, 'Max attendees cannot be set if signup is not required');
         }
-    }
 
-    /**
-     * Update an existing event record and its tag associations.
-     */
-    static async updateEvent(db, id, data) {
-        try {
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, image_id, upfront_refund_cutoff } = data;
+        const result = await db.run(
+            `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, is_offsite, image_id, upfront_refund_cutoff)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, image_id, upfront_refund_cutoff]
+        );
+        const eventId = result.lastID;
 
-            if (!signup_required && max_attendees > 0) {
-                return new statusObject(400, 'Max attendees cannot be set if signup is not required');
-            }
-
-            await db.run(
-                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, image_id=?, upfront_refund_cutoff=? WHERE id=?`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, image_id, upfront_refund_cutoff, id]
-            );
-
-            if (tags && Array.isArray(tags)) {
-                await TagsDB.clearEventTags(db, id);
-                for (const tagId of tags) await TagsDB.associateTag(db, id, tagId);
-            }
-
-            return new statusObject(200, 'Event updated');
-        } catch (error) {
-            Logger.error(error);
-            return new statusObject(500, 'Database error: ' + error.message);
+        if (tags && Array.isArray(tags)) {
+            for (const tagId of tags) await TagsDB.associateTag(db, eventId, tagId);
         }
+
+        return new statusObject(201, null, { id: eventId });
+    } catch (error) {
+        Logger.error(error);
+        return new statusObject(500, 'Database error');
     }
+}
+
+/**
+ * Update an existing event record and its tag associations.
+ */
+static async updateEvent(db, id, data) {
+    try {
+        let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff } = data;
+
+        if (!signup_required && max_attendees > 0) {
+            return new statusObject(400, 'Max attendees cannot be set if signup is not required');
+        }
+
+        await db.run(
+            `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, is_offsite=?, image_id=?, upfront_refund_cutoff=? WHERE id=?`,
+            [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, image_id, upfront_refund_cutoff, id]
+        );
+
+        if (tags && Array.isArray(tags)) {
+            await TagsDB.clearEventTags(db, id);
+            for (const tagId of tags) await TagsDB.associateTag(db, id, tagId);
+        }
+
+        return new statusObject(200, 'Event updated');
+    } catch (error) {
+        Logger.error(error);
+        return new statusObject(500, 'Database error: ' + error.message);
+    }
+}
 
     /**
      * Toggle the cancellation status of an event.
