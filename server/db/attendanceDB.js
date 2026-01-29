@@ -35,7 +35,7 @@ export default class AttendanceDB {
             [eventId, userId, new Date().toISOString(), transactionId]
         );
 
-        return new statusObject(200, 'Joined successfully');
+        return new statusObject(201, 'Joined successfully');
     }
 
     /**

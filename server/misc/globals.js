@@ -157,9 +157,11 @@ export default class Globals {
         data[key] = valueContainer;
         Globals.cache = data; 
 
-        fs.writeFile(this.path, JSON.stringify(data, null, 4), (err) => {
-            if (err) Logger.error('Failed to save globals.json:', err);
-        });
+        try {
+            fs.writeFileSync(this.path, JSON.stringify(data, null, 4));
+        } catch (error) {
+            Logger.error('Failed to save globals.json:', error);
+        }
     }
 
 }

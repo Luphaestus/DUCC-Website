@@ -53,7 +53,7 @@ export default class TagsDB {
                 'INSERT INTO tags (name, color, description, min_difficulty, priority, join_policy, view_policy, image_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 [name, color || '#808080', description, min_difficulty, priority || 0, join_policy || 'open', view_policy || 'open', image_id]
             );
-            return new statusObject(200, null, { id: result.lastID });
+            return new statusObject(201, null, { id: result.lastID });
         } catch (error) {
             Logger.error(error);
             return new statusObject(500, 'Database error');

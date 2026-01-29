@@ -246,7 +246,7 @@ export default class eventsDB {
                 for (const tagId of tags) await TagsDB.associateTag(db, eventId, tagId);
             }
 
-            return new statusObject(200, null, { id: eventId });
+            return new statusObject(201, null, { id: eventId });
         } catch (error) {
             Logger.error(error);
             return new statusObject(500, 'Database error');

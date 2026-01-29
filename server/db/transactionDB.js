@@ -50,7 +50,7 @@ export default class TransactionsDB {
             [userId, amount, description, new Date().toISOString(), eventId]
         );
         const transactionId = await db.get('SELECT last_insert_rowid() AS id');
-        return new statusObject(200, 'Transaction added successfully', transactionId.id);
+        return new statusObject(201, 'Transaction added successfully', transactionId.id);
     }
 
     /**

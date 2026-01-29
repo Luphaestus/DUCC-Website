@@ -23,7 +23,7 @@ export default class WaitlistDB {
         if (onList.getData()) return new statusObject(409, 'Already on waiting list');
 
         await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, userId]);
-        return new statusObject(200, 'Joined waiting list');
+        return new statusObject(201, 'Joined waiting list');
     }
 
     /**

@@ -1,63 +1,99 @@
 /**
  * permissions.js
  * 
- * Provides logic for evaluating user permissions and administrative scoping.
+ * Logic for user permission evaluation.
  */
 
 export const SCOPED_PERMS = ['event.manage.scoped', 'event.read.scoped', 'event.write.scoped'];
 
 export class Permissions {
-    /**
-     * Check if a user possesses a specific permission slug.
-     */
+    /** Determines permission implications (hierarchy). */
+    static getImplyingPermissions(slug) {
+        const implying = new Set([slug, 'user.manage']);
+        
+        const parts = slug.split('.');
+        if (parts.length >= 2) {
+            const entity = parts[0];
+            const action = parts[1];
+            const scope = parts[2];
+
+            const actionOrder = ['read', 'write', 'manage'];
+            const currentActionIdx = actionOrder.indexOf(action);
+
+            if (currentActionIdx !== -1) {
+                for (let i = currentActionIdx + 1; i < actionOrder.length; i++) {
+                    implying.add(`${entity}.${actionOrder[i]}${scope ? '.' + scope : ''}`);
+                }
+            }
+
+            if (scope === 'scoped') {
+                implying.add(`${entity}.${action}.all`);
+                
+                if (currentActionIdx !== -1) {
+                    for (let i = currentActionIdx + 1; i < actionOrder.length; i++) {
+                        implying.add(`${entity}.${actionOrder[i]}.all`);
+                    }
+                }
+            }
+        }
+        return Array.from(implying);
+    }
+
+    /** Check if user has permission. */
     static async hasPermission(db, userId, permissionSlug) {
+        const implying = this.getImplyingPermissions(permissionSlug);
+        const placeholders = implying.map(() => '?').join(',');
+
+        const result = await db.get(`
+            SELECT 1 FROM (
+                SELECT p.slug FROM user_roles ur
+                JOIN role_permissions rp ON ur.role_id = rp.role_id
+                JOIN permissions p ON rp.permission_id = p.id
+                WHERE ur.user_id = ?
+                UNION
+                SELECT p.slug FROM user_permissions up
+                JOIN permissions p ON up.permission_id = p.id
+                WHERE up.user_id = ?
+            ) as user_perms
+            WHERE slug IN (${placeholders})
+        `, [userId, userId, ...implying]);
+
+        if (result) return true;
+
         if (SCOPED_PERMS.includes(permissionSlug)) {
             const managedTags = await this.getManagedTags(db, userId);
             return managedTags.length > 0;
         }
 
-        const rolePerm = await db.get(
-            `SELECT 1 FROM user_roles ur
-             JOIN role_permissions rp ON ur.role_id = rp.role_id
-             JOIN permissions p ON rp.permission_id = p.id
-             WHERE ur.user_id = ? AND p.slug = ?`,
-            [userId, permissionSlug]
-        );
-        if (rolePerm) return true;
-
-        const userPerm = await db.get(
-            `SELECT 1 FROM user_permissions up
-             JOIN permissions p ON up.permission_id = p.id
-             WHERE up.user_id = ? AND p.slug = ?`,
-            [userId, permissionSlug]
-        );
-        return !!userPerm;
+        return false;
     }
 
-    /**
-     * Determine if a user has any administrative capabilities.
-     */
+    /** Check if user has any administrative power. */
     static async hasAnyPermission(db, userId) {
         const result = await db.get(
             `SELECT 1 FROM user_roles WHERE user_id = ? LIMIT 1`,
             [userId]
         );
-        return !!result;
+        if (result) return true;
+
+        const direct = await db.get(
+            `SELECT 1 FROM user_permissions WHERE user_id = ? LIMIT 1`,
+            [userId]
+        );
+        return !!direct;
     }
 
-    /**
-     * Check if a user is explicitly assigned a specific role.
-     */
+    /** Check if user has specific role. */
     static async hasRole(db, userId, role) {
         var roleId = role;
         
         if (typeof role === 'string') {
-            roleId = await db.get(
+            const row = await db.get(
                 `SELECT id FROM roles WHERE name = ?`,
                 [role]
             );
-            if (!roleId) return false;
-            roleId = roleId.id;
+            if (!row) return false;
+            roleId = row.id;
         }
 
         const result = await db.get(
@@ -67,9 +103,7 @@ export class Permissions {
         return !!result;
     }
 
-    /**
-     * Fetch all tag IDs that a user is authorized to manage.
-     */
+    /** Get managed tag IDs for user. */
     static async getManagedTags(db, userId) {
         const roleTags = await db.all(
             `SELECT rmt.tag_id FROM role_managed_tags rmt
@@ -86,9 +120,7 @@ export class Permissions {
         return [...new Set([...roleTags.map(t => t.tag_id), ...directTags.map(t => t.tag_id)])];
     }
 
-    /**
-     * Check if a user is authorized to manage a specific tag.
-     */
+    /** Check if user manages specific tag. */
     static async canManageTag(db, userId, tagId) {
         if (await this.hasPermission(db, userId, 'event.manage.all') || await this.hasPermission(db, userId, 'user.manage')) return true;
 
@@ -96,9 +128,7 @@ export class Permissions {
         return managedTagIds.includes(parseInt(tagId));
     }
 
-    /**
-     * Check if a user is authorized to manage a specific event.
-     */
+    /** Check if user manages specific event. */
     static async canManageEvent(db, userId, eventId = null, eventTagIds = []) {
         if (await this.hasPermission(db, userId, 'event.manage.all')) return true;
 
@@ -122,9 +152,7 @@ export class Permissions {
         return false;
     }
 
-    /**
-     * Helper to filter out system-managed scoped permissions from a list.
-     */
+    /** Filter out system-managed permissions. */
     static filterScopedPerms(permissions) {
         return permissions.filter(p => !SCOPED_PERMS.includes(p));
     }
