@@ -60,7 +60,7 @@ export default class AttendanceDB {
     static async get_all_event_attendees_history(db, eventId) {
         try {
             const rows = await db.all(
-                `SELECT u.id, u.first_name, u.last_name, u.email, ea.is_attending, ea.left_at
+                `SELECT u.id, u.first_name, u.last_name, u.email, ea.is_attending, ea.left_at, ea.payment_transaction_id, ea.upfront_refunded
                  FROM users u
                  JOIN event_attendees ea ON u.id = ea.user_id
                  WHERE ea.event_id = ?
@@ -77,7 +77,9 @@ export default class AttendanceDB {
                         last_name: row.last_name,
                         email: row.email,
                         is_attending: 0,
-                        left_at: null
+                        left_at: null,
+                        payment_transaction_id: null,
+                        upfront_refunded: 0
                     });
                 }
 
@@ -86,12 +88,16 @@ export default class AttendanceDB {
                 if (row.is_attending === 1) {
                     user.is_attending = 1;
                     user.left_at = null;
+                    user.payment_transaction_id = row.payment_transaction_id;
+                    user.upfront_refunded = row.upfront_refunded;
                 } else {
                     if (user.is_attending !== 1) {
                         const rowLeft = row.left_at ? new Date(row.left_at).getTime() : 0;
                         const currLeft = user.left_at ? new Date(user.left_at).getTime() : 0;
                         if (rowLeft > currLeft) {
                             user.left_at = row.left_at;
+                            user.payment_transaction_id = row.payment_transaction_id;
+                            user.upfront_refunded = row.upfront_refunded;
                         }
                     }
                 }

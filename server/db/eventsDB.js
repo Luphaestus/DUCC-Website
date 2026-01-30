@@ -186,13 +186,13 @@ export default class eventsDB {
         await this._enrichEvent(db, event);
 
         if (userId) {
-            const driverInfo = await db.get(`
+            const driverInfo = await db.all(`
                 SELECT ed.id, ed.status, ed.start_mileage, ed.end_mileage, t.name as trip_name
                 FROM event_drivers ed
                 JOIN trips t ON ed.trip_id = t.id
                 WHERE t.event_id = ? AND ed.user_id = ?
             `, [eventId, userId]);
-            event.driver_info = driverInfo || null;
+            event.driver_info = (driverInfo && driverInfo.length > 0) ? driverInfo : null;
         }
 
         const user = userId ? (await UserDB.getElementsById(db, userId, ['difficulty_level', 'id'])).getData() : null;
