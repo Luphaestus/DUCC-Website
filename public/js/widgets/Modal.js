@@ -7,6 +7,8 @@
 import { CLOSE_SVG } from '../../images/icons/outline/icons.js';
 
 export class Modal {
+    static openModals = 0;
+
     constructor({ id, title, content, contentId, onClose, isView = false, extraClasses = '', contentClasses = '', bodyClass = 'c-modal-body', fallbackPath }) {
         this.id = id;
         this.title = title;
@@ -19,6 +21,7 @@ export class Modal {
         this.bodyClass = bodyClass;
         this.fallbackPath = fallbackPath;
         this.element = null;
+        this._isVisible = false;
     }
 
     getHTML() {
@@ -71,10 +74,27 @@ export class Modal {
         }
     }
 
+    static increment() {
+        Modal.openModals++;
+        document.body.classList.add('modal-open');
+    }
+
+    static decrement() {
+        Modal.openModals = Math.max(0, Modal.openModals - 1);
+        if (Modal.openModals === 0) {
+            document.body.classList.remove('modal-open');
+        }
+    }
+
     hide() {
         if (this.element) {
             this.element.classList.add('hidden');
             this.element.classList.remove('visible');
+            
+            if (this._isVisible) {
+                Modal.decrement();
+                this._isVisible = false;
+            }
         }
     }
 
@@ -82,6 +102,11 @@ export class Modal {
         if (this.element) {
             this.element.classList.remove('hidden');
             requestAnimationFrame(() => this.element.classList.add('visible'));
+
+            if (!this._isVisible) {
+                Modal.increment();
+                this._isVisible = true;
+            }
         }
     }
 }

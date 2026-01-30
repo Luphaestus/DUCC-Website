@@ -7,10 +7,12 @@
 import { apiRequest } from './api.js';
 import { ViewChangedEvent } from "./events/events.js";
 import { hasHistory } from './history.js';
+import { Modal } from '../widgets/Modal.js';
 
 
 const Routes = [];
 let openURL = null;
+let currentIsOverlay = false;
 
 /**
  * Registers a new route in the application. 
@@ -90,7 +92,16 @@ function switchView(path, force = false) {
     }
 
     if (route.isOverlay) {
-        openURL = window.location.pathname + window.location.search;;
+        openURL = window.location.pathname + window.location.search;
+        if (!currentIsOverlay) {
+            Modal.increment();
+            currentIsOverlay = true;
+        }
+    } else {
+        if (currentIsOverlay) {
+            Modal.decrement();
+            currentIsOverlay = false;
+        }
     }
 
     const allViews = document.querySelectorAll('.view');
