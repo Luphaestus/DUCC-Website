@@ -1,6 +1,4 @@
-//todo refine 
-/* manage.js (Role)
-* 
+/* manage.js (Role)* 
 * Logic for the administrative roles list view.
 * 
 * Registered Route: /admin/roles
@@ -29,25 +27,44 @@ export async function renderManageRoles() {
                     </div>
                 </div>
             </div>
-            <div class="glass-table-container">
-                <div class="table-responsive">
-                    <table class="glass-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Permissions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="roles-table-body">
-                            <tr><td colspan="2" class="loading-cell">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+            
+            <div class="roles-sections">
+                ${Panel({
+                    title: 'System Roles',
+                    content: `
+                        <div class="table-responsive">
+                            <table class="glass-table">
+                                <thead><tr><th>Name</th><th>Permissions</th></tr></thead>
+                                <tbody id="roles-table-body">
+                                    <tr><td colspan="2" class="loading-cell">Loading roles...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `
+                })}
+
+                ${Panel({
+                    title: 'Permission Definitions',
+                    classes: 'mt-4',
+                    content: `
+                        <div class="table-responsive">
+                            <table class="glass-table">
+                                <thead><tr><th>Slug</th><th>Description</th><th class="text-right">Action</th></tr></thead>
+                                <tbody id="permissions-table-body">
+                                    <tr><td colspan="3" class="loading-cell">Loading permissions...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `
+                })}
             </div>
         </div>
     `;
 
-    await fetchAndRenderRoles();
+    await Promise.all([
+        fetchAndRenderRoles(),
+        fetchAndRenderPermissions()
+    ]);
 }
 
 /**
@@ -57,6 +74,7 @@ async function fetchAndRenderRoles() {
     try {
         const roles = await apiRequest('GET', '/api/admin/roles');
         const tbody = document.getElementById('roles-table-body');
+        if (!tbody) return;
 
         if (roles.length === 0) {
             tbody.innerHTML = '<tr><td colspan="2" class="empty-cell">No roles found.</td></tr>';
@@ -79,5 +97,40 @@ async function fetchAndRenderRoles() {
     } catch (e) {
         const tbody = document.getElementById('roles-table-body');
         if (tbody) tbody.innerHTML = '<tr><td colspan="2" class="error-cell">Error loading roles.</td></tr>';
+    }
+}
+
+/**
+ * Fetches all permissions and populates the definitions table.
+ */
+async function fetchAndRenderPermissions() {
+    try {
+        const perms = await apiRequest('GET', '/api/admin/roles/permissions');
+        const tbody = document.getElementById('permissions-table-body');
+        if (!tbody) return;
+
+        tbody.innerHTML = perms.map(p => `
+            <tr>
+                <td class="primary-text"><code>${p.slug}</code></td>
+                <td><input type="text" class="mini-input" id="perm-desc-${p.id}" value="${p.description || ''}" placeholder="No description"></td>
+                <td class="text-right">
+                    <button class="small-btn primary mini-btn" data-save-perm="${p.id}">Save</button>
+                </td>
+            </tr>
+        `).join('');
+
+        tbody.querySelectorAll('[data-save-perm]').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.dataset.savePerm;
+                const description = document.getElementById(`perm-desc-${id}`).value;
+                try {
+                    await apiRequest('PUT', `/api/admin/permissions/${id}`, { description });
+                    notify('Success', 'Permission updated.', 'success');
+                } catch (e) { notify('Error', e.message, 'error'); }
+            };
+        });
+    } catch (e) {
+        const tbody = document.getElementById('permissions-table-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3">Error loading permissions.</td></tr>';
     }
 }

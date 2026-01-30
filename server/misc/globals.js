@@ -63,6 +63,24 @@ export default class Globals {
                     error: "Value must be a valid path or file API URL.",
                     permission: "President",
                 },
+                MileageCost: {
+                    data: 0.45,
+                    name: "Mileage Cost",
+                    description: "Price per mile for driver reimbursements.",
+                    type: "number",
+                    regexp: "^\\d+(\\.\\d{1,2})?$",
+                    error: "Value must be a valid currency amount.",
+                    permission: "President",
+                },
+                ExpenseReportStartLimit: {
+                    data: 1,
+                    name: "Expense Reporting Lead Time",
+                    description: "Hours before an event starts that expenses and mileage can be reported.",
+                    type: "number",
+                    regexp: "^\\d+$",
+                    error: "Value must be a non-negative integer.",
+                    permission: "Authenticated",
+                },
             };
             fs.writeFileSync(this.path, JSON.stringify(defaults, null, 4));
             Globals.cache = defaults;

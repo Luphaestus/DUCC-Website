@@ -62,7 +62,10 @@ export async function seedEssential(db, newlyCreatedTables = []) {
         { slug: 'file.write', desc: 'Upload and delete files' },
         { slug: 'file.edit', desc: 'Edit file metadata' },
         { slug: 'file.category.manage', desc: 'Manage file categories' },
-        { slug: 'globals.manage', desc: 'Manage global system settings' }
+        { slug: 'globals.manage', desc: 'Manage global system settings' },
+        { slug: 'quote.manage', desc: 'Moderate quotes' },
+        { slug: 'quote.see_author', desc: 'See who submitted a quote' },
+        { slug: 'car.manage_global', desc: 'Manage website-wide global cars' }
     ];
 
     const permIds = {};
@@ -72,7 +75,7 @@ export async function seedEssential(db, newlyCreatedTables = []) {
         permIds[p.slug] = row.id;
     }
 
-    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage'];
+    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global'];
     await db.run('INSERT OR IGNORE INTO roles (name, description) VALUES (?, ?)', ['President', 'The Club President with full administrative access.']);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
     for (const permSlug of presidentPerms) {
@@ -109,13 +112,15 @@ export async function seedEssential(db, newlyCreatedTables = []) {
             const password = generateRandomPassword(12);
             const hashedPassword = await bcrypt.hash(password, 10);
             const adminResult = await db.run(
-                `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level) VALUES (?, ?, ?, ?, ?)`,
-                [email, hashedPassword, 'Admin', 'User', 5]
+                `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, is_member, filled_legal_info, legal_filled_at) VALUES (?, ?, ?, ?, ?, 1, 1, ?)`,
+                [email, hashedPassword, 'Admin', 'User', 5, new Date().toISOString()]
             );
             adminId = adminResult.lastID;
             if (process.env.NODE_ENV !== 'test') console.info(`========== Admin created. ==========\nEmail: ${email}\nPassword: ${password}\n====================================`);
         } else {
             adminId = adminExists.id;
+            // Ensure existing admin is also a member and has legal info
+            await db.run('UPDATE users SET is_member = 1, filled_legal_info = 1, legal_filled_at = ? WHERE id = ?', [new Date().toISOString(), adminId]);
         }
         if (presidentRole) {
             await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);

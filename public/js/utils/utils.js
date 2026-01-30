@@ -52,3 +52,94 @@ export function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
 }
+
+/**
+ * Enforces numeric-only input on an element.
+ * 
+ * @param {HTMLInputElement} input - The input element to protect.
+ */
+export function setupNumberInput(input) {
+    if (!input) return;
+
+    input.addEventListener('keydown', (e) => {
+        // Allow: backspace, delete, tab, escape, enter, dot, dash
+        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'ArrowUp', 'ArrowDown'];
+        
+        if (allowedKeys.includes(e.key) ||
+            (e.key === 'a' && (e.ctrlKey === true || e.metaKey === true)) || // Ctrl+A
+            (e.key === 'c' && (e.ctrlKey === true || e.metaKey === true)) || // Ctrl+C
+            (e.key === 'v' && (e.ctrlKey === true || e.metaKey === true)) || // Ctrl+V
+            (e.key === 'x' && (e.ctrlKey === true || e.metaKey === true))) { // Ctrl+X
+            return;
+        }
+
+        const step = input.getAttribute('step');
+        const min = input.getAttribute('min');
+        const isDecimal = step && step.includes('.');
+        const isNegative = min && (parseInt(min) < 0 || min === '-');
+
+        if (isDecimal && e.key === '.') {
+            if (input.value.includes('.')) e.preventDefault();
+            return;
+        }
+
+        if (isNegative && e.key === '-') {
+            if (input.selectionStart !== 0 || input.value.includes('-')) e.preventDefault();
+            return;
+        }
+
+        // Prevent non-numeric
+        if (!/^\d$/.test(e.key)) {
+            e.preventDefault();
+        }
+    });
+
+    // Handle paste
+    input.addEventListener('paste', (e) => {
+        const pasteData = e.clipboardData.getData('text/plain');
+        const step = input.getAttribute('step');
+        const min = input.getAttribute('min');
+        
+        let regexStr = '^\\d*$';
+        if (step && step.includes('.')) regexStr = '^-?\\d*\\.?\\d*$';
+        else if (min && parseInt(min) < 0) regexStr = '^-?\\d*$';
+        
+        const regex = new RegExp(regexStr);
+        if (!regex.test(pasteData)) {
+            e.preventDefault();
+        }
+    });
+
+    // Handle blur to ensure valid number
+    input.addEventListener('blur', () => {
+        if (input.value === '.' || input.value === '-') {
+            input.value = '';
+        }
+    });
+}
+
+/**
+ * Generates and triggers a download for a CSV file.
+ * 
+ * @param {Array<Array<string>>} data - 2D array of strings.
+ * @param {string} filename - Filename including extension.
+ */
+export function downloadCSV(data, filename) {
+    const csvContent = data.map(row => 
+        row.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+

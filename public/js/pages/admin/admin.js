@@ -20,6 +20,7 @@ import { renderRoleDetail } from './role/detail.js';
 import { renderManageGlobals } from './globals.js';
 import { renderAdminFiles } from './files.js';
 import { renderManageSlides } from './slides.js';
+import { renderManageQuotes } from './quotes.js';
 import { requireAuth } from '/js/utils/auth.js';
 import {
     GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG,
@@ -53,6 +54,7 @@ export async function renderAdminNavBar(activeSection) {
     const canManageTransactions = perms.includes('transaction.manage');
     const canManageRoles = perms.includes('role.manage');
     const canManageFiles = perms.includes('document.write') || perms.includes('document.edit');
+    const canManageQuotes = perms.includes('quote.manage');
     const isExec = perms.length > 0;
 
     const navItem = (link, label, key) => `
@@ -70,6 +72,7 @@ export async function renderAdminNavBar(activeSection) {
             ${canManageEvents ? navItem('/admin/events', 'Events', 'events') : ''}
             ${canManageEvents ? navItem('/admin/tags', 'Tags', 'tags') : ''}
             ${canManageFiles ? navItem('/admin/files', 'Files', 'files') : ''}
+            ${canManageQuotes ? navItem('/admin/quotes', 'Quotes', 'quotes') : ''}
             ${canManageRoles ? navItem('/admin/roles', 'Roles', 'roles') : ''}
             ${isExec ? navItem('/admin/slides', 'Slides', 'slides') : ''}
             ${isPresident ? navItem('/admin/globals', 'Globals', 'globals') : ''}
@@ -139,6 +142,7 @@ async function AdminNavigationListener({ viewId, path }) {
     const canManageTransactions = perms.includes('transaction.manage');
     const canManageRoles = perms.includes('role.manage');
     const canManageDocs = perms.includes('document.write') || perms.includes('document.edit');
+    const canManageQuotes = perms.includes('quote.manage');
     const isExec = perms.length > 0;
     const isPresident = !!statusData;
 
@@ -158,6 +162,7 @@ async function AdminNavigationListener({ viewId, path }) {
     const canAccessRoles = canManageRoles;
     const canAccessGlobals = isPresident;
     const canAccessDocs = canManageDocs;
+    const canAccessQuotes = canManageQuotes;
 
     // --- Sub-Route Handling ---
 
@@ -199,6 +204,12 @@ async function AdminNavigationListener({ viewId, path }) {
         updateAdminTitle('Files');
         await renderAdminFiles();
 
+        // Quotes Module
+    } else if (cleanPath === '/admin/quotes') {
+        if (!canAccessQuotes) return switchView('/unauthorised');
+        updateAdminTitle('Quotes');
+        await renderManageQuotes();
+
         // Global Settings
     } else if (cleanPath === '/admin/globals') {
         if (!canAccessGlobals) return switchView('/unauthorised');
@@ -220,6 +231,7 @@ async function AdminNavigationListener({ viewId, path }) {
         if (canAccessEvents) cardsHtml += createDashboardCard('Events', 'Schedule & attendance', CALENDAR_TODAY_SVG, '/admin/events');
         if (canAccessTags) cardsHtml += createDashboardCard('Tags', 'Event categories & styles', LOCAL_ACTIVITY_SVG, '/admin/tags');
         if (canAccessDocs) cardsHtml += createDashboardCard('Files', 'Documents & resources', FOLDER_SVG, '/admin/files');
+        if (canAccessQuotes) cardsHtml += createDashboardCard('Quotes', 'Moderate club quotes', LOCAL_ACTIVITY_SVG, '/admin/quotes');
         if (canAccessRoles) cardsHtml += createDashboardCard('Roles', 'User roles & access', ID_CARD_SVG, '/admin/roles');
         if (canAccessGlobals) cardsHtml += createDashboardCard('Globals', 'System configuration', SETTINGS_SVG, '/admin/globals');
 

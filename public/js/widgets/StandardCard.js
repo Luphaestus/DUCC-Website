@@ -26,6 +26,7 @@ export class StandardCard {
         const endTime = endDate.toLocaleTimeString('en-UK', timeOptions);
 
         const tagsHtml = Tag.renderList(event.tags || []);
+        const offsiteBadge = event.is_offsite ? `<span class="badge primary small-badge mr-2">External Trip</span>` : '';
 
         const imageUrl = event.image_url || '/images/misc/ducc.png';
         const imageHtml = /*html*/`
@@ -33,7 +34,7 @@ export class StandardCard {
                 <div class="event-image" style="--event-image-url: url('${imageUrl}');"></div>
                 <div class="image-overlay"></div>
                 <div class="event-image-content">
-                    <div class="event-tags">${tagsHtml}</div>
+                    <div class="event-tags">${offsiteBadge}${tagsHtml}</div>
                     <h3 class="event-title-bold ${isCanceled ? 'strikethrough error' : ''}">
                         ${event.title || 'Untitled Event'}
                     </h3>

@@ -31,6 +31,20 @@ export default class AdminRoles {
         });
 
         /**
+         * Update a permission description.
+         */
+        this.app.put('/api/admin/permissions/:id', check('perm:role.manage'), async (req, res) => {
+            const { description } = req.body;
+            const { id } = req.params;
+            try {
+                await this.db.run('UPDATE permissions SET description = ? WHERE id = ?', [description, id]);
+                res.status(200).json({ message: 'Permission updated.' });
+            } catch (e) {
+                res.status(500).json({ message: 'Database error.' });
+            }
+        });
+
+        /**
          * List all defined roles and their metadata.
          */
         this.app.get('/api/admin/roles', check('perm:role.manage'), async (req, res) => {

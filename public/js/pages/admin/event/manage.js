@@ -10,6 +10,7 @@
 
 import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
+import { setupNumberInput } from '/js/utils/utils.js';
 import { adminContentID, renderAdminNavBar } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
 import { UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG } from '../../../../images/icons/outline/icons.js'
@@ -107,6 +108,10 @@ export async function renderManageEvents() {
     const filterBtn = document.getElementById('toggle-filters-btn');
     const filterPanel = document.getElementById('advanced-filters-panel');
     const applyBtn = document.getElementById('apply-filters-btn');
+
+    setupNumberInput(document.getElementById('filter-difficulty'));
+    setupNumberInput(document.getElementById('filter-min-cost'));
+    setupNumberInput(document.getElementById('filter-max-cost'));
 
     searchBtn.onclick = () => updateEventParams({ search: searchInput.value, page: 1 });
     searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };

@@ -12,9 +12,10 @@ import { LegalEvent } from './legal.js';
 import { notify } from '/js/components/notification.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import { requireAuth } from '/js/utils/auth.js';
-import { getOrdinal } from '/js/utils/utils.js';
-import { BalanceChangedEvent } from '/js/utils/events/events.js';
+import { getOrdinal, setupNumberInput } from '/js/utils/utils.js';
+import { BalanceChangedEvent, MembershipChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from '/js/utils/modal.js';
+import { Modal } from '/js/widgets/Modal.js';
 import { Sidebar, initSidebar } from '../widgets/sidebar.js';
 import { Panel } from '../widgets/panel.js';
 import { StatusIndicator } from '../widgets/status.js';
@@ -33,6 +34,7 @@ addRoute('/transactions', 'profile');
 
 const sidebarItems = [
     { id: 'overview', label: 'Overview', icon: DASHBOARD_SVG, active: true },
+    { id: 'cars', label: 'Cars', icon: GROUP_SVG },
     { id: 'balance', label: 'Balance & History', icon: WALLET_SVG },
     { id: 'settings', label: 'Account Settings', icon: SETTINGS_SVG },
     { label: 'Sign Out', icon: LOGOUT_SVG, actionId: 'sidebar-logout-btn', classes: 'logout' }
@@ -109,6 +111,15 @@ const HTML_TEMPLATE = /*html*/`
                                 <button id="toggle-instructor-btn" class="small-btn secondary">Apply</button>
                             </div>
                         `
+                    })}
+                </section>
+
+                <section id="tab-cars" class="dashboard-section">
+                    ${Panel({
+                        title: 'My Vehicles',
+                        icon: GROUP_SVG,
+                        action: `<button id="add-car-btn" class="small-btn primary">${ADD_SVG} Add Car</button>`,
+                        content: `<div id="cars-list-container" class="item-list"></div>`
                     })}
                 </section>
 
@@ -192,6 +203,7 @@ function renderMembershipBanner(profile, globals) {
                     showStatus('Welcome!', 'You are now a club member.', 'success');
                     updateDashboard();
                     BalanceChangedEvent.notify();
+                    MembershipChangedEvent.notify();
                 } catch (err) {
                     showStatus('Error', err.message || 'Failed to join.', 'error');
                 }
@@ -331,6 +343,127 @@ function renderProfileBalance(profile, minMoney) {
 }
 
 /**
+ * Fetches and renders the user's cars.
+ */
+async function renderCars() {
+    const container = document.getElementById('cars-list-container');
+    if (!container) return;
+
+    try {
+        const res = await apiRequest('GET', '/api/cars');
+        const cars = res.data || [];
+
+        container.innerHTML = ItemList(cars, (car) => {
+            const isOwner = car.user_id === currentUser?.id;
+            const canManageGlobal = currentUser?.permissions?.includes('car.manage_global');
+            const canEdit = isOwner || canManageGlobal;
+
+            return StandardListItem({
+                icon: GROUP_SVG,
+                title: car.name,
+                subtitle: `${car.seats} Seats • ${car.boats} Boats${car.is_global ? ' • <span class="badge primary">Global</span>' : ''}`,
+                action: `
+                    <div class="button-group mini">
+                        ${canEdit ? `
+                            <button class="small-btn icon-only secondary" data-edit-car="${car.id}" title="Edit Car">
+                                ${EDIT_SVG}
+                            </button>
+                            <button class="small-btn icon-only delete" data-delete-car="${car.id}" title="Remove Car">
+                                ${CLOSE_SVG}
+                            </button>
+                        ` : ''}
+                    </div>
+                `
+            });
+        });
+
+        // Bind listeners
+        container.querySelectorAll('[data-edit-car]').forEach(btn => {
+            btn.onclick = () => {
+                const car = cars.find(c => c.id == btn.dataset.editCar);
+                if (car) openCarModal(car);
+            };
+        });
+
+        container.querySelectorAll('[data-delete-car]').forEach(btn => {
+            btn.onclick = async () => {
+                if (await showConfirmModal('Remove Car?', 'Are you sure you want to remove this vehicle?')) {
+                    try {
+                        await apiRequest('DELETE', `/api/cars/${btn.dataset.deleteCar}`);
+                        notify('Success', 'Car removed.', 'success');
+                        renderCars();
+                    } catch (err) {
+                        notify('Error', err.message, 'error');
+                    }
+                }
+            };
+        });
+
+    } catch (e) {
+        container.innerHTML = '<p class="error-text">Failed to load cars.</p>';
+    }
+}
+
+/**
+ * Opens a modal to add or edit a car.
+ */
+function openCarModal(car = null) {
+    const isEdit = !!car;
+    const canManageGlobal = currentUser?.permissions?.includes('car.manage_global');
+    
+    const modalContent = /*html*/`
+        <form id="car-form" class="modern-form">
+            <label>Car Name <input type="text" id="car-name" value="${isEdit ? car.name : ''}" placeholder="e.g. Blue VW Polo" required></label>
+            <div class="grid-2-col">
+                <label>Seats <input type="number" id="car-seats" min="1" max="9" value="${isEdit ? car.seats : 5}" required></label>
+                <label>Boats <input type="number" id="car-boats" min="0" max="9" value="${isEdit ? car.boats : 0}" required></label>
+            </div>
+            ${canManageGlobal ? `<label class="checkbox-label"><input type="checkbox" id="car-is-global" ${isEdit && car.is_global ? 'checked' : ''}> Global (available for anyone to use)</label>` : ''}
+            <div class="form-actions">
+                <button type="submit" class="primary full-width">${isEdit ? 'Update Vehicle' : 'Add Vehicle'}</button>
+            </div>
+        </form>
+    `;
+
+    const modal = new Modal({
+        id: 'car-modal',
+        title: isEdit ? 'Edit Vehicle' : 'Add New Vehicle',
+        content: modalContent
+    });
+
+    document.body.insertAdjacentHTML('beforeend', modal.getHTML());
+    modal.attachListeners();
+    modal.show();
+
+    setupNumberInput(document.getElementById('car-seats'));
+    setupNumberInput(document.getElementById('car-boats'));
+
+    document.getElementById('car-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById('car-name').value,
+            seats: document.getElementById('car-seats').value,
+            boats: document.getElementById('car-boats').value,
+            isGlobal: document.getElementById('car-is-global')?.checked || false
+        };
+
+        try {
+            if (isEdit) {
+                await apiRequest('PUT', `/api/cars/${car.id}`, data);
+                notify('Success', 'Vehicle updated.', 'success');
+            } else {
+                await apiRequest('POST', '/api/cars', data);
+                notify('Success', 'Vehicle added.', 'success');
+            }
+            modal.close();
+            renderCars();
+        } catch (err) {
+            notify('Error', err.message, 'error');
+        }
+    };
+}
+
+/**
  * Fetches and renders the user's transaction history list.
  */
 async function renderProfileTransactions() {
@@ -367,7 +500,7 @@ async function updateDashboard() {
 
     try {
         const [profile, globals, tags, minMoneyGlobal] = await Promise.all([
-            apiRequest('GET', '/api/user/elements/email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank'),
+            apiRequest('GET', '/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank'),
             apiRequest('GET', '/api/globals/MembershipCost'),
             apiRequest('GET', '/api/user/tags').catch(() => []),
             apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
@@ -383,6 +516,7 @@ async function updateDashboard() {
             renderSafetyInfo(profile);
             renderTags(tags);
             renderInstructor(profile);
+            renderCars();
         }
         renderProfileBalance(profile, minMoney);
         renderProfileTransactions();
@@ -421,6 +555,12 @@ function bindEvents() {
     };
 
     cancelBtn.onclick = closeSafetyEdit;
+
+    // Add Car Modal Logic
+    const addCarBtn = document.getElementById('add-car-btn');
+    if (addCarBtn) {
+        addCarBtn.onclick = () => openCarModal();
+    }
 
     formDiv.onsubmit = async (e) => {
         e.preventDefault();
@@ -490,7 +630,10 @@ function bindEvents() {
     };
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    const main = document.querySelector('main');
+    if (main) main.insertAdjacentHTML('beforeend', HTML_TEMPLATE);
+
     bindEvents();
 
     // Subscribe to external refresh triggers
@@ -503,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resolvedPath === '/profile') {
             const params = new URLSearchParams(window.location.search);
             let tab = params.get('tab') || 'overview';
-            const validTabs = ['overview', 'balance', 'settings'];
+            const validTabs = ['overview', 'cars', 'balance', 'settings'];
             if (!validTabs.includes(tab)) tab = 'overview';
 
             if (sidebarController) sidebarController.setActive(tab);
@@ -511,5 +654,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
-document.querySelector('main').insertAdjacentHTML('beforeend', HTML_TEMPLATE);

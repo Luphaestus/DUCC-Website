@@ -3294,6 +3294,35 @@ table tbody tr td {
   text-align: center !important;
 }
 
+.text-success {
+  color: var(--colour-good) !important;
+}
+
+.text-error {
+  color: var(--colour-bad) !important;
+}
+
+.small-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--pico-contrast);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  line-height: 1.2;
+}
+.small-title.nomargin {
+  margin-bottom: 0;
+}
+.small-title svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .mt-1 {
   margin-top: 0.25rem !important;
 }
@@ -4111,7 +4140,14 @@ nav.small-container ul.navbar-items li button#login-button {
 }
 .upload-widget .preview-container {
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  animation: fade-in-up 0.4s ease-out;
+}
+.upload-widget .preview-container.hidden {
+  display: none;
+  opacity: 0;
+  transform: translateY(-10px);
 }
 .upload-widget .preview-container .image-preview {
   width: 100%;
@@ -4120,6 +4156,48 @@ nav.small-container ul.navbar-items li button#login-button {
   background-position: center;
   border-radius: var(--border-radius-lg);
   border: 1px solid rgba(128, 128, 128, 0.2);
+  position: relative;
+}
+.upload-widget .preview-container .image-preview .remove-icon-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  /* Red glass theme */
+  background: rgba(231, 76, 60, 0.25) !important;
+  border: 1px solid rgba(231, 76, 60, 0.4) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white !important;
+  /* Reset global button constraints */
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  aspect-ratio: 1;
+  border-radius: 50% !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.upload-widget .preview-container .image-preview .remove-icon-btn.hidden {
+  display: none;
+}
+.upload-widget .preview-container .image-preview .remove-icon-btn:hover {
+  background: rgba(231, 76, 60, 0.5) !important;
+  border-color: rgba(231, 76, 60, 0.8) !important;
+  transform: scale(1.1);
+}
+.upload-widget .preview-container .image-preview .remove-icon-btn svg {
+  width: 1rem;
+  height: 1rem;
+  display: block;
+  fill: currentColor;
 }
 .upload-widget .preview-container .file-list {
   text-align: left;
@@ -4175,41 +4253,16 @@ nav.small-container ul.navbar-items li button#login-button {
   width: 100%;
   flex-wrap: wrap;
   justify-content: center;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  animation: fade-in-up 0.4s ease-out;
 }
-.upload-widget .actions-row .upload-btn-label {
-  min-height: 3rem !important;
-  height: auto;
-  padding: 0 1.5rem;
-  font-size: 1rem;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+.upload-widget .actions-row.hidden {
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
 }
-@media (max-width: 1200px) {
-  .upload-widget .actions-row .upload-btn-label {
-    min-height: 2.75rem !important;
-    padding: 0 1.25rem;
-  }
-}
-@media (max-width: 768px) {
-  .upload-widget .actions-row .upload-btn-label {
-    min-height: 2.5rem !important;
-    padding: 0 1rem;
-    font-size: 0.9rem !important;
-  }
-  .upload-widget .actions-row .upload-btn-label svg, .upload-widget .actions-row .upload-btn-label img {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-  }
-}
-@media (max-width: 480px) {
-  .upload-widget .actions-row .upload-btn-label {
-    min-height: 2.25rem !important;
-    padding: 0 0.75rem;
-    font-size: 0.8rem !important;
-  }
+.upload-widget .actions-row button, .upload-widget .actions-row .upload-btn-label {
+  margin-bottom: 0 !important;
 }
 .upload-widget .actions-row .upload-btn-label {
   display: inline-flex;
@@ -4223,9 +4276,7 @@ nav.small-container ul.navbar-items li button#login-button {
   font-weight: 600;
   transition: all 0.2s ease;
   border: none;
-  padding: 0 1rem;
   margin: 0;
-  min-width: 160px;
 }
 .upload-widget .actions-row .upload-btn-label:hover {
   background: var(--pico-primary-hover);
@@ -4276,6 +4327,16 @@ nav.small-container ul.navbar-items li button#login-button {
   border-color: var(--pico-primary);
 }
 
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 /* Shared Modal Component Styles */
 .c-modal-overlay {
   position: fixed;
@@ -4531,6 +4592,12 @@ nav.small-container ul.navbar-items li button#login-button {
   gap: 0.5rem;
   line-height: 1;
   color: var(--pico-color);
+}
+.panel-widget .box-header h3 svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  display: block;
 }
 .panel-widget .box-header button {
   margin: 0;
@@ -6170,29 +6237,31 @@ nav.small-container ul.navbar-items li button#login-button {
   display: flex;
   justify-content: center;
 }
-#event-view .event-modal-body .trip-card {
-  background: rgba(var(--pico-background-color-rgb), 0.4);
-  border: 1px solid rgba(var(--pico-color-rgb), 0.1);
-  border-radius: var(--border-radius-md);
-  padding: 1rem;
+#event-view .event-modal-body .expense-form {
+  display: flex;
+  flex-direction: column;
 }
-#event-view .event-modal-body .trip-card .trip-header {
+#event-view .event-modal-body .expense-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+#event-view .event-modal-body .expense-form input {
+  width: 100%;
+}
+#event-view .event-modal-body .embedded-trip-panel {
+  background: rgba(var(--pico-background-color-rgb), 0.15);
+  border: var(--glass-border);
+  box-shadow: var(--shadow-glass);
+  padding: 1.25rem;
+}
+#event-view .event-modal-body .embedded-trip-panel:last-child {
+  margin-bottom: 0 !important;
+}
+#event-view .event-modal-body .embedded-trip-panel .trip-header {
   margin-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.05);
+  border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
   padding-bottom: 0.5rem;
-}
-#event-view .event-modal-body .trip-card .driver-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(46, 204, 113, 0.1);
-  color: #2ecc71;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-right: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 #event-view .event-modal-body .event-actions {
   display: flex;
@@ -6226,6 +6295,11 @@ body[data-theme=light] #event-view .event-modal-body .event-actions #edit-event-
 }
 #event-view .event-modal-body .event-actions .join-btn.delete:hover {
   background: #c0392b;
+}
+#event-view .event-modal-body .button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 #event-view .event-modal-body .event-price-box {
   background: var(--glass-bg);
@@ -7559,6 +7633,80 @@ footer .footer-bottom p {
   }
 }
 
+.mini-math {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+.mini-math:last-child {
+  margin-bottom: 0;
+}
+
+.sum-row {
+  background: rgba(var(--pico-primary-rgb), 0.05);
+  border-top: 2px solid rgba(var(--pico-color-rgb), 0.1);
+}
+
+.settlement-table td {
+  vertical-align: top;
+}
+.settlement-table .contribution-details {
+  max-width: 300px;
+}
+
+.calculation-card {
+  background: rgba(var(--pico-background-color-rgb), 0.15);
+  border: var(--glass-border);
+  border-radius: var(--border-radius-md);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+.calculation-card .card-header {
+  background: rgba(var(--pico-primary-rgb), 0.1);
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.calculation-card .card-body {
+  padding: 1rem;
+}
+.calculation-card .math-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  color: var(--pico-muted-color);
+}
+.calculation-card .math-row:last-child {
+  margin-bottom: 0;
+}
+.calculation-card .math-row .amount {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--pico-contrast);
+}
+.calculation-card .summary-row {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(var(--pico-color-rgb), 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.calculation-card .summary-row .per-person {
+  color: var(--pico-primary);
+  font-size: 1rem;
+}
+
 /* Admin Layout */
 #admin-view {
   width: 100%;
@@ -7778,12 +7926,6 @@ footer .footer-bottom p {
 .glass-table-container table.glass-table tbody tr:last-child {
   border-bottom: none;
 }
-.glass-table-container table.glass-table tbody tr:last-child td:first-child {
-  border-bottom-left-radius: var(--border-radius-lg);
-}
-.glass-table-container table.glass-table tbody tr:last-child td:last-child {
-  border-bottom-right-radius: var(--border-radius-lg);
-}
 .glass-table-container table.glass-table tbody tr:hover {
   background: rgba(var(--pico-color-rgb), 0.08);
 }
@@ -7818,6 +7960,24 @@ footer .footer-bottom p {
   .glass-table-container table.glass-table tbody tr td.name-column .thin-name {
     display: inline;
   }
+}
+.glass-table-container table.glass-table tfoot tr {
+  border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+}
+.glass-table-container table.glass-table tfoot tr td {
+  padding: 1rem;
+  font-size: 0.95rem;
+}
+.glass-table-container table.glass-table {
+  /* Bottom corner rounding logic: Apply to whichever row is at the very bottom */
+}
+.glass-table-container table.glass-table tbody:last-child tr:last-child td:first-child,
+.glass-table-container table.glass-table tfoot:last-child tr:last-child td:first-child {
+  border-bottom-left-radius: var(--border-radius-lg);
+}
+.glass-table-container table.glass-table tbody:last-child tr:last-child td:last-child,
+.glass-table-container table.glass-table tfoot:last-child tr:last-child td:last-child {
+  border-bottom-right-radius: var(--border-radius-lg);
 }
 
 /* Badges */

@@ -7,6 +7,7 @@
 import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { showConfirmModal } from '/js/utils/modal.js';
+import { setupNumberInput } from '/js/utils/utils.js';
 import { Panel } from '/js/widgets/panel.js';
 import { ItemList, StandardListItem } from '/js/widgets/item_list.js';
 import { ValueHeader, updateValueDisplay } from '/js/widgets/value_header.js';
@@ -95,6 +96,8 @@ export async function renderTransactionsTab(container, userId) {
                 })}
             </div>
         `;
+
+        container.querySelectorAll('input[type="number"]').forEach(setupNumberInput);
 
         // --- Logic Binding ---
 

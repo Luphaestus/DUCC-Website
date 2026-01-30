@@ -1,0 +1,72 @@
+@use "../../mixins" as *;
+
+.mini-math {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-bottom: 0.25rem;
+
+    &:last-child { margin-bottom: 0; }
+}
+
+.sum-row {
+    background: rgba(var(--pico-primary-rgb), 0.05);
+    border-top: 2px solid rgba(var(--pico-color-rgb), 0.1);
+}
+
+.settlement-table {
+    td { vertical-align: top; }
+    .contribution-details {
+        max-width: 300px;
+    }
+}
+
+.calculation-card {
+    background: rgba(var(--pico-background-color-rgb), 0.15);
+    border: var(--glass-border);
+    border-radius: var(--border-radius-md);
+    margin-bottom: 1rem;
+    overflow: hidden;
+
+    .card-header {
+        background: rgba(var(--pico-primary-rgb), 0.1);
+        padding: 0.75rem 1rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .math-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+        color: var(--pico-muted-color);
+
+        &:last-child { margin-bottom: 0; }
+
+        .amount { font-family: monospace; font-weight: 600; color: var(--pico-contrast); }
+    }
+
+    .summary-row {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed rgba(var(--pico-color-rgb), 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+
+        .per-person { color: var(--pico-primary); font-size: 1rem; }
+    }
+}

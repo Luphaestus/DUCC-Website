@@ -73,7 +73,9 @@ export class UploadWidget {
             <div class="upload-widget ${this.options.mode}-mode" id="upload-widget-${Date.now()}">
                 <div class="preview-container ${!this.options.defaultPreview ? 'hidden' : ''}">
                     ${this.options.selectMode === 'single'
-                ? `<div class="image-preview"></div>`
+                ? `<div class="image-preview">
+                        ${this.options.enableRemove ? `<button type="button" class="remove-icon-btn hidden" title="Remove">${CLOSE_SVG}</button>` : ''}
+                   </div>`
                 : `<div class="file-list"></div>`
             }
                 </div>
@@ -84,7 +86,7 @@ export class UploadWidget {
                 </div>
 
                 <div class="actions-row">
-                    <label class="upload-btn-label">
+                    <label class="upload-btn-label small-btn">
                         ${UPLOAD_SVG} <span>${this.options.selectMode === 'single' ? 'Select File' : 'Select Files'}</span>
                         <input type="file" 
                             ${this.options.selectMode === 'multiple' ? 'multiple' : ''} 
@@ -101,12 +103,6 @@ export class UploadWidget {
                     ${this.options.enableUrl && this.options.selectMode === 'single' ? `
                         <button type="button" class="small-btn outline url-btn" title="Provide Image URL">
                             ${INFO_SVG} URL
-                        </button>
-                    ` : ''}
-
-                    ${this.options.selectMode === 'single' && this.options.enableRemove ? `
-                         <button type="button" class="small-btn delete outline remove-btn hidden" title="Remove">
-                            ${CLOSE_SVG} Remove
                         </button>
                     ` : ''}
                 </div>
@@ -130,9 +126,10 @@ export class UploadWidget {
         this.progressBar = this.widgetEl.querySelector('progress');
         this.progressText = this.widgetEl.querySelector('.progress-text');
         this.inputEl = this.widgetEl.querySelector('input[type="file"]');
+        this.actionsRowEl = this.widgetEl.querySelector('.actions-row');
         this.libraryBtn = this.widgetEl.querySelector('.library-btn');
         this.urlBtn = this.widgetEl.querySelector('.url-btn');
-        this.removeBtn = this.widgetEl.querySelector('.remove-btn');
+        this.removeBtn = this.widgetEl.querySelector('.remove-icon-btn');
         this.urlInputContainer = this.widgetEl.querySelector('.url-input-container');
         this.urlInputField = this.widgetEl.querySelector('.url-input-field');
         this.applyUrlBtn = this.widgetEl.querySelector('.apply-url-btn');
@@ -221,6 +218,7 @@ export class UploadWidget {
         if (this.previewEl) {
             this.previewEl.style.backgroundImage = `url('${url}')`;
             this.previewContainer.classList.remove('hidden');
+            this.actionsRowEl?.classList.add('hidden');
             this.removeBtn?.classList.remove('hidden');
         }
     }
@@ -294,6 +292,7 @@ export class UploadWidget {
     updateFileList() {
         if (!this.fileListEl) return;
         this.previewContainer.classList.remove('hidden');
+        this.actionsRowEl?.classList.add('hidden');
         this.fileListEl.innerHTML = this.files.map((f, i) => `
             <div class="file-item">
                 <span class="file-name" title="${f.name}">${f.name}</span>
@@ -384,6 +383,7 @@ export class UploadWidget {
         } else {
             this.updateFileList();
         }
+        this.actionsRowEl?.classList.remove('hidden');
         this.progressContainer.classList.add('hidden');
         this.isUploading = false;
     }

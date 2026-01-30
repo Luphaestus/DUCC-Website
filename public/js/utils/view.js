@@ -98,7 +98,18 @@ function switchView(path, force = false) {
         if (el.id === route.viewId + '-view') {
             el.classList.remove('hidden');
         } else {
-            if (!route.isOverlay) {
+            const viewId = el.id.replace('-view', '');
+            const viewRoutes = Routes.filter(r => r.viewId === viewId);
+            const isAnyRouteOverlay = viewRoutes.some(r => r.isOverlay);
+            const isAnyRouteMatching = viewRoutes.some(r => r.regex.test(window.location.pathname));
+
+            if (isAnyRouteOverlay) {
+                // If it's an overlay and not the target, only keep it if the URL still matches one of its routes
+                if (!isAnyRouteMatching) {
+                    el.classList.add('hidden');
+                }
+            } else if (!route.isOverlay) {
+                // If it's a normal view and target isn't an overlay, hide it
                 el.classList.add('hidden');
             }
         }
@@ -176,6 +187,10 @@ function updateContent() {
 
 window.onpopstate = updateContent;
 window.onload = updateContent;
+
+// Expose switchView to the global scope for inline onclick handlers
+window.switchView = switchView;
+window.closeModal = closeModal;
 
 document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {

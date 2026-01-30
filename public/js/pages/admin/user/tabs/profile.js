@@ -7,8 +7,9 @@
 import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { showPasswordModal } from '/js/utils/modal.js';
+import { MembershipChangedEvent } from '/js/utils/events/events.js';
 import { renderUserDetail } from '../detail.js';
-import { getOrdinal } from '/js/utils/utils.js';
+import { getOrdinal, setupNumberInput } from '/js/utils/utils.js';
 import { Panel } from '/js/widgets/panel.js';
 import { ValueHeader } from '/js/widgets/value_header.js';
 import { POOL_SVG, ADD_SVG, PERSON_SVG, EDIT_SVG, BOLT_SVG, ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG } from '../../../../../images/icons/outline/icons.js';
@@ -309,6 +310,8 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             const form = document.getElementById('account-info-form');
             const cancelBtn = document.getElementById('cancel-account-btn');
 
+            form.querySelectorAll('input[type="number"]').forEach(setupNumberInput);
+
             editBtn.onclick = () => {
                 displayDiv.classList.add('hidden');
                 form.classList.remove('hidden');
@@ -352,6 +355,7 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                     await apiRequest('POST', `/api/admin/user/${user.id}/elements`, updateData);
                     notify('Success', 'Account details updated', 'success');
                     Object.assign(user, updateData);
+                    MembershipChangedEvent.notify();
                     renderProfileTab(container, user, userPerms, canManageUsers, isExec);
                 } catch (err) {
                     notify('Error', err.message, 'error');

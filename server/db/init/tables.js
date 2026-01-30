@@ -76,6 +76,9 @@ export async function createTables(db) {
         is_canceled BOOLEAN NOT NULL DEFAULT 0,
         enable_waitlist BOOLEAN NOT NULL DEFAULT 1,
         signup_required BOOLEAN NOT NULL DEFAULT 1,
+        is_offsite BOOLEAN NOT NULL DEFAULT 0,
+        costs_released BOOLEAN NOT NULL DEFAULT 0,
+        costs_released_at DATETIME,
         image_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (image_id) REFERENCES files(id) ON DELETE SET NULL
@@ -91,6 +94,7 @@ export async function createTables(db) {
         joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         left_at DATETIME,
         payment_transaction_id INTEGER,
+        upfront_refunded BOOLEAN NOT NULL DEFAULT 0,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (payment_transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
@@ -274,6 +278,99 @@ export async function createTables(db) {
         file_id INTEGER NOT NULL,
         display_order INTEGER DEFAULT 0,
         FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'quotes',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT NOT NULL,
+        quoted_user_id INTEGER,
+        submitted_by_id INTEGER,
+        visibility TEXT CHECK(visibility IN ('public', 'private', 'hidden')) NOT NULL DEFAULT 'private',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (quoted_user_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (submitted_by_id) REFERENCES users(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'cars',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        name TEXT NOT NULL,
+        seats INTEGER NOT NULL,
+        boats INTEGER NOT NULL DEFAULT 0,
+        is_global BOOLEAN NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'trips',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'event_drivers',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trip_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        car_id INTEGER NOT NULL,
+        status TEXT CHECK(status IN ('pending', 'accepted', 'declined')) NOT NULL DEFAULT 'pending',
+        start_mileage REAL,
+        start_mileage_proof_id INTEGER,
+        end_mileage REAL,
+        end_mileage_proof_id INTEGER,
+        start_mileage_submitted_at DATETIME,
+        end_mileage_submitted_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE,
+        FOREIGN KEY (start_mileage_proof_id) REFERENCES files(id) ON DELETE SET NULL,
+        FOREIGN KEY (end_mileage_proof_id) REFERENCES files(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'event_expenses',
+      schema: `
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT NOT NULL,
+        receipt_file_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (receipt_file_id) REFERENCES files(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'trip_exclusions',
+      schema: `
+        trip_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        PRIMARY KEY (trip_id, user_id),
+        FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'expense_exclusions',
+      schema: `
+        expense_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        PRIMARY KEY (expense_id, user_id),
+        FOREIGN KEY (expense_id) REFERENCES event_expenses(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
     }
   ];

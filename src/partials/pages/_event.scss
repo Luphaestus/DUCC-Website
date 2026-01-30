@@ -163,17 +163,52 @@
             }
         }
 
-        .attendees-section {
-            &.nomargin {
-                margin-top: 0;
-            }
+        .event-main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
 
+            @media (min-width: 992px) {
+                grid-template-columns: 1.5fr 1fr;
+                align-items: start;
+            }
+        }
+
+        .event-secondary-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .event-details-content, .drivers-section, .expenses-section {
+            padding: 1.5rem;
+            margin: 0 !important;
+            border-top: none !important;
+        }
+
+        .description-section, .attendees-section, .drivers-section, .expenses-section {
             .section-title {
                 font-size: 0.8rem !important;
                 font-weight: 800 !important;
                 letter-spacing: 0.075em !important;
                 color: var(--pico-muted-color) !important;
                 margin-bottom: 0.75rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                text-transform: uppercase;
+
+                svg {
+                    width: 1rem;
+                    height: 1rem;
+                    fill: currentColor;
+                }
+            }
+        }
+
+        .attendees-section {
+            &.nomargin {
+                margin-top: 1.5rem;
             }
 
             .attendee-bubbles {
@@ -245,6 +280,110 @@
             }
         }
 
+        .drivers-section {
+            .volunteer-status {
+                padding: 0.75rem 1rem;
+                border-radius: var(--border-radius);
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+
+                &.pending { background: rgba(243, 156, 18, 0.1); color: #f39c12; }
+                &.accepted { background: rgba(46, 204, 113, 0.1); color: #2ecc71; }
+                &.declined { background: rgba(231, 76, 60, 0.1); color: #e74c3c; }
+            }
+
+            .mileage-submission-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+
+                .mileage-box {
+                    padding: 1rem;
+                    background: rgba(var(--pico-background-color-rgb), 0.3);
+                    border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+                    border-radius: var(--border-radius-md);
+                    text-align: center;
+
+                    h4 { font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--pico-muted-color); }
+                    p { margin: 0; font-weight: 600; }
+
+                    &.completed { border-color: #2ecc71; background: rgba(46, 204, 113, 0.05); }
+                    &.late { border-color: #e74c3c; background: rgba(231, 76, 60, 0.05); h4, p { color: #e74c3c; } }
+                }
+            }
+
+            .volunteer-action {
+                background: rgba(var(--pico-primary-rgb), 0.05);
+                padding: 1.25rem;
+                border-radius: var(--border-radius-md);
+                border: 1px dashed var(--pico-primary);
+
+                p { margin-bottom: 0.75rem; font-weight: 600; }
+                .inline-form {
+                    display: flex;
+                    gap: 0.5rem;
+                    select { margin-bottom: 0; flex: 1; }
+                    button { width: auto; margin-bottom: 0; }
+                }
+            }
+        }
+
+        .expenses-section {
+            .expense-item {
+                background: rgba(var(--pico-background-color-rgb), 0.3);
+                padding: 0.75rem 1rem;
+                border-radius: var(--border-radius);
+                border: 1px solid rgba(var(--pico-color-rgb), 0.05);
+                flex: 1;
+            }
+
+            .expense-item-row {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .expense-action {
+                margin-top: 2rem;
+                display: flex;
+                justify-content: center;
+            }
+        }
+
+        .expense-form {
+            display: flex;
+            flex-direction: column;
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            input {
+                width: 100%;
+            }
+        }
+
+        .embedded-trip-panel {
+            background: rgba(var(--pico-background-color-rgb), 0.15);
+            border: var(--glass-border);
+            box-shadow: var(--shadow-glass);
+            padding: 1.25rem;
+
+            &:last-child { margin-bottom: 0 !important; }
+
+            .trip-header { 
+                margin-bottom: 0.75rem; 
+                border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1); 
+                padding-bottom: 0.5rem; 
+            }
+        }
+
         .event-actions {
             display: flex;
             gap: 1rem;
@@ -286,6 +425,12 @@
                     }
                 }
             }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
         .event-price-box {

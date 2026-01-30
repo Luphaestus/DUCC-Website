@@ -1,4 +1,5 @@
 @use "../../mixins" as *;
+@use "finance_summary";
 
 /* Admin Layout */
 #admin-view {
@@ -180,7 +181,6 @@
 
         &.users-table {
             @media (max-width: 600px) {
-
                 th:nth-child(2),
                 td:nth-child(2) {
                     display: none;
@@ -235,14 +235,6 @@
 
                 &:last-child {
                     border-bottom: none;
-
-                    td:first-child {
-                        border-bottom-left-radius: var(--border-radius-lg);
-                    }
-
-                    td:last-child {
-                        border-bottom-right-radius: var(--border-radius-lg);
-                    }
                 }
 
                 &:hover {
@@ -291,6 +283,23 @@
                     }
                 }
             }
+        }
+
+        tfoot {
+            tr {
+                border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+                td {
+                    padding: 1rem;
+                    font-size: 0.95rem;
+                }
+            }
+        }
+
+        /* Bottom corner rounding logic: Apply to whichever row is at the very bottom */
+        tbody:last-child tr:last-child, 
+        tfoot:last-child tr:last-child {
+            td:first-child { border-bottom-left-radius: var(--border-radius-lg); }
+            td:last-child { border-bottom-right-radius: var(--border-radius-lg); }
         }
     }
 }
@@ -878,4 +887,111 @@ textarea[name="description"] {
 .destructive-actions {
     display: flex;
     gap: 0.5rem;
+}
+
+/* Admin Finance Section */
+.admin-finance-transport-section {
+    .finance-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        
+        @media (max-width: 1024px) {
+            grid-template-columns: 1fr;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            h4 { margin: 0; }
+        }
+    }
+
+    .trip-admin-card, .expense-admin-card {
+        @include glass-panel;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+
+        .trip-info, .expense-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            .capacity-tag { font-size: 0.75rem; background: rgba(var(--pico-primary-rgb), 0.1); color: var(--pico-primary); padding: 0.1rem 0.4rem; border-radius: 4px; width: fit-content; }
+            .payer { font-size: 0.85rem; color: var(--pico-muted-color); }
+            .desc { margin: 0; color: var(--pico-muted-color); line-height: 1.2; }
+        }
+
+        .trip-actions, .expense-actions {
+            display: flex;
+            gap: 0.4rem;
+        }
+    }
+
+    .cost-release-box {
+        background: rgba(var(--pico-primary-rgb), 0.03);
+        border: 1px solid rgba(var(--pico-primary-rgb), 0.1);
+        padding: 2rem;
+        border-radius: var(--border-radius-lg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Admin Finance Section */
+.admin-finance-transport-section {
+    .finance-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        
+        @media (max-width: 1024px) {
+            grid-template-columns: 1fr;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            h4 { margin: 0; }
+        }
+    }
+
+    .trip-admin-card, .expense-admin-card {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+
+        .trip-info, .expense-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            .capacity-tag { font-size: 0.75rem; background: rgba(var(--pico-primary-rgb), 0.1); color: var(--pico-primary); padding: 0.1rem 0.4rem; border-radius: 4px; width: fit-content; }
+            .payer { font-size: 0.85rem; color: var(--pico-muted-color); }
+            .desc { margin: 0; color: var(--pico-muted-color); line-height: 1.2; }
+        }
+
+        .trip-actions, .expense-actions {
+            display: flex;
+            gap: 0.4rem;
+        }
+    }
+
+    .cost-release-box {
+        background: rgba(var(--pico-primary-rgb), 0.03);
+        border: 1px solid rgba(var(--pico-primary-rgb), 0.1);
+        padding: 2rem;
+        border-radius: var(--border-radius-lg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 }
