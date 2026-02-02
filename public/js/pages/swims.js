@@ -8,7 +8,7 @@
 
 import { apiRequest } from '/js/utils/api.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG } from '../../images/icons/outline/icons.js';
+import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG } from '/images/icons/outline/icons.js';
 
 addRoute('/swims', 'swims');
 
@@ -56,7 +56,20 @@ async function populateLeaderboard() {
     content.innerHTML = '<p class="leaderboard-status" aria-busy="true">Loading...</p>';
 
     try {
-        const leaderboardData = (await apiRequest('GET', `/api/user/swims/leaderboard?yearly=${isYearly}`)).data;
+        const [leaderboardRes, userPermsRes] = await Promise.all([
+            apiRequest('GET', `/api/user/swims/leaderboard?yearly=${isYearly}`),
+            apiRequest('GET', '/api/user/elements/permissions').catch(() => ({ permissions: [] }))
+        ]);
+
+        const leaderboardData = leaderboardRes.data;
+        const canManageSwims = userPermsRes.permissions?.includes('swims.manage');
+
+        if (canManageSwims) {
+            const adminLink = document.createElement('div');
+            adminLink.className = 'admin-leaderboard-actions';
+            adminLink.innerHTML = `<button class="small-btn primary" data-nav="/admin/users?tab=swims">${POOL_SVG} Manage Swims</button>`;
+            content.parentNode.insertBefore(adminLink, content);
+        }
 
         if (!leaderboardData || leaderboardData.length === 0) {
             content.innerHTML = '<p class="leaderboard-status">No swims recorded yet!</p>';

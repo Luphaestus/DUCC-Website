@@ -11,7 +11,7 @@ import { Pagination } from '/js/widgets/Pagination.js';
 import { 
     SEARCH_SVG, DELETE_SVG, CHECK_SVG, CLOSE_SVG,
     UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG 
-} from '../../../images/icons/outline/icons.js';
+} from '/images/icons/outline/icons.js';
 
 /**
  * Renders the quote management view.

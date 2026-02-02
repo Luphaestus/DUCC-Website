@@ -20,11 +20,4 @@ export default class Utils {
     static getBaseUrl(req) {
         return `${req.protocol}://${req.get('host')}`;
     }
-
-    /**
-     * Formats a Date object into a string compatible with SQLite date comparisons (YYYY-MM-DD HH:MM:SS).
-     */
-    static formatDateForSQLite(date) {
-        return date.toISOString().slice(0, 19).replace('T', ' ');
-    }
 }

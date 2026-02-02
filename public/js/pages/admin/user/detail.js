@@ -9,7 +9,7 @@
 import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../admin.js';
-import { ARROW_BACK_IOS_NEW_SVG } from '../../../../images/icons/outline/icons.js';
+import { ARROW_BACK_IOS_NEW_SVG } from '/images/icons/outline/icons.js';
 import { TabNav } from '/js/widgets/TabNav.js';
 import { Panel } from '/js/widgets/panel.js';
 
@@ -18,6 +18,7 @@ import { renderProfileTab } from './tabs/profile.js';
 import { renderLegalTab } from './tabs/legal.js';
 import { renderTagsTab } from './tabs/tags.js';
 import { renderTransactionsTab } from './tabs/transactions.js';
+import { renderSwimsTab } from './tabs/swims.js';
 
 /**
  * Main rendering function for the user management dashboard.
@@ -42,6 +43,7 @@ export async function renderUserDetail(userId) {
 
         const canManageUsers = userPerms.includes('user.manage');
         const canManageTransactions = userPerms.includes('transaction.manage');
+        const canManageSwims = userPerms.includes('swims.manage');
         const isExec = userPerms.length > 0;
 
         const tabs = [{ label: 'Profile', key: 'profile', data: { tab: 'profile' } }];
@@ -51,6 +53,9 @@ export async function renderUserDetail(userId) {
         }
         if (canManageTransactions) {
             tabs.push({ label: 'Transactions', key: 'transactions', data: { tab: 'transactions' } });
+        }
+        if (canManageSwims) {
+            tabs.push({ label: 'Swims', key: 'swims', data: { tab: 'swims' } });
         }
 
         const currentTab = new URLSearchParams(window.location.search).get('tab') || 'profile';
@@ -133,5 +138,7 @@ async function renderTab(tabName, user, userPerms, canManageUsers, isExec) {
         renderTransactionsTab(container, user.id);
     } else if (tabName === 'tags') {
         renderTagsTab(container, user.id);
+    } else if (tabName === 'swims') {
+        renderSwimsTab(container, user);
     }
 }

@@ -45,12 +45,11 @@ export default class TransactionsDB {
      * Internal method to insert a transaction record.
      */
     static async _add_transaction_internal(db, userId, amount, description, eventId = null) {
-        await db.run(
+        const result = await db.run(
             'INSERT INTO transactions (user_id, amount, description, created_at, event_id) VALUES (?, ?, ?, ?, ?)',
             [userId, amount, description, new Date().toISOString(), eventId]
         );
-        const transactionId = await db.get('SELECT last_insert_rowid() AS id');
-        return new statusObject(201, 'Transaction added successfully', transactionId.id);
+        return new statusObject(201, 'Transaction added successfully', result.lastID);
     }
 
     /**
@@ -69,21 +68,25 @@ export default class TransactionsDB {
     }
 
     /**
-     * Fetch all transactions for a user, calculating a running balance.
+     * Fetch all transactions for a user, calculating a running balance using a window function.
      */
     static async get_transactions(db, userId) {
-        const transactions = await db.all(
-            'SELECT id, amount, description, created_at FROM transactions WHERE user_id = ? ORDER BY created_at ASC',
-            [userId]
-        );
-
-        let runningBalance = 0;
-        const transactionsWithAfter = transactions.map(tx => {
-            runningBalance += tx.amount;
-            return { ...tx, after: runningBalance };
-        });
-
-        return new statusObject(200, null, transactionsWithAfter.reverse());
+        try {
+            // Using SUM() OVER () to calculate the running balance in SQL
+            const sql = `
+                SELECT 
+                    id, amount, description, created_at,
+                    SUM(amount) OVER (ORDER BY created_at ASC, id ASC) as after
+                FROM transactions 
+                WHERE user_id = ? 
+                ORDER BY created_at DESC, id DESC
+            `;
+            const transactions = await db.all(sql, [userId]);
+            return new statusObject(200, null, transactions);
+        } catch (error) {
+            Logger.error('Database error in get_transactions:', error);
+            return new statusObject(500, 'Database error');
+        }
     }
 
     /**

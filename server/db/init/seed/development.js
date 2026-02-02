@@ -19,6 +19,20 @@ const __dirname = path.dirname(__filename);
  * Main development seeding function.
  */
 export async function seedDevelopment(db, newlyCreatedTables = []) {
+    let adminId = 1;
+    try {
+        const adminUser = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
+        if (adminUser && adminUser.id) {
+            adminId = adminUser.id;
+        } else {
+            // If not found, try to find ANY user with instructor status as a fallback
+            const fallbackUser = await db.get("SELECT id FROM users WHERE is_instructor = 1 LIMIT 1");
+            if (fallbackUser) adminId = fallbackUser.id;
+        }
+    } catch (e) {
+        Logger.error("Failed to fetch admin user for development seeding:", e);
+    }
+
     const userCount = await db.get('SELECT COUNT(*) as count FROM users');
 
     const slidesDir = path.join(__dirname, '..', '..', '..', 'public', 'images', 'slides');
@@ -32,7 +46,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
     const seedFile = async (filename) => {
         const title = filename.split('.')[0];
         await db.run(
-            'INSERT OR IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
+            'INSERT IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
             [title, filename, 'public', filename]
         );
         const row = await db.get('SELECT id FROM files WHERE filename = ?', [filename]);
@@ -71,7 +85,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
             userProgressBar.start(50, 0);
         }
 
-        await db.run('BEGIN TRANSACTION');
+        await db.exec('START TRANSACTION');
         for (let i = 0; i < 50; i++) {
             const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
             const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
@@ -109,7 +123,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
                 swimDate.setSeconds(swimDate.getSeconds() - Math.floor(Math.random() * 4 * 365 * 24 * 60 * 60));
                 await db.run(
                     `INSERT INTO swim_history (user_id, added_by, count, created_at) VALUES (?, ?, ?, ?)`,
-                    [userId, 1, count, swimDate.toISOString()]
+                    [userId, adminId, count, swimDate.toISOString().slice(0, 19).replace('T', ' ')]
                 );
             }
             await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, userId]);
@@ -119,7 +133,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
 
             if (userProgressBar) userProgressBar.update(i + 1);
         }
-        await db.run('COMMIT');
+        await db.exec('COMMIT');
         if (userProgressBar) userProgressBar.stop();
     }
 
@@ -139,7 +153,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
             swimProgressBar.start(users.length, 0);
         }
 
-        await db.run('BEGIN TRANSACTION');
+        await db.exec('START TRANSACTION');
         for (let i = 0; i < users.length; i++) {
             const user = users[i];
             const numSwims = Math.floor(Math.random() * 12);
@@ -151,14 +165,14 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
                 swimDate.setSeconds(swimDate.getSeconds() - Math.floor(Math.random() * 4 * 365 * 24 * 60 * 60));
                 await db.run(
                     `INSERT INTO swim_history (user_id, added_by, count, created_at) VALUES (?, ?, ?, ?)`,
-                    [user.id, 1, count, swimDate.toISOString()]
+                    [user.id, adminId, count, swimDate.toISOString().slice(0, 19).replace('T', ' ')]
                 );
             }
             const numBooties = Math.floor(Math.random() * (totalSwims + 1));
             await db.run(`UPDATE users SET swims = ?, booties = ? WHERE id = ?`, [totalSwims, numBooties, user.id]);
             if (swimProgressBar) swimProgressBar.update(i + 1);
         }
-        await db.run('COMMIT');
+        await db.exec('COMMIT');
         if (swimProgressBar) swimProgressBar.stop();
     }
 
@@ -209,20 +223,20 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
 
     for (const r of roles) {
         try {
-            await db.run('INSERT OR IGNORE INTO roles (name) VALUES (?)', [r.name]);
+            await db.run('INSERT IGNORE INTO roles (name) VALUES (?)', [r.name]);
             const roleRow = await db.get('SELECT id FROM roles WHERE name = ?', [r.name]);
             if (!roleRow) continue;
 
             for (const permSlug of r.perms) {
                 if (permIds[permSlug]) {
-                    await db.run('INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [roleRow.id, permIds[permSlug]]);
+                    await db.run('INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [roleRow.id, permIds[permSlug]]);
                 }
             }
 
             if (r.scopedTags) {
                 for (const tagName of r.scopedTags) {
                     if (tagIds[tagName]) {
-                        await db.run('INSERT OR IGNORE INTO role_managed_tags (role_id, tag_id) VALUES (?, ?)', [roleRow.id, tagIds[tagName]]);
+                        await db.run('INSERT IGNORE INTO role_managed_tags (role_id, tag_id) VALUES (?, ?)', [roleRow.id, tagIds[tagName]]);
                     }
                 }
             }
@@ -282,11 +296,11 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
         await db.run('UPDATE users SET is_instructor = 1 WHERE id = ?', [adminUser.id]);
         const coachRole = await db.get("SELECT id FROM roles WHERE name = 'Club Coach'");
         if (coachRole) {
-            await db.run('INSERT OR IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [adminUser.id, coachRole.id]);
+            await db.run('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [adminUser.id, coachRole.id]);
         }
 
-        await db.run('INSERT OR IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagIds['slalom-team'], adminUser.id]);
-        await db.run('INSERT OR IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagIds['polo-team'], adminUser.id]);
+        await db.run('INSERT IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagIds['slalom-team'], adminUser.id]);
+        await db.run('INSERT IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagIds['polo-team'], adminUser.id]);
     }
 
     if (newlyCreatedTables.includes('events')) {
@@ -339,12 +353,12 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
             if (upfrontCost > 0) {
                 const txRes = await db.run(
                     'INSERT INTO transactions (user_id, amount, description, created_at, event_id) VALUES (?, ?, ?, ?, ?)',
-                    [userId, -upfrontCost, `Joined Event: ${title}`, new Date().toISOString(), eventId]
+                    [userId, -upfrontCost, `Joined Event: ${title}`, new Date().toISOString().slice(0, 19).replace('T', ' '), eventId]
                 );
                 transactionId = txRes.lastID;
             }
             await db.run(
-                'INSERT INTO event_attendees (event_id, user_id, is_attending, payment_transaction_id) VALUES (?, ?, 1, ?)',
+                'INSERT IGNORE INTO event_attendees (event_id, user_id, is_attending, payment_transaction_id) VALUES (?, ?, 1, ?)',
                 [eventId, userId, transactionId]
             );
         };
@@ -376,7 +390,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
         }
 
         let dayCount = 0;
-        await db.run('BEGIN TRANSACTION');
+        await db.exec('START TRANSACTION');
         while (currentDate <= endDate) {
             const day = currentDate.getDay();
             let eventId = null;
@@ -601,8 +615,8 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
                 });
                 await db.run('UPDATE events SET is_offsite = 1 WHERE id = ?', [ev2Id]);
 
-                const admin = await db.get("SELECT id FROM users WHERE email = 'admin@durham.ac.uk'");
-                const otherUsers = allUsers.slice(0, 10).map(u => u.id);
+                const admin = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
+                const otherUsers = allUsers.filter(u => u.id !== admin.id).slice(0, 10).map(u => u.id);
                 const attendees = [admin.id, ...otherUsers];
                 const clubBus = await db.get("SELECT id FROM cars WHERE name = 'Club Bus'");
                 const mileagePhotoId = seededFileIds.length > 0 ? seededFileIds[0] : null;
@@ -739,7 +753,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
 
                     // Add a random driver from attendees
                     const driverId = attendeeIds[Math.floor(Math.random() * attendeeIds.length)];
-                    const carRes = await db.run('INSERT OR IGNORE INTO cars (user_id, name, seats, boats) VALUES (?, ?, ?, ?)', [driverId, 'Personal Car', 4, 2]);
+                    const carRes = await db.run('INSERT IGNORE INTO cars (user_id, name, seats, boats) VALUES (?, ?, ?, ?)', [driverId, 'Personal Car', 4, 2]);
                     const carRow = await db.get('SELECT id FROM cars WHERE user_id = ?', [driverId]);
                     
                     if (carRow) {
@@ -762,7 +776,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
             dayCount++;
             if (eventProgressBar) eventProgressBar.update(dayCount);
         }
-        await db.run('COMMIT');
+        await db.exec('COMMIT');
         if (eventProgressBar) eventProgressBar.stop();
         if (process.env.NODE_ENV !== 'test') console.info('Sample events generated successfully.');
     }

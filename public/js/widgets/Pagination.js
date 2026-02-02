@@ -8,7 +8,7 @@
  * pager.render(currentPage, totalPages);
  */
 
-import { ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '../../images/icons/outline/icons.js';
+import { ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG } from '/images/icons/outline/icons.js';
 
 export class Pagination {
     /**

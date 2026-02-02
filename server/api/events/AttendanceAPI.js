@@ -100,24 +100,24 @@ export default class AttendanceAPI {
             }
 
             try {
-                await this.db.run('BEGIN IMMEDIATE');
+                await this.db.exec('START TRANSACTION');
 
                 const eventRes = await EventsDB.get_event_by_id(this.db, req.user.id, eventId)
                 if (eventRes.isError()) {
-                    await this.db.run('ROLLBACK');
+                    await this.db.exec('ROLLBACK');
                     return res.status(404).json({ message: 'Event not found' });
                 }
                 const event = eventRes.getData();
 
                 const user = await UserDB.getElementsById(this.db, req.user.id, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level']);
                 if (user.isError()) {
-                    await this.db.run('ROLLBACK');
+                    await this.db.exec('ROLLBACK');
                     return user.getResponse(res);
                 }
 
                 const canJoin = await EventRules.canJoinEvent(this.db, event, user.getData());
                 if (canJoin.isError()) {
-                    await this.db.run('ROLLBACK');
+                    await this.db.exec('ROLLBACK');
                     return canJoin.getResponse(res);
                 }
 
@@ -131,7 +131,7 @@ export default class AttendanceAPI {
                 if (!membershipStatus.is_member) {
                     const updateStatus = await UserDB.writeElementsById(this.db, req.user.id, { free_sessions: membershipStatus.free_sessions - 1 });
                     if (updateStatus.isError()) {
-                        await this.db.run('ROLLBACK');
+                        await this.db.exec('ROLLBACK');
                         return updateStatus.getResponse(res);
                     }
                     usedFreeSession = true;
@@ -142,7 +142,7 @@ export default class AttendanceAPI {
                     transactionStatus = await TransactionsDB.add_transaction(this.db, req.user.id, -event.upfront_cost, `${event.title} upfront cost`, eventId);
                     if (transactionStatus.isError()) {
                         // UserDB write will be rolled back by transaction rollback
-                        await this.db.run('ROLLBACK');
+                        await this.db.exec('ROLLBACK');
                         return transactionStatus.getResponse(res);
                     }
 
@@ -158,14 +158,14 @@ export default class AttendanceAPI {
 
                 const status = await AttendanceDB.attend_event(this.db, req.user.id, eventId, transactionStatus.getData());
                 if (status.isError()) {
-                    await this.db.run('ROLLBACK');
+                    await this.db.exec('ROLLBACK');
                     return status.getResponse(res);
                 }
 
-                await this.db.run('COMMIT');
+                await this.db.exec('COMMIT');
                 return status.getResponse(res);
             } catch (error) {
-                await this.db.run('ROLLBACK');
+                await this.db.exec('ROLLBACK');
                 Logger.error(error);
                 res.status(500).json({ message: 'Internal server error' });
             }

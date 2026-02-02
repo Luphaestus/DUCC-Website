@@ -18,6 +18,7 @@ const navEntries = [
     { name: 'Files', group: 'main', id: 'nav-files', classes: "contrast", action: { run: () => switchView('/files') } },
     { name: 'Swims', group: 'main', id: 'nav-swims', classes: "contrast", action: { run: () => switchView('/swims') } },
     { name: 'Quotes', group: 'main', id: 'nav-quotes', classes: "contrast", action: { run: () => switchView('/quotes') } },
+    { name: 'Exec', group: 'main', id: 'nav-exec', classes: "contrast", action: { run: () => switchView('/exec') } },
 
     { name: 'Admin', group: 'user', id: 'admin-button', classes: "contrast", action: { run: () => switchView('/admin/') } },
     { name: 'Balance: £0.00', group: 'user', id: 'balance-button', classes: "contrast", action: { run: () => switchView('/profile?tab=balance') } },
@@ -69,6 +70,7 @@ function updateActiveNav(path) {
         else if (item.id === 'nav-files' && path.startsWith('/files')) match = true;
         else if (item.id === 'nav-swims' && path.startsWith('/swims')) match = true;
         else if (item.id === 'nav-quotes' && path.startsWith('/quotes')) match = true;
+        else if (item.id === 'nav-exec' && path.startsWith('/exec')) match = true;
 
         // Differentiate Balance vs Profile based on query param
         else if (item.id === 'balance-button' && path.startsWith('/profile') && isBalanceTab) match = true;
@@ -127,6 +129,7 @@ async function updateNavOnLoginState(data) {
     const authIds = ['profile-button', 'balance-button', 'nav-swims'];
     const memberIds = ['nav-quotes'];
     const guestIds = ['login-button'];
+    // No special list for exec button, it remains visible to guests too.
 
     authIds.forEach(id => {
         const el = document.getElementById(id);

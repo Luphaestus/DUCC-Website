@@ -12,7 +12,7 @@ import { notify } from '/js/components/notification.js';
 import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { Panel } from '/js/widgets/panel.js';
 import { renderLibrary } from '../../widgets/upload/Library.js';
-import { SAVE_SVG, IMAGE_SVG, UPLOAD_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
+import { SAVE_SVG, IMAGE_SVG, UPLOAD_SVG, CLOSE_SVG } from '/images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 
 let imagePickerModal = null;

@@ -7,92 +7,82 @@
 import { statusObject } from '../misc/status.js';
 import Logger from '../misc/Logger.js';
 
-export default class QuotesDB {
+import BaseDB from './BaseDB.js';
+
+export default class QuotesDB extends BaseDB {
     /**
      * Fetch quotes with filtering and visibility rules.
      */
     static async getQuotes(db, options = {}, user = null, canSeeAuthor = false) {
-        const { search, personId, visibility, page = 1, limit = 15, sort, order } = options;
-        const offset = (page - 1) * limit;
+        return this.wrap(async () => {
+            const { search, personId, visibility, page = 1, limit = 15, sort, order } = options;
 
-        const allowedSorts = ['created_at', 'text', 'quoted_user', 'visibility'];
-        let sortCol = allowedSorts.includes(sort) ? sort : 'created_at';
-        if (sortCol === 'quoted_user') sortCol = 'u.first_name';
-        else sortCol = `q.${sortCol}`;
-        
-        const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
-        
-        let query = `
-            SELECT q.*, 
-                   u.first_name as quoted_first_name, u.last_name as quoted_last_name,
-                   s.first_name as submitter_first_name, s.last_name as submitter_last_name
-            FROM quotes q
-            LEFT JOIN users u ON q.quoted_user_id = u.id
-            LEFT JOIN users s ON q.submitted_by_id = s.id
-        `;
-        
-        let conditions = [];
-        const params = [];
+            const allowedSorts = ['created_at', 'text', 'quoted_user', 'visibility'];
+            let sortCol = allowedSorts.includes(sort) ? sort : 'created_at';
+            if (sortCol === 'quoted_user') sortCol = 'u.first_name';
+            else sortCol = `q.${sortCol}`;
+            
+            const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
+            
+            let conditions = [];
+            const params = [];
 
-        // Visibility logic
-        if (!user) {
-            // Guests see nothing
-            conditions.push("1=0");
-        } else {
-            // Logged in users
-            if (visibility === 'private') {
-                // Only execs can request private quotes (handled by API check, but DB filter here)
-                conditions.push("q.visibility = 'private'");
-            } else if (visibility === 'all') {
-                // Admin view
-                // No extra filter
+            if (!user) {
+                conditions.push("1=0");
             } else {
-                // Standard view: public
-                conditions.push("q.visibility = 'public'");
-            }
-        }
-
-        if (search) {
-            if (search.startsWith('person:')) {
-                const terms = search.substring(7).trim().split(/\s+/);
-                const nameConds = terms.map(term => {
-                    params.push(`%${term}%`, `%${term}%`);
-                    return "(u.first_name LIKE ? OR u.last_name LIKE ?)";
-                });
-                if (nameConds.length > 0) {
-                    conditions.push("(" + nameConds.join(" AND ") + ")");
+                if (visibility === 'private') {
+                    conditions.push("q.visibility = 'private'");
+                } else if (visibility === 'all') {
+                    // Admin view
+                } else {
+                    conditions.push("q.visibility = 'public'");
                 }
-            } else {
-                conditions.push("q.text LIKE ?");
-                params.push(`%${search}%`);
             }
-        }
 
-        if (personId) {
-            conditions.push("q.quoted_user_id = ?");
-            params.push(personId);
-        }
+            if (search) {
+                if (search.startsWith('person:')) {
+                    const personSearch = search.substring(7).trim();
+                    const terms = personSearch.split(/\s+/);
+                    const searchTerms = terms.map(t => `+${t}*`).join(' ');
+                    // Use FTS but provide fallback for small words/test env if needed
+                    // Index is (first_name, last_name, email)
+                    conditions.push(`(MATCH(u.first_name, u.last_name, u.email) AGAINST(? IN BOOLEAN MODE) OR u.first_name LIKE ? OR u.last_name LIKE ?)`);
+                    params.push(searchTerms, `%${personSearch}%`, `%${personSearch}%`);
+                } else {
+                    const searchTerms = search.trim().split(/\s+/).map(t => `+${t}*`).join(' ');
+                    conditions.push(`(MATCH(q.text) AGAINST(? IN BOOLEAN MODE) OR q.text LIKE ?)`);
+                    params.push(searchTerms, `%${search}%`);
+                }
+            }
 
-        if (conditions.length > 0) {
-            query += " WHERE " + conditions.join(" AND ");
-        }
+            if (personId) {
+                conditions.push("q.quoted_user_id = ?");
+                params.push(Number(personId));
+            }
 
-        query += ` ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`;
+            const whereClause = conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : "";
 
-        try {
-            const rows = await db.all(query, [...params, limit, offset]);
+            const query = `
+                SELECT q.*, 
+                       u.first_name as quoted_first_name, u.last_name as quoted_last_name,
+                       s.first_name as submitter_first_name, s.last_name as submitter_last_name
+                FROM quotes q
+                LEFT JOIN users u ON q.quoted_user_id = u.id
+                LEFT JOIN users s ON q.submitted_by_id = s.id
+                ${whereClause}
+                ORDER BY ${sortCol} ${sortOrder}
+            `;
 
             const countQuery = `
                 SELECT COUNT(*) as count 
                 FROM quotes q
                 LEFT JOIN users u ON q.quoted_user_id = u.id
-                ${conditions.length > 0 ? " WHERE " + conditions.join(" AND ") : ""}
+                ${whereClause}
             `;
-            const countResult = await db.get(countQuery, params);
-            const totalQuotes = countResult ? countResult.count : 0;
-            const totalPages = Math.ceil(totalQuotes / limit);
-            
-            const processedRows = rows.map(row => {
+
+            const { data: rows, total, totalPages } = await this.paginate(db, query, countQuery, params, page, limit);
+
+            const quotes = rows.map(row => {
                 const quote = {
                     id: row.id,
                     text: row.text,
@@ -116,52 +106,40 @@ export default class QuotesDB {
                 return quote;
             });
 
-            return new statusObject(200, null, { quotes: processedRows, totalPages, totalQuotes, currentPage: page });
-        } catch (error) {
-            Logger.error(error);
-            return new statusObject(500, 'Database error');
-        }
+            return new statusObject(200, null, { quotes, totalPages, totalQuotes: total, currentPage: page });
+        });
     }
 
     /**
      * Create a new quote.
      */
     static async createQuote(db, text, quotedUserId, submittedById) {
-        try {
+        return this.wrap(async () => {
             const result = await db.run(
                 'INSERT INTO quotes (text, quoted_user_id, submitted_by_id, visibility) VALUES (?, ?, ?, ?)',
-                [text, quotedUserId, submittedById, 'private'] // Default to private until released
+                [text, quotedUserId, submittedById, 'private']
             );
             return new statusObject(201, 'Quote submitted for moderation.', { id: result.lastID });
-        } catch (error) {
-            Logger.error(error);
-            return new statusObject(500, 'Database error');
-        }
+        });
     }
 
     /**
      * Update quote visibility.
      */
     static async setVisibility(db, id, visibility) {
-        try {
+        return this.wrap(async () => {
             await db.run('UPDATE quotes SET visibility = ? WHERE id = ?', [visibility, id]);
             return new statusObject(200, `Quote marked as ${visibility}.`);
-        } catch (error) {
-            Logger.error(error);
-            return new statusObject(500, 'Database error');
-        }
+        });
     }
 
     /**
      * Delete a quote.
      */
     static async deleteQuote(db, id) {
-        try {
+        return this.wrap(async () => {
             await db.run('DELETE FROM quotes WHERE id = ?', [id]);
             return new statusObject(200, 'Quote deleted.');
-        } catch (error) {
-            Logger.error(error);
-            return new statusObject(500, 'Database error');
-        }
+        });
     }
 }

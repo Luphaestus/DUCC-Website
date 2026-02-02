@@ -9,7 +9,7 @@
 import { apiRequest } from '/js/utils/api.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { Modal } from '/js/widgets/Modal.js';
-import { ADD_SVG, SEARCH_SVG } from '../../images/icons/outline/icons.js';
+import { ADD_SVG, SEARCH_SVG } from '/images/icons/outline/icons.js';
 import { Pagination } from '/js/widgets/Pagination.js';
 import { notify } from '../components/notification.js';
 

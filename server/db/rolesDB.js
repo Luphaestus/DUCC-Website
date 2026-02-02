@@ -124,7 +124,7 @@ export default class RolesDB {
                 return new statusObject(400, 'Scoped permissions are assigned automatically and cannot be set manually.');
             }
 
-            await db.run('INSERT OR IGNORE INTO user_permissions (user_id, permission_id) VALUES (?, ?)', [userId, permissionId]);
+            await db.run('INSERT IGNORE INTO user_permissions (user_id, permission_id) VALUES (?, ?)', [userId, permissionId]);
             return new statusObject(200, 'Permission added');
         } catch (e) {
             Logger.error('Database error adding user permission:', e);
@@ -168,7 +168,7 @@ export default class RolesDB {
      */
     static async addManagedTag(db, userId, tagId) {
         try {
-            await db.run('INSERT OR IGNORE INTO user_managed_tags (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
+            await db.run('INSERT IGNORE INTO user_managed_tags (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
             return new statusObject(200, 'Tag scope added');
         } catch (e) {
             Logger.error('Database error adding managed tag:', e);

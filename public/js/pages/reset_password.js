@@ -8,7 +8,7 @@
 
 import { apiRequest } from '/js/utils/api.js';
 import { addRoute, ViewChangedEvent, switchView } from '/js/utils/view.js';
-import { MAIL_SVG } from '../../images/icons/outline/icons.js';
+import { MAIL_SVG } from '/images/icons/outline/icons.js';
 import { notify } from '../components/notification.js';
 
 addRoute('/reset-password', 'reset-password');

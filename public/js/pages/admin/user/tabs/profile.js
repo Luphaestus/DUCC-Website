@@ -12,7 +12,7 @@ import { renderUserDetail } from '../detail.js';
 import { getOrdinal, setupNumberInput } from '/js/utils/utils.js';
 import { Panel } from '/js/widgets/panel.js';
 import { ValueHeader } from '/js/widgets/value_header.js';
-import { POOL_SVG, ADD_SVG, PERSON_SVG, EDIT_SVG, BOLT_SVG, ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG } from '../../../../../images/icons/outline/icons.js';
+import { POOL_SVG, ADD_SVG, PERSON_SVG, EDIT_SVG, BOLT_SVG, ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG } from '/images/icons/outline/icons.js';
 
 /**
  * Main rendering and logic binding function for the Admin Profile tab.

@@ -11,7 +11,7 @@ import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { adminContentID, renderAdminNavBar } from './admin.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { Panel } from '/js/widgets/panel.js';
-import { IMAGE_SVG, DELETE_SVG, ADD_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
+import { IMAGE_SVG, DELETE_SVG, ADD_SVG, CLOSE_SVG } from '/images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 

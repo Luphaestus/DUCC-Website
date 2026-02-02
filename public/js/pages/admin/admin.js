@@ -25,7 +25,7 @@ import { requireAuth } from '/js/utils/auth.js';
 import {
     GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG,
     ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG
-} from '../../../images/icons/outline/icons.js';
+} from '/images/icons/outline/icons.js';
 
 export const adminContentID = 'admin-content';
 

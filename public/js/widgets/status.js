@@ -6,7 +6,7 @@
  * Reusable Status Indicator Component.
  */
 
-import { CHECK_SVG, BRIGHTNESS_ALERT_SVG } from '../../images/icons/outline/icons.js';
+import { CHECK_SVG, BRIGHTNESS_ALERT_SVG } from '/images/icons/outline/icons.js';
 
 /**
  * Renders a status indicator box.

@@ -4,7 +4,7 @@
  * Standardized glassmorphic modal component.
  */
 
-import { CLOSE_SVG } from '../../images/icons/outline/icons.js';
+import { CLOSE_SVG } from '/images/icons/outline/icons.js';
 
 export class Modal {
     static openModals = 0;

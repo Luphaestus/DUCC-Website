@@ -13,11 +13,10 @@ process.on('unhandledRejection', (reason, promise) => {
 
 import path from 'path';
 import express from 'express';
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
+import { connect } from './db/db.js';
 import session from 'express-session';
-import connectSqlite3 from 'connect-sqlite3';
-const SQLiteStore = connectSqlite3(session);
+import expressMySQLSession from 'express-mysql-session';
+const MySQLStore = expressMySQLSession(session);
 import passport from 'passport';
 import fs from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -101,11 +100,11 @@ app.use((req, res, next) => {
     return next();
   }
 
-  let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
+  let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' blob: https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
 
   if (isDev) {
-    csp = csp.replace("script-src 'self'", "script-src 'self' http://localhost:35729");
-    csp = csp.replace("connect-src 'self'", "connect-src 'self' ws://localhost:35729");
+    csp = csp.replace("script-src 'self'", "script-src 'self' http://localhost:35729 http://localhost:3000");
+    csp = csp.replace("connect-src 'self'", "connect-src 'self' ws://localhost:35729 http://localhost:3000");
   }
 
   res.setHeader("Content-Security-Policy", csp);
@@ -132,21 +131,12 @@ app.use(express.static('public', {
   }
 }));
 
-const dbPath = config.paths.db;
-const dbDir = path.dirname(dbPath);
-const dbFile = path.basename(dbPath);
+const sessionStore = new MySQLStore(config.mysql);
 
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-/** Session Management using connect-sqlite3. */
+/** Session Management using express-mysql-session. */
 app.use(session({
   name: config.session.cookieName,
-  store: new SQLiteStore({
-    db: dbFile,
-    dir: dbDir
-  }),
+  store: sessionStore,
   secret: config.session.secret,
   resave: false,
   saveUninitialized: false,
@@ -178,16 +168,10 @@ let db;
 /** Bootstraps server: connects DB, registers routes, starts listening. */
 const startServer = async () => {
   try {
-    db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
-
-    await db.exec('PRAGMA journal_mode = WAL;');
-    await db.exec('PRAGMA busy_timeout = 5000;');
+    db = await connect(config.mysql);
 
     if (isProd) {
-      Logger.info(`Connected to the SQLite database at ${dbPath}.`);
+      Logger.info(`Connected to the MySQL database at ${config.mysql.host}.`);
     }
 
     app.use((req, res, next) => {

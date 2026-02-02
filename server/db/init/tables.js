@@ -1,7 +1,7 @@
 /**
  * tables.js
  * 
- * Defines the entire SQLite schema for the application.
+ * Defines the entire MySQL schema for the application.
  */
 
 import { createTable } from './utils.js';
@@ -18,97 +18,164 @@ export async function createTables(db) {
     {
       name: 'colleges',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL
+      `
+    },
+    {
+      name: 'file_categories',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        default_visibility ENUM('public', 'members', 'execs', 'events') NOT NULL DEFAULT 'members'
+      `
+    },
+    {
+      name: 'files',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(255),
+        date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        size INT,
+        filename VARCHAR(255),
+        hash VARCHAR(255),
+        category_id INT,
+        visibility ENUM('public', 'members', 'execs', 'events') NOT NULL DEFAULT 'members',
+        content LONGTEXT,
+        FULLTEXT KEY ft_index (title, filename, content),
+        INDEX idx_visibility (visibility),
+        INDEX idx_hash (hash),
+        FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL
       `
     },
     {
       name: 'users',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL COLLATE NOCASE,
-        hashed_password TEXT,
-        first_name TEXT NOT NULL,
-        last_name TEXT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        hashed_password VARCHAR(255),
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
         date_of_birth DATE,
-        college_id INTEGER,
-        emergency_contact_name TEXT,
-        emergency_contact_phone TEXT,
+        college_id INT,
+        emergency_contact_name VARCHAR(255),
+        emergency_contact_phone VARCHAR(255),
         home_address TEXT,
-        phone_number TEXT,
-        has_medical_conditions BOOLEAN,
+        phone_number VARCHAR(255),
+        has_medical_conditions TINYINT(1) DEFAULT 0,
         medical_conditions_details TEXT,
-        takes_medication BOOLEAN,
+        takes_medication TINYINT(1) DEFAULT 0,
         medication_details TEXT,
-        free_sessions INTEGER NOT NULL DEFAULT 3,
-        is_member BOOLEAN NOT NULL DEFAULT 0,
-        agrees_to_fitness_statement BOOLEAN,
-        agrees_to_club_rules BOOLEAN,
-        agrees_to_pay_debts BOOLEAN,
-        agrees_to_data_storage BOOLEAN,
-        agrees_to_keep_health_data BOOLEAN,
-        filled_legal_info BOOLEAN NOT NULL DEFAULT 0,
+        free_sessions INT NOT NULL DEFAULT 3,
+        is_member TINYINT(1) NOT NULL DEFAULT 0,
+        agrees_to_fitness_statement TINYINT(1) DEFAULT 0,
+        agrees_to_club_rules TINYINT(1) DEFAULT 0,
+        agrees_to_pay_debts TINYINT(1) DEFAULT 0,
+        agrees_to_data_storage TINYINT(1) DEFAULT 0,
+        agrees_to_keep_health_data TINYINT(1) DEFAULT 0,
+        filled_legal_info TINYINT(1) NOT NULL DEFAULT 0,
         legal_filled_at DATETIME,
-        difficulty_level INTEGER not NULL DEFAULT 1,
-        is_instructor BOOLEAN NOT NULL DEFAULT 0,
+        difficulty_level INT NOT NULL DEFAULT 1,
+        is_instructor TINYINT(1) NOT NULL DEFAULT 0,
         first_aid_expiry DATE,
-        swims INTEGER NOT NULL DEFAULT 0,
-        booties INTEGER NOT NULL DEFAULT 0,
-        profile_picture_id INTEGER,
+        swims INT NOT NULL DEFAULT 0,
+        booties INT NOT NULL DEFAULT 0,
+        profile_picture_id INT,
+        totp_secret VARCHAR(255),
+        totp_enabled TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_instructor (is_instructor),
+        INDEX idx_member (is_member),
+        INDEX idx_names (last_name, first_name),
+        FULLTEXT KEY ft_user_search (first_name, last_name, email),
         FOREIGN KEY (college_id) REFERENCES colleges(id),
         FOREIGN KEY (profile_picture_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {
+      name: 'authenticators',
+      schema: `
+        id VARCHAR(255) PRIMARY KEY,
+        user_id INT NOT NULL,
+        public_key BLOB NOT NULL,
+        counter BIGINT NOT NULL,
+        transports VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'exec_committee',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        role_name VARCHAR(255) NOT NULL,
+        display_order INT DEFAULT 0,
+        is_current TINYINT(1) NOT NULL DEFAULT 1,
+        term_start DATE,
+        term_end DATE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
       name: 'events',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
         description TEXT,
-        location TEXT,
+        location VARCHAR(255),
         start DATETIME NOT NULL,
         end DATETIME NOT NULL,
-        difficulty_level INTEGER NOT NULL,
-        max_attendees INTEGER,
-        upfront_cost REAL NOT NULL DEFAULT 0,
+        difficulty_level INT NOT NULL,
+        max_attendees INT,
+        upfront_cost DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         upfront_refund_cutoff DATETIME,
-        is_canceled BOOLEAN NOT NULL DEFAULT 0,
-        enable_waitlist BOOLEAN NOT NULL DEFAULT 1,
-        signup_required BOOLEAN NOT NULL DEFAULT 1,
-        is_offsite BOOLEAN NOT NULL DEFAULT 0,
-        costs_released BOOLEAN NOT NULL DEFAULT 0,
+        is_canceled TINYINT(1) NOT NULL DEFAULT 0,
+        enable_waitlist TINYINT(1) NOT NULL DEFAULT 1,
+        signup_required TINYINT(1) NOT NULL DEFAULT 1,
+        is_offsite TINYINT(1) NOT NULL DEFAULT 0,
+        costs_released TINYINT(1) NOT NULL DEFAULT 0,
         costs_released_at DATETIME,
-        image_id INTEGER,
+        image_id INT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_start_end (start, end),
+        INDEX idx_canceled (is_canceled),
+        FULLTEXT KEY ft_event_search (title, description, location),
         FOREIGN KEY (image_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {
       name: 'event_attendees',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER,
-        user_id INTEGER,
-        is_attending BOOLEAN NOT NULL DEFAULT 1,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT NOT NULL,
+        user_id INT NOT NULL,
+        is_attending TINYINT(1) NOT NULL DEFAULT 1,
         joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         left_at DATETIME,
-        payment_transaction_id INTEGER,
-        upfront_refunded BOOLEAN NOT NULL DEFAULT 0,
+        payment_transaction_id INT,
+        upfront_refunded TINYINT(1) NOT NULL DEFAULT 0,
+        UNIQUE KEY idx_unique_active_attendance (event_id, user_id, (CASE WHEN is_attending = 1 THEN 1 ELSE NULL END)),
+        INDEX idx_event_user (event_id, user_id),
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (payment_transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
     },
     {
       name: 'transactions',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        amount REAL NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
         description TEXT,
-        event_id INTEGER,
+        event_id INT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_created (user_id, created_at),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL
       `
@@ -116,23 +183,24 @@ export async function createTables(db) {
     {
       name: 'tags',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        color TEXT DEFAULT '#808080',
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        color VARCHAR(50) DEFAULT '#808080',
         description TEXT,
-        min_difficulty INTEGER,
-        priority INTEGER DEFAULT 0,
-        join_policy TEXT CHECK(join_policy IN ('open', 'whitelist', 'role')) DEFAULT 'open',
-        view_policy TEXT CHECK(view_policy IN ('open', 'whitelist', 'role')) DEFAULT 'open',
-        image_id INTEGER,
+        min_difficulty INT,
+        priority INT DEFAULT 0,
+        join_policy ENUM('open', 'whitelist', 'role') DEFAULT 'open',
+        view_policy ENUM('open', 'whitelist', 'role') DEFAULT 'open',
+        image_id INT,
+        INDEX idx_priority (priority),
         FOREIGN KEY (image_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {
       name: 'event_tags',
       schema: `
-        event_id INTEGER,
-        tag_id INTEGER,
+        event_id INT NOT NULL,
+        tag_id INT NOT NULL,
         PRIMARY KEY (event_id, tag_id),
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
@@ -141,8 +209,8 @@ export async function createTables(db) {
     {
       name: 'tag_whitelists',
       schema: `
-        tag_id INTEGER,
-        user_id INTEGER,
+        tag_id INT NOT NULL,
+        user_id INT NOT NULL,
         PRIMARY KEY (tag_id, user_id),
         FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -151,24 +219,24 @@ export async function createTables(db) {
     {
       name: 'roles',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
         description TEXT
       `
     },
     {
       name: 'permissions',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slug TEXT UNIQUE NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        slug VARCHAR(255) UNIQUE NOT NULL,
         description TEXT
       `
     },
     {
       name: 'role_permissions',
       schema: `
-        role_id INTEGER,
-        permission_id INTEGER,
+        role_id INT NOT NULL,
+        permission_id INT NOT NULL,
         PRIMARY KEY (role_id, permission_id),
         FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
         FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
@@ -177,8 +245,8 @@ export async function createTables(db) {
     {
       name: 'user_roles',
       schema: `
-        user_id INTEGER PRIMARY KEY,
-        role_id INTEGER,
+        user_id INT NOT NULL PRIMARY KEY,
+        role_id INT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
       `
@@ -186,8 +254,8 @@ export async function createTables(db) {
     {
       name: 'role_managed_tags',
       schema: `
-        role_id INTEGER,
-        tag_id INTEGER,
+        role_id INT NOT NULL,
+        tag_id INT NOT NULL,
         PRIMARY KEY (role_id, tag_id),
         FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
         FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
@@ -196,8 +264,8 @@ export async function createTables(db) {
     {
       name: 'user_permissions',
       schema: `
-        user_id INTEGER,
-        permission_id INTEGER,
+        user_id INT NOT NULL,
+        permission_id INT NOT NULL,
         PRIMARY KEY (user_id, permission_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
@@ -206,8 +274,8 @@ export async function createTables(db) {
     {
       name: 'user_managed_tags',
       schema: `
-        user_id INTEGER,
-        tag_id INTEGER,
+        user_id INT NOT NULL,
+        tag_id INT NOT NULL,
         PRIMARY KEY (user_id, tag_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
@@ -216,10 +284,10 @@ export async function createTables(db) {
     {
       name: 'swim_history',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        added_by INTEGER NOT NULL,
-        count INTEGER NOT NULL DEFAULT 1,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        added_by INT,
+        count INT NOT NULL DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
@@ -228,67 +296,46 @@ export async function createTables(db) {
     {
       name: 'event_waiting_list',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER,
-        user_id INTEGER,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT NOT NULL,
+        user_id INT NOT NULL,
         joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
     },
     {
-      name: 'file_categories',
-      schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        default_visibility TEXT CHECK(default_visibility IN ('public', 'members', 'execs', 'events')) NOT NULL DEFAULT 'members'
-      `
-    },
-    {
-      name: 'files',
-      schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        author TEXT,
-        date DATETIME DEFAULT CURRENT_TIMESTAMP,
-        size INTEGER,
-        filename TEXT,
-        hash TEXT,
-        category_id INTEGER,
-        visibility TEXT CHECK(visibility IN ('public', 'members', 'execs', 'events')) NOT NULL DEFAULT 'members',
-        content TEXT,
-        FOREIGN KEY (category_id) REFERENCES file_categories(id) ON DELETE SET NULL
-      `
-    },
-    {
       name: 'password_resets',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        token TEXT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        token VARCHAR(255) NOT NULL,
         expires_at DATETIME NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_token (token),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
     },
     {
       name: 'slides',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        file_id INTEGER NOT NULL,
-        display_order INTEGER DEFAULT 0,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        file_id INT NOT NULL,
+        display_order INT DEFAULT 0,
         FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
       `
     },
     {
       name: 'quotes',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         text TEXT NOT NULL,
-        quoted_user_id INTEGER,
-        submitted_by_id INTEGER,
-        visibility TEXT CHECK(visibility IN ('public', 'private', 'hidden')) NOT NULL DEFAULT 'private',
+        quoted_user_id INT,
+        submitted_by_id INT,
+        visibility ENUM('public', 'private', 'hidden') NOT NULL DEFAULT 'private',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_visibility (visibility),
+        FULLTEXT KEY ft_quote_search (text),
         FOREIGN KEY (quoted_user_id) REFERENCES users(id) ON DELETE SET NULL,
         FOREIGN KEY (submitted_by_id) REFERENCES users(id) ON DELETE SET NULL
       `
@@ -296,12 +343,12 @@ export async function createTables(db) {
     {
       name: 'cars',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        name TEXT NOT NULL,
-        seats INTEGER NOT NULL,
-        boats INTEGER NOT NULL DEFAULT 0,
-        is_global BOOLEAN NOT NULL DEFAULT 0,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        name VARCHAR(255) NOT NULL,
+        seats INT NOT NULL,
+        boats INT NOT NULL DEFAULT 0,
+        is_global TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
@@ -309,9 +356,9 @@ export async function createTables(db) {
     {
       name: 'trips',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
       `
@@ -319,15 +366,15 @@ export async function createTables(db) {
     {
       name: 'event_drivers',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        trip_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        car_id INTEGER NOT NULL,
-        status TEXT CHECK(status IN ('pending', 'accepted', 'declined')) NOT NULL DEFAULT 'pending',
-        start_mileage REAL,
-        start_mileage_proof_id INTEGER,
-        end_mileage REAL,
-        end_mileage_proof_id INTEGER,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        trip_id INT NOT NULL,
+        user_id INT NOT NULL,
+        car_id INT NOT NULL,
+        status ENUM('pending', 'accepted', 'declined') NOT NULL DEFAULT 'pending',
+        start_mileage DECIMAL(10, 2),
+        start_mileage_proof_id INT,
+        end_mileage DECIMAL(10, 2),
+        end_mileage_proof_id INT,
         start_mileage_submitted_at DATETIME,
         end_mileage_submitted_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -341,12 +388,12 @@ export async function createTables(db) {
     {
       name: 'event_expenses',
       schema: `
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        amount REAL NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT NOT NULL,
+        user_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
         description TEXT NOT NULL,
-        receipt_file_id INTEGER,
+        receipt_file_id INT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -356,8 +403,8 @@ export async function createTables(db) {
     {
       name: 'trip_exclusions',
       schema: `
-        trip_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+        trip_id INT NOT NULL,
+        user_id INT NOT NULL,
         PRIMARY KEY (trip_id, user_id),
         FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -366,8 +413,8 @@ export async function createTables(db) {
     {
       name: 'expense_exclusions',
       schema: `
-        expense_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
+        expense_id INT NOT NULL,
+        user_id INT NOT NULL,
         PRIMARY KEY (expense_id, user_id),
         FOREIGN KEY (expense_id) REFERENCES event_expenses(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -394,58 +441,64 @@ export async function createTables(db) {
       progressBar.update(i + 1, { table: table.name });
     }
 
-    // Add partial unique index for event attendees to prevent duplicate active signups
-    await db.exec(`
-      CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
-        title, filename, content,
-        content='files',
-        content_rowid='id',
-        tokenize='porter unicode61'
-      );
-    `);
-
-    await db.exec(`
-      CREATE TRIGGER IF NOT EXISTS files_ai AFTER INSERT ON files BEGIN
-        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
-      END;
-      CREATE TRIGGER IF NOT EXISTS files_ad AFTER DELETE ON files BEGIN
-        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
-      END;
-      CREATE TRIGGER IF NOT EXISTS files_au AFTER UPDATE ON files BEGIN
-        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
-        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
-      END;
-    `);
-
     progressBar.stop();
   } else {
     for (const table of tableDefinitions) {
       const existed = await createTable(table.name, table.schema, db);
       if (!existed) newlyCreatedTables.push(table.name);
     }
-    await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_event_attendees_unique_active ON event_attendees(event_id, user_id) WHERE is_attending = 1;');
-
-    // Setup FTS for tests
-    await db.exec(`
-      CREATE VIRTUAL TABLE IF NOT EXISTS files_fts USING fts5(
-        title, filename, content,
-        content='files',
-        content_rowid='id'
-      );
-    `);
-    await db.exec(`
-      CREATE TRIGGER IF NOT EXISTS files_ai AFTER INSERT ON files BEGIN
-        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
-      END;
-      CREATE TRIGGER IF NOT EXISTS files_ad AFTER DELETE ON files BEGIN
-        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
-      END;
-      CREATE TRIGGER IF NOT EXISTS files_au AFTER UPDATE ON files BEGIN
-        INSERT INTO files_fts(files_fts, rowid, title, filename, content) VALUES('delete', old.id, old.title, old.filename, old.content);
-        INSERT INTO files_fts(rowid, title, filename, content) VALUES (new.id, new.title, new.filename, new.content);
-      END;
-    `);
   }
+
+  // Attempt to add foreign keys again for safety in case of dependency order issues?
+  // MySQL usually fails if referenced table doesn't exist.
+  // I ordered the tables above carefully to respect dependencies:
+  // colleges -> users
+  // file_categories -> files
+  // files -> users (profile_picture_id) -- WAIT. users has profile_picture_id REFERENCES files. files has author... no FK on author.
+  // files does NOT have FK to users.
+  // BUT users has FK to files(id).
+  // AND files has FK to file_categories.
+  // events has FK to files(image_id).
+  //
+  // So:
+  // 1. colleges
+  // 2. file_categories
+  // 3. files
+  // 4. users (depends on colleges, files)
+  // 5. events (depends on files)
+  // ... others depend on users, events, files.
+  //
+  // I must ensure 'files' is created before 'users'.
+  // In `tableDefinitions`, `colleges` is first. Then `users`? No, `users` references `files`.
+  // So `files` must come before `users`.
+  //
+  // Current order in my draft above:
+  // 1. colleges
+  // 2. file_categories (added)
+  // 3. files (moved up)
+  // 4. users
+  // ...
+  // This looks correct.
+
+  // Restore the event_attendees unique index logic for MySQL 8+ if possible?
+  // We added `UNIQUE KEY` in the schema for `event_attendees`.
+  // Note: Standard UNIQUE KEY includes the column even if it is 0. 
+  // If we want "is_attending=1" uniqueness only, we can't easily do it with standard UNIQUE constraint in MySQL if we allow multiple 0s.
+  // However, `is_attending` is BOOLEAN (TINYINT).
+  // If user leaves (is_attending=0), we might want to keep the record for history?
+  // If they join again, do we update the existing record or insert new?
+  // The `ExpensesDB.addAttendee` uses INSERT/UPDATE logic.
+  // If we have a UNIQUE key on (event_id, user_id), then we can only have ONE record per user per event.
+  // This implies if they leave, we set is_attending=0. If they join again, we set is_attending=1.
+  // This is actually BETTER for data integrity than allowing multiple history rows without a primary history table.
+  // So `UNIQUE KEY (event_id, user_id)` is probably what we want, regardless of `is_attending`.
+  // But wait, `event_attendees` has `joined_at` and `left_at`.
+  // If we reuse the row, we lose the *previous* history (joined/left times).
+  // But the original SQLite `idx_event_attendees_unique_active` filtered `WHERE is_attending = 1`.
+  // This means you could have many `is_attending = 0` rows, but only one `is_attending = 1`.
+  // MySQL 8.0.13+ supports functional key parts.
+  // For now, I will omit the unique constraint to avoid issues on older MySQL versions,
+  // relying on the application logic which checks for existing active attendees.
 
   return newlyCreatedTables;
 }

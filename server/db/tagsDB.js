@@ -142,7 +142,7 @@ export default class TagsDB {
      */
     static async addToWhitelist(db, tagId, userId) {
         try {
-            await db.run('INSERT OR IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
+            await db.run('INSERT IGNORE INTO tag_whitelists (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
             return new statusObject(200, 'User added to whitelist');
         } catch (error) {
             return new statusObject(500, 'Database error');
@@ -194,7 +194,7 @@ export default class TagsDB {
      */
     static async addManager(db, tagId, userId) {
         try {
-            await db.run('INSERT OR IGNORE INTO user_managed_tags (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
+            await db.run('INSERT IGNORE INTO user_managed_tags (tag_id, user_id) VALUES (?, ?)', [tagId, userId]);
             return new statusObject(200, 'Manager added');
         } catch (error) {
             return new statusObject(500, 'Database error');
@@ -217,7 +217,7 @@ export default class TagsDB {
      * Link a tag to an event.
      */
     static async associateTag(db, eventId, tagId) {
-        await db.run('INSERT OR IGNORE INTO event_tags (event_id, tag_id) VALUES (?, ?)', [eventId, tagId]);
+        await db.run('INSERT IGNORE INTO event_tags (event_id, tag_id) VALUES (?, ?)', [eventId, tagId]);
     }
 
     /**

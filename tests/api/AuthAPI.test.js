@@ -12,6 +12,7 @@ import TestWorld from '../utils/TestWorld.js';
 import AuthAPI from '../../server/api/AuthAPI.js';
 import UserAPI from '../../server/api/users/UserAPI.js';
 import bcrypt from 'bcrypt';
+import config from '../../server/config.js';
 
 describe('api/AuthAPI', () => {
     let app, db, passport, auth;
@@ -97,7 +98,7 @@ describe('api/AuthAPI', () => {
         const password = 'password123';
 
         beforeEach(async () => {
-            const hashed = await bcrypt.hash(password, 10);
+            const hashed = await bcrypt.hash(password, config.auth.bcryptSaltRounds);
             await db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?,?,?,?)', [email, hashed, 'L', 'T']);
         });
 
@@ -150,6 +151,52 @@ describe('api/AuthAPI', () => {
 
             const user = await db.get('SELECT hashed_password FROM users WHERE email = ?', [email]);
             expect(await bcrypt.compare('new-password', user.hashed_password)).toBe(true);
+        });
+    });
+
+    describe('2FA - TOTP', () => {
+        let userId;
+        let agent;
+
+        beforeEach(async () => {
+            agent = request.agent(app);
+            const signupRes = await agent.post('/api/auth/signup').send({
+                email: 'totp.test@durham.ac.uk', password: 'Password123!', first_name: 'Two', last_name: 'Factor'
+            });
+            expect(signupRes.statusCode).toBe(201);
+
+            const user = await db.get('SELECT id FROM users WHERE email = ?', ['totp.test@durham.ac.uk']);
+            expect(user).toBeDefined();
+            userId = user.id;
+            // Login to establish session
+            await agent.post('/api/auth/login').send({ email: 'totp.test@durham.ac.uk', password: 'Password123!' });
+        });
+
+        test('Setup generates QR code', async () => {
+            const res = await agent.get('/api/auth/totp/setup');
+            expect(res.statusCode).toBe(200);
+            expect(res.body.secret).toBeDefined();
+            expect(res.body.qrCodeData).toBeDefined();
+        });
+    });
+
+    describe('2FA - Passkey', () => {
+        let agent;
+        const email = 'passkey.test@durham.ac.uk';
+
+        beforeEach(async () => {
+            agent = request.agent(app);
+            await agent.post('/api/auth/signup').send({
+                email, password: 'Password123!', first_name: 'Key', last_name: 'Holder'
+            });
+            await agent.post('/api/auth/login').send({ email, password: 'Password123!' });
+        });
+
+        test('Registration options are generated', async () => {
+            const res = await agent.get('/api/auth/passkey/register-options');
+            expect(res.statusCode).toBe(200);
+            expect(res.body.challenge).toBeDefined();
+            expect(res.body.user.name).toBe(email);
         });
     });
 });

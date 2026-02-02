@@ -8,7 +8,7 @@
 
 import { apiRequest } from '/js/utils/api.js';
 import { addRoute, switchView, ViewChangedEvent } from '/js/utils/view.js';
-import { BOLT_SVG } from '../../images/icons/outline/icons.js';
+import { BOLT_SVG } from '/images/icons/outline/icons.js';
 import { notify } from '../components/notification.js';
 
 addRoute('/set-password', 'set-password');

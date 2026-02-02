@@ -12,7 +12,7 @@ import { setupNumberInput, downloadCSV } from '/js/utils/utils.js';
 import { Panel } from '/js/widgets/panel.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { Pagination } from '/js/widgets/Pagination.js';
-import { CURRENCY_POUND_SVG, ADD_SVG, TRIP_SVG, CHECK_SVG, CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG } from '../../../../../images/icons/outline/icons.js';
+import { CURRENCY_POUND_SVG, ADD_SVG, TRIP_SVG, CHECK_SVG, CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG } from '/images/icons/outline/icons.js';
 
 export async function renderFinanceTab(container, event, attendees, userPerms) {
     container.innerHTML = `

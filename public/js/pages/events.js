@@ -11,7 +11,7 @@ import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import {
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG,
     REFRESH_SVG, SETTINGS_SVG
-} from '../../images/icons/outline/icons.js';
+} from '/images/icons/outline/icons.js';
 import { StandardCard } from '../widgets/StandardCard.js';
 import { 
     EventAttendanceChangedEvent, 

@@ -4,7 +4,7 @@
  * Logic for the application footer.
  */
 
-import { MAIL_SVG } from "../../images/icons/outline/icons.js";
+import { MAIL_SVG } from '/images/icons/outline/icons.js';
 
 import { apiRequest } from "/js/utils/api.js";
 

@@ -1,7 +1,7 @@
 import { apiRequest } from '/js/utils/api.js';
 import { ViewChangedEvent, addRoute, switchView } from '/js/utils/view.js';
 import { downloadCSV } from '/js/utils/utils.js';
-import { CURRENCY_POUND_SVG, TRIP_SVG, WALLET_SVG } from '../../images/icons/outline/icons.js';
+import { CURRENCY_POUND_SVG, TRIP_SVG, WALLET_SVG } from '/images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 
 const view_id = 'settlement-view';

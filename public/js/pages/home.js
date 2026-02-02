@@ -8,7 +8,7 @@
 
 import { apiRequest } from '/js/utils/api.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { KAYAKING_SVG, SOCIAL_LEADERBOARD_SVG, CAMPING_SVG } from '../../images/icons/outline/icons.js';
+import { KAYAKING_SVG, SOCIAL_LEADERBOARD_SVG, CAMPING_SVG } from '/images/icons/outline/icons.js';
 
 const home_view_id = 'home-view';
 addRoute('/home', 'home');

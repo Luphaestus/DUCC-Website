@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import { generateRandomPassword } from '../utils.js';
 import colors from 'ansi-colors';
 import Logger from '../../../misc/Logger.js';
+import config from '../../../config.js';
 
 /**
  * Seeds the database with the canonical list of Durham colleges.
@@ -21,11 +22,9 @@ export async function seedColleges(db, newlyCreatedTables = []) {
             'south', 'aidans', 'stchads', 'stcuthberts', 'hildbede',
             'stjohns', 'stmarys', 'stephenson', 'trevelyan', 'ustinov', 'van-mildert'
         ];
-        const stmt = await db.prepare('INSERT INTO colleges (name) VALUES (?)');
-        for (const college of colleges) {
-            await stmt.run(college);
-        }
-        await stmt.finalize();
+        
+        const placeholders = colleges.map(() => '(?)').join(', ');
+        await db.run(`INSERT IGNORE INTO colleges (name) VALUES ${placeholders}`, colleges);
     }
 }
 
@@ -70,17 +69,17 @@ export async function seedEssential(db, newlyCreatedTables = []) {
 
     const permIds = {};
     for (const p of permissions) {
-        await db.run('INSERT OR IGNORE INTO permissions (slug, description) VALUES (?, ?)', [p.slug, p.desc]);
+        await db.run('INSERT IGNORE INTO permissions (slug, description) VALUES (?, ?)', [p.slug, p.desc]);
         const row = await db.get('SELECT id FROM permissions WHERE slug = ?', [p.slug]);
         permIds[p.slug] = row.id;
     }
 
     const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global'];
-    await db.run('INSERT OR IGNORE INTO roles (name, description) VALUES (?, ?)', ['President', 'The Club President with full administrative access.']);
+    await db.run('INSERT IGNORE INTO roles (name, description) VALUES (?, ?)', ['President', 'The Club President with full administrative access.']);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
     for (const permSlug of presidentPerms) {
         if (permIds[permSlug]) {
-            await db.run('INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presidentRole.id, permIds[permSlug]]);
+            await db.run('INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presidentRole.id, permIds[permSlug]]);
         }
     }
 
@@ -91,17 +90,17 @@ export async function seedEssential(db, newlyCreatedTables = []) {
         { name: 'Misc', visibility: 'members' }
     ];
     for (const cat of categories) {
-        await db.run('INSERT OR IGNORE INTO file_categories (name, default_visibility) VALUES (?, ?)', [cat.name, cat.visibility]);
+        await db.run('INSERT IGNORE INTO file_categories (name, default_visibility) VALUES (?, ?)', [cat.name, cat.visibility]);
     }
 
-    const presidentExists = await db.get("SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'President' LIMIT 1");
+    const presidentExists = await db.get("SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = ? LIMIT 1", ['President']);
     if (!presidentExists) {
         let adminId = null;
 
-        const adminExists = await db.get("SELECT id FROM users WHERE email = 'admin@durham.ac.uk'");
-        if (!adminExists) {
+        const adminUser = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
+        if (!adminUser) {
             try {
-                const sessionsExists = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'");
+                const sessionsExists = await db.get("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?", ['sessions']);
                 if (sessionsExists) {
                     await db.run('DELETE FROM sessions');
                 }
@@ -110,17 +109,17 @@ export async function seedEssential(db, newlyCreatedTables = []) {
             if (process.env.NODE_ENV !== 'test') console.info('Inserting default admin user...');
             const email = 'admin@durham.ac.uk'.toLowerCase();
             const password = generateRandomPassword(12);
-            const hashedPassword = await bcrypt.hash(password, 10);
+            const hashedPassword = await bcrypt.hash(password, config.auth.bcryptSaltRounds);
             const adminResult = await db.run(
                 `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, is_member, filled_legal_info, legal_filled_at) VALUES (?, ?, ?, ?, ?, 1, 1, ?)`,
-                [email, hashedPassword, 'Admin', 'User', 5, new Date().toISOString()]
+                [email, hashedPassword, 'Admin', 'User', 5, new Date().toISOString().slice(0, 19).replace('T', ' ')]
             );
             adminId = adminResult.lastID;
             if (process.env.NODE_ENV !== 'test') console.info(`========== Admin created. ==========\nEmail: ${email}\nPassword: ${password}\n====================================`);
         } else {
-            adminId = adminExists.id;
+            adminId = adminUser.id;
             // Ensure existing admin is also a member and has legal info
-            await db.run('UPDATE users SET is_member = 1, filled_legal_info = 1, legal_filled_at = ? WHERE id = ?', [new Date().toISOString(), adminId]);
+            await db.run('UPDATE users SET is_member = 1, filled_legal_info = 1, legal_filled_at = ? WHERE id = ?', [new Date().toISOString().slice(0, 19).replace('T', ' '), adminId]);
         }
         if (presidentRole) {
             await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);

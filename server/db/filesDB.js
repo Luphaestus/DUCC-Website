@@ -49,12 +49,10 @@ export default class FilesDB {
             }
 
             if (useFts && searchTerm) {
-                ftsJoin = "JOIN files_fts f ON d.id = f.rowid";
+                const cleanedSearch = searchTerm.replace(/"/g, '');
+                const ftsQuery = cleanedSearch.split(/\s+/).filter(s => s).map(s => `+${s}*`).join(' ');
                 
-                const cleanedSearch = searchTerm.replace(/"/g, '""');
-                const ftsQuery = cleanedSearch.split(/\s+/).filter(s => s).map(s => `"${s}"*`).join(' ');
-                
-                conditions.push("files_fts MATCH ?");
+                conditions.push("MATCH (d.title, d.filename, d.content) AGAINST (? IN BOOLEAN MODE)");
                 params.push(ftsQuery);
             }
         }
@@ -65,9 +63,9 @@ export default class FilesDB {
         }
 
         const usageFilter = !includeUsed ? `
-            AND d.id NOT IN (SELECT image_id FROM events WHERE image_id IS NOT NULL)
-            AND d.id NOT IN (SELECT image_id FROM tags WHERE image_id IS NOT NULL)
-            AND d.id NOT IN (SELECT file_id FROM slides)
+            AND NOT EXISTS (SELECT 1 FROM events WHERE image_id = d.id)
+            AND NOT EXISTS (SELECT 1 FROM tags WHERE image_id = d.id)
+            AND NOT EXISTS (SELECT 1 FROM slides WHERE file_id = d.id)
         ` : '';
 
         try {
@@ -81,7 +79,7 @@ export default class FilesDB {
                 ORDER BY ${sortCol} ${sortOrder}
                 LIMIT ? OFFSET ?
             `;
-            const files = await db.all(query, [...params, limit, offset]);
+            const files = await db.all(query, [...params, Number(limit), Number(offset)]);
 
             const countQuery = `
                 SELECT COUNT(*) as count 

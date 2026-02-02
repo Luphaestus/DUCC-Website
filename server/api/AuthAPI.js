@@ -13,6 +13,15 @@ import ValidationRules from '../rules/ValidationRules.js';
 import AuthDB from '../db/authDB.js';
 import Logger from '../misc/Logger.js';
 import config from '../config.js';
+import { generateSecret, verify, generateURI } from 'otplib';
+import qrcode from 'qrcode';
+import {
+    generateRegistrationOptions,
+    verifyRegistrationResponse,
+    generateAuthenticationOptions,
+    verifyAuthenticationResponse,
+} from '@simplewebauthn/server';
+import { isoUint8Array, isoBase64URL } from '@simplewebauthn/server/helpers';
 
 export default class Auth {
     /**
@@ -53,6 +62,18 @@ export default class Auth {
                 done(err);
             }
         });
+
+        // WebAuthn configuration
+        this.rpName = 'DUCC Website';
+        this.rpID = config.domain;
+        this.origin = `https://${this.rpID}`;
+        if (this.rpID === 'localhost') {
+            this.origin = `http://localhost:${process.env.PORT || 3000}`;
+        }
+        
+        if (process.env.ORIGIN) {
+            this.origin = process.env.ORIGIN;
+        }
     }
 
     /**
@@ -89,7 +110,7 @@ export default class Auth {
                 const deletedEmail = 'deleted:' + email;
                 const existingUser = await AuthDB.getUserByEmail(this.db, deletedEmail);
 
-                const hashedPassword = await bcrypt.hash(password, 10);
+                const hashedPassword = await bcrypt.hash(password, config.auth.bcryptSaltRounds);
 
                 if (existingUser) {
                     const status = await AuthDB.restoreUser(this.db, existingUser.id, email, hashedPassword, first_name, last_name);
@@ -108,9 +129,28 @@ export default class Auth {
          * Authenticate user and start session.
          */
         this.app.post('/api/auth/login', (req, res, next) => {
-            this.passport.authenticate('local', (err, user, info) => {
+            this.passport.authenticate('local', async (err, user, info) => {
                 if (err) return res.status(500).json({ message: 'Authentication error.' });
                 if (!user) return res.status(401).json({ message: info.message || 'Authentication failed.' });
+
+                const authenticators = await AuthDB.getUserAuthenticators(this.db, user.id);
+                const hasPasskeys = authenticators.length > 0;
+                const hasTOTP = !!user.totp_enabled;
+
+                if (hasPasskeys || hasTOTP) {
+                    req.session.pendingUser = {
+                        id: user.id,
+                        hasTOTP,
+                        hasPasskeys
+                    };
+                    return res.status(200).json({ 
+                        requires2FA: true,
+                        methods: {
+                            totp: hasTOTP,
+                            passkey: hasPasskeys
+                        }
+                    });
+                }
 
                 req.logIn(user, (err) => {
                     if (err) return res.status(500).json({ message: 'Login error.' });
@@ -127,6 +167,277 @@ export default class Auth {
                     });
                 });
             })(req, res, next);
+        });
+
+        /**
+         * Verify TOTP token during login.
+         */
+        this.app.post('/api/auth/verify-totp', async (req, res) => {
+            const { token } = req.body;
+            const pendingUser = req.session.pendingUser;
+
+            if (!pendingUser || !pendingUser.hasTOTP) {
+                return res.status(400).json({ message: 'TOTP not required or session expired.' });
+            }
+
+            try {
+                const user = await AuthDB.getUserById(this.db, pendingUser.id);
+                const isValid = await verify({
+                    token,
+                    secret: user.totp_secret
+                });
+
+                if (!isValid) {
+                    return res.status(401).json({ message: 'Invalid TOTP token.' });
+                }
+
+                req.logIn(user, (err) => {
+                    if (err) return res.status(500).json({ message: 'Login error.' });
+                    delete req.session.pendingUser;
+                    return res.status(200).json({ message: 'Login successful.' });
+                });
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Verification failed.' });
+            }
+        });
+
+        /**
+         * WebAuthn login - Get authentication options.
+         */
+        this.app.post('/api/auth/passkey/login-options', async (req, res) => {
+            const pendingUser = req.session.pendingUser;
+            let userId = pendingUser?.id;
+
+            if (!userId && req.body.email) {
+                const user = await AuthDB.getUserByEmail(this.db, req.body.email.toLowerCase());
+                if (user) userId = user.id;
+            }
+
+            if (!userId) {
+                return res.status(400).json({ message: 'Email required or session expired.' });
+            }
+
+            try {
+                const userAuthenticators = await AuthDB.getUserAuthenticators(this.db, userId);
+                if (userAuthenticators.length === 0) {
+                    return res.status(400).json({ message: 'No passkeys found for this user.' });
+                }
+
+                const options = await generateAuthenticationOptions({
+                    rpID: this.rpID,
+                    allowCredentials: userAuthenticators.map(auth => ({
+                        id: typeof auth.id === 'string' ? isoBase64URL.toBuffer(auth.id) : auth.id,
+                        type: 'public-key',
+                        transports: auth.transports ? JSON.parse(auth.transports) : undefined,
+                    })),
+                    userVerification: 'preferred',
+                });
+
+                req.session.currentChallenge = options.challenge;
+                req.session.passkeyUserId = userId; // Store intended user ID for verification
+                res.json(options);
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Failed to generate options.' });
+            }
+        });
+
+        /**
+         * WebAuthn login - Verify response.
+         */
+        this.app.post('/api/auth/passkey/login-verify', async (req, res) => {
+            const { body } = req;
+            const expectedChallenge = req.session.currentChallenge;
+            const targetUserId = req.session.pendingUser?.id || req.session.passkeyUserId;
+
+            if (!expectedChallenge || !targetUserId) {
+                return res.status(400).json({ message: 'Authentication session expired.' });
+            }
+
+            try {
+                const authenticator = await AuthDB.getAuthenticatorById(this.db, body.id);
+                if (!authenticator || authenticator.user_id !== targetUserId) {
+                    return res.status(400).json({ message: 'Authenticator not found.' });
+                }
+
+                const verification = await verifyAuthenticationResponse({
+                    response: body,
+                    expectedChallenge,
+                    expectedOrigin: this.origin,
+                    expectedRPID: this.rpID,
+                    authenticator: {
+                        credentialID: typeof authenticator.id === 'string' ? isoBase64URL.toBuffer(authenticator.id) : authenticator.id,
+                        credentialPublicKey: authenticator.public_key,
+                        counter: authenticator.counter || 0,
+                    },
+                });
+
+                if (verification.verified) {
+                    const { authenticationInfo } = verification;
+                    await AuthDB.updateAuthenticatorCounter(this.db, authenticator.id, authenticationInfo.newCounter);
+                    
+                    const user = await AuthDB.getUserById(this.db, targetUserId);
+                    req.logIn(user, (err) => {
+                        if (err) return res.status(500).json({ message: 'Login error.' });
+                        delete req.session.pendingUser;
+                        delete req.session.currentChallenge;
+                        delete req.session.passkeyUserId;
+                        return res.status(200).json({ message: 'Login successful.' });
+                    });
+                } else {
+                    res.status(401).json({ message: 'Passkey verification failed.' });
+                }
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Verification error.' });
+            }
+        });
+
+        /**
+         * Setup TOTP - Generate secret and QR code.
+         */
+        this.app.get('/api/auth/totp/setup', this.check(), async (req, res) => {
+            try {
+                const secret = generateSecret();
+                const user = req.user;
+                const otpauth = generateURI({ secret, label: user.email, issuer: this.rpName });
+
+                const qrCodeData = await qrcode.toDataURL(otpauth);
+                // Temporarily store secret in session until verified
+                req.session.tempTOTPSecret = secret;
+                res.json({ qrCodeData, secret });
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Failed to generate setup.' });
+            }
+        });
+
+        /**
+         * Verify and enable TOTP.
+         */
+        this.app.post('/api/auth/totp/enable', this.check(), async (req, res) => {
+            const { token } = req.body;
+            const secret = req.session.tempTOTPSecret;
+
+            if (!secret) return res.status(400).json({ message: 'Setup session expired.' });
+
+            const isValid = await verify({ token, secret });
+            if (!isValid) return res.status(400).json({ message: 'Invalid token.' });
+
+            try {
+                await AuthDB.setTOTPSecret(this.db, req.user.id, secret);
+                await AuthDB.setTOTPEnabled(this.db, req.user.id, true);
+                delete req.session.tempTOTPSecret;
+                res.json({ success: true });
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Failed to enable TOTP.' });
+            }
+        });
+
+        /**
+         * Disable TOTP.
+         */
+        this.app.post('/api/auth/totp/disable', this.check(), async (req, res) => {
+            try {
+                await AuthDB.setTOTPEnabled(this.db, req.user.id, false);
+                res.json({ success: true });
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Failed to disable TOTP.' });
+            }
+        });
+
+        /**
+         * WebAuthn Registration - Get options.
+         */
+        this.app.get('/api/auth/passkey/register-options', this.check(), async (req, res) => {
+            const user = req.user;
+            const userAuthenticators = await AuthDB.getUserAuthenticators(this.db, user.id);
+
+            try {
+                const options = await generateRegistrationOptions({
+                    rpName: this.rpName,
+                    rpID: this.rpID,
+                    userID: isoUint8Array.fromUTF8String(user.id.toString()),
+                    userName: user.email,
+                    attestationType: 'none',
+                    excludeCredentials: userAuthenticators.map(auth => ({
+                        id: typeof auth.id === 'string' ? isoBase64URL.toBuffer(auth.id) : auth.id,
+                        type: 'public-key',
+                        transports: auth.transports ? JSON.parse(auth.transports) : undefined,
+                    })),
+                    authenticatorSelection: {
+                        residentKey: 'preferred',
+                        userVerification: 'preferred',
+                    },
+                });
+
+                req.session.currentChallenge = options.challenge;
+                res.json(options);
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Failed to generate options.' });
+            }
+        });
+
+        /**
+         * WebAuthn Registration - Verify response.
+         */
+        this.app.post('/api/auth/passkey/register-verify', this.check(), async (req, res) => {
+            const { body } = req;
+            const expectedChallenge = req.session.currentChallenge;
+
+            if (!expectedChallenge) return res.status(400).json({ message: 'Registration session expired.' });
+
+            try {
+                const verification = await verifyRegistrationResponse({
+                    response: body,
+                    expectedChallenge,
+                    expectedOrigin: this.origin,
+                    expectedRPID: this.rpID,
+                });
+
+                if (verification.verified) {
+                    const { registrationInfo } = verification;
+                    if (!registrationInfo) {
+                        return res.status(500).json({ message: 'Verification successful but registration info missing.' });
+                    }
+                    await AuthDB.saveAuthenticator(this.db, req.user.id, registrationInfo);
+                    delete req.session.currentChallenge;
+                    res.json({ success: true });
+                } else {
+                    res.status(400).json({ message: 'Verification failed.' });
+                }
+            } catch (err) {
+                Logger.error(err);
+                res.status(500).json({ message: 'Verification error.' });
+            }
+        });
+
+        /**
+         * List user's passkeys.
+         */
+        this.app.get('/api/auth/passkeys', this.check(), async (req, res) => {
+            try {
+                const keys = await AuthDB.getUserAuthenticators(this.db, req.user.id);
+                res.json(keys.map(k => ({ id: k.id, created_at: k.created_at })));
+            } catch (err) {
+                res.status(500).json({ message: 'Failed to fetch passkeys.' });
+            }
+        });
+
+        /**
+         * Delete a passkey.
+         */
+        this.app.delete('/api/auth/passkeys/:id', this.check(), async (req, res) => {
+            try {
+                await AuthDB.deleteAuthenticator(this.db, req.user.id, req.params.id);
+                res.json({ success: true });
+            } catch (err) {
+                res.status(500).json({ message: 'Failed to delete passkey.' });
+            }
         });
 
         /**
@@ -158,7 +469,15 @@ export default class Auth {
             if (!email) return res.status(400).json({ message: 'Email is required.' });
 
             try {
-                const user = await AuthDB.getUserByEmail(this.db, email.toLowerCase());
+                const searchStr = email.toLowerCase();
+                // Try exact match first
+                let user = await AuthDB.getUserByEmail(this.db, searchStr);
+                
+                // If not found and doesn't look like an email, try matching the prefix
+                if (!user && !searchStr.includes('@')) {
+                    user = await this.db.get('SELECT * FROM users WHERE email LIKE ?', [`${searchStr}@%`]);
+                }
+
                 if (!user) {
                     return res.json({ message: 'If an account exists, a reset link has been sent.' });
                 }
@@ -170,7 +489,7 @@ export default class Auth {
 
                 const baseUrl = Utils.getBaseUrl(req);
 
-                Logger.info(`[RESET] Password reset url for ${email}: ${baseUrl}/set-password?token=${token}`);
+                Logger.info(`[RESET] Password reset url for ${user.email}: ${baseUrl}/set-password?token=${token}`);
 
                 res.json({ message: 'If an account exists, a reset link has been sent.' });
             } catch (e) {
@@ -193,7 +512,7 @@ export default class Auth {
                     return res.status(400).json({ message: 'Invalid or expired token.' });
                 }
 
-                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                const hashedPassword = await bcrypt.hash(newPassword, config.auth.bcryptSaltRounds);
 
                 await AuthDB.resetPassword(this.db, resetRecord.user_id, hashedPassword);
 
@@ -218,7 +537,7 @@ export default class Auth {
                 const isMatch = await bcrypt.compare(currentPassword, user.hashed_password);
                 if (!isMatch) return res.status(403).json({ message: 'Incorrect current password.' });
 
-                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                const hashedPassword = await bcrypt.hash(newPassword, config.auth.bcryptSaltRounds);
                 await AuthDB.updatePassword(this.db, req.user.id, hashedPassword);
 
                 res.json({ message: 'Password changed successfully.' });

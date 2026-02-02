@@ -6,7 +6,7 @@
 
 import {
     CHECK_SVG, LOCATION_ON_SVG, SCHEDULE_SVG, GROUP_SVG, CURRENCY_POUND_SVG
-} from '../../images/icons/outline/icons.js';
+} from '/images/icons/outline/icons.js';
 import { Tag } from './Tag.js';
 
 export class StandardCard {

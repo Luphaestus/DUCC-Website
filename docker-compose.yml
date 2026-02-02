@@ -1,4 +1,17 @@
 services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: ducc_website
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: ducc_user
+      MYSQL_PASSWORD: ducc_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
   app:
     build: .
     expose:
@@ -6,7 +19,16 @@ services:
     volumes:
       - ./data:/app/data
     restart: always
+    environment:
+      - DB_HOST=db
+      - DB_USER=ducc_user
+      - DB_PASSWORD=ducc_password
+      - DB_NAME=ducc_website
+      - DB_PORT=3306
+      - SESSION_SECRET=${SESSION_SECRET:-dev-secret-key}
     command: sh -c "${APP_CMD:-npm run db:init && npm start}"
+    depends_on:
+      - db
 
   caddy:
     image: caddy:alpine
@@ -24,5 +46,6 @@ services:
       - app
 
 volumes:
+  db_data:
   caddy_data:
   caddy_config:

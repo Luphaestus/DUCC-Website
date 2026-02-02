@@ -10,10 +10,56 @@ import TagsDB from './tagsDB.js';
 import UserDB from './userDB.js';
 import EventRules from '../rules/EventRules.js';
 import Globals from '../misc/globals.js';
-import Utils from '../misc/utils.js';
 import Logger from '../misc/Logger.js';
 
 export default class eventsDB {
+    static _getEventSelect(userId) {
+        return `
+            e.*, 
+            (SELECT COUNT(*) FROM event_attendees ea_count WHERE ea_count.event_id = e.id AND ea_count.is_attending = 1) as attendee_count,
+            ${userId ? `EXISTS(SELECT 1 FROM event_attendees ea_user WHERE ea_user.event_id = e.id AND ea_user.user_id = ${Number(userId)} AND ea_user.is_attending = 1)` : '0'} as is_attending,
+            (
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'id', t.id,
+                        'name', t.name,
+                        'color', t.color,
+                        'description', t.description,
+                        'min_difficulty', t.min_difficulty,
+                        'priority', t.priority,
+                        'join_policy', t.join_policy,
+                        'view_policy', t.view_policy,
+                        'image_id', t.image_id
+                    )
+                )
+                FROM event_tags et
+                JOIN tags t ON et.tag_id = t.id
+                WHERE et.event_id = e.id
+            ) as tags_json
+        `;
+    }
+
+    static _processEvent(event) {
+        if (!event) return null;
+        event.tags = event.tags_json || [];
+        delete event.tags_json;
+        
+        if (event.image_id) {
+            event.image_url = `/api/files/${event.image_id}/download?view=true`;
+        } else {
+            const bestTag = event.tags
+                .filter(t => t.image_id !== null)
+                .sort((a, b) => b.priority - a.priority)[0];
+            
+            if (bestTag) {
+                event.image_url = `/api/files/${bestTag.image_id}/download?view=true`;
+            } else {
+                event.image_url = new Globals().get('DefaultEventImage').data;
+            }
+        }
+        return event;
+    }
+
     /**
      * Fetch events for a specific week, filtered by the maximum difficulty the user is allowed to see.
      */
@@ -30,21 +76,20 @@ export default class eventsDB {
         endOfWeek.setDate(endOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
-        const events = await db.all(
-            `SELECT e.*, 
-             EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
-             FROM events e 
-             WHERE e.start BETWEEN ? AND ?
-             ORDER BY e.start ASC`,
-            [userId, Utils.formatDateForSQLite(startOfWeek), Utils.formatDateForSQLite(endOfWeek)]
-        );
+        const sql = `
+            SELECT ${this._getEventSelect(userId)}
+            FROM events e 
+            WHERE e.start BETWEEN ? AND ?
+            ORDER BY e.start ASC
+        `;
+
+        const rawEvents = await db.all(sql, [startOfWeek, endOfWeek]);
+        const events = rawEvents.map(e => this._processEvent(e));
 
         const visibleEvents = [];
         const user = userId ? (await UserDB.getElementsById(db, userId, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level'])).getData() : null;
 
         for (const event of events) {
-            await this._enrichEvent(db, event);
-
             if (await EventRules.canViewEvent(db, event, user)) {
                 if (user) {
                     const joinStatus = await EventRules.canJoinEvent(db, event, user);
@@ -54,7 +99,6 @@ export default class eventsDB {
             }
         }
 
-        visibleEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
         return new statusObject(200, null, visibleEvents);
     }
 
@@ -63,7 +107,7 @@ export default class eventsDB {
      */
     static async get_events_relative_week(db, max_difficulty, offset = 0, userId = null) {
         const targetDate = new Date();
-        targetDate.setDate(targetDate.getDate() + offset * 7);
+        targetDate.setDate(targetDate.getDate() + (Number(offset) * 7));
         return this.get_events_for_week(db, max_difficulty, targetDate, userId);
     }
 
@@ -71,22 +115,20 @@ export default class eventsDB {
      * Fetch events within an arbitrary date range.
      */
     static async get_events_in_range(db, max_difficulty, startDate, endDate, userId = null) {
-        const events = await db.all(
-            `SELECT e.*,
-             (SELECT COUNT(*) FROM event_attendees ea WHERE ea.event_id = e.id AND ea.is_attending = 1) as attendee_count,
-             EXISTS(SELECT 1 FROM event_attendees ea WHERE ea.event_id = e.id AND ea.user_id = ? AND ea.is_attending = 1) as is_attending
-             FROM events e 
-             WHERE e.start >= ? AND e.start <= ?
-             ORDER BY e.start ASC`,
-            [userId, Utils.formatDateForSQLite(startDate), Utils.formatDateForSQLite(endDate)]
-        );
+        const sql = `
+            SELECT ${this._getEventSelect(userId)}
+            FROM events e 
+            WHERE e.start >= ? AND e.start <= ?
+            ORDER BY e.start ASC
+        `;
+
+        const rawEvents = await db.all(sql, [startDate, endDate]);
+        const events = rawEvents.map(e => this._processEvent(e));
 
         const visibleEvents = [];
         const user = userId ? (await UserDB.getElementsById(db, userId, ['id', 'is_instructor', 'filled_legal_info', 'is_member', 'free_sessions', 'difficulty_level'])).getData() : null;
 
         for (const event of events) {
-            await this._enrichEvent(db, event);
-
             if (await EventRules.canViewEvent(db, event, user)) {
                 if (user) {
                     const joinStatus = await EventRules.canJoinEvent(db, event, user);
@@ -96,7 +138,6 @@ export default class eventsDB {
             }
         }
 
-        visibleEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
         return new statusObject(200, null, visibleEvents);
     }
 
@@ -104,74 +145,68 @@ export default class eventsDB {
      * Administrative fetch of events with full filtering and no visibility restrictions.
      */
     static async getEventsAdmin(db, options) {
-        const { page, limit, search, sort, order, showPast, minCost, maxCost, difficulty, location, permissions } = options;
+        const { page = 1, limit = 20, search, sort, order, showPast, minCost, maxCost, difficulty, location, permissions } = options;
         const offset = (page - 1) * limit;
 
         const allowedSorts = ['title', 'start', 'location', 'difficulty_level', 'upfront_cost'];
         const sortCol = allowedSorts.includes(sort) ? sort : 'start';
         const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
 
-
         let conditions = [];
         const params = [];
 
         if (search) {
-            const terms = search.trim().split(/\s+/);
-            terms.forEach(term => {
-                const termPattern = `%${term}%`;
-                params.push(termPattern, termPattern, termPattern);
-                conditions.push(`(title LIKE ? OR location LIKE ? OR description LIKE ?)`);
-            });
+            const searchTerms = search.trim().split(/\s+/).map(t => `+${t}*`).join(' ');
+            conditions.push(`MATCH(e.title, e.description, e.location) AGAINST(? IN BOOLEAN MODE)`);
+            params.push(searchTerms);
         }
 
         if (!showPast) {
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
-            conditions.push(`start >= ?`);
-            params.push(Utils.formatDateForSQLite(startOfToday));
+            conditions.push(`e.start >= CURRENT_DATE`);
         }
 
         if (minCost !== undefined && minCost !== '') {
-            conditions.push(`upfront_cost >= ?`);
-            params.push(parseFloat(minCost));
+            conditions.push(`e.upfront_cost >= ?`);
+            params.push(Number(minCost));
         }
         if (maxCost !== undefined && maxCost !== '') {
-            conditions.push(`upfront_cost <= ?`);
-            params.push(parseFloat(maxCost));
+            conditions.push(`e.upfront_cost <= ?`);
+            params.push(Number(maxCost));
         }
         if (difficulty !== undefined && difficulty !== '') {
-            conditions.push(`difficulty_level = ?`);
-            params.push(parseInt(difficulty));
+            conditions.push(`e.difficulty_level = ?`);
+            params.push(Number(difficulty));
         }
         if (location && location.trim() !== '') {
-            conditions.push(`location LIKE ?`);
+            conditions.push(`e.location LIKE ?`);
             params.push(`%${location.trim()}%`);
         }
 
-        if (permissions !== undefined) {
-            if (Array.isArray(permissions) && permissions.length > 0) {
-                const tagPlaceholders = permissions.map(() => '?').join(',');
-                conditions.push(`id IN (SELECT event_id FROM event_tags WHERE tag_id IN (${tagPlaceholders}))`);
-                params.push(...permissions);
-            }
+        if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+            const tagPlaceholders = permissions.map(() => '?').join(',');
+            conditions.push(`e.id IN (SELECT event_id FROM event_tags WHERE tag_id IN (${tagPlaceholders}))`);
+            params.push(...permissions);
         }
 
         const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
         try {
-            const query = `SELECT * FROM events ${whereClause} ORDER BY ${sortCol} ${sortOrder} LIMIT ? OFFSET ?`;
-            const events = await db.all(query, [...params, limit, offset]);
+            const query = `
+                SELECT ${this._getEventSelect()}
+                FROM events e 
+                ${whereClause} 
+                ORDER BY e.${sortCol} ${sortOrder} 
+                LIMIT ? OFFSET ?
+            `;
+            const rawEvents = await db.all(query, [...params, Number(limit), Number(offset)]);
+            const events = rawEvents.map(e => this._processEvent(e));
 
-            for (const event of events) {
-                await this._enrichEvent(db, event);
-            }
-
-            const countResult = await db.get(`SELECT COUNT(*) as count FROM events ${whereClause}`, params);
+            const countResult = await db.get(`SELECT COUNT(*) as count FROM events e ${whereClause}`, params);
             const totalPages = Math.ceil((countResult ? countResult.count : 0) / limit);
 
             return new statusObject(200, null, { events, totalPages, currentPage: page });
         } catch (error) {
-            Logger.error(error);
+            Logger.error('Database error in getEventsAdmin:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -180,10 +215,9 @@ export default class eventsDB {
      * Fetch specific event details by ID.
      */
     static async get_event_by_id(db, userId, eventId) {
-        const event = await db.get('SELECT * FROM events WHERE id = ?', [eventId]);
+        const sql = `SELECT ${this._getEventSelect(userId)} FROM events e WHERE e.id = ?`;
+        const event = this._processEvent(await db.get(sql, [eventId]));
         if (!event) return new statusObject(404, 'Event not found');
-
-        await this._enrichEvent(db, event);
 
         if (userId) {
             const driverInfo = await db.all(`
@@ -208,9 +242,9 @@ export default class eventsDB {
      */
     static async getEventByIdAdmin(db, id) {
         try {
-            const event = await db.get('SELECT * FROM events WHERE id = ?', [id]);
+            const sql = `SELECT ${this._getEventSelect()} FROM events e WHERE e.id = ?`;
+            const event = this._processEvent(await db.get(sql, [id]));
             if (!event) return new statusObject(404, 'Event not found');
-            await this._enrichEvent(db, event);
             return new statusObject(200, null, event);
         } catch (error) {
             return new statusObject(500, 'Database error');
@@ -241,14 +275,14 @@ export default class eventsDB {
  * Create a new event record and link its tags.
  */
 static async createEvent(db, data) {
-    try {
+    return db.transaction(async (tx) => {
         let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff } = data;
         
         if (!signup_required && max_attendees > 0) {
             return new statusObject(400, 'Max attendees cannot be set if signup is not required');
         }
 
-        const result = await db.run(
+        const result = await tx.run(
             `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, is_offsite, image_id, upfront_refund_cutoff)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, image_id, upfront_refund_cutoff]
@@ -256,42 +290,42 @@ static async createEvent(db, data) {
         const eventId = result.lastID;
 
         if (tags && Array.isArray(tags)) {
-            for (const tagId of tags) await TagsDB.associateTag(db, eventId, tagId);
+            for (const tagId of tags) await TagsDB.associateTag(tx, eventId, tagId);
         }
 
         return new statusObject(201, null, { id: eventId });
-    } catch (error) {
+    }).catch(error => {
         Logger.error(error);
         return new statusObject(500, 'Database error');
-    }
+    });
 }
 
 /**
  * Update an existing event record and its tag associations.
  */
 static async updateEvent(db, id, data) {
-    try {
+    return db.transaction(async (tx) => {
         let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff } = data;
 
         if (!signup_required && max_attendees > 0) {
             return new statusObject(400, 'Max attendees cannot be set if signup is not required');
         }
 
-        await db.run(
+        await tx.run(
             `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, is_offsite=?, image_id=?, upfront_refund_cutoff=? WHERE id=?`,
             [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, image_id, upfront_refund_cutoff, id]
         );
 
         if (tags && Array.isArray(tags)) {
-            await TagsDB.clearEventTags(db, id);
-            for (const tagId of tags) await TagsDB.associateTag(db, id, tagId);
+            await TagsDB.clearEventTags(tx, id);
+            for (const tagId of tags) await TagsDB.associateTag(tx, id, tagId);
         }
 
         return new statusObject(200, 'Event updated');
-    } catch (error) {
+    }).catch(error => {
         Logger.error(error);
         return new statusObject(500, 'Database error: ' + error.message);
-    }
+    });
 }
 
     /**
@@ -311,48 +345,36 @@ static async updateEvent(db, id, data) {
      * Cancel an event and process automatic refunds for all attendees.
      */
     static async cancelEvent(db, id) {
-        try {
-            await db.run('BEGIN TRANSACTION');
+        return db.transaction(async (tx) => {
+            const event = await tx.get('SELECT * FROM events WHERE id = ?', [id]);
+            if (!event) return new statusObject(404, 'Event not found');
+            if (event.is_canceled) return new statusObject(400, 'Event already canceled');
 
-            const event = await db.get('SELECT * FROM events WHERE id = ?', [id]);
-            if (!event) {
-                await db.run('ROLLBACK');
-                return new statusObject(404, 'Event not found');
-            }
+            await tx.run("UPDATE events SET is_canceled = 1 WHERE id = ?", [id]);
 
-            if (event.is_canceled) {
-                await db.run('ROLLBACK');
-                return new statusObject(400, 'Event already canceled');
-            }
-
-            await db.run("UPDATE events SET is_canceled = 1 WHERE id = ?", [id]);
-
-            const attendees = await db.all('SELECT * FROM event_attendees WHERE event_id = ? AND is_attending = 1', [id]);
+            const attendees = await tx.all('SELECT * FROM event_attendees WHERE event_id = ? AND is_attending = 1', [id]);
 
             for (const attendee of attendees) {
                 if (attendee.payment_transaction_id) {
-                    const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [attendee.payment_transaction_id]);
+                    const transaction = await tx.get('SELECT * FROM transactions WHERE id = ?', [attendee.payment_transaction_id]);
                     if (transaction) {
                         const refundAmount = Math.abs(transaction.amount);
-                        await TransactionsDB._add_transaction_internal(db, attendee.user_id, refundAmount, `Refund for canceled event: ${event.title}`, id);
+                        await TransactionsDB._add_transaction_internal(tx, attendee.user_id, refundAmount, `Refund for canceled event: ${event.title}`, id);
                     }
                 } 
                 
-                const user = await db.get('SELECT is_member FROM users WHERE id = ?', [attendee.user_id]);
+                const user = await tx.get('SELECT is_member FROM users WHERE id = ?', [attendee.user_id]);
                 if (user && !user.is_member) {
-                    await db.run('UPDATE users SET free_sessions = free_sessions + 1 WHERE id = ?', [attendee.user_id]);
+                    await tx.run('UPDATE users SET free_sessions = free_sessions + 1 WHERE id = ?', [attendee.user_id]);
                 }
             }
 
-            await db.run('DELETE FROM event_waiting_list WHERE event_id = ?', [id]);
-
-            await db.run('COMMIT');
+            await tx.run('DELETE FROM event_waiting_list WHERE event_id = ?', [id]);
             return new statusObject(200, 'Event canceled and refunds processed');
-        } catch (error) {
-            await db.run('ROLLBACK');
+        }).catch(error => {
             Logger.error(error);
             return new statusObject(500, 'Database error during cancellation');
-        }
+        });
     }
 
     /**
@@ -365,34 +387,5 @@ static async updateEvent(db, id, data) {
         } catch (error) {
             return new statusObject(500, 'Database error');
         }
-    }
-
-    /**
-     * Internal helper to enrich event object with tags and effective image URL.
-     */
-    static async _enrichEvent(db, event) {
-        event.tags = await TagsDB.getTagsForEvent(db, event.id);
-        if (event.image_id) {
-            event.image_url = `/api/files/${event.image_id}/download?view=true`;
-        } else {
-            event.image_url = await this._getFallbackImage(db, event.tags);
-        }
-    }
-
-    /**
-     * Internal helper to calculate fallback image based on tags or global default.
-     */
-    static async _getFallbackImage(db, tags) {
-        if (tags && tags.length > 0) {
-            const bestTag = tags
-                .filter(t => t.image_id !== null)
-                .sort((a, b) => b.priority - a.priority)[0];
-            
-            if (bestTag) {
-                return `/api/files/${bestTag.image_id}/download?view=true`;
-            }
-        }
-        
-        return new Globals().get('DefaultEventImage').data;
     }
 }

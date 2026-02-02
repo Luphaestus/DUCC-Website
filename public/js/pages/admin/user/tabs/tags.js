@@ -7,7 +7,7 @@
 import { apiRequest } from '/js/utils/api.js';
 import { notify } from '/js/components/notification.js';
 import { Panel } from '/js/widgets/panel.js';
-import { LOCAL_ACTIVITY_SVG, SHIELD_SVG } from '../../../../../images/icons/outline/icons.js';
+import { LOCAL_ACTIVITY_SVG, SHIELD_SVG } from '/images/icons/outline/icons.js';
 
 /**
  * Main rendering and logic binding function for the Admin Tags tab.

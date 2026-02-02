@@ -15,13 +15,13 @@ export default class SwimsDB {
      */
     static async addSwims(db, userId, count, addedBy) {
         try {
-            await db.run('BEGIN TRANSACTION');
+            await db.exec('START TRANSACTION');
             await db.run('UPDATE users SET swims = swims + ? WHERE id = ?', [count, userId]);
             await db.run('INSERT INTO swim_history (user_id, added_by, count) VALUES (?, ?, ?)', [userId, addedBy, count]);
-            await db.run('COMMIT');
+            await db.exec('COMMIT');
             return new statusObject(200, 'Swims added successfully');
         } catch (error) {
-            await db.run('ROLLBACK');
+            await db.exec('ROLLBACK');
             Logger.error('Database error in addSwims:', error);
             return new statusObject(500, 'Database error');
         }

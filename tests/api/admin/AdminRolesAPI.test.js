@@ -48,7 +48,7 @@ describe('api/admin/AdminRolesAPI', () => {
                 name: 'TestRole', description: 'Desc', permissions: ['role.read']
             });
             expect(res1.statusCode).toBe(201);
-            const roleId = res1.body.id;
+            const roleId = res1.body.data.id;
 
             // Update
             const res2 = await world.as('admin').put(`/api/admin/roles/${roleId}`).send({

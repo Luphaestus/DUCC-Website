@@ -31,7 +31,7 @@ export default class AuthDB {
             return new statusObject(201, 'User registered successfully.');
         } catch (err) {
             Logger.error(err);
-            if (err.message && err.message.includes('UNIQUE constraint failed')) {
+            if (err.message && (err.message.includes('UNIQUE constraint failed') || err.code === 'ER_DUP_ENTRY')) {
                 return new statusObject(400, 'Email is already taken.');
             }
             return new statusObject(500, 'Registration failed.');
@@ -94,5 +94,84 @@ export default class AuthDB {
      */
     static async updatePassword(db, id, hashedPassword) {
         await db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashedPassword, id]);
+    }
+
+    /**
+     * Set TOTP secret for a user.
+     */
+    static async setTOTPSecret(db, userId, secret) {
+        await db.run('UPDATE users SET totp_secret = ? WHERE id = ?', [secret, userId]);
+    }
+
+    /**
+     * Enable or disable TOTP for a user.
+     */
+    static async setTOTPEnabled(db, userId, enabled) {
+        await db.run('UPDATE users SET totp_enabled = ? WHERE id = ?', [enabled ? 1 : 0, userId]);
+    }
+
+    /**
+     * Get user's authenticators.
+     */
+    static async getUserAuthenticators(db, userId) {
+        return await db.all('SELECT * FROM authenticators WHERE user_id = ?', [userId]);
+    }
+
+    /**
+     * Get an authenticator by ID.
+     */
+    static async getAuthenticatorById(db, id) {
+        return await db.get('SELECT * FROM authenticators WHERE id = ?', [id]);
+    }
+
+    /**
+     * Save a new authenticator.
+     */
+    static async saveAuthenticator(db, userId, authenticator) {
+        const credential = authenticator.credential || {};
+        let credentialID = credential.id || authenticator.credentialID || authenticator.credentialId;
+        let credentialPublicKey = credential.publicKey || authenticator.credentialPublicKey;
+        
+        // Ensure credentialID is a string (Base64URL)
+        if (credentialID instanceof Uint8Array || credentialID instanceof Buffer) {
+            credentialID = Buffer.from(credentialID).toString('base64url');
+        }
+
+        // Ensure publicKey is a Buffer (it might be a Uint8Array or object from JSON)
+        if (credentialPublicKey && !(credentialPublicKey instanceof Buffer)) {
+             // Handle the case where it's an object-like map {0: x, 1: y} which happens with some JSON parsers on Uint8Arrays
+             if (typeof credentialPublicKey === 'object' && !Array.isArray(credentialPublicKey) && !credentialPublicKey.buffer) {
+                 credentialPublicKey = Buffer.from(Object.values(credentialPublicKey));
+             } else {
+                 credentialPublicKey = Buffer.from(credentialPublicKey);
+             }
+        }
+
+        const counter = credential.counter ?? authenticator.counter ?? 0;
+        const transports = credential.transports || authenticator.transports;
+
+        if (!credentialID) {
+            Logger.error('saveAuthenticator: Missing credentialID', authenticator);
+            throw new Error('Authenticator data is missing credentialID.');
+        }
+
+        await db.run(
+            'INSERT INTO authenticators (id, user_id, public_key, counter, transports) VALUES (?, ?, ?, ?, ?)',
+            [credentialID, userId, credentialPublicKey, counter, transports ? JSON.stringify(transports) : null]
+        );
+    }
+
+    /**
+     * Update authenticator counter.
+     */
+    static async updateAuthenticatorCounter(db, id, counter) {
+        await db.run('UPDATE authenticators SET counter = ? WHERE id = ?', [counter, id]);
+    }
+
+    /**
+     * Delete an authenticator.
+     */
+    static async deleteAuthenticator(db, userId, id) {
+        await db.run('DELETE FROM authenticators WHERE id = ? AND user_id = ?', [id, userId]);
     }
 }

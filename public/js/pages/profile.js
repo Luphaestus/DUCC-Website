@@ -23,10 +23,11 @@ import { AccentPanel } from '../widgets/accent_panel.js';
 import { ValueHeader, updateValueDisplay } from '../widgets/value_header.js';
 import { ItemList, StandardListItem } from '../widgets/item_list.js';
 import { Tag } from '../widgets/Tag.js';
+import { UploadWidget } from '../widgets/upload/UploadWidget.js';
 import {
     SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
-    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, SAVE_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG
-} from '../../images/icons/outline/icons.js';
+    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, SAVE_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG, PHONE_SVG
+} from '/images/icons/outline/icons.js';
 
 // Register routes
 addRoute('/profile', 'profile');
@@ -51,6 +52,19 @@ const HTML_TEMPLATE = /*html*/`
         
                 <!-- Overview Tab -->
                 <section id="tab-overview" class="dashboard-section active">
+                    <div class="profile-header-card glass-panel">
+                        <div class="profile-avatar-section">
+                            <div id="profile-picture-container" class="profile-picture-large">
+                                <img id="profile-img-display" src="/images/misc/ducc.png" alt="Profile Picture">
+                                <button id="change-pic-btn" class="avatar-edit-btn">${EDIT_SVG}</button>
+                            </div>
+                        </div>
+                        <div class="profile-name-section">
+                            <h2 id="profile-full-name">Loading...</h2>
+                            <p id="profile-email">...</p>
+                        </div>
+                    </div>
+
                     <div id="membership-banner-container"></div>
 
                     ${Panel({
@@ -141,9 +155,32 @@ const HTML_TEMPLATE = /*html*/`
                 <section id="tab-settings" class="dashboard-section">
                     <div class="settings-grid">
                         ${Panel({
-                            title: 'Security',
+                            title: 'Password',
                             icon: ID_CARD_SVG,
                             content: `<button id="change-password-btn" class="outline">Change Password</button>`
+                        })}
+
+                        ${Panel({
+                            title: 'Two-Factor Authentication',
+                            icon: KEY_SVG,
+                            content: `
+                                <div class="two-fa-grid dual-grid">
+                                    <div class="glass-panel embedded-panel">
+                                        <div class="setting-info">
+                                            <strong>Authenticator (TOTP)</strong>
+                                            <p id="totp-status" class="status-tag warning">Disabled</p>
+                                        </div>
+                                        <button id="manage-totp-btn" class="small-btn secondary">Setup</button>
+                                    </div>
+                                    <div class="glass-panel embedded-panel">
+                                        <div class="setting-info">
+                                            <strong>WebAuthn</strong>
+                                            <p id="passkey-count">0 keys registered</p>
+                                        </div>
+                                        <button id="manage-passkeys-btn" class="small-btn secondary">Manage</button>
+                                    </div>
+                                </div>
+                            `
                         })}
 
                         ${Panel({
@@ -489,6 +526,135 @@ async function renderProfileTransactions() {
     }
 }
 
+// --- 2FA Functions ---
+
+async function update2FADisplay() {
+    try {
+        const [profile, keys] = await Promise.all([
+            apiRequest('GET', '/api/user/elements/totp_enabled'),
+            apiRequest('GET', '/api/auth/passkeys')
+        ]);
+
+        const totpBtn = document.getElementById('manage-totp-btn');
+        const totpStatus = document.getElementById('totp-status');
+        if (profile.totp_enabled) {
+            totpStatus.textContent = 'Enabled';
+            totpStatus.className = 'status-tag success';
+            totpBtn.textContent = 'Disable';
+            totpBtn.className = 'small-btn outline delete';
+            totpBtn.onclick = () => disableTOTP();
+        } else {
+            totpStatus.textContent = 'Disabled';
+            totpStatus.className = 'status-tag warning';
+            totpBtn.textContent = 'Setup';
+            totpBtn.className = 'small-btn secondary';
+            totpBtn.onclick = () => setupTOTP();
+        }
+
+        document.getElementById('passkey-count').textContent = `${keys.length} key${keys.length !== 1 ? 's' : ''} registered`;
+    } catch (err) {
+        console.error('Failed to update 2FA UI', err);
+    }
+}
+
+async function setupTOTP() {
+    try {
+        const { qrCodeData, secret } = await apiRequest('GET', '/api/auth/totp/setup');
+        const modalContent = /*html*/`
+            <div class="totp-setup-flow">
+                <p>Scan this QR code with your authenticator app (like Google Authenticator or Authy).</p>
+                <div class="qr-container"><img src="${qrCodeData}" alt="TOTP QR Code"></div>
+                <p class="manual-secret">Or enter manually: <code>${secret}</code></p>
+                <form id="totp-verify-form" class="modern-form">
+                    <label>Verification Code <input type="text" id="totp-code" placeholder="123456" required></label>
+                    <button type="submit" class="primary full-width">Verify & Enable</button>
+                </form>
+            </div>
+        `;
+
+        const modal = new Modal({ id: 'totp-setup-modal', title: 'Setup TOTP', content: modalContent });
+        document.body.insertAdjacentHTML('beforeend', modal.getHTML());
+        modal.attachListeners();
+        modal.show();
+
+        document.getElementById('totp-verify-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const token = document.getElementById('totp-code').value;
+            try {
+                await apiRequest('POST', '/api/auth/totp/enable', { token });
+                notify('Success', 'TOTP enabled!', 'success');
+                modal.close();
+                update2FADisplay();
+            } catch (err) {
+                notify('Error', err.message, 'error');
+            }
+        };
+    } catch (err) {
+        notify('Error', 'Failed to start setup.', 'error');
+    }
+}
+
+async function disableTOTP() {
+    if (await showConfirmModal('Disable 2FA?', 'Are you sure you want to disable your authenticator app? This will make your account less secure.')) {
+        try {
+            await apiRequest('POST', '/api/auth/totp/disable');
+            notify('Success', 'TOTP disabled.', 'success');
+            update2FADisplay();
+        } catch (err) {
+            notify('Error', err.message, 'error');
+        }
+    }
+}
+
+async function managePasskeys() {
+    try {
+        const keys = await apiRequest('GET', '/api/auth/passkeys');
+        const modalContent = /*html*/`
+            <div class="passkey-management">
+                <div id="passkey-list" class="item-list">
+                    ${keys.map(k => StandardListItem({
+                        icon: KEY_SVG,
+                        title: `Passkey (Added ${new Date(k.created_at).toLocaleDateString()})`,
+                        action: `<button class="small-btn icon-only delete" onclick="window.deletePasskey('${k.id}')">${CLOSE_SVG}</button>`
+                    })).join('')}
+                    ${keys.length === 0 ? '<p class="empty-state">No passkeys registered.</p>' : ''}
+                </div>
+                <button id="add-passkey-btn" class="primary full-width">${ADD_SVG} Add Passkey</button>
+            </div>
+        `;
+
+        const modal = new Modal({ id: 'passkey-modal', title: 'Manage Passkeys', content: modalContent });
+        document.body.insertAdjacentHTML('beforeend', modal.getHTML());
+        modal.attachListeners();
+        modal.show();
+
+        window.deletePasskey = async (id) => {
+            if (await showConfirmModal('Delete Passkey?', 'Are you sure you want to remove this passkey?')) {
+                await apiRequest('DELETE', `/api/auth/passkeys/${id}`);
+                modal.close();
+                managePasskeys();
+                update2FADisplay();
+            }
+        };
+
+        document.getElementById('add-passkey-btn').onclick = async () => {
+            try {
+                const options = await apiRequest('GET', '/api/auth/passkey/register-options');
+                const attResp = await SimpleWebAuthnBrowser.startRegistration(options);
+                await apiRequest('POST', '/api/auth/passkey/register-verify', attResp);
+                notify('Success', 'Passkey registered!', 'success');
+                modal.close();
+                managePasskeys();
+                update2FADisplay();
+            } catch (err) {
+                notify('Error', err.message, 'error');
+            }
+        };
+    } catch (err) {
+        notify('Error', 'Failed to load passkeys.', 'error');
+    }
+}
+
 // --- Main Update Logic ---
 
 /**
@@ -500,7 +666,7 @@ async function updateDashboard() {
 
     try {
         const [profile, globals, tags, minMoneyGlobal] = await Promise.all([
-            apiRequest('GET', '/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank'),
+            apiRequest('GET', '/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank,profile_picture_path,totp_enabled'),
             apiRequest('GET', '/api/globals/MembershipCost'),
             apiRequest('GET', '/api/user/tags').catch(() => []),
             apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
@@ -510,6 +676,10 @@ async function updateDashboard() {
         const minMoney = Number(minMoneyGlobal.res?.MinMoney?.data || -25);
 
         if (currentUser) {
+            document.getElementById('profile-full-name').textContent = `${profile.first_name} ${profile.last_name}`;
+            document.getElementById('profile-email').textContent = profile.email;
+            document.getElementById('profile-img-display').src = profile.profile_picture_path || '/images/misc/ducc.png';
+
             renderMembershipBanner(profile, globals.res || {});
             renderSwimStats(profile.swimmer_stats);
             renderLegalStatus(profile);
@@ -517,6 +687,7 @@ async function updateDashboard() {
             renderTags(tags);
             renderInstructor(profile);
             renderCars();
+            update2FADisplay();
         }
         renderProfileBalance(profile, minMoney);
         renderProfileTransactions();
@@ -535,6 +706,35 @@ async function updateDashboard() {
 function bindEvents() {
     // Sidebar Navigation Logic
     sidebarController = initSidebar('overview');
+
+    // Profile Picture Logic
+    document.getElementById('change-pic-btn').onclick = () => {
+        const modal = new Modal({
+            id: 'avatar-modal',
+            title: 'Change Profile Picture',
+            content: '<div id="avatar-upload-container"></div>'
+        });
+        document.body.insertAdjacentHTML('beforeend', modal.getHTML());
+        modal.attachListeners();
+        modal.show();
+
+        new UploadWidget('avatar-upload-container', {
+            mode: 'modal',
+            onImageSelect: async ({ id }) => {
+                try {
+                    await apiRequest('POST', '/api/user/profile-picture', { fileId: id });
+                    notify('Success', 'Profile picture updated.', 'success');
+                    modal.close();
+                    updateDashboard();
+                } catch (err) {
+                    notify('Error', err.message, 'error');
+                }
+            }
+        });
+    };
+
+    // 2FA Management
+    document.getElementById('manage-passkeys-btn').onclick = () => managePasskeys();
 
     // Safety Info Inline Editor Toggle
     const displayDiv = document.getElementById('safety-info-display');
@@ -604,7 +804,7 @@ function bindEvents() {
                 await apiRequest('POST', '/api/auth/change-password', passwords);
                 showStatus('Success', 'Password changed.', 'success');
             } catch (err) {
-                showStatus('Error', 'Failed to change password.', 'error');
+                showStatus('Error', err.message || 'Failed to change password.', 'error');
             }
         }
     };

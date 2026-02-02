@@ -6569,11 +6569,81 @@ body[data-theme=light] #event-view .event-modal-body .event-actions #edit-event-
   display: grid;
   gap: 2rem;
 }
+#profile-view .two-fa-grid {
+  gap: 1rem !important;
+}
+#profile-view .two-fa-grid .embedded-panel {
+  background: rgba(var(--pico-background-color-rgb), 0.15);
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+#profile-view .two-fa-grid .embedded-panel .setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+#profile-view .two-fa-grid .embedded-panel .setting-info strong {
+  font-size: 0.95rem;
+  color: var(--pico-contrast);
+}
+#profile-view .two-fa-grid .embedded-panel .setting-info p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+#profile-view .two-fa-grid .embedded-panel button {
+  margin: 0;
+  white-space: nowrap;
+}
 #profile-view .danger-zone {
   border-color: rgba(231, 76, 60, 0.3);
 }
 #profile-view .danger-zone .box-header h3 {
   color: #e74c3c;
+}
+#profile-view {
+  /* TOTP Setup Flow */
+}
+#profile-view .totp-setup-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+#profile-view .totp-setup-flow .qr-container {
+  background: white;
+  padding: 1rem;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: fit-content;
+  margin: 0 auto;
+}
+#profile-view .totp-setup-flow .qr-container img {
+  display: block;
+  max-width: 200px;
+  height: auto;
+}
+#profile-view .totp-setup-flow .manual-secret {
+  font-size: 0.9rem;
+  color: var(--pico-muted-color);
+}
+#profile-view .totp-setup-flow .manual-secret code {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  background: rgba(var(--pico-primary-rgb), 0.1);
+  color: var(--pico-primary);
+  padding: 0.5rem 1rem;
+}
+#profile-view .totp-setup-flow form {
+  width: 100%;
+  text-align: left;
 }
 
 /* Footer */

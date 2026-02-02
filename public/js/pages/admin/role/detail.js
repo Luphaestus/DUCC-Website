@@ -10,7 +10,7 @@ import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
-import { ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG } from '../../../../images/icons/outline/icons.js';
+import { ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG } from '/images/icons/outline/icons.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 import { debounce } from '/js/utils/utils.js';

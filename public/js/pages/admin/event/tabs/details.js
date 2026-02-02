@@ -9,7 +9,7 @@ import { notify } from '/js/components/notification.js';
 import { switchView } from '/js/utils/view.js';
 import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { Panel } from '/js/widgets/panel.js';
-import { INFO_SVG, IMAGE_SVG } from '../../../../../images/icons/outline/icons.js';
+import { INFO_SVG, IMAGE_SVG } from '/images/icons/outline/icons.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 import { setupNumberInput } from '/js/utils/utils.js';
 

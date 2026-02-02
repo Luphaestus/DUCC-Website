@@ -15,8 +15,7 @@ export default class UserDB {
      */
     static async getUsers(db, userPerms, options) {
         const { canManageUsers, canManageTrans, canManageEvents, isScopedExec } = userPerms;
-
-        const { page, limit, search, sort, order, inDebt, isMember, difficulty, permissions } = options;
+        const { page = 1, limit = 20, search, sort, order, inDebt, isMember, difficulty, permissions } = options;
         const offset = (page - 1) * limit;
 
         const isOnlyExec = isScopedExec && !canManageUsers && !canManageTrans && !canManageEvents;
@@ -29,16 +28,9 @@ export default class UserDB {
         const params = [];
 
         if (search) {
-            const terms = search.trim().split(/\s+/);
-            const searchConds = terms.map(term => {
-                const termPattern = `%${term}%`;
-                params.push(termPattern, termPattern);
-                if (isOnlyExec) return `(u.first_name LIKE ? OR u.last_name LIKE ? )`;
-
-                params.push(termPattern);
-                return `(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)`;
-            });
-            conditions.push('(' + searchConds.join(' AND ') + ')');
+            const searchTerms = search.trim().split(/\s+/).map(t => `+${t}*`).join(' ');
+            conditions.push(`MATCH(u.first_name, u.last_name, u.email) AGAINST(? IN BOOLEAN MODE)`);
+            params.push(searchTerms);
         }
 
         if (isMember !== undefined && isMember !== '') {
@@ -48,7 +40,7 @@ export default class UserDB {
 
         if (difficulty !== undefined && difficulty !== '') {
             conditions.push(`u.difficulty_level = ?`);
-            params.push(parseInt(difficulty));
+            params.push(Number(difficulty));
         }
 
         if (permissions) {
@@ -57,92 +49,56 @@ export default class UserDB {
 
             for (const p of permParts) {
                 if (p === 'perm:is_exec') {
-                    permOrs.push(`u.id IN (SELECT user_id FROM user_roles)`);
+                    permOrs.push(`EXISTS(SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id)`);
                 } else if (p.startsWith('role:')) {
                     const roleName = p.substring(5);
-                    permOrs.push(`u.id IN (SELECT ur.user_id FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = ?)`);
+                    permOrs.push(`EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = u.id AND r.name = ?)`);
                     params.push(roleName);
                 } else {
                     const slug = p.startsWith('perm:') ? p.substring(5) : p;
                     permOrs.push(`(
-                        u.id IN (
-                            SELECT ur.user_id FROM user_roles ur 
-                            JOIN role_permissions rp ON ur.role_id = rp.role_id 
-                            JOIN permissions p ON rp.permission_id = p.id 
-                            WHERE p.slug = ?
-                        ) OR u.id IN (
-                            SELECT up.user_id FROM user_permissions up 
-                            JOIN permissions p ON up.permission_id = p.id 
-                            WHERE p.slug = ?
-                        )
+                        EXISTS(SELECT 1 FROM user_roles ur 
+                               JOIN role_permissions rp ON ur.role_id = rp.role_id 
+                               JOIN permissions p ON rp.permission_id = p.id 
+                               WHERE ur.user_id = u.id AND p.slug = ?)
+                        OR EXISTS(SELECT 1 FROM user_permissions up 
+                                  JOIN permissions p ON up.permission_id = p.id 
+                                  WHERE up.user_id = u.id AND p.slug = ?)
                     )`);
                     params.push(slug, slug);
                 }
             }
-            if (permOrs.length > 0) {
-                conditions.push('(' + permOrs.join(' OR ') + ')');
-            }
+            if (permOrs.length > 0) conditions.push('(' + permOrs.join(' OR ') + ')');
         }
 
         const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
-        let havingClause = '';
-        if (inDebt === 'true') {
-            havingClause = 'HAVING balance < 0';
-        }
+        const havingClause = inDebt === 'true' ? 'HAVING balance < 0' : '';
 
         try {
-            let selectFields;
-            let joinTransactions = '';
+            const selectFields = isOnlyExec 
+                ? `u.id, u.first_name, u.last_name`
+                : `u.id, u.first_name, u.last_name, u.email, 
+                   u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
+                   u.swims, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance`;
 
-            if (isOnlyExec) {
-                selectFields = `u.id, u.first_name, u.last_name`;
-            } else {
-                selectFields = `
-                    u.id, u.first_name, u.last_name, u.email, 
-                    u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
-                    u.swims,
-                    COALESCE(SUM(t.amount), 0) as balance
-                `;
-                joinTransactions = `LEFT JOIN transactions t ON u.id = t.user_id`;
-            }
-
-            let orderBy;
-            if (sortCol === 'first_name' || sortCol === 'last_name' || isOnlyExec) {
-                const primary = sortCol === 'first_name' ? 'u.first_name' : 'u.last_name';
-                const secondary = sortCol === 'first_name' ? 'u.last_name' : 'u.first_name';
-                orderBy = `${primary} COLLATE NOCASE ${sortOrder}, ${secondary} COLLATE NOCASE ${sortOrder}`;
-            } else {
-                orderBy = `${sortCol} ${sortOrder}, u.last_name COLLATE NOCASE ASC`;
-            }
+            const orderBy = (sortCol === 'first_name' || sortCol === 'last_name' || isOnlyExec)
+                ? `${sortCol === 'first_name' ? 'u.first_name, u.last_name' : 'u.last_name, u.first_name'} ${sortOrder}`
+                : `${sortCol} ${sortOrder}, u.last_name ASC`;
 
             const query = `
                 SELECT ${selectFields}
                 FROM users u
-                ${joinTransactions}
                 ${whereClause}
-                GROUP BY u.id
                 ${havingClause}
                 ORDER BY ${orderBy}
                 LIMIT ? OFFSET ?
             `;
 
-            const users = await db.all(query, [...params, limit, offset]);
+            const users = await db.all(query, [...params, Number(limit), Number(offset)]);
 
-            let countQuery;
-            if (havingClause) {
-                countQuery = `
-                    SELECT COUNT(*) as count FROM (
-                        SELECT u.id, COALESCE(SUM(t.amount), 0) as balance 
-                        FROM users u 
-                        LEFT JOIN transactions t ON u.id = t.user_id 
-                        ${whereClause} 
-                        GROUP BY u.id 
-                        HAVING balance < 0
-                    )
-                `;
-            } else {
-                countQuery = `SELECT COUNT(*) as count FROM users u ${whereClause}`;
-            }
+            const countQuery = havingClause 
+                ? `SELECT COUNT(*) as count FROM (SELECT u.id, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance FROM users u ${whereClause} HAVING balance < 0) as sub`
+                : `SELECT COUNT(*) as count FROM users u ${whereClause}`;
 
             const countResult = await db.get(countQuery, params);
             const totalUsers = countResult ? countResult.count : 0;
@@ -163,14 +119,14 @@ export default class UserDB {
 
         const mappedElements = elements.map(e => {
             if (e === 'balance') return '(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = users.id) as balance';
-            if (e === 'profile_picture_path') return '(SELECT "/api/files/" || f.id || "/download?view=true" FROM files f WHERE f.id = users.profile_picture_id) as profile_picture_path';
+            if (e === 'profile_picture_path') return '(SELECT CAST(CONCAT("/api/files/", f.id, "/download", CHAR(63), "view=true") AS CHAR) FROM files f WHERE f.id = users.profile_picture_id) as profile_picture_path';
             return e;
         });
 
         try {
             const user = await db.get(
                 `SELECT ${mappedElements.join(', ')} FROM users WHERE id = ?`,
-                userId
+                [userId]
             );
             if (!user) return new statusObject(404, 'User not found');
             return new statusObject(200, null, user);
@@ -195,10 +151,11 @@ export default class UserDB {
             data.email = data.email.replace(/\s/g, '').toLowerCase();
         }
         try {
+            const keys = Object.keys(data);
+            if (keys.length === 0) return new statusObject(200, null);
+
             await db.run(
-                `UPDATE users SET
-                    ${Object.keys(data).map(el => `${el} = ?`).join(', ')}
-                WHERE id = ?`,
+                `UPDATE users SET ${keys.map(el => `${el} = ?`).join(', ')} WHERE id = ?`,
                 [...Object.values(data), id]
             );
             return new statusObject(200, null);
@@ -233,64 +190,42 @@ export default class UserDB {
      * Remove a user from the system.
      */
     static async removeUser(db, userId, real = false) {
-        const targetId = userId;
-
         try {
-            const allTables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
-            const tablesWithUserId = [];
-            for (const tbl of allTables) {
-                const info = await db.all(`PRAGMA table_info(${tbl.name})`);
-                if (info.some(c => c.name === 'user_id')) tablesWithUserId.push(tbl.name);
-            }
-
             if (!real) {
-                const user = await db.get('SELECT email FROM users WHERE id = ?', [targetId]);
+                // Soft delete: clear personal info but keep record for historical integrity
+                const user = await db.get('SELECT email FROM users WHERE id = ?', [userId]);
                 if (!user) return new statusObject(404, 'User not found');
 
-                const cols = await db.all('PRAGMA table_info(users)');
-                const keepCols = ['id', 'first_name', 'last_name', 'swims', 'created_at', 'free_sessions', 'difficulty_level'];
+                // Clear most fields, but keep ID, names (for logs), and swims
+                await db.run(`
+                    UPDATE users SET 
+                        email = CONCAT('deleted:', email),
+                        hashed_password = NULL,
+                        date_of_birth = NULL,
+                        college_id = NULL,
+                        emergency_contact_name = NULL,
+                        emergency_contact_phone = NULL,
+                        home_address = NULL,
+                        phone_number = NULL,
+                        has_medical_conditions = 0,
+                        medical_conditions_details = NULL,
+                        takes_medication = 0,
+                        medication_details = NULL,
+                        profile_picture_id = NULL,
+                        filled_legal_info = 0,
+                        legal_filled_at = NULL
+                    WHERE id = ?
+                `, [userId]);
 
-                const updates = ["email = 'deleted:' || email"];
-
-                for (const col of cols) {
-                    if (col.name === 'email') continue;
-                    if (keepCols.includes(col.name)) continue;
-
-                    if (col.notnull) {
-                        if (col.dflt_value !== null) {
-                            updates.push(`${col.name} = ${col.dflt_value}`);
-                        } else {
-                            const type = col.type.toUpperCase();
-                            if (type.includes('INT') || type.includes('REAL') || type.includes('FLOA') || type.includes('DOUB')) {
-                                updates.push(`${col.name} = 0`);
-                            } else if (type.includes('CHAR') || type.includes('TEXT') || type.includes('CLOB')) {
-                                updates.push(`${col.name} = 'deleted'`);
-                            } else if (type.includes('BOOL')) {
-                                updates.push(`${col.name} = 0`);
-                            } else {
-                                updates.push(`${col.name} = 0`);
-                            }
-                        }
-                    } else {
-                        updates.push(`${col.name} = NULL`);
-                    }
-                }
-
-                await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, [targetId]);
-
-                const softDeleteSafeTables = ['users', 'swim_history', 'event_attendees', 'transactions'];
-                for (const tbl of tablesWithUserId) {
-                    if (!softDeleteSafeTables.includes(tbl)) {
-                        await db.run(`DELETE FROM ${tbl} WHERE user_id = ?`, [targetId]);
-                    }
-                }
+                // Also clean up some related data that isn't historical
+                await db.run('DELETE FROM user_roles WHERE user_id = ?', [userId]);
+                await db.run('DELETE FROM user_permissions WHERE user_id = ?', [userId]);
+                await db.run('DELETE FROM user_managed_tags WHERE user_id = ?', [userId]);
+                await db.run('DELETE FROM event_waiting_list WHERE user_id = ?', [userId]);
+                await db.run('DELETE FROM cars WHERE user_id = ?', [userId]);
             } else {
-                for (const tbl of tablesWithUserId) {
-                    if (tbl !== 'users') {
-                        await db.run(`DELETE FROM ${tbl} WHERE user_id = ?`, [targetId]);
-                    }
-                }
-                await db.run(`DELETE FROM users WHERE id = ?`, [targetId]);
+                // Hard delete: relies on ON DELETE CASCADE in the schema
+                await db.run('DELETE FROM users WHERE id = ?', [userId]);
             }
             return new statusObject(200, null);
         } catch (error) {
@@ -305,31 +240,23 @@ export default class UserDB {
     static async getUserProfile(db, userId, elements, includeBalance) {
         try {
             const query = `
-                SELECT u.id, u.email, u.first_name, u.last_name, u.date_of_birth, u.college_id, 
-                       u.emergency_contact_name, u.emergency_contact_phone, u.home_address, u.phone_number,
-                       u.has_medical_conditions, u.medical_conditions_details, u.takes_medication, u.medication_details,
-                       u.free_sessions, u.is_member, u.filled_legal_info, u.legal_filled_at, u.difficulty_level,
-                       u.is_instructor, u.first_aid_expiry, u.swims, u.profile_picture_id, u.created_at,
-                       c.name as college_name 
+                SELECT u.*, c.name as college_name,
+                       (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = u.id) as balance,
+                       (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path
                 FROM users u 
                 LEFT JOIN colleges c ON u.college_id = c.id 
                 WHERE u.id = ?
             `;
-            const user = await db.get(query, userId);
+            const user = await db.get(query, [userId]);
             if (!user) return new statusObject(404, 'User not found');
 
-            const filteredUser = {};
+            const result = {};
             elements.forEach(key => {
-                if (user[key] !== undefined) filteredUser[key] = user[key];
+                if (user[key] !== undefined) result[key] = user[key];
             });
+            if (includeBalance) result.balance = user.balance;
 
-            if (includeBalance) {
-                const balanceRes = await TransactionsDB.get_balance(db, userId);
-                if (balanceRes.isError()) return balanceRes;
-                filteredUser.balance = balanceRes.getData();
-            }
-
-            return new statusObject(200, null, filteredUser);
+            return new statusObject(200, null, result);
         } catch (error) {
             Logger.error('Database error fetching user profile:', error);
             return new statusObject(500, 'Database error');
@@ -340,34 +267,42 @@ export default class UserDB {
      * Perform a total system permission reset and assign a new President.
      */
     static async resetPermissions(db, newPresidentId) {
-        try {
-            await db.run('BEGIN TRANSACTION');
+        return db.transaction(async (tx) => {
+            await tx.run(`DELETE FROM user_roles`);
+            await tx.run(`DELETE FROM user_permissions`);
+            await tx.run(`DELETE FROM user_managed_tags`);
 
-            await db.run(`DELETE FROM user_roles`);
-            await db.run(`DELETE FROM user_permissions`);
-            await db.run(`DELETE FROM user_managed_tags`);
+            await tx.run(`
+                UPDATE users SET 
+                    date_of_birth = NULL, college_id = NULL, emergency_contact_name = NULL, 
+                    emergency_contact_phone = NULL, home_address = NULL, phone_number = NULL, 
+                    has_medical_conditions = 0, medical_conditions_details = NULL, 
+                    takes_medication = 0, medication_details = NULL, agrees_to_fitness_statement = 0,
+                    agrees_to_club_rules = 0, agrees_to_pay_debts = 0, agrees_to_data_storage = 0, 
+                    agrees_to_keep_health_data = 0, filled_legal_info = 0, legal_filled_at = NULL
+                WHERE agrees_to_keep_health_data = 0 OR agrees_to_keep_health_data IS NULL
+            `);
 
-            const legalFields = [
-                "date_of_birth", "college_id", "emergency_contact_name", "emergency_contact_phone",
-                "home_address", "phone_number", "has_medical_conditions", "medical_conditions_details",
-                "takes_medication", "medication_details", "agrees_to_fitness_statement",
-                "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data"
-            ];
-            const setClause = legalFields.map(f => `${f} = NULL`).join(', ') + ", filled_legal_info = 0, legal_filled_at = NULL";
-
-            await db.run(`UPDATE users SET ${setClause} WHERE agrees_to_keep_health_data = 0 OR agrees_to_keep_health_data IS NULL`);
-
-            const presidentRole = await db.get('SELECT id FROM roles WHERE name = ?', ['President']);
+            const presidentRole = await tx.get('SELECT id FROM roles WHERE name = ?', ['President']);
             if (presidentRole) {
-                await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [newPresidentId, presidentRole.id]);
+                await tx.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [newPresidentId, presidentRole.id]);
             }
-
-            await db.run('COMMIT');
             return new statusObject(200);
-        } catch (error) {
-            await db.run('ROLLBACK');
+        }).catch(error => {
             Logger.error('Database error in resetPermissions:', error);
             return new statusObject(500, 'Database error');
-        }
+        });
+    }
+
+    /**
+     * Set a user's profile picture.
+     */
+    static async setProfilePicture(db, userId, fileId) {
+        return db.run('UPDATE users SET profile_picture_id = ? WHERE id = ?', [fileId, userId])
+            .then(() => new statusObject(200, 'Profile picture updated.'))
+            .catch((error) => {
+                Logger.error('Database error in setProfilePicture:', error);
+                return new statusObject(500, 'Database error');
+            });
     }
 }

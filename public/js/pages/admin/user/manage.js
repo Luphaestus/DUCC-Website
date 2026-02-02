@@ -10,7 +10,7 @@ import { adminContentID, renderAdminNavBar } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
 import {
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG
-} from '../../../../images/icons/outline/icons.js'
+} from '/images/icons/outline/icons.js'
 import { Pagination } from '/js/widgets/Pagination.js';
 
 /**
@@ -80,6 +80,8 @@ function updateUserParams(updates) {
 async function fetchAndRenderUsers({ page, search, sort, order }) {
     const thead = document.getElementById('users-table-head');
     const tbody = document.getElementById('users-table-body');
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('tab') || 'default';
 
     try {
         const [userData, globalData] = await Promise.all([
@@ -93,14 +95,19 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
 
         const hasBalance = users.length > 0 && users[0].balance !== undefined;
 
-        const columns = [
+        let columns = [
             { key: 'name', label: 'Name', sort: 'last_name' },
-            { key: 'college', label: 'College', sort: 'college_id' },
-            { key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' },
         ];
 
-        if (hasBalance) {
-            columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
+        if (mode === 'swims') {
+            columns.push({ key: 'swims', label: 'Swims', sort: 'swims' });
+            columns.push({ key: 'actions', label: 'Quick Add' });
+        } else {
+            columns.push({ key: 'college', label: 'College', sort: 'college_id' });
+            columns.push({ key: 'difficulty', label: 'Difficulty', sort: 'difficulty_level' });
+            if (hasBalance) {
+                columns.push({ key: 'balance', label: 'Balance', sort: 'balance' });
+            }
         }
 
         thead.innerHTML = `<tr>${columns.map(c => `
@@ -130,6 +137,22 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
 
                 const lastInitial = user.last_name ? user.last_name.charAt(0) + '.' : '';
 
+                if (mode === 'swims') {
+                    return `
+                        <tr class="user-row clickable-row" data-id="${user.id}">
+                            <td data-label="Name" class="primary-text name-column">
+                                <span class="full-name">${user.first_name} ${user.last_name}</span>
+                                <span class="thin-name">${user.first_name} ${lastInitial}</span>
+                            </td>
+                            <td data-label="Swims">${user.swims || 0}</td>
+                            <td data-label="Quick Add" class="quick-actions-cell" onclick="event.stopPropagation()">
+                                <button class="small-btn primary mini-btn" data-add-swim="${user.id}">+1 Swim</button>
+                                <button class="small-btn secondary mini-btn" data-add-bootie="${user.id}">+1 Bootie</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+
                 return `
                     <tr class="user-row clickable-row" data-id="${user.id}">
                         <td data-label="Name" class="primary-text name-column">
@@ -146,8 +169,37 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
             }).join('');
             
             tbody.querySelectorAll('.user-row').forEach(row => {
-                row.onclick = () => switchView(`/admin/user/${row.dataset.id}`);
+                const target = mode === 'swims' ? `/admin/user/${row.dataset.id}?tab=swims` : `/admin/user/${row.dataset.id}`;
+                row.onclick = () => switchView(target);
             });
+
+            if (mode === 'swims') {
+                const { notify } = await import('/js/components/notification.js');
+                tbody.querySelectorAll('[data-add-swim]').forEach(btn => {
+                    btn.onclick = async () => {
+                        const id = btn.dataset.addSwim;
+                        try {
+                            await apiRequest('POST', `/api/user/${id}/swims`, { count: 1 });
+                            notify('Success', 'Swim added.', 'success', 1000);
+                            fetchAndRenderUsers({ page, search, sort, order });
+                        } catch (err) {
+                            notify('Error', err.message, 'error');
+                        }
+                    };
+                });
+                tbody.querySelectorAll('[data-add-bootie]').forEach(btn => {
+                    btn.onclick = async () => {
+                        const id = btn.dataset.addBootie;
+                        try {
+                            await apiRequest('POST', `/api/user/${id}/booties`, { count: 1 });
+                            notify('Success', 'Bootie added.', 'success', 1000);
+                            fetchAndRenderUsers({ page, search, sort, order });
+                        } catch (err) {
+                            notify('Error', err.message, 'error');
+                        }
+                    };
+                });
+            }
         }
 
         new Pagination(document.getElementById('users-pagination'), (newPage) => {

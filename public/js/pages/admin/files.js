@@ -12,7 +12,7 @@ import { switchView } from '../../utils/view.js';
 import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { notify, NotificationTypes } from '../../components/notification.js';
 import { Panel } from '/js/widgets/panel.js';
-import { SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, CLOSE_SVG } from '../../../images/icons/outline/icons.js';
+import { SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, CLOSE_SVG } from '/images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { Pagination } from '/js/widgets/Pagination.js';
 import { showConfirmModal } from '/js/utils/modal.js';

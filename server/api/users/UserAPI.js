@@ -16,6 +16,13 @@ import check from '../../misc/authentication.js';
 import bcrypt from 'bcrypt';
 import ValidationRules from '../../rules/ValidationRules.js';
 import Logger from '../../misc/Logger.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { fileTypeFromFile } from 'file-type';
+import config from '../../config.js';
+import FilesDB from '../../db/filesDB.js';
 
 export default class User {
     /**
@@ -25,6 +32,32 @@ export default class User {
     constructor(app, db) {
         this.app = app;
         this.db = db;
+        this.uploadDir = config.paths.files;
+
+        const storage = multer.diskStorage({
+            destination: (req, file, cb) => {
+                cb(null, this.uploadDir);
+            },
+            filename: (req, file, cb) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                cb(null, uniqueSuffix);
+            }
+        });
+
+        this.upload = multer({ storage: storage });
+    }
+
+    /**
+     * Calculate file hash (SHA-256).
+     */
+    async calculateHash(filePath) {
+        return new Promise((resolve, reject) => {
+            const hash = crypto.createHash('sha256');
+            const stream = fs.createReadStream(filePath);
+            stream.on('data', (data) => hash.update(data));
+            stream.on('end', () => resolve(hash.digest('hex')));
+            stream.on('error', reject);
+        });
     }
 
     static legalElements = [
@@ -52,7 +85,7 @@ export default class User {
                 "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts",
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
                 "is_instructor", "first_aid_expiry", "profile_picture_path", "profile_picture_id",
-                "created_at", "swims", "swimmer_rank", "permissions", "roles"
+                "created_at", "swims", "swimmer_rank", "permissions", "roles", 'totp_enabled'
             ];
             const accessibleTransactionsDB = ['balance', 'transactions'];
             return [accessibleUserDB.includes(element), accessibleTransactionsDB.includes(element)];
@@ -91,7 +124,7 @@ export default class User {
                 ]);
                 let allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
                 allTimeData.rank = allTimeData.swims === 0 ? -1 : allTimeData.rank;
-                
+
                 let yearlyData = yearlyRes.getData() || { rank: -1, swims: 0 };
                 yearlyData.rank = yearlyData.swims === 0 ? -1 : yearlyData.rank;
 
@@ -277,7 +310,7 @@ export default class User {
         this.app.get('/api/user/:id/elements/:elements', check('perm:user.read'), async (req, res) => {
             const userId = parseInt(req.params.id);
             if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
-            
+
             const elements = req.params.elements.split(',').map(e => e.trim());
             const targetReq = { ...req, user: { ...req.user, id: userId } };
             const status = await User.getAccessibleElements(targetReq, this.db, elements);
@@ -349,6 +382,56 @@ export default class User {
             } catch (err) {
                 Logger.error(err);
                 res.status(500).json({ message: 'Internal server error.' });
+            }
+        });
+
+        /**
+         * Upload and set profile picture.
+         */
+        this.app.post('/api/user/profile-picture', check(), this.upload.single('image'), async (req, res) => {
+            if (!req.file) return res.status(400).json({ message: 'No image uploaded.' });
+
+            const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            const filePath = req.file.path;
+
+            try {
+                const fileTypeResult = await fileTypeFromFile(filePath);
+                if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
+                    await fs.promises.unlink(filePath);
+                    return res.status(400).json({ message: 'Invalid image type.' });
+                }
+
+                const ext = `.${fileTypeResult.ext}`;
+                const newFilename = req.file.filename + ext;
+                const newPath = filePath + ext;
+                await fs.promises.rename(filePath, newPath);
+
+                const fileHash = await this.calculateHash(newPath);
+                const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
+
+                let fileId;
+                if (!existingFileStatus.isError()) {
+                    fileId = existingFileStatus.getData().id;
+                    await fs.promises.unlink(newPath);
+                } else {
+                    const data = {
+                        title: `Profile Picture - ${req.user.first_name} ${req.user.last_name}`,
+                        author: `${req.user.first_name} ${req.user.last_name}`,
+                        size: req.file.size,
+                        filename: newFilename,
+                        hash: fileHash,
+                        visibility: 'public'
+                    };
+                    const createStatus = await FilesDB.createFile(this.db, data);
+                    if (createStatus.isError()) return createStatus.getResponse(res);
+                    fileId = createStatus.getData().id;
+                }
+
+                const status = await UserDB.setProfilePicture(this.db, req.user.id, fileId);
+                status.getResponse(res);
+            } catch (err) {
+                Logger.error('Profile picture upload error:', err);
+                res.status(500).json({ message: 'Upload failed.' });
             }
         });
     }

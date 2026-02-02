@@ -56,69 +56,31 @@ export default class AttendanceDB {
 
     /**
      * Fetch the full attendance history for an event, including users who have left.
+     * Uses a Window Function to identify the most recent record for each user.
      */
     static async get_all_event_attendees_history(db, eventId) {
         try {
-            const rows = await db.all(
-                `SELECT u.id, u.first_name, u.last_name, u.email, ea.is_attending, ea.left_at, ea.payment_transaction_id, ea.upfront_refunded
-                 FROM users u
-                 JOIN event_attendees ea ON u.id = ea.user_id
-                 WHERE ea.event_id = ?
-                 ORDER BY ea.joined_at ASC`, [eventId]
-            );
-
-            const userMap = new Map();
-
-            for (const row of rows) {
-                if (!userMap.has(row.id)) {
-                    userMap.set(row.id, {
-                        id: row.id,
-                        first_name: row.first_name,
-                        last_name: row.last_name,
-                        email: row.email,
-                        is_attending: 0,
-                        left_at: null,
-                        payment_transaction_id: null,
-                        upfront_refunded: 0
-                    });
-                }
-
-                const user = userMap.get(row.id);
-
-                if (row.is_attending === 1) {
-                    user.is_attending = 1;
-                    user.left_at = null;
-                    user.payment_transaction_id = row.payment_transaction_id;
-                    user.upfront_refunded = row.upfront_refunded;
-                } else {
-                    if (user.is_attending !== 1) {
-                        const rowLeft = row.left_at ? new Date(row.left_at).getTime() : 0;
-                        const currLeft = user.left_at ? new Date(user.left_at).getTime() : 0;
-                        if (rowLeft > currLeft) {
-                            user.left_at = row.left_at;
-                            user.payment_transaction_id = row.payment_transaction_id;
-                            user.upfront_refunded = row.upfront_refunded;
-                        }
-                    }
-                }
-            }
-
-            const result = Array.from(userMap.values());
-
-            result.sort((a, b) => {
-                if (a.is_attending !== b.is_attending) {
-                    return b.is_attending - a.is_attending;  
-                }
-                if (a.is_attending === 1) {
-                    return a.last_name.localeCompare(b.last_name);
-                }
-                const tA = a.left_at ? new Date(a.left_at).getTime() : 0;
-                const tB = b.left_at ? new Date(b.left_at).getTime() : 0;
-                return tB - tA;
-            });
-
-            return new statusObject(200, null, result);
+            // We use a Common Table Expression (CTE) and ROW_NUMBER() to get the current/latest status for each user
+            const sql = `
+                WITH LatestAttendance AS (
+                    SELECT 
+                        u.id, u.first_name, u.last_name, u.email, 
+                        ea.is_attending, ea.joined_at, ea.left_at, 
+                        ea.payment_transaction_id, ea.upfront_refunded,
+                        ROW_NUMBER() OVER (PARTITION BY u.id ORDER BY ea.joined_at DESC, ea.id DESC) as rn
+                    FROM users u
+                    JOIN event_attendees ea ON u.id = ea.user_id
+                    WHERE ea.event_id = ?
+                )
+                SELECT * FROM LatestAttendance 
+                WHERE rn = 1
+                ORDER BY is_attending DESC, last_name ASC, first_name ASC
+            `;
+            
+            const rows = await db.all(sql, [eventId]);
+            return new statusObject(200, null, rows);
         } catch (error) {
+            Logger.error('Database error in get_all_event_attendees_history:', error);
             return new statusObject(500, 'Database error');
         }
     }
@@ -127,42 +89,44 @@ export default class AttendanceDB {
      * Fetch a list of all users currently attending an event.
      */
     static async get_users_attending_event(db, eventId) {
-        const events = await db.all(
-            `SELECT u.id, u.first_name, u.last_name, u.email
-             FROM users u
-             JOIN event_attendees ea ON u.id = ea.user_id
-             WHERE ea.event_id = ? AND ea.is_attending = 1`, [eventId]
-        );
-        return new statusObject(200, null, events);
+        const sql = `
+            SELECT u.id, u.first_name, u.last_name, u.email
+            FROM users u
+            JOIN event_attendees ea ON u.id = ea.user_id
+            WHERE ea.event_id = ? AND ea.is_attending = 1
+            ORDER BY u.last_name ASC, u.first_name ASC
+        `;
+        const attendees = await db.all(sql, [eventId]);
+        return new statusObject(200, null, attendees);
     }
 
     /**
      * Get the total count of active attendees for an event.
      */
     static async get_event_attendance_count(db, eventId) {
-        const result = await db.get(`SELECT COUNT(*) AS count FROM event_attendees WHERE event_id = ? AND is_attending = 1`, [eventId]);
-        return new statusObject(200, null, result.count);
+        const sql = 'SELECT COUNT(*) AS count FROM event_attendees WHERE event_id = ? AND is_attending = 1';
+        const result = await db.get(sql, [eventId]);
+        return new statusObject(200, null, result?.count || 0);
     }
 
     /**
      * Find a refundable transaction for an event spot.
      */
     static async get_event_refund_id(db, userId, eventId) {
-        const userRefund = await db.get(
-            `SELECT payment_transaction_id FROM event_attendees 
-             WHERE event_id = ? AND user_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL 
-             ORDER BY left_at ASC LIMIT 1`, [eventId, userId]
-        );
-        if (userRefund && userRefund.payment_transaction_id) return new statusObject(200, null, userRefund);
+        // Prioritize the user's own record, then fallback to any other record available for refund
+        const sql = `
+            SELECT payment_transaction_id, user_id 
+            FROM event_attendees 
+            WHERE event_id = ? 
+              AND is_attending = 0 
+              AND payment_transaction_id IS NOT NULL 
+            ORDER BY (user_id = ?) DESC, left_at ASC 
+            LIMIT 1
+        `;
+        const refundRecord = await db.get(sql, [eventId, userId]);
+        if (refundRecord) return new statusObject(200, null, refundRecord);
 
-        const otherRefund = await db.get(
-            `SELECT payment_transaction_id, user_id FROM event_attendees 
-             WHERE event_id = ? AND is_attending = 0 AND payment_transaction_id IS NOT NULL 
-             ORDER BY left_at ASC LIMIT 1`, [eventId]
-        );
-        if (otherRefund && otherRefund.payment_transaction_id) return new statusObject(200, null, otherRefund);
-
-        return new statusObject(404, 'No refund found');
+        return new statusObject(404, 'No refundable transaction found');
     }
 
     /**
@@ -173,7 +137,7 @@ export default class AttendanceDB {
         if (eventRes.isError()) return eventRes;
         const event = eventRes.getData();
 
-        TransactionsDB.add_transaction(db, user_id, event.upfront_cost, `Refund for ${event.title}`);
+        await TransactionsDB.add_transaction(db, user_id, event.upfront_cost, `Refund for ${event.title}`);
 
         await db.run(
             `UPDATE event_attendees SET payment_transaction_id = NULL 

@@ -4,6 +4,7 @@
  * Centralized configuration for the application.
  */
 
+import 'dotenv/config';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,6 +14,7 @@ const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 const config = {
+    domain: process.env.DOMAIN || 'localhost',
     paths: {
         root: PROJECT_ROOT,
         data: process.env.DATABASE_PATH ? path.dirname(process.env.DATABASE_PATH) : path.join(PROJECT_ROOT, './data'),
@@ -23,6 +25,19 @@ const config = {
     session: {
         cookieName: 'ducc_sid',
         secret: process.env.SESSION_SECRET || 'dev-secret-key-change-me-in-prod',
+    },
+    auth: {
+        bcryptSaltRounds: process.env.NODE_ENV === 'test' ? 1 : 10,
+    },
+    mysql: {
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || 'password',
+        database: (process.env.DB_NAME || 'ducc_website') + (process.env.VITEST_WORKER_ID ? `_${process.env.VITEST_WORKER_ID}` : ''),
+        port: process.env.DB_PORT || 3306,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
     }
 };
 

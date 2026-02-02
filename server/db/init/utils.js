@@ -28,7 +28,7 @@ export function generateRandomPassword(length) {
  */
 export async function createTable(tableName, createStatement, db) {
     const tableExists = await db.get(`
-      SELECT name FROM sqlite_master WHERE type='table' AND name=?;
+      SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?;
     `, [tableName]);
 
     if (tableExists) return true;

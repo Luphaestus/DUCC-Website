@@ -9,7 +9,7 @@
 import { apiRequest } from '/js/utils/api.js';
 import { switchView, addRoute, ViewChangedEvent } from '/js/utils/view.js';
 import { notify } from '/js/components/notification.js';
-import { ACCOUNT_BOX_SVG } from '../../images/icons/outline/icons.js';
+import { ACCOUNT_BOX_SVG } from '/images/icons/outline/icons.js';
 
 addRoute('/signup', 'signup');
 

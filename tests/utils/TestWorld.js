@@ -84,9 +84,10 @@ export default class TestWorld {
 
     /** Cleanup test environment. */
     async tearDown() {
-        if (this.db) {
-            await this.db.close();
-        }
+        // Do not close the shared DB connection
+        // if (this.db) {
+        //     await this.db.close();
+        // }
         vi.restoreAllMocks();
         this.globalInts = {};
         this.globalFloats = {};
@@ -111,20 +112,20 @@ export default class TestWorld {
 
     async createPermission(slug) {
         if (this.data.perms[slug]) return this.data.perms[slug];
-        await this.db.run('INSERT OR IGNORE INTO permissions (slug) VALUES (?)', [slug]);
+        await this.db.run('INSERT IGNORE INTO permissions (slug) VALUES (?)', [slug]);
         const res = await this.db.get('SELECT id FROM permissions WHERE slug = ?', [slug]);
         this.data.perms[slug] = res.id;
         return res.id;
     }
 
     async createRole(name, permSlugs = []) {
-        await this.db.run('INSERT OR IGNORE INTO roles (name) VALUES (?)', [name]);
+        await this.db.run('INSERT IGNORE INTO roles (name) VALUES (?)', [name]);
         const role = await this.db.get('SELECT id FROM roles WHERE name = ?', [name]);
         this.data.roles[name] = role.id;
 
         for (const slug of permSlugs) {
             const permId = await this.createPermission(slug);
-            await this.db.run('INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [role.id, permId]);
+            await this.db.run('INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [role.id, permId]);
         }
         return role.id;
     }
@@ -169,8 +170,8 @@ export default class TestWorld {
 
         const defaultEvent = {
             title: alias,
-            start: start.toISOString(),
-            end: end.toISOString(),
+            start: start.toISOString().slice(0, 19).replace('T', ' '),
+            end: end.toISOString().slice(0, 19).replace('T', ' '),
             difficulty_level: 1,
             max_attendees: 10,
             upfront_cost: 0,
@@ -258,7 +259,7 @@ export default class TestWorld {
         const diff = now.getDate() - (day === 0 ? 6 : day - 1); // diff to Monday
         const monday = new Date(now.setDate(diff));
         monday.setHours(12, 0, 0, 0); // Midday Monday
-        return monday.toISOString();
+        return monday.toISOString().slice(0, 19).replace('T', ' ');
     }
 
     // Supertest Proxies

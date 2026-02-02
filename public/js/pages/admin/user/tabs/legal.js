@@ -6,7 +6,7 @@
 
 import { Panel } from '/js/widgets/panel.js';
 import { StatusIndicator } from '/js/widgets/status.js';
-import { CONTRACT_SVG, PERSON_SVG, ID_CARD_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG } from '../../../../../images/icons/outline/icons.js';
+import { CONTRACT_SVG, PERSON_SVG, ID_CARD_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG } from '/images/icons/outline/icons.js';
 
 /**
  * Main rendering function for the Legal tab content.

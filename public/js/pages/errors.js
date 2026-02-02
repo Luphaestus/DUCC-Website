@@ -9,7 +9,7 @@
 
 import { addRoute, ViewChangedEvent } from '/js/utils/view.js';
 import { apiRequest } from '/js/utils/api.js';
-import { BRIGHTNESS_ALERT_SVG, SHIELD_SVG, SIGNAL_DISCONNECTED_SVG } from '../../images/icons/outline/icons.js';
+import { BRIGHTNESS_ALERT_SVG, SHIELD_SVG, SIGNAL_DISCONNECTED_SVG } from '/images/icons/outline/icons.js';
 
 addRoute('/error', 'error', { changeURL: false, titleFunc: () => 'Error - Page Not Found' });
 addRoute('/unauthorised', 'unauthorised', { titleFunc: () => 'Error - Access Denied', changeURL: false });

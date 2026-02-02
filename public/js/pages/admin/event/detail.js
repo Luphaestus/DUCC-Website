@@ -9,7 +9,7 @@
 import { apiRequest } from '/js/utils/api.js';
 import { switchView } from '/js/utils/view.js';
 import { adminContentID } from '../admin.js';
-import { ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, CLOSE_SVG } from '../../../../images/icons/outline/icons.js';
+import { ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, CLOSE_SVG } from '/images/icons/outline/icons.js';
 import { TabNav } from '/js/widgets/TabNav.js';
 import { Panel } from '/js/widgets/panel.js';
 import { showConfirmModal } from '/js/utils/modal.js';

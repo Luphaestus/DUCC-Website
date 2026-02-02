@@ -77,7 +77,7 @@ export default class QuotesAPI {
                     FROM quotes q
                     LEFT JOIN users u ON q.quoted_user_id = u.id
                     WHERE q.visibility = 'public'
-                    ORDER BY RANDOM() LIMIT 1
+                    ORDER BY RAND() LIMIT 1
                 `);
                 if (!quote) return res.status(404).json({ message: 'No quotes found.' });
                 res.status(200).json(quote);

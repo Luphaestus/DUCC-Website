@@ -16,7 +16,7 @@ import {
     BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG,
     CLOSE_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, WALLET_SVG, SCHEDULE_SVG,
     DESCRIPTION_SVG, TRIP_SVG
-} from '../../images/icons/outline/icons.js';
+} from '/images/icons/outline/icons.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { notify } from '../components/notification.js';
 import { initTooltips } from '/js/widgets/tooltip.js';

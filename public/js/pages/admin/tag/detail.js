@@ -12,7 +12,7 @@ import { UploadWidget } from '/js/widgets/upload/UploadWidget.js';
 import { adminContentID } from '../admin.js';
 import { Panel } from '/js/widgets/panel.js';
 import { notify, NotificationTypes } from '/js/components/notification.js';
-import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, IMAGE_SVG, UPLOAD_SVG } from "../../../../images/icons/outline/icons.js"
+import { ARROW_BACK_IOS_NEW_SVG, CLOSE_SVG, DELETE_SVG, ADD_SVG, PERSON_SVG, LOCAL_ACTIVITY_SVG, SHIELD_SVG, IMAGE_SVG, UPLOAD_SVG } from '/images/icons/outline/icons.js'
 import { showConfirmModal } from '/js/utils/modal.js';
 import { debounce, setupNumberInput } from '/js/utils/utils.js';
 
