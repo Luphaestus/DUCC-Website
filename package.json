@@ -14,16 +14,16 @@
   "author": "Luphaestus",
   "type": "module",
   "scripts": {
-    "db:init": "cross-env-shell \"node server/db/init/init.js $NODE_ENV $1\"",
-    "reseed": "cross-env NODE_ENV=dev node server/db/init/init.js dev --seed",
-    "start": "cross-env NODE_ENV=prod npm run --silent db:init && cross-env NODE_ENV=prod node server/server.js",
-    "sass": "sass --watch src:public --load-path=node_modules/@picocss/pico/scss/",
-    "sass:build": "sass src:public --load-path=node_modules/@picocss/pico/scss/ --no-source-map",
-    "dev:server": "cross-env NODE_ENV=dev nodemon --quiet server/server.js",
-    "dev": "cross-env NODE_ENV=dev npm run --silent db:init && cross-env NODE_ENV=dev run-p --silent sass dev:server",
-    "dev:seed": "cross-env NODE_ENV=dev node server/db/init/init.js dev --seed && cross-env NODE_ENV=dev run-p --silent sass dev:server",
-    "pretest": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db npm run --silent db:init",
-    "test": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest run",
+    "db:init": "cross-env-shell \"tsx server/db/init/init.ts $NODE_ENV $1\"",
+    "reseed": "cross-env NODE_ENV=dev tsx server/db/init/init.ts dev --seed",
+    "start": "cross-env NODE_ENV=prod npm run --silent db:init && npm run build:client && cross-env NODE_ENV=prod tsx server/server.ts",
+    "build:client": "vite build",
+    "build:client:watch": "vite build --watch",
+    "dev:server": "cross-env NODE_ENV=dev nodemon --quiet --exec tsx server/server.ts",
+    "dev": "cross-env NODE_ENV=dev npm run --silent db:init && cross-env NODE_ENV=dev run-p --silent build:client:watch dev:server",
+    "dev:seed": "cross-env NODE_ENV=dev tsx server/db/init/init.ts dev --seed && cross-env NODE_ENV=dev run-p --silent sass dev:server",
+    "pretest": "cross-env NODE_ENV=test tsx server/db/init/init.ts test --seed",
+    "test": "cross-env NODE_ENV=test vitest run",
     "test:watch": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest",
     "apidoc": "npx openapi-generate-html -i public/openapi.json --theme=dark --ui stoplight --theme dark -o public/openapi.html",
     "prepare": "husky install"
@@ -38,7 +38,7 @@
     "watch": [
       "server/"
     ],
-    "ext": "js,json"
+    "ext": "js,json,ts"
   },
   "dependencies": {
     "@picocss/pico": "^2.1.1",
@@ -66,17 +66,30 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/cli-progress": "^3.11.6",
+    "@types/cookie": "^0.6.0",
+    "@types/csurf": "^1.11.5",
+    "@types/express": "^5.0.6",
+    "@types/express-mysql-session": "^3.0.8",
     "@types/express-session": "^1.18.2",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^25.2.0",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
+    "@types/qrcode": "^1.5.6",
+    "@types/supertest": "^6.0.3",
     "connect-livereload": "^0.6.1",
     "cross-env": "^10.1.0",
     "husky": "^8.0.0",
+    "jsdom": "^28.0.0",
     "lint-staged": "^16.2.7",
     "livereload": "^0.10.3",
     "nodemon": "^3.1.11",
     "npm-run-all": "^4.1.5",
     "supertest": "^7.1.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
     "vitest": "^4.0.17"
   }
 }

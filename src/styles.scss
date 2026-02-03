@@ -6,7 +6,7 @@
  * shared mixins, and individual page/component partials.
  */
 
-@use "pico" with ($theme-color: "purple");
+@use "@picocss/pico/scss/pico" with ($theme-color: "purple");
 @use "partials/theme";
 @use "partials/mixins";
 @use "partials/animations";
