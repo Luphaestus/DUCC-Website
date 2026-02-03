@@ -27,6 +27,8 @@ const HTML_TEMPLATE = /*html*/`
             </div>
         </div>
 
+        <div id="admin-actions-container"></div>
+
         <div id="leaderboard-content">
             <p class="leaderboard-status" aria-busy="true">Loading leaderboard...</p>
         </div>
@@ -52,9 +54,11 @@ function getBootieClass(swims, booties) {
  */
 async function populateLeaderboard() {
     const content = document.getElementById('leaderboard-content');
+    const adminContainer = document.getElementById('admin-actions-container');
     if (!content) return;
 
     content.innerHTML = '<p class="leaderboard-status" aria-busy="true">Loading...</p>';
+    if (adminContainer) adminContainer.innerHTML = '';
 
     try {
         const [leaderboardRes, userPermsRes] = await Promise.all([
@@ -65,11 +69,10 @@ async function populateLeaderboard() {
         const leaderboardData = leaderboardRes.data;
         const canManageSwims = userPermsRes.permissions?.includes('swims.manage');
 
-        if (canManageSwims) {
-            const adminLink = document.createElement('div');
-            adminLink.className = 'admin-leaderboard-actions';
-            adminLink.innerHTML = `<button class="small-btn primary" data-nav="/admin/users?tab=swims">${POOL_SVG} Manage Swims</button>`;
-            content.parentNode.insertBefore(adminLink, content);
+        if (canManageSwims && adminContainer) {
+            adminContainer.innerHTML = `<div class="admin-leaderboard-actions">
+                <button class="small-btn primary" data-nav="/admin/users?tab=swims">${POOL_SVG} Manage Swims</button>
+            </div>`;
         }
 
         if (!leaderboardData || leaderboardData.length === 0) {
@@ -114,16 +117,24 @@ async function populateLeaderboard() {
         podiumHtml += '</div>';
 
         // --- Render List (4th and below) ---
-        let listHtml = '<div class="leaderboard-list glass-panel">';
+        let listHtml = `
+            <div class="leaderboard-container-list">
+                <div class="list-header">
+                    <span>Rank</span>
+                    <span>Swimmer</span>
+                    <span>Count</span>
+                </div>
+                <div class="leaderboard-list glass-panel">`;
+        
         rest.forEach(user => {
             const isMe = user.is_me;
             const bootieClass = getBootieClass(user.swims, user.booties);
             listHtml += `
                 <div class="leaderboard-row ${isMe ? 'highlight' : ''}">
                     <div class="rank-box">${user.rank}</div>
-                    ${renderAvatar(user, { classes: 'mini' })}
                     <div class="swimmer-info">
-                        ${user.first_name} ${user.last_name}
+                        ${renderAvatar(user, { classes: 'mini' })}
+                        <span>${user.first_name} ${user.last_name}</span>
                         ${isMe ? '<span class="you-tag">YOU</span>' : ''}
                     </div>
                     <div class="swims-count-group">
@@ -132,7 +143,7 @@ async function populateLeaderboard() {
                     </div>
                 </div>`;
         });
-        listHtml += '</div>';
+        listHtml += '</div></div>';
 
         content.innerHTML = podiumHtml + listHtml;
 
