@@ -58,7 +58,9 @@ export default class SwimsDB {
             if (yearly) {
                 const start = Utils.getAcademicYearStart();
                 query = `
-                    SELECT u.id, u.first_name, u.last_name, SUM(sh.count) as swims, u.booties
+                    SELECT u.id, u.first_name, u.last_name, SUM(sh.count) as swims, u.booties,
+                           u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
+                           (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path
                     FROM users u
                     JOIN swim_history sh ON u.id = sh.user_id
                     WHERE sh.created_at >= ?
@@ -68,7 +70,10 @@ export default class SwimsDB {
                 `;
                 params.push(start);
             } else {
-                query = 'SELECT id, first_name, last_name, swims, booties FROM users WHERE swims > 0 ORDER BY swims DESC, last_name ASC';
+                query = `SELECT id, first_name, last_name, swims, booties,
+                                u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
+                                (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path
+                         FROM users u WHERE swims > 0 ORDER BY swims DESC, last_name ASC`;
             }
 
             const users = await db.all(query, params);

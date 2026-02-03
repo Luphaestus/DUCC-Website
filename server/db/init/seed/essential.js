@@ -64,7 +64,9 @@ export async function seedEssential(db, newlyCreatedTables = []) {
         { slug: 'globals.manage', desc: 'Manage global system settings' },
         { slug: 'quote.manage', desc: 'Moderate quotes' },
         { slug: 'quote.see_author', desc: 'See who submitted a quote' },
-        { slug: 'car.manage_global', desc: 'Manage website-wide global cars' }
+        { slug: 'car.manage_global', desc: 'Manage website-wide global cars' },
+        { slug: 'exec.publish', desc: 'Automatically publish users with this role to the executive committee page' },
+        { slug: 'exec.manage', desc: 'Manage the executive committee page members' }
     ];
 
     const permIds = {};
@@ -74,8 +76,8 @@ export async function seedEssential(db, newlyCreatedTables = []) {
         permIds[p.slug] = row.id;
     }
 
-    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global'];
-    await db.run('INSERT IGNORE INTO roles (name, description) VALUES (?, ?)', ['President', 'The Club President with full administrative access.']);
+    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global', 'exec.publish', 'exec.manage'];
+    await db.run('INSERT IGNORE INTO roles (name, description, exec_ranking) VALUES (?, ?, ?)', ['President', 'The Club President with full administrative access.', 1]);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
     for (const permSlug of presidentPerms) {
         if (permIds[permSlug]) {
@@ -123,6 +125,10 @@ export async function seedEssential(db, newlyCreatedTables = []) {
         }
         if (presidentRole) {
             await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);
+            
+            // Sync exec status so they appear on the page
+            const ExecDB = (await import('../../execDB.js')).default;
+            await ExecDB.syncExecMember(db, adminId);
         }
     }
 }

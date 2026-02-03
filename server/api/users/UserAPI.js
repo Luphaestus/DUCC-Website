@@ -85,6 +85,7 @@ export default class User {
                 "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts",
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
                 "is_instructor", "first_aid_expiry", "profile_picture_path", "profile_picture_id",
+                "profile_picture_color", "profile_picture_font", "profile_picture_initials",
                 "created_at", "swims", "swimmer_rank", "permissions", "roles", 'totp_enabled'
             ];
             const accessibleTransactionsDB = ['balance', 'transactions'];
@@ -389,45 +390,56 @@ export default class User {
          * Upload and set profile picture.
          */
         this.app.post('/api/user/profile-picture', check(), this.upload.single('image'), async (req, res) => {
-            if (!req.file) return res.status(400).json({ message: 'No image uploaded.' });
-
-            const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-            const filePath = req.file.path;
-
             try {
-                const fileTypeResult = await fileTypeFromFile(filePath);
-                if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
-                    await fs.promises.unlink(filePath);
-                    return res.status(400).json({ message: 'Invalid image type.' });
+                let fileId = null;
+
+                if (req.file) {
+                    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                    const filePath = req.file.path;
+
+                    const fileTypeResult = await fileTypeFromFile(filePath);
+                    if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
+                        await fs.promises.unlink(filePath);
+                        return res.status(400).json({ message: 'Invalid image type.' });
+                    }
+
+                    const ext = `.${fileTypeResult.ext}`;
+                    const newFilename = req.file.filename + ext;
+                    const newPath = filePath + ext;
+                    await fs.promises.rename(filePath, newPath);
+
+                    const fileHash = await this.calculateHash(newPath);
+                    const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
+
+                    if (!existingFileStatus.isError()) {
+                        fileId = existingFileStatus.getData().id;
+                        await fs.promises.unlink(newPath);
+                    } else {
+                        const data = {
+                            title: `Profile Picture - ${req.user.first_name} ${req.user.last_name}`,
+                            author: `${req.user.first_name} ${req.user.last_name}`,
+                            size: req.file.size,
+                            filename: newFilename,
+                            hash: fileHash,
+                            visibility: 'public'
+                        };
+                        const createStatus = await FilesDB.createFile(this.db, data);
+                        if (createStatus.isError()) return createStatus.getResponse(res);
+                        fileId = createStatus.getData().id;
+                    }
+                } else if (req.body.fileId !== undefined) {
+                    fileId = req.body.fileId;
                 }
 
-                const ext = `.${fileTypeResult.ext}`;
-                const newFilename = req.file.filename + ext;
-                const newPath = filePath + ext;
-                await fs.promises.rename(filePath, newPath);
+                // Fetch current values to preserve them if not provided
+                const currentUser = await UserDB.getElements(this.db, req.user.id, ['profile_picture_color', 'profile_picture_font', 'profile_picture_initials']);
+                const currentData = currentUser.getData() || {};
 
-                const fileHash = await this.calculateHash(newPath);
-                const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
-
-                let fileId;
-                if (!existingFileStatus.isError()) {
-                    fileId = existingFileStatus.getData().id;
-                    await fs.promises.unlink(newPath);
-                } else {
-                    const data = {
-                        title: `Profile Picture - ${req.user.first_name} ${req.user.last_name}`,
-                        author: `${req.user.first_name} ${req.user.last_name}`,
-                        size: req.file.size,
-                        filename: newFilename,
-                        hash: fileHash,
-                        visibility: 'public'
-                    };
-                    const createStatus = await FilesDB.createFile(this.db, data);
-                    if (createStatus.isError()) return createStatus.getResponse(res);
-                    fileId = createStatus.getData().id;
-                }
-
-                const status = await UserDB.setProfilePicture(this.db, req.user.id, fileId);
+                const color = req.body.color !== undefined ? req.body.color : currentData.profile_picture_color;
+                const font = req.body.font !== undefined ? req.body.font : currentData.profile_picture_font;
+                const initials = req.body.initials !== undefined ? req.body.initials : currentData.profile_picture_initials;
+                
+                const status = await UserDB.setProfilePicture(this.db, req.user.id, fileId, color, font, initials);
                 status.getResponse(res);
             } catch (err) {
                 Logger.error('Profile picture upload error:', err);

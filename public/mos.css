@@ -299,54 +299,9 @@
 
 /* --- Added Styles --- */
 
-/* Exec Committee Grid */
-.exec-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-}
+/* Past Exec */
+.past-exec-container {
 
-.exec-card {
-    text-align: center;
-    padding: 2rem;
-    transition: transform 0.2s;
-}
-
-.exec-card:hover {
-    transform: translateY(-5px);
-}
-
-.exec-image {
-    width: 150px;
-    height: 150px;
-    margin: 0 auto 1.5rem;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid var(--primary);
-}
-
-.exec-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.exec-info h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--primary);
-}
-
-.exec-name {
-    font-weight: 600;
-    margin: 0.25rem 0;
-}
-
-.exec-email {
-    font-size: 0.9rem;
-    opacity: 0.8;
-}
 
 /* Profile Avatar */
 .profile-header-card {

@@ -13,6 +13,7 @@ import { Panel } from '/js/widgets/panel.js';
 import { Modal } from '/js/widgets/Modal.js';
 import { Pagination } from '/js/widgets/Pagination.js';
 import { CURRENCY_POUND_SVG, ADD_SVG, TRIP_SVG, CHECK_SVG, CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG } from '/images/icons/outline/icons.js';
+import { renderAvatar } from '/js/utils/avatar.js';
 
 export async function renderFinanceTab(container, event, attendees, userPerms) {
     container.innerHTML = `
@@ -61,18 +62,6 @@ export async function renderFinanceTab(container, event, attendees, userPerms) {
                     (a.email && a.email.toLowerCase().includes(attendeeFilter.toLowerCase()))
                 );
 
-                // Debug refund button visibility logic
-                filteredAttendees.forEach(a => {
-                    const hasTx = !!a.payment_transaction_id;
-                    const notRefunded = !a.upfront_refunded;
-                    const willShow = canRefundPerm && hasTx && notRefunded;
-                    console.log(`[Refund Logic] Attendee: ${a.first_name} ${a.last_name} | ID: ${a.id}
-    - Has Permission: ${canRefundPerm}
-    - Has Transaction: ${hasTx}
-    - Not Yet Refunded: ${notRefunded}
-    - RESULT: ${willShow ? 'SHOW' : 'HIDE'}`);
-                });
-
                 const totalAttendeePages = Math.ceil(filteredAttendees.length / attendeePageSize);
                 if (attendeePage > totalAttendeePages && totalAttendeePages > 0) attendeePage = totalAttendeePages;
                 const displayAttendees = filteredAttendees.slice((attendeePage - 1) * attendeePageSize, attendeePage * attendeePageSize);
@@ -97,7 +86,12 @@ export async function renderFinanceTab(container, event, attendees, userPerms) {
                                         <tbody>
                                             ${displayAttendees.map(a => `
                                                 <tr>
-                                                    <td class="primary-text">${a.first_name} ${a.last_name}</td>
+                                                    <td class="primary-text">
+                                                        <div class="user-info-cell">
+                                                            ${renderAvatar(a, { classes: 'mini' })}
+                                                            <span>${a.first_name} ${a.last_name}</span>
+                                                        </div>
+                                                    </td>
                                                     <td>
                                                         ${a.is_attending ? 
                                                             `<span class="badge success">Attending${a.upfront_refunded ? ' - Refunded' : ''}</span>` : 
@@ -501,9 +495,12 @@ function openAddParticipantModal(eventId, onSuccess) {
                 if (users.length === 0) resultsDropdown.innerHTML = '<p class="small-text p-3">No members found.</p>';
                 else {
                     resultsDropdown.innerHTML = users.map(u => `
-                        <div class="search-result-item" data-user-id="${u.id}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.1);">
-                            <strong>${u.first_name} ${u.last_name}</strong><br>
-                            <small class="muted-text">${u.email}</small>
+                        <div class="search-result-item" data-user-id="${u.id}" style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.1); display: flex; align-items: center; gap: 0.75rem;">
+                            ${renderAvatar(u, { classes: 'mini' })}
+                            <div>
+                                <strong>${u.first_name} ${u.last_name}</strong><br>
+                                <small class="muted-text">${u.email}</small>
+                            </div>
                         </div>
                     `).join('');
                     resultsDropdown.querySelectorAll('.search-result-item').forEach(item => {
@@ -552,7 +549,14 @@ async function openManageDriversModal(eventId, tripId, attendees, onSuccess, isR
                     <tbody>
                         ${drivers.map(d => `
                             <tr>
-                                <td data-label="Driver" class="primary-text">${d.first_name} ${d.last_name}<br><small class="muted-text">${d.car_name}</small></td>
+                                <td data-label="Driver" class="primary-text">
+                                    <div class="user-info-cell">
+                                        ${renderAvatar(d, { classes: 'mini' })}
+                                        <div>
+                                            ${d.first_name} ${d.last_name}<br><small class="muted-text">${d.car_name}</small>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td data-label="Status"><span class="badge ${d.status}">${d.status}</span></td>
                                 <td data-label="Capacity">${d.seats}S / ${d.boats}B</td>
                                 <td data-label="Mileage">

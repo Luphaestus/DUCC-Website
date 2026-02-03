@@ -128,19 +128,19 @@
                 }
             }
 
-            .swimmer-name {
-                font-weight: 700;
-                margin-bottom: 0.25rem;
-                font-size: 1rem;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                width: 100%;
+        .swimmer-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: var(--pico-contrast);
+        }
 
-                @media (max-width: 600px) {
-                    font-size: 0.85rem;
-                }
-            }
+        .swimmer-avatar {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
 
             .swim-count {
                 color: var(--pico-primary);

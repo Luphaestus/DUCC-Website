@@ -8,7 +8,8 @@
 
 import { apiRequest } from '/js/utils/api.js';
 import { ViewChangedEvent, addRoute } from '/js/utils/view.js';
-import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG } from '/images/icons/outline/icons.js';
+import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG, POOL_SVG } from '/images/icons/outline/icons.js';
+import { renderAvatar } from '/js/utils/avatar.js';
 
 addRoute('/swims', 'swims');
 
@@ -97,6 +98,9 @@ async function populateLeaderboard() {
                 podiumHtml += `
                     <div class="podium-place ${style}">
                         ${rank === 1 ? `<div class="crown-icon">${CROWN_SVG}</div>` : ''}
+                        <div class="swimmer-avatar">
+                            ${renderAvatar(user, { classes: 'clickable', dataAttributes: `onclick="switchView('/admin/user/${user.id}')"` })}
+                        </div>
                         <div class="swimmer-name">${user.first_name} ${isMe ? '(You)' : ''}</div>
                         <div class="swim-count">${user.swims} Swims</div>
                         <div class="bootie-count ${bootieClass}">${user.booties} Booties</div>
@@ -117,6 +121,7 @@ async function populateLeaderboard() {
             listHtml += `
                 <div class="leaderboard-row ${isMe ? 'highlight' : ''}">
                     <div class="rank-box">${user.rank}</div>
+                    ${renderAvatar(user, { classes: 'mini' })}
                     <div class="swimmer-info">
                         ${user.first_name} ${user.last_name}
                         ${isMe ? '<span class="you-tag">YOU</span>' : ''}

@@ -80,6 +80,7 @@ export async function renderAdminNavBar(activeSection) {
     `;
 }
 
+addRoute('/admin', 'admin');
 addRoute('/admin/*', 'admin');
 
 const HTML_TEMPLATE = /*html*/`

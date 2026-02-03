@@ -83,6 +83,9 @@ export async function createTables(db) {
         swims INT NOT NULL DEFAULT 0,
         booties INT NOT NULL DEFAULT 0,
         profile_picture_id INT,
+        profile_picture_color VARCHAR(50) DEFAULT NULL,
+        profile_picture_font VARCHAR(50) DEFAULT NULL,
+        profile_picture_initials VARCHAR(50) DEFAULT NULL,
         totp_secret VARCHAR(255),
         totp_enabled TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -111,14 +114,23 @@ export async function createTables(db) {
       name: 'exec_committee',
       schema: `
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
+        user_id INT,
         role_name VARCHAR(255) NOT NULL,
+        first_name_override VARCHAR(255),
+        last_name_override VARCHAR(255),
+        email_override VARCHAR(255),
+        profile_picture_override_id INT,
+        profile_picture_color_override VARCHAR(7),
+        profile_picture_font_override VARCHAR(50),
+        profile_picture_initials_override VARCHAR(10),
         display_order INT DEFAULT 0,
         is_current TINYINT(1) NOT NULL DEFAULT 1,
+        is_hidden TINYINT(1) NOT NULL DEFAULT 0,
         term_start DATE,
         term_end DATE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (profile_picture_override_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {
@@ -221,7 +233,8 @@ export async function createTables(db) {
       schema: `
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) UNIQUE NOT NULL,
-        description TEXT
+        description TEXT,
+        exec_ranking INT DEFAULT 4
       `
     },
     {

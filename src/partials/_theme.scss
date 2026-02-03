@@ -16,6 +16,8 @@
     --table-border: 1px solid rgba(255, 255, 255, 0.05);
     --table-bg-body: rgba(30, 30, 35, 0.4);
     --table-bg-hover-body: rgba(40, 40, 45, 0.6);
+    --pico-primary-rgb: 212, 125, 228;
+    --pico-color-rgb: 194, 199, 208;
 
     /* Dark Mode Blobs */
     --blob-colour-1: rgba(155, 89, 182, 0.12);
@@ -60,6 +62,8 @@ body {
     --colour-warning: #f39c12;
     --colour-bad: #e74c3c;
     --table-border: 1px solid rgba(0, 0, 0, 0.05);
+    --pico-primary-rgb: 170, 64, 191;
+    --pico-color-rgb: 55, 60, 68;
     --table-bg-head: rgba(var(--pico-primary-rgb), 0.05);
     --table-bg-hover-head: rgba(var(--pico-primary-rgb), 0.1);
     --table-bg-body: rgba(255, 255, 255, 0.4);

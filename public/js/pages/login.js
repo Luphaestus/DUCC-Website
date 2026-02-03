@@ -10,7 +10,7 @@ import { apiRequest } from '/js/utils/api.js';
 import { switchView, ViewChangedEvent, addRoute } from '/js/utils/view.js';
 import { LoginEvent } from "/js/utils/events/events.js";
 import { getPreviousPath } from '/js/utils/history.js';
-import { LOGIN_SVG, KEY_SVG, PHONE_SVG } from '/images/icons/outline/icons.js';
+import { LOGIN_SVG, KEY_SVG } from '/images/icons/outline/icons.js';
 import { notify } from '../components/notification.js';
 
 addRoute('/login', 'login');
@@ -18,41 +18,48 @@ addRoute('/login', 'login');
 const HTML_TEMPLATE = /*html*/
     `<div id="login-view" class="view hidden">
             <div class="small-container">
-                <h1>Login</h1>
                 <div class="form-info">
-                    <article class="form-box" id="login-card-content">
-                        <h3>
-                            ${LOGIN_SVG}
-                            Login to your account
-                        </h3>
+                    <article class="form-box shadow" id="login-card-content">
+                        <div class="center-text" style="margin-bottom: 2rem;">
+                            <h2 class="no-margin">
+                                ${LOGIN_SVG}
+                                Sign In
+                            </h2>
+                        </div>
+                        
+                        <div class="passkey-quick-login center-text" style="margin-bottom: 1.5rem;">
+                            <button type="button" id="passkey-login-initial-btn" class="secondary outline full-width">
+                                ${KEY_SVG} Sign in with Passkey
+                            </button>
+                            <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
+                        </div>
+
                         <form id="login-form">
-                            <div>
-                                <div>
-                                    <label for="email">Email:</label>
-                                    <div class="durham-email-wrapper">
-                                        <input id="email" name="email" placeholder="username" autocomplete="username">
-                                        <span class="email-suffix">@durham.ac.uk</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label for="password">Password:</label>
-                                    <input type="password" id="password" name="password" autocomplete="current-password">
-                                </div>
+                            <label for="email">Email address</label>
+                            <div class="durham-email-wrapper">
+                                <input id="email" name="email" placeholder="username" autocomplete="username">
+                                <span class="email-suffix">@durham.ac.uk</span>
                             </div>
-                            <div id="login-footer" class="button-group vertical">
-                                <button type="submit">Login</button>
-                                <button type="button" id="passkey-login-initial-btn" class="secondary">${KEY_SVG} Login with Passkey</button>
+
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••">
+                            
+                            <div style="margin-top: 1rem;">
+                                <button type="submit" class="primary full-width">Continue with Password</button>
                             </div>
                         </form>
-                        <p><a data-nav="/reset-password">Forgot Password?</a></p>
-                        <p>Don't have an account? <a data-nav="/signup">Sign Up</a></p>
+
+                        <div class="center-text" style="margin-top: 2rem; border-top: 1px solid var(--pico-muted-border-color); padding-top: 1rem;">
+                            <p class="no-margin"><a data-nav="/reset-password" class="secondary">Forgot password?</a></p>
+                            <p class="no-margin" style="margin-top: 0.5rem;">New here? <a data-nav="/signup">Create an account</a></p>
+                        </div>
                     </article>
                 </div>
             </div>
         </div>`;
 
-let email = null;
-let password = null;
+let emailInput = null;
+let passwordInput = null;
 
 function handleLoginSuccess(res) {
     LoginEvent.notify({ authenticated: true });
@@ -78,6 +85,8 @@ async function startPasskeyLogin(emailVal = null) {
         const res = await apiRequest('POST', '/api/auth/passkey/login-verify', asseResp);
         handleLoginSuccess(res);
     } catch (err) {
+        // If the user cancelled, don't show an error notification
+        if (err.name === 'NotAllowedError' || err.name === 'AbortError') return;
         notify('Error', err.message || 'Passkey login failed.', 'error');
     }
 }
@@ -85,24 +94,29 @@ async function startPasskeyLogin(emailVal = null) {
 async function render2FAForm(methods) {
     const card = document.getElementById('login-card-content');
     card.innerHTML = /*html*/`
-        <h3>Two-Factor Authentication</h3>
-        <p>Your account is protected with 2FA. Please verify your identity.</p>
+        <div class="center-text" style="margin-bottom: 2rem;">
+            <h2 class="no-margin">Verify Identity</h2>
+        </div>
+        <p class="center-text secondary">Your account is protected with 2FA.</p>
         
         ${methods.totp ? `
             <form id="totp-login-form" class="modern-form">
-                <label>Authenticator Code <input type="text" id="totp-code" placeholder="123456" required autofocus></label>
+                <label for="totp-code">Authenticator Code</label>
+                <input type="text" id="totp-code" placeholder="123456" pattern="[0-9]*" inputmode="numeric" required autofocus>
                 <button type="submit" class="primary full-width">Verify Code</button>
             </form>
         ` : ''}
 
         ${methods.passkey ? `
             <div class="passkey-login-section">
-                ${methods.totp ? '<div class="divider"><span>OR</span></div>' : ''}
+                ${methods.totp ? '<div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>' : ''}
                 <button id="passkey-login-btn" class="secondary full-width">${KEY_SVG} Use Passkey</button>
             </div>
         ` : ''}
 
-        <p><button class="small-btn outline secondary" onclick="location.reload()">Back to Login</button></p>
+        <div class="center-text" style="margin-top: 2rem;">
+            <button class="outline secondary" onclick="location.reload()">Back to Login</button>
+        </div>
     `;
 
     if (methods.totp) {
@@ -141,32 +155,31 @@ function ViewNavigationEventListener({ resolvedPath }) {
             }
         }));
     }
-    if (email) email.value = '';
-    if (password) password.value = '';
+    if (emailInput) emailInput.value = '';
+    if (passwordInput) passwordInput.value = '';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
-    email = document.getElementById('email');
-    password = document.getElementById('password');
+    emailInput = document.getElementById('email');
+    passwordInput = document.getElementById('password');
     const passkeyBtn = document.getElementById('passkey-login-initial-btn');
 
-    email.addEventListener('input', () => {
-        if (email.value.includes('@')) {
-            email.value = email.value.split('@')[0];
+    emailInput.addEventListener('input', () => {
+        if (emailInput.value.includes('@')) {
+            emailInput.value = emailInput.value.split('@')[0];
         }
     });
 
     if (passkeyBtn) {
         passkeyBtn.onclick = () => {
-            let emailVal = email.value;
-            if (!emailVal || emailVal.trim() === '') {
-                email.setAttribute('aria-invalid', 'true');
-                notify('Error', 'Please enter your email prefix to login with passkey.', 'error', 2000, 'login-status');
-                return;
-            }
-            if (!emailVal.includes('@')) {
-                emailVal += '@durham.ac.uk';
+            let emailVal = emailInput.value;
+            if (emailVal && emailVal.trim() !== '') {
+                if (!emailVal.includes('@')) {
+                    emailVal += '@durham.ac.uk';
+                }
+            } else {
+                emailVal = null;
             }
             startPasskeyLogin(emailVal);
         };
@@ -178,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let emailVal = formData.get('email');
 
         let notPresent = false;
-        [email, password].forEach(input => {
+        [emailInput, passwordInput].forEach(input => {
             input.removeAttribute('aria-invalid');
             if (!input.value || input.value.trim() === '') {
                 input.setAttribute('aria-invalid', 'true');
@@ -204,10 +217,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             notify('Error', error.message || error || 'Login failed.', 'error', 3000, 'login-status');
             if (error.message && error.message.includes('email')) {
-                email.setAttribute('aria-invalid', 'true');
+                emailInput.setAttribute('aria-invalid', 'true');
             }
             if (error.message && error.message.includes('password')) {
-                password.setAttribute('aria-invalid', 'true');
+                passwordInput.setAttribute('aria-invalid', 'true');
             }
         }
     });

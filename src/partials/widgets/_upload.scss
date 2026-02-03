@@ -19,6 +19,20 @@
         padding: 1rem;
     }
 
+    &.no-actions {
+        border: none;
+        padding: 0;
+        background: transparent;
+
+        &:not(.drag-over) {
+            box-shadow: none;
+        }
+
+        .progress-container:not(.hidden) {
+            padding: 1rem 0;
+        }
+    }
+
     &.modal-mode {
         min-height: 200px;
         display: flex;
@@ -206,6 +220,37 @@
             }
         }
     }
+}
+
+/* CropperJS Customization */
+.crop-container {
+    background: #000;
+    border-radius: var(--border-radius-md);
+    padding: 20px;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+
+    #crop-image {
+        max-height: 50vh;
+        max-width: 100%;
+    }
+
+    .cropper-view-box,
+    .cropper-face {
+        border-radius: 50%;
+    }
+}
+
+#confirm-crop-btn {
+    margin-bottom: 0 !important;
+}
+
+.crop-actions {
+    display: flex;
+    justify-content: center;
 }
 
 .image-library-grid {

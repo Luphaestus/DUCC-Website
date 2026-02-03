@@ -12,6 +12,7 @@ import { adminContentID } from '../admin.js';
 import { ARROW_BACK_IOS_NEW_SVG } from '/images/icons/outline/icons.js';
 import { TabNav } from '/js/widgets/TabNav.js';
 import { Panel } from '/js/widgets/panel.js';
+import { renderAvatar } from '/js/utils/avatar.js';
 
 // Import sub-renderers for specific tabs
 import { renderProfileTab } from './tabs/profile.js';
@@ -72,8 +73,11 @@ export async function renderUserDetail(userId) {
                     content: `
                         <header class="user-detail-header">
                             <div class="user-identity">
-                                <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
-                                <span class="user-id-badge">ID: ${user.id}</span>
+                                ${renderAvatar(user, { classes: 'medium' })}
+                                <div class="user-info">
+                                    <h2 class="user-name-header">${user.first_name} ${user.last_name}</h2>
+                                    <span class="user-id-badge">ID: ${user.id}</span>
+                                </div>
                             </div>
                             ${tabNav.getHTML()}
                         </header>

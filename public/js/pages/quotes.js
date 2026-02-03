@@ -12,6 +12,7 @@ import { Modal } from '/js/widgets/Modal.js';
 import { ADD_SVG, SEARCH_SVG } from '/images/icons/outline/icons.js';
 import { Pagination } from '/js/widgets/Pagination.js';
 import { notify } from '../components/notification.js';
+import { renderAvatar } from '/js/utils/avatar.js';
 
 addRoute('/quotes', 'quotes');
 
@@ -84,9 +85,17 @@ async function renderQuotes() {
 
         container.innerHTML = quotes.map(quote => `
             <div class="quote-card" data-mos="fade-up">
+                <div class="quote-card-header">
+                    ${renderAvatar(quote.quoted_user, { classes: 'mini' })}
+                    <p class="quote-author">${quote.quoted_user.first_name} ${quote.quoted_user.last_name}</p>
+                </div>
                 <p class="quote-text">"${quote.text}"</p>
-                <p class="quote-author">- ${quote.quoted_user.first_name} ${quote.quoted_user.last_name}</p>
-                ${quote.submitted_by ? `<p class="quote-submitter">Submitted by: ${quote.submitted_by.first_name} ${quote.submitted_by.last_name}</p>` : ''}
+                ${quote.submitted_by ? `
+                    <div class="quote-card-footer">
+                        ${renderAvatar(quote.submitted_by, { classes: 'mini' })}
+                        <p class="quote-submitter">Submitted by ${quote.submitted_by.first_name}</p>
+                    </div>
+                ` : ''}
             </div>
         `).join('');
 

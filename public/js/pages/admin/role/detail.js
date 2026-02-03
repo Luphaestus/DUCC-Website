@@ -36,7 +36,7 @@ export async function renderRoleDetail(roleId) {
 
     try {
         const isNew = roleId === 'new';
-        const role = isNew ? { name: '', permissions: [] } : await apiRequest('GET', `/api/admin/roles/${roleId}`);
+        const role = isNew ? { name: '', permissions: [], exec_ranking: 4 } : await apiRequest('GET', `/api/admin/roles/${roleId}`);
         const allPermissions = await apiRequest('GET', '/api/admin/roles/permissions');
 
         adminContent.innerHTML = `
@@ -51,6 +51,10 @@ export async function renderRoleDetail(roleId) {
                                 </label>
                                 <label class="form-label-top">Description
                                     <input type="text" name="description" value="${role.description || ''}" class="full-width-input" placeholder="Role purpose">
+                                </label>
+                                <label class="form-label-top">Exec Ranking
+                                    <input type="number" name="execRanking" value="${role.exec_ranking || 4}" class="full-width-input" min="1" max="10">
+                                    <small>1 = Top (President), 2 = Important (VP), 4 = Standard</small>
                                 </label>
                             </div>
 
@@ -77,6 +81,7 @@ export async function renderRoleDetail(roleId) {
             return {
                 name: formData.get('name'),
                 description: formData.get('description'),
+                execRanking: formData.get('execRanking'),
                 permissions: formData.getAll('permissions')
             };
         };
@@ -120,6 +125,7 @@ async function handleSaveRole(e, id) {
     const data = {
         name: formData.get('name'),
         description: formData.get('description'),
+        execRanking: formData.get('execRanking'),
         permissions: formData.getAll('permissions')
     };
 

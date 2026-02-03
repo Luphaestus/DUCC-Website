@@ -16,6 +16,7 @@
 
 // --- Components ---
 @use "partials/components/common";
+@use "partials/components/avatar";
 @use "partials/components/navbar";
 @use "partials/components/notification";
 @use "partials/components/background";
@@ -39,6 +40,7 @@
 @use "partials/pages/home";
 @use "partials/pages/events";
 @use "partials/pages/event";
+@use "partials/pages/exec";
 @use "partials/pages/legal";
 @use "partials/pages/profile";
 @use "partials/pages/footer";

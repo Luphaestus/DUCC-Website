@@ -209,21 +209,29 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
     }
 
     const roles = [
-        { name: 'Vice Captain (Durham)', perms: ['user.manage', 'event.manage.all', 'swims.manage', 'file.write'] },
-        { name: 'Club Coach', perms: ['event.manage.all', 'swims.manage'] },
-        { name: 'Treasurer', perms: ['transaction.manage'] },
-        { name: 'Trip Officer', perms: ['event.manage.all', 'swims.manage', 'file.write'] },
-        { name: 'Kit and Safety Officer', perms: [] },
-        { name: 'Media Secretary', perms: ['file.write', 'file.edit'] },
-        { name: 'Social Secretary (Durham)', perms: ['event.manage.scoped'], scopedTags: ['socials'] },
-        { name: 'Polo Captain', perms: ['event.manage.scoped', 'swims.manage'], scopedTags: ['polo', 'polo-team'] },
-        { name: 'Slalom Captain', perms: ['event.manage.scoped', 'swims.manage'], scopedTags: ['slalom', 'slalom-team'] },
-        { name: 'Welfare Officer', perms: [] }
+        { name: 'Vice Captain (Durham)', ranking: 2, perms: ['user.manage', 'event.manage.all', 'swims.manage', 'file.write', 'exec.publish'] },
+        { name: 'Club Coach', ranking: 3, perms: ['event.manage.all', 'swims.manage', 'exec.publish'] },
+        { name: 'Treasurer', ranking: 3, perms: ['transaction.manage', 'exec.publish'] },
+        { name: 'Trip Officer', ranking: 3, perms: ['event.manage.all', 'swims.manage', 'file.write', 'exec.publish'] },
+        { name: 'Kit and Safety Officer', ranking: 3, perms: ['exec.publish'] },
+        { name: 'Media Secretary', ranking: 4, perms: ['file.write', 'file.edit', 'exec.publish'] },
+        { name: 'Social Secretary (Durham)', ranking: 4, perms: ['event.manage.scoped', 'exec.publish'], scopedTags: ['socials'] },
+        { name: 'Polo Captain', ranking: 3, perms: ['event.manage.scoped', 'swims.manage', 'exec.publish'], scopedTags: ['polo', 'polo-team'] },
+        { name: 'Slalom Captain', ranking: 3, perms: ['event.manage.scoped', 'swims.manage', 'exec.publish'], scopedTags: ['slalom', 'slalom-team'] },
+        { name: 'Welfare Officer', ranking: 4, perms: ['exec.publish'] }
     ];
 
+    const ExecDB = (await import('../../execDB.js')).default;
+    const allUsers = await db.all('SELECT id FROM users');
+    let adminUser = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
+    
+    // Create a pool of users to ensure we don't double-assign roles if possible
+    let availableUsers = [...allUsers].filter(u => u.id !== adminUser?.id).sort(() => 0.5 - Math.random());
+    
+    // Seed Current Committee
     for (const r of roles) {
         try {
-            await db.run('INSERT IGNORE INTO roles (name) VALUES (?)', [r.name]);
+            await db.run('INSERT IGNORE INTO roles (name, exec_ranking) VALUES (?, ?)', [r.name, r.ranking || 4]);
             const roleRow = await db.get('SELECT id FROM roles WHERE name = ?', [r.name]);
             if (!roleRow) continue;
 
@@ -240,8 +248,50 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
                     }
                 }
             }
+
+            // Assign this role to a random user from the pool
+            if (availableUsers.length > 0) {
+                const targetUser = availableUsers.shift();
+                await db.run('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [targetUser.id, roleRow.id]);
+                
+                // If it's an exec role (has exec.publish), sync them
+                if (r.perms.includes('exec.publish')) {
+                    await ExecDB.syncExecMember(db, targetUser.id);
+                }
+            }
         } catch (err) {
             Logger.error(`Error seeding role ${r.name}:`, err);
+        }
+    }
+
+    // Seed Past Committees (Last 2 years)
+    if (newlyCreatedTables.includes('exec_committee')) {
+        const pastRolePool = [
+            { name: 'President', rank: 1 },
+            { name: 'Treasurer', rank: 2 },
+            { name: 'Secretary', rank: 2 },
+            { name: 'Social Secretary', rank: 4 },
+            { name: 'Welfare Officer', rank: 4 }
+        ];
+
+        const years = [2025, 2024]; // Academic years ending in these
+        for (const year of years) {
+            for (const role of pastRolePool) {
+                if (availableUsers.length > 0) {
+                    const user = availableUsers.shift();
+                    await db.run(
+                        `INSERT INTO exec_committee (user_id, role_name, display_order, is_current, term_start, term_end)
+                         VALUES (?, ?, ?, 0, ?, ?)`,
+                        [
+                            user.id,
+                            role.name,
+                            role.rank,
+                            `${year - 1}-10-01`,
+                            `${year}-06-30`
+                        ]
+                    );
+                }
+            }
         }
     }
 
@@ -291,7 +341,7 @@ export async function seedDevelopment(db, newlyCreatedTables = []) {
         }
     }
 
-    const adminUser = await db.get("SELECT id FROM users WHERE email = 'admin@durham.ac.uk'");
+    adminUser = await db.get("SELECT id FROM users WHERE email = 'admin@durham.ac.uk'");
     if (adminUser) {
         await db.run('UPDATE users SET is_instructor = 1 WHERE id = ?', [adminUser.id]);
         const coachRole = await db.get("SELECT id FROM roles WHERE name = 'Club Coach'");

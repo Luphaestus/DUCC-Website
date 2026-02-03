@@ -214,28 +214,27 @@ export default class Auth {
                 if (user) userId = user.id;
             }
 
-            if (!userId) {
-                return res.status(400).json({ message: 'Email required or session expired.' });
-            }
-
             try {
-                const userAuthenticators = await AuthDB.getUserAuthenticators(this.db, userId);
-                if (userAuthenticators.length === 0) {
-                    return res.status(400).json({ message: 'No passkeys found for this user.' });
+                let allowCredentials;
+                if (userId) {
+                    const userAuthenticators = await AuthDB.getUserAuthenticators(this.db, userId);
+                    if (userAuthenticators.length > 0) {
+                        allowCredentials = userAuthenticators.map(auth => ({
+                            id: auth.id,
+                            type: 'public-key',
+                            transports: auth.transports ? JSON.parse(auth.transports) : undefined,
+                        }));
+                    }
                 }
 
                 const options = await generateAuthenticationOptions({
                     rpID: this.rpID,
-                    allowCredentials: userAuthenticators.map(auth => ({
-                        id: typeof auth.id === 'string' ? isoBase64URL.toBuffer(auth.id) : auth.id,
-                        type: 'public-key',
-                        transports: auth.transports ? JSON.parse(auth.transports) : undefined,
-                    })),
+                    allowCredentials,
                     userVerification: 'preferred',
                 });
 
                 req.session.currentChallenge = options.challenge;
-                req.session.passkeyUserId = userId; // Store intended user ID for verification
+                req.session.passkeyUserId = userId;
                 res.json(options);
             } catch (err) {
                 Logger.error(err);
@@ -249,16 +248,25 @@ export default class Auth {
         this.app.post('/api/auth/passkey/login-verify', async (req, res) => {
             const { body } = req;
             const expectedChallenge = req.session.currentChallenge;
-            const targetUserId = req.session.pendingUser?.id || req.session.passkeyUserId;
+            let targetUserId = req.session.pendingUser?.id || req.session.passkeyUserId;
 
-            if (!expectedChallenge || !targetUserId) {
+            if (!expectedChallenge) {
                 return res.status(400).json({ message: 'Authentication session expired.' });
             }
 
             try {
                 const authenticator = await AuthDB.getAuthenticatorById(this.db, body.id);
-                if (!authenticator || authenticator.user_id !== targetUserId) {
+                if (!authenticator) {
                     return res.status(400).json({ message: 'Authenticator not found.' });
+                }
+
+                if (targetUserId && authenticator.user_id !== targetUserId) {
+                    return res.status(400).json({ message: 'Authenticator not found.' });
+                }
+
+                // If no targetUserId (discoverable credential), use the one from the authenticator
+                if (!targetUserId) {
+                    targetUserId = authenticator.user_id;
                 }
 
                 const verification = await verifyAuthenticationResponse({
@@ -266,9 +274,9 @@ export default class Auth {
                     expectedChallenge,
                     expectedOrigin: this.origin,
                     expectedRPID: this.rpID,
-                    authenticator: {
-                        credentialID: typeof authenticator.id === 'string' ? isoBase64URL.toBuffer(authenticator.id) : authenticator.id,
-                        credentialPublicKey: authenticator.public_key,
+                    credential: {
+                        id: typeof authenticator.id === 'string' ? isoBase64URL.toBuffer(authenticator.id) : authenticator.id,
+                        publicKey: authenticator.public_key,
                         counter: authenticator.counter || 0,
                     },
                 });
@@ -364,7 +372,7 @@ export default class Auth {
                     userName: user.email,
                     attestationType: 'none',
                     excludeCredentials: userAuthenticators.map(auth => ({
-                        id: typeof auth.id === 'string' ? isoBase64URL.toBuffer(auth.id) : auth.id,
+                        id: auth.id,
                         type: 'public-key',
                         transports: auth.transports ? JSON.parse(auth.transports) : undefined,
                     })),
@@ -377,7 +385,7 @@ export default class Auth {
                 req.session.currentChallenge = options.challenge;
                 res.json(options);
             } catch (err) {
-                Logger.error(err);
+                Logger.error('Error in register-options:', err);
                 res.status(500).json({ message: 'Failed to generate options.' });
             }
         });

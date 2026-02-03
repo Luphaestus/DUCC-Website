@@ -181,14 +181,25 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
             <div class="dual-grid">
                 <!-- RBAC: System Role Assignment -->
                 ${Panel({
-                    title: 'System Role',
+                    title: 'System Roles',
                     icon: ID_CARD_SVG,
                     content: `
                         <div class="card-body">
-                            <p class="small-text">Defines base permissions and access levels.</p>
-                            <select id="admin-user-role-select" class="full-width-select">
-                                <option value="">No Role</option>
-                            </select>
+                            <p class="small-text">Define base permissions and access levels. Users can have multiple roles.</p>
+                            <div class="inline-add-form mb-3">
+                                <select id="admin-user-role-select">
+                                    <option value="">Add Role...</option>
+                                </select>
+                                <button id="add-role-btn" class="icon-btn small-btn">${ADD_SVG}</button>
+                            </div>
+                            <div id="active-roles-list" class="tags-cloud">
+                                ${(user.roles || []).map(r => `
+                                    <span class="tag-chip primary">
+                                        ${r.name} 
+                                        <button class="remove-role-btn delete-icon-btn" data-id="${r.id}">${CLOSE_SVG}</button>
+                                    </span>
+                                `).join('')}
+                            </div>
                         </div>
                     `
                 })}
@@ -225,14 +236,17 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
 
     if (canManageUsers) {
         const roleSelect = document.getElementById('admin-user-role-select');
-        if (roleSelect) {
+        const addRoleBtn = document.getElementById('add-role-btn');
+        
+        if (roleSelect && addRoleBtn) {
             const allRoles = await apiRequest('GET', '/api/admin/roles').catch(() => []);
-            const userRoleId = (user.roles && user.roles.length > 0) ? user.roles[0].id : '';
-            roleSelect.innerHTML = `<option value="">No Role</option>` + allRoles.map(role => `<option value="${role.id}" ${role.id == userRoleId ? 'selected' : ''}>${role.name}</option>`).join('');
+            roleSelect.innerHTML = `<option value="">Add Role...</option>` + allRoles.map(role => `<option value="${role.id}">${role.name}</option>`).join('');
 
-            let lastValue = roleSelect.value;
-            roleSelect.onchange = async () => {
-                const selectedRole = allRoles.find(r => r.id == roleSelect.value);
+            addRoleBtn.onclick = async () => {
+                const roleId = roleSelect.value;
+                if (!roleId) return;
+
+                const selectedRole = allRoles.find(r => r.id == roleId);
                 const isPresident = selectedRole?.name === 'President';
 
                 let password = null;
@@ -241,22 +255,31 @@ export async function renderProfileTab(container, user, userPerms, canManageUser
                         'Transfer President Role',
                         'Transferring the President role is a <strong>critical action</strong>. This will:<br><br>1. <strong>Remove all permissions</strong> from every other Exec member.<br>2. <strong>Wipe medical information</strong> for all users who have not consented to long-term storage.<br><br>Enter your password to confirm this transfer.'
                     );
-                    if (!password) {
-                        roleSelect.value = lastValue;
-                        return;
-                    }
+                    if (!password) return;
                 }
 
                 try {
-                    await apiRequest('POST', `/api/admin/user/${user.id}/role`, { roleId: roleSelect.value, password });
-                    notify('Success', 'Role updated', 'success');
-                    lastValue = roleSelect.value;
-                    if (isPresident) renderUserDetail(user.id);
+                    await apiRequest('POST', `/api/admin/user/${user.id}/role`, { roleId, password });
+                    notify('Success', 'Role added', 'success');
+                    const updatedUser = await apiRequest('GET', `/api/admin/user/${user.id}`);
+                    renderProfileTab(container, updatedUser, userPerms, canManageUsers, isExec);
                 } catch (e) {
-                    notify('Error', e.message || 'Failed to update role', 'error');
-                    roleSelect.value = lastValue;
+                    notify('Error', e.message || 'Failed to add role', 'error');
                 }
             };
+
+            container.querySelectorAll('.remove-role-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    try {
+                        await apiRequest('DELETE', `/api/admin/user/${user.id}/role/${btn.dataset.id}`);
+                        notify('Success', 'Role removed', 'success');
+                        const updatedUser = await apiRequest('GET', `/api/admin/user/${user.id}`);
+                        renderProfileTab(container, updatedUser, userPerms, canManageUsers, isExec);
+                    } catch (e) {
+                        notify('Error', e.message || 'Failed to remove role', 'error');
+                    }
+                };
+            });
         }
 
         // --- Instructor Status Toggle ---

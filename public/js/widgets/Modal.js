@@ -64,7 +64,9 @@ export class Modal {
     close() {
         if (this.onClose) {
             this.onClose();
-        } else if (this.isView) {
+        } 
+        
+        if (this.isView) {
             import('/js/utils/view.js').then(({ closeModal }) => {
                 const fallback = typeof this.fallbackPath === 'function' ? this.fallbackPath() : this.fallbackPath;
                 closeModal(fallback);

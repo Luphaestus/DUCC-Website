@@ -28,9 +28,16 @@ export default class UserDB {
         const params = [];
 
         if (search) {
-            const searchTerms = search.trim().split(/\s+/).map(t => `+${t}*`).join(' ');
-            conditions.push(`MATCH(u.first_name, u.last_name, u.email) AGAINST(? IN BOOLEAN MODE)`);
-            params.push(searchTerms);
+            const terms = search.trim().split(/\s+/);
+            const matchTerms = terms.map(t => `+${t}*`).join(' ');
+            
+            // Try MATCH first (fast, handles AND across words)
+            // AND also check each term with LIKE for partial matching within words
+            const termConditions = terms.map(() => `(u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)`);
+            const termParams = terms.flatMap(t => [`%${t}%`, `%${t}%`, `%${t}%`]);
+
+            conditions.push(`(MATCH(u.first_name, u.last_name, u.email) AGAINST(? IN BOOLEAN MODE) OR (${termConditions.join(' AND ')}))`);
+            params.push(matchTerms, ...termParams);
         }
 
         if (isMember !== undefined && isMember !== '') {
@@ -76,10 +83,12 @@ export default class UserDB {
 
         try {
             const selectFields = isOnlyExec 
-                ? `u.id, u.first_name, u.last_name`
+                ? `u.id, u.first_name, u.last_name, u.email`
                 : `u.id, u.first_name, u.last_name, u.email, 
                    u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
-                   u.swims, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance`;
+                   u.swims, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance,
+                   u.profile_picture_id, u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
+                   (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path`;
 
             const orderBy = (sortCol === 'first_name' || sortCol === 'last_name' || isOnlyExec)
                 ? `${sortCol === 'first_name' ? 'u.first_name, u.last_name' : 'u.last_name, u.first_name'} ${sortOrder}`
@@ -119,7 +128,7 @@ export default class UserDB {
 
         const mappedElements = elements.map(e => {
             if (e === 'balance') return '(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = users.id) as balance';
-            if (e === 'profile_picture_path') return '(SELECT CAST(CONCAT("/api/files/", f.id, "/download", CHAR(63), "view=true") AS CHAR) FROM files f WHERE f.id = users.profile_picture_id) as profile_picture_path';
+            if (e === 'profile_picture_path') return '(SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = users.profile_picture_id) as profile_picture_path';
             return e;
         });
 
@@ -212,6 +221,9 @@ export default class UserDB {
                         takes_medication = 0,
                         medication_details = NULL,
                         profile_picture_id = NULL,
+                        profile_picture_color = NULL,
+                        profile_picture_font = NULL,
+                        profile_picture_initials = NULL,
                         filled_legal_info = 0,
                         legal_filled_at = NULL
                     WHERE id = ?
@@ -242,7 +254,7 @@ export default class UserDB {
             const query = `
                 SELECT u.*, c.name as college_name,
                        (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = u.id) as balance,
-                       (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path
+                       (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path
                 FROM users u 
                 LEFT JOIN colleges c ON u.college_id = c.id 
                 WHERE u.id = ?
@@ -256,6 +268,12 @@ export default class UserDB {
             });
             if (includeBalance) result.balance = user.balance;
 
+            // Ensure profile customization fields are included if requested or by default if not filtered
+            const customFields = ['profile_picture_color', 'profile_picture_font', 'profile_picture_initials', 'profile_picture_path'];
+            customFields.forEach(f => {
+                if (user[f] !== undefined && !result[f]) result[f] = user[f];
+            });
+
             return new statusObject(200, null, result);
         } catch (error) {
             Logger.error('Database error fetching user profile:', error);
@@ -267,7 +285,13 @@ export default class UserDB {
      * Perform a total system permission reset and assign a new President.
      */
     static async resetPermissions(db, newPresidentId) {
+        // Dynamic imports to avoid circular dependencies
+        const ExecDB = (await import('./execDB.js')).default;
+
         return db.transaction(async (tx) => {
+            // Archive current committee before wiping roles
+            await ExecDB.archiveCurrentCommittee(tx);
+
             await tx.run(`DELETE FROM user_roles`);
             await tx.run(`DELETE FROM user_permissions`);
             await tx.run(`DELETE FROM user_managed_tags`);
@@ -286,6 +310,8 @@ export default class UserDB {
             const presidentRole = await tx.get('SELECT id FROM roles WHERE name = ?', ['President']);
             if (presidentRole) {
                 await tx.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [newPresidentId, presidentRole.id]);
+                // Sync new president to the (now archived) exec committee
+                await ExecDB.syncExecMember(tx, newPresidentId);
             }
             return new statusObject(200);
         }).catch(error => {
@@ -297,8 +323,8 @@ export default class UserDB {
     /**
      * Set a user's profile picture.
      */
-    static async setProfilePicture(db, userId, fileId) {
-        return db.run('UPDATE users SET profile_picture_id = ? WHERE id = ?', [fileId, userId])
+    static async setProfilePicture(db, userId, fileId, color = null, font = null, initials = null) {
+        return db.run('UPDATE users SET profile_picture_id = ?, profile_picture_color = ?, profile_picture_font = ?, profile_picture_initials = ? WHERE id = ?', [fileId, color, font, initials, userId])
             .then(() => new statusObject(200, 'Profile picture updated.'))
             .catch((error) => {
                 Logger.error('Database error in setProfilePicture:', error);

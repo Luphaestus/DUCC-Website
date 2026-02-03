@@ -24,9 +24,11 @@ import { ValueHeader, updateValueDisplay } from '../widgets/value_header.js';
 import { ItemList, StandardListItem } from '../widgets/item_list.js';
 import { Tag } from '../widgets/Tag.js';
 import { UploadWidget } from '../widgets/upload/UploadWidget.js';
+import { renderAvatar } from '/js/utils/avatar.js';
 import {
     SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
-    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, SAVE_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG, PHONE_SVG
+    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, SAVE_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG,
+    CONTENT_COPY_SVG, UPLOAD_SVG
 } from '/images/icons/outline/icons.js';
 
 // Register routes
@@ -52,18 +54,33 @@ const HTML_TEMPLATE = /*html*/`
         
                 <!-- Overview Tab -->
                 <section id="tab-overview" class="dashboard-section active">
-                    <div class="profile-header-card glass-panel">
-                        <div class="profile-avatar-section">
-                            <div id="profile-picture-container" class="profile-picture-large">
-                                <img id="profile-img-display" src="/images/misc/ducc.png" alt="Profile Picture">
-                                <button id="change-pic-btn" class="avatar-edit-btn">${EDIT_SVG}</button>
+                    ${Panel({
+                        title: 'Profile Picture',
+                        icon: ID_CARD_SVG,
+                        content: `
+                            <div class="profile-avatar-row">
+                                <div id="profile-picture-container" class="profile-picture-container" title="Change Profile Picture">
+                                    <div class="profile-picture-large" id="profile-img-wrapper">
+                                        <img id="profile-img-display" src="/images/misc/ducc.png" alt="Profile Picture">
+                                    </div>
+                                    <div class="avatar-overlay">${UPLOAD_SVG}</div>
+                                </div>
+                                <div class="profile-avatar-controls">
+                                    <div id="avatar-upload-container"></div>
+                                    <div class="avatar-presets no-margin no-padding">
+                                        <h4 class="small-title">Color Presets</h4>
+                                        <div id="color-presets" class="presets-grid"></div>
+
+                                        <h4 class="small-title mt-4">Initials</h4>
+                                        <div id="initials-presets" class="presets-grid"></div>
+
+                                        <h4 class="small-title mt-4">Fonts</h4>
+                                        <div id="font-presets" class="presets-grid"></div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="profile-name-section">
-                            <h2 id="profile-full-name">Loading...</h2>
-                            <p id="profile-email">...</p>
-                        </div>
-                    </div>
+                        `
+                    })}
 
                     <div id="membership-banner-container"></div>
 
@@ -168,13 +185,13 @@ const HTML_TEMPLATE = /*html*/`
                                     <div class="glass-panel embedded-panel">
                                         <div class="setting-info">
                                             <strong>Authenticator (TOTP)</strong>
-                                            <p id="totp-status" class="status-tag warning">Disabled</p>
+                                            <p id="totp-status" class="status-tag warning no-margin">Disabled</p>
                                         </div>
                                         <button id="manage-totp-btn" class="small-btn secondary">Setup</button>
                                     </div>
                                     <div class="glass-panel embedded-panel">
                                         <div class="setting-info">
-                                            <strong>WebAuthn</strong>
+                                            <strong>Passkey</strong>
                                             <p id="passkey-count">0 keys registered</p>
                                         </div>
                                         <button id="manage-passkeys-btn" class="small-btn secondary">Manage</button>
@@ -279,6 +296,103 @@ function renderSwimStats(stats) {
             <span class="stat-label">All Time Rank</span>
         </div>
     `;
+}
+
+/**
+ * Renders the user's profile picture with initials fallback.
+ * 
+ * @param {object} profile 
+ */
+function renderProfilePicture(profile) {
+    const wrapper = document.getElementById('profile-img-wrapper');
+    if (!wrapper) return;
+
+    wrapper.outerHTML = renderAvatar(profile, { classes: 'large', dataAttributes: 'id="profile-img-wrapper"' });
+    renderAvatarControls(profile);
+}
+
+/**
+ * Renders the inline avatar controls.
+ * @param {object} profile 
+ */
+function renderAvatarControls(profile) {
+    const colorGrid = document.getElementById('color-presets');
+    const initialsGrid = document.getElementById('initials-presets');
+    const fontGrid = document.getElementById('font-presets');
+    if (!colorGrid || !initialsGrid || !fontGrid) return;
+
+    const colors = [
+        '#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', 
+        '#e74c3c', '#1abc9c', '#34495e', '#d35400', '#c0392b'
+    ];
+    
+    const firstInitial = profile.first_name ? profile.first_name[0] : '';
+    const lastInitial = profile.last_name ? profile.last_name[0] : '';
+    const bothInitials = `${firstInitial}${lastInitial}` || '?';
+    
+    const initialsOptions = [
+        { label: 'Both', value: 'both', text: bothInitials },
+        { label: 'First', value: 'first', text: firstInitial },
+        { label: 'Last', value: 'last', text: lastInitial }
+    ];
+
+    const fonts = [
+        { label: 'Sans', value: 'sans' },
+        { label: 'Display', value: 'outfit' },
+        { label: 'Serif', value: 'serif' },
+        { label: 'Gothic', value: 'gothic' },
+        { label: 'Retro', value: 'accent' },
+        { label: 'Mono', value: 'mono' }
+    ];
+
+    colorGrid.innerHTML = colors.map(color => `
+        <div class="preset-item color-preset ${profile.profile_picture_color === color ? 'active' : ''}" 
+             style="background-color: ${color};" data-color="${color}">
+            ${bothInitials}
+        </div>
+    `).join('');
+
+    initialsGrid.innerHTML = initialsOptions.map(opt => `
+        <div class="preset-item initials-preset ${profile.profile_picture_initials === opt.value ? 'active' : ''}" 
+             style="background-color: var(--pico-primary);" data-initials="${opt.value}">
+            ${opt.text}
+        </div>
+    `).join('');
+
+    fontGrid.innerHTML = fonts.map(f => `
+        <div class="preset-item font-preset font-preset-${f.value} ${profile.profile_picture_font === f.value ? 'active' : ''}" 
+             style="background-color: var(--pico-primary);" data-font="${f.value}">
+            ${bothInitials}
+        </div>
+    `).join('');
+
+    // Re-bind events for the newly rendered presets
+    const updatePreset = async (data) => {
+        try {
+            await apiRequest('POST', '/api/user/profile-picture', { 
+                fileId: null, 
+                color: profile.profile_picture_color,
+                font: profile.profile_picture_font,
+                initials: profile.profile_picture_initials,
+                ...data 
+            });
+            updateDashboard();
+        } catch (err) {
+            notify('Error', err.message, 'error');
+        }
+    };
+
+    colorGrid.querySelectorAll('.color-preset').forEach(item => {
+        item.onclick = () => updatePreset({ color: item.dataset.color });
+    });
+
+    initialsGrid.querySelectorAll('.initials-preset').forEach(item => {
+        item.onclick = () => updatePreset({ initials: item.dataset.initials });
+    });
+
+    fontGrid.querySelectorAll('.font-preset').forEach(item => {
+        item.onclick = () => updatePreset({ font: item.dataset.font });
+    });
 }
 
 /**
@@ -539,13 +653,13 @@ async function update2FADisplay() {
         const totpStatus = document.getElementById('totp-status');
         if (profile.totp_enabled) {
             totpStatus.textContent = 'Enabled';
-            totpStatus.className = 'status-tag success';
+            totpStatus.className = 'status-tag success no-margin no-padding';
             totpBtn.textContent = 'Disable';
             totpBtn.className = 'small-btn outline delete';
             totpBtn.onclick = () => disableTOTP();
         } else {
             totpStatus.textContent = 'Disabled';
-            totpStatus.className = 'status-tag warning';
+            totpStatus.className = 'status-tag warning no-margin no-padding';
             totpBtn.textContent = 'Setup';
             totpBtn.className = 'small-btn secondary';
             totpBtn.onclick = () => setupTOTP();
@@ -560,11 +674,23 @@ async function update2FADisplay() {
 async function setupTOTP() {
     try {
         const { qrCodeData, secret } = await apiRequest('GET', '/api/auth/totp/setup');
+        const modalId = 'totp-setup-modal';
+        const existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
         const modalContent = /*html*/`
             <div class="totp-setup-flow">
                 <p>Scan this QR code with your authenticator app (like Google Authenticator or Authy).</p>
                 <div class="qr-container"><img src="${qrCodeData}" alt="TOTP QR Code"></div>
-                <p class="manual-secret">Or enter manually: <code>${secret}</code></p>
+                <div class="manual-secret">
+                    <span>Or enter manually:</span>
+                    <div class="secret-row">
+                        <code id="totp-secret-code">${secret}</code>
+                        <button class="copy-btn" id="copy-totp-secret" title="Copy to clipboard">
+                            ${CONTENT_COPY_SVG}
+                        </button>
+                    </div>
+                </div>
                 <form id="totp-verify-form" class="modern-form">
                     <label>Verification Code <input type="text" id="totp-code" placeholder="123456" required></label>
                     <button type="submit" class="primary full-width">Verify & Enable</button>
@@ -572,10 +698,19 @@ async function setupTOTP() {
             </div>
         `;
 
-        const modal = new Modal({ id: 'totp-setup-modal', title: 'Setup TOTP', content: modalContent });
+        const modal = new Modal({ id: modalId, title: 'Setup TOTP', content: modalContent });
         document.body.insertAdjacentHTML('beforeend', modal.getHTML());
         modal.attachListeners();
         modal.show();
+
+        document.getElementById('copy-totp-secret').onclick = async () => {
+            try {
+                await navigator.clipboard.writeText(secret);
+                notify('Copied', 'Secret copied to clipboard!', 'success');
+            } catch (err) {
+                notify('Error', 'Failed to copy.', 'error');
+            }
+        };
 
         document.getElementById('totp-verify-form').onsubmit = async (e) => {
             e.preventDefault();
@@ -607,33 +742,55 @@ async function disableTOTP() {
 }
 
 async function managePasskeys() {
+    const modalId = 'passkey-modal';
+    
+    const renderList = (passkeys) => {
+        const listContainer = document.getElementById('passkey-list');
+        if (!listContainer) return;
+        
+        listContainer.innerHTML = passkeys.map(k => StandardListItem({
+            icon: KEY_SVG,
+            title: `Passkey (Added ${new Date(k.created_at).toLocaleDateString()})`,
+            action: `<button class="small-btn icon-only delete" onclick="window.deletePasskey('${k.id}')">${CLOSE_SVG}</button>`
+        })).join('');
+        
+        if (passkeys.length === 0) {
+            listContainer.innerHTML = '<p class="empty-state">No passkeys registered.</p>';
+        }
+    };
+
     try {
         const keys = await apiRequest('GET', '/api/auth/passkeys');
+        
+        // Clean up any stale modal elements
+        const existing = document.getElementById(modalId);
+        if (existing) existing.remove();
+
         const modalContent = /*html*/`
             <div class="passkey-management">
-                <div id="passkey-list" class="item-list">
-                    ${keys.map(k => StandardListItem({
-                        icon: KEY_SVG,
-                        title: `Passkey (Added ${new Date(k.created_at).toLocaleDateString()})`,
-                        action: `<button class="small-btn icon-only delete" onclick="window.deletePasskey('${k.id}')">${CLOSE_SVG}</button>`
-                    })).join('')}
-                    ${keys.length === 0 ? '<p class="empty-state">No passkeys registered.</p>' : ''}
-                </div>
+                <div id="passkey-list" class="item-list"></div>
                 <button id="add-passkey-btn" class="primary full-width">${ADD_SVG} Add Passkey</button>
             </div>
         `;
 
-        const modal = new Modal({ id: 'passkey-modal', title: 'Manage Passkeys', content: modalContent });
+        const modal = new Modal({ id: modalId, title: 'Manage Passkeys', content: modalContent });
         document.body.insertAdjacentHTML('beforeend', modal.getHTML());
         modal.attachListeners();
         modal.show();
 
+        // Initial render
+        renderList(keys);
+
         window.deletePasskey = async (id) => {
             if (await showConfirmModal('Delete Passkey?', 'Are you sure you want to remove this passkey?')) {
-                await apiRequest('DELETE', `/api/auth/passkeys/${id}`);
-                modal.close();
-                managePasskeys();
-                update2FADisplay();
+                try {
+                    await apiRequest('DELETE', `/api/auth/passkeys/${id}`);
+                    const updatedKeys = await apiRequest('GET', '/api/auth/passkeys');
+                    renderList(updatedKeys);
+                    update2FADisplay();
+                } catch (err) {
+                    notify('Error', 'Failed to delete passkey.', 'error');
+                }
             }
         };
 
@@ -643,8 +800,9 @@ async function managePasskeys() {
                 const attResp = await SimpleWebAuthnBrowser.startRegistration(options);
                 await apiRequest('POST', '/api/auth/passkey/register-verify', attResp);
                 notify('Success', 'Passkey registered!', 'success');
-                modal.close();
-                managePasskeys();
+                
+                const updatedKeys = await apiRequest('GET', '/api/auth/passkeys');
+                renderList(updatedKeys);
                 update2FADisplay();
             } catch (err) {
                 notify('Error', err.message, 'error');
@@ -666,7 +824,7 @@ async function updateDashboard() {
 
     try {
         const [profile, globals, tags, minMoneyGlobal] = await Promise.all([
-            apiRequest('GET', '/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank,profile_picture_path,totp_enabled'),
+            apiRequest('GET', '/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled'),
             apiRequest('GET', '/api/globals/MembershipCost'),
             apiRequest('GET', '/api/user/tags').catch(() => []),
             apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
@@ -676,9 +834,7 @@ async function updateDashboard() {
         const minMoney = Number(minMoneyGlobal.res?.MinMoney?.data || -25);
 
         if (currentUser) {
-            document.getElementById('profile-full-name').textContent = `${profile.first_name} ${profile.last_name}`;
-            document.getElementById('profile-email').textContent = profile.email;
-            document.getElementById('profile-img-display').src = profile.profile_picture_path || '/images/misc/ducc.png';
+            renderProfilePicture(profile);
 
             renderMembershipBanner(profile, globals.res || {});
             renderSwimStats(profile.swimmer_stats);
@@ -700,6 +856,8 @@ async function updateDashboard() {
 
 // --- Event Listeners ---
 
+let uploadWidget = null;
+
 /**
  * Binds static UI element listeners.
  */
@@ -708,30 +866,37 @@ function bindEvents() {
     sidebarController = initSidebar('overview');
 
     // Profile Picture Logic
-    document.getElementById('change-pic-btn').onclick = () => {
-        const modal = new Modal({
-            id: 'avatar-modal',
-            title: 'Change Profile Picture',
-            content: '<div id="avatar-upload-container"></div>'
-        });
-        document.body.insertAdjacentHTML('beforeend', modal.getHTML());
-        modal.attachListeners();
-        modal.show();
-
-        new UploadWidget('avatar-upload-container', {
-            mode: 'modal',
+    if (document.getElementById('avatar-upload-container') && !uploadWidget) {
+        uploadWidget = new UploadWidget('avatar-upload-container', {
+            mode: 'inline',
+            enableLibrary: false,
+            enableUrl: false,
+            showActions: false,
+            showPreview: false,
+            enableCrop: true,
             onImageSelect: async ({ id }) => {
                 try {
                     await apiRequest('POST', '/api/user/profile-picture', { fileId: id });
                     notify('Success', 'Profile picture updated.', 'success');
-                    modal.close();
                     updateDashboard();
                 } catch (err) {
                     notify('Error', err.message, 'error');
                 }
             }
         });
-    };
+
+        // Use delegation on main for better reliability
+        document.querySelector('main').addEventListener('click', (e) => {
+            const container = e.target.closest('#profile-picture-container');
+            if (container) {
+                if (uploadWidget && uploadWidget.inputEl) {
+                    uploadWidget.inputEl.click();
+                } else {
+                    console.error('UploadWidget input element not found');
+                }
+            }
+        });
+    }
 
     // 2FA Management
     document.getElementById('manage-passkeys-btn').onclick = () => managePasskeys();
@@ -830,27 +995,51 @@ function bindEvents() {
     };
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+function initProfile() {
     const main = document.querySelector('main');
-    if (main) main.insertAdjacentHTML('beforeend', HTML_TEMPLATE);
+    if (!main) return;
 
-    bindEvents();
+    // Check if the template is already there
+    if (!document.getElementById('profile-view')) {
+        main.insertAdjacentHTML('beforeend', HTML_TEMPLATE);
+        bindEvents();
+    }
+}
 
-    // Subscribe to external refresh triggers
-    LoginEvent.subscribe(() => updateDashboard());
-    LegalEvent.subscribe(() => updateDashboard());
-    BalanceChangedEvent.subscribe(() => updateDashboard());
+// Initial load check
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProfile);
+} else {
+    initProfile();
+}
 
-    // Router hook
-    ViewChangedEvent.subscribe(({ resolvedPath }) => {
-        if (resolvedPath === '/profile') {
-            const params = new URLSearchParams(window.location.search);
-            let tab = params.get('tab') || 'overview';
-            const validTabs = ['overview', 'cars', 'balance', 'settings'];
-            if (!validTabs.includes(tab)) tab = 'overview';
+// Subscribe to external refresh triggers
+LoginEvent.subscribe(() => {
+    if (!document.getElementById('profile-view')?.classList.contains('hidden')) {
+        updateDashboard();
+    }
+});
+LegalEvent.subscribe(() => {
+    if (!document.getElementById('profile-view')?.classList.contains('hidden')) {
+        updateDashboard();
+    }
+});
+BalanceChangedEvent.subscribe(() => {
+    if (!document.getElementById('profile-view')?.classList.contains('hidden')) {
+        updateDashboard();
+    }
+});
 
-            if (sidebarController) sidebarController.setActive(tab);
-            updateDashboard();
-        }
-    });
+// Router hook
+ViewChangedEvent.subscribe(({ resolvedPath }) => {
+    if (resolvedPath === '/profile' || resolvedPath === '/transactions') {
+        initProfile();
+        const params = new URLSearchParams(window.location.search);
+        let tab = params.get('tab') || 'overview';
+        const validTabs = ['overview', 'cars', 'balance', 'settings'];
+        if (!validTabs.includes(tab)) tab = 'overview';
+
+        if (sidebarController) sidebarController.setActive(tab);
+        updateDashboard();
+    }
 });

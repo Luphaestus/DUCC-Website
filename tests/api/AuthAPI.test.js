@@ -183,6 +183,7 @@ describe('api/AuthAPI', () => {
     describe('2FA - Passkey', () => {
         let agent;
         const email = 'passkey.test@durham.ac.uk';
+        let user;
 
         beforeEach(async () => {
             agent = request.agent(app);
@@ -190,6 +191,7 @@ describe('api/AuthAPI', () => {
                 email, password: 'Password123!', first_name: 'Key', last_name: 'Holder'
             });
             await agent.post('/api/auth/login').send({ email, password: 'Password123!' });
+            user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
         });
 
         test('Registration options are generated', async () => {
@@ -197,6 +199,54 @@ describe('api/AuthAPI', () => {
             expect(res.statusCode).toBe(200);
             expect(res.body.challenge).toBeDefined();
             expect(res.body.user.name).toBe(email);
+        });
+
+        test('POST /api/auth/passkey/login-options - Success even if no email and no session (Discoverable Credentials)', async () => {
+            // New agent without session
+            const res = await request(app)
+                .post('/api/auth/passkey/login-options')
+                .send({});
+            expect(res.statusCode).toBe(200);
+            expect(res.body.challenge).toBeDefined();
+            expect(res.body.allowCredentials).toBeUndefined();
+        });
+
+        test('POST /api/auth/passkey/login-options - Success even if user has no passkeys (Discoverable Credentials)', async () => {
+            const res = await request(app)
+                .post('/api/auth/passkey/login-options')
+                .send({ email }); // User exists but has no passkeys
+                
+            expect(res.statusCode).toBe(200);
+            expect(res.body.challenge).toBeDefined();
+            expect(res.body.allowCredentials).toBeUndefined();
+        });
+
+        test('POST /api/auth/passkey/login-options - Success with email', async () => {
+            // Create Passkey manually for the user
+            const credentialID = 'validCredentialId123';
+            const publicKey = Buffer.from('publicKey');
+            // We use the internal method to save a fake passkey
+            // Need to import AuthDB if we want to use its methods, or raw SQL.
+            // AuthDB is not imported in this file, but we have 'db' access.
+            // Let's use raw SQL or import AuthDB. AuthAPI uses AuthDB, so it's safer to use raw SQL for simple setup 
+            // OR duplicate the logic. Let's rely on the fact that we can just insert into the DB directly.
+            
+            // Wait, previous test used AuthDB.saveAuthenticator. Let's import AuthDB at the top of this file first.
+            // I'll add the import in a separate tool call or just use raw SQL here to avoid messing up imports now.
+            
+            await db.run(
+                'INSERT INTO authenticators (id, user_id, public_key, counter, transports) VALUES (?, ?, ?, ?, ?)',
+                [credentialID, user.id, publicKey, 0, JSON.stringify(['usb'])]
+            );
+
+            const res = await request(app)
+                .post('/api/auth/passkey/login-options')
+                .send({ email });
+
+            expect(res.statusCode).toBe(200);
+            expect(res.body.challenge).toBeDefined();
+            expect(res.body.allowCredentials).toHaveLength(1);
+            expect(res.body.allowCredentials[0].id).toBe(credentialID);
         });
     });
 });

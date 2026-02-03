@@ -20,6 +20,7 @@ class Logger {
     }
 
     static error(message, ...args) {
+        console.trace();
         console.error(`${colors.gray(this.getTimestamp())} [${colors.red('ERROR')}] ${message}`, ...args);
     }
 

@@ -7,6 +7,7 @@
 import { statusObject } from '../misc/status.js';
 import { SCOPED_PERMS, Permissions } from '../misc/permissions.js';
 import Logger from '../misc/Logger.js';
+import ExecDB from './execDB.js';
 
 export default class RolesDB {
     /**
@@ -35,8 +36,8 @@ export default class RolesDB {
      */
     static async assignRole(db, userId, roleId) {
         try {
-            await db.run('DELETE FROM user_roles WHERE user_id = ?', [userId]);
-            await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleId]);
+            await db.run('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [userId, roleId]);
+            await ExecDB.syncExecMember(db, userId);
             return new statusObject(200, 'Role assigned');
         } catch (e) {
             Logger.error('Database error assigning role:', e);
@@ -54,6 +55,7 @@ export default class RolesDB {
                 return new statusObject(403, 'The President role cannot be removed.');
             }
             await db.run('DELETE FROM user_roles WHERE user_id = ? AND role_id = ?', [userId, roleId]);
+            await ExecDB.syncExecMember(db, userId);
             return new statusObject(200, 'Role removed');
         } catch (e) {
             Logger.error('Database error removing role:', e);
@@ -264,14 +266,14 @@ export default class RolesDB {
     /**
      * Create a new role definition.
      */
-    static async createRole(db, name, description, permissions) {
+    static async createRole(db, name, description, permissions, execRanking = 4) {
         try {
             const existingRole = await db.get('SELECT id FROM roles WHERE name = ?', [name]);
             if (existingRole) {
                 return new statusObject(409, 'A role with this name already exists.');
             }
 
-            const result = await db.run('INSERT INTO roles (name, description) VALUES (?, ?)', [name, description]);
+            const result = await db.run('INSERT INTO roles (name, description, exec_ranking) VALUES (?, ?, ?)', [name, description, execRanking]);
             const roleId = result.lastID;
 
             if (permissions && Array.isArray(permissions)) {
@@ -293,14 +295,9 @@ export default class RolesDB {
     /**
      * Update an existing role definition and its permission mappings.
      */
-    static async updateRole(db, id, name, description, permissions) {
+    static async updateRole(db, id, name, description, permissions, execRanking = 4) {
         try {
-            const role = await db.get('SELECT name FROM roles WHERE id = ?', [id]);
-            if (role && role.name === 'President') {
-                return new statusObject(403, 'The President role cannot be updated.');
-            }
-
-            await db.run('UPDATE roles SET name = ?, description = ? WHERE id = ?', [name, description, id]);
+            await db.run('UPDATE roles SET name = ?, description = ?, exec_ranking = ? WHERE id = ?', [name, description, execRanking, id]);
 
             if (permissions && Array.isArray(permissions)) {
                 await db.run('DELETE FROM role_permissions WHERE role_id = ?', [id]);

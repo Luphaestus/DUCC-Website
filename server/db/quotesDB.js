@@ -65,7 +65,11 @@ export default class QuotesDB extends BaseDB {
             const query = `
                 SELECT q.*, 
                        u.first_name as quoted_first_name, u.last_name as quoted_last_name,
-                       s.first_name as submitter_first_name, s.last_name as submitter_last_name
+                       u.profile_picture_color as quoted_color, u.profile_picture_font as quoted_font, u.profile_picture_initials as quoted_initials,
+                       (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as quoted_picture_path,
+                       s.first_name as submitter_first_name, s.last_name as submitter_last_name,
+                       s.profile_picture_color as submitter_color, s.profile_picture_font as submitter_font, s.profile_picture_initials as submitter_initials,
+                       (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = s.profile_picture_id) as submitter_picture_path
                 FROM quotes q
                 LEFT JOIN users u ON q.quoted_user_id = u.id
                 LEFT JOIN users s ON q.submitted_by_id = s.id
@@ -89,7 +93,11 @@ export default class QuotesDB extends BaseDB {
                     quoted_user: {
                         id: row.quoted_user_id,
                         first_name: row.quoted_first_name,
-                        last_name: row.quoted_last_name
+                        last_name: row.quoted_last_name,
+                        profile_picture_color: row.quoted_color,
+                        profile_picture_font: row.quoted_font,
+                        profile_picture_initials: row.quoted_initials,
+                        profile_picture_path: row.quoted_picture_path
                     },
                     visibility: row.visibility,
                     created_at: row.created_at
@@ -99,7 +107,11 @@ export default class QuotesDB extends BaseDB {
                     quote.submitted_by = {
                         id: row.submitted_by_id,
                         first_name: row.submitter_first_name,
-                        last_name: row.submitter_last_name
+                        last_name: row.submitter_last_name,
+                        profile_picture_color: row.submitter_color,
+                        profile_picture_font: row.submitter_font,
+                        profile_picture_initials: row.submitter_initials,
+                        profile_picture_path: row.submitter_picture_path
                     };
                 }
 

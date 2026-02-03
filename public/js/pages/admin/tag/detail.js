@@ -288,7 +288,7 @@ export async function renderTagDetail(id) {
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');
             }).catch(() => { });
 
-            apiRequest('GET', '/api/admin/users?limit=1000&permissions=perm:is_exec').then(usersData => {
+            apiRequest('GET', '/api/admin/users?limit=1000').then(usersData => {
                 const users = usersData.users || [];
                 const datalist = document.getElementById('managers-datalist');
                 if (datalist) datalist.innerHTML = users.map(u => `<option value="${u.id} - ${u.first_name} ${u.last_name} (${u.email})">`).join('');

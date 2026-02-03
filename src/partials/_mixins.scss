@@ -29,7 +29,8 @@
     &:nth-child(4) { --highlight: #3498db; }
 }
 
-/** Event Card Style */
+/**
+ * Event Card Style */
 @mixin event-card-style {
     @include glass-panel;
     padding: 0 !important; gap: 0 !important; overflow: hidden;
@@ -38,7 +39,7 @@
 
     &:hover {
         transform: translateY(-6px); box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-        border-color: rgba(var(--pico-primary-rgb), 0.4);
+        border-color: color-mix(in srgb, var(--pico-primary), transparent 60%);
         animation: card-pulse 2s infinite ease-in-out;
         .event-image { transform: scale(1.1); }
     }

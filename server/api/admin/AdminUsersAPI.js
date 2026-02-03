@@ -132,7 +132,10 @@ export default class AdminUsers {
             
             if (role.name === 'President') {
                 const isPresident = await Permissions.hasRole(this.db, req.user.id, 'President');
-                if (!isPresident) {
+                const isSelf = parseInt(req.params.id) === req.user.id;
+                
+                // Allow self-assignment if already President, otherwise restrict to current President
+                if (!isPresident && !isSelf) {
                     return res.status(403).json({ message: 'Only the current President can transfer this role.' });
                 }
 

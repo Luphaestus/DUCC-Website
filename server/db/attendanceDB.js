@@ -6,8 +6,8 @@
 
 import { statusObject } from '../misc/status.js';
 import TransactionsDB from './transactionDB.js';
-import UserDB from './userDB.js';
 import EventsDB from './eventsDB.js';
+import Logger from '../misc/Logger.js';
 
 export default class AttendanceDB {
     /**
@@ -65,6 +65,8 @@ export default class AttendanceDB {
                 WITH LatestAttendance AS (
                     SELECT 
                         u.id, u.first_name, u.last_name, u.email, 
+                        u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
+                        (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path,
                         ea.is_attending, ea.joined_at, ea.left_at, 
                         ea.payment_transaction_id, ea.upfront_refunded,
                         ROW_NUMBER() OVER (PARTITION BY u.id ORDER BY ea.joined_at DESC, ea.id DESC) as rn
@@ -90,7 +92,9 @@ export default class AttendanceDB {
      */
     static async get_users_attending_event(db, eventId) {
         const sql = `
-            SELECT u.id, u.first_name, u.last_name, u.email
+            SELECT u.id, u.first_name, u.last_name, u.email,
+                   u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
+                   (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path
             FROM users u
             JOIN event_attendees ea ON u.id = ea.user_id
             WHERE ea.event_id = ? AND ea.is_attending = 1

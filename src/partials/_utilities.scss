@@ -2,7 +2,35 @@
 .small-container { margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
 .hidden { display: none !important; }
 .text-right { text-align: right !important; }
-.text-centre { text-align: center !important; }
+.text-centre, .center-text { text-align: center !important; }
+.no-margin { margin: 0 !important; }
+.no-padding { padding: 0 !important; }
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--pico-muted-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    &::before, &::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid var(--pico-muted-border-color);
+    }
+
+    &:not(:empty)::before { margin-right: 1rem; }
+    &:not(:empty)::after { margin-left: 1rem; }
+}
+
+.shadow {
+    box-shadow: var(--pico-card-sectioning-background-color) 0px 4px 12px;
+}
+
+.full-width {
+    width: 100% !important;
+}
 
 .text-success { color: var(--colour-good) !important; }
 .text-error { color: var(--colour-bad) !important; }

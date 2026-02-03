@@ -18,35 +18,6 @@ const shouldWipe = process.argv.includes('--seed');
 Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
 
 /**
- * Wipes data from tables while preserving admin and sessions.
- */
-async function wipeData(db) {
-  Logger.info('Wiping data (preserving admin & sessions)...');
-  const tablesToWipe = [
-    'events', 'event_attendees', 'event_waiting_list', 'transactions', 'swim_history',
-    'quotes', 'cars', 'trips', 'event_drivers', 'event_expenses', 'trip_exclusions',
-    'expense_exclusions', 'user_managed_tags', 'user_permissions', 'user_roles',
-    'tag_whitelists', 'role_managed_tags', 'role_permissions', 'roles', 'tags',
-    'password_resets', 'slides', 'exec_committee', 'authenticators'
-  ];
-
-  await db.run('SET FOREIGN_KEY_CHECKS = 0');
-  for (const table of tablesToWipe) {
-    try {
-      const exists = await db.get(`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`, [table]);
-      if (exists) await db.run(`DELETE FROM ${table}`);
-    } catch (e) { }
-  }
-  
-  // Wipe users except admin
-  try {
-    await db.run("DELETE FROM users WHERE email != 'admin@durham.ac.uk'");
-  } catch (e) { }
-  
-  await db.run('SET FOREIGN_KEY_CHECKS = 1');
-}
-
-/**
  * Self-invoking initialization function.
  */
 (async () => {
@@ -97,14 +68,28 @@ async function wipeData(db) {
     const db = await connect(config.mysql);
 
     if (shouldWipe) {
-      await wipeData(db);
+      Logger.info('Dropping tables for schema refresh...');
+      await db.run('SET FOREIGN_KEY_CHECKS = 0');
+      const tables = [
+        'event_attendees', 'event_waiting_list', 'transactions', 'swim_history',
+        'quotes', 'cars', 'trips', 'event_drivers', 'event_expenses', 'trip_exclusions',
+        'expense_exclusions', 'user_managed_tags', 'user_permissions', 'user_roles',
+        'tag_whitelists', 'role_managed_tags', 'roles', 'tags', 'password_resets',
+        'slides', 'exec_committee', 'authenticators', 'events', 'users', 'files',
+        'file_categories', 'colleges'
+      ];
+      for (const table of tables) {
+        await db.run(`DROP TABLE IF EXISTS ${table}`);
+      }
+      await db.run('SET FOREIGN_KEY_CHECKS = 1');
+      Logger.info('Tables dropped.');
     }
 
     Logger.info('Initializing database schema...');
 
     const newlyCreatedTables = await createTables(db);
     const tablesToForceSeed = shouldWipe ? [
-      'users', 'events', 'tags', 'roles', 'slides', 'quotes', 'cars', 'swim_history'
+      'users', 'events', 'tags', 'roles', 'slides', 'quotes', 'cars', 'swim_history', 'exec_committee'
     ] : [];
     
     await seedData(db, env, [...new Set(newlyCreatedTables.concat(tablesToForceSeed))]);

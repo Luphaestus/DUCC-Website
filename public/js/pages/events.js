@@ -442,8 +442,14 @@ document.addEventListener('DOMContentLoaded', () => {
             checkAdminAccess();
             const urlParams = new URLSearchParams(window.location.search);
             const pageParam = parseInt(urlParams.get('page'));
-            currentPage = isNaN(pageParam) ? 0 : pageParam;
-            changePage(null, false);
+            const newPage = isNaN(pageParam) ? 0 : pageParam;
+            
+            // Only change page if it's different or we haven't rendered yet
+            const eventsList = document.getElementById('events-page-current');
+            if (currentPage !== newPage || (eventsList && eventsList.querySelector('.loading-text'))) {
+                currentPage = newPage;
+                changePage(null, false);
+            }
         }
     });
 });

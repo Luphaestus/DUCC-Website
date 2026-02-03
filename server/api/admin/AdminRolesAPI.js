@@ -47,7 +47,7 @@ export default class AdminRoles {
         /**
          * List all defined roles and their metadata.
          */
-        this.app.get('/api/admin/roles', check('perm:role.manage'), async (req, res) => {
+        this.app.get('/api/admin/roles', check('perm:is_exec'), async (req, res) => {
             const result = await RolesDB.getAllRoles(this.db);
             if (result.isError()) return result.getResponse(res);
             res.json(result.getData());
@@ -66,8 +66,8 @@ export default class AdminRoles {
          * Create a new role.
          */
         this.app.post('/api/admin/roles', check('perm:role.write | perm:role.manage'), async (req, res) => {
-            const { name, description, permissions } = req.body;
-            const result = await RolesDB.createRole(this.db, name, description, permissions);
+            const { name, description, permissions, execRanking } = req.body;
+            const result = await RolesDB.createRole(this.db, name, description, permissions, execRanking);
             result.getResponse(res);
         });
 
@@ -75,8 +75,8 @@ export default class AdminRoles {
          * Update an existing role definition.
          */
         this.app.put('/api/admin/roles/:id', check('perm:role.write | perm:role.manage'), async (req, res) => {
-            const { name, description, permissions } = req.body;
-            const result = await RolesDB.updateRole(this.db, req.params.id, name, description, permissions);
+            const { name, description, permissions, execRanking } = req.body;
+            const result = await RolesDB.updateRole(this.db, req.params.id, name, description, permissions, execRanking);
             if (result.isError()) return result.getResponse(res);
             res.json({ message: result.getMessage() });
         });

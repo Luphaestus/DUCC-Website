@@ -12,6 +12,7 @@ import {
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG
 } from '/images/icons/outline/icons.js'
 import { Pagination } from '/js/widgets/Pagination.js';
+import { renderAvatar } from '/js/utils/avatar.js';
 
 /**
  * Main rendering function for the admin users management dashboard.
@@ -141,8 +142,13 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
                     return `
                         <tr class="user-row clickable-row" data-id="${user.id}">
                             <td data-label="Name" class="primary-text name-column">
-                                <span class="full-name">${user.first_name} ${user.last_name}</span>
-                                <span class="thin-name">${user.first_name} ${lastInitial}</span>
+                                <div class="user-info-cell">
+                                    ${renderAvatar(user, { classes: 'mini' })}
+                                    <div class="user-names">
+                                        <span class="full-name">${user.first_name} ${user.last_name}</span>
+                                        <span class="thin-name">${user.first_name} ${lastInitial}</span>
+                                    </div>
+                                </div>
                             </td>
                             <td data-label="Swims">${user.swims || 0}</td>
                             <td data-label="Quick Add" class="quick-actions-cell" onclick="event.stopPropagation()">
@@ -156,8 +162,13 @@ async function fetchAndRenderUsers({ page, search, sort, order }) {
                 return `
                     <tr class="user-row clickable-row" data-id="${user.id}">
                         <td data-label="Name" class="primary-text name-column">
-                            <span class="full-name">${user.first_name} ${user.last_name}</span>
-                            <span class="thin-name">${user.first_name} ${lastInitial}</span>
+                            <div class="user-info-cell">
+                                ${renderAvatar(user, { classes: 'mini' })}
+                                <div class="user-names">
+                                    <span class="full-name">${user.first_name} ${user.last_name}</span>
+                                    <span class="thin-name">${user.first_name} ${lastInitial}</span>
+                                </div>
+                            </div>
                         </td>
                         <td data-label="College">${user.college_name || 'N/A'}</td>
                         <td data-label="Difficulty">

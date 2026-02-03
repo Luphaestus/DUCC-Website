@@ -11,6 +11,7 @@ import { apiRequest } from "/js/utils/api.js";
 import { BalanceChangedEvent, EventAttendanceChangedEvent } from '/js/utils/events/events.js';
 import { showConfirmModal } from '/js/utils/modal.js';
 import { setupNumberInput } from '/js/utils/utils.js';
+import { renderAvatar } from '/js/utils/avatar.js';
 import { Tag } from '../widgets/Tag.js';
 import {
     BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG,
@@ -50,13 +51,13 @@ const HTML_TEMPLATE = modal.getHTML();
 function renderUserBubbles(users, canManage, checkLeftStatus = true) {
     if (!users || users.length === 0) return '';
     return users.map(u => {
-        const initials = `${u.first_name[0]}${u.last_name[0]}`;
         const fullName = `${u.first_name} ${u.last_name}`;
         const isLeft = checkLeftStatus && u.is_attending === 0;
 
-        return `<div class="attendee-bubble ${isLeft ? 'left' : ''}" data-name="${fullName}" ${canManage ? `data-user-id="${u.id}"` : ''}>
-            ${initials}
-        </div>`;
+        return renderAvatar(u, {
+            classes: `attendee-bubble ${isLeft ? 'left' : ''} clickable`,
+            dataAttributes: `data-name="${fullName}" ${canManage ? `data-user-id="${u.id}"` : ''}`
+        });
     }).join('');
 }
 
