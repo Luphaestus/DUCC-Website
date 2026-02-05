@@ -7,11 +7,13 @@
 import { updateConnectionStatus } from '../connection.js';
 import { getCookie } from './utils.js';
 import { NoInternetEvent } from './events/events.js';
+import { notify, NotificationTypes } from '../components/notification';
 
 /**
  * Cache for GET requests to reduce redundant network traffic.
  */
 const cache = new Map<string, Promise<any>>();
+// ... (rest of imports and cache logic)
 
 /**
  * Manually clear the API GET cache.
@@ -84,7 +86,16 @@ async function apiRequest(method: string, url: string, data: any = null): Promis
                 return result;
             } else {
                 // If the server responded with an error, it's NOT a connection loss
-                throw result || { message: 'Request failed with status: ' + response.status };
+                const error = result || { message: 'Request failed with status: ' + response.status };
+                
+                // Automatically notify for certain error types if not handled
+                if (response.status >= 500) {
+                    notify('Server Error', error.message || 'An internal server error occurred.', NotificationTypes.ERROR);
+                } else if (response.status === 403) {
+                    notify('Access Denied', error.message || 'You do not have permission to perform this action.', NotificationTypes.WARNING);
+                }
+
+                throw error;
             }
         } catch (error: any) {
             if (error.name === 'AbortError') throw error;
@@ -95,7 +106,14 @@ async function apiRequest(method: string, url: string, data: any = null): Promis
                 updateConnectionStatus(false);
             }
             
-            throw error.message ? error : { message: 'Network error' };
+            const finalError = error.message ? error : { message: 'Network error' };
+            
+            // If it's a generic network error (not a status-based one), notify
+            if (finalError.message === 'Network error') {
+                notify('Network Error', 'Check your connection.', NotificationTypes.ERROR, 5000, 'network-error');
+            }
+
+            throw finalError;
         }
     })();
 

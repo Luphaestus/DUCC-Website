@@ -27,6 +27,7 @@ export function ErrorView(props: ErrorViewProps) {
         const auth = await apiRequest('GET', '/api/auth/status');
         setAuthStatus(auth);
       } catch {
+        // Fallback if the auth request itself fails (e.g. server down)
         setAuthStatus({ authenticated: false });
       } finally {
         setChecking(false);
@@ -40,19 +41,20 @@ export function ErrorView(props: ErrorViewProps) {
 
   return (
     <div id={props.id} class="view" classList={{ 'hidden': props.hidden ?? false }}>
-      <div class="container">
-        <div class="error-icon">
-          <span innerHTML={props.icon} />
+      <div class="container" style="text-align: center; padding: 4rem 1rem;">
+        <div class="error-icon" style="margin-bottom: 2rem;">
+          <span style="display: block; width: 80px; height: 80px; margin: 0 auto;" innerHTML={props.icon} />
         </div>
         <h1>{props.title}</h1>
-        <p innerHTML={props.message} />
-        <div class="error-actions">
+        <p style="font-size: 1.2rem; opacity: 0.8; margin-bottom: 2rem;" innerHTML={props.message} />
+        <div class="error-actions" style="display: flex; gap: 1rem; justify-content: center;">
           <Show when={checking()}>
-            <button disabled aria-busy="true" class="secondary outline">Checking...</button>
+            <button disabled aria-busy="true" class="secondary outline">Checking status...</button>
           </Show>
           <Show when={!checking()}>
             <Show when={props.viewId === 'error'}>
               <A href="/home" class="button">Go to Homepage</A>
+              <button class="button secondary outline" onClick={() => window.location.reload()}>Reload Page</button>
             </Show>
             <Show when={props.viewId !== 'error' && props.viewId !== 'no-connection'}>
               <Show when={authStatus()?.authenticated}>
@@ -65,7 +67,8 @@ export function ErrorView(props: ErrorViewProps) {
               </Show>
             </Show>
             <Show when={props.viewId === 'no-connection'}>
-              <A href="/home" class="button">Go to Home</A>
+              <button class="button" onClick={() => window.location.reload()}>Retry Connection</button>
+              <A href="/home" class="button secondary outline">Go to Home</A>
             </Show>
           </Show>
         </div>
