@@ -21,11 +21,12 @@ export default function UserDetailPage() {
     const params = useParams();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const userId = () => parseInt(params.id || '0');
+    const userId = () => params.id ? parseInt(params.id) : null;
 
     onMount(() => {
         const cleanup = onUpdate((event) => {
-            if ((event.type === 'balance_update' || event.type === 'attendance_update') && Number(event.data.userId) === userId()) {
+            const currentId = userId();
+            if ((event.type === 'balance_update' || event.type === 'attendance_update') && currentId && Number(event.data.userId) === currentId) {
                 refetch();
                 refetchStats();
             }
@@ -36,6 +37,7 @@ export default function UserDetailPage() {
     const currentTab = () => (searchParams.tab as string) || 'profile';
 
     const [user, { refetch }] = createResource(userId, async (id) => {
+        if (id === null || isNaN(id)) return null;
         return await apiRequest('GET', `/api/admin/user/${id}`);
     });
 
@@ -44,20 +46,23 @@ export default function UserDetailPage() {
         return (res.permissions || []) as string[];
     });
 
-    const canManageUsers = () => viewerPerms()?.includes('user.manage');
-    const canManageTransactions = () => viewerPerms()?.includes('transaction.manage');
-    const canManageSwims = () => viewerPerms()?.includes('swims.manage');
+    const canManageUsers = () => viewerPerms()?.includes('user.manage') || viewerPerms()?.includes('user.read');
+    const canManageTransactions = () => viewerPerms()?.includes('transaction.manage') || viewerPerms()?.includes('transaction.read');
+    const canManageSwims = () => viewerPerms()?.includes('swims.manage') || viewerPerms()?.includes('swims.read');
     const isExec = () => (viewerPerms()?.length || 0) > 0;
 
-    const [stats, { refetch: refetchStats }] = createResource(userId, async (id) => {
-        if (!canManageTransactions()) return null;
-        try {
-            return await apiRequest('GET', `/api/admin/stats/user/${id}`);
-        } catch { return null; }
-    });
+    const [stats, { refetch: refetchStats }] = createResource(
+        () => ({ id: userId(), can: canManageTransactions() }),
+        async ({ id, can }) => {
+            if (!id || isNaN(id) || !can) return null;
+            try {
+                return await apiRequest('GET', `/api/admin/stats/user/${id}`);
+            } catch { return null; }
+        }
+    );
 
     return (
-        <Show when={user()} fallback={<p aria-busy="true">Loading user details...</p>}>
+        <Show when={user()} fallback={<p aria-busy="true" class="loading-text">Loading user details...</p>}>
             {(u: any) => (
                 <div class="dashboard-container">
                     <aside class="dashboard-sidebar">

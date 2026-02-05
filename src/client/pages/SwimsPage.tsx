@@ -78,8 +78,8 @@ export default function SwimsPage() {
         return 'bootie-red';
     };
 
-    const podiumData = createMemo(() => getPodiumData(leaderboard() || []));
-    const listData = createMemo(() => (leaderboard() || []).slice(3));
+    const podiumData = createMemo(() => getPodiumData((leaderboard() || []) as LeaderboardUser[] || []));
+    const listData = createMemo(() => ((leaderboard() || []) as LeaderboardUser[] || []).slice(3));
 
     const oldPodiumData = createMemo(() => getPodiumData(oldLeaderboard() || []));
     const oldListData = createMemo(() => (oldLeaderboard() || []).slice(3));

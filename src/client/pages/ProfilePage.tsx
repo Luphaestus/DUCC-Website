@@ -47,6 +47,13 @@ interface UserProfile {
     };
 }
 
+interface KitItem {
+    id: number;
+    name: string;
+    type: string;
+    size: string;
+}
+
 // ... Car/Transaction interfaces same as before
 interface Car {
     id: number;
