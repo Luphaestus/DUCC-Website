@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import solidPlugin from 'vite-plugin-solid';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: 'src/client',
-  publicDir: 'public',
+  publicDir: resolve(__dirname, 'public'),
+  plugins: [solidPlugin()],
   resolve: {
     alias: {
       '/js': resolve(__dirname, 'src/client'),
@@ -18,12 +20,14 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../../public',
+    outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
+    sourcemap: true,
+    minify: mode === 'production',
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/client/index.html'),
       },
     },
   },
-});
+}));

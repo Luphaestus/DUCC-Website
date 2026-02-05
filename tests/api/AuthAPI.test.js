@@ -139,18 +139,34 @@ describe('api/AuthAPI', () => {
         });
 
         /** Test password update using token. */
-        test('POST /api/auth/reset-password updates password', async () => {
+        test('POST /api/auth/set-password updates password', async () => {
             await request(app).post('/api/auth/reset-password-request').send({ email });
-            const { token } = await db.get('SELECT token FROM password_resets');
+            const reset = await db.get('SELECT * FROM password_resets');
+            const resetToken = reset.token;
 
-            const res = await request(app).post('/api/auth/reset-password').send({
-                token,
-                newPassword: 'new-password'
+            const res = await request(app).post('/api/auth/set-password').send({
+                token: resetToken,
+                password: 'newSecretPassword123'
             });
             expect(res.statusCode).toBe(200);
 
             const user = await db.get('SELECT hashed_password FROM users WHERE email = ?', [email]);
-            expect(await bcrypt.compare('new-password', user.hashed_password)).toBe(true);
+            expect(await bcrypt.compare('newSecretPassword123', user.hashed_password)).toBe(true);
+        });
+
+        test('POST /api/auth/reset-password (legacy) updates password', async () => {
+            await request(app).post('/api/auth/reset-password-request').send({ email });
+            const reset = await db.get('SELECT * FROM password_resets ORDER BY created_at DESC LIMIT 1');
+            const resetToken = reset.token;
+
+            const res = await request(app).post('/api/auth/reset-password').send({
+                token: resetToken,
+                newPassword: 'legacySecretPassword123'
+            });
+            expect(res.statusCode).toBe(200);
+
+            const user = await db.get('SELECT hashed_password FROM users WHERE email = ?', [email]);
+            expect(await bcrypt.compare('legacySecretPassword123', user.hashed_password)).toBe(true);
         });
     });
 

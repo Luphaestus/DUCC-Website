@@ -1,7 +1,7 @@
 /**
  * api.js
  * 
- * High-level wrapper for XMLHttpRequest providing a Promise-based API.
+ * High-level wrapper for fetch providing a Promise-based API.
  */
 
 import { updateConnectionStatus } from '../connection.js';
@@ -31,69 +31,73 @@ NoInternetEvent.subscribe(() => {
  * @param {any} [data=null] - Json Payload, or cache controls for GET requests.
  * @returns {Promise<any>}
  */
-function apiRequest(method: string, url: string, data: any = null): Promise<any> {
-
+async function apiRequest(method: string, url: string, data: any = null): Promise<any> {
     if (method === 'GET') {
         if (data === true) {
             if (cache.has(url)) return cache.get(url)!;
-        } else {
+        } else if (data !== undefined && data !== null) {
             clearApiCache(data);
         }
     } else {
         clearApiCache();
     }
 
+    const options: RequestInit = {
+        method,
+        headers: {}
+    };
 
-    const requestPromise = new Promise<any>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
+    if (method !== 'GET') {
+        const csrfToken = getCookie('XSRF-TOKEN');
+        if (csrfToken) {
+            (options.headers as Record<string, string>)['X-CSRF-Token'] = csrfToken;
+        }
+        if (data) {
+            (options.headers as Record<string, string>)['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(data);
+        }
+    }
 
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 0) {
-                    updateConnectionStatus(false);
-                    reject({ message: 'Network error' });
-                } else if (xhr.status >= 200 && xhr.status < 300) {
-                    updateConnectionStatus(true);
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        resolve(response);
-                    } catch (e: any) {
-                        const snippet = xhr.responseText.slice(0, 50);
-                        console.error(`API Parse Error [${method} ${url}]:`, xhr.responseText);
-                        reject({ message: `Failed to parse response: ${e.message}. Content: ${snippet}...` });
-                    }
+    const requestPromise = (async () => {
+        try {
+            const response = await fetch(url, options);
+            updateConnectionStatus(true);
+            
+            const text = await response.text();
+            if (!text && response.status >= 200 && response.status < 300) {
+                return {};
+            }
+
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e: any) {
+                if (response.ok) {
+                    console.error(`API Parse Error [${method} ${url}]:`, text);
+                    throw { message: `Failed to parse response: ${e.message}. Content: ${text.slice(0, 50)}...` };
                 } else {
-                    try {
-                        const errorResponse = JSON.parse(xhr.responseText);
-                        reject(errorResponse);
-                    } catch (e) {
-                        reject({ message: 'Request failed with status: ' + xhr.status });
-                    }
+                    throw { message: `Request failed with status ${response.status}: ${text.slice(0, 100)}` };
                 }
             }
-        };
 
-        xhr.onerror = function () {
-            updateConnectionStatus(false);
-            reject({ message: 'Network error' });
-        };
-
-        xhr.open(method, url, true);
-
-        if (method !== 'GET') {
-            const csrfToken = getCookie('XSRF-TOKEN');
-            if (csrfToken) {
-                xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+            if (response.ok) {
+                return result;
+            } else {
+                // If the server responded with an error, it's NOT a connection loss
+                throw result || { message: 'Request failed with status: ' + response.status };
             }
+        } catch (error: any) {
+            if (error.name === 'AbortError') throw error;
+            
+            // Only update connection status to false if it's a network error (no response)
+            // If the error has a 'message' that starts with 'Request failed with status', it's a server response.
+            if (!error.message || !error.message.startsWith('Request failed with status')) {
+                updateConnectionStatus(false);
+            }
+            
+            throw error.message ? error : { message: 'Network error' };
         }
-
-        if (method !== 'GET' && data) {
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(data));
-        } else {
-            xhr.send();
-        }
-    });
+    })();
 
     if (method === 'GET' && data === true) {
         const cachedPromise = requestPromise.catch(err => {
@@ -115,7 +119,7 @@ interface UploadOptions {
 }
 
 /**
- * Uploads a file to the server using XHR to support progress tracking.
+ * Uploads a file to the server using XMLHttpRequest to support progress tracking.
  */
 async function uploadFile(file: File, options: UploadOptions = {}): Promise<number | null> {
     if (!file) return null;

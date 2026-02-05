@@ -57,3 +57,24 @@
 .pagination {
     @extend .glass-pagination;
 }
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    width: fit-content;
+    margin-inline: auto;
+
+    button {
+        width: auto;
+        margin-bottom: 0;
+        
+        &.active {
+            background-color: var(--pico-primary);
+            border-color: var(--pico-primary);
+            color: var(--pico-primary-inverse);
+        }
+    }
+}

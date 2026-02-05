@@ -12,7 +12,12 @@ export class DatabaseWrapper {
         if (params === undefined || params === null) return [];
         const paramArray = Array.isArray(params) ? params : [params];
         return paramArray.map(p => {
-            if (p === undefined) return null;
+            if (p === undefined || (typeof p === 'number' && isNaN(p))) {
+                if (typeof p === 'number' && isNaN(p)) {
+                    Logger.error('NaN detected in database parameters');
+                }
+                return null;
+            }
             if (p instanceof Date) {
                 return p.toISOString().slice(0, 19).replace('T', ' ');
             }

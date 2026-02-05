@@ -25,6 +25,56 @@
     @media (max-width: 992px) {
         width: 100%;
     }
+
+    .toggle-group.vertical-sidebar {
+        flex-direction: column;
+        width: 100%;
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        border-radius: var(--border-radius-lg);
+        padding: 0.5rem;
+        gap: 0.25rem;
+        backdrop-filter: blur(12px);
+        box-shadow: var(--shadow-glass);
+
+        .toggle-bg {
+            border-radius: var(--border-radius-md);
+        }
+
+        .nav-item {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            backdrop-filter: none;
+            margin: 0;
+            width: 100%;
+            border-radius: var(--border-radius-md);
+
+            &:hover:not(.active) {
+                background: rgba(var(--pico-color-rgb), 0.05);
+                transform: none;
+            }
+
+            &.active {
+                background: transparent; // TabNav bg covers it
+                color: white;
+            }
+        }
+
+        .sidebar-spacer {
+            flex-grow: 1;
+            min-height: 1rem;
+        }
+
+        .logout {
+            margin-top: auto;
+            color: #e74c3c;
+            
+            &:hover {
+                background: rgba(231, 76, 60, 0.1) !important;
+            }
+        }
+    }
 }
 
 .nav-item {

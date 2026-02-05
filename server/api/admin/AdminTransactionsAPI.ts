@@ -30,7 +30,11 @@ export default class AdminTransactions {
          * Fetch full transaction history for a specific user.
          */
         this.app.get('/api/admin/user/:id/transactions', check('perm:transaction.read | perm:transaction.manage'), async (req: Request, res: Response) => {
-            const result = await transactionsDB.get_transactions(this.db, parseInt(req.params.id));
+            const userId = parseInt(req.params.id);
+            if (isNaN(userId)) {
+                return res.status(400).json({ message: 'Invalid user ID' });
+            }
+            const result = await transactionsDB.get_transactions(this.db, userId);
             if (result.isError()) return result.getResponse(res);
             res.json(result.getData());
         });
@@ -39,7 +43,11 @@ export default class AdminTransactions {
          * Manually add a transaction to a user's account.
          */
         this.app.post('/api/admin/user/:id/transaction', check('perm:transaction.write | perm:transaction.manage'), async (req: Request, res: Response) => {
-            const result = await transactionsDB.add_transaction(this.db, parseInt(req.params.id), req.body.amount, req.body.description);
+            const userId = parseInt(req.params.id);
+            if (isNaN(userId)) {
+                return res.status(400).json({ message: 'Invalid user ID' });
+            }
+            const result = await transactionsDB.add_transaction(this.db, userId, req.body.amount, req.body.description);
             result.getResponse(res);
         });
 
@@ -47,7 +55,9 @@ export default class AdminTransactions {
          * Update an existing transaction record.
          */
         this.app.put('/api/admin/transaction/:id', check('perm:transaction.write | perm:transaction.manage'), async (req: Request, res: Response) => {
-            const result = await transactionsDB.edit_transaction(this.db, parseInt(req.params.id), req.body.amount, req.body.description);
+            const transactionId = parseInt(req.params.id);
+            if (isNaN(transactionId)) return res.status(400).json({ message: 'Invalid transaction ID' });
+            const result = await transactionsDB.edit_transaction(this.db, transactionId, req.body.amount, req.body.description);
             result.getResponse(res);
         });
 
@@ -55,7 +65,9 @@ export default class AdminTransactions {
          * Delete a transaction record.
          */
         this.app.delete('/api/admin/transaction/:id', check('perm:transaction.manage'), async (req: Request, res: Response) => {
-            const result = await transactionsDB.delete_transaction(this.db, parseInt(req.params.id));
+            const transactionId = parseInt(req.params.id);
+            if (isNaN(transactionId)) return res.status(400).json({ message: 'Invalid transaction ID' });
+            const result = await transactionsDB.delete_transaction(this.db, transactionId);
             result.getResponse(res);
         });
     }

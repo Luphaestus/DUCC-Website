@@ -204,6 +204,9 @@ export default class Auth {
                 return res.status(400).json({ message: 'TOTP not required or session expired.' });
             }
 
+            const tokenError = ValidationRules.validate('totp', token);
+            if (tokenError) return res.status(400).json({ message: tokenError });
+
             try {
                 const user = await AuthDB.getUserById(this.db, pendingUser.id);
                 const isValid = await verify({
@@ -211,7 +214,7 @@ export default class Auth {
                     secret: user.totp_secret
                 });
 
-                if (!isValid) {
+                if (!isValid || !isValid.valid) {
                     return res.status(401).json({ message: 'Invalid TOTP token.' });
                 }
 
@@ -358,10 +361,13 @@ export default class Auth {
 
             if (!secret) return res.status(400).json({ message: 'Setup session expired.' });
 
-            const isValid = await verify({ token, secret });
-            if (!isValid) return res.status(400).json({ message: 'Invalid token.' });
+            const tokenError = ValidationRules.validate('totp', token);
+            if (tokenError) return res.status(400).json({ message: tokenError });
 
             try {
+                const isValid = await verify({ token, secret });
+                if (!isValid || !isValid.valid) return res.status(400).json({ message: 'Invalid token.' });
+
                 await AuthDB.setTOTPSecret(this.db, req.user.id, secret);
                 await AuthDB.setTOTPEnabled(this.db, req.user.id, true);
                 delete req.session.tempTOTPSecret;
@@ -535,10 +541,12 @@ export default class Auth {
         });
 
         /**
-         * Reset password with token.
+         * Set new password with token.
          */
-        this.app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
-            const { token, newPassword } = req.body;
+        const setPasswordHandler = async (req: Request, res: Response) => {
+            const { token, password } = req.body;
+            const newPassword = password || req.body.newPassword;
+
             if (!token || !newPassword) return res.status(400).json({ message: 'Token and new password required.' });
 
             try {
@@ -557,7 +565,10 @@ export default class Auth {
                 Logger.error(e);
                 res.status(500).json({ message: 'Server error.' });
             }
-        });
+        };
+
+        this.app.post('/api/auth/set-password', setPasswordHandler);
+        this.app.post('/api/auth/reset-password', setPasswordHandler);
 
         /**
          * Change password for logged in user.

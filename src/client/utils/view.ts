@@ -7,7 +7,7 @@
 import { apiRequest } from './api.js';
 import { ViewChangedEvent } from "./events/events.js";
 import { hasHistory } from './history.js';
-import { Modal } from '../widgets/Modal.js';
+import { incrementModals, decrementModals } from './modal-state.js';
 
 interface Route {
     pattern: string;
@@ -26,6 +26,12 @@ interface RouteOptions {
     isOverlay?: boolean;
     titleFunc?: (path: string) => string;
     changeURL?: boolean;
+}
+
+declare global {
+    interface Window {
+        solidNavigate?: (path: string) => void;
+    }
 }
 
 /**
@@ -50,7 +56,7 @@ export function addRoute(pattern: string, viewId: string, options: RouteOptions 
 /**
  * find a matching route for a given path. 
  */
-function matchRoute(path: string): Route | null {
+export function matchRoute(path: string): Route | null {
     const pathOnly = path.split('?')[0];
     return Routes.find(route => route.regex.test(pathOnly)) || null;
 }
@@ -66,6 +72,12 @@ function isCurrentPath(path: string): boolean {
  * Switches to new view
  */
 function switchView(path: string, force: boolean = false): boolean {
+    if (window.solidNavigate) {
+        window.solidNavigate(path);
+        return true;
+    }
+
+    console.log(`Requested navigation to: ${path}`);
     if (!path.startsWith('/')) path = '/' + path;
 
     // Handle root path: redirect to events if logged in, home if not
@@ -82,9 +94,12 @@ function switchView(path: string, force: boolean = false): boolean {
 
     if (isCurrentPath(path) && !force) return true;
 
+    console.error(`Navigating to: ${path}`);
     if (!route) {
-        switchView('/error');
-        return false;
+        if (!isCurrentPath(path)) {
+            window.history.pushState(null, '', path);
+        }
+        return true;
     }
 
     if (!isCurrentPath(path) && route.changeURL) {
@@ -94,20 +109,22 @@ function switchView(path: string, force: boolean = false): boolean {
     if (route.isOverlay) {
         openURL = window.location.pathname + window.location.search;
         if (!currentIsOverlay) {
-            Modal.increment();
+            incrementModals();
             currentIsOverlay = true;
         }
     } else {
         if (currentIsOverlay) {
-            Modal.decrement();
+            decrementModals();
             currentIsOverlay = false;
         }
     }
 
     const allViews = document.querySelectorAll('.view');
+    let targetFound = false;
     allViews.forEach(el => {
         if (el.id === route.viewId + '-view') {
             el.classList.remove('hidden');
+            targetFound = true;
         } else {
             const viewId = el.id.replace('-view', '');
             const viewRoutes = Routes.filter(r => r.viewId === viewId);
@@ -115,16 +132,18 @@ function switchView(path: string, force: boolean = false): boolean {
             const isAnyRouteMatching = viewRoutes.some(r => r.regex.test(window.location.pathname));
 
             if (isAnyRouteOverlay) {
-                // If it's an overlay and not the target, only keep it if the URL still matches one of its routes
                 if (!isAnyRouteMatching) {
                     el.classList.add('hidden');
                 }
             } else if (!route.isOverlay) {
-                // If it's a normal view and target isn't an overlay, hide it
                 el.classList.add('hidden');
             }
         }
     });
+
+    if (!targetFound && !route.isOverlay) {
+        console.warn(`View element not found for route: ${route.viewId}. If this is a Solid route, it's expected.`);
+    }
 
     ViewChangedEvent.notify({
         resolvedPath: route.pattern,

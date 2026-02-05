@@ -18,14 +18,14 @@ export default class TransactionsDB {
         for (const element of elements) {
             switch (element) {
                 case "balance":
-                    var response = await this.get_balance(db, userId);
-                    if (response.isError()) return response;
-                    data[element] = response.getData();
+                    const balanceResponse = await this.get_balance(db, userId);
+                    if (balanceResponse.isError()) return balanceResponse;
+                    data[element] = balanceResponse.getData();
                     break;
                 case "transactions":
-                    var response = await this.get_transactions(db, userId);
-                    if (response.isError()) return response;
-                    data[element] = response.getData();
+                    const transactionsResponse = await this.get_transactions(db, userId);
+                    if (transactionsResponse.isError()) return transactionsResponse;
+                    data[element] = transactionsResponse.getData();
                     break;
                 default:
                     return new statusObject(400, 'Invalid element');

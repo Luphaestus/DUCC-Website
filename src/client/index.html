@@ -11,57 +11,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;700;800&family=Pirata+One&family=Monoton&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="../styles.scss">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <title>DUCC - Home</title>
+    <title>DUCC</title>
 
     <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
-    <script type="module" src="./utils/view.ts" defer></script>
-    <script type="module" src="./components/background.ts" defer></script>
-
-    <link rel="stylesheet" href="./mos.css">
-    <script type="module" src="./mos.ts" defer></script>
 </head>
 
 <body>
-    <main class="container">
-        <script type="module" src="./components/navbar.ts" defer></script>
-        <nav class="small-container">
-            <div class="nav-links">
-                <ul class="navbar-items main-items"></ul>
-                <ul class="navbar-items user-items"></ul>
-            </div>
-        </nav>
-
-        <script type="module" src="./components/notification.ts" defer></script>
-        <script type="module" src="./connection.ts" defer></script>
-        <div id="notification-container" role="alert" aria-live="assertive"></div>
-
-
-        <script type="module" src="./pages/home.ts" defer></script>
-        <script type="module" src="./pages/events.ts" defer></script>
-        <script type="module" src="./pages/signup.ts" defer></script>
-        <script type="module" src="./pages/login.ts" defer></script>
-        <script type="module" src="./pages/profile.ts" defer></script>
-        <script type="module" src="./pages/event_expense.ts" defer></script>
-        <script type="module" src="./pages/settlement.ts" defer></script>
-        <script type="module" src="./pages/legal.ts" defer></script>
-        <script type="module" src="./pages/swims.ts" defer></script>
-        <script type="module" src="./pages/quotes.ts" defer></script>
-        <script type="module" src="./pages/exec.ts" defer></script>
-        <script type="module" src="./pages/admin/admin.ts" defer></script>
-        <script type="module" src="./pages/files.ts" defer></script>
-        <script type="module" src="./pages/footer.ts" defer></script>
-        <script type="module" src="./pages/reset_password.ts" defer></script>
-        <script type="module" src="./pages/set_password.ts" defer></script>
-        <script type="module" src="./pages/errors.ts" defer></script>
-
-    </main>
-
-
-
-
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
 </body>
 
 </html>

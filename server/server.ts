@@ -19,11 +19,11 @@ import expressMySQLSession from 'express-mysql-session';
 const MySQLStore = expressMySQLSession(session);
 import passport from 'passport';
 import fs from 'fs';
+import crypto from 'crypto';
 import { fileURLToPath, pathToFileURL } from 'url';
 import Globals from './misc/globals.js';
 import cliProgress from 'cli-progress';
 import colors from 'ansi-colors';
-import csurf from 'csurf';
 import rateLimit from 'express-rate-limit';
 import Logger from './misc/Logger.js';
 import config from './config.js';
@@ -118,6 +118,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /** Static file serving with caching policies. */
+app.use(express.static('dist', {
+  maxAge: isDev ? '0' : '1h'
+}));
+
 app.use(express.static('public', {
   maxAge: isDev ? '0' : '1h',
   setHeaders: (res, path) => {
@@ -141,7 +145,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,
+    secure: false, // Set to true if using HTTPS
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24
   }
@@ -150,13 +154,33 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-/** CSRF Protection */
+/** CSRF Protection (Modern Double Submit Cookie Implementation) */
 if (isProd) {
-  app.use(csurf());
   app.use((req, res, next) => {
-    const token = req.csrfToken();
-    res.cookie('XSRF-TOKEN', token, { httpOnly: false });
+    // Generate token if it doesn't exist in session
+    let token = (req.session as any).csrfToken;
+    if (!token) {
+      token = crypto.randomBytes(32).toString('hex');
+      (req.session as any).csrfToken = token;
+    }
+
+    // Set token in a client-readable cookie
+    res.cookie('XSRF-TOKEN', token, { 
+      httpOnly: false, 
+      sameSite: 'lax',
+      secure: isProd 
+    });
     res.locals.csrfToken = token;
+
+    // Verify token for state-changing methods
+    const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+    if (!safeMethods.includes(req.method)) {
+      const headerToken = req.headers['x-csrf-token'];
+      if (!token || !headerToken || headerToken !== token) {
+        return res.status(403).json({ message: 'Invalid or missing CSRF token' });
+      }
+    }
+
     next();
   });
 }
@@ -236,7 +260,7 @@ const startServer = async () => {
 
     /** Catch-all route for SPA. */
     app.get(/.*/, (req, res) => {
-      res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+      res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
     });
 
     app.listen(PORT, () => {

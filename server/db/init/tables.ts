@@ -147,6 +147,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         max_attendees INT,
         upfront_cost DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         upfront_refund_cutoff DATETIME,
+        status ENUM('confirmed', 'pending', 'scheduled') NOT NULL DEFAULT 'confirmed',
+        visible_at DATETIME,
         is_canceled TINYINT(1) NOT NULL DEFAULT 0,
         enable_waitlist TINYINT(1) NOT NULL DEFAULT 1,
         signup_required TINYINT(1) NOT NULL DEFAULT 1,
@@ -177,6 +179,31 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         INDEX idx_event_user (event_id, user_id),
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'kit_items',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        type ENUM('paddle', 'ba', 'boat', 'wetsuit', 'cag', 'helmet', 'other') NOT NULL,
+        size ENUM('XS', 'S', 'M', 'L', 'XL', 'XXL', 'None') DEFAULT 'None',
+        total_quantity INT NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      `
+    },
+    {
+      name: 'event_kit_requests',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT NOT NULL,
+        user_id INT NOT NULL,
+        kit_item_id INT NOT NULL,
+        is_fulfilled TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE
       `
     },
     {

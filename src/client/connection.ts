@@ -44,8 +44,6 @@ async function updateConnectionStatus(newStatus: boolean | null): Promise<void> 
         if (isCurrentPath('/no-internet')) {
             const prev = getPreviousPath();
             switchView(prev || '/home');
-        } else {
-            switchView(window.location.pathname, true);
         }
     } else {
         if (!reconnectInterval) {
@@ -63,7 +61,10 @@ async function updateConnectionStatus(newStatus: boolean | null): Promise<void> 
 document.addEventListener('DOMContentLoaded', () => {
    ViewChangedEvent.subscribe(path => {
         if (path.viewId === "no-connection") return;
-        updateConnectionStatus(null);
+        // Break synchronous recursion chain
+        setTimeout(() => {
+            updateConnectionStatus(null);
+        }, 0);
     });
 });
 

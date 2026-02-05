@@ -8,6 +8,14 @@
     gap: 1.5rem;
     padding: 1.5rem;
 
+    // Reset Pico CSS defaults
+    header, footer {
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+
     .box-header {
         display: flex;
         justify-content: space-between;

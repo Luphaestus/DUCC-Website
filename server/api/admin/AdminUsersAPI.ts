@@ -67,20 +67,20 @@ export default class AdminUsers {
             const canManageUsers = await Permissions.hasPermission(this.db, req.user.id, 'user.manage') || await Permissions.hasPermission(this.db, req.user.id, 'user.read');
             const canManageTransactions = await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage') || await Permissions.hasPermission(this.db, req.user.id, 'transaction.read');
 
-            let elements: string[];
+            let elements: string[] = ["id"];
             if (canManageUsers) {
-                elements = [
-                    "id", "email", "first_name", "last_name", "date_of_birth", "college_id", "college_name",
+                elements.push(
+                    "email", "first_name", "last_name", "date_of_birth", "college_id", "college_name",
                     "emergency_contact_name", "emergency_contact_phone", "home_address", "phone_number",
                     "has_medical_conditions", "medical_conditions_details", "takes_medication", "medication_details",
                     "free_sessions", "is_member", "filled_legal_info", "is_instructor", "first_aid_expiry",
                     "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data",
                     "difficulty_level", "swims"
-                ];
+                );
             } else if (canManageTransactions) {
-                elements = ["id", "first_name", "last_name", "free_sessions", "is_member", "is_instructor", "difficulty_level", "swims"];
+                elements.push("first_name", "last_name", "free_sessions", "is_member", "is_instructor", "difficulty_level", "swims");
             } else {
-                elements = ["id", "first_name", "last_name", "swims"];
+                elements.push("first_name", "last_name", "swims");
             }
 
             const includeBalance = canManageUsers || canManageTransactions;

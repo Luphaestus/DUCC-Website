@@ -1,4 +1,5 @@
-dir = "./public/images/icons/outline/"
+input_dir = "./public/images/icons/outline/"
+output_file = "./src/client/utils/icons.ts"
 
 from os import listdir
 from os.path import isfile, join
@@ -6,23 +7,24 @@ import shutil
 
 # --- Filename Normalization ---
 # Cleans up export artifacts from design tools (e.g. stripping 'dp_' suffixes)
-files = [f for f in listdir(dir) if isfile(join(dir, f))]
+files = [f for f in listdir(input_dir) if isfile(join(input_dir, f))]
 
 for file in files:
     if file.find("dp_") == -1: continue
     # Derive new name by stripping resolution suffixes
+    # Assumes format like name_24dp_... or name_wght...
     newName = file[:file[:file.find("dp_")].rfind("_")] + file[file.rfind("."):]
-    shutil.move(dir+file, dir+newName)
+    shutil.move(join(input_dir, file), join(input_dir, newName))
     
 # --- JS Module Generation ---
 # Reads all SVGs, strips fill attributes, and generates 'export const NAME_SVG = ...'
-files = [f for f in listdir(dir) if isfile(join(dir, f)) and f.endswith(".svg")]
+files = [f for f in listdir(input_dir) if isfile(join(input_dir, f)) and f.endswith(".svg")]
 
 icons = ""
 iconNames = "{"
 
 for file in files:
-    with open(dir+file, "r") as i:
+    with open(join(input_dir, file), "r") as i:
         icon=i.read()
     
     # Generate constant name (e.g. my-icon.svg -> MY_ICON_SVG)
@@ -44,6 +46,6 @@ for file in files:
 # Finalize the export statement
 icons += f"\nexport { iconNames }" + "};"
 
-# Save the generated JS module
-with open(dir+"icons.js", "w") as i:
+# Save the generated TS module
+with open(output_file, "w") as i:
     i.write(icons)

@@ -313,14 +313,14 @@
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
-                font-size: 0.75rem;
+                font-size: 0.85rem;
                 color: var(--glass-text-colour);
                 opacity: 0.8;
                 text-align: left;
 
-                svg {
-                    width: 1rem;
-                    height: 1rem;
+                svg, span:has(svg) {
+                    width: 1.1rem;
+                    height: 1.1rem;
                     color: var(--pico-primary);
                     fill: currentColor;
                     flex-shrink: 0;
@@ -360,9 +360,9 @@
                     border-color: rgba(255, 255, 255, 0.05);
                 }
 
-                svg {
-                    width: 0.75rem;
-                    height: 0.75rem;
+                svg, span:has(svg) {
+                    width: 0.9rem;
+                    height: 0.9rem;
                     fill: currentColor;
                 }
 

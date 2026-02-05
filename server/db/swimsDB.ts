@@ -86,8 +86,7 @@ export default class SwimsDB {
                     lastSwims = user.swims;
                 }
                 const is_me = user.id === currentUserId;
-                const { id, ...rest } = user;
-                return { ...rest, rank, is_me };
+                return { ...user, rank, is_me };
             });
 
             return new statusObject(200, null, leaderboard);

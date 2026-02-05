@@ -134,9 +134,9 @@
             }
         }
     },
-    "/api/auth/reset-password": {
+    "/api/auth/set-password": {
         "post": {
-            "summary": "Reset password with token",
+            "summary": "Set new password with token",
             "description": "Updates the user's password using a valid reset token from an email link.",
             "tags": ["Auth"],
             "requestBody": {
@@ -147,9 +147,9 @@
                             "type": "object",
                             "properties": {
                                 "token": { "type": "string", "description": "The password reset token." },
-                                "newPassword": { "type": "string", "format": "password", "description": "The new password to set." }
+                                "password": { "type": "string", "format": "password", "description": "The new password to set." }
                             },
-                            "required": ["token", "newPassword"]
+                            "required": ["token", "password"]
                         }
                     }
                 }

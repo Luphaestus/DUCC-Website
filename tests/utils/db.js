@@ -54,6 +54,27 @@ export async function initSchemaAndClean() {
 
     if (!initialized) {
         // console.log(`[Worker ${workerId}] Initializing schema for ${dbName}`);
+        
+        const conn = await db.connection.getConnection();
+        try {
+            await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+            const tablesToDrop = [
+                'kit_items', 'event_kit_requests',
+                'authenticators', 'exec_committee', 'event_attendees', 'event_waiting_list', 
+                'transactions', 'swim_history', 'quotes', 'cars', 'event_drivers', 'trips', 
+                'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags', 
+                'user_permissions', 'user_roles', 'tag_whitelists', 'role_managed_tags', 
+                'role_permissions', 'roles', 'tags', 'event_tags', 'password_resets', 
+                'slides', 'events', 'users', 'files', 'file_categories', 'colleges', 'permissions'
+            ];
+            for (const table of tablesToDrop) {
+                await conn.query(`DROP TABLE IF EXISTS ${table}`);
+            }
+            await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+        } finally {
+            conn.release();
+        }
+
         await createTables(db);
         initialized = true;
     }

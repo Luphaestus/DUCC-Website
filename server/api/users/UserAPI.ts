@@ -93,7 +93,7 @@ export default class User {
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
                 "is_instructor", "first_aid_expiry", "profile_picture_path", "profile_picture_id",
                 "profile_picture_color", "profile_picture_font", "profile_picture_initials",
-                "created_at", "swims", "swimmer_rank", "permissions", "roles", 'totp_enabled'
+                "created_at", "swims", "swimmer_rank", "swimmer_stats", "permissions", "roles", 'totp_enabled'
             ];
             const accessibleTransactionsDB = ['balance', 'transactions'];
             return [accessibleUserDB.includes(element), accessibleTransactionsDB.includes(element)];
@@ -113,10 +113,10 @@ export default class User {
 
         let userResultData: any = {};
         if (userElements.length > 0) {
-            const needsRank = userElements.includes('swimmer_rank');
+            const needsRank = userElements.includes('swimmer_rank') || userElements.includes('swimmer_stats');
             const needsPerms = userElements.includes('permissions');
             const needsRoles = userElements.includes('roles');
-            const cleanElements = userElements.filter(e => !['swimmer_rank', 'permissions', 'roles'].includes(e));
+            const cleanElements = userElements.filter(e => !['swimmer_rank', 'swimmer_stats', 'permissions', 'roles'].includes(e));
 
             let userResult;
             if (cleanElements.length > 0) {

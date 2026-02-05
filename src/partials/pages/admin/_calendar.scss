@@ -1,0 +1,218 @@
+@use "../../mixins" as *;
+
+.calendar-container {
+    @include glass-panel;
+    padding: 1.5rem;
+    position: relative;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+
+            h2 {
+                margin: 0;
+                font-size: 1.5rem;
+                min-width: 200px;
+                text-align: center;
+            }
+
+            .icon-btn {
+                background: transparent;
+                border: none;
+                padding: 0.5rem;
+                color: var(--pico-color);
+
+                &:hover {
+                    color: var(--pico-primary);
+                    background: rgba(var(--pico-color-rgb), 0.1);
+                    border-radius: 50%;
+                }
+
+                svg {
+                    width: 1.25rem;
+                    height: 1.25rem;
+                }
+            }
+        }
+
+        .view-toggles {
+            display: flex;
+            background: rgba(var(--pico-background-color-rgb), 0.5);
+            border-radius: var(--border-radius-pill);
+            padding: 0.25rem;
+            border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+
+            button {
+                background: transparent;
+                border: none;
+                padding: 0.4rem 1rem;
+                border-radius: var(--border-radius-pill);
+                font-size: 0.9rem;
+                color: var(--pico-muted-color);
+                box-shadow: none;
+                margin-bottom: 0;
+
+                &.active {
+                    background: var(--pico-primary);
+                    color: white;
+                }
+            }
+        }
+    }
+
+    .calendar-grid {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+
+        .weekdays-row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: 600;
+            color: var(--pico-muted-color);
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
+            margin-bottom: 0.5rem;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-auto-rows: minmax(100px, 1fr);
+            gap: 1px;
+            background: rgba(var(--pico-color-rgb), 0.1); // Grid lines color
+            border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+
+            .calendar-day {
+                background: var(--glass-bg); // Cell background
+                padding: 0.5rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+                cursor: pointer;
+                transition: background 0.2s;
+                min-height: 100px;
+
+                &:hover {
+                    background: rgba(var(--pico-background-color-rgb), 0.8);
+                }
+
+                &.other-month {
+                    background: rgba(var(--pico-background-color-rgb), 0.4);
+                    opacity: 0.6;
+
+                    .day-number {
+                        opacity: 0.5;
+                    }
+                }
+
+                &.today {
+                    background: rgba(var(--pico-primary-rgb), 0.05);
+
+                    .day-number {
+                        background: var(--pico-primary);
+                        color: white;
+                        width: 24px;
+                        height: 24px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 50%;
+                    }
+                }
+
+                .day-number {
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    align-self: flex-start;
+                    margin-bottom: 0.25rem;
+                }
+
+                .day-events {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.25rem;
+                    overflow-y: auto;
+                    max-height: 120px;
+                }
+
+                .event-chip {
+                    font-size: 0.75rem;
+                    padding: 0.2rem 0.4rem;
+                    border-radius: 4px;
+                    background: var(--pico-primary);
+                    color: white;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    cursor: grab;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.3rem;
+
+                    &:active {
+                        cursor: grabbing;
+                    }
+
+                    .event-time {
+                        opacity: 0.8;
+                        font-size: 0.7rem;
+                    }
+
+                    &.status-pending {
+                        background: var(--pico-muted-color);
+                        border: 1px dashed rgba(255, 255, 255, 0.5);
+                    }
+
+                    &.status-scheduled {
+                        background: #f39c12; // Orange
+                    }
+                }
+            }
+        }
+    }
+
+    .fab-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 50%;
+        background: var(--pico-primary);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s, background 0.2s;
+        z-index: 100;
+
+        &:hover {
+            transform: scale(1.1);
+            background: var(--pico-primary-hover);
+        }
+
+        svg {
+            width: 1.75rem;
+            height: 1.75rem;
+        }
+    }
+}

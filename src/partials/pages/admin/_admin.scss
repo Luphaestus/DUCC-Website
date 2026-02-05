@@ -1,5 +1,7 @@
 @use "../../mixins" as *;
 @use "finance_summary";
+@use "calendar";
+@use "stats";
 
 /* Admin Layout */
 #admin-view {
@@ -89,6 +91,22 @@
     padding: 0.5rem 1rem;
     border-radius: var(--border-radius-pill);
     box-shadow: var(--shadow-glass);
+
+    .toggle-group {
+        background: transparent;
+        border: none;
+        backdrop-filter: none;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    &:empty {
+        display: none;
+    }
+
+    &:has(.toolbar-left:empty):has(.toolbar-right:empty) {
+        display: none;
+    }
 
     .toolbar-left {
         display: flex;
@@ -574,6 +592,13 @@ textarea[name="description"] {
         display: flex;
         align-items: center;
         gap: 0.75rem;
+
+        .toggle-group {
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
+            box-shadow: none;
+        }
 
         h3 {
             margin: 0;

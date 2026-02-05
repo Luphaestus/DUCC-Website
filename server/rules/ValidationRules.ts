@@ -25,6 +25,10 @@ export default class ValidationRules {
         phone: {
             pattern: /^\+?[0-9\s\-()]{7,15}$/,
             message: 'Invalid phone number. Must be 7-15 digits, optionally with +, -, or ().'
+        },
+        totp: {
+            pattern: /^\d{6}$/,
+            message: 'Invalid code format. Must be 6 digits.'
         }
     };
 
