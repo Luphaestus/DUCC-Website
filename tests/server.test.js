@@ -1,25 +1,26 @@
 /**
  * server.test.js
  * 
- * Express server tests.
+ * Fastify server tests.
  */
 
-import request from 'supertest';
 import { serverReady } from '../server/server.js';
 
-describe('Main Express Application', () => {
+describe('Main Fastify Application', () => {
     let app;
     let db;
 
     beforeAll(async () => {
         // Wait for the dynamic bootstrapping process to finish
         const ready = await serverReady;
-        app = ready.app;
+        app = ready.fastify || ready.app;
         db = ready.db;
     });
 
     afterAll(async () => {
-        // Ensure database connection is closed after all tests
+        if (app) {
+            await app.close();
+        }
         if (db) {
             await db.close();
         }
@@ -27,21 +28,30 @@ describe('Main Express Application', () => {
 
     /** Test health check endpoint. */
     test('GET /api/health returns 200 OK', async () => {
-        const res = await request(app).get('/api/health');
+        const res = await app.inject({
+            method: 'GET',
+            url: '/api/health'
+        });
         expect(res.statusCode).toBe(200);
-        expect(res.body).toEqual({ ok: true });
+        expect(JSON.parse(res.body)).toEqual({ ok: true });
     });
 
     /** Test SPA root entry. */
     test('GET / returns index.html (SPA Entry)', async () => {
-        const res = await request(app).get('/');
+        const res = await app.inject({
+            method: 'GET',
+            url: '/'
+        });
         expect(res.statusCode).toBe(200);
         expect(res.headers['content-type']).toContain('text/html');
     });
 
     /** Test SPA fallback. */
     test('GET /arbitrary-route returns index.html (SPA fallback)', async () => {
-        const res = await request(app).get('/arbitrary-route');
+        const res = await app.inject({
+            method: 'GET',
+            url: '/arbitrary-route'
+        });
         expect(res.statusCode).toBe(200);
         expect(res.headers['content-type']).toContain('text/html');
     });

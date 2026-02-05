@@ -1,59 +1,59 @@
 /**
  * authentication.test.js
  * 
- * Authentication middleware tests.
+ * Authentication hook tests.
  */
 
 import checkAuthentication from '../../server/misc/authentication.js';
 import { Permissions } from '../../server/misc/permissions.js';
 
 describe('misc/authentication', () => {
-    let req, res, next;
+    let req, reply;
 
     beforeEach(() => {
-        // Mock Express Request and Response objects
+        // Mock Fastify Request and Reply objects
         req = {
             isAuthenticated: vi.fn().mockReturnValue(true),
             user: { id: 1 },
             db: {}
         };
-        res = {
+        reply = {
             status: vi.fn().mockReturnThis(),
-            json: vi.fn()
+            send: vi.fn().mockReturnThis()
         };
-        next = vi.fn();
     });
 
     test('Allow access if authenticated and no permissions are required', async () => {
-        const middleware = checkAuthentication();
-        await middleware(req, res, next);
-        expect(next).toHaveBeenCalled();
+        const hook = checkAuthentication();
+        const result = await hook(req, reply);
+        expect(result).toBeUndefined(); // Fastify hooks return undefined on success
+        expect(reply.status).not.toHaveBeenCalled();
     });
 
     test('Denied (401) if session is not authenticated', async () => {
         req.isAuthenticated.mockReturnValue(false);
-        const middleware = checkAuthentication();
-        await middleware(req, res, next);
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(next).not.toHaveBeenCalled();
+        const hook = checkAuthentication();
+        await hook(req, reply);
+        expect(reply.status).toHaveBeenCalledWith(401);
+        expect(reply.send).toHaveBeenCalled();
     });
 
     test('Check single permission slug', async () => {
         vi.spyOn(Permissions, 'hasPermission').mockResolvedValue(true);
-        const middleware = checkAuthentication('user.manage');
-        await middleware(req, res, next);
+        const hook = checkAuthentication('user.manage');
+        const result = await hook(req, reply);
         
         expect(Permissions.hasPermission).toHaveBeenCalledWith(req.db, 1, 'user.manage');
-        expect(next).toHaveBeenCalled();
+        expect(result).toBeUndefined();
     });
 
     test('Denied (403) if user is missing the required permission', async () => {
         vi.spyOn(Permissions, 'hasPermission').mockResolvedValue(false);
-        const middleware = checkAuthentication('user.manage');
-        await middleware(req, res, next);
+        const hook = checkAuthentication('user.manage');
+        await hook(req, reply);
         
-        expect(res.status).toHaveBeenCalledWith(403);
-        expect(next).not.toHaveBeenCalled();
+        expect(reply.status).toHaveBeenCalledWith(403);
+        expect(reply.send).toHaveBeenCalled();
     });
 
     /** Test OR permission logic. */
@@ -62,18 +62,18 @@ describe('misc/authentication', () => {
         vi.spyOn(Permissions, 'hasPermission')
             .mockImplementation(async (db, id, perm) => perm === 'user.manage');
         
-        const middleware = checkAuthentication('user.read | user.manage');
-        await middleware(req, res, next);
-        expect(next).toHaveBeenCalled();
+        const hook = checkAuthentication('user.read | user.manage');
+        const result = await hook(req, reply);
+        expect(result).toBeUndefined();
     });
 
     /** Test special meta-permission: perm:is_exec. */
     test('Check special meta-permission: perm:is_exec', async () => {
         vi.spyOn(Permissions, 'hasAnyPermission').mockResolvedValue(true);
-        const middleware = checkAuthentication('perm:is_exec');
-        await middleware(req, res, next);
+        const hook = checkAuthentication('perm:is_exec');
+        const result = await hook(req, reply);
         
         expect(Permissions.hasAnyPermission).toHaveBeenCalledWith(req.db, 1);
-        expect(next).toHaveBeenCalled();
+        expect(result).toBeUndefined();
     });
 });

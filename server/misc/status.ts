@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 /**
  * status.ts
@@ -37,14 +37,14 @@ export class statusObject<T = any> {
     }
 
     /**
-     * Sends the object state as a JSON response using an Express response object.
+     * Sends the object state as a JSON response using a Fastify reply object.
      */
-    getResponse(res: Response): Response {
+    getResponse(reply: FastifyReply): FastifyReply {
         if (this.isError()) {
-            return res.status(this.getStatus()).json({ message: this.getMessage() });
+            return reply.status(this.getStatus()).send({ message: this.getMessage() });
         }
 
-        return res.status(this.getStatus()).json({ message: this.getMessage(), data: this.getData() });
+        return reply.status(this.getStatus()).send({ message: this.getMessage(), data: this.getData() });
     }
 
     /**

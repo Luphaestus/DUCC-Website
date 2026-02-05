@@ -16,6 +16,7 @@ describe('api/CollegesAPI', () => {
         await world.createUser('user', {});
 
         new CollegesAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -27,11 +28,11 @@ describe('api/CollegesAPI', () => {
         // As authenticated user
         const res1 = await world.as('user').get('/api/colleges');
         expect(res1.statusCode).toBe(200);
-        expect(res1.body.length).toBeGreaterThan(0);
+        expect(JSON.parse(res1.body).length).toBeGreaterThan(0);
 
         // As guest
         const res2 = await world.request.get('/api/colleges');
         expect(res2.statusCode).toBe(200);
-        expect(res2.body.length).toBeGreaterThan(0);
+        expect(JSON.parse(res2.body).length).toBeGreaterThan(0);
     });
 });

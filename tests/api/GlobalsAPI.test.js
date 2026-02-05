@@ -50,6 +50,7 @@ describe('api/GlobalsAPI', () => {
         await world.createUser('guest', { is_member: 0 });
 
         new GlobalsAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -60,7 +61,7 @@ describe('api/GlobalsAPI', () => {
         test('Success for President-level user', async () => {
             const res = await world.as('president').get('/api/globals/status');
             expect(res.statusCode).toBe(200);
-            expect(res.body.isPresident).toBe(true);
+            expect(JSON.parse(res.body).isPresident).toBe(true);
         });
 
         test('Forbidden for non-president user', async () => {
@@ -73,22 +74,29 @@ describe('api/GlobalsAPI', () => {
         /** Test Guest restricted keys. */
         test('Guest can only see Guest-level globals', async () => {
             const res = await world.request.get('/api/globals/MinMoney,Unauthorized_max_difficulty');
-            expect(res.body.res).not.toHaveProperty('MinMoney');
-            expect(res.body.res).not.toHaveProperty('Unauthorized_max_difficulty');
+            expect(res.statusCode).toBe(200);
+            const body = JSON.parse(res.body);
+            expect(body).toHaveProperty('res');
+            expect(body.res).not.toHaveProperty('MinMoney');
+            expect(body.res).not.toHaveProperty('Unauthorized_max_difficulty');
         });
 
         /** Test Authenticated user keys. */
         test('Authenticated user can see Authenticated-level keys', async () => {
             const res = await world.as('user').get('/api/globals/MinMoney,Unauthorized_max_difficulty');
-            expect(res.body.res).toHaveProperty('MinMoney');
-            expect(res.body.res).not.toHaveProperty('Unauthorized_max_difficulty');
+            expect(res.statusCode).toBe(200);
+            const body = JSON.parse(res.body);
+            expect(body.res).toHaveProperty('MinMoney');
+            expect(body.res).not.toHaveProperty('Unauthorized_max_difficulty');
         });
 
         /** Test President keys. */
         test('President can see all configuration keys', async () => {
             const res = await world.as('president').get('/api/globals/MinMoney,Unauthorized_max_difficulty');
-            expect(res.body.res).toHaveProperty('MinMoney');
-            expect(res.body.res).toHaveProperty('Unauthorized_max_difficulty');
+            expect(res.statusCode).toBe(200);
+            const body = JSON.parse(res.body);
+            expect(body.res).toHaveProperty('MinMoney');
+            expect(body.res).toHaveProperty('Unauthorized_max_difficulty');
         });
     });
 
@@ -97,44 +105,42 @@ describe('api/GlobalsAPI', () => {
         test('President can update a global and it persists', async () => {
             const newValue = 100;
             const res = await world.as('president')
-                .post('/api/globals/MembershipCost')
-                .send({ value: newValue });
+                .post('/api/globals/MembershipCost', { value: newValue });
             expect(res.statusCode).toBe(200);
 
             // Verify persistence via fetch
             const getRes = await world.as('user').get('/api/globals/MembershipCost');
-            expect(getRes.body.res.MembershipCost.data).toBe(newValue);
+            const getBody = JSON.parse(getRes.body);
+            expect(getBody.res.MembershipCost.data).toBe(newValue);
         });
 
         /** Test update regex failure. */
         test('Update fails if value does not match regex rule', async () => {
             const res = await world.as('president')
-                .post('/api/globals/MembershipCost')
-                .send({ value: "not-a-number" });
+                .post('/api/globals/MembershipCost', { value: "not-a-number" });
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/currency amount/i);
+            expect(JSON.parse(res.body).message).toMatch(/currency amount/i);
         });
 
         test('DefaultEventImage validation: allows valid paths, rejects invalid', async () => {
             // Valid static path
-            let res = await world.as('president').post('/api/globals/DefaultEventImage').send({ value: "/images/custom.png" });
+            let res = await world.as('president').post('/api/globals/DefaultEventImage', { value: "/images/custom.png" });
             expect(res.statusCode).toBe(200);
 
             // Valid API path
-            res = await world.as('president').post('/api/globals/DefaultEventImage').send({ value: "/api/files/123/download?view=true" });
+            res = await world.as('president').post('/api/globals/DefaultEventImage', { value: "/api/files/123/download?view=true" });
             expect(res.statusCode).toBe(200);
 
             // Invalid path
-            res = await world.as('president').post('/api/globals/DefaultEventImage').send({ value: "http://external.com/img.png" });
+            res = await world.as('president').post('/api/globals/DefaultEventImage', { value: "http://external.com/img.png" });
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/valid path or file API URL/i);
+            expect(JSON.parse(res.body).message).toMatch(/valid path or file API URL/i);
         });
 
         /** Test unauthorized update attempt. */
         test('Standard authenticated user cannot update global settings', async () => {
             const res = await world.as('user')
-                .post('/api/globals/MembershipCost')
-                .send({ value: 10 });
+                .post('/api/globals/MembershipCost', { value: 10 });
             expect(res.statusCode).toBe(403);
         });
     });

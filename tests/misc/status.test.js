@@ -19,22 +19,22 @@ describe('misc/status', () => {
     });
 
     /** Test JSON response formatting. */
-    test('getResponse correctly formats the JSON payload for Express', () => {
-        const res = {
+    test('getResponse correctly formats the JSON payload for Fastify', () => {
+        const reply = {
             status: vi.fn().mockReturnThis(),
-            json: vi.fn()
+            send: vi.fn().mockReturnThis()
         };
 
         // Success case
         const success = new statusObject(200, 'Ok', { foo: 'bar' });
-        success.getResponse(res);
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith({ message: 'Ok', data: { foo: 'bar' } });
+        success.getResponse(reply);
+        expect(reply.status).toHaveBeenCalledWith(200);
+        expect(reply.send).toHaveBeenCalledWith({ message: 'Ok', data: { foo: 'bar' } });
 
         // Error case (omits data payload)
         const error = new statusObject(404, 'Not Found');
-        error.getResponse(res);
-        expect(res.status).toHaveBeenCalledWith(404);
-        expect(res.json).toHaveBeenCalledWith({ message: 'Not Found' });
+        error.getResponse(reply);
+        expect(reply.status).toHaveBeenCalledWith(404);
+        expect(reply.send).toHaveBeenCalledWith({ message: 'Not Found' });
     });
 });

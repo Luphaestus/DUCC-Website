@@ -9,6 +9,14 @@ vi.mock("../../src/client/utils/api", () => ({
 }));
 
 describe("App Router Setup", () => {
+  beforeAll(() => {
+    // Mock EventSource for JSDOM
+    global.EventSource = class {
+      addEventListener = vi.fn();
+      close = vi.fn();
+    } as any;
+  });
+
   it("should render without throwing router errors", () => {
     const root = document.createElement("div");
     

@@ -5,18 +5,14 @@
  */
 
 import CollegesDB from '../db/collegesDB.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../db/db.js';
 
 export default class CollegesAPI {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
-    /**
-     * @param {object} app - The Express application instance.
-     * @param {object} db - The database connection instance.
-     */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -28,10 +24,10 @@ export default class CollegesAPI {
         /**
          * List all colleges.
          */
-        this.app.get('/api/colleges', async (req: Request, res: Response) => {
+        this.app.get('/api/colleges', async (request: FastifyRequest, reply: FastifyReply) => {
             const result = await CollegesDB.getAll(this.db);
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
     }
 }

@@ -19,6 +19,7 @@ describe('api/users/SwimsAPI', () => {
         await world.createUser('user', {});
 
         new SwimsAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -29,13 +30,14 @@ describe('api/users/SwimsAPI', () => {
     test('GET /api/user/swims/leaderboard', async () => {
         const res = await world.as('user').get('/api/user/swims/leaderboard');
         expect(res.statusCode).toBe(200);
-        expect(Array.isArray(res.body.data)).toBe(true);
+        const body = JSON.parse(res.body);
+        expect(Array.isArray(body.data)).toBe(true);
     });
 
     /** Test admin swim addition. */
     test('POST /api/user/:id/swims - Success for authorized Exec', async () => {
         const userId = world.data.users['user'];
-        const res = await world.as('admin').post(`/api/user/${userId}/swims`).send({ count: 5 });
+        const res = await world.as('admin').post(`/api/user/${userId}/swims`, { count: 5 });
         expect(res.statusCode).toBe(200);
         
         // Verify update in DB
@@ -48,14 +50,14 @@ describe('api/users/SwimsAPI', () => {
         // Setup some swims first
         await world.db.run('UPDATE users SET swims = 10 WHERE id = ?', [userId]);
 
-        const res = await world.as('admin').post(`/api/user/${userId}/booties`).send({ count: 5 });
+        const res = await world.as('admin').post(`/api/user/${userId}/booties`, { count: 5 });
         expect(res.statusCode).toBe(200);
 
         const user = await world.db.get('SELECT booties FROM users WHERE id = ?', [userId]);
         expect(user.booties).toBe(5);
 
         // Fail validation
-        const resFail = await world.as('admin').post(`/api/user/${userId}/booties`).send({ count: 6 });
+        const resFail = await world.as('admin').post(`/api/user/${userId}/booties`, { count: 6 });
         expect(resFail.statusCode).toBe(400);
     });
 });

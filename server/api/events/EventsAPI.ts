@@ -11,18 +11,18 @@ import Globals from '../../misc/globals.js';
 import check from '../../misc/authentication.js';
 import { Permissions } from '../../misc/permissions.js';
 import Logger from '../../misc/Logger.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 
 export default class EventsAPI {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
     /**
-     * @param {object} app - Express application instance.
+     * @param {object} app - Fastify application instance.
      * @param {object} db - Database connection instance.
      */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -34,55 +34,50 @@ export default class EventsAPI {
         /**
          * Fetch events for a specific week, filtered by user difficulty.
          */
-        this.app.get('/api/events/rweek/:offset', async (req: any, res: Response) => {
-            const userId = req.user ? req.user.id : null;
-            let max_difficulty_val;
+        this.app.get('/api/events/rweek/:offset', async (request: any, reply: FastifyReply) => {
+            const userId = request.user ? request.user.id : null;
+            // let max_difficulty_val; // unused in current logic but kept from original if needed
             
             if (userId) {
                 const max_difficulty = await UserDB.getElementsById(this.db, userId, "difficulty_level");
-                if (max_difficulty.isError()) return max_difficulty.getResponse(res);
-                max_difficulty_val = max_difficulty.getData().difficulty_level;
+                if (max_difficulty.isError()) return max_difficulty.getResponse(reply);
+                // max_difficulty_val = max_difficulty.getData().difficulty_level;
             } else {
-                max_difficulty_val = new Globals().getInt("Unauthorized_max_difficulty");
+                // max_difficulty_val = new Globals().getInt("Unauthorized_max_difficulty");
             }
 
-            const offset = parseInt(req.params.offset, 10);
+            const offset = parseInt(request.params.offset, 10);
             if (Number.isNaN(offset)) {
-                return res.status(400).json({ message: 'Offset must be an integer' });
+                return reply.status(400).send({ message: 'Offset must be an integer' });
             }
             if (Math.abs(offset) > 10000) {
-                return res.status(400).json({ message: 'Offset out of range' });
+                return reply.status(400).send({ message: 'Offset out of range' });
             }
 
             const events = await EventsDB.get_events_relative_week(this.db, offset, userId);
-            if (events.isError()) { return events.getResponse(res); }
+            if (events.isError()) { return events.getResponse(reply); }
 
-            res.json({ events: events.getData() });
+            return reply.send({ events: events.getData() });
         });
 
         /**
          * Fetch events paged by logical chunks.
          */
-        this.app.get('/api/events/paged/:page', async (req: any, res: Response) => {
-            const userId = req.user ? req.user.id : null;
-            let max_difficulty_val;
+        this.app.get('/api/events/paged/:page', async (request: any, reply: FastifyReply) => {
+            const userId = request.user ? request.user.id : null;
             
             if (userId) {
                 const max_difficulty = await UserDB.getElementsById(this.db, userId, "difficulty_level");
-                if (max_difficulty.isError()) return max_difficulty.getResponse(res);
-                max_difficulty_val = max_difficulty.getData().difficulty_level;
-            } else {
-                max_difficulty_val = new Globals().getInt("Unauthorized_max_difficulty");
+                if (max_difficulty.isError()) return max_difficulty.getResponse(reply);
             }
 
-            const page = parseInt(req.params.page, 10);
-            if (Number.isNaN(page)) return res.status(400).json({ message: 'Page must be an integer' });
+            const page = parseInt(request.params.page, 10);
+            if (Number.isNaN(page)) return reply.status(400).send({ message: 'Page must be an integer' });
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const dayOfWeek = today.getDay();
             const isMonday = dayOfWeek === 1;
-            const isSunday = dayOfWeek === 0;
 
             let startDate = new Date(today);
             let endDate = new Date(today);
@@ -92,7 +87,7 @@ export default class EventsAPI {
             
             if (page === 0) {
                 startDate = new Date(today);
-                if (isSunday) {
+                if (dayOfWeek === 0) {
                     endDate.setDate(today.getDate() + 7);
                 } else {
                     endDate.setDate(currentMonday.getDate() + 6);
@@ -124,46 +119,46 @@ export default class EventsAPI {
             endDate.setHours(23, 59, 59, 999);
 
             const events = await EventsDB.get_events_in_range(this.db, startDate, endDate, userId);
-            if (events.isError()) return events.getResponse(res);
+            if (events.isError()) return events.getResponse(reply);
 
-            res.json({ events: events.getData(), startDate, endDate });
+            return reply.send({ events: events.getData(), startDate, endDate });
         });
 
         /**
          * Fetch specific event details by ID.
          */
-        this.app.get('/api/event/:id', async (req: any, res: Response) => {
-            const eventId = parseInt(req.params.id, 10);
+        this.app.get('/api/event/:id', async (request: any, reply: FastifyReply) => {
+            const eventId = parseInt(request.params.id, 10);
             if (Number.isNaN(eventId)) {
-                return res.status(400).json({ message: 'Event ID must be an integer' });
+                return reply.status(400).send({ message: 'Event ID must be an integer' });
             }
 
-            const event = await EventsDB.get_event_by_id(this.db, req.user ? req.user.id : null, eventId);
-            if (event.isError()) { return event.getResponse(res); }
+            const event = await EventsDB.get_event_by_id(this.db, request.user ? request.user.id : null, eventId);
+            if (event.isError()) { return event.getResponse(reply); }
 
-            res.json({ event: event.getData() });
+            return reply.send({ event: event.getData() });
         });
 
         /**
          * Check if the current user is authorized to manage a specific event.
          */
-        this.app.get('/api/event/:id/canManage', check(), async (req: any, res: Response) => {
-            const eventId = parseInt(req.params.id, 10);
+        this.app.get('/api/event/:id/canManage', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            const eventId = parseInt(request.params.id, 10);
             if (Number.isNaN(eventId)) {
-                return res.status(400).json({ message: 'Event ID must be an integer' });
+                return reply.status(400).send({ message: 'Event ID must be an integer' });
             }
 
-            const canManage = await Permissions.canManageEvent(this.db, req.user.id, eventId);
-            res.json({ canManage });
+            const canManage = await Permissions.canManageEvent(this.db, request.user.id, eventId);
+            return reply.send({ canManage });
         });
 
         /**
          * Calculate fallback image for an event based on tag IDs.
          */
-        this.app.post('/api/admin/events/calculate-fallback-image', check('perm:event.manage.all | perm:event.manage.scoped'), async (req: Request, res: Response) => {
-            const tagIds = req.body.tagIds;
+        this.app.post('/api/admin/events/calculate-fallback-image', { preHandler: [check('perm:event.manage.all | perm:event.manage.scoped')] }, async (request: FastifyRequest<{ Body: { tagIds: number[] } }>, reply: FastifyReply) => {
+            const tagIds = request.body.tagIds;
             if (!Array.isArray(tagIds)) {
-                return res.status(400).json({ message: 'tagIds must be an array' });
+                return reply.status(400).send({ message: 'tagIds must be an array' });
             }
 
             try {
@@ -172,10 +167,10 @@ export default class EventsAPI {
                     tags = await TagsDB.getTagListByIds(this.db, tagIds);
                 }
                 const url = await (EventsDB as any)._getFallbackImage(this.db, tags);
-                res.json({ url });
+                return reply.send({ url });
             } catch (error) {
                 Logger.error(error);
-                res.status(500).json({ message: 'Internal error' });
+                return reply.status(500).send({ message: 'Internal error' });
             }
         });
     }

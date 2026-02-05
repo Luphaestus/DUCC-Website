@@ -17,6 +17,7 @@ describe('api/events/EventsAPI', () => {
         world.mockGlobalInt('Unauthorized_max_difficulty', 1);
 
         new EventsAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -42,7 +43,7 @@ describe('api/events/EventsAPI', () => {
             
             const res = await world.as('user').get('/api/events/rweek/0');
             expect(res.statusCode).toBe(200);
-            expect(res.body.events).toBeDefined();
+            expect(JSON.parse(res.body).events).toBeDefined();
         });
 
         /** Test guest difficulty limit. */
@@ -56,7 +57,8 @@ describe('api/events/EventsAPI', () => {
 
             const res = await world.request.get('/api/events/rweek/0');
             expect(res.statusCode).toBe(200);
-            const titles = res.body.events.map(e => e.title);
+            const body = JSON.parse(res.body);
+            const titles = body.events.map(e => e.title);
             
             expect(titles).toContain('EasyEvent');
             expect(titles).not.toContain('HardEvent');
@@ -70,7 +72,7 @@ describe('api/events/EventsAPI', () => {
 
             const res = await world.request.get(`/api/event/${eventId}`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.event.title).toBe('PublicEvent');
+            expect(JSON.parse(res.body).event.title).toBe('PublicEvent');
         });
 
         test('Denied: guest attempts to view high-difficulty event', async () => {
@@ -114,7 +116,7 @@ describe('api/events/EventsAPI', () => {
 
             const res = await world.as('expert').get(`/api/event/${eventId}`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.event.title).toBe('HardTaggedEvent');
+            expect(JSON.parse(res.body).event.title).toBe('HardTaggedEvent');
         });
 
         test('Returns 404 for non-existent events', async () => {
@@ -137,7 +139,7 @@ describe('api/events/EventsAPI', () => {
 
             const res = await world.as('admin').get(`/api/event/${eventId}/canManage`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.canManage).toBe(true);
+            expect(JSON.parse(res.body).canManage).toBe(true);
         });
 
         /** Test scoped management permission. */
@@ -151,7 +153,7 @@ describe('api/events/EventsAPI', () => {
 
             const res = await world.as('scoped_user').get(`/api/event/${eventId}/canManage`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.canManage).toBe(true);
+            expect(JSON.parse(res.body).canManage).toBe(true);
         });
 
         /** Test scoped management denial. */
@@ -164,7 +166,7 @@ describe('api/events/EventsAPI', () => {
 
             const res = await world.as('scoped_user_wrong').get(`/api/event/${eventId}/canManage`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.canManage).toBe(false);
+            expect(JSON.parse(res.body).canManage).toBe(false);
         });
 
         test('Returns false for standard members', async () => {
@@ -172,7 +174,7 @@ describe('api/events/EventsAPI', () => {
 
             const res = await world.as('plain_user').get(`/api/event/${eventId}/canManage`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.canManage).toBe(false);
+            expect(JSON.parse(res.body).canManage).toBe(false);
         });
     });
 });

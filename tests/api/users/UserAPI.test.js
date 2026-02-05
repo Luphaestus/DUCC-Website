@@ -25,6 +25,7 @@ describe('api/users/UserAPI', () => {
         });
 
         new UserAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -35,7 +36,7 @@ describe('api/users/UserAPI', () => {
         test('Success: fetching allowed, whitelisted fields', async () => {
             const res = await world.as('user').get('/api/user/elements/first_name,email,is_member');
             expect(res.statusCode).toBe(200);
-            expect(res.body).toEqual({
+            expect(JSON.parse(res.body)).toEqual({
                 first_name: 'John',
                 email: 'john.doe@durham.ac.uk',
                 is_member: 0
@@ -46,7 +47,7 @@ describe('api/users/UserAPI', () => {
         test('Denied: attempting to fetch forbidden fields (hashed_password)', async () => {
             const res = await world.as('user').get('/api/user/elements/hashed_password');
             expect(res.statusCode).toBe(403);
-            expect(res.body.message).toMatch(/Forbidden element/i);
+            expect(JSON.parse(res.body).message).toMatch(/Forbidden element/i);
         });
 
         test('Denied: fail-fast if ANY requested field is forbidden', async () => {
@@ -57,7 +58,7 @@ describe('api/users/UserAPI', () => {
 
     describe('POST /api/user/elements (Profile Updates)', () => {
         test('Success: updating basic profile fields', async () => {
-            const res = await world.as('user').post('/api/user/elements').send({
+            const res = await world.as('user').post('/api/user/elements', {
                 first_name: 'Johnny',
                 phone_number: '+44 7123 456789'
             });
@@ -69,11 +70,11 @@ describe('api/users/UserAPI', () => {
         });
 
         test('Blocked: validation fail for non-Durham email', async () => {
-            const res = await world.as('user').post('/api/user/elements').send({
+            const res = await world.as('user').post('/api/user/elements', {
                 email: 'not.durham@gmail.com'
             });
             expect(res.statusCode).toBe(400);
-            expect(res.body.errors).toHaveProperty('email');
+            expect(JSON.parse(res.body).errors).toHaveProperty('email');
         });
 
         /** Test legal info completion. */
@@ -95,7 +96,7 @@ describe('api/users/UserAPI', () => {
                 agrees_to_keep_health_data: true
             };
 
-            const res = await world.as('user').post('/api/user/elements').send(legalData);
+            const res = await world.as('user').post('/api/user/elements', legalData);
             expect(res.statusCode).toBe(200);
 
             // Verification: flag is now 1
@@ -105,7 +106,7 @@ describe('api/users/UserAPI', () => {
 
         describe('Security: Privilege Escalation', () => {
             test('Security: prevents mass assignment of restricted fields', async () => {
-                const res = await world.as('user').post('/api/user/elements').send({
+                const res = await world.as('user').post('/api/user/elements', {
                     first_name: 'Hacker',
                     difficulty_level: 5,
                     swims: 9999,
@@ -148,7 +149,7 @@ describe('api/users/UserAPI', () => {
             await world.db.run('UPDATE users SET is_member = 1 WHERE id = ?', [world.data.users['user']]);
             const res = await world.as('user').post('/api/user/join');
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/already a member/i);
+            expect(JSON.parse(res.body).message).toMatch(/already a member/i);
         });
     });
 
@@ -169,20 +170,20 @@ describe('api/users/UserAPI', () => {
         });
 
         test('Blocked: deletion requires correct password verification', async () => {
-            const res = await world.as('user').post('/api/user/deleteAccount').send({ password: 'wrong-password' });
+            const res = await world.as('user').post('/api/user/deleteAccount', { password: 'wrong-password' });
             expect(res.statusCode).toBe(403);
         });
 
         test('Blocked: cannot delete account with outstanding debt', async () => {
             await world.addTransaction('user', -10.0, 'Unpaid Debt');
-            const res = await world.as('user').post('/api/user/deleteAccount').send({ password });
+            const res = await world.as('user').post('/api/user/deleteAccount', { password });
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/zero/i);
+            expect(JSON.parse(res.body).message).toMatch(/zero/i);
         });
 
         /** Test soft-delete success. */
         test('Success: soft-deletion anonymizes PII but preserves historical record links', async () => {
-            const res = await world.as('user').post('/api/user/deleteAccount').send({ password });
+            const res = await world.as('user').post('/api/user/deleteAccount', { password });
             expect(res.statusCode).toBe(200);
 
             const user = await world.db.get('SELECT * FROM users WHERE id = ?', [userId]);

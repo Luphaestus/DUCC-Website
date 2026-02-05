@@ -21,6 +21,7 @@ describe('api/events/WaitlistAPI', () => {
         new WaitlistAPI(world.app, world.db).registerRoutes();
         new AttendanceAPI(world.app, world.db).registerRoutes();
         new EventsAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
 
         await world.createUser('user', { filled_legal_info: 1, difficulty_level: 5 });
     });
@@ -48,7 +49,7 @@ describe('api/events/WaitlistAPI', () => {
             
             const res = await world.as('illegal_user').post(`/api/event/${eventId}/waitlist/join`);
             expect(res.statusCode).toBe(403);
-            expect(res.body.message).toMatch(/legal/i);
+            expect(JSON.parse(res.body).message).toMatch(/legal/i);
         });
 
         test('Blocked: cannot join waitlist for events restricted by difficulty', async () => {
@@ -69,7 +70,7 @@ describe('api/events/WaitlistAPI', () => {
 
             const res = await world.as('user').post(`/api/event/${eventId}/waitlist/join`);
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/disabled/i);
+            expect(JSON.parse(res.body).message).toMatch(/disabled/i);
         });
     });
 
@@ -96,9 +97,10 @@ describe('api/events/WaitlistAPI', () => {
             
             const res = await world.request.get(`/api/event/${eventId}/waitlist`);
             expect(res.statusCode).toBe(200);
-            expect(res.body).toHaveProperty('count');
+            const body = JSON.parse(res.body);
+            expect(body).toHaveProperty('count');
             // Full list should NOT be visible to public
-            expect(res.body.waitlist).toBeUndefined();
+            expect(body.waitlist).toBeUndefined();
         });
 
         test('Blocked: guests cannot fetch waitlist data for restricted events', async () => {
@@ -118,7 +120,7 @@ describe('api/events/WaitlistAPI', () => {
 
             const res = await world.as('admin').get(`/api/event/${eventId}/waitlist`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.waitlist).toBeDefined();
+            expect(JSON.parse(res.body).waitlist).toBeDefined();
         });
     });
 });

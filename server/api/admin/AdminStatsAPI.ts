@@ -4,17 +4,16 @@
  * Provides statistical data for the admin dashboard.
  */
 
-import { Express, Response } from 'express';
+import { FastifyInstance, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 import check from '../../misc/authentication.js';
-import { statusObject } from '../../misc/status.js';
 import Logger from '../../misc/Logger.js';
 
 export default class AdminStats {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -24,7 +23,7 @@ export default class AdminStats {
          * GET /api/admin/stats/summary
          * Returns high-level metrics for dashboard cards.
          */
-        this.app.get('/api/admin/stats/summary', check('perm:user.manage | perm:event.manage.all | perm:transaction.manage'), async (req: any, res: Response) => {
+        this.app.get('/api/admin/stats/summary', { preHandler: [check('perm:user.manage | perm:event.manage.all | perm:transaction.manage')] }, async (request: any, reply: FastifyReply) => {
             try {
                 const [
                     memberCount,
@@ -38,7 +37,7 @@ export default class AdminStats {
                     this.db.get('SELECT COUNT(*) as count FROM event_drivers WHERE status = "pending"')
                 ]);
 
-                res.json({
+                return reply.send({
                     members: memberCount?.count || 0,
                     club_balance: totalBalance?.total || 0,
                     upcoming_events: activeEvents?.count || 0,
@@ -46,7 +45,7 @@ export default class AdminStats {
                 });
             } catch (e: any) {
                 Logger.error('Stats Summary Error', e);
-                res.status(500).json({ message: 'Database error' });
+                return reply.status(500).send({ message: 'Database error' });
             }
         });
 
@@ -54,7 +53,7 @@ export default class AdminStats {
          * GET /api/admin/stats/finance
          * Returns financial data for charts.
          */
-        this.app.get('/api/admin/stats/finance', check('perm:transaction.manage'), async (req: any, res: Response) => {
+        this.app.get('/api/admin/stats/finance', { preHandler: [check('perm:transaction.manage')] }, async (request: any, reply: FastifyReply) => {
             try {
                 // Monthly Income/Expenses (Last 12 Months)
                 const monthlyStats = await this.db.all(`
@@ -85,13 +84,13 @@ export default class AdminStats {
                     GROUP BY category
                 `);
 
-                res.json({
+                return reply.send({
                     monthly: monthlyStats,
                     categories: categoryStats
                 });
             } catch (e: any) {
                 Logger.error('Finance Stats Error', e);
-                res.status(500).json({ message: 'Database error' });
+                return reply.status(500).send({ message: 'Database error' });
             }
         });
 
@@ -99,7 +98,7 @@ export default class AdminStats {
          * GET /api/admin/stats/attendance
          * Returns attendance data for charts.
          */
-        this.app.get('/api/admin/stats/attendance', check('perm:event.manage.all | perm:event.read.all'), async (req: any, res: Response) => {
+        this.app.get('/api/admin/stats/attendance', { preHandler: [check('perm:event.manage.all | perm:event.read.all')] }, async (request: any, reply: FastifyReply) => {
             try {
                 // Monthly Attendance (Last 12 Months)
                 const monthlyAttendance = await this.db.all(`
@@ -128,13 +127,13 @@ export default class AdminStats {
                     LIMIT 10
                 `);
 
-                res.json({
+                return reply.send({
                     monthly: monthlyAttendance,
                     types: typeBreakdown
                 });
             } catch (e: any) {
                 Logger.error('Attendance Stats Error', e);
-                res.status(500).json({ message: 'Database error' });
+                return reply.status(500).send({ message: 'Database error' });
             }
         });
 
@@ -142,7 +141,7 @@ export default class AdminStats {
          * GET /api/admin/stats/leaderboards
          * Returns Top Spenders and Most Active Members.
          */
-        this.app.get('/api/admin/stats/leaderboards', check('perm:user.manage | perm:transaction.manage'), async (req: any, res: Response) => {
+        this.app.get('/api/admin/stats/leaderboards', { preHandler: [check('perm:user.manage | perm:transaction.manage')] }, async (request: any, reply: FastifyReply) => {
             try {
                 const [topSpenders, mostActive] = await Promise.all([
                     this.db.all(`
@@ -165,13 +164,13 @@ export default class AdminStats {
                     `)
                 ]);
 
-                res.json({
+                return reply.send({
                     top_spenders: topSpenders,
                     most_active: mostActive
                 });
             } catch (e: any) {
                 Logger.error('Leaderboards Stats Error', e);
-                res.status(500).json({ message: 'Database error' });
+                return reply.status(500).send({ message: 'Database error' });
             }
         });
 
@@ -179,9 +178,9 @@ export default class AdminStats {
          * GET /api/admin/stats/user/:id
          * Returns detailed stats for a specific user.
          */
-        this.app.get('/api/admin/stats/user/:id', check('perm:user.manage | perm:transaction.manage'), async (req: any, res: Response) => {
+        this.app.get('/api/admin/stats/user/:id', { preHandler: [check('perm:user.manage | perm:transaction.manage')] }, async (request: any, reply: FastifyReply) => {
             try {
-                const userId = parseInt(req.params.id);
+                const userId = parseInt(request.params.id);
                 
                 const [totalSpent, yearSpent, totalEvents, yearEvents] = await Promise.all([
                     this.db.get('SELECT SUM(ABS(amount)) as val FROM transactions WHERE user_id = ? AND amount < 0', [userId]),
@@ -190,7 +189,7 @@ export default class AdminStats {
                     this.db.get('SELECT COUNT(*) as val FROM event_attendees ea JOIN events e ON ea.event_id = e.id WHERE ea.user_id = ? AND ea.is_attending = 1 AND YEAR(e.start) = YEAR(NOW())', [userId])
                 ]);
 
-                res.json({
+                return reply.send({
                     finance: {
                         total_spent: totalSpent?.val || 0,
                         year_spent: yearSpent?.val || 0
@@ -202,7 +201,7 @@ export default class AdminStats {
                 });
             } catch (e: any) {
                 Logger.error('User Stats Error', e);
-                res.status(500).json({ message: 'Database error' });
+                return reply.status(500).send({ message: 'Database error' });
             }
         });
     }

@@ -10,6 +10,7 @@ describe('api/admin/AdminStatsAPI', () => {
         await world.setUp();
         
         new AdminStatsAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
 
         // Setup initial data for stats
         await world.createRole('Admin', ['user.manage', 'event.manage.all', 'transaction.manage']);
@@ -30,47 +31,43 @@ describe('api/admin/AdminStatsAPI', () => {
     });
 
     it('GET /api/admin/stats/summary - Returns summary metrics', async () => {
-        await world.as('admin').get('/api/admin/stats/summary')
-            .expect(200)
-            .then(res => {
-                expect(res.body).toHaveProperty('members');
-                expect(res.body).toHaveProperty('club_balance');
-                expect(res.body.club_balance).toBe(40); // 50 - 10
-            });
+        const res = await world.as('admin').get('/api/admin/stats/summary');
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body).toHaveProperty('members');
+        expect(body).toHaveProperty('club_balance');
+        expect(body.club_balance).toBe(40); // 50 - 10
     });
 
     it('GET /api/admin/stats/finance - Returns finance data', async () => {
-        await world.as('admin').get('/api/admin/stats/finance')
-            .expect(200)
-            .then(res => {
-                expect(res.body).toHaveProperty('monthly');
-                expect(res.body).toHaveProperty('categories');
-                expect(Array.isArray(res.body.monthly)).toBe(true);
-            });
+        const res = await world.as('admin').get('/api/admin/stats/finance');
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body).toHaveProperty('monthly');
+        expect(body).toHaveProperty('categories');
+        expect(Array.isArray(body.monthly)).toBe(true);
     });
 
     it('GET /api/admin/stats/attendance - Returns attendance data', async () => {
-        await world.as('admin').get('/api/admin/stats/attendance')
-            .expect(200)
-            .then(res => {
-                expect(res.body).toHaveProperty('monthly');
-                expect(res.body).toHaveProperty('types');
-            });
+        const res = await world.as('admin').get('/api/admin/stats/attendance');
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body).toHaveProperty('monthly');
+        expect(body).toHaveProperty('types');
     });
 
     it('GET /api/admin/stats/user/:id - Returns user stats', async () => {
         const userId = world.data.users['user'];
-        await world.as('admin').get(`/api/admin/stats/user/${userId}`)
-            .expect(200)
-            .then(res => {
-                expect(res.body).toHaveProperty('finance');
-                expect(res.body.finance.total_spent).toBe(10);
-                expect(res.body.attendance.total_events).toBe(1);
-            });
+        const res = await world.as('admin').get(`/api/admin/stats/user/${userId}`);
+        expect(res.statusCode).toBe(200);
+        const body = JSON.parse(res.body);
+        expect(body).toHaveProperty('finance');
+        expect(body.finance.total_spent).toBe(10);
+        expect(body.attendance.total_events).toBe(1);
     });
 
     it('GET /api/admin/stats/summary - Forbidden for standard user', async () => {
-        await world.as('user').get('/api/admin/stats/summary')
-            .expect(403);
+        const res = await world.as('user').get('/api/admin/stats/summary');
+        expect(res.statusCode).toBe(403);
     });
 });

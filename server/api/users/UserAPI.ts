@@ -16,42 +16,29 @@ import check from '../../misc/authentication.js';
 import bcrypt from 'bcrypt';
 import ValidationRules from '../../rules/ValidationRules.js';
 import Logger from '../../misc/Logger.js';
-import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { fileTypeFromFile } from 'file-type';
 import config from '../../config.js';
 import FilesDB from '../../db/filesDB.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
+import { pipeline } from 'stream/promises';
 
 export default class User {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
     uploadDir: string;
-    upload: multer.Multer;
 
     /**
-     * @param {object} app - Express app.
+     * @param {object} app - Fastify app.
      * @param {object} db - SQLite database.
      */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
         this.uploadDir = config.paths.files;
-
-        const storage = multer.diskStorage({
-            destination: (req, file, cb) => {
-                cb(null, this.uploadDir);
-            },
-            filename: (req, file, cb) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                cb(null, uniqueSuffix);
-            }
-        });
-
-        this.upload = multer({ storage: storage });
     }
 
     /**
@@ -75,14 +62,9 @@ export default class User {
     ];
 
     /**
-     * Get authenticated user ID.
-     */
-    static getID(req: any) { return req.user ? req.user.id : null; }
-
-    /**
      * Fetch whitelisted profile elements for current user.
      */
-    static async getAccessibleElements(req: any, db: DatabaseWrapper, elements: string | string[]): Promise<statusObject> {
+    static async getAccessibleElements(request: any, db: DatabaseWrapper, elements: string | string[]): Promise<statusObject> {
         function isElementAccessibleByNormalUser(element: string): [boolean, boolean] {
             const accessibleUserDB = [
                 "id", "email", "first_name", "last_name", "date_of_birth", "college_id",
@@ -120,15 +102,15 @@ export default class User {
 
             let userResult;
             if (cleanElements.length > 0) {
-                userResult = await UserDB.getElements(db, req.user.id, cleanElements);
+                userResult = await UserDB.getElements(db, request.user.id, cleanElements);
                 if (userResult.isError()) return userResult;
                 userResultData = userResult.getData();
             }
 
             if (needsRank) {
                 const [allTimeRes, yearlyRes] = await Promise.all([
-                    SwimsDB.getUserSwimmerRank(db, req.user.id, false),
-                    SwimsDB.getUserSwimmerRank(db, req.user.id, true)
+                    SwimsDB.getUserSwimmerRank(db, request.user.id, false),
+                    SwimsDB.getUserSwimmerRank(db, request.user.id, true)
                 ]);
                 let allTimeData = allTimeRes.getData() || { rank: -1, swims: 0 };
                 allTimeData.rank = allTimeData.swims === 0 ? -1 : allTimeData.rank;
@@ -142,13 +124,13 @@ export default class User {
 
             if (needsPerms || needsRoles) {
                 if (needsRoles) {
-                    const rolesRes = await RolesDB.getUserRoles(db, req.user.id);
+                    const rolesRes = await RolesDB.getUserRoles(db, request.user.id);
                     if (rolesRes.isError()) return rolesRes;
                     userResultData.roles = rolesRes.getData();
                 }
 
                 if (needsPerms) {
-                    const permsRes = await RolesDB.getAllUserPermissions(db, req.user.id);
+                    const permsRes = await RolesDB.getAllUserPermissions(db, request.user.id);
                     if (permsRes.isError()) return permsRes;
                     userResultData.permissions = permsRes.getData();
                 }
@@ -157,7 +139,7 @@ export default class User {
 
         let transactionResultData: any = {};
         if (transactionElements.length > 0) {
-            const transactionResult = await transactionsDB.getElements(db, req.user.id, transactionElements);
+            const transactionResult = await transactionsDB.getElements(db, request.user.id, transactionElements);
             if (transactionResult.isError()) return transactionResult;
             transactionResultData = transactionResult.getData();
         }
@@ -168,7 +150,7 @@ export default class User {
     /**
      * Validate and write profile updates.
      */
-    static async writeNormalElements(req: any, db: DatabaseWrapper, inputData: any): Promise<statusObject> {
+    static async writeNormalElements(request: any, db: DatabaseWrapper, inputData: any): Promise<statusObject> {
         const ALLOWED_FIELDS = [
             "email", "first_name", "last_name", "date_of_birth", "college_id",
             "emergency_contact_name", "emergency_contact_phone", "home_address",
@@ -187,7 +169,7 @@ export default class User {
 
         async function getElement(element: string, data: any, db: DatabaseWrapper) {
             if (element in data) return new statusObject(200, null, data[element]);
-            return await User.getAccessibleElements(req, db, element);
+            return await User.getAccessibleElements(request, db, element);
         }
 
         const errors: any = {};
@@ -286,7 +268,7 @@ export default class User {
 
         if (data.email) data.email = data.email.replace(/\s/g, '').toLowerCase();
 
-        const writeStatus = await UserDB.writeElements(db, req.user.id, data);
+        const writeStatus = await UserDB.writeElements(db, request.user.id, data);
         if (writeStatus.isError()) return writeStatus;
         return new statusObject(200);
     }
@@ -305,152 +287,165 @@ export default class User {
         /**
          * Fetch profile elements for current user.
          */
-        this.app.get('/api/user/elements/:elements', check(), async (req: any, res: Response) => {
-            const elements = req.params.elements.split(',').map((e: string) => e.trim());
-            const status = await User.getAccessibleElements(req, this.db, elements);
-            if (status.isError()) return status.getResponse(res);
-            res.json(status.getData());
+        this.app.get('/api/user/elements/:elements', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            const elements = request.params.elements.split(',').map((e: string) => e.trim());
+            const status = await User.getAccessibleElements(request, this.db, elements);
+            if (status.isError()) return status.getResponse(reply);
+            return reply.send(status.getData());
         });
 
         /**
          * Fetch profile elements for a specific user.
          */
-        this.app.get('/api/user/:id/elements/:elements', check('perm:user.read'), async (req: any, res: Response) => {
-            const userId = parseInt(req.params.id);
-            if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
+        this.app.get('/api/user/:id/elements/:elements', { preHandler: [check('perm:user.read')] }, async (request: any, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id);
+            if (isNaN(userId)) return reply.status(400).send({ message: 'Invalid user ID' });
 
-            const elements = req.params.elements.split(',').map((e: string) => e.trim());
-            const targetReq = { ...req, user: { ...req.user, id: userId } };
-            const status = await User.getAccessibleElements(targetReq, this.db, elements);
-            if (status.isError()) return status.getResponse(res);
-            res.json(status.getData());
+            const elements = request.params.elements.split(',').map((e: string) => e.trim());
+            const targetRequest = { ...request, user: { ...request.user, id: userId } };
+            const status = await User.getAccessibleElements(targetRequest, this.db, elements);
+            if (status.isError()) return status.getResponse(reply);
+            return reply.send(status.getData());
         });
 
         /**
          * Update current user's profile elements.
          */
-        this.app.post('/api/user/elements', check(), async (req: any, res: Response) => {
-            User.preprocessData(req.body);
-            const status = await User.writeNormalElements(req, this.db, req.body);
+        this.app.post('/api/user/elements', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            User.preprocessData(request.body);
+            const status = await User.writeNormalElements(request, this.db, request.body);
             if (status.isError()) {
                 if (status.status === 400 && status.data && status.data.errors) {
-                    return res.status(400).json({ message: status.message, errors: status.data.errors });
+                    return reply.status(400).send({ message: status.message, errors: status.data.errors });
                 }
-                return status.getResponse(res);
+                return status.getResponse(reply);
             }
-            res.json({ success: true });
+            return reply.send({ success: true });
         });
 
         /**
          * Process membership joining.
          */
-        this.app.post('/api/user/join', check(), async (req: any, res: Response) => {
+        this.app.post('/api/user/join', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
             try {
-                const status = await UserDB.getElements(this.db, req.user.id, 'is_member');
-                if (status.isError()) return status.getResponse(res);
-                if (status.getData().is_member) return res.status(400).json({ message: 'Already a member.' });
+                const status = await UserDB.getElements(this.db, request.user.id, 'is_member');
+                if (status.isError()) return status.getResponse(reply);
+                if (status.getData().is_member) return reply.status(400).send({ message: 'Already a member.' });
 
                 const globals = new Globals();
                 const cost = globals.getFloat('MembershipCost') || 50;
 
-                const tx = await transactionsDB.add_transaction(this.db, User.getID(req), -cost, 'Membership Fee');
-                if (typeof tx === 'number' && tx >= 400) return res.status(tx).json({ message: 'Transaction failed' });
+                const tx = await transactionsDB.add_transaction(this.db, request.user.id, -cost, 'Membership Fee');
+                if (typeof tx === 'number' && tx >= 400) return reply.status(tx).send({ message: 'Transaction failed' });
 
-                const update = await UserDB.setMembershipStatus(this.db, req.user.id, true);
-                if (update.isError()) return update.getResponse(res);
-                res.json({ success: true });
+                const update = await UserDB.setMembershipStatus(this.db, request.user.id, true);
+                if (update.isError()) return update.getResponse(reply);
+                return reply.send({ success: true });
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Internal error' });
+                return reply.status(500).send({ message: 'Internal error' });
             }
         });
 
         /**
          * Permanently delete current user account.
          */
-        this.app.post('/api/user/deleteAccount', check(), async (req: any, res: Response) => {
-            const { password } = req.body;
-            if (!password) return res.status(400).json({ message: 'Password is required to delete account.' });
+        this.app.post('/api/user/deleteAccount', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            const { password } = request.body as any;
+            if (!password) return reply.status(400).send({ message: 'Password is required to delete account.' });
 
             try {
-                const user = await AuthDB.getUserById(this.db, req.user.id);
-                if (!user || !user.hashed_password) return res.status(400).json({ message: 'User not found or invalid state.' });
+                const user = await AuthDB.getUserById(this.db, request.user.id);
+                if (!user || !user.hashed_password) return reply.status(400).send({ message: 'User not found or invalid state.' });
 
                 const isMatch = await bcrypt.compare(password, user.hashed_password);
-                if (!isMatch) return res.status(403).json({ message: 'Incorrect password.' });
+                if (!isMatch) return reply.status(403).send({ message: 'Incorrect password.' });
 
-                const balance = await transactionsDB.get_balance(this.db, req.user.id);
-                if (balance.isError()) return balance.getResponse(res);
-                if (balance.getData() !== 0) return res.status(400).json({ message: 'Balance must be zero to delete account.' });
+                const balance = await transactionsDB.get_balance(this.db, request.user.id);
+                if (balance.isError()) return balance.getResponse(reply);
+                if (balance.getData() !== 0) return reply.status(400).send({ message: 'Balance must be zero to delete account.' });
 
-                const status = await UserDB.removeUser(this.db, req.user.id);
-                if (status.isError()) return status.getResponse(res);
+                const status = await UserDB.removeUser(this.db, request.user.id);
+                if (status.isError()) return status.getResponse(reply);
 
-                req.logout((err: any) => { res.json({ success: true }); });
+                await request.logOut();
+                return reply.send({ success: true });
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Internal server error.' });
+                return reply.status(500).send({ message: 'Internal server error.' });
             }
         });
 
         /**
          * Upload and set profile picture.
          */
-        this.app.post('/api/user/profile-picture', check(), this.upload.single('image'), async (req: any, res: Response) => {
+        this.app.post('/api/user/profile-picture', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
             try {
                 let fileId = null;
+                const parts = request.files();
+                let body: any = {};
 
-                if (req.file) {
-                    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                    const filePath = req.file.path;
+                for await (const part of parts) {
+                    if (part.type === 'file') {
+                        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                        const tempFilename = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                        const tempPath = path.join(this.uploadDir, tempFilename);
+                        
+                        await pipeline(part.file, fs.createWriteStream(tempPath));
 
-                    const fileTypeResult = await fileTypeFromFile(filePath);
-                    if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
-                        await fs.promises.unlink(filePath);
-                        return res.status(400).json({ message: 'Invalid image type.' });
-                    }
+                        const fileTypeResult = await fileTypeFromFile(tempPath);
+                        if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
+                            await fs.promises.unlink(tempPath);
+                            return reply.status(400).send({ message: 'Invalid image type.' });
+                        }
 
-                    const ext = `.${fileTypeResult.ext}`;
-                    const newFilename = req.file.filename + ext;
-                    const newPath = filePath + ext;
-                    await fs.promises.rename(filePath, newPath);
+                        const ext = `.${fileTypeResult.ext}`;
+                        const finalFilename = tempFilename + ext;
+                        const finalPath = tempPath + ext;
+                        await fs.promises.rename(tempPath, finalPath);
 
-                    const fileHash = await this.calculateHash(newPath);
-                    const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
+                        const fileHash = await this.calculateHash(finalPath);
+                        const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
 
-                    if (!existingFileStatus.isError()) {
-                        fileId = existingFileStatus.getData().id;
-                        await fs.promises.unlink(newPath);
+                        if (!existingFileStatus.isError()) {
+                            fileId = existingFileStatus.getData().id;
+                            await fs.promises.unlink(finalPath);
+                        } else {
+                            const stats = await fs.promises.stat(finalPath);
+                            const data = {
+                                title: `Profile Picture - ${request.user.first_name} ${request.user.last_name}`,
+                                author: `${request.user.first_name} ${request.user.last_name}`,
+                                size: stats.size,
+                                filename: finalFilename,
+                                hash: fileHash,
+                                visibility: 'public'
+                            };
+                            const createStatus = await FilesDB.createFile(this.db, data);
+                            if (createStatus.isError()) return createStatus.getResponse(reply);
+                            fileId = createStatus.getData().id;
+                        }
                     } else {
-                        const data = {
-                            title: `Profile Picture - ${req.user.first_name} ${req.user.last_name}`,
-                            author: `${req.user.first_name} ${req.user.last_name}`,
-                            size: req.file.size,
-                            filename: newFilename,
-                            hash: fileHash,
-                            visibility: 'public'
-                        };
-                        const createStatus = await FilesDB.createFile(this.db, data);
-                        if (createStatus.isError()) return createStatus.getResponse(res);
-                        fileId = createStatus.getData().id;
+                        body[part.fieldname] = part.value;
                     }
-                } else if (req.body.fileId !== undefined) {
-                    fileId = req.body.fileId;
+                }
+
+                if (body.fileId !== undefined) {
+                    fileId = body.fileId;
                 }
 
                 // Fetch current values to preserve them if not provided
-                const currentUser = await UserDB.getElements(this.db, req.user.id, ['profile_picture_color', 'profile_picture_font', 'profile_picture_initials']);
+                const currentUser = await UserDB.getElements(this.db, request.user.id, ['profile_picture_color', 'profile_picture_font', 'profile_picture_initials']);
                 const currentData = currentUser.getData() || {};
 
-                const color = req.body.color !== undefined ? req.body.color : currentData.profile_picture_color;
-                const font = req.body.font !== undefined ? req.body.font : currentData.profile_picture_font;
-                const initials = req.body.initials !== undefined ? req.body.initials : currentData.profile_picture_initials;
+                const color = body.color !== undefined ? body.color : currentData.profile_picture_color;
+                const font = body.font !== undefined ? body.font : currentData.profile_picture_font;
+                const initials = body.initials !== undefined ? body.initials : currentData.profile_picture_initials;
                 
-                const status = await UserDB.setProfilePicture(this.db, req.user.id, fileId, color, font, initials);
-                status.getResponse(res);
+                const status = await UserDB.setProfilePicture(this.db, request.user.id, fileId, color, font, initials);
+                return status.getResponse(reply);
             } catch (err) {
                 Logger.error('Profile picture upload error:', err);
-                res.status(500).json({ message: 'Upload failed.' });
+                return reply.status(500).send({ message: 'Upload failed.' });
             }
         });
     }

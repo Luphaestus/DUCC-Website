@@ -17,6 +17,7 @@ describe('api/SlidesAPI', () => {
         
         slidesAPI = new SlidesAPI(world.app, world.db);
         slidesAPI.registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -29,7 +30,7 @@ describe('api/SlidesAPI', () => {
 
         const res = await world.request.get('/api/slides/count');
         expect(res.statusCode).toBe(200);
-        expect(res.body.data).toBe(1);
+        expect(JSON.parse(res.body).data).toBe(1);
     });
 
     test('GET /api/slides/images', async () => {
@@ -38,7 +39,7 @@ describe('api/SlidesAPI', () => {
 
         const res = await world.request.get('/api/slides/images');
         expect(res.statusCode).toBe(200);
-        expect(res.body.images).toContain(`/api/files/${fileId}/download?view=true`);
+        expect(JSON.parse(res.body).images).toContain(`/api/files/${fileId}/download?view=true`);
     });
 
     test('GET /api/slides/random', async () => {
@@ -47,7 +48,7 @@ describe('api/SlidesAPI', () => {
 
         const res = await world.request.get('/api/slides/random');
         expect(res.statusCode).toBe(200);
-        expect(res.body.image).toBe(`/api/files/${fileId}/download?view=true`);
+        expect(JSON.parse(res.body).image).toBe(`/api/files/${fileId}/download?view=true`);
     });
 
     test('POST /api/slides/import and DELETE /api/slides', async () => {
@@ -56,17 +57,17 @@ describe('api/SlidesAPI', () => {
         const fileId = await world.createFile('Slide1');
 
         // Import
-        const resImport = await world.as('admin').post('/api/slides/import').send({ fileId });
+        const resImport = await world.as('admin').post('/api/slides/import', { fileId });
         expect(resImport.statusCode).toBe(201);
 
         const countRes = await world.request.get('/api/slides/count');
-        expect(countRes.body.data).toBe(1);
+        expect(JSON.parse(countRes.body).data).toBe(1);
 
         // Delete
-        const resDelete = await world.as('admin').delete('/api/slides').send({ fileId });
+        const resDelete = await world.as('admin').delete('/api/slides', { fileId });
         expect(resDelete.statusCode).toBe(200);
 
         const countRes2 = await world.request.get('/api/slides/count');
-        expect(countRes2.body.data).toBe(0);
+        expect(JSON.parse(countRes2.body).data).toBe(0);
     });
 });

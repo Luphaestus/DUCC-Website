@@ -1,37 +1,39 @@
 /**
- * server.js
+ * server.ts
  * 
-* Main application entry point. Configures Express, SQLite, security, sessions, and API routes.
+ * Main application entry point. Configures Fastify, MySQL, security, sessions, and API routes.
  */
 
-const PORT = process.env.PORT || 3000;
-
-/** Catch and log unhandled promise rejections for debugging. */
-process.on('unhandledRejection', (reason, promise) => {
-  Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
 import path from 'path';
-import express, { Request, Response } from 'express';
-import { connect, DatabaseWrapper } from './db/db.js';
-import session from 'express-session';
-import expressMySQLSession from 'express-mysql-session';
-const MySQLStore = expressMySQLSession(session);
-import passport from 'passport';
+import { fileURLToPath, pathToFileURL } from 'url';
 import fs from 'fs';
 import crypto from 'crypto';
-import { fileURLToPath, pathToFileURL } from 'url';
-import Globals from './misc/globals.js';
-import cliProgress from 'cli-progress';
+import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import fastifyStatic from '@fastify/static';
+import fastifyFormbody from '@fastify/formbody';
+import fastifyMultipart from '@fastify/multipart';
+import fastifyCookie from '@fastify/cookie';
+import fastifySession from '@fastify/session';
+import fastifyPassport from '@fastify/passport';
+import fastifyRateLimit from '@fastify/rate-limit';
+import middie from '@fastify/middie';
 import colors from 'ansi-colors';
-import rateLimit from 'express-rate-limit';
+import cliProgress from 'cli-progress';
+
+import { connect, DatabaseWrapper } from './db/db.js';
+import Globals from './misc/globals.js';
 import Logger from './misc/Logger.js';
 import config from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
+const PORT = parseInt(process.env.PORT || '3000');
+
+/** Catch and log unhandled promise rejections for debugging. */
+process.on('unhandledRejection', (reason, promise) => {
+  Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 const isDev = process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'development';
 const isProd = process.env.NODE_ENV === 'prod' || process.env.NODE_ENV === 'production';
@@ -41,152 +43,11 @@ if (isProd && !config.session.secret) {
   process.exit(1);
 }
 
-
-/** Disable header for mild obfuscation. */
-app.disable('x-powered-by');
-
-/** Configure LiveReload for faster frontend development in dev mode. */
-if (isDev) {
-  try {
-    const livereload = (await import('livereload')).default;
-    const connectLiveReload = (await import('connect-livereload')).default;
-
-    const liveReloadServer = livereload.createServer();
-    liveReloadServer.watch(path.join(__dirname, '..', 'public'));
-    app.use(connectLiveReload({
-      ignore: [
-        /^\/api\/.*/,
-        /\.js$/,
-        /\.css$/,
-        /\.svg$/,
-        /\.ico$/,
-        /\.jpg$/,
-        /\.jpeg$/,
-        /\.png$/,
-        /\.pdf$/,
-        /\.docx?$/,
-        /\.xlsx?$/,
-        /\.zip$/,
-        /\.mp4$/
-      ]
-    }));
-  } catch (e: any) {
-    Logger.warn('LiveReload not available.');
-  }
-}
-
-/** Rate Limiting */
-const standardLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10000,
-  standardHeaders: true,
-  legacyHeaders: false,
+const fastify = Fastify({
+  logger: false, // We use our own Logger
 });
 
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 2000,
-  message: { message: 'Too many attempts, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use(standardLimiter);
-app.use('/api/auth/', strictLimiter);
-
-/** Security Middleware: Sets CSP and other security-related HTTP headers. */
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/files/') && req.path.endsWith('/download')) {
-    return next();
-  }
-
-  let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' blob: https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
-
-  if (isDev) {
-    csp = csp.replace("script-src 'self'", "script-src 'self' http://localhost:35729 http://localhost:3000");
-    csp = csp.replace("connect-src 'self'", "connect-src 'self' ws://localhost:35729 http://localhost:3000");
-  }
-
-  res.setHeader("Content-Security-Policy", csp);
-  res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  next();
-});
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-/** Static file serving with caching policies. */
-app.use(express.static('dist', {
-  maxAge: isDev ? '0' : '1h'
-}));
-
-app.use(express.static('public', {
-  maxAge: isDev ? '0' : '1h',
-  setHeaders: (res, path) => {
-    if (isDev) {
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.set('Pragma', 'no-cache');
-      res.set('Expires', '0');
-    } else if (path.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
-      res.set('Cache-Control', 'public, max-age=86400');
-    }
-  }
-}));
-
-const sessionStore = new MySQLStore(config.mysql);
-
-/** Session Management using express-mysql-session. */
-app.use(session({
-  name: config.session.cookieName,
-  store: sessionStore,
-  secret: config.session.secret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to true if using HTTPS
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24
-  }
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-/** CSRF Protection (Modern Double Submit Cookie Implementation) */
-if (isProd) {
-  app.use((req, res, next) => {
-    // Generate token if it doesn't exist in session
-    let token = (req.session as any).csrfToken;
-    if (!token) {
-      token = crypto.randomBytes(32).toString('hex');
-      (req.session as any).csrfToken = token;
-    }
-
-    // Set token in a client-readable cookie
-    res.cookie('XSRF-TOKEN', token, { 
-      httpOnly: false, 
-      sameSite: 'lax',
-      secure: isProd 
-    });
-    res.locals.csrfToken = token;
-
-    // Verify token for state-changing methods
-    const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
-    if (!safeMethods.includes(req.method)) {
-      const headerToken = req.headers['x-csrf-token'];
-      if (!token || !headerToken || headerToken !== token) {
-        return res.status(403).json({ message: 'Invalid or missing CSRF token' });
-      }
-    }
-
-    next();
-  });
-}
-
-new Globals();
-
+/** Decorate request with DB */
 let db: DatabaseWrapper;
 
 /** Bootstraps server: connects DB, registers routes, starts listening. */
@@ -198,36 +59,167 @@ const startServer = async () => {
       Logger.info(`Connected to the MySQL database at ${config.mysql.host}.`);
     }
 
-    app.use((req, res, next) => {
-      (req as any).db = db;
-      next();
+    // Register plugins
+    await fastify.register(middie);
+    await fastify.register(fastifyFormbody);
+    await fastify.register(fastifyMultipart, {
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB
+      }
+    });
+    await fastify.register(fastifyCookie);
+    
+    await fastify.register(fastifySession, {
+      secret: config.session.secret,
+      cookieName: config.session.cookieName,
+      saveUninitialized: false,
+      cookie: {
+        secure: false, // Set to true if using HTTPS
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24
+      }
     });
 
-    app.get('/api/health', (req, res) => {
-      res.status(200).json({ ok: true });
+    await fastify.register(fastifyPassport.initialize());
+    await fastify.register(fastifyPassport.secureSession());
+
+    /** Static file serving - Register BEFORE routes so reply.sendFile is available */
+    await fastify.register(fastifyStatic, {
+      root: [path.join(__dirname, '..', 'dist'), path.join(__dirname, '..', 'public')],
+      prefix: '/',
+      wildcard: true,
+      setHeaders: (res, filePath) => {
+        if (isDev) {
+          res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        } else if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+        }
+      }
     });
 
-    app.get('/api/updates', async (req: any, res: Response) => {
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.flushHeaders();
+    fastify.decorateRequest('db', null);
+    fastify.addHook('preHandler', async (request) => {
+      (request as any).db = db;
+    });
+
+    /** Rate Limiting */
+    await fastify.register(fastifyRateLimit, {
+      global: true,
+      max: 10000,
+      timeWindow: '15m'
+    });
+
+    /** Security Headers & CSP */
+    fastify.addHook('onSend', async (request, reply, payload) => {
+      if (request.url.startsWith('/api/files/') && request.url.endsWith('/download')) {
+        return payload;
+      }
+
+      let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' blob: https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
+
+      if (isDev) {
+        csp = csp.replace("script-src 'self'", "script-src 'self' http://localhost:35729 http://localhost:3000");
+        csp = csp.replace("connect-src 'self'", "connect-src 'self' ws://localhost:35729 http://localhost:3000");
+      }
+
+      reply.header("Content-Security-Policy", csp);
+      reply.header("X-Frame-Options", "DENY");
+      reply.header("X-Content-Type-Options", "nosniff");
+      reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+      reply.header("X-Powered-By", ""); // Fastify doesn't add this by default but just in case
+      
+      return payload;
+    });
+
+    /** Configure LiveReload for faster frontend development in dev mode. */
+    if (isDev) {
+      try {
+        const livereload = (await import('livereload')).default;
+        const connectLiveReload = (await import('connect-livereload')).default;
+
+        const liveReloadServer = livereload.createServer();
+        liveReloadServer.watch(path.join(__dirname, '..', 'public'));
+        
+        // Use middie to support connect-style middleware
+        (fastify as any).use(connectLiveReload({
+          ignore: [
+            /^\/api\/.*/,
+            /\.js$/,
+            /\.css$/,
+            /\.svg$/,
+            /\.ico$/,
+            /\.jpg$/,
+            /\.jpeg$/,
+            /\.png$/,
+            /\.pdf$/,
+            /\.docx?$/,
+            /\.xlsx?$/,
+            /\.zip$/,
+            /\.mp4$/
+          ]
+        }));
+      } catch (e: any) {
+        Logger.warn('LiveReload not available.');
+      }
+    }
+
+    /** CSRF Protection (Modern Double Submit Cookie Implementation) */
+    if (isProd) {
+      fastify.addHook('preHandler', async (request, reply) => {
+        // Generate token if it doesn't exist in session
+        let token = (request.session as any).get('csrfToken');
+        if (!token) {
+          token = crypto.randomBytes(32).toString('hex');
+          (request.session as any).set('csrfToken', token);
+        }
+
+        // Set token in a client-readable cookie
+        reply.setCookie('XSRF-TOKEN', token, { 
+          httpOnly: false, 
+          sameSite: 'lax',
+          secure: isProd,
+          path: '/'
+        });
+
+        // Verify token for state-changing methods
+        const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+        if (!safeMethods.includes(request.method)) {
+          const headerToken = request.headers['x-csrf-token'];
+          if (!token || !headerToken || headerToken !== token) {
+            return reply.status(403).send({ message: 'Invalid or missing CSRF token' });
+          }
+        }
+      });
+    }
+
+    new Globals();
+
+    fastify.get('/api/health', async (request, reply) => {
+      return { ok: true };
+    });
+
+    fastify.get('/api/updates', async (request: any, reply: FastifyReply) => {
+      reply.raw.setHeader('Content-Type', 'text/event-stream');
+      reply.raw.setHeader('Cache-Control', 'no-cache');
+      reply.raw.setHeader('Connection', 'keep-alive');
 
       const EventHub = (await import('./misc/EventHub.js')).default;
-      EventHub.addClient(res, req.user?.id);
+      EventHub.addClient(reply.raw as any, request.user?.id);
 
       // Keep connection alive with heartbeat
       const heartbeat = setInterval(() => {
-        res.write(': heartbeat\n\n');
+        reply.raw.write(': heartbeat\n\n');
       }, 30000);
 
-      res.on('close', () => {
+      request.raw.on('close', () => {
         clearInterval(heartbeat);
       });
     });
 
     const Auth = (await import('./api/AuthAPI.js')).default;
-    const auth = new Auth(app, db, passport);
+    const auth = new Auth(fastify, db, fastifyPassport);
     auth.registerRoutes();
 
     /** Recursive helper to find all API definition files. */
@@ -265,29 +257,32 @@ const startServer = async () => {
         progressBar.update(i + 1, { file: fileName });
 
         const ApiClass = (await import(pathToFileURL(fullPath).href)).default;
-        const apiInstance = new ApiClass(app, db, passport);
+        const apiInstance = new ApiClass(fastify, db, fastifyPassport);
         apiInstance.registerRoutes();
       }
       progressBar.stop();
     } else {
       for (const fullPath of apiFiles) {
         const ApiClass = (await import(pathToFileURL(fullPath).href)).default;
-        const apiInstance = new ApiClass(app, db, passport);
+        const apiInstance = new ApiClass(fastify, db, fastifyPassport);
         apiInstance.registerRoutes();
       }
     }
 
     /** Catch-all route for SPA. */
-    app.get(/.*/, (req, res) => {
-      res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    fastify.setNotFoundHandler(async (request, reply) => {
+      if (request.url.startsWith('/api')) {
+        return reply.status(404).send({ message: 'Not Found' });
+      }
+      return reply.sendFile('index.html');
     });
 
-    app.listen(PORT, () => {
+    if (process.env.NODE_ENV !== 'test') {
+      await fastify.listen({ port: PORT, host: '0.0.0.0' });
       Logger.info(`Server is running on http://localhost:${PORT}`);
-      Logger.info('Press Ctrl+C to stop the server.');
-    });
+    }
 
-    return { app, db };
+    return { fastify, db };
   } catch (err: any) {
     Logger.error(err.message);
     throw err;
@@ -304,4 +299,4 @@ serverReady.then(async ({ db }) => {
   }
 });
 
-export { app, serverReady };
+export { fastify as app, serverReady };

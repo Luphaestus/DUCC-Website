@@ -74,11 +74,16 @@ export class DatabaseWrapper {
     }
 
     async transaction<T>(callback: (db: DatabaseWrapper) => Promise<T>): Promise<T> {
-        if (!('getConnection' in this.connection)) {
-            throw new Error('Cannot start transaction from a non-pool connection');
+        let conn: any;
+        let release = false;
+
+        if ('getConnection' in this.connection) {
+            conn = await (this.connection as Pool).getConnection();
+            release = true;
+        } else {
+            conn = this.connection;
         }
 
-        const conn = await (this.connection as Pool).getConnection();
         await conn.beginTransaction();
         try {
             const result = await callback(new DatabaseWrapper(conn));
@@ -88,7 +93,9 @@ export class DatabaseWrapper {
             await conn.rollback();
             throw error;
         } finally {
-            conn.release();
+            if (release) {
+                conn.release();
+            }
         }
     }
 

@@ -4,11 +4,14 @@
  * Test environment utility.
  */
 
-import request from 'supertest';
-import express from 'express';
 import { setupTestDb } from './db.js';
 import Globals from '../../server/misc/globals.js';
 import TransactionsDB from '../../server/db/transactionDB.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default class TestWorld {
     constructor() {
@@ -29,23 +32,49 @@ export default class TestWorld {
     /** Initialize test environment. */
     async setUp() {
         this.db = await setupTestDb();
-        this.app = express();
-        this.app.use(express.json());
+        
+        const Fastify = (await import('fastify')).default;
+        const fastifyCookie = (await import('@fastify/cookie')).default;
+        const fastifySession = (await import('@fastify/session')).default;
+        const fastifyPassport = (await import('@fastify/passport')).default;
+        const fastifyStatic = (await import('@fastify/static')).default;
+
+        this.app = Fastify();
+        
+        this.app.setErrorHandler((error, request, reply) => {
+            console.error('Fastify Test Error:', error);
+            reply.status(500).send({ message: error.message });
+        });
+
+        await this.app.register(fastifyCookie);
+        await this.app.register(fastifySession, { 
+            secret: 'test-secret-must-be-long-enough-for-session-plugin', 
+            cookieName: 'ducc_sid',
+            saveUninitialized: true,
+            cookie: { secure: false }
+        });
+        await this.app.register(fastifyPassport.initialize());
+        await this.app.register(fastifyPassport.secureSession());
+
+        // Register static for reply.sendFile support
+        await this.app.register(fastifyStatic, {
+            root: path.join(__dirname, '..', '..', 'public'),
+            prefix: '/public/',
+        });
 
         /** Auth Simulation Middleware. */
-        this.app.use(async (req, res, next) => {
-            req.db = this.db;
-            const userAlias = req.headers['x-test-user'];
+        this.app.addHook('preHandler', async (request) => {
+            request.db = this.db;
+            const userAlias = request.headers['x-test-user'];
             if (userAlias && this.data.users[userAlias]) {
-                req.isAuthenticated = () => true;
+                request.isAuthenticated = () => true;
                 const userId = this.data.users[userAlias];
                 const user = await this.db.get('SELECT * FROM users WHERE id = ?', [userId]);
-                req.user = user || { id: userId, email: `${userAlias}@test.com` };
+                request.user = user || { id: userId, email: `${userAlias}@test.com` };
             } else {
-                req.isAuthenticated = () => false;
+                request.isAuthenticated = () => false;
             }
-            req.logout = (cb) => { if(cb) cb(); };
-            next();
+            request.logOut = async () => {};
         });
 
         // Global Configuration Mocks
@@ -84,10 +113,9 @@ export default class TestWorld {
 
     /** Cleanup test environment. */
     async tearDown() {
-        // Do not close the shared DB connection
-        // if (this.db) {
-        //     await this.db.close();
-        // }
+        if (this.app) {
+            await this.app.close();
+        }
         vi.restoreAllMocks();
         this.globalInts = {};
         this.globalFloats = {};
@@ -262,20 +290,30 @@ export default class TestWorld {
         return monday.toISOString().slice(0, 19).replace('T', ' ');
     }
 
-    // Supertest Proxies
-    
-    /** Impersonate user. */
+    /** Set the app instance for injection. */
+    setApp(app) {
+        this.app = app;
+    }
+
+    /** Impersonate user using fastify.inject. */
     as(userAlias) {
+        if (!this.app) throw new Error('App not set in TestWorld');
         return {
-            get: (url) => request(this.app).get(url).set('x-test-user', userAlias),
-            post: (url) => request(this.app).post(url).set('x-test-user', userAlias),
-            delete: (url) => request(this.app).delete(url).set('x-test-user', userAlias),
-            put: (url) => request(this.app).put(url).set('x-test-user', userAlias),
+            get: (url) => this.app.inject({ method: 'GET', url, headers: { 'x-test-user': userAlias } }),
+            post: (url, payload) => this.app.inject({ method: 'POST', url, payload, headers: { 'x-test-user': userAlias } }),
+            delete: (url, payload) => this.app.inject({ method: 'DELETE', url, payload, headers: { 'x-test-user': userAlias } }),
+            put: (url, payload) => this.app.inject({ method: 'PUT', url, payload, headers: { 'x-test-user': userAlias } }),
         };
     }
     
     /** Simple guest requester. */
     get request() {
-        return request(this.app);
+        if (!this.app) throw new Error('App not set in TestWorld');
+        return {
+            get: (url) => this.app.inject({ method: 'GET', url }),
+            post: (url, payload) => this.app.inject({ method: 'POST', url, payload }),
+            delete: (url, payload) => this.app.inject({ method: 'DELETE', url, payload }),
+            put: (url, payload) => this.app.inject({ method: 'PUT', url, payload }),
+        };
     }
 }

@@ -6,18 +6,18 @@
 
 import check from '../../misc/authentication.js';
 import RolesDB from '../../db/rolesDB.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 
 export default class AdminRoles {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
     /**
-     * @param {object} app - Express application instance.
+     * @param {object} app - Fastify application instance.
      * @param {object} db - Database connection instance.
      */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -29,70 +29,70 @@ export default class AdminRoles {
         /**
          * List all valid system permissions.
          */
-        this.app.get('/api/admin/roles/permissions', check('perm:role.read | perm:role.manage'), async (req: Request, res: Response) => {
+        this.app.get('/api/admin/roles/permissions', { preHandler: [check('perm:role.read | perm:role.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
             const result = await RolesDB.getAllPermissions(this.db);
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         /**
          * Update a permission description.
          */
-        this.app.put('/api/admin/permissions/:id', check('perm:role.manage'), async (req: Request, res: Response) => {
-            const { description } = req.body;
-            const { id } = req.params;
+        this.app.put('/api/admin/permissions/:id', { preHandler: [check('perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { description: string } }>, reply: FastifyReply) => {
+            const { description } = request.body;
+            const { id } = request.params;
             try {
                 await this.db.run('UPDATE permissions SET description = ? WHERE id = ?', [description, id]);
-                res.status(200).json({ message: 'Permission updated.' });
+                return reply.status(200).send({ message: 'Permission updated.' });
             } catch (e) {
-                res.status(500).json({ message: 'Database error.' });
+                return reply.status(500).send({ message: 'Database error.' });
             }
         });
 
         /**
          * List all defined roles and their metadata.
          */
-        this.app.get('/api/admin/roles', check('perm:is_exec'), async (req: Request, res: Response) => {
+        this.app.get('/api/admin/roles', { preHandler: [check('perm:is_exec')] }, async (request: FastifyRequest, reply: FastifyReply) => {
             const result = await RolesDB.getAllRoles(this.db);
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         /**
          * Fetch a specific role by ID.
          */
-        this.app.get('/api/admin/roles/:id', check('perm:role.manage'), async (req: Request, res: Response) => {
-            const result = await RolesDB.getRoleById(this.db, req.params.id);
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+        this.app.get('/api/admin/roles/:id', { preHandler: [check('perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const result = await RolesDB.getRoleById(this.db, request.params.id);
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         /**
          * Create a new role.
          */
-        this.app.post('/api/admin/roles', check('perm:role.write | perm:role.manage'), async (req: Request, res: Response) => {
-            const { name, description, permissions, execRanking } = req.body;
+        this.app.post('/api/admin/roles', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+            const { name, description, permissions, execRanking } = request.body as any;
             const result = await RolesDB.createRole(this.db, name, description, permissions, execRanking);
-            result.getResponse(res);
+            return result.getResponse(reply);
         });
 
         /**
          * Update an existing role definition.
          */
-        this.app.put('/api/admin/roles/:id', check('perm:role.write | perm:role.manage'), async (req: Request, res: Response) => {
-            const { name, description, permissions, execRanking } = req.body;
-            const result = await RolesDB.updateRole(this.db, req.params.id, name, description, permissions, execRanking);
-            if (result.isError()) return result.getResponse(res);
-            res.json({ message: result.getMessage() });
+        this.app.put('/api/admin/roles/:id', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const { name, description, permissions, execRanking } = request.body as any;
+            const result = await RolesDB.updateRole(this.db, request.params.id, name, description, permissions, execRanking);
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send({ message: result.getMessage() });
         });
 
         /**
          * Delete a role definition.
          */
-        this.app.delete('/api/admin/roles/:id', check('perm:role.write | perm:role.manage'), async (req: Request, res: Response) => {
-            const result = await RolesDB.deleteRole(this.db, req.params.id);
-            if (result.isError()) return result.getResponse(res);
-            res.json({ message: result.getMessage() });
+        this.app.delete('/api/admin/roles/:id', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const result = await RolesDB.deleteRole(this.db, request.params.id);
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send({ message: result.getMessage() });
         });
     }
 }

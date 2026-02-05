@@ -7,23 +7,23 @@
 import QuotesDB from '../../db/quotesDB.js';
 import { Permissions } from '../../misc/permissions.js';
 import checkAuthentication from '../../misc/authentication.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 
 export default class AdminQuotesAPI {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
 
     registerRoutes() {
         /** Fetch all quotes for moderation. */
-        this.app.get('/api/admin/quotes', checkAuthentication('quote.manage'), async (req: any, res: Response) => {
-            const { search, personId, visibility, page, limit, sort, order } = req.query;
-            const user = req.user;
+        this.app.get('/api/admin/quotes', { preHandler: [checkAuthentication('quote.manage')] }, async (request: any, reply: FastifyReply) => {
+            const { search, personId, visibility, page, limit, sort, order } = request.query as any;
+            const user = request.user;
             
             const canSeeAuthor = await Permissions.hasPermission(this.db, user.id, 'quote.see_author');
 
@@ -36,27 +36,27 @@ export default class AdminQuotesAPI {
                 sort: sort as string,
                 order: order as 'asc' | 'desc'
             }, user, canSeeAuthor);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /** Update quote visibility (Release/Private/Hidden). */
-        this.app.post('/api/admin/quotes/:id/visibility', checkAuthentication('quote.manage'), async (req: Request, res: Response) => {
-            const { visibility } = req.body;
-            const { id } = req.params;
+        this.app.post('/api/admin/quotes/:id/visibility', { preHandler: [checkAuthentication('quote.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { visibility: string } }>, reply: FastifyReply) => {
+            const { visibility } = request.body;
+            const { id } = request.params;
 
             if (!['public', 'private', 'hidden'].includes(visibility)) {
-                return res.status(400).json({ message: 'Invalid visibility state.' });
+                return reply.status(400).send({ message: 'Invalid visibility state.' });
             }
 
             const status = await QuotesDB.setVisibility(this.db, id, visibility);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /** Delete a quote. */
-        this.app.delete('/api/admin/quotes/:id', checkAuthentication('quote.manage'), async (req: Request, res: Response) => {
-            const { id } = req.params;
+        this.app.delete('/api/admin/quotes/:id', { preHandler: [checkAuthentication('quote.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const { id } = request.params;
             const status = await QuotesDB.deleteQuote(this.db, id);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
     }
 }

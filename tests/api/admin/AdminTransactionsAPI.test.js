@@ -19,6 +19,7 @@ describe('api/admin/AdminTransactionsAPI', () => {
         await world.createUser('user', {});
 
         new AdminTransactionsAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -31,7 +32,7 @@ describe('api/admin/AdminTransactionsAPI', () => {
             const userId = world.data.users['user'];
 
             // Create a transaction
-            const res1 = await world.as('admin').post(`/api/admin/user/${userId}/transaction`).send({
+            const res1 = await world.as('admin').post(`/api/admin/user/${userId}/transaction`, {
                 amount: 50, description: 'Initial adjustment'
             });
             expect(res1.statusCode).toBe(201);
@@ -39,11 +40,12 @@ describe('api/admin/AdminTransactionsAPI', () => {
             // Fetch and verify
             const res2 = await world.as('admin').get(`/api/admin/user/${userId}/transactions`);
             expect(res2.statusCode).toBe(200);
-            expect(res2.body).toHaveLength(1);
-            const txId = res2.body[0].id;
+            const body2 = JSON.parse(res2.body);
+            expect(body2).toHaveLength(1);
+            const txId = body2[0].id;
 
             // Edit existing transaction
-            const res3 = await world.as('admin').put(`/api/admin/transaction/${txId}`).send({
+            const res3 = await world.as('admin').put(`/api/admin/transaction/${txId}`, {
                 amount: 100, description: 'Corrected adjustment'
             });
             expect(res3.statusCode).toBe(200);

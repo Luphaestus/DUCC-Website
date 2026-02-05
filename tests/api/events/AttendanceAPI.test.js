@@ -22,6 +22,7 @@ describe('api/events/AttendanceAPI', () => {
         new AttendanceAPI(world.app, world.db).registerRoutes();
         new EventsAPI(world.app, world.db).registerRoutes();
         new WaitlistAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
 
         await world.createUser('user', { filled_legal_info: 1, is_member: 1 });
     });
@@ -43,7 +44,7 @@ describe('api/events/AttendanceAPI', () => {
         test(`${method.toUpperCase()} ${pathTemplate} - Fail if ID is non-numeric`, async () => {
             const res = await world.as('user')[method](pathTemplate.replace(':id', 'abc'));
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/integer/i);
+            expect(JSON.parse(res.body).message).toMatch(/integer/i);
         });
 
         test(`${method.toUpperCase()} ${pathTemplate} - Handle request for non-existent ID`, async () => {
@@ -80,7 +81,7 @@ describe('api/events/AttendanceAPI', () => {
 
             const res = await world.as('user').get(`/api/event/${eventId}/isAttending`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.isAttending).toBe(true);
+            expect(JSON.parse(res.body).isAttending).toBe(true);
         });
 
         test('Returns false for non-attendees', async () => {
@@ -89,7 +90,7 @@ describe('api/events/AttendanceAPI', () => {
 
             const res = await world.as('user').get(`/api/event/${eventId}/isAttending`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.isAttending).toBe(false);
+            expect(JSON.parse(res.body).isAttending).toBe(false);
         });
     });
 
@@ -100,7 +101,7 @@ describe('api/events/AttendanceAPI', () => {
             const userId = world.data.users['user'];
 
             let res = await world.as('user').get(`/api/event/${eventId}/isPaying`);
-            expect(res.body.isPaying).toBe(false);
+            expect(JSON.parse(res.body).isPaying).toBe(false);
 
             // Simulate a completed payment transaction
             await world.addTransaction('user', -10, 'Manual Payment', eventId);
@@ -108,7 +109,7 @@ describe('api/events/AttendanceAPI', () => {
             await world.db.run('INSERT INTO event_attendees (event_id, user_id, payment_transaction_id) VALUES (?, ?, ?)', [eventId, userId, tx.id]);
 
             res = await world.as('user').get(`/api/event/${eventId}/isPaying`);
-            expect(res.body.isPaying).toBe(true);
+            expect(JSON.parse(res.body).isPaying).toBe(true);
         });
     });
 
@@ -118,13 +119,13 @@ describe('api/events/AttendanceAPI', () => {
             const eventId = world.data.events['E1'];
 
             let res = await world.as('user').get(`/api/event/${eventId}/coachCount`);
-            expect(res.body.count).toBe(0);
+            expect(JSON.parse(res.body).count).toBe(0);
 
             // Add one coach
             await world.createUser('c1', { is_instructor: 1 });
             await world.joinEvent('c1', 'E1');
             res = await world.as('user').get(`/api/event/${eventId}/coachCount`);
-            expect(res.body.count).toBe(1);
+            expect(JSON.parse(res.body).count).toBe(1);
 
             // Add many more coaches
             for(let i=2; i<=12; i++) {
@@ -132,7 +133,7 @@ describe('api/events/AttendanceAPI', () => {
                 await world.joinEvent(`c${i}`, 'E1');
             }
             res = await world.as('user').get(`/api/event/${eventId}/coachCount`);
-            expect(res.body.count).toBe(12);
+            expect(JSON.parse(res.body).count).toBe(12);
         });
     });
 
@@ -148,16 +149,16 @@ describe('api/events/AttendanceAPI', () => {
 
             // No coach attending
             const res1 = await world.as('member_b').post(`/api/event/${eventId}/attend`);
-            expect(res1.status).toBe(403);
+            expect(res1.statusCode).toBe(403);
 
             // Coach added
             await world.as('coach_a').post(`/api/event/${eventId}/attend`);
             const res2 = await world.as('member_b').post(`/api/event/${eventId}/attend`);
-            expect(res2.status).toBe(201);
+            expect(res2.statusCode).toBe(201);
 
             //  Incomplete legal info
             const res3 = await world.as('member_c').post(`/api/event/${eventId}/attend`);
-            expect(res3.status).toBe(403);
+            expect(res3.statusCode).toBe(403);
         });
     });
 
@@ -176,7 +177,7 @@ describe('api/events/AttendanceAPI', () => {
             
             const res = await world.as('user').post(`/api/event/${world.data.events['CanceledEvent']}/attend`);
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/canceled/i);
+            expect(JSON.parse(res.body).message).toMatch(/canceled/i);
         });
 
         test('Blocked: cannot join past events', async () => {
@@ -185,7 +186,7 @@ describe('api/events/AttendanceAPI', () => {
 
             const res = await world.as('user').post(`/api/event/${world.data.events['PastEvent']}/attend`);
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/ended|started/i);
+            expect(JSON.parse(res.body).message).toMatch(/ended|started/i);
         });
 
         test('Blocked: whitelist-only tag policy enforcement', async () => {
@@ -198,7 +199,7 @@ describe('api/events/AttendanceAPI', () => {
 
             const res = await world.as('user').post(`/api/event/${world.data.events['RestrictedEvent']}/attend`);
             expect(res.statusCode).toBe(403);
-            expect(res.body.message).toMatch(/Restricted access/i);
+            expect(JSON.parse(res.body).message).toMatch(/Restricted access/i);
         });
 
         test('Success: joining whitelisted restricted event', async () => {
@@ -225,7 +226,7 @@ describe('api/events/AttendanceAPI', () => {
 
             const res = await world.as('user').post(`/api/event/${world.data.events['NoCoachEvent']}/attend`);
             expect(res.statusCode).toBe(403);
-            expect(res.body.message).toMatch(/No coach/i);
+            expect(JSON.parse(res.body).message).toMatch(/No coach/i);
         });
 
         test('Instructors can join events solo', async () => {
@@ -446,10 +447,11 @@ describe('api/events/AttendanceAPI', () => {
 
             const res = await world.as('user').get(`/api/event/${eventId}/attendees`);
             expect(res.statusCode).toBe(200);
-            expect(res.body.attendees.length).toBe(1);
+            const body = JSON.parse(res.body);
+            expect(body.attendees.length).toBe(1);
             // Verify PII exclusion
-            expect(res.body.attendees[0]).toHaveProperty('first_name');
-            expect(res.body.attendees[0]).not.toHaveProperty('balance');
+            expect(body.attendees[0]).toHaveProperty('first_name');
+            expect(body.attendees[0]).not.toHaveProperty('balance');
         });
 
         test('Exec sees full attendee history and detailed data', async () => {
@@ -463,7 +465,7 @@ describe('api/events/AttendanceAPI', () => {
             const res = await world.as('admin').get(`/api/event/${eventId}/attendees`);
             expect(res.statusCode).toBe(200);
             // Execs see the internal 'is_attending' flag
-            expect(res.body.attendees[0]).toHaveProperty('is_attending');
+            expect(JSON.parse(res.body).attendees[0]).toHaveProperty('is_attending');
         });
     });
 });

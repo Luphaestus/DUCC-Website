@@ -29,21 +29,25 @@ describe('api/admin/AdminUsersAPI', () => {
     describe('GET /api/admin/users (List View)', () => {
         test('Applying filters and pagination to user lists', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
             await world.createUser('member', { is_member: 1 });
             
             const res = await world.as('admin').get('/api/admin/users?isMember=true');
             expect(res.statusCode).toBe(200);
-            expect(res.body.users.every(u => u.is_member === 1)).toBe(true);
+            const body = JSON.parse(res.body);
+            expect(body.users.every(u => u.is_member === 1)).toBe(true);
         });
 
         /** Test dynamic field visibility. */
         test('Dynamic field visibility: Admins see all, Scoped Execs see restricted data', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
             
             // Full Admin check
             const resAdmin = await world.as('admin').get('/api/admin/users');
-            expect(resAdmin.body.users[0]).toHaveProperty('email');
-            expect(resAdmin.body.users[0]).toHaveProperty('balance');
+            const bodyAdmin = JSON.parse(resAdmin.body);
+            expect(bodyAdmin.users[0]).toHaveProperty('email');
+            expect(bodyAdmin.users[0]).toHaveProperty('balance');
 
             // Scoped Exec check
             await world.createTag('T1');
@@ -51,7 +55,8 @@ describe('api/admin/AdminUsersAPI', () => {
 
             const resExec = await world.as('exec').get('/api/admin/users');
             expect(resExec.statusCode).toBe(200);
-            const firstUser = resExec.body.users[0];
+            const bodyExec = JSON.parse(resExec.body);
+            const firstUser = bodyExec.users[0];
             expect(firstUser).toHaveProperty('first_name');
             expect(firstUser.email).toBeUndefined();
             expect(firstUser.balance).toBeUndefined();
@@ -62,19 +67,22 @@ describe('api/admin/AdminUsersAPI', () => {
         /** RBAC-based data filtering in detailed user profiles. */
         test('RBAC-based data filtering in detailed user profiles', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
             const userId = world.data.users['user'];
 
             // Admin sees full profile
             const resAdmin = await world.as('admin').get(`/api/admin/user/${userId}`);
-            expect(resAdmin.body).toHaveProperty('email');
-            expect(resAdmin.body).toHaveProperty('balance');
+            const bodyAdmin = JSON.parse(resAdmin.body);
+            expect(bodyAdmin).toHaveProperty('email');
+            expect(bodyAdmin).toHaveProperty('balance');
 
             // Scoped Exec sees restricted profile
             await world.createTag('T1');
             await world.assignTag('user_managed', 'exec', 'T1');
             const resExec = await world.as('exec').get(`/api/admin/user/${userId}`);
-            expect(resExec.body.email).toBeUndefined();
-            expect(resExec.body.balance).toBeUndefined();
+            const bodyExec = JSON.parse(resExec.body);
+            expect(bodyExec.email).toBeUndefined();
+            expect(bodyExec.balance).toBeUndefined();
         });
     });
 
@@ -98,21 +106,21 @@ describe('api/admin/AdminUsersAPI', () => {
 
             const targetId = world.data.users['user'];
 
-            // Inject the hashed password into the session object for the test agent
-            world.app.use((req, res, next) => {
-                if (req.user && req.user.id === world.data.users['admin']) {
-                    req.user.hashed_password = hashed;
+            // Fastify hook for password injection
+            world.app.addHook('preHandler', async (request) => {
+                if (request.user && request.user.id === world.data.users['admin']) {
+                    request.user.hashed_password = hashed;
                 }
-                next();
             });
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
 
             // Fail without password
-            const res1 = await world.as('admin').post(`/api/admin/user/${targetId}/role`).send({ roleId: presRole.id });
+            const res1 = await world.as('admin').post(`/api/admin/user/${targetId}/role`, { roleId: presRole.id });
             expect(res1.statusCode).toBe(400);
 
             // Success with password
-            const res2 = await world.as('admin').post(`/api/admin/user/${targetId}/role`).send({ 
+            const res2 = await world.as('admin').post(`/api/admin/user/${targetId}/role`, { 
                 roleId: presRole.id, 
                 password: password 
             });
@@ -160,14 +168,16 @@ describe('api/admin/AdminUsersAPI', () => {
             await world.createPermission('DirectPerm');
             await world.db.run('INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?)', [keptId, world.data.perms['DirectPerm']]);
 
-            world.app.use((req, res, next) => {
-                if (req.user && req.user.id === world.data.users['admin']) req.user.hashed_password = hashed;
-                next();
+            world.app.addHook('preHandler', async (request) => {
+                if (request.user && request.user.id === world.data.users['admin']) {
+                    request.user.hashed_password = hashed;
+                }
             });
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
 
             // Perform the transfer
-            await world.as('admin').post(`/api/admin/user/${targetId}/role`).send({ roleId: presRole.id, password });
+            await world.as('admin').post(`/api/admin/user/${targetId}/role`, { roleId: presRole.id, password });
 
             // Roles and direct permissions are wiped
             const rolesCount = await world.db.get('SELECT COUNT(*) as c FROM user_roles WHERE user_id != ?', [targetId]);
@@ -204,8 +214,9 @@ describe('api/admin/AdminUsersAPI', () => {
             const attackerId = await world.createUser('attacker', { hashed_password: attackerHash }, ['Manager']);
 
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
 
-            const res = await world.as('attacker').post(`/api/admin/user/${attackerId}/role`).send({
+            const res = await world.as('attacker').post(`/api/admin/user/${attackerId}/role`, {
                 roleId: presidentRoleId,
                 password: attackerPassword
             });
@@ -218,6 +229,7 @@ describe('api/admin/AdminUsersAPI', () => {
         /** Test role assignment escalation prevention. */
         test('User cannot assign a role containing permissions they do not possess', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
 
             await world.createRole('ManagerRole', ['user.manage', 'role.manage']);
             const managerId = await world.createUser('manager', {}, ['ManagerRole']);
@@ -230,17 +242,19 @@ describe('api/admin/AdminUsersAPI', () => {
 
             const targetId = await world.createUser('target', {});
 
-            const res = await world.as('limited').post(`/api/admin/user/${targetId}/role`).send({
+            const res = await world.as('limited').post(`/api/admin/user/${targetId}/role`, {
                 roleId: superRoleId
             });
 
             expect(res.statusCode).toBe(403);
-            expect(res.body.message).toMatch(/cannot assign a role with permission/i);
+            const body = JSON.parse(res.body);
+            expect(body.message).toMatch(/cannot assign a role with permission/i);
         });
 
         /** Test hierarchy check. */
         test('User CAN assign a role if they possess an implying higher-level permission (Hierarchy Check)', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
 
             await world.createRole('ManagerRole', ['user.manage', 'event.manage.all']);
             const managerId = await world.createUser('manager', {}, ['ManagerRole']);
@@ -250,7 +264,7 @@ describe('api/admin/AdminUsersAPI', () => {
 
             const targetId = await world.createUser('target', {});
 
-            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`).send({
+            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`, {
                 roleId: subRoleId
             });
 
@@ -260,6 +274,7 @@ describe('api/admin/AdminUsersAPI', () => {
         /** Test role assignment with full permissions. */
         test('User CAN assign a role if they possess all permissions in that role', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
 
             await world.createRole('ManagerRole', ['user.manage', 'role.manage']);
             const managerId = await world.createUser('manager', {}, ['ManagerRole']);
@@ -269,7 +284,7 @@ describe('api/admin/AdminUsersAPI', () => {
 
             const targetId = await world.createUser('target', {});
 
-            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`).send({
+            const res = await world.as('manager').post(`/api/admin/user/${targetId}/role`, {
                 roleId: subRoleId
             });
 
@@ -281,24 +296,26 @@ describe('api/admin/AdminUsersAPI', () => {
         /** Test direct permission overrides. */
         test('Management of direct user-specific permission and tag scope overrides', async () => {
             new AdminUsersAPI(world.app, world.db).registerRoutes();
+            await world.app.ready();
             const userId = world.data.users['user'];
             await world.createPermission('custom.perm');
             const permId = world.data.perms['custom.perm'];
 
             // Grant direct permission
-            const res1 = await world.as('admin').post(`/api/admin/user/${userId}/permission`).send({ permissionId: permId });
+            const res1 = await world.as('admin').post(`/api/admin/user/${userId}/permission`, { permissionId: permId });
             expect(res1.statusCode).toBe(200);
 
             // Grant direct tag scope
             await world.createTag('T1');
             const tagId = world.data.tags['T1'];
-            const res2 = await world.as('admin').post(`/api/admin/user/${userId}/managed_tag`).send({ tagId });
+            const res2 = await world.as('admin').post(`/api/admin/user/${userId}/managed_tag`, { tagId });
             expect(res2.statusCode).toBe(200);
 
             // Verify via profile fetch
             const res3 = await world.as('admin').get(`/api/admin/user/${userId}`);
-            expect(res3.body.direct_permissions.some(p => p.id === permId)).toBe(true);
-            expect(res3.body.direct_managed_tags.some(t => t.id === tagId)).toBe(true);
+            const body3 = JSON.parse(res3.body);
+            expect(body3.direct_permissions.some(p => p.id === permId)).toBe(true);
+            expect(body3.direct_managed_tags.some(t => t.id === tagId)).toBe(true);
         });
     });
 });

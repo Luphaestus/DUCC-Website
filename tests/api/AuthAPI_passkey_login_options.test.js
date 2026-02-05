@@ -1,15 +1,14 @@
-
-import request from 'supertest';
-import express from 'express';
-import session from 'express-session';
-import { Authenticator } from 'passport';
+import Fastify from 'fastify';
+import fastifySession from '@fastify/session';
+import fastifyCookie from '@fastify/cookie';
+import fastifyPassport from '@fastify/passport';
 import TestWorld from '../utils/TestWorld.js';
 import AuthAPI from '../../server/api/AuthAPI.js';
 import AuthDB from '../../server/db/authDB.js';
-import { isoBase64URL } from '@simplewebauthn/server/helpers';
+import config from '../../server/config.js';
 
 describe('api/AuthAPI - Passkey Login Options', () => {
-    let app, db, passport, auth;
+    let app, db;
     let world;
 
     beforeEach(async () => {
@@ -17,54 +16,64 @@ describe('api/AuthAPI - Passkey Login Options', () => {
         await world.setUp();
         db = world.db;
 
-        // Manual Express setup
-        passport = new Authenticator();
-        app = express();
-        app.use(express.json());
-        app.use(session({ secret: 'test', resave: false, saveUninitialized: false }));
-        app.use(passport.initialize());
-        app.use(passport.session());
+        app = Fastify();
+        await app.register(fastifyCookie);
+        await app.register(fastifySession, { 
+            secret: 'test-secret-must-be-long-enough-for-session-plugin', 
+            cookieName: config.session.cookieName,
+            saveUninitialized: true,
+            cookie: { secure: false }
+        });
+        await app.register(fastifyPassport.initialize());
+        await app.register(fastifyPassport.secureSession());
 
-        app.use((req, res, next) => {
-            req.db = db;
-            next();
+        app.addHook('preHandler', async (request) => {
+            request.db = db;
         });
 
-        auth = new AuthAPI(app, db, passport);
-        auth.registerRoutes();
+        new AuthAPI(app, db, fastifyPassport).registerRoutes();
+        await app.ready();
     });
 
     afterEach(async () => {
+        await app.close();
         await world.tearDown();
     });
 
     test('POST /api/auth/passkey/login-options - 200 even if no email and no session (Discoverable Credentials)', async () => {
-        const res = await request(app)
-            .post('/api/auth/passkey/login-options')
-            .send({});
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/auth/passkey/login-options',
+            payload: {}
+        });
         expect(res.statusCode).toBe(200);
-        expect(res.body.challenge).toBeDefined();
+        expect(JSON.parse(res.body).challenge).toBeDefined();
     });
 
     test('POST /api/auth/passkey/login-options - 200 even if user not found (Discoverable Credentials)', async () => {
-        const res = await request(app)
-            .post('/api/auth/passkey/login-options')
-            .send({ email: 'nonexistent@example.com' });
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/auth/passkey/login-options',
+            payload: { email: 'nonexistent@example.com' }
+        });
         expect(res.statusCode).toBe(200);
-        expect(res.body.challenge).toBeDefined();
+        expect(JSON.parse(res.body).challenge).toBeDefined();
     });
 
     test('POST /api/auth/passkey/login-options - 200 even if user has no passkeys (Discoverable Credentials)', async () => {
         // Create user
         await AuthDB.createUser(db, 'user@example.com', 'hash', 'User', 'Name');
         
-        const res = await request(app)
-            .post('/api/auth/passkey/login-options')
-            .send({ email: 'user@example.com' });
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/auth/passkey/login-options',
+            payload: { email: 'user@example.com' }
+        });
             
         expect(res.statusCode).toBe(200);
-        expect(res.body.challenge).toBeDefined();
-        expect(res.body.allowCredentials).toBeUndefined();
+        const body = JSON.parse(res.body);
+        expect(body.challenge).toBeDefined();
+        expect(body.allowCredentials).toBeUndefined();
     });
 
     test('POST /api/auth/passkey/login-options - Success with email', async () => {
@@ -82,16 +91,19 @@ describe('api/AuthAPI - Passkey Login Options', () => {
             transports: ['usb']
         });
 
-        const res = await request(app)
-            .post('/api/auth/passkey/login-options')
-            .send({ email: 'passkey@example.com' });
+        const res = await app.inject({
+            method: 'POST',
+            url: '/api/auth/passkey/login-options',
+            payload: { email: 'passkey@example.com' }
+        });
 
         expect(res.statusCode).toBe(200);
-        expect(res.body.challenge).toBeDefined();
-        expect(res.body.allowCredentials).toHaveLength(1);
+        const body = JSON.parse(res.body);
+        expect(body.challenge).toBeDefined();
+        expect(body.allowCredentials).toHaveLength(1);
         
         // Verify allowCredentials ID encoding (base64url)
-        const allowed = res.body.allowCredentials[0];
+        const allowed = body.allowCredentials[0];
         expect(allowed.id).toBeDefined();
     });
 
@@ -107,25 +119,33 @@ describe('api/AuthAPI - Passkey Login Options', () => {
             counter: 0
         });
 
-        const agent = request.agent(app);
-        
         // Re-do user creation with known password hash
         const bcrypt = await import('bcrypt');
         const validHash = await bcrypt.hash('password123', 10);
         await db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [validHash, user.id]);
 
-        const res1 = await agent.post('/api/auth/login').send({ 
-            email: 'session@example.com', 
-            password: 'password123'
+        const loginRes = await app.inject({
+            method: 'POST',
+            url: '/api/auth/login',
+            payload: { 
+                email: 'session@example.com', 
+                password: 'password123'
+            }
         });
         
-        expect(res1.statusCode).toBe(200);
-        expect(res1.body.requires2FA).toBe(true);
-        expect(res1.body.methods.passkey).toBe(true);
+        expect(loginRes.statusCode).toBe(200);
+        const loginBody = JSON.parse(loginRes.body);
+        expect(loginBody.requires2FA).toBe(true);
+        expect(loginBody.methods.passkey).toBe(true);
 
         // Now call login-options without email
-        const res2 = await agent.post('/api/auth/passkey/login-options').send({});
+        const res2 = await app.inject({
+            method: 'POST',
+            url: '/api/auth/passkey/login-options',
+            payload: {},
+            cookies: { [config.session.cookieName]: loginRes.cookies[0].value }
+        });
         expect(res2.statusCode).toBe(200);
-        expect(res2.body.challenge).toBeDefined();
+        expect(JSON.parse(res2.body).challenge).toBeDefined();
     });
 });

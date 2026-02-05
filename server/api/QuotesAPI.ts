@@ -7,26 +7,26 @@
 import QuotesDB from '../db/quotesDB.js';
 import { Permissions } from '../misc/permissions.js';
 import checkAuthentication from '../misc/authentication.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../db/db.js';
 
 export default class QuotesAPI {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
 
     registerRoutes() {
         /** Fetch released quotes. */
-        this.app.get('/api/quotes', checkAuthentication(), async (req: any, res: Response) => {
-            const { search, personId, page, limit } = req.query;
-            const user = req.user;
+        this.app.get('/api/quotes', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            const { search, personId, page, limit } = request.query as any;
+            const user = request.user;
 
             if (!user.is_member) {
-                return res.status(403).json({ message: 'Only members can view quotes.' });
+                return reply.status(403).send({ message: 'Only members can view quotes.' });
             }
             
             let canSeeAuthor = await Permissions.hasPermission(this.db, user.id, 'quote.see_author');
@@ -38,43 +38,43 @@ export default class QuotesAPI {
                 page: page as string,
                 limit: limit as string
             }, user, canSeeAuthor);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /** Submit a new quote (Members only). */
-        this.app.post('/api/quotes', checkAuthentication(), async (req: any, res: Response) => {
-            const { text, quotedUserId } = req.body;
-            const user = req.user;
+        this.app.post('/api/quotes', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            const { text, quotedUserId } = request.body as any;
+            const user = request.user;
 
             if (!user.is_member) {
-                return res.status(403).json({ message: 'Only members can submit quotes.' });
+                return reply.status(403).send({ message: 'Only members can submit quotes.' });
             }
 
             if (!text || !quotedUserId) {
-                return res.status(400).json({ message: 'Text and person are required.' });
+                return reply.status(400).send({ message: 'Text and person are required.' });
             }
 
             const status = await QuotesDB.createQuote(this.db, text, quotedUserId, user.id);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /** Get list of all users for the dropdown. */
-        this.app.get('/api/quotes/users', checkAuthentication(), async (req: any, res: Response) => {
-            if (!req.user.is_member) {
-                return res.status(403).json({ message: 'Only members can access quote data.' });
+        this.app.get('/api/quotes/users', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            if (!request.user.is_member) {
+                return reply.status(403).send({ message: 'Only members can access quote data.' });
             }
 
             // Simplified user list for dropdown
             try {
                 const users = await this.db.all('SELECT id, first_name, last_name FROM users ORDER BY first_name ASC');
-                res.status(200).json(users);
+                return reply.status(200).send(users);
             } catch (e) {
-                res.status(500).json({ message: 'Database error' });
+                return reply.status(500).send({ message: 'Database error' });
             }
         });
 
         /** Get a random public quote. */
-        this.app.get('/api/quotes/random', async (req: Request, res: Response) => {
+        this.app.get('/api/quotes/random', async (request: FastifyRequest, reply: FastifyReply) => {
             try {
                 const quote = await this.db.get(`
                     SELECT q.*, u.first_name as quoted_first_name, u.last_name as quoted_last_name
@@ -83,10 +83,10 @@ export default class QuotesAPI {
                     WHERE q.visibility = 'public'
                     ORDER BY RAND() LIMIT 1
                 `);
-                if (!quote) return res.status(404).json({ message: 'No quotes found.' });
-                res.status(200).json(quote);
+                if (!quote) return reply.status(404).send({ message: 'No quotes found.' });
+                return reply.status(200).send(quote);
             } catch (e) {
-                res.status(500).json({ message: 'Database error' });
+                return reply.status(500).send({ message: 'Database error' });
             }
         });
     }

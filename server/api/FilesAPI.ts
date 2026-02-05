@@ -9,7 +9,6 @@ import FilesDB from '../db/filesDB.js';
 import check from '../misc/authentication.js';
 import { Permissions } from '../misc/permissions.js';
 import FileRules from '../rules/FileRules.js';
-import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -17,23 +16,23 @@ import { fileTypeFromFile } from 'file-type';
 import config from '../config.js';
 import Logger from '../misc/Logger.js';
 import { createRequire } from 'module';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../db/db.js';
+import { pipeline } from 'stream/promises';
 
 const require = createRequire(import.meta.url);
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 
 export default class FilesAPI {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
     uploadDir: string;
-    upload: multer.Multer;
 
     /**
-     * Initialize file upload directory and storage.
+     * Initialize file upload directory.
      */
-    constructor(app: Express, db: DatabaseWrapper, passport = null, uploadDir: string | null = null) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper, passport = null, uploadDir: string | null = null) {
         this.app = app;
         this.db = db;
         this.uploadDir = uploadDir || config.paths.files;
@@ -41,20 +40,6 @@ export default class FilesAPI {
         if (!fs.existsSync(this.uploadDir)) {
             fs.mkdirSync(this.uploadDir, { recursive: true });
         }
-
-        const storage = multer.diskStorage({
-            destination: (req, file, cb) => {
-                cb(null, this.uploadDir);
-            },
-            filename: (req, file, cb) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                cb(null, uniqueSuffix); // Save without extension first
-            }
-        });
-
-        this.upload = multer({ 
-            storage: storage
-        });
     }
 
     /**
@@ -73,9 +58,9 @@ export default class FilesAPI {
     /**
      * Get user role for visibility filtering.
      */
-    async getUserRole(req: any): Promise<string> {
-        if (!req.isAuthenticated || !req.isAuthenticated()) return 'public';
-        if (await Permissions.hasAnyPermission(this.db, req.user.id)) return 'exec';
+    async getUserRole(request: any): Promise<string> {
+        if (!request.isAuthenticated || !request.isAuthenticated()) return 'public';
+        if (await Permissions.hasAnyPermission(this.db, request.user.id)) return 'exec';
         return 'member';
     }
 
@@ -86,28 +71,27 @@ export default class FilesAPI {
         /**
          * List files with pagination, sorting, and category filtering.
          */
-        this.app.get('/api/files', async (req: any, res: Response) => {
-            const role = await this.getUserRole(req);
+        this.app.get('/api/files', async (request: FastifyRequest<{ Querystring: any }>, reply: FastifyReply) => {
+            const role = await this.getUserRole(request);
             const options = {
-                page: parseInt(req.query.page as string) || 1,
-                limit: parseInt(req.query.limit as string) || 20,
-                search: req.query.search as string,
-                sort: req.query.sort as string,
-                order: req.query.order as 'asc' | 'desc',
-                categoryId: req.query.categoryId as string,
-                includeUsed: req.query.includeUsed === 'true'
+                page: parseInt(request.query.page as string) || 1,
+                limit: parseInt(request.query.limit as string) || 20,
+                search: request.query.search as string,
+                sort: request.query.sort as string,
+                order: request.query.order as 'asc' | 'desc',
+                categoryId: request.query.categoryId as string,
+                includeUsed: request.query.includeUsed === 'true'
             };
 
             const status = await FilesDB.getFiles(this.db, options, role);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /**
          * Upload multiple files.
          */
-        this.app.post('/api/files', check('file.write'), this.upload.array('files'), async (req: any, res: Response) => {
-            if (!req.files || req.files.length === 0) return res.status(400).json({ message: 'No files uploaded.' });
-
+        this.app.post('/api/files', { preHandler: [check('file.write')] }, async (request: any, reply: FastifyReply) => {
+            const parts = request.files();
             const results: number[] = [];
             const allowedMimes = [
                 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 
@@ -115,134 +99,141 @@ export default class FilesAPI {
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             ];
 
-            for (const file of (req.files as Express.Multer.File[])) {
-                const filePath = file.path;
-                let fileTypeResult: any;
-                try {
-                    fileTypeResult = await fileTypeFromFile(filePath);
-                } catch (e) {
-                    fileTypeResult = null;
-                }
+            let body: any = {};
 
-                if (!fileTypeResult && file.originalname.endsWith('.txt')) {
-                    fileTypeResult = { mime: 'text/plain', ext: 'txt' };
-                }
+            for await (const part of parts) {
+                if (part.type === 'file') {
+                    const tempFilename = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                    const tempPath = path.join(this.uploadDir, tempFilename);
+                    
+                    await pipeline(part.file, fs.createWriteStream(tempPath));
 
-                if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
+                    let fileTypeResult: any;
                     try {
-                        await fs.promises.unlink(filePath);
-                    } catch (err) {
-                        Logger.error('Failed to delete invalid file:', err);
+                        fileTypeResult = await fileTypeFromFile(tempPath);
+                    } catch (e) {
+                        fileTypeResult = null;
                     }
-                    return res.status(400).json({ message: 'Invalid file content or type not allowed.' });
-                }
 
-                // Rename file to include correct extension
-                const ext = `.${fileTypeResult.ext}`;
-                const newFilename = file.filename + ext;
-                const newPath = filePath + ext;
-                try {
-                    await fs.promises.rename(filePath, newPath);
-                } catch (err) {
-                    Logger.error('Failed to rename uploaded file:', err);
-                    return res.status(500).json({ message: 'File processing error.' });
-                }
-                
-                // Update file object references
-                (file as any).filename = newFilename;
-                (file as any).path = newPath;
+                    if (!fileTypeResult && part.filename.endsWith('.txt')) {
+                        fileTypeResult = { mime: 'text/plain', ext: 'txt' };
+                    }
 
-                const fileHash = await this.calculateHash(newPath);
+                    if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
+                        try {
+                            await fs.promises.unlink(tempPath);
+                        } catch (err) {
+                            Logger.error('Failed to delete invalid file:', err);
+                        }
+                        return reply.status(400).send({ message: 'Invalid file content or type not allowed.' });
+                    }
 
-                const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
-                let finalFilename = (file as any).filename;
-
-                if (!existingFileStatus.isError()) {
-                    const existingFile = existingFileStatus.getData();
+                    // Rename file to include correct extension
+                    const ext = `.${fileTypeResult.ext}`;
+                    const finalFilename = tempFilename + ext;
+                    const finalPath = tempPath + ext;
                     try {
-                        await fs.promises.unlink(newPath);
+                        await fs.promises.rename(tempPath, finalPath);
                     } catch (err) {
-                        // Ignore if file doesn't exist, though it should
+                        Logger.error('Failed to rename uploaded file:', err);
+                        return reply.status(500).send({ message: 'File processing error.' });
                     }
-                    finalFilename = existingFile.filename;
-                }
 
-                let defaultTitle = file.originalname;
-                const originalExt = path.extname(file.originalname);
-                if (originalExt && defaultTitle.endsWith(originalExt)) {
-                    defaultTitle = defaultTitle.slice(0, -originalExt.length);
-                }
+                    const fileHash = await this.calculateHash(finalPath);
+                    const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
+                    let dbFilename = finalFilename;
 
-                let content: string | null = null;
-                if (fileTypeResult.mime === 'text/plain') {
-                    try {
-                        content = await fs.promises.readFile(newPath, 'utf8');
-                    } catch (err) {
-                        Logger.error('Failed to read text file content:', err);
+                    if (!existingFileStatus.isError()) {
+                        const existingFile = existingFileStatus.getData();
+                        try {
+                            await fs.promises.unlink(finalPath);
+                        } catch (err) {}
+                        dbFilename = existingFile.filename;
                     }
-                } else if (fileTypeResult.mime === 'application/pdf') {
-                    try {
-                        const dataBuffer = await fs.promises.readFile(newPath);
-                        const pdfData = await pdf(dataBuffer);
-                        content = pdfData.text;
-                    } catch (err) {
-                        Logger.error('Failed to extract PDF content:', err);
-                    }
-                } else if (fileTypeResult.mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                    try {
-                        const result = await mammoth.extractRawText({ path: newPath });
-                        content = result.value;
-                    } catch (err) {
-                        Logger.error('Failed to extract DOCX content:', err);
-                    }
-                }
 
-                const data = {
-                    title: req.body.title || defaultTitle,
-                    author: req.body.author || (req.user.first_name + ' ' + req.user.last_name),
-                    date: req.body.date,
-                    size: file.size,
-                    filename: finalFilename,
-                    hash: fileHash,
-                    category_id: req.body.categoryId,
-                    visibility: req.body.visibility || 'members',
-                    content: content
-                };
-                const status = await FilesDB.createFile(this.db, data);
-                if (status.isError()) {
-                    return status.getResponse(res);
+                    let defaultTitle = part.filename;
+                    const originalExt = path.extname(part.filename);
+                    if (originalExt && defaultTitle.endsWith(originalExt)) {
+                        defaultTitle = defaultTitle.slice(0, -originalExt.length);
+                    }
+
+                    let content: string | null = null;
+                    const stats = await fs.promises.stat(path.join(this.uploadDir, dbFilename));
+
+                    if (fileTypeResult.mime === 'text/plain') {
+                        try {
+                            content = await fs.promises.readFile(path.join(this.uploadDir, dbFilename), 'utf8');
+                        } catch (err) {
+                            Logger.error('Failed to read text file content:', err);
+                        }
+                    } else if (fileTypeResult.mime === 'application/pdf') {
+                        try {
+                            const dataBuffer = await fs.promises.readFile(path.join(this.uploadDir, dbFilename));
+                            const pdfData = await pdf(dataBuffer);
+                            content = pdfData.text;
+                        } catch (err) {
+                            Logger.error('Failed to extract PDF content:', err);
+                        }
+                    } else if (fileTypeResult.mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                        try {
+                            const result = await mammoth.extractRawText({ path: path.join(this.uploadDir, dbFilename) });
+                            content = result.value;
+                        } catch (err) {
+                            Logger.error('Failed to extract DOCX content:', err);
+                        }
+                    }
+
+                    const data = {
+                        title: body.title || defaultTitle,
+                        author: body.author || (request.user.first_name + ' ' + request.user.last_name),
+                        date: body.date,
+                        size: stats.size,
+                        filename: dbFilename,
+                        hash: fileHash,
+                        category_id: body.categoryId,
+                        visibility: body.visibility || 'members',
+                        content: content
+                    };
+                    const status = await FilesDB.createFile(this.db, data);
+                    if (status.isError()) {
+                        return status.getResponse(reply);
+                    }
+                    results.push(status.getData().id);
+                } else {
+                    // It's a field
+                    body[part.fieldname] = part.value;
                 }
-                results.push(status.getData().id);
             }
 
-            res.status(201).json({ success: true, ids: results });
+            return reply.status(201).send({ success: true, ids: results });
         });
 
         /**
          * Edit file metadata.
          */
-        this.app.put('/api/files/:id', check('file.edit'), async (req: Request, res: Response) => {
-            const id = req.params.id;
+        this.app.put('/api/files/:id', { preHandler: [check('file.edit')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: any }>, reply: FastifyReply) => {
+            const id = request.params.id;
+            const body = request.body as any;
             const data = {
-                title: req.body.title,
-                author: req.body.author,
-                date: req.body.date,
-                visibility: req.body.visibility,
-                category_id: req.body.categoryId
+                title: body.title,
+                author: body.author,
+                date: body.date,
+                visibility: body.visibility,
+                category_id: body.categoryId
             };
 
             const status = await FilesDB.updateFile(this.db, id, data);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /**
          * Delete a file and its disk file.
          */
-        this.app.delete('/api/files/:id', check('file.write'), async (req: Request, res: Response) => {
-            const id = req.params.id;
+        this.app.delete('/api/files/:id', { preHandler: [check('file.write')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const id = request.params.id;
             const fileStatus = await FilesDB.getFileById(this.db, id);
 
-            if (fileStatus.isError()) return fileStatus.getResponse(res);
+            if (fileStatus.isError()) return fileStatus.getResponse(reply);
 
             const file = fileStatus.getData();
             const filePath = path.join(this.uploadDir, file.filename);
@@ -254,32 +245,31 @@ export default class FilesAPI {
             }
 
             const status = await FilesDB.deleteFile(this.db, id);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /**
          * Download/View a file.
          */
-        this.app.get('/api/files/:id/download', async (req: any, res: Response) => {
+        this.app.get('/api/files/:id/download', async (request: any, reply: FastifyReply) => {
             try {
-                const id = req.params.id;
+                const id = request.params.id;
                 const fileStatus = await FilesDB.getFileById(this.db, id);
-                if (fileStatus.isError()) return fileStatus.getResponse(res);
+                if (fileStatus.isError()) return fileStatus.getResponse(reply);
 
                 const file = fileStatus.getData();
-                const role = await this.getUserRole(req);
+                const role = await this.getUserRole(request);
 
-                if (!await FileRules.canAccessFile(this.db, file, req.user, role)) {
-                    return res.status(403).json({ message: 'Forbidden' });
+                if (!await FileRules.canAccessFile(this.db, file, request.user, role)) {
+                    return reply.status(403).send({ message: 'Forbidden' });
                 }
 
                 const filePath = path.join(this.uploadDir, file.filename);
 
-                
                 try {
                     await fs.promises.access(filePath);
                 } catch {
-                     return res.status(404).json({ message: 'File not found' });
+                     return reply.status(404).send({ message: 'File not found' });
                 }
 
                 const ext = path.extname(file.filename);
@@ -289,56 +279,50 @@ export default class FilesAPI {
                     downloadName += ext;
                 }
 
-                if (req.query.view === 'true') {
-                    return res.sendFile(filePath, (err) => {
-                        if (err && !res.headersSent) {
-                            res.status(500).json({ message: 'Error sending file' });
-                        }
-                    });
+                if (request.query.view === 'true') {
+                    return reply.sendFile(file.filename, this.uploadDir);
                 }
 
-                return res.download(filePath, downloadName, (err) => {
-                    if (err && !res.headersSent) {
-                        res.status(500).json({ message: 'Error downloading file' });
-                    }
-                });
+                // For download, we might need to set headers manually or use a plugin
+                reply.header('Content-Disposition', `attachment; filename="${downloadName}"`);
+                return reply.sendFile(file.filename, this.uploadDir);
             } catch (error: any) {
                 Logger.error('Error in download route:', error);
-                res.status(500).json({ message: 'Internal Server Error', error: error.message });
+                return reply.status(500).send({ message: 'Internal Server Error', error: error.message });
             }
         });
 
         /**
          * List all file categories.
          */
-        this.app.get('/api/file-categories', async (req: any, res: Response) => {
-            const role = await this.getUserRole(req);
+        this.app.get('/api/file-categories', async (request: FastifyRequest, reply: FastifyReply) => {
+            const role = await this.getUserRole(request);
             const status = await FilesDB.getCategories(this.db, role);
-            status.getResponse(res);
+            return status.getResponse(reply);
         });
 
         /**
          * Create a new file category.
          */
-        this.app.post('/api/file-categories', check('file.category.manage'), async (req: Request, res: Response) => {
-            const status = await FilesDB.createCategory(this.db, req.body);
-            status.getResponse(res);
+        this.app.post('/api/file-categories', { preHandler: [check('file.category.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+            const status = await FilesDB.createCategory(this.db, request.body as any);
+            return status.getResponse(reply);
         });
 
         /**
          * Update an existing category.
          */
-        this.app.put('/api/file-categories/:id', check('file.category.manage'), async (req: Request, res: Response) => {
-            const status = await FilesDB.updateCategory(this.db, req.params.id, req.body);
-            status.getResponse(res);
+        this.app.put('/api/file-categories/:id', { preHandler: [check('file.category.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const status = await FilesDB.updateCategory(this.db, request.params.id, request.body as any);
+            return status.getResponse(reply);
         });
 
         /**
          * Delete a category.
          */
-        this.app.delete('/api/file-categories/:id', check('file.category.manage'), async (req: Request, res: Response) => {
-            const status = await FilesDB.deleteCategory(this.db, req.params.id);
-            status.getResponse(res);
+        this.app.delete('/api/file-categories/:id', { preHandler: [check('file.category.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const status = await FilesDB.deleteCategory(this.db, request.params.id);
+            return status.getResponse(reply);
         });
     }
 }

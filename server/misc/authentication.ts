@@ -1,8 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { Permissions } from './permissions.js';
 import { DatabaseWrapper } from '../db/db.js';
 
-interface AuthenticatedRequest extends Request {
+interface AuthenticatedRequest extends FastifyRequest {
     user: any;
     db: DatabaseWrapper;
 }
@@ -27,6 +27,7 @@ const getPermissionName = (perm: string): string => {
 /**
  * Identifies the type of permission requirement.
  */
+// @ts-ignore
 const getPermissionType = (perm: string): string => {
     const colonPos = perm.indexOf(':');
     if (colonPos !== -1) {
@@ -37,13 +38,13 @@ const getPermissionType = (perm: string): string => {
 
 
 /**
- * Express middleware to verify authentication and complex permission requirements.
+ * Fastify preHandler hook to verify authentication and complex permission requirements.
  */
 const checkAuthentication = (...requirements: string[]) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
-        const authReq = req as AuthenticatedRequest;
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+        const authReq = request as AuthenticatedRequest;
         if (!authReq.isAuthenticated || !authReq.isAuthenticated()) {
-            return res.status(401).json({ message: 'Unauthorized: Please log in.' });
+            return reply.status(401).send({ message: 'Unauthorized: Please log in.' });
         }
 
         for (const requirement of requirements) {
@@ -67,11 +68,9 @@ const checkAuthentication = (...requirements: string[]) => {
             }
 
             if (!hasPermission) {
-                return res.status(403).json({ message: 'Forbidden: Insufficient permissions.' });
+                return reply.status(403).send({ message: 'Forbidden: Insufficient permissions.' });
             }
         }
-
-        next();
     };
 };
 

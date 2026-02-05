@@ -26,6 +26,7 @@ describe('api/admin/AdminEventsAPI', () => {
 
         new AdminEventsAPI(world.app, world.db).registerRoutes();
         new TagsAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -40,9 +41,10 @@ describe('api/admin/AdminEventsAPI', () => {
             
             const res = await world.as('admin').get('/api/admin/events');
             expect(res.statusCode).toBe(200);
-            expect(res.body.events).toHaveLength(2);
-            expect(res.body).toHaveProperty('totalPages');
-            expect(res.body).toHaveProperty('currentPage');
+            const body = JSON.parse(res.body);
+            expect(body.events).toHaveLength(2);
+            expect(body).toHaveProperty('totalPages');
+            expect(body).toHaveProperty('currentPage');
         });
 
         /** Scoped admin sees only events within their managed tags. */
@@ -56,8 +58,9 @@ describe('api/admin/AdminEventsAPI', () => {
 
             const res = await world.as('scoped').get('/api/admin/events');
             expect(res.statusCode).toBe(200);
-            expect(res.body.events).toHaveLength(1);
-            expect(res.body.events[0].title).toBe('ManagedEvent');
+            const body = JSON.parse(res.body);
+            expect(body.events).toHaveLength(1);
+            expect(body.events[0].title).toBe('ManagedEvent');
         });
 
         test('Standard user is denied access to admin listings', async () => {
@@ -71,7 +74,7 @@ describe('api/admin/AdminEventsAPI', () => {
             await world.createTag('T1');
             const tagId = world.data.tags['T1'];
 
-            const res = await world.as('admin').post('/api/admin/event').send({
+            const res = await world.as('admin').post('/api/admin/event', {
                 title: 'New Event',
                 start: '2025-01-01',
                 end: '2025-01-01',
@@ -89,14 +92,14 @@ describe('api/admin/AdminEventsAPI', () => {
             await world.assignTag('user_managed', 'scoped', 'ManagedTag');
 
             // Success case: using a managed tag
-            const res1 = await world.as('scoped').post('/api/admin/event').send({
+            const res1 = await world.as('scoped').post('/api/admin/event', {
                 title: 'Ok Event', start: '2025-01-01', end: '2025-01-01', difficulty_level: 1, upfront_cost: 0,
                 tags: [world.data.tags['ManagedTag']]
             });
             expect(res1.statusCode).toBe(201);
 
             // Failure case: using an unmanaged tag
-            const res2 = await world.as('scoped').post('/api/admin/event').send({
+            const res2 = await world.as('scoped').post('/api/admin/event', {
                 title: 'Bad Event', start: '2025-01-01', end: '2025-01-01', difficulty_level: 1, upfront_cost: 0,
                 tags: [world.data.tags['SecretTag']]
             });
@@ -112,7 +115,7 @@ describe('api/admin/AdminEventsAPI', () => {
             const lowId = world.data.tags['Low'];
             const highId = world.data.tags['High'];
 
-            const res = await world.as('admin').post('/api/admin/event').send({
+            const res = await world.as('admin').post('/api/admin/event', {
                 title: 'Default Image Event',
                 start: '2025-01-01',
                 end: '2025-01-01',
@@ -122,10 +125,12 @@ describe('api/admin/AdminEventsAPI', () => {
             });
 
             expect(res.statusCode).toBe(201);
-            const eventId = res.body.data.id;
+            const body = JSON.parse(res.body);
+            const eventId = body.data.id;
             
             const getRes = await world.as('admin').get(`/api/admin/event/${eventId}`);
-            expect(getRes.body.image_url).toBe(`/api/files/${highFileId}/download?view=true`);
+            const getBody = JSON.parse(getRes.body);
+            expect(getBody.image_url).toBe(`/api/files/${highFileId}/download?view=true`);
         });
 
         test('POST /api/admin/event/:id/reset-image - Clear event custom image', async () => {
@@ -157,17 +162,20 @@ describe('api/admin/AdminEventsAPI', () => {
 
             //  Verify event image
             let res = await world.as('admin').get(`/api/admin/event/${eventId}`);
-            expect(res.body.image_url).toBe(`/api/files/${eventFileId}/download?view=true`);
+            let body = JSON.parse(res.body);
+            expect(body.image_url).toBe(`/api/files/${eventFileId}/download?view=true`);
 
             // Remove event image, verify fallback to tag image
             await world.as('admin').post(`/api/admin/event/${eventId}/reset-image`);
             res = await world.as('admin').get(`/api/admin/event/${eventId}`);
-            expect(res.body.image_url).toBe(tagImageUrl);
+            body = JSON.parse(res.body);
+            expect(body.image_url).toBe(tagImageUrl);
 
             // Remove tag image, verify fallback to global default
             await world.as('admin').post(`/api/tags/${tagId}/reset-image`);
             res = await world.as('admin').get(`/api/admin/event/${eventId}`);
-            expect(res.body.image_url).toBe(globalDefault);
+            body = JSON.parse(res.body);
+            expect(body.image_url).toBe(globalDefault);
         });
     });
 
@@ -188,7 +196,8 @@ describe('api/admin/AdminEventsAPI', () => {
 
             const res = await world.as('admin').delete(`/api/admin/event/${eventId}`);
             expect(res.statusCode).toBe(400);
-            expect(res.body.message).toMatch(/past events/i);
+            const body = JSON.parse(res.body);
+            expect(body.message).toMatch(/past events/i);
         });
 
         test('Success for full admin on future event deletion', async () => {

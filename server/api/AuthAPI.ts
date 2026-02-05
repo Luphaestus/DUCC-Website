@@ -22,13 +22,13 @@ import {
     verifyAuthenticationResponse,
 } from '@simplewebauthn/server';
 import { isoUint8Array, isoBase64URL } from '@simplewebauthn/server/helpers';
-import { Express, Request, Response, NextFunction } from 'express';
-import { PassportStatic } from 'passport';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { Authenticator } from '@fastify/passport';
 import { DatabaseWrapper } from '../db/db.js';
 
 // Extend Session data interface
-declare module 'express-session' {
-    interface SessionData {
+declare module 'fastify' {
+    interface Session {
         pendingUser?: {
             id: number;
             hasTOTP: boolean;
@@ -37,13 +37,14 @@ declare module 'express-session' {
         currentChallenge?: string;
         passkeyUserId?: number;
         tempTOTPSecret?: string;
+        csrfToken?: string;
     }
 }
 
 export default class Auth {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
-    passport: PassportStatic;
+    passport: Authenticator;
     rpName: string;
     rpID: string;
     origin: string;
@@ -51,12 +52,12 @@ export default class Auth {
     /**
      * Initialize Passport strategies and serialization.
      */
-    constructor(app: Express, db: DatabaseWrapper, passport: PassportStatic) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper, passport: Authenticator) {
         this.app = app;
         this.db = db;
         this.passport = passport;
 
-        passport.use(new LocalStrategy(
+        passport.use('local', new LocalStrategy(
             { usernameField: 'email' },
             async (email, password, done) => {
                 const formatedEmail = email.replace(/\s/g, '').toLowerCase();
@@ -74,16 +75,16 @@ export default class Auth {
             }
         ));
 
-        passport.serializeUser((user: any, done) => {
-            done(null, user.id);
+        passport.registerUserSerializer(async (user: any) => {
+            return user.id;
         });
 
-        passport.deserializeUser(async (id: number, done) => {
+        passport.registerUserDeserializer(async (id: number) => {
             try {
                 const user = await AuthDB.getUserById(this.db, id);
-                done(null, user);
+                return user;
             } catch (err) {
-                done(err);
+                throw err;
             }
         });
 
@@ -107,11 +108,11 @@ export default class Auth {
         /**
          * Register a new user or restore a deleted account.
          */
-        this.app.post('/api/auth/signup', async (req: Request, res: Response) => {
-            let { email, password, first_name, last_name } = req.body;
+        this.app.post('/api/auth/signup', async (request: FastifyRequest, reply: FastifyReply) => {
+            let { email, password, first_name, last_name } = request.body as any;
 
             if (!email || !password || !first_name || !last_name) {
-                return res.status(400).json({ message: 'All fields are required.' });
+                return reply.status(400).send({ message: 'All fields are required.' });
             }
 
             email = email.replace(/\s/g, '').toLowerCase();
@@ -127,7 +128,7 @@ export default class Auth {
             if (lastNameError) errors.last_name = lastNameError;
 
             if (Object.keys(errors).length > 0) {
-                return res.status(400).json({ message: 'Validation failed', errors });
+                return reply.status(400).send({ message: 'Validation failed', errors });
             }
 
             try {
@@ -138,49 +139,51 @@ export default class Auth {
 
                 if (existingUser) {
                     const status = await AuthDB.restoreUser(this.db, existingUser.id, email, hashedPassword, first_name, last_name);
-                    status.getResponse(res);
+                    return status.getResponse(reply);
                 } else {
                     const status = await AuthDB.createUser(this.db, email, hashedPassword, first_name, last_name);
-                    status.getResponse(res);
+                    return status.getResponse(reply);
                 }
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Registration failed.' });
+                return reply.status(500).send({ message: 'Registration failed.' });
             }
         });
 
         /**
          * Authenticate user and start session.
          */
-        this.app.post('/api/auth/login', (req: Request, res: Response, next: NextFunction) => {
-            this.passport.authenticate('local', async (err: any, user: any, info: any) => {
-                if (err) return res.status(500).json({ message: 'Authentication error.' });
-                if (!user) return res.status(401).json({ message: info.message || 'Authentication failed.' });
+        this.app.post('/api/auth/login', async (request: any, reply: FastifyReply) => {
+            try {
+                // @ts-ignore - passport.authenticate returns a function in some versions, but in fastify-passport it can be used as a hook or directly
+                const result = await this.passport.authenticate('local', async (request, reply, err, user, info) => {
+                    if (err) return reply.status(500).send({ message: 'Authentication error.' });
+                    if (!user) return reply.status(401).send({ message: info?.message || 'Authentication failed.' });
 
-                const authenticators = await AuthDB.getUserAuthenticators(this.db, user.id);
-                const hasPasskeys = authenticators.length > 0;
-                const hasTOTP = !!user.totp_enabled;
+                    const authenticators = await AuthDB.getUserAuthenticators(this.db, user.id);
+                    const hasPasskeys = authenticators.length > 0;
+                    const hasTOTP = !!user.totp_enabled;
 
-                if (hasPasskeys || hasTOTP) {
-                    req.session.pendingUser = {
-                        id: user.id,
-                        hasTOTP,
-                        hasPasskeys
-                    };
-                    return res.status(200).json({ 
-                        requires2FA: true,
-                        methods: {
-                            totp: hasTOTP,
-                            passkey: hasPasskeys
-                        }
-                    });
-                }
+                    if (hasPasskeys || hasTOTP) {
+                        request.session.pendingUser = {
+                            id: user.id,
+                            hasTOTP,
+                            hasPasskeys
+                        };
+                        return reply.status(200).send({ 
+                            requires2FA: true,
+                            methods: {
+                                totp: hasTOTP,
+                                passkey: hasPasskeys
+                            }
+                        });
+                    }
 
-                req.logIn(user, (err) => {
-                    if (err) return res.status(500).json({ message: 'Login error.' });
+                    await request.logIn(user);
+                    request.session.set('user_id', user.id); // Force session save
                     
                     const { hashed_password, ...safeUser } = user;
-                    return res.status(200).json({ 
+                    return reply.status(200).send({ 
                         message: 'Login successful.', 
                         user: {
                             id: safeUser.id,
@@ -189,23 +192,27 @@ export default class Auth {
                             last_name: safeUser.last_name
                         }
                     });
-                });
-            })(req, res, next);
+                })(request, reply);
+                return result;
+            } catch (err) {
+                Logger.error(err);
+                return reply.status(500).send({ message: 'Login error.' });
+            }
         });
 
         /**
          * Verify TOTP token during login.
          */
-        this.app.post('/api/auth/verify-totp', async (req: Request, res: Response) => {
-            const { token } = req.body;
-            const pendingUser = req.session.pendingUser;
+        this.app.post('/api/auth/verify-totp', async (request: any, reply: FastifyReply) => {
+            const { token } = request.body as any;
+            const pendingUser = request.session.pendingUser;
 
             if (!pendingUser || !pendingUser.hasTOTP) {
-                return res.status(400).json({ message: 'TOTP not required or session expired.' });
+                return reply.status(400).send({ message: 'TOTP not required or session expired.' });
             }
 
             const tokenError = ValidationRules.validate('totp', token);
-            if (tokenError) return res.status(400).json({ message: tokenError });
+            if (tokenError) return reply.status(400).send({ message: tokenError });
 
             try {
                 const user = await AuthDB.getUserById(this.db, pendingUser.id);
@@ -215,29 +222,28 @@ export default class Auth {
                 });
 
                 if (!isValid || !isValid.valid) {
-                    return res.status(401).json({ message: 'Invalid TOTP token.' });
+                    return reply.status(401).send({ message: 'Invalid TOTP token.' });
                 }
 
-                req.logIn(user, (err) => {
-                    if (err) return res.status(500).json({ message: 'Login error.' });
-                    delete req.session.pendingUser;
-                    return res.status(200).json({ message: 'Login successful.' });
-                });
+                await request.logIn(user);
+                delete request.session.pendingUser;
+                return reply.status(200).send({ message: 'Login successful.' });
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Verification failed.' });
+                return reply.status(500).send({ message: 'Verification failed.' });
             }
         });
 
         /**
          * WebAuthn login - Get authentication options.
          */
-        this.app.post('/api/auth/passkey/login-options', async (req: Request, res: Response) => {
-            const pendingUser = req.session.pendingUser;
+        this.app.post('/api/auth/passkey/login-options', async (request: any, reply: FastifyReply) => {
+            const pendingUser = request.session.pendingUser;
             let userId = pendingUser?.id;
 
-            if (!userId && req.body.email) {
-                const user = await AuthDB.getUserByEmail(this.db, req.body.email.toLowerCase());
+            const body = request.body as any;
+            if (!userId && body?.email) {
+                const user = await AuthDB.getUserByEmail(this.db, body.email.toLowerCase());
                 if (user) userId = user.id;
             }
 
@@ -260,39 +266,39 @@ export default class Auth {
                     userVerification: 'preferred',
                 });
 
-                req.session.currentChallenge = options.challenge;
-                req.session.passkeyUserId = userId;
-                res.json(options);
+                request.session.currentChallenge = options.challenge;
+                request.session.passkeyUserId = userId;
+                return reply.send(options);
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Failed to generate options.' });
+                return reply.status(500).send({ message: 'Failed to generate options.' });
             }
         });
 
         /**
          * WebAuthn login - Verify response.
          */
-        this.app.post('/api/auth/passkey/login-verify', async (req: Request, res: Response) => {
-            const { body } = req;
-            const expectedChallenge = req.session.currentChallenge;
-            let targetUserId = req.session.pendingUser?.id || req.session.passkeyUserId;
+        this.app.post('/api/auth/passkey/login-verify', async (request: any, reply: FastifyReply) => {
+            const body = request.body as any;
+            const expectedChallenge = request.session.currentChallenge;
+            let targetUserId = request.session.pendingUser?.id || request.session.passkeyUserId;
 
             if (!targetUserId) {
-                return res.status(400).json({ message: 'User context missing.' });
+                return reply.status(400).send({ message: 'User context missing.' });
             }
 
             if (!expectedChallenge) {
-                return res.status(400).json({ message: 'Authentication session expired.' });
+                return reply.status(400).send({ message: 'Authentication session expired.' });
             }
 
             try {
                 const authenticator = await AuthDB.getAuthenticatorById(this.db, body.id);
                 if (!authenticator) {
-                    return res.status(400).json({ message: 'Authenticator not found.' });
+                    return reply.status(400).send({ message: 'Authenticator not found.' });
                 }
 
                 if (targetUserId && authenticator.user_id !== targetUserId) {
-                    return res.status(400).json({ message: 'Authenticator not found.' });
+                    return reply.status(400).send({ message: 'Authenticator not found.' });
                 }
 
                 // If no targetUserId (discoverable credential), use the one from the authenticator
@@ -317,85 +323,84 @@ export default class Auth {
                     await AuthDB.updateAuthenticatorCounter(this.db, authenticator.id, authenticationInfo.newCounter);
                     
                     const user = await AuthDB.getUserById(this.db, targetUserId as number);
-                    req.logIn(user, (err) => {
-                        if (err) return res.status(500).json({ message: 'Login error.' });
-                        delete req.session.pendingUser;
-                        delete req.session.currentChallenge;
-                        delete req.session.passkeyUserId;
-                        return res.status(200).json({ message: 'Login successful.' });
-                    });
+                    await request.logIn(user);
+                    request.session.set('user_id', user.id); // Force session save
+                    delete request.session.pendingUser;
+                    delete request.session.currentChallenge;
+                    delete request.session.passkeyUserId;
+                    return reply.status(200).send({ message: 'Login successful.' });
                 } else {
-                    res.status(401).json({ message: 'Passkey verification failed.' });
+                    return reply.status(401).send({ message: 'Passkey verification failed.' });
                 }
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Verification error.' });
+                return reply.status(500).send({ message: 'Verification error.' });
             }
         });
 
         /**
          * Setup TOTP - Generate secret and QR code.
          */
-        this.app.get('/api/auth/totp/setup', this.check(), async (req: any, res: Response) => {
+        this.app.get('/api/auth/totp/setup', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
             try {
                 const secret = generateSecret();
-                const user = req.user;
+                const user = request.user;
                 const otpauth = generateURI({ secret, label: user.email, issuer: this.rpName });
 
                 const qrCodeData = await qrcode.toDataURL(otpauth);
                 // Temporarily store secret in session until verified
-                req.session.tempTOTPSecret = secret;
-                res.json({ qrCodeData, secret });
+                request.session.tempTOTPSecret = secret;
+                return reply.send({ qrCodeData, secret });
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Failed to generate setup.' });
+                return reply.status(500).send({ message: 'Failed to generate setup.' });
             }
         });
 
         /**
          * Verify and enable TOTP.
          */
-        this.app.post('/api/auth/totp/enable', this.check(), async (req: any, res: Response) => {
-            const { token } = req.body;
-            const secret = req.session.tempTOTPSecret;
+        this.app.post('/api/auth/totp/enable', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            const { token } = request.body as any;
+            const secret = request.session.tempTOTPSecret;
 
-            if (!secret) return res.status(400).json({ message: 'Setup session expired.' });
+            if (!secret) return reply.status(400).send({ message: 'Setup session expired.' });
 
             const tokenError = ValidationRules.validate('totp', token);
-            if (tokenError) return res.status(400).json({ message: tokenError });
+            if (tokenError) return reply.status(400).send({ message: tokenError });
 
             try {
                 const isValid = await verify({ token, secret });
-                if (!isValid || !isValid.valid) return res.status(400).json({ message: 'Invalid token.' });
+                if (!isValid || !isValid.valid) return reply.status(400).send({ message: 'Invalid token.' });
 
-                await AuthDB.setTOTPSecret(this.db, req.user.id, secret);
-                await AuthDB.setTOTPEnabled(this.db, req.user.id, true);
-                delete req.session.tempTOTPSecret;
-                res.json({ success: true });
+                await AuthDB.setTOTPSecret(this.db, request.user.id, secret);
+                await AuthDB.setTOTPEnabled(this.db, request.user.id, true);
+                delete request.session.tempTOTPSecret;
+                return reply.send({ success: true });
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Failed to enable TOTP.' });
+                return reply.status(500).send({ message: 'Failed to enable TOTP.' });
             }
         });
 
         /**
          * Disable TOTP.
          */
-        this.app.post('/api/auth/totp/disable', this.check(), async (req: any, res: Response) => {
+        this.app.post('/api/auth/totp/disable', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
             try {
-                await AuthDB.setTOTPEnabled(this.db, req.user.id, false);
-                res.json({ success: true });
+                await AuthDB.setTOTPEnabled(this.db, request.user.id, false);
+                return reply.send({ success: true });
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Failed to disable TOTP.' });
+                return reply.status(500).send({ message: 'Failed to disable TOTP.' });
             }
         });
 
         /**
          * WebAuthn Registration - Get options.
          */
-        this.app.get('/api/auth/passkey/register-options', this.check(), async (req: any, res: Response) => {
-            const user = req.user;
+        this.app.get('/api/auth/passkey/register-options', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            const user = request.user;
             const userAuthenticators = await AuthDB.getUserAuthenticators(this.db, user.id);
 
             try {
@@ -416,22 +421,22 @@ export default class Auth {
                     },
                 });
 
-                req.session.currentChallenge = options.challenge;
-                res.json(options);
+                request.session.currentChallenge = options.challenge;
+                return reply.send(options);
             } catch (err) {
                 Logger.error('Error in register-options:', err);
-                res.status(500).json({ message: 'Failed to generate options.' });
+                return reply.status(500).send({ message: 'Failed to generate options.' });
             }
         });
 
         /**
          * WebAuthn Registration - Verify response.
          */
-        this.app.post('/api/auth/passkey/register-verify', this.check(), async (req: any, res: Response) => {
-            const { body } = req;
-            const expectedChallenge = req.session.currentChallenge;
+        this.app.post('/api/auth/passkey/register-verify', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            const body = request.body as any;
+            const expectedChallenge = request.session.currentChallenge;
 
-            if (!expectedChallenge) return res.status(400).json({ message: 'Registration session expired.' });
+            if (!expectedChallenge) return reply.status(400).send({ message: 'Registration session expired.' });
 
             try {
                 const verification = await verifyRegistrationResponse({
@@ -444,71 +449,67 @@ export default class Auth {
                 if (verification.verified) {
                     const { registrationInfo } = verification;
                     if (!registrationInfo) {
-                        return res.status(500).json({ message: 'Verification successful but registration info missing.' });
+                        return reply.status(500).send({ message: 'Verification successful but registration info missing.' });
                     }
-                    await AuthDB.saveAuthenticator(this.db, req.user.id, registrationInfo);
-                    delete req.session.currentChallenge;
-                    res.json({ success: true });
+                    await AuthDB.saveAuthenticator(this.db, request.user.id, registrationInfo);
+                    delete request.session.currentChallenge;
+                    return reply.send({ success: true });
                 } else {
-                    res.status(400).json({ message: 'Verification failed.' });
+                    return reply.status(400).send({ message: 'Verification failed.' });
                 }
             } catch (err) {
                 Logger.error(err);
-                res.status(500).json({ message: 'Verification error.' });
+                return reply.status(500).send({ message: 'Verification error.' });
             }
         });
 
         /**
          * List user's passkeys.
          */
-        this.app.get('/api/auth/passkeys', this.check(), async (req: any, res: Response) => {
+        this.app.get('/api/auth/passkeys', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
             try {
-                const keys = await AuthDB.getUserAuthenticators(this.db, req.user.id);
-                res.json(keys.map(k => ({ id: k.id, created_at: k.created_at })));
+                const keys = await AuthDB.getUserAuthenticators(this.db, request.user.id);
+                return reply.send(keys.map(k => ({ id: k.id, created_at: k.created_at })));
             } catch (err) {
-                res.status(500).json({ message: 'Failed to fetch passkeys.' });
+                return reply.status(500).send({ message: 'Failed to fetch passkeys.' });
             }
         });
 
         /**
          * Delete a passkey.
          */
-        this.app.delete('/api/auth/passkeys/:id', this.check(), async (req: any, res: Response) => {
+        this.app.delete('/api/auth/passkeys/:id', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
             try {
-                await AuthDB.deleteAuthenticator(this.db, req.user.id, req.params.id);
-                res.json({ success: true });
+                await AuthDB.deleteAuthenticator(this.db, request.user.id, request.params.id);
+                return reply.send({ success: true });
             } catch (err) {
-                res.status(500).json({ message: 'Failed to delete passkey.' });
+                return reply.status(500).send({ message: 'Failed to delete passkey.' });
             }
         });
 
         /**
          * Logout user and destroy session.
          */
-        this.app.get('/api/auth/logout', this.check(), (req: Request, res: Response, next: NextFunction) => {
-            req.logout((err) => {
-                if (err) return next(err);
-                req.session.destroy((err) => {
-                    if (err) return res.status(500).json({ message: 'Logout failed.' });
-                    res.clearCookie(config.session.cookieName);
-                    res.status(200).json({ message: 'Logged out.' });
-                });
-            });
+        this.app.get('/api/auth/logout', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            await request.logOut();
+            await request.session.destroy();
+            reply.clearCookie(config.session.cookieName);
+            return reply.status(200).send({ message: 'Logged out.' });
         });
 
         /**
          * Get current authentication status.
          */
-        this.app.get('/api/auth/status', (req: Request, res: Response) => {
-            res.json({ authenticated: req.isAuthenticated() });
+        this.app.get('/api/auth/status', async (request: any, reply: FastifyReply) => {
+            return reply.send({ authenticated: request.isAuthenticated() });
         });
 
         /**
          * Request password reset.
          */
-        this.app.post('/api/auth/reset-password-request', async (req: Request, res: Response) => {
-            const { email } = req.body;
-            if (!email) return res.status(400).json({ message: 'Email is required.' });
+        this.app.post('/api/auth/reset-password-request', async (request: FastifyRequest, reply: FastifyReply) => {
+            const { email } = request.body as any;
+            if (!email) return reply.status(400).send({ message: 'Email is required.' });
 
             try {
                 const searchStr = email.toLowerCase();
@@ -521,7 +522,7 @@ export default class Auth {
                 }
 
                 if (!user) {
-                    return res.json({ message: 'If an account exists, a reset link has been sent.' });
+                    return reply.send({ message: 'If an account exists, a reset link has been sent.' });
                 }
 
                 const token = crypto.randomBytes(32).toString('hex');
@@ -529,41 +530,44 @@ export default class Auth {
 
                 await AuthDB.createPasswordReset(this.db, user.id, token, expiresAt);
 
-                const baseUrl = Utils.getBaseUrl(req);
+                // Need a way to get base URL in fastify
+                const protocol = request.protocol;
+                const host = request.hostname;
+                const baseUrl = `${protocol}://${host}`;
 
                 Logger.info(`[RESET] Password reset url for ${user.email}: ${baseUrl}/set-password?token=${token}`);
 
-                res.json({ message: 'If an account exists, a reset link has been sent.' });
+                return reply.send({ message: 'If an account exists, a reset link has been sent.' });
             } catch (e) {
                 Logger.error(e);
-                res.status(500).json({ message: 'Server error.' });
+                return reply.status(500).send({ message: 'Server error.' });
             }
         });
 
         /**
          * Set new password with token.
          */
-        const setPasswordHandler = async (req: Request, res: Response) => {
-            const { token, password } = req.body;
-            const newPassword = password || req.body.newPassword;
+        const setPasswordHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+            const { token, password } = request.body as any;
+            const newPassword = password || (request.body as any).newPassword;
 
-            if (!token || !newPassword) return res.status(400).json({ message: 'Token and new password required.' });
+            if (!token || !newPassword) return reply.status(400).send({ message: 'Token and new password required.' });
 
             try {
                 const resetRecord = await AuthDB.getValidPasswordReset(this.db, token);
 
                 if (!resetRecord) {
-                    return res.status(400).json({ message: 'Invalid or expired token.' });
+                    return reply.status(400).send({ message: 'Invalid or expired token.' });
                 }
 
                 const hashedPassword = await bcrypt.hash(newPassword, config.auth.bcryptSaltRounds);
 
                 await AuthDB.resetPassword(this.db, resetRecord.user_id, hashedPassword);
 
-                res.json({ message: 'Password updated successfully.' });
+                return reply.send({ message: 'Password updated successfully.' });
             } catch (e) {
                 Logger.error(e);
-                res.status(500).json({ message: 'Server error.' });
+                return reply.status(500).send({ message: 'Server error.' });
             }
         };
 
@@ -573,24 +577,24 @@ export default class Auth {
         /**
          * Change password for logged in user.
          */
-        this.app.post('/api/auth/change-password', this.check(), async (req: any, res: Response) => {
-            const { currentPassword, newPassword } = req.body;
-            if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Current and new password required.' });
+        this.app.post('/api/auth/change-password', { preHandler: [checkAuthentication()] }, async (request: any, reply: FastifyReply) => {
+            const { currentPassword, newPassword } = request.body as any;
+            if (!currentPassword || !newPassword) return reply.status(400).send({ message: 'Current and new password required.' });
 
             try {
-                const user = await AuthDB.getUserById(this.db, req.user.id);
-                if (!user) return res.status(404).json({ message: 'User not found.' });
+                const user = await AuthDB.getUserById(this.db, request.user.id);
+                if (!user) return reply.status(404).send({ message: 'User not found.' });
 
                 const isMatch = await bcrypt.compare(currentPassword, user.hashed_password);
-                if (!isMatch) return res.status(403).json({ message: 'Incorrect current password.' });
+                if (!isMatch) return reply.status(403).send({ message: 'Incorrect current password.' });
 
                 const hashedPassword = await bcrypt.hash(newPassword, config.auth.bcryptSaltRounds);
-                await AuthDB.updatePassword(this.db, req.user.id, hashedPassword);
+                await AuthDB.updatePassword(this.db, request.user.id, hashedPassword);
 
-                res.json({ message: 'Password changed successfully.' });
+                return reply.send({ message: 'Password changed successfully.' });
             } catch (e) {
                 Logger.error(e);
-                res.status(500).json({ message: 'Server error.' });
+                return reply.status(500).send({ message: 'Server error.' });
             }
         });
     }
@@ -598,8 +602,8 @@ export default class Auth {
     /**
      * Authentication middleware proxy.
      */
-    isAuthenticated(req: Request, res: Response, next: NextFunction) {
-        return checkAuthentication()(req, res, next);
+    isAuthenticated() {
+        return checkAuthentication();
     }
 
     /**

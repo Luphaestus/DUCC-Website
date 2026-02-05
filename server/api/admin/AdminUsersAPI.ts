@@ -10,18 +10,18 @@ import SwimsDB from '../../db/swimsDB.js';
 import check from '../../misc/authentication.js';
 import { Permissions } from '../../misc/permissions.js';
 import bcrypt from 'bcrypt';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 
 export default class AdminUsers {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
     /**
-     * @param {object} app - Express application instance.
+     * @param {object} app - Fastify application instance.
      * @param {object} db - Database connection instance.
      */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -33,39 +33,39 @@ export default class AdminUsers {
         /**
          * Fetch paginated users list for admin tables.
          */
-        this.app.get('/api/admin/users', check('perm:is_exec'), async (req: any, res: Response) => {
-            const page = parseInt(req.query.page as string) || 1;
-            const limit = parseInt(req.query.limit as string) || 10;
-            const search = (req.query.search as string) || '';
-            const sort = (req.query.sort as string) || 'last_name';
-            const order = (req.query.order as 'asc' | 'desc') || 'asc';
+        this.app.get('/api/admin/users', { preHandler: [check('perm:is_exec')] }, async (request: any, reply: FastifyReply) => {
+            const page = parseInt(request.query.page as string) || 1;
+            const limit = parseInt(request.query.limit as string) || 10;
+            const search = (request.query.search as string) || '';
+            const sort = (request.query.sort as string) || 'last_name';
+            const order = (request.query.order as 'asc' | 'desc') || 'asc';
 
-            const inDebt = req.query.inDebt as string;
-            const isMember = req.query.isMember as string;
-            const difficulty = req.query.difficulty as string;
-            const permissions = req.query.permissions as string;
+            const inDebt = request.query.inDebt as string;
+            const isMember = request.query.isMember as string;
+            const difficulty = request.query.difficulty as string;
+            const permissions = request.query.permissions as string;
 
             const userPerms = {
-                canManageUsers: await Permissions.hasPermission(this.db, req.user.id, 'user.manage'),
-                canManageTrans: await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage'),
-                canManageEvents: await Permissions.hasPermission(this.db, req.user.id, 'event.manage.all'),
-                isScopedExec: await Permissions.hasPermission(this.db, req.user.id, 'event.manage.scoped')
+                canManageUsers: await Permissions.hasPermission(this.db, request.user.id, 'user.manage'),
+                canManageTrans: await Permissions.hasPermission(this.db, request.user.id, 'transaction.manage'),
+                canManageEvents: await Permissions.hasPermission(this.db, request.user.id, 'event.manage.all'),
+                isScopedExec: await Permissions.hasPermission(this.db, request.user.id, 'event.manage.scoped')
             };
 
             const result = await UserDB.getUsers(this.db, userPerms, { page, limit, search, sort, order, inDebt, isMember, difficulty, permissions });
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         /**
          * Fetch full user profile, balance, and authorization details.
          */
-        this.app.get('/api/admin/user/:id', check('perm:user.read | perm:user.manage | perm:transaction.read | perm:transaction.manage | perm:is_exec'), async (req: any, res: Response) => {
-            const userId = parseInt(req.params.id);
-            if (isNaN(userId)) return res.status(400).json({ message: 'Invalid user ID' });
+        this.app.get('/api/admin/user/:id', { preHandler: [check('perm:user.read | perm:user.manage | perm:transaction.read | perm:transaction.manage | perm:is_exec')] }, async (request: any, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id);
+            if (isNaN(userId)) return reply.status(400).send({ message: 'Invalid user ID' });
 
-            const canManageUsers = await Permissions.hasPermission(this.db, req.user.id, 'user.manage') || await Permissions.hasPermission(this.db, req.user.id, 'user.read');
-            const canManageTransactions = await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage') || await Permissions.hasPermission(this.db, req.user.id, 'transaction.read');
+            const canManageUsers = await Permissions.hasPermission(this.db, request.user.id, 'user.manage') || await Permissions.hasPermission(this.db, request.user.id, 'user.read');
+            const canManageTransactions = await Permissions.hasPermission(this.db, request.user.id, 'transaction.manage') || await Permissions.hasPermission(this.db, request.user.id, 'transaction.read');
 
             let elements: string[] = ["id"];
             if (canManageUsers) {
@@ -85,7 +85,7 @@ export default class AdminUsers {
 
             const includeBalance = canManageUsers || canManageTransactions;
             const profileRes = await UserDB.getUserProfile(this.db, userId, elements, includeBalance);
-            if (profileRes.isError()) return profileRes.getResponse(res);
+            if (profileRes.isError()) return profileRes.getResponse(reply);
 
             const filteredUser = profileRes.getData();
 
@@ -110,102 +110,103 @@ export default class AdminUsers {
             const tagsRes = await RolesDB.getUserManagedTags(this.db, userId);
             if (!tagsRes.isError()) filteredUser.direct_managed_tags = tagsRes.getData();
 
-            res.json(filteredUser);
+            return reply.send(filteredUser);
         });
 
         /**
          * Update profile elements for any user.
          */
-        this.app.post('/api/admin/user/:id/elements', check('perm:user.write | perm:user.manage'), async (req: Request, res: Response) => {
-            if (req.body.email) req.body.email = req.body.email.toLowerCase();
-            const result = await UserDB.writeElements(this.db, parseInt(req.params.id), req.body);
-            result.getResponse(res);
+        this.app.post('/api/admin/user/:id/elements', { preHandler: [check('perm:user.write | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: any }>, reply: FastifyReply) => {
+            const body = request.body as any;
+            if (body.email) body.email = body.email.toLowerCase();
+            const result = await UserDB.writeElements(this.db, parseInt(request.params.id), body);
+            return result.getResponse(reply);
         });
 
         /**
          * Assign a role to a user.
          */
-        this.app.post('/api/admin/user/:id/role', check('perm:user.manage | perm:role.manage'), async (req: any, res: Response) => {
-            const roleId = req.body.roleId;
+        this.app.post('/api/admin/user/:id/role', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: any, reply: FastifyReply) => {
+            const roleId = request.body.roleId;
             const roleRes = await RolesDB.getRoleById(this.db, roleId);
-            if (roleRes.isError()) return roleRes.getResponse(res);
+            if (roleRes.isError()) return roleRes.getResponse(reply);
             
             const role = roleRes.getData();
             
             if (role.name === 'President') {
-                const isPresident = await Permissions.hasRole(this.db, req.user.id, 'President');
+                const isPresident = await Permissions.hasRole(this.db, request.user.id, 'President');
                 
                 if (!isPresident) {
-                    return res.status(403).json({ message: 'Only the current President can transfer this role.' });
+                    return reply.status(403).send({ message: 'Only the current President can transfer this role.' });
                 }
 
-                const { password } = req.body;
+                const { password } = request.body;
                 if (!password) {
-                    return res.status(400).json({ message: 'Password is required to transfer the President role.' });
+                    return reply.status(400).send({ message: 'Password is required to transfer the President role.' });
                 }
 
-                const isMatch = await bcrypt.compare(password, req.user.hashed_password);
+                const isMatch = await bcrypt.compare(password, request.user.hashed_password);
                 if (!isMatch) {
-                    return res.status(403).json({ message: 'Incorrect password.' });
+                    return reply.status(403).send({ message: 'Incorrect password.' });
                 }
 
-                const result = await UserDB.resetPermissions(this.db, parseInt(req.params.id));
-                return result.getResponse(res);
+                const result = await UserDB.resetPermissions(this.db, parseInt(request.params.id));
+                return result.getResponse(reply);
             }
 
        
             if (role.permissions) {
                 for (const permSlug of role.permissions) {
-                    if (!await Permissions.hasPermission(this.db, req.user.id, permSlug)) {
-                        return res.status(403).json({ 
+                    if (!await Permissions.hasPermission(this.db, request.user.id, permSlug)) {
+                        return reply.status(403).send({ 
                             message: `You cannot assign a role with permission '${permSlug}' because you do not have it.` 
                         });
                     }
                 }
             }
 
-            const result = await RolesDB.assignRole(this.db, req.params.id, roleId);
-            result.getResponse(res);
+            const result = await RolesDB.assignRole(this.db, request.params.id, roleId);
+            return result.getResponse(reply);
         });
 
         /**
          * Remove a role from a user.
          */
-        this.app.delete('/api/admin/user/:id/role/:roleId', check('perm:user.manage | perm:role.manage'), async (req: Request, res: Response) => {
-            const result = await RolesDB.removeRole(this.db, req.params.id, req.params.roleId);
-            result.getResponse(res);
+        this.app.delete('/api/admin/user/:id/role/:roleId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string, roleId: string } }>, reply: FastifyReply) => {
+            const result = await RolesDB.removeRole(this.db, request.params.id, request.params.roleId);
+            return result.getResponse(reply);
         });
 
         /**
          * Add a direct permission override to a user.
          */
-        this.app.post('/api/admin/user/:id/permission', check('perm:user.manage | perm:role.manage'), async (req: Request, res: Response) => {
-            const result = await RolesDB.addUserPermission(this.db, req.params.id, req.body.permissionId);
-            result.getResponse(res);
+        this.app.post('/api/admin/user/:id/permission', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { permissionId: string } }>, reply: FastifyReply) => {
+            const result = await RolesDB.addUserPermission(this.db, request.params.id, request.body.permissionId);
+            return result.getResponse(reply);
         });
 
         /**
          * Remove a direct permission override from a user.
          */
-        this.app.delete('/api/admin/user/:id/permission/:permId', check('perm:user.manage | perm:role.manage'), async (req: Request, res: Response) => {
-            const result = await RolesDB.removeUserPermission(this.db, req.params.id, req.params.permId);
-            result.getResponse(res);
+        this.app.delete('/api/admin/user/:id/permission/:permId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string, permId: string } }>, reply: FastifyReply) => {
+            const result = await RolesDB.removeUserPermission(this.db, request.params.id, request.params.permId);
+            return result.getResponse(reply);
         });
 
         /**
          * Grant an Exec direct management scope over events with a specific tag.
          */
-        this.app.post('/api/admin/user/:id/managed_tag', check('perm:user.manage | perm:role.manage'), async (req: Request, res: Response) => {
-            const result = await RolesDB.addManagedTag(this.db, req.params.id, req.body.tagId);
-            result.getResponse(res);
+        this.app.post('/api/admin/user/:id/managed_tag', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { tagId: string } }>, reply: FastifyReply) => {
+            const result = await RolesDB.addManagedTag(this.db, request.params.id, request.body.tagId);
+            return result.getResponse(reply);
         });
 
         /**
          * Revoke an Exec's direct management scope over a specific tag.
          */
-        this.app.delete('/api/admin/user/:id/managed_tag/:tagId', check('perm:user.manage | perm:role.manage'), async (req: Request, res: Response) => {
-            const result = await RolesDB.removeManagedTag(this.db, req.params.id, req.params.tagId);
-            result.getResponse(res);
+        this.app.delete('/api/admin/user/:id/managed_tag/:tagId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string, tagId: string } }>, reply: FastifyReply) => {
+            const result = await RolesDB.removeManagedTag(this.db, request.params.id, request.params.tagId);
+            return result.getResponse(reply);
         });
     }
 }

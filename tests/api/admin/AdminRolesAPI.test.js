@@ -19,6 +19,7 @@ describe('api/admin/AdminRolesAPI', () => {
         await world.createUser('user', {});
 
         new AdminRolesAPI(world.app, world.db).registerRoutes();
+        await world.app.ready();
     });
 
     afterEach(async () => {
@@ -33,7 +34,8 @@ describe('api/admin/AdminRolesAPI', () => {
 
             const res = await world.as('admin').get('/api/admin/roles/permissions');
             expect(res.statusCode).toBe(200);
-            const slugs = res.body.map(p => p.slug);
+            const body = JSON.parse(res.body);
+            const slugs = body.map(p => p.slug);
             
             expect(slugs).toContain('user.manage');
             expect(slugs).not.toContain('event.manage.scoped');
@@ -44,14 +46,15 @@ describe('api/admin/AdminRolesAPI', () => {
         /** Full CRUD flow for custom administrative roles. */
         test('Full CRUD flow for custom administrative roles', async () => {
             // Create
-            const res1 = await world.as('admin').post('/api/admin/roles').send({
+            const res1 = await world.as('admin').post('/api/admin/roles', {
                 name: 'TestRole', description: 'Desc', permissions: ['role.read']
             });
             expect(res1.statusCode).toBe(201);
-            const roleId = res1.body.data.id;
+            const body1 = JSON.parse(res1.body);
+            const roleId = body1.data.id;
 
             // Update
-            const res2 = await world.as('admin').put(`/api/admin/roles/${roleId}`).send({
+            const res2 = await world.as('admin').put(`/api/admin/roles/${roleId}`, {
                 name: 'UpdatedName', description: 'NewDesc', permissions: []
             });
             expect(res2.statusCode).toBe(200);
@@ -67,7 +70,7 @@ describe('api/admin/AdminRolesAPI', () => {
             const pres = await world.db.get('SELECT id FROM roles WHERE name = "President"');
 
             // Attempt Update
-            const resUpdate = await world.as('admin').put(`/api/admin/roles/${pres.id}`).send({ name: 'Hack' });
+            const resUpdate = await world.as('admin').put(`/api/admin/roles/${pres.id}`, { name: 'Hack' });
             expect(resUpdate.statusCode).toBe(403);
 
             // Attempt Delete

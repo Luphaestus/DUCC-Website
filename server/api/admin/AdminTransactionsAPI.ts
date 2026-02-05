@@ -6,18 +6,18 @@
 
 import transactionsDB from '../../db/transactionDB.js';
 import check from '../../misc/authentication.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 
 export default class AdminTransactions {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
     /**
-     * @param {object} app - Express application instance.
+     * @param {object} app - Fastify application instance.
      * @param {object} db - Database connection instance.
      */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -29,47 +29,47 @@ export default class AdminTransactions {
         /**
          * Fetch full transaction history for a specific user.
          */
-        this.app.get('/api/admin/user/:id/transactions', check('perm:transaction.read | perm:transaction.manage'), async (req: Request, res: Response) => {
-            const userId = parseInt(req.params.id);
+        this.app.get('/api/admin/user/:id/transactions', { preHandler: [check('perm:transaction.read | perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id);
             if (isNaN(userId)) {
-                return res.status(400).json({ message: 'Invalid user ID' });
+                return reply.status(400).send({ message: 'Invalid user ID' });
             }
             const result = await transactionsDB.get_transactions(this.db, userId);
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         /**
          * Manually add a transaction to a user's account.
          */
-        this.app.post('/api/admin/user/:id/transaction', check('perm:transaction.write | perm:transaction.manage'), async (req: Request, res: Response) => {
-            const userId = parseInt(req.params.id);
+        this.app.post('/api/admin/user/:id/transaction', { preHandler: [check('perm:transaction.write | perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { amount: number, description: string } }>, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id);
             if (isNaN(userId)) {
-                return res.status(400).json({ message: 'Invalid user ID' });
+                return reply.status(400).send({ message: 'Invalid user ID' });
             }
-            const result = await transactionsDB.add_transaction(this.db, userId, req.body.amount, req.body.description);
+            const result = await transactionsDB.add_transaction(this.db, userId, request.body.amount, request.body.description);
             
             if (!result.isError()) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
-                EventHub.sendToUser(userId, 'balance_update', { userId, amount: req.body.amount });
+                EventHub.sendToUser(userId, 'balance_update', { userId, amount: request.body.amount });
                 EventHub.broadcast('admin_transaction_update', { userId });
             }
 
-            result.getResponse(res);
+            return result.getResponse(reply);
         });
 
         /**
          * Update an existing transaction record.
          */
-        this.app.put('/api/admin/transaction/:id', check('perm:transaction.write | perm:transaction.manage'), async (req: Request, res: Response) => {
-            const transactionId = parseInt(req.params.id);
-            if (isNaN(transactionId)) return res.status(400).json({ message: 'Invalid transaction ID' });
+        this.app.put('/api/admin/transaction/:id', { preHandler: [check('perm:transaction.write | perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { amount: number, description: string } }>, reply: FastifyReply) => {
+            const transactionId = parseInt(request.params.id);
+            if (isNaN(transactionId)) return reply.status(400).send({ message: 'Invalid transaction ID' });
             
             // Get user ID before edit
             const tx = await transactionsDB.get_transaction_by_id(this.db, transactionId);
             const userId = tx.getData()?.user_id;
 
-            const result = await transactionsDB.edit_transaction(this.db, transactionId, req.body.amount, req.body.description);
+            const result = await transactionsDB.edit_transaction(this.db, transactionId, request.body.amount, request.body.description);
             
             if (!result.isError() && userId) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
@@ -77,15 +77,15 @@ export default class AdminTransactions {
                 EventHub.broadcast('admin_transaction_update', { userId });
             }
 
-            result.getResponse(res);
+            return result.getResponse(reply);
         });
 
         /**
          * Delete a transaction record.
          */
-        this.app.delete('/api/admin/transaction/:id', check('perm:transaction.manage'), async (req: Request, res: Response) => {
-            const transactionId = parseInt(req.params.id);
-            if (isNaN(transactionId)) return res.status(400).json({ message: 'Invalid transaction ID' });
+        this.app.delete('/api/admin/transaction/:id', { preHandler: [check('perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const transactionId = parseInt(request.params.id);
+            if (isNaN(transactionId)) return reply.status(400).send({ message: 'Invalid transaction ID' });
             
             // Get user ID before delete
             const tx = await transactionsDB.get_transaction_by_id(this.db, transactionId);
@@ -99,7 +99,7 @@ export default class AdminTransactions {
                 EventHub.broadcast('admin_transaction_update', { userId });
             }
 
-            result.getResponse(res);
+            return result.getResponse(reply);
         });
     }
 }

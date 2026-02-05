@@ -9,18 +9,18 @@ import UserDB from '../db/userDB.js';
 import check from '../misc/authentication.js';
 import { Permissions } from '../misc/permissions.js';
 import FileCleanup from '../misc/FileCleanup.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../db/db.js';
 
 export default class GlobalsAPI {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
     /**
-     * @param {object} app - Express app.
+     * @param {object} app - Fastify app.
      * @param {object} db - Database connection.
      */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -32,88 +32,88 @@ export default class GlobalsAPI {
         /**
          * Get President status.
          */
-        this.app.get('/api/globals/status', check("perm:globals.manage"), (req: Request, res: Response) => {
-            res.json({ isPresident: true });
+        this.app.get('/api/globals/status', { preHandler: [check("perm:globals.manage")] }, async (request: FastifyRequest, reply: FastifyReply) => {
+            return reply.send({ isPresident: true });
         });
 
         /**
          * Fetch paginated users list for global settings / admin overview.
          */
-        this.app.get('/api/globals/users', check('perm:globals.manage'), async (req: any, res: Response) => {
-            const page = parseInt(req.query.page as string) || 1;
-            const limit = parseInt(req.query.limit as string) || 10;
-            const search = req.query.search as string || '';
-            const sort = req.query.sort as string || 'last_name';
-            const order = (req.query.order as 'asc' | 'desc') || 'asc';
+        this.app.get('/api/globals/users', { preHandler: [check('perm:globals.manage')] }, async (request: any, reply: FastifyReply) => {
+            const page = parseInt(request.query.page as string) || 1;
+            const limit = parseInt(request.query.limit as string) || 10;
+            const search = request.query.search as string || '';
+            const sort = request.query.sort as string || 'last_name';
+            const order = (request.query.order as 'asc' | 'desc') || 'asc';
 
-            const inDebt = req.query.inDebt as string;
-            const isMember = req.query.isMember as string;
-            const difficulty = req.query.difficulty as string;
+            const inDebt = request.query.inDebt as string;
+            const isMember = request.query.isMember as string;
+            const difficulty = request.query.difficulty as string;
 
             const userPerms = {
-                canManageUsers: await Permissions.hasPermission(this.db, req.user.id, 'user.manage'),
-                canManageTrans: await Permissions.hasPermission(this.db, req.user.id, 'transaction.manage'),
-                canManageEvents: await Permissions.hasPermission(this.db, req.user.id, 'event.manage.all'),
-                isScopedExec: await Permissions.hasPermission(this.db, req.user.id, 'event.manage.scoped')
+                canManageUsers: await Permissions.hasPermission(this.db, request.user.id, 'user.manage'),
+                canManageTrans: await Permissions.hasPermission(this.db, request.user.id, 'transaction.manage'),
+                canManageEvents: await Permissions.hasPermission(this.db, request.user.id, 'event.manage.all'),
+                isScopedExec: await Permissions.hasPermission(this.db, request.user.id, 'event.manage.scoped')
             };
 
             const result = await UserDB.getUsers(this.db, userPerms, { page, limit, search, sort, order, inDebt, isMember, difficulty });
-            if (result.isError()) return result.getResponse(res);
-            res.json(result.getData());
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         /**
          * Fetch all global settings.
          */
-        this.app.get('/api/globals', check('perm:globals.manage'), async (req: Request, res: Response) => {
+        this.app.get('/api/globals', { preHandler: [check('perm:globals.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
             const globals = new Globals().getAll();
-            res.json({ res: globals });
+            return reply.send({ res: globals });
         });
 
         /**
          * Fetch specific global settings by key.
          */
-        this.app.get('/api/globals/:key', async (req: any, res: Response) => {
+        this.app.get('/api/globals/:key', async (request: any, reply: FastifyReply) => {
             let permission = 'Guest';
 
-            if (req.user !== undefined) {
-                if (await Permissions.hasPermission(this.db, req.user.id, 'globals.manage')) {
+            if (request.user !== undefined) {
+                if (await Permissions.hasPermission(this.db, request.user.id, 'globals.manage')) {
                     permission = 'President';
                 } else {
                     permission = 'Authenticated';
                 }
             }
 
-            res.json({ res: new Globals().getKeys(req.params.key.split(','), permission) });
+            return reply.send({ res: new Globals().getKeys(request.params.key.split(','), permission) });
         });
 
         /**
          * Update a global setting.
          */
-        this.app.post('/api/globals/:key', check('perm:globals.manage'), async (req: Request, res: Response) => {
-            const key = req.params.key;
+        this.app.post('/api/globals/:key', { preHandler: [check('perm:globals.manage')] }, async (request: FastifyRequest<{ Params: { key: string }, Body: { value: string } }>, reply: FastifyReply) => {
+            const key = request.params.key;
             const globals = new Globals();
             try {
                 const config = globals.get(key);
                 if (!config) throw new Error("Global key not found.");
 
-                if (config.type === 'image' && (!req.body.value || req.body.value.trim() === '')) {
+                if (config.type === 'image' && (!request.body.value || request.body.value.trim() === '')) {
                     throw new Error("Image settings cannot be empty.");
                 }
 
                 if (key === 'DefaultEventImage') {
                     const oldVal = config.data;
-                    globals.set(key, req.body.value);
-                    if (oldVal !== req.body.value) {
+                    globals.set(key, request.body.value);
+                    if (oldVal !== request.body.value) {
                         await FileCleanup.checkAndDeleteIfUnused(this.db, oldVal);
                     }
                 } else {
-                    globals.set(key, req.body.value);
+                    globals.set(key, request.body.value);
                 }
             } catch (error: any) {
-                return res.status(400).json({ message: error.message });
+                return reply.status(400).send({ message: error.message });
             }
-            res.json({ success: true });
+            return reply.send({ success: true });
         });
     }
 }

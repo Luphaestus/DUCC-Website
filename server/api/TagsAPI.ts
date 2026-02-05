@@ -7,18 +7,18 @@
 import TagsDB from '../db/tagsDB.js';
 import check from '../misc/authentication.js';
 import { Permissions } from '../misc/permissions.js';
-import { Express, Request, Response } from 'express';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../db/db.js';
 
 export default class TagsAPI {
-    app: Express;
+    app: FastifyInstance;
     db: DatabaseWrapper;
 
     /**
-     * @param {object} app - Express app instance.
+     * @param {object} app - Fastify app instance.
      * @param {object} db - Database connection.
      */
-    constructor(app: Express, db: DatabaseWrapper) {
+    constructor(app: FastifyInstance, db: DatabaseWrapper) {
         this.app = app;
         this.db = db;
     }
@@ -30,126 +30,126 @@ export default class TagsAPI {
         /**
          * Fetch all tags.
          */
-        this.app.get('/api/tags', async (req: Request, res: Response) => {
+        this.app.get('/api/tags', async (request: FastifyRequest, reply: FastifyReply) => {
             const result = await TagsDB.getAllTags(this.db);
-            result.getResponse(res);
+            return result.getResponse(reply);
         });
 
         /**
          * Create a new tag.
          */
-        this.app.post('/api/tags', check('perm:event.write.all | perm:manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.createTag(this.db, req.body);
-            result.getResponse(res);
+        this.app.post('/api/tags', { preHandler: [check('perm:event.write.all | perm:manage.all | perm:user.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+            const result = await TagsDB.createTag(this.db, request.body as any);
+            return result.getResponse(reply);
         });
 
         /**
          * Update an existing tag.
          */
-        this.app.put('/api/tags/:id', check(), async (req: any, res: Response) => {
-            if (!await Permissions.canManageTag(this.db, req.user.id, req.params.id)) {
-                return res.status(403).json({ message: 'Forbidden' });
+        this.app.put('/api/tags/:id', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            if (!await Permissions.canManageTag(this.db, request.user.id, request.params.id)) {
+                return reply.status(403).send({ message: 'Forbidden' });
             }
 
-            const result = await TagsDB.updateTag(this.db, req.params.id, req.body);
-            result.getResponse(res);
+            const result = await TagsDB.updateTag(this.db, request.params.id, request.body as any);
+            return result.getResponse(reply);
         });
 
         /**
          * Reset tag image to default (none).
          */
-        this.app.post('/api/tags/:id/reset-image', check(), async (req: any, res: Response) => {
-            if (!await Permissions.canManageTag(this.db, req.user.id, req.params.id)) {
-                return res.status(403).json({ message: 'Forbidden' });
+        this.app.post('/api/tags/:id/reset-image', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            if (!await Permissions.canManageTag(this.db, request.user.id, request.params.id)) {
+                return reply.status(403).send({ message: 'Forbidden' });
             }
 
-            const result = await TagsDB.resetImage(this.db, req.params.id);
-            result.getResponse(res);
+            const result = await TagsDB.resetImage(this.db, request.params.id);
+            return result.getResponse(reply);
         });
 
         /**
          * Delete a tag.
          */
-        this.app.delete('/api/tags/:id', check('perm:event.manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.deleteTag(this.db, req.params.id);
-            result.getResponse(res);
+        this.app.delete('/api/tags/:id', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const result = await TagsDB.deleteTag(this.db, request.params.id);
+            return result.getResponse(reply);
         });
 
         /**
          * Fetch whitelisted users for a tag.
          */
-        this.app.get('/api/tags/:id/whitelist', check('perm:event.manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.getWhitelist(this.db, req.params.id);
-            result.getResponse(res);
+        this.app.get('/api/tags/:id/whitelist', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const result = await TagsDB.getWhitelist(this.db, request.params.id);
+            return result.getResponse(reply);
         });
 
         /**
          * Add a user to a tag's whitelist.
          */
-        this.app.post('/api/tags/:id/whitelist', check('perm:event.manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.addToWhitelist(this.db, req.params.id, req.body.userId);
-            result.getResponse(res);
+        this.app.post('/api/tags/:id/whitelist', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { userId: string } }>, reply: FastifyReply) => {
+            const result = await TagsDB.addToWhitelist(this.db, request.params.id, request.body.userId);
+            return result.getResponse(reply);
         });
 
         /**
          * Remove a user from a tag's whitelist.
          */
-        this.app.delete('/api/tags/:id/whitelist/:userId', check('perm:event.manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.removeFromWhitelist(this.db, req.params.id, req.params.userId);
-            result.getResponse(res);
+        this.app.delete('/api/tags/:id/whitelist/:userId', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string, userId: string } }>, reply: FastifyReply) => {
+            const result = await TagsDB.removeFromWhitelist(this.db, request.params.id, request.params.userId);
+            return result.getResponse(reply);
         });
 
         /**
          * Fetch managers for a tag.
          */
-        this.app.get('/api/tags/:id/managers', check('perm:event.manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.getManagers(this.db, req.params.id);
-            result.getResponse(res);
+        this.app.get('/api/tags/:id/managers', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+            const result = await TagsDB.getManagers(this.db, request.params.id);
+            return result.getResponse(reply);
         });
 
         /**
          * Assign a manager to a tag.
          */
-        this.app.post('/api/tags/:id/managers', check('perm:event.manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.addManager(this.db, req.params.id, req.body.userId);
-            result.getResponse(res);
+        this.app.post('/api/tags/:id/managers', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { userId: string } }>, reply: FastifyReply) => {
+            const result = await TagsDB.addManager(this.db, request.params.id, request.body.userId);
+            return result.getResponse(reply);
         });
 
         /**
          * Remove a manager from a tag.
          */
-        this.app.delete('/api/tags/:id/managers/:userId', check('perm:event.manage.all | perm:user.manage'), async (req: Request, res: Response) => {
-            const result = await TagsDB.removeManager(this.db, req.params.id, req.params.userId);
-            result.getResponse(res);
+        this.app.delete('/api/tags/:id/managers/:userId', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string, userId: string } }>, reply: FastifyReply) => {
+            const result = await TagsDB.removeManager(this.db, request.params.id, request.params.userId);
+            return result.getResponse(reply);
         });
 
         /**
          * Fetch tags for a specific user.
          */
-        this.app.get('/api/user/:userId/tags', check(), async (req: any, res: Response) => {
-            if (req.user.id != req.params.userId) {
-                if (!await Permissions.hasPermission(this.db, req.user.id, 'user.manage')) {
-                    return res.status(403).json({ message: 'Forbidden' });
+        this.app.get('/api/user/:userId/tags', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            if (request.user.id != request.params.userId) {
+                if (!await Permissions.hasPermission(this.db, request.user.id, 'user.manage')) {
+                    return reply.status(403).send({ message: 'Forbidden' });
                 }
             }
 
             try {
-                const tags = await TagsDB.getTagsForUser(this.db, req.params.userId);
-                res.json(tags);
+                const tags = await TagsDB.getTagsForUser(this.db, request.params.userId);
+                return reply.send(tags);
             } catch (error) {
-                res.status(500).json({ message: 'Internal error' });
+                return reply.status(500).send({ message: 'Internal error' });
             }
         });
 
         /**
          * Fetch tags for current authenticated user.
          */
-        this.app.get('/api/user/tags', check(), async (req: any, res: Response) => {
+        this.app.get('/api/user/tags', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
             try {
-                const tags = await TagsDB.getTagsForUser(this.db, req.user.id);
-                res.json(tags);
+                const tags = await TagsDB.getTagsForUser(this.db, request.user.id);
+                return reply.send(tags);
             } catch (error) {
-                res.status(500).json({ message: 'Internal error' });
+                return reply.status(500).send({ message: 'Internal error' });
             }
         });
     }
