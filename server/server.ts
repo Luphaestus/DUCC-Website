@@ -90,11 +90,18 @@ const startServer = async () => {
       wildcard: true,
       setHeaders: (res, filePath) => {
         if (isDev) {
+          // Disable caching entirely in development for all files
           res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
           res.setHeader('Pragma', 'no-cache');
           res.setHeader('Expires', '0');
-        } else if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/)) {
-          res.setHeader('Cache-Control', 'public, max-age=86400');
+        } else {
+          // In production, cache images and assets for a long time
+          if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico|webp|js|css|woff2?|ttf|otf)$/i)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          } else if (filePath.endsWith('index.html')) {
+            // Never cache index.html so updates are immediate
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          }
         }
       }
     });
@@ -285,7 +292,14 @@ const startServer = async () => {
       if (request.url.startsWith('/api')) {
         return reply.status(404).send({ message: 'Not Found' });
       }
-      return reply.sendFile('index.html');
+
+      if (isDev) {
+        reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        reply.header('Pragma', 'no-cache');
+        reply.header('Expires', '0');
+      }
+
+      return reply.sendFile('index.html', path.join(__dirname, '..', 'dist'));
     });
 
     if (process.env.NODE_ENV !== 'test') {

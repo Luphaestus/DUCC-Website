@@ -280,10 +280,21 @@ export default class FilesAPI {
                 }
 
                 if (request.query.view === 'true') {
+                    // Set ETag based on file hash for efficient caching
+                    reply.header('ETag', `"${file.hash}"`);
+                    
+                    // If file is an image, allow long-term caching
+                    if (file.filename.match(/\.(jpg|jpeg|png|gif|svg|ico|webp)$/i)) {
+                        reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+                    } else {
+                        reply.header('Cache-Control', 'public, max-age=3600'); // 1 hour for other viewable files
+                    }
+
                     return reply.sendFile(file.filename, this.uploadDir);
                 }
 
                 // For download, we might need to set headers manually or use a plugin
+                reply.header('ETag', `"${file.hash}"`);
                 reply.header('Content-Disposition', `attachment; filename="${downloadName}"`);
                 return reply.sendFile(file.filename, this.uploadDir);
             } catch (error: any) {
