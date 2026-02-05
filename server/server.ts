@@ -139,8 +139,19 @@ const startServer = async () => {
         const livereload = (await import('livereload')).default;
         const connectLiveReload = (await import('connect-livereload')).default;
 
-        const liveReloadServer = livereload.createServer();
-        liveReloadServer.watch(path.join(__dirname, '..', 'public'));
+        const liveReloadServer = livereload.createServer({
+          host: 'localhost',
+          port: 35729,
+          debug: false
+        });
+        
+        const watchDirs = [
+          path.join(__dirname, '..', 'public'),
+          path.join(__dirname, '..', 'dist')
+        ];
+        liveReloadServer.watch(watchDirs);
+        
+        Logger.info(`LiveReload server started, watching: ${watchDirs.join(', ')}`);
         
         // Use middie to support connect-style middleware
         (fastify as any).use(connectLiveReload({

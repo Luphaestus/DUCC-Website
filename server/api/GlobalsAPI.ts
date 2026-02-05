@@ -76,7 +76,7 @@ export default class GlobalsAPI {
         this.app.get('/api/globals/:key', async (request: any, reply: FastifyReply) => {
             let permission = 'Guest';
 
-            if (request.user !== undefined) {
+            if (request.user) {
                 if (await Permissions.hasPermission(this.db, request.user.id, 'globals.manage')) {
                     permission = 'President';
                 } else {
