@@ -9,7 +9,7 @@ import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
     SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
-    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, SAVE_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG,
+    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, KAYAKING_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG,
     CONTENT_COPY_SVG, UPLOAD_SVG
 } from '@/utils/icons';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
@@ -102,12 +102,38 @@ export default function ProfilePage() {
         return (res.transactions || []) as Transaction[];
     });
 
+    const [userKitPrefs, { refetch: refetchKitPrefs }] = createResource(async () => {
+        try {
+            const res = await apiRequest('GET', '/api/kit/preferences');
+            return (res.data || []) as KitItem[];
+        } catch { return []; }
+    });
+
+    const handleUpdateKitPrefs = async (e: Event) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt((cb as HTMLInputElement).value));
+        try {
+            await apiRequest('POST', '/api/kit/preferences', { itemIds: selected });
+            notify('Success', 'Kit preferences updated.', 'success');
+            refetchKitPrefs();
+        } catch (err: any) {
+            notify('Error', err.message, 'error');
+        }
+    };
+
     const [tags] = createResource(async () => {
         try {
             return await apiRequest('GET', '/api/user/tags');
         } catch (e) {
             return [];
         }
+    });
+
+    const [kitItems] = createResource(async () => {
+        try {
+            return await apiRequest('GET', '/api/kit');
+        } catch { return { data: [] }; }
     });
 
     const [globals] = createResource(async () => {
@@ -375,6 +401,9 @@ export default function ProfilePage() {
                         <button class="nav-item" classList={{ active: activeTab() === 'cars' }} onClick={() => setSearchParams({ tab: 'cars' })}>
                             <span innerHTML={GROUP_SVG} /> Cars
                         </button>
+                        <button class="nav-item" classList={{ active: activeTab() === 'kit' }} onClick={() => setSearchParams({ tab: 'kit' })}>
+                            <span innerHTML={KAYAKING_SVG} /> Kit
+                        </button>
                         <button class="nav-item" classList={{ active: activeTab() === 'balance' }} onClick={() => setSearchParams({ tab: 'balance' })}>
                             <span innerHTML={WALLET_SVG} /> Balance
                         </button>
@@ -594,6 +623,39 @@ export default function ProfilePage() {
                                             )}
                                         </For>
                                     </div>
+                                </Panel>
+                            </section>
+                        </Show>
+
+                        <Show when={activeTab() === 'kit'}>
+                            <section class="dashboard-section active">
+                                <Panel 
+                                    title="Default Kit Requirements" 
+                                    icon={KAYAKING_SVG}
+                                >
+                                    <p>Select the equipment you usually need to borrow from the club for trips. These will be your default requests when you join an event.</p>
+                                    
+                                    <form onSubmit={handleUpdateKitPrefs} class="modern-form">
+                                        <div class="item-list">
+                                            <For each={kitItems()?.data || []}>
+                                                {(item) => (
+                                                    <label class="list-item checkbox-item">
+                                                        <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>
+                                                        <div class="item-details">
+                                                            <span class="item-title">{item.name}</span>
+                                                            <span class="item-subtitle">{item.type} • {item.size}</span>
+                                                        </div>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            value={item.id} 
+                                                            checked={userKitPrefs()?.some(p => p.id === item.id)} 
+                                                        />
+                                                    </label>
+                                                )}
+                                            </For>
+                                        </div>
+                                        <button type="submit" class="primary full-width mt-4">Save Preferences</button>
+                                    </form>
                                 </Panel>
                             </section>
                         </Show>

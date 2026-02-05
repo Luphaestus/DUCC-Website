@@ -2,9 +2,15 @@ import { createSignal, createResource, Show, createEffect, onMount, onCleanup } 
 import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Avatar from "@/components/Avatar";
+import {
+    BOLT_SVG, SHIELD_SVG, ID_CARD_SVG, KAYAKING_SVG,
+    WALLET_SVG, POOL_SVG
+} from '@/utils/icons';
 import ProfileTab from "./tabs/ProfileTab";
 import LegalTab from "./tabs/LegalTab";
 import TagsTab from "./tabs/TagsTab";
+import KitTab from "./tabs/KitTab";
+import PermissionsTab from "./tabs/PermissionsTab";
 import TransactionsTab from "./tabs/TransactionsTab";
 import SwimsTab from "./tabs/SwimsTab";
 import Panel from "@/components/Panel";
@@ -51,53 +57,78 @@ export default function UserDetailPage() {
     });
 
     return (
-        <Show when={user()} fallback={<p>Loading user details...</p>}>
+        <Show when={user()} fallback={<p aria-busy="true">Loading user details...</p>}>
             {(u: any) => (
-                <Panel class="detail-card">
-                    <header>
-                        <div class="user-identity" style={{ display: "flex", "align-items": "center", gap: "1rem" }}>
-                            <Avatar user={u} classes="medium" />
-                            <div class="user-info">
-                                <h2 class="user-name-header" style={{ margin: 0, "font-size": "1.5rem" }}>{u.first_name} {u.last_name}</h2>
-                                <span class="user-id-badge" style={{ "font-size": "0.8rem", opacity: 0.7 }}>ID: {u.id}</span>
+                <div class="dashboard-container">
+                    <aside class="dashboard-sidebar">
+                        <div class="user-identity-card" style={{ 
+                            background: "var(--glass-bg)", 
+                            border: "var(--glass-border)", 
+                            padding: "1.5rem", 
+                            "border-radius": "var(--border-radius-lg)",
+                            display: "flex",
+                            "flex-direction": "column",
+                            "align-items": "center",
+                            gap: "1rem",
+                            "backdrop-filter": "blur(12px)",
+                            "margin-bottom": "1rem"
+                        }}>
+                            <Avatar user={u} classes="large" />
+                            <div class="user-info" style={{ "text-align": "center" }}>
+                                <h2 style={{ margin: 0, "font-size": "1.25rem" }}>{u.first_name} {u.last_name}</h2>
+                                <span class="badge neutral">ID: {u.id}</span>
                             </div>
                         </div>
-                        
-                        <div style={{ "margin-left": "auto" }}>
-                            <TabNav class="tab-nav-simple">
-                                <button class={`tab-btn ${currentTab() === 'profile' ? 'active' : ''}`} onClick={() => setSearchParams({ tab: 'profile' })}>Profile</button>
-                                <Show when={canManageUsers()}>
-                                    <button class={`tab-btn ${currentTab() === 'legal' ? 'active' : ''}`} onClick={() => setSearchParams({ tab: 'legal' })}>Legal</button>
-                                    <button class={`tab-btn ${currentTab() === 'tags' ? 'active' : ''}`} onClick={() => setSearchParams({ tab: 'tags' })}>Tags</button>
-                                </Show>
-                                <Show when={canManageTransactions()}>
-                                    <button class={`tab-btn ${currentTab() === 'transactions' ? 'active' : ''}`} onClick={() => setSearchParams({ tab: 'transactions' })}>Transactions</button>
-                                </Show>
-                                <Show when={canManageSwims()}>
-                                    <button class={`tab-btn ${currentTab() === 'swims' ? 'active' : ''}`} onClick={() => setSearchParams({ tab: 'swims' })}>Swims</button>
-                                </Show>
-                            </TabNav>
-                        </div>
-                    </header>
 
-                    <div class="card-body">
+                        <TabNav class="vertical-sidebar">
+                            <button class="nav-item" classList={{ active: currentTab() === 'profile' }} onClick={() => setSearchParams({ tab: 'profile' })}>
+                                <span innerHTML={BOLT_SVG} /> Profile
+                            </button>
+                            <Show when={canManageUsers()}>
+                                <button class="nav-item" classList={{ active: currentTab() === 'legal' }} onClick={() => setSearchParams({ tab: 'legal' })}>
+                                    <span innerHTML={SHIELD_SVG} /> Legal
+                                </button>
+                                <button class="nav-item" classList={{ active: currentTab() === 'tags' }} onClick={() => setSearchParams({ tab: 'tags' })}>
+                                    <span innerHTML={ID_CARD_SVG} /> Tags
+                                </button>
+                                <button class="nav-item" classList={{ active: currentTab() === 'kit' }} onClick={() => setSearchParams({ tab: 'kit' })}>
+                                    <span innerHTML={KAYAKING_SVG} /> Kit
+                                </button>
+                                <button class="nav-item" classList={{ active: currentTab() === 'permissions' }} onClick={() => setSearchParams({ tab: 'permissions' })}>
+                                    <span innerHTML={SHIELD_SVG} /> Permissions
+                                </button>
+                            </Show>
+                            <Show when={canManageTransactions()}>
+                                <button class="nav-item" classList={{ active: currentTab() === 'transactions' }} onClick={() => setSearchParams({ tab: 'transactions' })}>
+                                    <span innerHTML={WALLET_SVG} /> Finance
+                                </button>
+                            </Show>
+                            <Show when={canManageSwims()}>
+                                <button class="nav-item" classList={{ active: currentTab() === 'swims' }} onClick={() => setSearchParams({ tab: 'swims' })}>
+                                    <span innerHTML={POOL_SVG} /> Swims
+                                </button>
+                            </Show>
+                        </TabNav>
+                    </aside>
+
+                    <main class="dashboard-content">
                         <Show when={stats() && currentTab() === 'profile'}>
-                            <div class="stats-grid-small" style={{ "margin-bottom": "2rem" }}>
+                            <div class="stats-grid" style={{ "margin-bottom": "0rem" }}>
                                 <div class="stat-item">
-                                    <span class="stat-val">£{stats().finance.year_spent.toFixed(2)}</span>
-                                    <span class="stat-lbl">Spent (Year)</span>
+                                    <span class="stat-value">£{stats().finance.year_spent.toFixed(2)}</span>
+                                    <span class="stat-label">Spent (Year)</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-val">£{stats().finance.total_spent.toFixed(2)}</span>
-                                    <span class="stat-lbl">Spent (Total)</span>
+                                    <span class="stat-value">£{stats().finance.total_spent.toFixed(2)}</span>
+                                    <span class="stat-label">Spent (Total)</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-val">{stats().attendance.year_events}</span>
-                                    <span class="stat-lbl">Events (Year)</span>
+                                    <span class="stat-value">{stats().attendance.year_events}</span>
+                                    <span class="stat-label">Events (Year)</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-val">{stats().attendance.total_events}</span>
-                                    <span class="stat-lbl">Events (Total)</span>
+                                    <span class="stat-value">{stats().attendance.total_events}</span>
+                                    <span class="stat-label">Events (Total)</span>
                                 </div>
                             </div>
                         </Show>
@@ -111,14 +142,20 @@ export default function UserDetailPage() {
                         <Show when={currentTab() === 'tags'}>
                             <TagsTab userId={u.id} />
                         </Show>
+                        <Show when={currentTab() === 'kit'}>
+                            <KitTab userId={u.id} />
+                        </Show>
+                        <Show when={currentTab() === 'permissions'}>
+                            <PermissionsTab user={u} refetchUser={refetch} />
+                        </Show>
                         <Show when={currentTab() === 'transactions'}>
                             <TransactionsTab userId={u.id} />
                         </Show>
                         <Show when={currentTab() === 'swims'}>
                             <SwimsTab user={u} />
                         </Show>
-                    </div>
-                </Panel>
+                    </main>
+                </div>
             )}
         </Show>
     );

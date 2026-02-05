@@ -98,7 +98,7 @@ export default function StatsPage() {
                     <div class="charts-row">
                         <div class="chart-box">
                             <h4>Monthly Income vs Expenses</h4>
-                            <Show when={!financeData.loading} fallback={<p>Loading...</p>}>
+                            <Show when={financeData() || !financeData.loading} fallback={<p>Loading...</p>}>
                                 <div class="multi-chart">
                                     <div class="legend">
                                         <span class="dot income"></span> Income
@@ -121,7 +121,7 @@ export default function StatsPage() {
                         
                         <div class="chart-box">
                             <h4>Spending by Category</h4>
-                            <Show when={!financeData.loading} fallback={<p>Loading...</p>}>
+                            <Show when={financeData() || !financeData.loading} fallback={<p>Loading...</p>}>
                                 <div class="category-list">
                                     <For each={financeData()?.categories || []} fallback={<div class="no-data-msg">No data available</div>}>
                                         {c => (
@@ -145,7 +145,7 @@ export default function StatsPage() {
                     <div class="charts-row">
                         <div class="chart-box">
                             <h4>Monthly Attendance</h4>
-                            <Show when={!attendanceData.loading} fallback={<p>Loading...</p>}>
+                            <Show when={attendanceData() || !attendanceData.loading} fallback={<p>Loading...</p>}>
                                 <BarChart 
                                     data={(attendanceData()?.monthly || []).map((m: any) => ({ 
                                         label: m.month?.split('-')[1] || '?', 
@@ -157,7 +157,7 @@ export default function StatsPage() {
 
                         <div class="chart-box">
                             <h4>Event Types</h4>
-                            <Show when={!attendanceData.loading} fallback={<p>Loading...</p>}>
+                            <Show when={attendanceData() || !attendanceData.loading} fallback={<p>Loading...</p>}>
                                 <div class="category-list">
                                     <For each={attendanceData()?.types || []} fallback={<div class="no-data-msg">No data available</div>}>
                                         {t => (
@@ -180,7 +180,7 @@ export default function StatsPage() {
                 <div class="dual-grid">
                     <Panel title="Top Spenders (All Time)" icon={TRENDING_UP_SVG}>
                         <div class="item-list">
-                            <Show when={!leaderboardData.loading} fallback={<p>Loading...</p>}>
+                            <Show when={leaderboardData() || !leaderboardData.loading} fallback={<p>Loading...</p>}>
                                 <For each={leaderboardData()?.top_spenders || []} fallback={<div class="no-data-msg">No spenders yet</div>}>
                                     {u => (
                                         <div class="list-item">
@@ -199,7 +199,7 @@ export default function StatsPage() {
 
                     <Panel title="Most Active Members" icon={EVENT_SVG}>
                         <div class="item-list">
-                            <Show when={!leaderboardData.loading} fallback={<p>Loading...</p>}>
+                            <Show when={leaderboardData() || !leaderboardData.loading} fallback={<p>Loading...</p>}>
                                 <For each={leaderboardData()?.most_active || []} fallback={<div class="no-data-msg">No active members yet</div>}>
                                     {u => (
                                         <div class="list-item">

@@ -13,6 +13,7 @@ import check from '../../misc/authentication.js';
 import { statusObject } from '../../misc/status.js';
 import { Permissions } from '../../misc/permissions.js';
 import WaitlistDB from '../../db/waitlistDB.js';
+import KitDB from '../../db/kitDB.js';
 import Logger from '../../misc/Logger.js';
 import { Express, Request, Response } from 'express';
 import { DatabaseWrapper } from '../../db/db.js';
@@ -166,6 +167,8 @@ export default class AttendanceAPI {
                     await this.db.exec('ROLLBACK');
                     return status.getResponse(res);
                 }
+
+                await KitDB.applyUserDefaultKit(this.db, req.user.id, eventId);
 
                 await this.db.exec('COMMIT');
                 

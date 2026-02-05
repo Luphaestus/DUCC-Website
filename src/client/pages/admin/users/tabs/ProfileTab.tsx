@@ -154,44 +154,6 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                     </div>
                 </Panel>
             </div>
-
-            {/* RBAC */}
-            <div class="dual-grid mt-4">
-                <Panel title="System Roles" icon={ID_CARD_SVG}>
-                    <div class="inline-add-form mb-3">
-                        <select onChange={e => handleAddRole(e.currentTarget.value)}>
-                            <option value="">Add Role...</option>
-                            <For each={allRoles()}>
-                                {r => <option value={r.id}>{r.name}</option>}
-                            </For>
-                        </select>
-                    </div>
-                    <div class="tags-cloud">
-                        <For each={props.user.roles}>
-                            {r => (
-                                <span class="tag-chip primary">{r.name} <button class="delete-icon-btn" onClick={() => handleRemoveRole(r.id)} innerHTML={CLOSE_SVG} /></span>
-                            )}
-                        </For>
-                    </div>
-                </Panel>
-                <Panel title="Direct Permissions" icon={SHIELD_SVG}>
-                    <div class="inline-add-form mb-3">
-                        <select onChange={e => handleAddPerm(e.currentTarget.value)}>
-                            <option value="">Select Permission...</option>
-                            <For each={allPerms()}>
-                                {p => <option value={p.id}>{p.slug}</option>}
-                            </For>
-                        </select>
-                    </div>
-                    <div class="tags-cloud">
-                        <For each={props.user.direct_permissions}>
-                            {p => (
-                                <span class="tag-chip neutral">{p.slug} <button class="delete-icon-btn" onClick={() => handleRemovePerm(p.id)} innerHTML={CLOSE_SVG} /></span>
-                            )}
-                        </For>
-                    </div>
-                </Panel>
-            </div>
         </div>
     );
 }

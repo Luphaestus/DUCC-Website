@@ -27,6 +27,7 @@ export default function AdminLayout(props: ParentProps) {
         }
     });
 
+    const isDashboard = createMemo(() => location.pathname === '/admin' || location.pathname === '/admin/');
     const hasNav = createMemo(() => !!user() && !user.loading);
 
     return (
@@ -37,7 +38,7 @@ export default function AdminLayout(props: ParentProps) {
                 </h1>
             </header>
             
-            <Show when={hasNav()}>
+            <Show when={hasNav() && !isDashboard()}>
                 <div class="glass-toolbar">
                     <div class="toolbar-left">
                         <AdminNavBar 

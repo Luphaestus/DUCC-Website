@@ -74,6 +74,14 @@ export default function EventDetailPage() {
     const [kitItems] = createResource(async () => {
         try {
             return await apiRequest('GET', '/api/kit');
+        } catch { return { data: [] }; }
+    });
+
+    const [userKitRequests, { refetch: refetchUserKit }] = createResource(eventId, async (id) => {
+        if (!id) return [];
+        try {
+            const res = await apiRequest('GET', `/api/kit/event/${id}/my-request`);
+            return (res.data || []) as KitItem[];
         } catch { return []; }
     });
 
@@ -101,6 +109,7 @@ export default function EventDetailPage() {
             notify('Success', 'Joined event!', 'success');
             refetchAttendees();
             refetchEvent();
+            refetchUserKit();
         } catch (e: any) {
             notify('Error', e.message, 'error');
         }
@@ -109,13 +118,13 @@ export default function EventDetailPage() {
     const handleRequestKit = async (e: Event) => {
         e.preventDefault();
         const form = e.target as HTMLFormElement;
-        const itemId = (form.querySelector('[name="kitItem"]') as HTMLSelectElement).value;
-        if (!itemId) return;
+        const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt((cb as HTMLInputElement).value));
         
         try {
-            await apiRequest('POST', '/api/kit/request', { event_id: parseInt(eventId() || '0'), kit_item_id: parseInt(itemId) });
-            notify('Success', 'Kit requested', 'success');
+            await apiRequest('POST', '/api/kit/event-request', { event_id: eventId(), itemIds: selected });
+            notify('Success', 'Kit requests updated', 'success');
             setIsKitModalOpen(false);
+            refetchUserKit();
         } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
@@ -217,15 +226,25 @@ export default function EventDetailPage() {
 
                 <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title="Request Club Kit">
                     <form onSubmit={handleRequestKit} class="modern-form">
-                        <label>Select Item
-                            <select name="kitItem" required>
-                                <option value="">-- Choose Equipment --</option>
-                                <For each={kitItems()}>
-                                    {(item: KitItem) => <option value={item.id}>{item.name} ({item.type} - {item.size})</option>}
-                                </For>
-                            </select>
-                        </label>
-                        <button type="submit" class="primary full-width">Request</button>
+                        <div class="item-list mb-4" style={{ "max-height": "400px", "overflow-y": "auto" }}>
+                            <For each={kitItems()?.data || []}>
+                                {(item: KitItem) => (
+                                    <label class="list-item checkbox-item">
+                                        <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>
+                                        <div class="item-details">
+                                            <span class="item-title">{item.name}</span>
+                                            <span class="item-subtitle">{item.type} • {item.size}</span>
+                                        </div>
+                                        <input 
+                                            type="checkbox" 
+                                            value={item.id} 
+                                            checked={userKitRequests()?.some(r => r.id === item.id)} 
+                                        />
+                                    </label>
+                                )}
+                            </For>
+                        </div>
+                        <button type="submit" class="primary full-width">Update Requests</button>
                     </form>
                 </Modal>
             </div>

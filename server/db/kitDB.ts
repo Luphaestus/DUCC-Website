@@ -109,4 +109,69 @@ export default class KitDB {
             return new statusObject(500, 'Database error');
         }
     }
+
+    static async getUserPreferences(db: DatabaseWrapper, userId: number): Promise<statusObject> {
+        try {
+            const prefs = await db.all(`
+                SELECT k.* 
+                FROM user_kit_preferences p
+                JOIN kit_items k ON p.kit_item_id = k.id
+                WHERE p.user_id = ?
+            `, [userId]);
+            return new statusObject(200, null, prefs);
+        } catch (e) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    static async setUserPreferences(db: DatabaseWrapper, userId: number, itemIds: number[]): Promise<statusObject> {
+        try {
+            return await db.transaction(async (tx) => {
+                await tx.run('DELETE FROM user_kit_preferences WHERE user_id = ?', [userId]);
+                for (const itemId of itemIds) {
+                    await tx.run('INSERT INTO user_kit_preferences (user_id, kit_item_id) VALUES (?, ?)', [userId, itemId]);
+                }
+                return new statusObject(200, 'Preferences updated');
+            });
+        } catch (e) {
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    static async applyUserDefaultKit(db: DatabaseWrapper, userId: number, eventId: number): Promise<statusObject> {
+        try {
+            return await db.transaction(async (tx) => {
+                await tx.run('DELETE FROM event_kit_requests WHERE user_id = ? AND event_id = ?', [userId, eventId]);
+                const prefs = await tx.all('SELECT kit_item_id FROM user_kit_preferences WHERE user_id = ?', [userId]);
+                for (const p of prefs) {
+                    await tx.run(
+                        'INSERT INTO event_kit_requests (event_id, user_id, kit_item_id) VALUES (?, ?, ?)',
+                        [eventId, userId, p.kit_item_id]
+                    );
+                }
+                return new statusObject(200);
+            });
+        } catch (e) {
+            Logger.error('Error applying default kit', e);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    static async setUserEventKit(db: DatabaseWrapper, userId: number, eventId: number, itemIds: number[]): Promise<statusObject> {
+        try {
+            return await db.transaction(async (tx) => {
+                await tx.run('DELETE FROM event_kit_requests WHERE user_id = ? AND event_id = ?', [userId, eventId]);
+                for (const itemId of itemIds) {
+                    await tx.run(
+                        'INSERT INTO event_kit_requests (event_id, user_id, kit_item_id) VALUES (?, ?, ?)',
+                        [eventId, userId, itemId]
+                    );
+                }
+                return new statusObject(200, 'Event kit updated');
+            });
+        } catch (e) {
+            Logger.error('Error setting event kit', e);
+            return new statusObject(500, 'Database error');
+        }
+    }
 }

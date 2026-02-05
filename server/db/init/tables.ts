@@ -395,6 +395,16 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
       `
     },
     {
+      name: 'user_kit_preferences',
+      schema: `
+        user_id INT NOT NULL,
+        kit_item_id INT NOT NULL,
+        PRIMARY KEY (user_id, kit_item_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE
+      `
+    },
+    {
       name: 'trips',
       schema: `
         id INT AUTO_INCREMENT PRIMARY KEY,

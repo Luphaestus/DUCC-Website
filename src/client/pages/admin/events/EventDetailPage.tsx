@@ -2,7 +2,11 @@ import { createSignal, createResource, For, Show, createMemo, createEffect } fro
 import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, CLOSE_SVG, CONTENT_COPY_SVG, CLOUD_DOWNLOAD_SVG } from '@/utils/icons';
+import { 
+    ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, CLOSE_SVG, 
+    CONTENT_COPY_SVG, CLOUD_DOWNLOAD_SVG, CURRENCY_POUND_SVG, 
+    KAYAKING_SVG 
+} from '@/utils/icons';
 import DetailsTab from "./tabs/DetailsTab";
 import FinanceTab from "./tabs/FinanceTab";
 import KitTab from "./tabs/KitTab";
@@ -66,63 +70,86 @@ export default function EventDetailPage() {
     };
 
     return (
-        <>
-            <Show when={!isNew()}>
-                <div class="admin-header-actions-proxy" style="display: none;">
-                    {/* In a real scenario, I'd use a Portal to the layout's action area */}
-                </div>
-            </Show>
-
-            <Show when={data()} fallback={<p>Loading...</p>}>
-                {res => (
-                    <Panel class="detail-card">
-                        <Show when={!isNew()}>
-                            <header style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0; padding-bottom: 0; border-bottom: none;">
-                                <div class="event-identity">
-                                    <h2 class="nomargin">{res().event.title}</h2>
-                                    <span class="badge" classList={{ success: res().event.costs_released, neutral: !res().event.costs_released }}>
-                                        {res().event.costs_released ? 'Costs Released' : 'Finance Open'}
-                                    </span>
-                                </div>
-                                <div class="tab-nav-simple" style="margin-left: auto; margin-right: auto;">
-                                    <button classList={{ active: currentTab() === 'details' }} onClick={() => setSearchParams({ tab: 'details' })}>Edit</button>
-                                    <button classList={{ active: currentTab() === 'finance' }} onClick={() => setSearchParams({ tab: 'finance' })}>Finance</button>
-                                    <button classList={{ active: currentTab() === 'kit' }} onClick={() => setSearchParams({ tab: 'kit' })}>Kit</button>
-                                </div>
-                                <div class="button-group">
-                                    <a href={`/api/admin/event/${id()}/attendees/csv`} target="_blank" class="small-btn outline" title="Export Attendees CSV">
-                                        <span innerHTML={CLOUD_DOWNLOAD_SVG} />
-                                    </a>
-                                    <button class="small-btn outline secondary" onClick={handleDuplicate} title="Duplicate"><span innerHTML={CONTENT_COPY_SVG} /> Copy</button>
-                                    <button class="small-btn outline delete" onClick={handleDelete} title="Delete"><span innerHTML={DELETE_HISTORY_SVG} /> Delete</button>
-                                    <button class="small-btn outline warning" onClick={handleCancel} title="Cancel"><span innerHTML={CLOSE_SVG} /> Cancel</button>
-                                </div>
-                            </header>
-                        </Show>
-
-                        <div class="card-body">
-                            <Show when={currentTab() === 'details'}>
-                                <DetailsTab 
-                                    event={{ ...res().event, image_id: res().rawEvent.image_id }} 
-                                    allTags={res().allTags} 
-                                    globalDefaultUrl={res().globalDefaultUrl} 
-                                />
-                            </Show>
-                            <Show when={currentTab() === 'finance'}>
-                                <FinanceTab 
-                                    eventId={parseInt(id() || '0')} 
-                                    isOffsite={res().event.is_offsite} 
-                                    costsReleased={res().event.costs_released} 
-                                    userPerms={res().userPerms}
-                                />
-                            </Show>
-                            <Show when={currentTab() === 'kit'}>
-                                <KitTab eventId={parseInt(id() || '0')} />
-                            </Show>
+        <Show when={data()} fallback={<p aria-busy="true">Loading...</p>}>
+            {res => (
+                <div class="dashboard-container">
+                    <aside class="dashboard-sidebar">
+                        <div class="event-identity-card" style={{ 
+                            background: "var(--glass-bg)", 
+                            border: "var(--glass-border)", 
+                            padding: "1.5rem", 
+                            "border-radius": "var(--border-radius-lg)",
+                            display: "flex",
+                            "flex-direction": "column",
+                            "align-items": "center",
+                            gap: "1rem",
+                            "backdrop-filter": "blur(12px)",
+                            "margin-bottom": "1rem"
+                        }}>
+                            <div class="event-preview-image" style={{
+                                width: "100%",
+                                height: "120px",
+                                "border-radius": "var(--border-radius-md)",
+                                "background-image": `url('${res().event.image_url || res().globalDefaultUrl}')`,
+                                "background-size": "cover",
+                                "background-position": "center"
+                            }}></div>
+                            <div class="event-info" style={{ "text-align": "center" }}>
+                                <h2 style={{ margin: 0, "font-size": "1.25rem" }}>{res().event.title || 'New Event'}</h2>
+                                <span class="badge" classList={{ success: res().event.costs_released, neutral: !res().event.costs_released }}>
+                                    {res().event.costs_released ? 'Costs Released' : 'Finance Open'}
+                                </span>
+                            </div>
                         </div>
-                    </Panel>
-                )}
-            </Show>
-        </>
+
+                        <TabNav class="vertical-sidebar">
+                            <button class="nav-item" classList={{ active: currentTab() === 'details' }} onClick={() => setSearchParams({ tab: 'details' })}>
+                                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} style={{ transform: "rotate(180deg)" }} /> Details
+                            </button>
+                            <Show when={!isNew()}>
+                                <button class="nav-item" classList={{ active: currentTab() === 'finance' }} onClick={() => setSearchParams({ tab: 'finance' })}>
+                                    <span innerHTML={CURRENCY_POUND_SVG} /> Finance
+                                </button>
+                                <button class="nav-item" classList={{ active: currentTab() === 'kit' }} onClick={() => setSearchParams({ tab: 'kit' })}>
+                                    <span innerHTML={KAYAKING_SVG} /> Kit Requests
+                                </button>
+                            </Show>
+                        </TabNav>
+
+                        <Show when={!isNew()}>
+                            <div class="sidebar-actions mt-4" style={{ display: "flex", "flex-direction": "column", gap: "0.5rem" }}>
+                                <a href={`/api/admin/event/${id()}/attendees/csv`} target="_blank" class="small-btn outline full-width" style={{ "text-align": "center", display: "block" }}>
+                                    <span innerHTML={CLOUD_DOWNLOAD_SVG} /> Export CSV
+                                </a>
+                                <button class="small-btn outline secondary full-width" onClick={handleDuplicate}><span innerHTML={CONTENT_COPY_SVG} /> Duplicate</button>
+                                <button class="small-btn outline warning full-width" onClick={handleCancel}><span innerHTML={CLOSE_SVG} /> Cancel Event</button>
+                                <button class="small-btn outline delete full-width" onClick={handleDelete}><span innerHTML={DELETE_HISTORY_SVG} /> Delete Permanently</button>
+                            </div>
+                        </Show>
+                    </aside>
+
+                    <main class="dashboard-content">
+                        <Show when={currentTab() === 'details'}>
+                            <DetailsTab 
+                                event={{ ...res().event, image_id: res().rawEvent.image_id }} 
+                                allTags={res().allTags} 
+                                globalDefaultUrl={res().globalDefaultUrl} 
+                            />
+                        </Show>
+                        <Show when={currentTab() === 'finance'}>
+                            <FinanceTab 
+                                eventId={parseInt(id() || '0')} 
+                                isOffsite={res().event.is_offsite} 
+                                costsReleased={res().event.costs_released} 
+                                userPerms={res().userPerms}
+                            />
+                        </Show>
+                        <Show when={currentTab() === 'kit'}>
+                            <KitTab eventId={parseInt(id() || '0')} />
+                        </Show>
+                    </main>
+                </div>
+            )}
+        </Show>
     );
 }

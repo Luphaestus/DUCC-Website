@@ -95,6 +95,15 @@
     box-shadow: var(--shadow-glass);
     border: var(--glass-border);
 
+    span, svg {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
     &:hover {
         background: var(--glass-highlight);
         color: var(--pico-primary);

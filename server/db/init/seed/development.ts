@@ -44,8 +44,16 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
         }
     } catch (e) { } // Ignore errors reading slides directory
 
-    const seedFile = async (filename: string) => {
+    // Fallback images for seeding if no slides are found
+    const fallbackImages = [
+        'boathouse-outside.jpg',
+        'maiden-castle-outside.jpg',
+        'ducc.png'
+    ];
+
+    const seedFile = async (filename: string, dir: string = 'slides') => {
         const title = filename.split('.')[0];
+        const pathSuffix = dir === 'misc' ? '/images/misc/' : '/images/slides/';
         await db.run(
             'INSERT IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
             [title, filename, 'public', filename]
@@ -55,12 +63,19 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
     };
 
     const seededFileIds: number[] = [];
-    for (const file of slideFiles) {
-        const id = await seedFile(file);
-        if (id) seededFileIds.push(id);
+    if (slideFiles.length > 0) {
+        for (const file of slideFiles) {
+            const id = await seedFile(file, 'slides');
+            if (id) seededFileIds.push(id);
+        }
+    } else {
+        for (const file of fallbackImages) {
+            const id = await seedFile(file, 'misc');
+            if (id) seededFileIds.push(id);
+        }
     }
 
-    if (newlyCreatedTables.includes('slides')) {
+    if (newlyCreatedTables.includes('slides') || (await db.get('SELECT COUNT(*) as count FROM slides')).count === 0) {
         await db.run('DELETE FROM slides');
         for (let i = 0; i < seededFileIds.length; i++) {
             await db.run('INSERT INTO slides (file_id, display_order) VALUES (?, ?)', [seededFileIds[i], i]);

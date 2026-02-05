@@ -43,6 +43,10 @@
         border-radius: var(--border-radius-pill);
         font-size: 0.9rem;
         position: relative;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
         &.active {
             color: white !important;
