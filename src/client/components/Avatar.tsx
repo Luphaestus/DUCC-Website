@@ -42,16 +42,16 @@ export default function Avatar(props: AvatarProps) {
     });
 
     return (
-        <div 
-            class={`avatar-bubble ${props.classes || ''} ${fontClass()}`} 
+        <div
+            class={`avatar-bubble ${props.classes || ''} ${fontClass()}`}
             style={{ "background-color": color() }}
             onClick={() => props.onClick?.()}
         >
             {props.user?.profile_picture_path && (
-                <img 
-                    src={props.user.profile_picture_path} 
-                    alt={`${props.user.first_name} ${props.user.last_name}`} 
-                    onError={(e) => (e.currentTarget.style.display = 'none')} 
+                <img
+                    src={`${props.user.profile_picture_path}${props.user.profile_picture_path.includes('?') ? '&' : '?'}t=${Date.now()}`}
+                    alt={`${props.user.first_name} ${props.user.last_name}`}
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
             )}
             <span class="avatar-initials">{initials()}</span>

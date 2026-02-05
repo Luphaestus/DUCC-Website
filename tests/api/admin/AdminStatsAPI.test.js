@@ -63,7 +63,11 @@ describe('api/admin/AdminStatsAPI', () => {
         const body = JSON.parse(res.body);
         expect(body).toHaveProperty('finance');
         expect(body.finance.total_spent).toBe(10);
+        expect(body.finance.avg_cost_per_event).toBe(10);
+        expect(body.finance.total_fuel_cost).toBe(0);
         expect(body.attendance.total_events).toBe(1);
+        expect(body.attendance.attendance_rate).toBe(100);
+        expect(body.attendance.late_unsigns).toBe(0);
     });
 
     it('GET /api/admin/stats/summary - Forbidden for standard user', async () => {

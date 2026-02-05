@@ -83,3 +83,49 @@
         }
     }
 }
+
+.profile-picture-container {
+    position: relative;
+    display: inline-block;
+    border-radius: 50%;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    isolation: isolate;
+
+    &:hover {
+        transform: scale(1.06);
+        
+        .avatar-bubble {
+            border-color: var(--pico-primary) !important;
+            box-shadow: 0 0 0 6px rgba(var(--pico-primary-rgb), 0.15);
+        }
+
+        .avatar-overlay {
+            opacity: 1;
+        }
+    }
+
+    .avatar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        color: white;
+        z-index: 10;
+        pointer-events: none;
+
+        svg, span:has(svg) {
+            width: 2.5rem;
+            height: 2.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+    }
+}

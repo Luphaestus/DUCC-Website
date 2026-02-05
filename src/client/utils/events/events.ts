@@ -51,9 +51,15 @@ const EventAttendanceChangedEvent = new Event();
 const MembershipChangedEvent = new Event();
 
 /**
+ * Event fired when a user's profile picture is updated.
+ * @type {Event}
+ */
+const ProfilePictureChangedEvent = new Event();
+
+/**
  * Event fired when the connection to the server is lost.
  * @type {Event}
  */
 const NoInternetEvent = new Event();
 
-export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, NoInternetEvent };
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent, NoInternetEvent };

@@ -221,7 +221,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
             <div class="panel mb-6">
                 <div class="panel-header">
                     <h3><span innerHTML={GROUP_SVG} /> Participant Management</h3>
-                    <div class="panel-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div class="panel-actions">
                         <input 
                             type="text" 
                             placeholder="Filter list..." 

@@ -60,9 +60,11 @@ async function apiRequest(method: string, url: string, data: any = null): Promis
         }
     }
 
+    let gotResponse = false;
     const requestPromise = (async () => {
         try {
             const response = await fetch(url, options);
+            gotResponse = true;
             updateConnectionStatus(true);
             
             const text = await response.text();
@@ -88,11 +90,22 @@ async function apiRequest(method: string, url: string, data: any = null): Promis
                 // If the server responded with an error, it's NOT a connection loss
                 const error = result || { message: 'Request failed with status: ' + response.status };
                 
-                // Automatically notify for certain error types if not handled
-                if (response.status >= 500) {
-                    notify('Server Error', error.message || 'An internal server error occurred.', NotificationTypes.ERROR);
+                if (response.status === 401) {
+                    // Unauthorized: Redirect to login if not already there
+                    if (!window.location.pathname.startsWith('/login')) {
+                        if (window.solidNavigate) window.solidNavigate('/login');
+                        else window.location.href = '/login';
+                    }
                 } else if (response.status === 403) {
+                    // Forbidden: Redirect to unauthorised page only on GET requests
+                    // For other methods (POST, etc.), we assume the caller will handle it (e.g., showing an error in a modal)
+                    if (method === 'GET' && !window.location.pathname.startsWith('/unauthorised')) {
+                        if (window.solidNavigate) window.solidNavigate('/unauthorised');
+                        else window.location.href = '/unauthorised';
+                    }
                     notify('Access Denied', error.message || 'You do not have permission to perform this action.', NotificationTypes.WARNING);
+                } else if (response.status >= 500) {
+                    notify('Server Error', error.message || 'An internal server error occurred.', NotificationTypes.ERROR);
                 }
 
                 throw error;
@@ -101,15 +114,14 @@ async function apiRequest(method: string, url: string, data: any = null): Promis
             if (error.name === 'AbortError') throw error;
             
             // Only update connection status to false if it's a network error (no response)
-            // If the error has a 'message' that starts with 'Request failed with status', it's a server response.
-            if (!error.message || !error.message.startsWith('Request failed with status')) {
+            if (!gotResponse) {
                 updateConnectionStatus(false);
             }
             
             const finalError = error.message ? error : { message: 'Network error' };
             
             // If it's a generic network error (not a status-based one), notify
-            if (finalError.message === 'Network error') {
+            if (!gotResponse || finalError.message === 'Network error') {
                 notify('Network Error', 'Check your connection.', NotificationTypes.ERROR, 5000, 'network-error');
             }
 
@@ -172,6 +184,7 @@ async function uploadFile(file: File, options: UploadOptions = {}): Promise<numb
         }
 
         xhr.onload = () => {
+            updateConnectionStatus(true);
             if (xhr.status === 201) {
                 try {
                     const result = JSON.parse(xhr.responseText);

@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import { initUpdates } from "./utils/updates";
 import { ErrorView } from "./pages/ErrorPage";
 import { BRIGHTNESS_ALERT_SVG } from "./utils/icons";
+import PresidentGoodbyeOverlay from "./components/PresidentGoodbyeOverlay";
 
 export default function App(props: ParentProps) {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export default function App(props: ParentProps) {
       </main>
       <NotificationContainer />
       <Footer />
+      <PresidentGoodbyeOverlay />
     </>
   );
 }

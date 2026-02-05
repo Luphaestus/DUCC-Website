@@ -8,6 +8,7 @@ import { FastifyInstance, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 import check from '../../misc/authentication.js';
 import Logger from '../../misc/Logger.js';
+import Globals from '../../misc/globals.js';
 
 export default class AdminStats {
     app: FastifyInstance;
@@ -174,29 +175,63 @@ export default class AdminStats {
             }
         });
 
-        /**
-         * GET /api/admin/stats/user/:id
-         * Returns detailed stats for a specific user.
-         */
         this.app.get('/api/admin/stats/user/:id', { preHandler: [check('perm:user.manage | perm:transaction.manage')] }, async (request: any, reply: FastifyReply) => {
             try {
                 const userId = parseInt(request.params.id);
+                const mileageCost = new Globals().getFloat('MileageCost') || 0.45;
                 
-                const [totalSpent, yearSpent, totalEvents, yearEvents] = await Promise.all([
+                const [totalSpent, yearSpent, totalEvents, yearEvents, fuelCost, attendanceStats] = await Promise.all([
                     this.db.get('SELECT SUM(ABS(amount)) as val FROM transactions WHERE user_id = ? AND amount < 0', [userId]),
                     this.db.get('SELECT SUM(ABS(amount)) as val FROM transactions WHERE user_id = ? AND amount < 0 AND YEAR(created_at) = YEAR(NOW())', [userId]),
                     this.db.get('SELECT COUNT(*) as val FROM event_attendees WHERE user_id = ? AND is_attending = 1', [userId]),
-                    this.db.get('SELECT COUNT(*) as val FROM event_attendees ea JOIN events e ON ea.event_id = e.id WHERE ea.user_id = ? AND ea.is_attending = 1 AND YEAR(e.start) = YEAR(NOW())', [userId])
+                    this.db.get('SELECT COUNT(*) as val FROM event_attendees ea JOIN events e ON ea.event_id = e.id WHERE ea.user_id = ? AND ea.is_attending = 1 AND YEAR(e.start) = YEAR(NOW())', [userId]),
+                    this.db.get(`
+                        SELECT SUM(share) as val FROM (
+                            SELECT 
+                                (SELECT SUM((ed.end_mileage - ed.start_mileage) * ?) 
+                                 FROM event_drivers ed 
+                                 JOIN trips t ON ed.trip_id = t.id 
+                                 WHERE t.event_id = e.id AND ed.status = 'accepted' AND ed.end_mileage IS NOT NULL AND ed.start_mileage IS NOT NULL
+                                ) / 
+                                (SELECT COUNT(*) 
+                                 FROM event_attendees ea2 
+                                 WHERE ea2.event_id = e.id AND ea2.is_attending = 1
+                                ) as share
+                            FROM event_attendees ea
+                            JOIN events e ON ea.event_id = e.id
+                            WHERE ea.user_id = ? AND ea.is_attending = 1
+                        ) summary
+                    `, [mileageCost, userId]),
+                    this.db.get(`
+                        SELECT 
+                            COUNT(CASE WHEN is_attending = 1 THEN 1 END) as attended,
+                            COUNT(CASE WHEN is_attending = 0 AND left_at >= DATE_SUB(e.start, INTERVAL 24 HOUR) THEN 1 END) as late_unsigns,
+                            AVG(CASE WHEN is_attending = 1 THEN e.difficulty_level END) as avg_diff
+                        FROM event_attendees ea
+                        JOIN events e ON ea.event_id = e.id
+                        WHERE ea.user_id = ? AND e.start < NOW()
+                    `, [userId])
                 ]);
+
+                const total_spent = totalSpent?.val || 0;
+                const total_events = totalEvents?.val || 0;
+                const attended = attendanceStats?.attended || 0;
+                const late_unsigns = attendanceStats?.late_unsigns || 0;
+                const total_attempted = attended + late_unsigns;
 
                 return reply.send({
                     finance: {
-                        total_spent: totalSpent?.val || 0,
-                        year_spent: yearSpent?.val || 0
+                        total_spent: total_spent,
+                        year_spent: yearSpent?.val || 0,
+                        avg_cost_per_event: total_events > 0 ? total_spent / total_events : 0,
+                        total_fuel_cost: fuelCost?.val || 0
                     },
                     attendance: {
-                        total_events: totalEvents?.val || 0,
-                        year_events: yearEvents?.val || 0
+                        total_events: total_events,
+                        year_events: yearEvents?.val || 0,
+                        attendance_rate: total_attempted > 0 ? (attended / total_attempted) * 100 : 100,
+                        late_unsigns: late_unsigns,
+                        avg_difficulty: attendanceStats?.avg_diff || 0
                     }
                 });
             } catch (e: any) {

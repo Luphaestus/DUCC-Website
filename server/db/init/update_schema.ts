@@ -75,6 +75,24 @@ import Logger from '../../misc/Logger.js';
             Logger.error('Error creating event_kit_requests table:', e);
         }
 
+        // 5. Update user_roles to allow multiple roles (composite primary key)
+        try {
+            // Check current primary key status
+            const columns: any[] = await db.all("SHOW COLUMNS FROM user_roles");
+            const userIdColumn = columns.find(c => c.Field === 'user_id');
+            
+            if (userIdColumn && userIdColumn.Key === 'PRI' && !columns.some(c => c.Field === 'role_id' && c.Key === 'PRI')) {
+                Logger.info('Converting user_roles to composite primary key...');
+                // Drop existing primary key and add new composite one
+                await db.run(`ALTER TABLE user_roles DROP PRIMARY KEY, ADD PRIMARY KEY (user_id, role_id)`);
+                Logger.info('Successfully converted user_roles to composite primary key.');
+            } else {
+                Logger.info('user_roles already has composite primary key or is already updated.');
+            }
+        } catch (e) {
+            Logger.error('Error updating user_roles primary key:', e);
+        }
+
         await db.close();
         Logger.info('Schema update complete.');
         process.exit(0);

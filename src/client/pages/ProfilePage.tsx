@@ -3,14 +3,14 @@ import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest, clearApiCache, uploadFile } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { useAuth } from "@/stores/auth";
-import { LoginEvent, BalanceChangedEvent, MembershipChangedEvent } from "@/utils/events/events";
+import { LoginEvent, BalanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent } from "@/utils/events/events";
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, BRIGHTNESS_ALERT_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
-    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, CONTRACT_SVG, MEDICAL_INFORMATION_SVG, KAYAKING_SVG, BOLT_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG,
-    CONTENT_COPY_SVG, UPLOAD_SVG
+    SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
+    LOGOUT_SVG, EDIT_SVG, GROUP_SVG, KAYAKING_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG,
+    CONTENT_COPY_SVG, UPLOAD_SVG, SHIELD_SVG
 } from '@/utils/icons';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
 import { Tag } from "@/widgets/Tag";
@@ -87,12 +87,20 @@ export default function ProfilePage() {
                 refetchTransactions();
             }
         });
-        onCleanup(cleanup);
+
+        const ppCleanup = ProfilePictureChangedEvent.subscribe(() => {
+            refetch();
+        });
+
+        onCleanup(() => {
+            cleanup();
+            ppCleanup();
+        });
     });
 
     const [profile, { refetch }] = createResource(async () => {
         try {
-            return await apiRequest('GET', '/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled,swimmer_stats') as UserProfile;
+            return await apiRequest('GET', `/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled,swimmer_stats?t=${Date.now()}`) as UserProfile;
         } catch (e) {
             navigate('/login');
             throw e;
@@ -368,6 +376,7 @@ export default function ProfilePage() {
                 initials: p.profile_picture_initials,
                 ...data
             });
+            ProfilePictureChangedEvent.notify();
             refetch();
         } catch (err: any) {
             notify('Error', err.message, 'error');
@@ -388,6 +397,7 @@ export default function ProfilePage() {
                 try {
                     await apiRequest('POST', '/api/user/profile-picture', { fileId: id });
                     notify('Success', 'Profile picture updated.', 'success');
+                    ProfilePictureChangedEvent.notify();
                     refetch();
                 } catch (err: any) {
                     notify('Error', err.message, 'error');
@@ -448,6 +458,7 @@ export default function ProfilePage() {
                                             <span innerHTML={SOCIAL_LEADERBOARD_SVG} /> Leaderboard
                                         </button>
                                     }
+                                    class="no-margin"
                                 >
                                     <div class="stats-grid">
                                         <div class="stat-item">
@@ -470,130 +481,139 @@ export default function ProfilePage() {
                                 </Panel>
 
                                 <div class="dual-grid">
-                                    <Panel 
-                                        title="Legal Waiver" 
-                                        icon={CONTRACT_SVG}
-                                        action={
-                                            <button class="small-btn secondary" onClick={() => navigate('/legal')}>
-                                                <span innerHTML={EDIT_SVG} /> Update
-                                            </button>
-                                        }
-                                    >
-                                        <div class="status-indicator" classList={{ active: profile()!.filled_legal_info }}>
-                                            <p>{profile()!.filled_legal_info ? 'Your legal waiver is up to date.' : 'Action required: Complete the legal waiver.'}</p>
-                                        </div>
-                                    </Panel>
-
-                                    <Panel 
-                                        title="Safety Info" 
-                                        icon={MEDICAL_INFORMATION_SVG}
-                                        action={
-                                            <Show when={!isEditingSafety()}>
-                                                <button class="small-btn secondary" onClick={() => setIsEditingSafety(true)}>
-                                                    <span innerHTML={EDIT_SVG} /> Edit
-                                                </button>
-                                            </Show>
-                                        }
-                                    >
-                                        <Show when={!isEditingSafety()}>
+                                    <div class="column">
+                                        <Panel title="Administration & Safety" style="margin-bottom: 2rem;" icon={SHIELD_SVG}>
                                             <div class="info-rows">
-                                                <div class="info-row"><span>First Aid Expiry</span><span>{profile()!.first_aid_expiry || 'Not Set'}</span></div>
-                                                <div class="info-row"><span>Emergency Contact</span><span>{profile()!.phone_number || 'Not Set'}</span></div>
-                                            </div>
-                                        </Show>
-                                        <Show when={isEditingSafety()}>
-                                            <form onSubmit={handleSaveSafety} class="modern-form">
-                                                <label>First Aid Expiry
-                                                    <input name="first_aid_expiry" type="date" value={profile()!.first_aid_expiry || ''} />
-                                                </label>
-                                                <label>Emergency Contact
-                                                    <input name="phone_number" type="tel" value={profile()!.phone_number || ''} placeholder="07700 900000" />
-                                                </label>
-                                                <div class="form-actions">
-                                                    <button type="button" class="secondary" onClick={() => setIsEditingSafety(false)}>Cancel</button>
-                                                    <button type="submit">Save</button>
+                                                <div class="info-row">
+                                                    <span>Membership</span>
+                                                    <span class={`badge ${profile()!.is_member ? 'primary' : 'neutral'}`}>
+                                                        {profile()!.is_member ? 'Active Member' : `${profile()!.free_sessions} Trials Left`}
+                                                    </span>
                                                 </div>
-                                            </form>
+                                                <div class="info-row">
+                                                    <span>Legal Waiver</span>
+                                                    <span class={`badge ${profile()!.filled_legal_info ? 'success' : 'warning'}`} onClick={() => navigate('/legal')} style="cursor: pointer">
+                                                        {profile()!.filled_legal_info ? 'Signed' : 'Not Signed'}
+                                                    </span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <span>First Aid</span>
+                                                    <span>{profile()!.first_aid_expiry || 'N/A'}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <span>Emergency Contact</span>
+                                                    <span>{profile()!.phone_number || 'N/A'}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <span>Instructor</span>
+                                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                        <span class={`badge ${profile()!.is_instructor ? 'primary' : 'neutral'}`}>{profile()!.is_instructor ? 'Active' : 'No'}</span>
+                                                        <button class="small-btn mini-btn" onClick={handleToggleInstructor}>
+                                                            {profile()!.is_instructor ? 'Resign' : 'Apply'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-actions mt-4">
+                                                <button class="small-btn secondary full-width" onClick={() => setIsEditingSafety(true)}>
+                                                    <span innerHTML={EDIT_SVG} /> Edit Safety Info
+                                                </button>
+                                            </div>
+                                        </Panel>
+
+                                        <Show when={tags()?.length > 0}>
+                                            <Panel title="Groups & Teams" class="no-margin" icon={GROUP_SVG}>
+                                                <div class="tags-list">
+                                                    <For each={tags()}>
+                                                        {(tag) => <Tag name={tag.name} color={tag.color} />}
+                                                    </For>
+                                                </div>
+                                            </Panel>
                                         </Show>
-                                    </Panel>
-                                </div>
-
-                                <Show when={tags()?.length > 0}>
-                                    <Panel title="Groups & Teams" icon={GROUP_SVG}>
-                                        <div class="tags-list">
-                                            <For each={tags()}>
-                                                {(tag) => <Tag name={tag.name} color={tag.color} />}
-                                            </For>
-                                        </div>
-                                    </Panel>
-                                </Show>
-
-                                <article class="panel-widget">
-                                    <div class="role-toggle">
-                                        <div class="role-info">
-                                            <h4><span innerHTML={BOLT_SVG} /> Instructor Status</h4>
-                                            <p>{profile()!.is_instructor ? 'Active Instructor' : 'Not an instructor'}</p>
-                                        </div>
-                                        <button
-                                            class="small-btn"
-                                            classList={{ 'outline delete': profile()!.is_instructor, 'secondary': !profile()!.is_instructor }}
-                                            onClick={handleToggleInstructor}
-                                        >
-                                            {profile()!.is_instructor ? 'Resign' : 'Apply'}
-                                        </button>
                                     </div>
-                                </article>
+
+                                    <div class="column">
+                                        <Panel title="Profile Customization" class="no-margin" icon={ID_CARD_SVG}>
+                                            <div class="profile-avatar-row compact-customization">
+                                                <div class="profile-picture-container" onClick={() => uploadWidget?.inputEl.click()}>
+                                                    <Avatar user={profile()!} classes="large" />
+                                                    <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
+                                                </div>
+                                                <div class="profile-avatar-controls">
+                                                    <div class="avatar-presets">
+                                                        <h4 class="small-title">Colour Presets</h4>
+                                                        <div class="presets-grid" style="grid-template-columns: repeat(10, 1fr); gap: 0.5rem;">
+                                                            <For each={colors}>
+                                                                {(color) => (
+                                                                    <div
+                                                                        class="preset-item color-preset"
+                                                                        classList={{ active: profile()!.profile_picture_color === color }}
+                                                                        style={{ width: "auto", "aspect-ratio": "1", height: "auto" }}
+                                                                        onClick={() => updatePP({ color })}
+                                                                    >
+                                                                        <Avatar user={{ ...profile()!, profile_picture_color: color, profile_picture_path: null }} classes="mini-avatar" />
+                                                                    </div>
+                                                                )}
+                                                            </For>
+                                                        </div>
+                                                        <div class="grid mt-4" style="gap: 1rem;">
+                                                            <div>
+                                                                <h4 class="small-title">Initials</h4>
+                                                                <div class="presets-grid" style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
+                                                                    <For each={initialsOptions}>
+                                                                        {(opt) => (
+                                                                            <div
+                                                                                class="preset-item initials-preset"
+                                                                                classList={{ active: profile()!.profile_picture_initials === opt.value }}
+                                                                                style={{ width: "auto", "aspect-ratio": "1", height: "auto" }}
+                                                                                onClick={() => updatePP({ initials: opt.value })}
+                                                                            >
+                                                                                <Avatar user={{ ...profile()!, profile_picture_initials: opt.value, profile_picture_path: null }} classes="mini-avatar" />
+                                                                            </div>
+                                                                        )}
+                                                                    </For>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <h4 class="small-title">Fonts</h4>
+                                                                <div class="presets-grid" style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
+                                                                    <For each={fonts}>
+                                                                        {(f) => (
+                                                                            <div
+                                                                                class={`preset-item font-preset font-preset-${f.value}`}
+                                                                                classList={{ active: profile()!.profile_picture_font === f.value }}
+                                                                                style={{ width: "auto", "aspect-ratio": "1", height: "auto" }}
+                                                                                onClick={() => updatePP({ font: f.value })}
+                                                                            >
+                                                                                <Avatar user={{ ...profile()!, profile_picture_font: f.value, profile_picture_path: null }} classes="mini-avatar" />
+                                                                            </div>
+                                                                        )}
+                                                                    </For>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Panel>
+                                    </div>
+                                </div>
                             </section>
 
-                            <Panel title="Profile Picture" icon={ID_CARD_SVG}>
-                                <div class="profile-avatar-row">
-                                    <div class="profile-picture-container" onClick={() => uploadWidget?.inputEl.click()}>
-                                        <Avatar user={profile()!} classes="large" />
-                                        <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
+                            <Modal isOpen={isEditingSafety()} onClose={() => setIsEditingSafety(false)} title="Update Safety Info">
+                                <form onSubmit={handleSaveSafety} class="modern-form">
+                                    <label>First Aid Expiry
+                                        <input name="first_aid_expiry" type="date" value={profile()!.first_aid_expiry || ''} />
+                                    </label>
+                                    <label>Emergency Contact
+                                        <input name="phone_number" type="tel" value={profile()!.phone_number || ''} placeholder="07700 900000" />
+                                    </label>
+                                    <div class="form-actions mt-4">
+                                        <button type="button" class="secondary" onClick={() => setIsEditingSafety(false)}>Cancel</button>
+                                        <button type="submit" class="primary">Save Changes</button>
                                     </div>
-                                    <div class="profile-avatar-controls">
-                                        <div class="avatar-presets">
-                                            <h4 class="small-title">Color Presets</h4>
-                                            <div class="presets-grid">
-                                                <For each={colors}>
-                                                    {(color) => (
-                                                        <div
-                                                            class="preset-item color-preset"
-                                                            classList={{ active: profile()!.profile_picture_color === color }}
-                                                            style={{ "background-color": color }}
-                                                            onClick={() => updatePP({ color })}
-                                                        ></div>
-                                                    )}
-                                                </For>
-                                            </div>
-                                            <h4 class="small-title mt-4">Initials</h4>
-                                            <div class="presets-grid">
-                                                <For each={initialsOptions}>
-                                                    {(opt) => (
-                                                        <div
-                                                            class="preset-item initials-preset"
-                                                            classList={{ active: profile()!.profile_picture_initials === opt.value }}
-                                                            onClick={() => updatePP({ initials: opt.value })}
-                                                        >{opt.label}</div>
-                                                    )}
-                                                </For>
-                                            </div>
-                                            <h4 class="small-title mt-4">Fonts</h4>
-                                            <div class="presets-grid">
-                                                <For each={fonts}>
-                                                    {(f) => (
-                                                        <div
-                                                            class={`preset-item font-preset font-preset-${f.value}`}
-                                                            classList={{ active: profile()!.profile_picture_font === f.value }}
-                                                            onClick={() => updatePP({ font: f.value })}
-                                                        >Ab</div>
-                                                    )}
-                                                </For>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Panel>
+                                </form>
+                            </Modal>
                         </Show>
 
                         <Show when={activeTab() === 'cars'}>

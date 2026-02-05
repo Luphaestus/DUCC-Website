@@ -50,5 +50,48 @@
                 margin-right: 0.5rem;
             }
         }
+
+        .panel-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+
+            button {
+                margin: 0;
+            }
+        }
+    }
+}
+
+// Support for older/manual panel classes
+.panel {
+    @include glass-panel;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+
+        h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    }
+
+    .panel-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+
+        button {
+            margin: 0;
+        }
     }
 }

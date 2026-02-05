@@ -6,11 +6,12 @@ interface PanelProps extends ParentProps {
     icon?: string | JSX.Element;
     action?: JSX.Element;
     class?: string;
+    style?: string;
 }
 
 export default function Panel(props: PanelProps) {
     return (
-        <article id={props.id} class={`panel-widget ${props.class || ''}`}>
+        <article id={props.id} class={`panel-widget ${props.class || ''}`} style={props.style}>
             <Show when={props.title}>
                 <header class="box-header">
                     <h3>

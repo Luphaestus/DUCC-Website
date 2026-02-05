@@ -10,6 +10,8 @@ import {
 import { useNotifications } from "@/stores/notifications";
 import { TabNav } from "@/widgets/TabNav";
 import Panel from "@/components/Panel";
+import { ProfilePictureChangedEvent } from "@/utils/events/events";
+import { onCleanup, onMount } from "solid-js";
 
 export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -22,6 +24,13 @@ export default function UsersPage() {
     const sort = () => (searchParams.sort as string) || 'last_name';
     const order = () => (searchParams.order as string) || 'asc';
     const tab = () => (searchParams.tab as string) || 'default';
+
+    onMount(() => {
+        const ppCleanup = ProfilePictureChangedEvent.subscribe(() => {
+            refetch();
+        });
+        onCleanup(ppCleanup);
+    });
 
     const [data, { refetch }] = createResource(
         () => ({ page: page(), search: search(), sort: sort(), order: order(), tab: tab() }),

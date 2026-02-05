@@ -124,10 +124,14 @@ export default function TransactionsTab(props: { userId: number }) {
                                             <span class="item-subtitle">{dateStr}</span>
                                         </div>
                                         <div class="item-value-group">
-                                            <span class="item-value" classList={{ positive: !isNegative, negative: isNegative }}>
-                                                {isNegative ? '' : '+'}{tx.amount.toFixed(2)}
-                                            </span>
-                                            <span class="item-extra">£{tx.after.toFixed(2)}</span>
+                                            <div class="amount-line">
+                                                <span class="item-value" classList={{ positive: !isNegative, negative: isNegative }}>
+                                                    {isNegative ? '' : '+'}{tx.amount.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div class="balance-line">
+                                                <span class="item-extra">£{tx.after.toFixed(2)}</span>
+                                            </div>
                                         </div>
                                     </Show>
 

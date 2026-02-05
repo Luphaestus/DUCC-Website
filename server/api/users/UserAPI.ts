@@ -66,6 +66,7 @@ export default class User {
      */
     static async getAccessibleElements(request: any, db: DatabaseWrapper, elements: string | string[]): Promise<statusObject> {
         function isElementAccessibleByNormalUser(element: string): [boolean, boolean] {
+            if (element === 'booties') return [false, false]; // Explicitly forbidden
             const accessibleUserDB = [
                 "id", "email", "first_name", "last_name", "date_of_birth", "college_id",
                 "emergency_contact_name", "emergency_contact_phone", "home_address",
@@ -287,8 +288,9 @@ export default class User {
         /**
          * Fetch profile elements for current user.
          */
-        this.app.get('/api/user/elements/:elements', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
-            const elements = request.params.elements.split(',').map((e: string) => e.trim());
+        this.app.get('/api/user/elements/*', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            const elementsStr = request.params['*'];
+            const elements = elementsStr.split(',').map((e: string) => e.trim());
             const status = await User.getAccessibleElements(request, this.db, elements);
             if (status.isError()) return status.getResponse(reply);
             return reply.send(status.getData());
@@ -297,11 +299,12 @@ export default class User {
         /**
          * Fetch profile elements for a specific user.
          */
-        this.app.get('/api/user/:id/elements/:elements', { preHandler: [check('perm:user.read')] }, async (request: any, reply: FastifyReply) => {
+        this.app.get('/api/user/:id/elements/*', { preHandler: [check('perm:user.read')] }, async (request: any, reply: FastifyReply) => {
             const userId = parseInt(request.params.id);
             if (isNaN(userId)) return reply.status(400).send({ message: 'Invalid user ID' });
 
-            const elements = request.params.elements.split(',').map((e: string) => e.trim());
+            const elementsStr = request.params['*'];
+            const elements = elementsStr.split(',').map((e: string) => e.trim());
             const targetRequest = { ...request, user: { ...request.user, id: userId } };
             const status = await User.getAccessibleElements(targetRequest, this.db, elements);
             if (status.isError()) return status.getResponse(reply);
@@ -382,51 +385,55 @@ export default class User {
         this.app.post('/api/user/profile-picture', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
             try {
                 let fileId = null;
-                const parts = request.files();
                 let body: any = {};
 
-                for await (const part of parts) {
-                    if (part.type === 'file') {
-                        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                        const tempFilename = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                        const tempPath = path.join(this.uploadDir, tempFilename);
-                        
-                        await pipeline(part.file, fs.createWriteStream(tempPath));
+                if (request.isMultipart && request.isMultipart()) {
+                    const parts = request.files();
+                    for await (const part of parts) {
+                        if (part.type === 'file') {
+                            const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                            const tempFilename = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                            const tempPath = path.join(this.uploadDir, tempFilename);
+                            
+                            await pipeline(part.file, fs.createWriteStream(tempPath));
 
-                        const fileTypeResult = await fileTypeFromFile(tempPath);
-                        if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
-                            await fs.promises.unlink(tempPath);
-                            return reply.status(400).send({ message: 'Invalid image type.' });
-                        }
+                            const fileTypeResult = await fileTypeFromFile(tempPath);
+                            if (!fileTypeResult || !allowedMimes.includes(fileTypeResult.mime)) {
+                                await fs.promises.unlink(tempPath);
+                                return reply.status(400).send({ message: 'Invalid image type.' });
+                            }
 
-                        const ext = `.${fileTypeResult.ext}`;
-                        const finalFilename = tempFilename + ext;
-                        const finalPath = tempPath + ext;
-                        await fs.promises.rename(tempPath, finalPath);
+                            const ext = `.${fileTypeResult.ext}`;
+                            const finalFilename = tempFilename + ext;
+                            const finalPath = tempPath + ext;
+                            await fs.promises.rename(tempPath, finalPath);
 
-                        const fileHash = await this.calculateHash(finalPath);
-                        const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
+                            const fileHash = await this.calculateHash(finalPath);
+                            const existingFileStatus = await FilesDB.getFileByHash(this.db, fileHash);
 
-                        if (!existingFileStatus.isError()) {
-                            fileId = existingFileStatus.getData().id;
-                            await fs.promises.unlink(finalPath);
+                            if (!existingFileStatus.isError()) {
+                                fileId = existingFileStatus.getData().id;
+                                await fs.promises.unlink(finalPath);
+                            } else {
+                                const stats = await fs.promises.stat(finalPath);
+                                const data = {
+                                    title: `Profile Picture - ${request.user.first_name} ${request.user.last_name}`,
+                                    author: `${request.user.first_name} ${request.user.last_name}`,
+                                    size: stats.size,
+                                    filename: finalFilename,
+                                    hash: fileHash,
+                                    visibility: 'public'
+                                };
+                                const createStatus = await FilesDB.createFile(this.db, data);
+                                if (createStatus.isError()) return createStatus.getResponse(reply);
+                                fileId = createStatus.getData().id;
+                            }
                         } else {
-                            const stats = await fs.promises.stat(finalPath);
-                            const data = {
-                                title: `Profile Picture - ${request.user.first_name} ${request.user.last_name}`,
-                                author: `${request.user.first_name} ${request.user.last_name}`,
-                                size: stats.size,
-                                filename: finalFilename,
-                                hash: fileHash,
-                                visibility: 'public'
-                            };
-                            const createStatus = await FilesDB.createFile(this.db, data);
-                            if (createStatus.isError()) return createStatus.getResponse(reply);
-                            fileId = createStatus.getData().id;
+                            body[part.fieldname] = part.value;
                         }
-                    } else {
-                        body[part.fieldname] = part.value;
                     }
+                } else {
+                    body = request.body || {};
                 }
 
                 if (body.fileId !== undefined) {

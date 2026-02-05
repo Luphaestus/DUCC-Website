@@ -1,54 +1,19 @@
-import { createSignal, createResource, For, Show, createMemo } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { 
-    POOL_SVG, ADD_SVG, PERSON_SVG, EDIT_SVG, 
-    BOLT_SVG, ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG 
+    PERSON_SVG, EDIT_SVG, 
+    ID_CARD_SVG, CLOSE_SVG,
+    CONTRACT_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG
 } from '@/utils/icons';
 import Panel from "@/components/Panel";
 
 export default function ProfileTab(props: { user: any, permissions: string[], canManageUsers: boolean, isExec: boolean, refetchUser: () => void }) {
     const { notify } = useNotifications();
-    const canManageSwims = () => props.permissions.includes('swims.manage');
     
     const [isEditing, setIsEditing] = createSignal(false);
-    const [allRoles] = createResource(async () => await apiRequest('GET', '/api/admin/roles'));
-    const [allPerms] = createResource(async () => await apiRequest('GET', '/api/admin/roles/permissions'));
-    const [colleges] = createResource(async () => await apiRequest('GET', '/api/colleges'));
 
-    const handleAddRole = async (roleId: string) => {
-        if (!roleId) return;
-        try {
-            await apiRequest('POST', `/api/admin/user/${props.user.id}/role`, { roleId });
-            notify('Success', 'Role added', 'success');
-            props.refetchUser();
-        } catch (e: any) { notify('Error', e.message, 'error'); }
-    };
-
-    const handleRemoveRole = async (roleId: number) => {
-        try {
-            await apiRequest('DELETE', `/api/admin/user/${props.user.id}/role/${roleId}`);
-            notify('Success', 'Role removed', 'success');
-            props.refetchUser();
-        } catch (e: any) { notify('Error', e.message, 'error'); }
-    };
-
-    const handleAddPerm = async (permissionId: string) => {
-        if (!permissionId) return;
-        try {
-            await apiRequest('POST', `/api/admin/user/${props.user.id}/permission`, { permissionId });
-            notify('Success', 'Permission added', 'success');
-            props.refetchUser();
-        } catch (e: any) { notify('Error', e.message, 'error'); }
-    };
-
-    const handleRemovePerm = async (permId: number) => {
-        try {
-            await apiRequest('DELETE', `/api/admin/user/${props.user.id}/permission/${permId}`);
-            notify('Success', 'Permission removed', 'success');
-            props.refetchUser();
-        } catch (e: any) { notify('Error', e.message, 'error'); }
-    };
+    const isSigned = () => !!props.user.filled_legal_info;
 
     const handleSaveProfile = async (e: Event) => {
         e.preventDefault();
@@ -67,62 +32,95 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
         } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
-    const handleLogAction = async (type: 'swims' | 'booties') => {
-        try {
-            await apiRequest('POST', `/api/user/${props.user.id}/${type}`, { count: 1 });
-            notify('Success', 'Logged successfully', 'success');
-            props.refetchUser();
-        } catch (e: any) { notify('Error', e.message, 'error'); }
-    };
-
     return (
         <div class="dashboard-section active">
-            <div class="dual-grid">
-                <Panel title="Account Balance">
-                    <span class={`value-amount ${props.user.balance >= 0 ? 'positive' : 'negative'}`}>£{Number(props.user.balance || 0).toFixed(2)}</span>
-                </Panel>
-                <Panel title="Member Status">
-                    <span class={`value-amount ${props.user.is_member ? 'positive' : ''}`}>{props.user.is_member ? 'Active Member' : (props.user.free_sessions || 0)}</span>
-                    {!props.user.is_member && <small> free sessions remaining</small>}
-                </Panel>
-            </div>
-
-            {/* Stats */}
-            <Panel 
-                class="mt-4"
-                title="Swimming Stats" 
-                icon={POOL_SVG}
-                action={
-                    <Show when={canManageSwims()}>
-                        <div class="panel-actions">
-                            <button class="small-btn" onClick={() => handleLogAction('swims')}><span innerHTML={ADD_SVG} /> Log Swim</button>
-                            <button class="small-btn secondary" onClick={() => handleLogAction('booties')}><span innerHTML={ADD_SVG} /> Log Bootie</button>
-                        </div>
-                    </Show>
-                }
-            >
-                <div class="stats-grid">
-                    <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.yearly?.swims || 0}</span><span class="stat-label">Yearly Swims</span></div>
-                    <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.yearly?.booties || 0}</span><span class="stat-label">Yearly Booties</span></div>
-                    <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.allTime?.swims || 0}</span><span class="stat-label">Total Swims</span></div>
-                    <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.allTime?.booties || 0}</span><span class="stat-label">Total Booties</span></div>
+            <article class="value-header no-margin" style={{ margin: "0 0 1.5rem 0" }}>
+                <div class="value-info">
+                    <span class="value-title">Legal Status</span>
+                    <div class="value-display" classList={{ 'positive': isSigned() }}>
+                        {isSigned() ? 'Signed' : 'Missing'}
+                    </div>
                 </div>
-            </Panel>
+                <div class="value-actions" innerHTML={CONTRACT_SVG}></div>
+            </article>
 
-            <div class="dual-grid mt-4">
+            <div class="dual-grid">
+                <Panel title="Health Information" icon={MEDICAL_INFORMATION_SVG} class="no-margin">
+                    <div class="detail-info-group">
+                        <div class="medical-section">
+                            <div class="info-item-modern compact">
+                                <span class="label">Medical Conditions:</span> 
+                                <span class="badge" classList={{ warning: props.user.has_medical_conditions, success: !props.user.has_medical_conditions }}>
+                                    {props.user.has_medical_conditions ? 'Yes' : 'None Reported'}
+                                </span>
+                            </div>
+                            <Show when={props.user.has_medical_conditions}>
+                                <div class="detail-info-box">{props.user.medical_conditions_details}</div>
+                            </Show>
+                        </div>
+
+                        <div class="medical-section">
+                            <div class="info-item-modern compact">
+                                <span class="label">Medication:</span>
+                                <span class="badge" classList={{ warning: props.user.takes_medication, success: !props.user.takes_medication }}>
+                                    {props.user.takes_medication ? 'Yes' : 'None Reported'}
+                                </span>
+                            </div>
+                            <Show when={props.user.takes_medication}>
+                                <div class="detail-info-box">{props.user.medication_details}</div>
+                            </Show>
+                        </div>
+                    </div>
+                </Panel>
+
                 <Panel 
-                    title="Account Details" 
+                    title="Identity & Contact" 
                     icon={PERSON_SVG}
+                    class="no-margin"
                     action={
                         <Show when={props.permissions.includes('user.manage.advanced')}>
-                            <button class="small-btn secondary" onClick={() => setIsEditing(!isEditing())}><span innerHTML={EDIT_SVG} /> Edit</button>
+                            <button class="small-btn secondary" onClick={() => setIsEditing(!isEditing())}>
+                                <span innerHTML={isEditing() ? CLOSE_SVG : EDIT_SVG} /> {isEditing() ? 'Cancel' : 'Edit'}
+                            </button>
                         </Show>
                     }
                 >
                     <Show when={isEditing()} fallback={
-                        <div class="info-rows">
-                            <div class="info-row-modern"><span class="label">Email</span><span class="value">{props.user.email}</span></div>
-                            <div class="info-row-modern"><span class="label">Phone</span><span class="value">{props.user.phone_number || 'N/A'}</span></div>
+                        <div class="detail-info-group">
+                            <div class="detail-info-box">
+                                <span class="box-label"><span innerHTML={ID_CARD_SVG} /> Identity Details</span>
+                                <div class="box-value-grid">
+                                    <div class="row">
+                                        <span class="label-sub">Email</span>
+                                        <span>{props.user.email}</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="label-sub">Phone</span>
+                                        <span>{props.user.phone_number || 'N/A'}</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="label-sub">Date of Birth</span>
+                                        <span>{props.user.date_of_birth || 'N/A'}</span>
+                                    </div>
+                                    <div class="row">
+                                        <span class="label-sub">First Aid Expiry</span>
+                                        <span>{props.user.first_aid_expiry || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-info-box">
+                                <span class="box-label"><span innerHTML={HOME_SVG} /> Home Address</span>
+                                <span class="box-value">{props.user.home_address || 'N/A'}</span>
+                            </div>
+                            
+                            <div class="detail-info-box warning">
+                                <span class="box-label"><span innerHTML={EMERGENCY_SVG} /> Emergency Contact</span>
+                                <div class="box-value">
+                                    <strong class="contact-name">{props.user.emergency_contact_name || 'N/A'}</strong>
+                                    <span class="contact-phone">{props.user.emergency_contact_phone || 'N/A'}</span>
+                                </div>
+                            </div>
                         </div>
                     }>
                         <form class="modern-form" onSubmit={handleSaveProfile}>
@@ -141,17 +139,6 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                             </div>
                         </form>
                     </Show>
-                </Panel>
-
-                <Panel title="Capabilities" icon={BOLT_SVG}>
-                    <div class="role-toggle">
-                        <div class="role-info"><h4>Instructor Status</h4></div>
-                        <span class={`badge ${props.user.is_instructor ? 'primary' : 'neutral'}`}>{props.user.is_instructor ? 'Yes' : 'No'}</span>
-                    </div>
-                    <div class="difficulty-control mt-4">
-                        <label>Difficulty Level: {props.user.difficulty_level || 1}</label>
-                        <input type="range" min="1" max="5" value={props.user.difficulty_level || 1} disabled />
-                    </div>
                 </Panel>
             </div>
         </div>
