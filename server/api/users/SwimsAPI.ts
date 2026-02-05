@@ -44,6 +44,10 @@ export default class SwimsAPI {
             if (isNaN(userId) || isNaN(count)) return res.status(400).json({ message: 'Invalid data' });
             
             const status = await SwimsDB.addSwims(this.db, userId, count, req.user.id);
+            if (!status.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('swims_update', { userId });
+            }
             return status.getResponse(res);
         });
 
@@ -56,6 +60,10 @@ export default class SwimsAPI {
             if (isNaN(userId) || isNaN(count)) return res.status(400).json({ message: 'Invalid data' });
 
             const status = await SwimsDB.addBooties(this.db, userId, count);
+            if (!status.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('swims_update', { userId });
+            }
             return status.getResponse(res);
         });
     }

@@ -1,4 +1,4 @@
-import { createSignal, createResource, Show, createEffect } from "solid-js";
+import { createSignal, createResource, Show, createEffect, onMount, onCleanup } from "solid-js";
 import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Avatar from "@/components/Avatar";
@@ -9,14 +9,25 @@ import TransactionsTab from "./tabs/TransactionsTab";
 import SwimsTab from "./tabs/SwimsTab";
 import Panel from "@/components/Panel";
 import { TabNav } from "@/widgets/TabNav";
+import { onUpdate } from "@/utils/updates";
 
 export default function UserDetailPage() {
     const params = useParams();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const userId = () => parseInt(params.id);
+    const userId = () => parseInt(params.id || '0');
 
-    const currentTab = () => searchParams.tab || 'profile';
+    onMount(() => {
+        const cleanup = onUpdate((event) => {
+            if ((event.type === 'balance_update' || event.type === 'attendance_update') && Number(event.data.userId) === userId()) {
+                refetch();
+                refetchStats();
+            }
+        });
+        onCleanup(cleanup);
+    });
+
+    const currentTab = () => (searchParams.tab as string) || 'profile';
 
     const [user, { refetch }] = createResource(userId, async (id) => {
         return await apiRequest('GET', `/api/admin/user/${id}`);
@@ -32,7 +43,7 @@ export default function UserDetailPage() {
     const canManageSwims = () => viewerPerms()?.includes('swims.manage');
     const isExec = () => (viewerPerms()?.length || 0) > 0;
 
-    const [stats] = createResource(userId, async (id) => {
+    const [stats, { refetch: refetchStats }] = createResource(userId, async (id) => {
         if (!canManageTransactions()) return null;
         try {
             return await apiRequest('GET', `/api/admin/stats/user/${id}`);
@@ -41,7 +52,7 @@ export default function UserDetailPage() {
 
     return (
         <Show when={user()} fallback={<p>Loading user details...</p>}>
-            {u => (
+            {(u: any) => (
                 <Panel class="detail-card">
                     <header>
                         <div class="user-identity" style={{ display: "flex", "align-items": "center", gap: "1rem" }}>
@@ -92,7 +103,7 @@ export default function UserDetailPage() {
                         </Show>
 
                         <Show when={currentTab() === 'profile'}>
-                            <ProfileTab user={u} permissions={viewerPerms() || []} canManageUsers={canManageUsers()} isExec={isExec()} refetchUser={refetch} />
+                            <ProfileTab user={u} permissions={viewerPerms() || []} canManageUsers={canManageUsers() || false} isExec={isExec()} refetchUser={refetch} />
                         </Show>
                         <Show when={currentTab() === 'legal'}>
                             <LegalTab user={u} />

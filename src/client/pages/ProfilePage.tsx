@@ -1,4 +1,4 @@
-import { createSignal, createResource, onMount, Show, For, createMemo } from "solid-js";
+import { createSignal, createResource, onMount, Show, For, createMemo, onCleanup } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest, clearApiCache, uploadFile } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -17,6 +17,7 @@ import { Tag } from "@/widgets/Tag";
 import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
 import { TabNav } from "@/widgets/TabNav";
+import { onUpdate } from "@/utils/updates";
 
 interface UserProfile {
     // ... same as before
@@ -72,6 +73,16 @@ export default function ProfilePage() {
 
     const activeTab = () => searchParams.tab || 'overview';
 
+    onMount(() => {
+        const cleanup = onUpdate((event) => {
+            if (event.type === 'balance_update') {
+                refetch();
+                refetchTransactions();
+            }
+        });
+        onCleanup(cleanup);
+    });
+
     const [profile, { refetch }] = createResource(async () => {
         try {
             return await apiRequest('GET', '/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled,swimmer_stats') as UserProfile;
@@ -86,7 +97,7 @@ export default function ProfilePage() {
         return (res.data || []) as Car[];
     });
 
-    const [transactions] = createResource(async () => {
+    const [transactions, { refetch: refetchTransactions }] = createResource(async () => {
         const res = await apiRequest('GET', '/api/user/elements/transactions');
         return (res.transactions || []) as Transaction[];
     });

@@ -419,15 +419,10 @@
         }
     }
 
-    #events-list {
+    #events-list-container {
         width: 100%;
-    }
-
-    #events-slider {
-        display: flex;
-        flex-direction: row;
-        width: 100%;
-        will-change: transform;
+        overflow: hidden;
+        position: relative;
     }
 
     .events-page {

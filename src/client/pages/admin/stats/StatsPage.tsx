@@ -1,10 +1,11 @@
-import { createResource, For, Show, createMemo } from "solid-js";
+import { createResource, For, Show, createMemo, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import Panel from "@/components/Panel";
 import { 
     CURRENCY_POUND_SVG, GROUP_SVG, EVENT_SVG, 
     TRENDING_UP_SVG 
 } from '@/utils/icons';
+import { onUpdate } from "@/utils/updates";
 
 // Simple Bar Chart Component (SVG)
 const BarChart = (props: { data: { label: string, value: number, color?: string }[], height?: number }) => {
@@ -54,9 +55,18 @@ const BarChart = (props: { data: { label: string, value: number, color?: string 
 };
 
 export default function StatsPage() {
-    const [financeData] = createResource(async () => await apiRequest('GET', '/api/admin/stats/finance'));
-    const [attendanceData] = createResource(async () => await apiRequest('GET', '/api/admin/stats/attendance'));
-    const [leaderboardData] = createResource(async () => await apiRequest('GET', '/api/admin/stats/leaderboards'));
+    const [financeData, { refetch: refetchFinance }] = createResource(async () => await apiRequest('GET', '/api/admin/stats/finance'));
+    const [attendanceData, { refetch: refetchAttendance }] = createResource(async () => await apiRequest('GET', '/api/admin/stats/attendance'));
+    const [leaderboardData, { refetch: refetchLeaderboard }] = createResource(async () => await apiRequest('GET', '/api/admin/stats/leaderboards'));
+
+    onMount(() => {
+        const cleanup = onUpdate(() => {
+            refetchFinance();
+            refetchAttendance();
+            refetchLeaderboard();
+        });
+        onCleanup(cleanup);
+    });
 
     const maxFinance = createMemo(() => {
         const monthly = financeData()?.monthly || [];

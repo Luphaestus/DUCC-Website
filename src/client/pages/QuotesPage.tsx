@@ -1,10 +1,11 @@
-import { createSignal, createResource, onMount, For, Show, createMemo } from "solid-js";
+import { createSignal, createResource, onMount, For, Show, createMemo, batch } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { ADD_SVG, SEARCH_SVG } from '@/utils/icons';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
+import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate } from "@solidjs/router";
 
 interface QuoteUser {
@@ -28,13 +29,21 @@ export default function QuotesPage() {
     const [canManage, setCanManage] = createSignal(false);
     const [users, setUsers] = createSignal<QuoteUser[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = createSignal(false);
+    const [oldQuotesData, setOldQuotesData] = createSignal<any>(null);
 
-    const [quotesData, { refetch }] = createResource(() => ({ page: page(), search: search() }), async ({ page, search }) => {
-        const query = new URLSearchParams({ page: String(page), limit: '12', search });
-        const response = await apiRequest('GET', `/api/quotes?${query.toString()}`);
-        return response.data as { quotes: Quote[]; totalPages: number };
-    });
-
+    const [quotesData, { refetch }] = createResource(
+        () => ({ page: page(), search: search() }), 
+        async ({ page, search }, { value }) => {
+            if (value && search === (quotesData() as any)?.search) {
+                setOldQuotesData(value);
+            } else {
+                setOldQuotesData(null);
+            }
+            const query = new URLSearchParams({ page: String(page), limit: '12', search });
+            const response = await apiRequest('GET', `/api/quotes?${query.toString()}`);
+            return { ...response.data, search } as { quotes: Quote[]; totalPages: number, search: string };
+        }
+    );
 
     onMount(async () => {
         try {
@@ -62,6 +71,27 @@ export default function QuotesPage() {
             notify('Error', err.message || 'Failed to submit quote.', 'error');
         }
     };
+
+    const QuoteGrid = (props: { data: any }) => (
+        <div class="quotes-grid">
+            <For each={props.data?.quotes}>
+                {(quote) => (
+                    <div class="quote-card">
+                        <div class="quote-card-header">
+                            <Avatar user={quote.quoted_user} classes="mini" />
+                            <p class="quote-author">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</p>
+                        </div>
+                        <p class="quote-text">"{quote.text}"</p>
+                        <Show when={quote.submitted_by}>
+                            <div class="quote-card-footer">
+                                <p class="quote-submitter">Submitted by {quote.submitted_by!.first_name}</p>
+                            </div>
+                        </Show>
+                    </div>
+                )}
+            </For>
+        </div>
+    );
 
     return (
         <div id="quotes-view" class="view small-container">
@@ -91,8 +121,8 @@ export default function QuotesPage() {
                 </div>
             </div>
 
-            <div id="quotes-list" class="quotes-grid">
-                <Show when={quotesData.loading}>
+            <div id="quotes-list-container">
+                <Show when={quotesData.loading && !quotesData() && !oldQuotesData()}>
                     <div class="loading-spinner"></div>
                 </Show>
                 <Show when={quotesData.error}>
@@ -101,22 +131,13 @@ export default function QuotesPage() {
                 <Show when={!quotesData.loading && !quotesData.error && quotesData()?.quotes.length === 0}>
                     <p class="no-results">No quotes found.</p>
                 </Show>
-                <For each={quotesData()?.quotes}>
-                    {(quote) => (
-                        <div class="quote-card">
-                            <div class="quote-card-header">
-                                <Avatar user={quote.quoted_user} classes="mini" />
-                                <p class="quote-author">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</p>
-                            </div>
-                            <p class="quote-text">"{quote.text}"</p>
-                            <Show when={quote.submitted_by}>
-                                <div class="quote-card-footer">
-                                    <p class="quote-submitter">Submitted by {quote.submitted_by!.first_name}</p>
-                                </div>
-                            </Show>
-                        </div>
-                    )}
-                </For>
+                
+                <PaginationSlider 
+                    currentPage={page()} 
+                    oldContent={<QuoteGrid data={oldQuotesData()} />}
+                >
+                    <QuoteGrid data={quotesData()} />
+                </PaginationSlider>
             </div>
 
             <Pagination

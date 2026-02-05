@@ -77,7 +77,7 @@ export function showPasswordModal(title: string, message: string): Promise<strin
                     value={password()}
                     onInput={e => setPassword(e.currentTarget.value)}
                     onKeyDown={e => e.key === 'Enter' && close(password())}
-                    autoFocus
+                    autofocus
                 />
             </Modal>
         ), mount);
@@ -119,7 +119,7 @@ export function showChangePasswordModal(): Promise<{ currentPassword: string; ne
                 <p>Please enter your current password and a new password.</p>
                 <div class="modern-form">
                     <label>Current Password
-                        <input type="password" value={currentPassword()} onInput={e => setCurrentPassword(e.currentTarget.value)} autoFocus />
+                        <input type="password" value={currentPassword()} onInput={e => setCurrentPassword(e.currentTarget.value)} autofocus />
                     </label>
                     <label>New Password
                         <input type="password" value={newPassword()} onInput={e => setNewPassword(e.currentTarget.value)} />

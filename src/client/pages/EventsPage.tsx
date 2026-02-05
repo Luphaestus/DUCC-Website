@@ -1,4 +1,4 @@
-import { createSignal, createResource, For, Show, onMount, onCleanup, createMemo } from "solid-js";
+import { createSignal, createResource, For, Show, onMount, onCleanup, createMemo, createEffect } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import {
@@ -12,6 +12,8 @@ import {
     LegalEvent, 
     BalanceChangedEvent,
 } from '@/utils/events/events';
+import { onUpdate } from "@/utils/updates";
+import PaginationSlider from "@/components/PaginationSlider";
 
 interface PageData {
     events: EventData[];
@@ -24,14 +26,16 @@ export default function EventsPage() {
     const navigate = useNavigate();
     const { user, isAdmin } = useAuth();
     const [isRefreshing, setIsRefreshing] = createSignal(false);
-    
+    const [oldPageData, setOldData] = createSignal<PageData | null>(null);
+
     const page = () => {
         const p = searchParams.page;
         const pageStr = Array.isArray(p) ? p[0] : p;
         return parseInt(pageStr || '0');
     };
 
-    const [pageData, { mutate, refetch }] = createResource(page, async (p) => {
+    const [pageData, { mutate, refetch }] = createResource(page, async (p, { value }) => {
+        if (value) setOldData(value);
         return await apiRequest('GET', `/api/events/paged/${p}`) as PageData;
     });
 
@@ -46,10 +50,30 @@ export default function EventsPage() {
         BalanceChangedEvent.subscribe(refresh);
         EventAttendanceChangedEvent.subscribe(refresh);
 
+        const cleanup = onUpdate((event) => {
+            if (event.type === 'event_update') {
+                refetch();
+            } else if (event.type === 'attendance_update') {
+                const { eventId, action } = event.data;
+                mutate((prev: any) => {
+                    if (!prev || !prev.events) return prev;
+                    const updatedEvents = prev.events.map((e: any) => {
+                        if (Number(e.id) === Number(eventId)) {
+                            const change = action === 'joined' ? 1 : -1;
+                            return { ...e, attendee_count: (e.attendee_count || 0) + change };
+                        }
+                        return e;
+                    });
+                    return { ...prev, events: updatedEvents };
+                });
+            }
+        });
+
         onCleanup(() => {
             LegalEvent.unsubscribe(refresh);
             BalanceChangedEvent.unsubscribe(refresh);
             EventAttendanceChangedEvent.unsubscribe(refresh);
+            cleanup();
         });
     });
 
@@ -73,8 +97,8 @@ export default function EventsPage() {
         return `${formatDate(data.startDate)} - ${formatDate(data.endDate)}`;
     };
 
-    const groupedEvents = createMemo(() => {
-        const events = pageData()?.events || [];
+    const getGroupedEvents = (data: PageData | null) => {
+        const events = data?.events || [];
         const groups: { date: Date; events: EventData[] }[] = [];
         let currentGroup: { date: Date; events: EventData[] } | null = null;
 
@@ -89,7 +113,31 @@ export default function EventsPage() {
             currentGroup.events.push(event);
         });
         return groups;
-    });
+    };
+
+    const EventList = (props: { data: PageData | null }) => (
+        <div class="events-page">
+            <For each={getGroupedEvents(props.data)}>
+                {(group) => (
+                    <div class="day-group">
+                        <div class="date-strip">
+                            <span class="date-num">{group.date.getDate()}</span>
+                            <div class="date-text-group">
+                                <span class="day-name">{group.date.toLocaleDateString('en-UK', { weekday: 'long' })}</span>
+                                <div class="date-line"></div>
+                                <span class="month-name">{group.date.toLocaleDateString('en-UK', { month: 'short' })}</span>
+                            </div>
+                        </div>
+                        <div class="day-events-grid">
+                            <For each={group.events}>
+                                {(event) => <StandardCard event={event} />}
+                            </For>
+                        </div>
+                    </div>
+                )}
+            </For>
+        </div>
+    );
 
     return (
         <div id="events-view" class="view small-container">
@@ -129,38 +177,17 @@ export default function EventsPage() {
                 </div>
             </div>
 
-            <div id="events-list">
-                <Show when={pageData.loading}>
+            <div id="events-list-container">
+                <Show when={pageData.loading && !pageData() && !oldPageData()}>
                      <p class="loading-text">Loading events...</p>
                 </Show>
-                <Show when={!pageData.loading && groupedEvents().length === 0}>
-                    <div class="empty-week-state">
-                        <p>No events found for this period.</p>
-                    </div>
-                </Show>
-                <div id="events-slider">
-                    <div class="events-page">
-                        <For each={groupedEvents()}>
-                            {(group) => (
-                                <div class="day-group">
-                                    <div class="date-strip">
-                                        <span class="date-num">{group.date.getDate()}</span>
-                                        <div class="date-text-group">
-                                            <span class="day-name">{group.date.toLocaleDateString('en-UK', { weekday: 'long' })}</span>
-                                            <div class="date-line"></div>
-                                            <span class="month-name">{group.date.toLocaleDateString('en-UK', { month: 'short' })}</span>
-                                        </div>
-                                    </div>
-                                    <div class="day-events-grid">
-                                        <For each={group.events}>
-                                            {(event) => <StandardCard event={event} />}
-                                        </For>
-                                    </div>
-                                </div>
-                            )}
-                        </For>
-                    </div>
-                </div>
+                
+                <PaginationSlider 
+                    currentPage={page()} 
+                    oldContent={<EventList data={oldPageData()} />}
+                >
+                    <EventList data={pageData()} />
+                </PaginationSlider>
             </div>
         </div>
     );

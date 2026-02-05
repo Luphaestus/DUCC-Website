@@ -2,6 +2,7 @@ import { createSignal, createResource, Show, For } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Pagination from "@/components/Pagination";
+import PaginationSlider from "@/components/PaginationSlider";
 import CalendarView from "./CalendarView";
 import { 
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG
@@ -11,6 +12,7 @@ export default function EventsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const [showFilters, setShowFilters] = createSignal(false);
+    const [oldData, setOldData] = createSignal<any>(null);
     
     // View mode: list or calendar
     const viewMode = () => searchParams.view || 'list';
@@ -38,8 +40,14 @@ export default function EventsPage() {
             difficulty: difficulty(), location: location(), status: status(),
             view: viewMode()
         }),
-        async (params) => {
+        async (params, { value }) => {
             if (params.view === 'calendar') return { events: [], totalPages: 0 }; // Calendar handles its own data fetching
+
+            if (value && params.view === (data() as any)?.viewMode) {
+                setOldData(value);
+            } else {
+                setOldData(null);
+            }
 
             const query = new URLSearchParams({
                 page: String(params.page),
@@ -55,7 +63,7 @@ export default function EventsPage() {
                 status: params.status
             });
             const res = await apiRequest('GET', `/api/admin/events?${query.toString()}`);
-            return { events: res.events || [], totalPages: res.totalPages || 1 };
+            return { events: res.events || [], totalPages: res.totalPages || 1, viewMode: params.view };
         }
     );
 
@@ -79,6 +87,64 @@ export default function EventsPage() {
         });
         setShowFilters(false);
     };
+
+    const EventTable = (props: { data: any }) => (
+        <table class="glass-table">
+            <thead>
+                <tr>
+                    <th class="sortable" onClick={() => handleSort('title')}>
+                        Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('status')}>Status</th>
+                    <th class="sortable" onClick={() => handleSort('start')}>
+                        Date <Show when={sort() === 'start'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('location')}>
+                        Location <Show when={sort() === 'location'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('difficulty_level')}>
+                        Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('upfront_cost')}>
+                        Cost <Show when={sort() === 'upfront_cost'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <Show when={props.data && props.data.events.length === 0}>
+                    <tr><td colspan="6" class="empty-cell">No events found.</td></tr>
+                </Show>
+                <For each={props.data?.events}>
+                    {(event) => (
+                        <tr class="event-row clickable-row" onClick={() => navigate(`/admin/event/${event.id}`)}>
+                            <td data-label="Title" class="primary-text">{event.title}</td>
+                            <td data-label="Status">
+                                <span class={`badge ${event.status === 'confirmed' ? 'success' : event.status === 'scheduled' ? 'warning' : 'neutral'}`}>
+                                    {event.status}
+                                </span>
+                            </td>
+                            <td data-label="Date">{new Date(event.start).toLocaleString('en-GB')}</td>
+                            <td data-label="Location">{event.location}</td>
+                            <td data-label="Difficulty">
+                                <span class={`badge difficulty-${event.difficulty_level}`}>{event.difficulty_level}</span>
+                            </td>
+                            <td data-label="Cost">£{event.upfront_cost.toFixed(2)}</td>
+                        </tr>
+                    )}
+                </For>
+            </tbody>
+        </table>
+    );
 
     return (
         <div class="glass-layout">
@@ -157,64 +223,15 @@ export default function EventsPage() {
             <Show when={viewMode() === 'list'}>
                 <div class="glass-table-container">
                     <div class="table-responsive">
-                        <table class="glass-table">
-                            <thead>
-                                <tr>
-                                    <th class="sortable" onClick={() => handleSort('title')}>
-                                        Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                        </Show>
-                                    </th>
-                                    <th class="sortable" onClick={() => handleSort('status')}>Status</th>
-                                    <th class="sortable" onClick={() => handleSort('start')}>
-                                        Date <Show when={sort() === 'start'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                        </Show>
-                                    </th>
-                                    <th class="sortable" onClick={() => handleSort('location')}>
-                                        Location <Show when={sort() === 'location'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                        </Show>
-                                    </th>
-                                    <th class="sortable" onClick={() => handleSort('difficulty_level')}>
-                                        Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                        </Show>
-                                    </th>
-                                    <th class="sortable" onClick={() => handleSort('upfront_cost')}>
-                                        Cost <Show when={sort() === 'upfront_cost'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                        </Show>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <Show when={data.loading}>
-                                    <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
-                                </Show>
-                                <Show when={!data.loading && data()?.events.length === 0}>
-                                    <tr><td colspan="6" class="empty-cell">No events found.</td></tr>
-                                </Show>
-                                <For each={data()?.events}>
-                                    {(event) => (
-                                        <tr class="event-row clickable-row" onClick={() => navigate(`/admin/event/${event.id}`)}>
-                                            <td data-label="Title" class="primary-text">{event.title}</td>
-                                            <td data-label="Status">
-                                                <span class={`badge ${event.status === 'confirmed' ? 'success' : event.status === 'scheduled' ? 'warning' : 'neutral'}`}>
-                                                    {event.status}
-                                                </span>
-                                            </td>
-                                            <td data-label="Date">{new Date(event.start).toLocaleString('en-GB')}</td>
-                                            <td data-label="Location">{event.location}</td>
-                                            <td data-label="Difficulty">
-                                                <span class={`badge difficulty-${event.difficulty_level}`}>{event.difficulty_level}</span>
-                                            </td>
-                                            <td data-label="Cost">£{event.upfront_cost.toFixed(2)}</td>
-                                        </tr>
-                                    )}
-                                </For>
-                            </tbody>
-                        </table>
+                        <Show when={data.loading && !data() && !oldData()}>
+                            <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
+                        </Show>
+                        <PaginationSlider 
+                            currentPage={page()} 
+                            oldContent={<EventTable data={oldData()} />}
+                        >
+                            <EventTable data={data()} />
+                        </PaginationSlider>
                     </div>
                 </div>
                 

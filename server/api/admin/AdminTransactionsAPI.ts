@@ -48,6 +48,13 @@ export default class AdminTransactions {
                 return res.status(400).json({ message: 'Invalid user ID' });
             }
             const result = await transactionsDB.add_transaction(this.db, userId, req.body.amount, req.body.description);
+            
+            if (!result.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.sendToUser(userId, 'balance_update', { userId, amount: req.body.amount });
+                EventHub.broadcast('admin_transaction_update', { userId });
+            }
+
             result.getResponse(res);
         });
 
@@ -57,7 +64,19 @@ export default class AdminTransactions {
         this.app.put('/api/admin/transaction/:id', check('perm:transaction.write | perm:transaction.manage'), async (req: Request, res: Response) => {
             const transactionId = parseInt(req.params.id);
             if (isNaN(transactionId)) return res.status(400).json({ message: 'Invalid transaction ID' });
+            
+            // Get user ID before edit
+            const tx = await transactionsDB.get_transaction_by_id(this.db, transactionId);
+            const userId = tx.getData()?.user_id;
+
             const result = await transactionsDB.edit_transaction(this.db, transactionId, req.body.amount, req.body.description);
+            
+            if (!result.isError() && userId) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.sendToUser(userId, 'balance_update', { userId });
+                EventHub.broadcast('admin_transaction_update', { userId });
+            }
+
             result.getResponse(res);
         });
 
@@ -67,7 +86,19 @@ export default class AdminTransactions {
         this.app.delete('/api/admin/transaction/:id', check('perm:transaction.manage'), async (req: Request, res: Response) => {
             const transactionId = parseInt(req.params.id);
             if (isNaN(transactionId)) return res.status(400).json({ message: 'Invalid transaction ID' });
+            
+            // Get user ID before delete
+            const tx = await transactionsDB.get_transaction_by_id(this.db, transactionId);
+            const userId = tx.getData()?.user_id;
+
             const result = await transactionsDB.delete_transaction(this.db, transactionId);
+            
+            if (!result.isError() && userId) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.sendToUser(userId, 'balance_update', { userId });
+                EventHub.broadcast('admin_transaction_update', { userId });
+            }
+
             result.getResponse(res);
         });
     }

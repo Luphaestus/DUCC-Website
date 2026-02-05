@@ -1,11 +1,22 @@
-import { createSignal, createResource, Show } from "solid-js";
+import { createSignal, createResource, Show, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { ADD_SVG, POOL_SVG } from '@/utils/icons';
 import Panel from "@/components/Panel";
+import { onUpdate } from "@/utils/updates";
 
 export default function SwimsTab(props: { user: any }) {
     const { notify } = useNotifications();
+
+    onMount(() => {
+        const cleanup = onUpdate((event) => {
+            if (event.type === 'swims_update' && Number(event.data.userId) === Number(props.user.id)) {
+                refetch();
+            }
+        });
+        onCleanup(cleanup);
+    });
+
     const [counts, { mutate, refetch }] = createResource(
         () => props.user?.id,
         async (id) => {

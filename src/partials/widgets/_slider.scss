@@ -1,0 +1,41 @@
+@use "../mixins" as *;
+
+.slider-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.slider-track {
+    display: flex;
+    width: 100%;
+    position: relative;
+    will-change: transform;
+    
+    &.is-animating {
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        &.animate-to-left {
+            animation: slide-to-left 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        &.animate-to-right {
+            animation: slide-to-right 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+    }
+}
+
+.slider-item {
+    flex: 0 0 100%;
+    width: 100%;
+}
+
+@keyframes slide-to-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+}
+
+@keyframes slide-to-right {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}

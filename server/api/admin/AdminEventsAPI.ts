@@ -159,6 +159,10 @@ export default class AdminEvents {
                 return res.status(403).json({ message: 'Not authorized for these tags' });
             }
             const result = await EventsDB.createEvent(this.db, req.body);
+            if (!result.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('event_update', { action: 'created', eventId: result.getData()?.id });
+            }
             result.getResponse(res);
         });
 
@@ -170,6 +174,10 @@ export default class AdminEvents {
                 return res.status(403).json({ message: 'Not authorized for this event' });
             }
             const result = await EventsDB.updateEvent(this.db, parseInt(req.params.id), req.body);
+            if (!result.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('event_update', { action: 'updated', eventId: req.params.id });
+            }
             result.getResponse(res);
         });
 
@@ -182,6 +190,10 @@ export default class AdminEvents {
             }
             
             const result = await EventsDB.resetImage(this.db, parseInt(req.params.id));
+            if (!result.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('event_update', { action: 'updated', eventId: req.params.id });
+            }
             result.getResponse(res);
         });
 
@@ -193,6 +205,10 @@ export default class AdminEvents {
                 return res.status(403).json({ message: 'Not authorized for this event' });
             }
             const result = await EventsDB.cancelEvent(this.db, parseInt(req.params.id));
+            if (!result.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('event_update', { action: 'cancelled', eventId: req.params.id });
+            }
             return result.getResponse(res);
         });
 
@@ -211,6 +227,10 @@ export default class AdminEvents {
             }
 
             const result = await EventsDB.deleteEvent(this.db, parseInt(req.params.id));
+            if (!result.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('event_update', { action: 'deleted', eventId: req.params.id });
+            }
             result.getResponse(res);
         });
     }

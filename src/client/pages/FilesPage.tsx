@@ -2,6 +2,7 @@ import { createSignal, createResource, onMount, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG } from '@/utils/icons';
 import Pagination from "@/components/Pagination";
+import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate } from "@solidjs/router";
 
 interface FileCategory {
@@ -28,6 +29,7 @@ export default function FilesPage() {
     const [order, setOrder] = createSignal("desc");
     const [canManage, setCanManage] = createSignal(false);
     const [categories, setCategories] = createSignal<FileCategory[]>([]);
+    const [oldFilesData, setOldFilesData] = createSignal<any>(null);
 
     const [filesData] = createResource(() => ({ 
         page: page(), 
@@ -35,7 +37,12 @@ export default function FilesPage() {
         categoryId: categoryId(),
         sort: sort(),
         order: order()
-    }), async (params) => {
+    }), async (params, { value }) => {
+        if (value && params.search === (filesData() as any)?.search && params.categoryId === (filesData() as any)?.categoryId) {
+            setOldFilesData(value);
+        } else {
+            setOldFilesData(null);
+        }
         const query = new URLSearchParams({
             page: String(params.page),
             limit: '15',
@@ -45,7 +52,7 @@ export default function FilesPage() {
             categoryId: params.categoryId
         });
         const res = await apiRequest('GET', `/api/files?${query.toString()}`);
-        return res.data as { files: FileEntry[]; totalPages: number };
+        return { ...res.data, search: params.search, categoryId: params.categoryId } as { files: FileEntry[]; totalPages: number, search: string, categoryId: string };
     });
 
     onMount(async () => {
@@ -74,6 +81,60 @@ export default function FilesPage() {
             setOrder('asc');
         }
     };
+
+    const FileTable = (props: { data: any }) => (
+        <table class="files-table">
+            <thead>
+                <tr>
+                    <For each={[
+                        { key: 'title', label: 'Title', sort: 'title' },
+                        { key: 'author', label: 'Author', sort: 'author' },
+                        { key: 'date', label: 'Date', sort: 'date' },
+                        { key: 'size', label: 'Size', sort: 'size' }
+                    ]}>
+                        {(c) => (
+                            <th class="sortable" onClick={() => toggleSort(c.sort)}>
+                                {c.label} 
+                                <span innerHTML={sort() === c.sort ? (order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG} />
+                            </th>
+                        )}
+                    </For>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <Show when={props.data && props.data.files.length === 0}>
+                    <tr><td colspan="5" class="text-centre">No files found.</td></tr>
+                </Show>
+                <For each={props.data?.files}>
+                    {(file) => {
+                        const ext = file.filename.split('.').pop()?.toLowerCase() || '';
+                        const viewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'].includes(ext);
+                        return (
+                            <tr>
+                                <td data-label="Title">
+                                    <div class="file-title">
+                                        <strong>{file.title}</strong>
+                                        <span class="file-category">{file.category_name || 'Uncategorised'}</span>
+                                    </div>
+                                </td>
+                                <td data-label="Author">{file.author}</td>
+                                <td data-label="Date">
+                                    <span class="full-date">{new Date(file.date).toLocaleDateString('en-GB')}</span>
+                                </td>
+                                <td data-label="Size">{formatSize(file.size)}</td>
+                                <td data-label="Action">
+                                    <a href={`/api/files/${file.id}/download${viewable ? '?view=true' : ''}`} class="download-btn" title={viewable ? 'View' : 'Download'} target={viewable ? '_blank' : undefined}>
+                                        <span innerHTML={CLOUD_DOWNLOAD_SVG} />
+                                    </a>
+                                </td>
+                            </tr>
+                        );
+                    }}
+                </For>
+            </tbody>
+        </table>
+    );
 
     return (
         <div id="files-view" class="view small-container">
@@ -110,60 +171,16 @@ export default function FilesPage() {
             </div>
 
             <div class="files-table-wrapper">
-                <table class="files-table">
-                    <thead>
-                        <tr>
-                            <For each={[
-                                { key: 'title', label: 'Title', sort: 'title' },
-                                { key: 'author', label: 'Author', sort: 'author' },
-                                { key: 'date', label: 'Date', sort: 'date' },
-                                { key: 'size', label: 'Size', sort: 'size' }
-                            ]}>
-                                {(c) => (
-                                    <th class="sortable" onClick={() => toggleSort(c.sort)}>
-                                        {c.label} 
-                                        <span innerHTML={sort() === c.sort ? (order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG} />
-                                    </th>
-                                )}
-                            </For>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <Show when={filesData.loading}>
-                            <tr><td colspan="5" class="text-centre">Loading...</td></tr>
-                        </Show>
-                        <Show when={!filesData.loading && filesData()?.files.length === 0}>
-                            <tr><td colspan="5" class="text-centre">No files found.</td></tr>
-                        </Show>
-                        <For each={filesData()?.files}>
-                            {(file) => {
-                                const ext = file.filename.split('.').pop()?.toLowerCase() || '';
-                                const viewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'].includes(ext);
-                                return (
-                                    <tr>
-                                        <td data-label="Title">
-                                            <div class="file-title">
-                                                <strong>{file.title}</strong>
-                                                <span class="file-category">{file.category_name || 'Uncategorised'}</span>
-                                            </div>
-                                        </td>
-                                        <td data-label="Author">{file.author}</td>
-                                        <td data-label="Date">
-                                            <span class="full-date">{new Date(file.date).toLocaleDateString('en-GB')}</span>
-                                        </td>
-                                        <td data-label="Size">{formatSize(file.size)}</td>
-                                        <td data-label="Action">
-                                            <a href={`/api/files/${file.id}/download${viewable ? '?view=true' : ''}`} class="download-btn" title={viewable ? 'View' : 'Download'} target={viewable ? '_blank' : undefined}>
-                                                <span innerHTML={CLOUD_DOWNLOAD_SVG} />
-                                            </a>
-                                        </td>
-                                    </tr>
-                                );
-                            }}
-                        </For>
-                    </tbody>
-                </table>
+                <Show when={filesData.loading && !filesData() && !oldFilesData()}>
+                    <p class="text-centre">Loading...</p>
+                </Show>
+
+                <PaginationSlider 
+                    currentPage={page()} 
+                    oldContent={<FileTable data={oldFilesData()} />}
+                >
+                    <FileTable data={filesData()} />
+                </PaginationSlider>
             </div>
 
             <Pagination 

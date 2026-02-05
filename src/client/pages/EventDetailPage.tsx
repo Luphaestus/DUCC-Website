@@ -1,4 +1,4 @@
-import { createSignal, createResource, onMount, For, Show, createMemo } from "solid-js";
+import { createSignal, createResource, onMount, For, Show, createMemo, onCleanup, Switch, Match } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -10,6 +10,7 @@ import {
 import { Tag } from '../widgets/Tag';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
+import { onUpdate } from "@/utils/updates";
 
 interface KitItem {
     id: number;
@@ -26,12 +27,40 @@ export default function EventDetailPage() {
     
     const [isKitModalOpen, setIsKitModalOpen] = createSignal(false);
 
-    const [eventData, { refetch: refetchEvent }] = createResource(eventId, async (id) => {
+    onMount(() => {
+        const cleanup = onUpdate((event) => {
+            if (event.type === 'attendance_update' && Number(event.data.eventId) === Number(eventId())) {
+                const { action, user, userId } = event.data;
+                
+                // Update attendees list without full re-fetch
+                mutateAttendees((prev: any[]) => {
+                    if (action === 'joined' && user) {
+                        if (prev.some(a => a.id === user.id)) return prev;
+                        return [...prev, user];
+                    } else if (action === 'left') {
+                        const targetId = userId || user?.id;
+                        return prev.filter(a => a.id !== targetId);
+                    }
+                    return prev;
+                });
+
+                // Update event capacity count locally
+                mutateEvent((prev: any) => {
+                    if (!prev) return prev;
+                    const change = action === 'joined' ? 1 : -1;
+                    return { ...prev, attendee_count: (prev.attendee_count || 0) + change };
+                });
+            }
+        });
+        onCleanup(cleanup);
+    });
+
+    const [eventData, { refetch: refetchEvent, mutate: mutateEvent }] = createResource(eventId, async (id) => {
         const res = await apiRequest('GET', `/api/event/${id}`);
         return res.event;
     });
 
-    const [attendees, { refetch: refetchAttendees }] = createResource(eventId, async (id) => {
+    const [attendees, { refetch: refetchAttendees, mutate: mutateAttendees }] = createResource(eventId, async (id) => {
         const res = await apiRequest('GET', `/api/event/${id}/attendees`);
         return res.attendees || [];
     });
@@ -50,6 +79,17 @@ export default function EventDetailPage() {
 
     const canManage = createMemo(() => (userStatus()?.permissions?.length || 0) > 0);
     const isAttending = createMemo(() => attendees()?.some((a: any) => a.id === userStatus()?.id && (a.is_attending === undefined || a.is_attending === 1)));
+
+    const eventStatus = createMemo(() => {
+        const e = eventData();
+        if (!e) return 'loading';
+        const now = new Date();
+        if (now >= new Date(e.end)) return 'ended';
+        if (now >= new Date(e.start)) return 'started';
+        if (e.is_canceled) return 'canceled';
+        if (e.max_attendees > 0 && (e.attendee_count || 0) >= e.max_attendees) return 'full';
+        return 'open';
+    });
 
     const handleAttend = async () => {
         if (!userStatus()) {
@@ -73,7 +113,7 @@ export default function EventDetailPage() {
         if (!itemId) return;
         
         try {
-            await apiRequest('POST', '/api/kit/request', { event_id: parseInt(eventId()), kit_item_id: parseInt(itemId) });
+            await apiRequest('POST', '/api/kit/request', { event_id: parseInt(eventId() || '0'), kit_item_id: parseInt(itemId) });
             notify('Success', 'Kit requested', 'success');
             setIsKitModalOpen(false);
         } catch (e: any) { notify('Error', e.message, 'error'); }
@@ -138,13 +178,31 @@ export default function EventDetailPage() {
 
                                 <div class="event-actions">
                                     <Show when={!isAttending()}>
-                                        <button class="primary" onClick={handleAttend}>Join Event</button>
+                                        <Switch>
+                                            <Match when={eventStatus() === 'ended'}>
+                                                <button class="secondary outline" disabled>Event Ended</button>
+                                            </Match>
+                                            <Match when={eventStatus() === 'started'}>
+                                                <button class="secondary outline" disabled>Already Started</button>
+                                            </Match>
+                                            <Match when={eventStatus() === 'canceled'}>
+                                                <button class="secondary outline" disabled>Canceled</button>
+                                            </Match>
+                                            <Match when={eventStatus() === 'full'}>
+                                                <button class="secondary outline" disabled>Event Full</button>
+                                            </Match>
+                                            <Match when={eventStatus() === 'open'}>
+                                                <button class="primary" onClick={handleAttend}>Join Event</button>
+                                            </Match>
+                                        </Switch>
                                     </Show>
                                     <Show when={isAttending()}>
                                         <button class="secondary outline" disabled>Joined</button>
-                                        <button class="secondary" onClick={() => setIsKitModalOpen(true)}>
-                                            <span innerHTML={KAYAKING_SVG} /> Request Kit
-                                        </button>
+                                        <Show when={eventStatus() !== 'ended'}>
+                                            <button class="secondary" onClick={() => setIsKitModalOpen(true)}>
+                                                <span innerHTML={KAYAKING_SVG} /> Request Kit
+                                            </button>
+                                        </Show>
                                     </Show>
                                     <Show when={canManage()}>
                                         <button class="secondary" onClick={() => navigate(`/admin/event/${event().id}`)}>

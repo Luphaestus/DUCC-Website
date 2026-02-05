@@ -62,19 +62,70 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    width: fit-content;
+    gap: 1rem;
+    margin-top: 2rem;
+    width: 100%;
     margin-inline: auto;
 
-    button {
-        width: auto;
-        margin-bottom: 0;
-        
-        &.active {
-            background-color: var(--pico-primary);
-            border-color: var(--pico-primary);
-            color: var(--pico-primary-inverse);
+    &.glass-pagination {
+        .page-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        button {
+            @include common-element-size;
+            background: var(--glass-bg);
+            border: var(--glass-border);
+            color: var(--theme-opposite);
+            border-radius: var(--border-radius-md);
+            transition: all 0.2s ease;
+            box-shadow: none;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover:not(:disabled) {
+                background: rgba(var(--pico-primary-rgb), 0.1);
+                color: var(--pico-primary);
+                border-color: var(--pico-primary);
+                transform: translateY(-2px);
+            }
+
+            &:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+                filter: grayscale(1);
+            }
+
+            &.active {
+                background: var(--pico-primary);
+                color: white !important;
+                border-color: var(--pico-primary);
+                font-weight: 700;
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(var(--pico-primary-rgb), 0.3);
+            }
+
+            &.page-btn {
+                min-width: 3rem;
+                width: 3rem;
+                padding: 0;
+            }
+
+            &.nav-btn {
+                min-width: 5rem;
+                padding: 0 1rem;
+            }
+        }
+
+        .pagination-ellipsis {
+            color: var(--theme-opposite);
+            opacity: 0.5;
+            padding: 0 0.25rem;
         }
     }
 }

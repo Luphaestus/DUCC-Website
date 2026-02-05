@@ -2,6 +2,7 @@ import { createSignal, createResource, Show, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Pagination from "@/components/Pagination";
+import PaginationSlider from "@/components/PaginationSlider";
 import { 
     SEARCH_SVG, DELETE_SVG, CHECK_SVG, CLOSE_SVG,
     UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG 
@@ -22,10 +23,17 @@ export default function QuotesPage() {
     const [search, setSearch] = createSignal('');
     const [sort, setSort] = createSignal('created_at');
     const [order, setOrder] = createSignal('desc');
+    const [oldData, setOldData] = createSignal<any>(null);
 
     const [data, { refetch }] = createResource(
         () => ({ page: page(), search: search(), sort: sort(), order: order() }),
-        async (params) => {
+        async (params, { value }) => {
+            if (value) {
+                setOldData(value);
+            } else {
+                setOldData(null);
+            }
+
             const query = new URLSearchParams({
                 page: String(params.page),
                 limit: '15',
@@ -64,6 +72,60 @@ export default function QuotesPage() {
         }
     };
 
+    const QuoteTable = (props: { data: any }) => (
+        <table class="glass-table quotes-table">
+            <thead>
+                <tr>
+                    <th class="sortable" onClick={() => handleSort('text')}>
+                        Quote <Show when={sort() === 'text'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('quoted_user')}>
+                        Person <Show when={sort() === 'quoted_user'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th>Submitter</th>
+                    <th class="sortable" onClick={() => handleSort('visibility')}>
+                        Status <Show when={sort() === 'visibility'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <Show when={props.data && props.data.quotes.length === 0}>
+                    <tr><td colspan="5" class="empty-cell">No quotes found.</td></tr>
+                </Show>
+                <For each={props.data?.quotes}>
+                    {(quote) => (
+                        <tr class="quote-row">
+                            <td data-label="Quote" class="primary-text quote-text-cell">"{quote.text}"</td>
+                            <td data-label="Person">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</td>
+                            <td data-label="Submitter">{quote.submitted_by ? `${quote.submitted_by.first_name} ${quote.submitted_by.last_name}` : 'Unknown'}</td>
+                            <td data-label="Status">
+                                <span class={`status-badge status-${quote.visibility}`}>{quote.visibility}</span>
+                            </td>
+                            <td data-label="Actions" class="text-right action-cell">
+                                <div class="button-group">
+                                    <Show when={quote.visibility !== 'public'}>
+                                        <button class="button success icon-only mini-btn" onClick={() => handleAction(quote.id, 'release')} title="Release" innerHTML={CHECK_SVG} />
+                                    </Show>
+                                    <Show when={quote.visibility !== 'hidden'}>
+                                        <button class="button warning icon-only mini-btn" onClick={() => handleAction(quote.id, 'hide')} title="Hide" innerHTML={CLOSE_SVG} />
+                                    </Show>
+                                    <button class="button danger icon-only mini-btn" onClick={() => handleAction(quote.id, 'delete')} title="Delete" innerHTML={DELETE_SVG} />
+                                </div>
+                            </td>
+                        </tr>
+                    )}
+                </For>
+            </tbody>
+        </table>
+    );
+
     return (
         <div class="glass-layout">
             <div class="glass-toolbar">
@@ -82,60 +144,15 @@ export default function QuotesPage() {
 
             <div class="glass-table-container">
                 <div class="table-responsive">
-                    <table class="glass-table quotes-table">
-                        <thead>
-                            <tr>
-                                <th class="sortable" onClick={() => handleSort('text')}>
-                                    Quote <Show when={sort() === 'text'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th class="sortable" onClick={() => handleSort('quoted_user')}>
-                                    Person <Show when={sort() === 'quoted_user'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th>Submitter</th>
-                                <th class="sortable" onClick={() => handleSort('visibility')}>
-                                    Status <Show when={sort() === 'visibility'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th class="text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <Show when={data.loading}>
-                                <tr><td colspan="5" class="loading-cell">Loading...</td></tr>
-                            </Show>
-                            <Show when={!data.loading && data()?.quotes.length === 0}>
-                                <tr><td colspan="5" class="empty-cell">No quotes found.</td></tr>
-                            </Show>
-                            <For each={data()?.quotes}>
-                                {(quote) => (
-                                    <tr class="quote-row">
-                                        <td data-label="Quote" class="primary-text quote-text-cell">"{quote.text}"</td>
-                                        <td data-label="Person">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</td>
-                                        <td data-label="Submitter">{quote.submitted_by ? `${quote.submitted_by.first_name} ${quote.submitted_by.last_name}` : 'Unknown'}</td>
-                                        <td data-label="Status">
-                                            <span class={`status-badge status-${quote.visibility}`}>{quote.visibility}</span>
-                                        </td>
-                                        <td data-label="Actions" class="text-right action-cell">
-                                            <div class="button-group">
-                                                <Show when={quote.visibility !== 'public'}>
-                                                    <button class="button success icon-only mini-btn" onClick={() => handleAction(quote.id, 'release')} title="Release" innerHTML={CHECK_SVG} />
-                                                </Show>
-                                                <Show when={quote.visibility !== 'hidden'}>
-                                                    <button class="button warning icon-only mini-btn" onClick={() => handleAction(quote.id, 'hide')} title="Hide" innerHTML={CLOSE_SVG} />
-                                                </Show>
-                                                <button class="button danger icon-only mini-btn" onClick={() => handleAction(quote.id, 'delete')} title="Delete" innerHTML={DELETE_SVG} />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </For>
-                        </tbody>
-                    </table>
+                    <Show when={data.loading && !data() && !oldData()}>
+                        <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
+                    </Show>
+                    <PaginationSlider 
+                        currentPage={page()} 
+                        oldContent={<QuoteTable data={oldData()} />}
+                    >
+                        <QuoteTable data={data()} />
+                    </PaginationSlider>
                 </div>
             </div>
 

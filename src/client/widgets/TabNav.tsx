@@ -7,7 +7,7 @@ interface TabNavProps extends ParentProps {
 
 export function TabNav(props: TabNavProps) {
     let navRef: HTMLElement | undefined;
-    let bgRef: HTMLElement | undefined;
+    let bgRef: HTMLDivElement | undefined;
 
     const updatePosition = () => {
         if (!navRef || !bgRef) return;

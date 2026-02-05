@@ -3,6 +3,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
+import PaginationSlider from "@/components/PaginationSlider";
 import UploadWidget from "@/components/UploadWidget";
 import { 
     SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, 
@@ -201,6 +202,7 @@ export default function FilesPage() {
     const [categoryId, setCategoryId] = createSignal('');
     const [sort, setSort] = createSignal('date');
     const [order, setOrder] = createSignal('desc');
+    const [oldData, setOldData] = createSignal<any>(null);
 
     // Modals
     const [showUpload, setShowUpload] = createSignal(false);
@@ -210,7 +212,13 @@ export default function FilesPage() {
     // Data Fetching
     const [filesData, { refetch: refetchFiles }] = createResource(
         () => ({ page: page(), search: search(), categoryId: categoryId(), sort: sort(), order: order() }),
-        async (params) => {
+        async (params, { value }) => {
+            if (value && params.categoryId === (filesData() as any)?.categoryId) {
+                setOldData(value);
+            } else {
+                setOldData(null);
+            }
+
             const query = new URLSearchParams({
                 page: String(params.page),
                 limit: '15',
@@ -220,7 +228,7 @@ export default function FilesPage() {
                 order: params.order
             });
             const res = await apiRequest('GET', `/api/files?${query.toString()}`);
-            return { files: res.data.files as FileRecord[], totalPages: res.data.totalPages };
+            return { files: res.data.files as FileRecord[], totalPages: res.data.totalPages, categoryId: params.categoryId };
         }
     );
 
@@ -255,6 +263,65 @@ export default function FilesPage() {
         // or we need to trigger it. Let's assume autoUpload: true for simplicity now or fix the component.
         // Actually I'll set autoUpload: true in the usage above.
     };
+
+    const FileTable = (props: { data: any }) => (
+        <table class="glass-table files-table">
+            <thead>
+                <tr>
+                    <th class="sortable" onClick={() => handleSort('title')}>
+                        Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('category_name')}>
+                        Category <Show when={sort() === 'category_name'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('author')}>
+                        Author <Show when={sort() === 'author'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('visibility')}>
+                        Visibility <Show when={sort() === 'visibility'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th class="sortable" onClick={() => handleSort('date')}>
+                        Date <Show when={sort() === 'date'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        </Show>
+                    </th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <Show when={props.data && props.data.files.length === 0}>
+                    <tr><td colspan="6" class="empty-cell">No files found.</td></tr>
+                </Show>
+                <For each={props.data?.files}>
+                    {(file) => (
+                        <tr>
+                            <td data-label="Title" class="primary-text"><strong>{file.title}</strong></td>
+                            <td data-label="Category"><span class="badge neutral">{file.category_name || 'Uncategorised'}</span></td>
+                            <td data-label="Author">{file.author}</td>
+                            <td data-label="Visibility"><span class={`tag-badge ${file.visibility}`}>{file.visibility}</span></td>
+                            <td data-label="Date">
+                                <span class="full-date">{new Date(file.date).toLocaleDateString('en-GB')}</span>
+                            </td>
+                            <td data-label="Actions">
+                                <div class="row-actions">
+                                    <button class="icon-btn edit-file" onClick={() => setEditingFile(file)} title="Edit" innerHTML={EDIT_SVG} />
+                                    <button class="icon-btn delete-file delete" onClick={() => handleDelete(file.id)} title="Delete" innerHTML={DELETE_SVG} />
+                                </div>
+                            </td>
+                        </tr>
+                    )}
+                </For>
+            </tbody>
+        </table>
+    );
 
     return (
         <div class="glass-layout">
@@ -294,65 +361,15 @@ export default function FilesPage() {
 
             <div class="glass-table-container">
                 <div class="table-responsive">
-                    <table class="glass-table files-table">
-                        <thead>
-                            <tr>
-                                <th class="sortable" onClick={() => handleSort('title')}>
-                                    Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th class="sortable" onClick={() => handleSort('category_name')}>
-                                    Category <Show when={sort() === 'category_name'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th class="sortable" onClick={() => handleSort('author')}>
-                                    Author <Show when={sort() === 'author'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th class="sortable" onClick={() => handleSort('visibility')}>
-                                    Visibility <Show when={sort() === 'visibility'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th class="sortable" onClick={() => handleSort('date')}>
-                                    Date <Show when={sort() === 'date'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                                    </Show>
-                                </th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <Show when={filesData.loading}>
-                                <tr><td colspan="6" class="loading-cell">Loading...</td></tr>
-                            </Show>
-                            <Show when={!filesData.loading && filesData()?.files.length === 0}>
-                                <tr><td colspan="6" class="empty-cell">No files found.</td></tr>
-                            </Show>
-                            <For each={filesData()?.files}>
-                                {(file) => (
-                                    <tr>
-                                        <td data-label="Title" class="primary-text"><strong>{file.title}</strong></td>
-                                        <td data-label="Category"><span class="badge neutral">{file.category_name || 'Uncategorised'}</span></td>
-                                        <td data-label="Author">{file.author}</td>
-                                        <td data-label="Visibility"><span class={`tag-badge ${file.visibility}`}>{file.visibility}</span></td>
-                                        <td data-label="Date">
-                                            <span class="full-date">{new Date(file.date).toLocaleDateString('en-GB')}</span>
-                                        </td>
-                                        <td data-label="Actions">
-                                            <div class="row-actions">
-                                                <button class="icon-btn edit-file" onClick={() => setEditingFile(file)} title="Edit" innerHTML={EDIT_SVG} />
-                                                <button class="icon-btn delete-file delete" onClick={() => handleDelete(file.id)} title="Delete" innerHTML={DELETE_SVG} />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </For>
-                        </tbody>
-                    </table>
+                    <Show when={filesData.loading && !filesData() && !oldData()}>
+                        <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
+                    </Show>
+                    <PaginationSlider 
+                        currentPage={page()} 
+                        oldContent={<FileTable data={oldData()} />}
+                    >
+                        <FileTable data={filesData()} />
+                    </PaginationSlider>
                 </div>
             </div>
 

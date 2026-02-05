@@ -12,7 +12,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 import path from 'path';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { connect, DatabaseWrapper } from './db/db.js';
 import session from 'express-session';
 import expressMySQLSession from 'express-mysql-session';
@@ -207,6 +207,25 @@ const startServer = async () => {
       res.status(200).json({ ok: true });
     });
 
+    app.get('/api/updates', async (req: any, res: Response) => {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      const EventHub = (await import('./misc/EventHub.js')).default;
+      EventHub.addClient(res, req.user?.id);
+
+      // Keep connection alive with heartbeat
+      const heartbeat = setInterval(() => {
+        res.write(': heartbeat\n\n');
+      }, 30000);
+
+      res.on('close', () => {
+        clearInterval(heartbeat);
+      });
+    });
+
     const Auth = (await import('./api/AuthAPI.js')).default;
     const auth = new Auth(app, db, passport);
     auth.registerRoutes();
@@ -276,5 +295,13 @@ const startServer = async () => {
 };
 
 const serverReady = startServer();
+
+serverReady.then(async ({ db }) => {
+  if (process.env.ENABLE_SIMULATOR === 'true') {
+    const { ActivitySimulator } = await import('./misc/ActivitySimulator.js');
+    const simulator = new ActivitySimulator(db);
+    simulator.start();
+  }
+});
 
 export { app, serverReady };

@@ -168,6 +168,20 @@ export default class AttendanceAPI {
                 }
 
                 await this.db.exec('COMMIT');
+                
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                
+                const userFull = await UserDB.getElementsById(this.db, req.user.id, [
+                    'id', 'first_name', 'last_name', 'profile_picture_color', 
+                    'profile_picture_font', 'profile_picture_initials', 'profile_picture_path'
+                ]);
+
+                EventHub.broadcast('attendance_update', { 
+                    eventId, 
+                    user: userFull.getData(), 
+                    action: 'joined' 
+                });
+                
                 return status.getResponse(res);
             } catch (error) {
                 await this.db.exec('ROLLBACK');
@@ -217,6 +231,9 @@ export default class AttendanceAPI {
 
             const status = await AttendanceDB.leave_event(this.db, req.user.id, eventId);
             if (status.isError()) return status.getResponse(res);
+
+            const EventHub = (await import('../../misc/EventHub.js')).default;
+            EventHub.broadcast('attendance_update', { eventId, userId: req.user.id, action: 'left' });
 
             if (event.upfront_cost > 0) {
                 if (!event.upfront_refund_cutoff || (new Date() <= new Date(event.upfront_refund_cutoff))) {

@@ -1,4 +1,4 @@
-import { createSignal, createResource, For, Show, createMemo, onMount } from "solid-js";
+import { createSignal, createResource, For, Show, createMemo, createEffect } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { 
@@ -8,7 +8,7 @@ import {
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
-import { downloadCSV } from "@/utils/utils";
+import PaginationSlider from "@/components/PaginationSlider";
 
 // --- Types ---
 interface Attendee {
@@ -71,6 +71,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
     const { notify } = useNotifications();
     const [attendeePage, setAttendeePage] = createSignal(1);
     const [attendeeFilter, setAttendeeFilter] = createSignal('');
+    const [oldAttendees, setOldAttendees] = createSignal<Attendee[] | null>(null);
 
     // --- Modals State ---
     const [showAddAttendee, setShowAddAttendee] = createSignal(false);
@@ -133,6 +134,18 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 
     const totalAttendeePages = createMemo(() => Math.ceil(filteredAttendees().length / 5));
 
+    // Handle capturing old data for slider
+    let lastPageNum = attendeePage();
+    createEffect(() => {
+        const current = attendeePage();
+        if (current !== lastPageNum) {
+            const list = filteredAttendees();
+            const start = (lastPageNum - 1) * 5;
+            setOldAttendees(list.slice(start, start + 5));
+            lastPageNum = current;
+        }
+    });
+
     // --- Actions ---
     const handleRemoveAttendee = async (id: number) => {
         if (!confirm('Remove participant?')) return;
@@ -162,6 +175,46 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
         } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
+    const AttendeeTable = (props: { list: Attendee[] }) => (
+        <table class="glass-table">
+            <thead>
+                <tr><th>Attendee</th><th>Status</th><th class="text-right">Action</th></tr>
+            </thead>
+            <tbody>
+                <For each={props.list}>
+                    {a => (
+                        <tr>
+                            <td class="primary-text">
+                                <div class="user-info-cell">
+                                    <Avatar user={a} classes="mini" />
+                                    <span>{a.first_name} {a.last_name}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <Show when={a.is_attending} fallback={<span class="badge neutral">Left{a.upfront_refunded ? ' - Refunded' : ''}</span>}>
+                                    <span class="badge success">Attending{a.upfront_refunded ? ' - Refunded' : ''}</span>
+                                </Show>
+                            </td>
+                            <td class="text-right">
+                                <div class="button-group mini justify-end">
+                                    <Show when={a.is_attending && !props.costsReleased}>
+                                        <button class="small-btn outline delete" onClick={() => handleRemoveAttendee(a.id)}>Remove</button>
+                                    </Show>
+                                    <Show when={(props.userPerms.includes('transaction.manage') || props.userPerms.includes('event.manage.all')) && a.payment_transaction_id && !a.upfront_refunded}>
+                                        <button class="small-btn outline secondary" onClick={() => handleRefundUpfront(a.id)}>Refund</button>
+                                    </Show>
+                                </div>
+                            </td>
+                        </tr>
+                    )}
+                </For>
+                <Show when={props.list.length === 0}>
+                    <tr><td colspan="3" class="empty-cell">No participants found.</td></tr>
+                </Show>
+            </tbody>
+        </table>
+    );
+
     return (
         <div class="finance-management-layout">
             {/* Participant Management */}
@@ -186,43 +239,12 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                 </div>
                 <div class="panel-content">
                     <div class="glass-table-container">
-                        <table class="glass-table">
-                            <thead>
-                                <tr><th>Attendee</th><th>Status</th><th class="text-right">Action</th></tr>
-                            </thead>
-                            <tbody>
-                                <For each={displayAttendees()}>
-                                    {a => (
-                                        <tr>
-                                            <td class="primary-text">
-                                                <div class="user-info-cell">
-                                                    <Avatar user={a} classes="mini" />
-                                                    <span>{a.first_name} {a.last_name}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <Show when={a.is_attending} fallback={<span class="badge neutral">Left{a.upfront_refunded ? ' - Refunded' : ''}</span>}>
-                                                    <span class="badge success">Attending{a.upfront_refunded ? ' - Refunded' : ''}</span>
-                                                </Show>
-                                            </td>
-                                            <td class="text-right">
-                                                <div class="button-group mini justify-end">
-                                                    <Show when={a.is_attending && !props.costsReleased}>
-                                                        <button class="small-btn outline delete" onClick={() => handleRemoveAttendee(a.id)}>Remove</button>
-                                                    </Show>
-                                                    <Show when={(props.userPerms.includes('transaction.manage') || props.userPerms.includes('event.manage.all')) && a.payment_transaction_id && !a.upfront_refunded}>
-                                                        <button class="small-btn outline secondary" onClick={() => handleRefundUpfront(a.id)}>Refund</button>
-                                                    </Show>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </For>
-                                <Show when={displayAttendees().length === 0}>
-                                    <tr><td colspan="3" class="empty-cell">No participants found.</td></tr>
-                                </Show>
-                            </tbody>
-                        </table>
+                        <PaginationSlider 
+                            currentPage={attendeePage()} 
+                            oldContent={<AttendeeTable list={oldAttendees() || []} />}
+                        >
+                            <AttendeeTable list={displayAttendees()} />
+                        </PaginationSlider>
                     </div>
                     <Pagination currentPage={attendeePage()} totalPages={totalAttendeePages()} onPageChange={setAttendeePage} />
                 </div>
@@ -353,7 +375,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                 </div>
             </Show>
 
-            {/* Modals Implementation (simplified for brevity, but I'll add the essential ones) */}
+            {/* Modals Implementation */}
             <Modal isOpen={showAddAttendee()} onClose={() => setShowAddAttendee(false)} title="Add Participant">
                  <AttendeeSearch eventId={props.eventId} onAdded={() => { setShowAddAttendee(false); refreshAll(); }} />
             </Modal>
@@ -372,8 +394,6 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                     <button type="submit" class="primary full-width">Create Trip</button>
                 </form>
             </Modal>
-
-            {/* ... Other Modals ... */}
         </div>
     );
 }

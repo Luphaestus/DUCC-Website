@@ -1,8 +1,9 @@
-import { createSignal, createResource, For, Show } from "solid-js";
+import { createSignal, createResource, For, Show, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_SVG } from '@/utils/icons';
 import Panel from "@/components/Panel";
+import { onUpdate } from "@/utils/updates";
 
 interface Transaction {
     id: number;
@@ -15,6 +16,15 @@ interface Transaction {
 export default function TransactionsTab(props: { userId: number }) {
     const { notify } = useNotifications();
     const [editingId, setEditingId] = createSignal<number | null>(null);
+
+    onMount(() => {
+        const cleanup = onUpdate((event) => {
+            if ((event.type === 'admin_transaction_update' || event.type === 'balance_update') && Number(event.data.userId) === Number(props.userId)) {
+                refetch();
+            }
+        });
+        onCleanup(cleanup);
+    });
 
     const [data, { refetch }] = createResource(
         () => props.userId,
