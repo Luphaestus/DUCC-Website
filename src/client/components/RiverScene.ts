@@ -58,7 +58,7 @@ export class RiverScene {
         this.fog = new THREE.Fog(0x020617, 20, 180);
         this.scene.fog = this.fog;
 
-        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 250);
+        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 250);
         this.camera.position.set(0, 6, 15);
         this.camera.lookAt(0, 2, -30);
 
@@ -106,7 +106,7 @@ export class RiverScene {
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     }
 
-    private modifyMaterial(material: THREE.Material) {
+    private modifyMaterial(material: THREE.Material, isWater = false) {
         material.dithering = true;
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uTime = this.uniforms.uTime;
@@ -119,6 +119,20 @@ export class RiverScene {
                 ${shader.vertexShader}
             `;
 
+            const waveCode = isWater ? `
+                float k_s = 2.0 * 3.14159 / 100.0;
+                float kw = 2.0 * 3.14159 / 300.0;
+                float s_val = abs(0.2 + 0.2 * cos(worldPos.z * k_s));
+                float r_val = clamp((s_val - 0.2) * 5.0, 0.0, 1.0);
+                float waveIntensity = 1.0 - (r_val * 0.8);
+
+                float wave = sin(worldPos.x * 0.8 + uTime * 3.0) * 0.15;
+                wave += cos(worldPos.z * (kw * 30.0) + uTime * 2.0) * 0.15;
+                wave += sin(worldPos.x * 1.5 + worldPos.z * (kw * 60.0) + uTime * 4.5) * 0.05;
+                wave += cos(worldPos.x * 0.4 - worldPos.z * (kw * 15.0) + uTime * 1.5) * 0.1;
+                transformed.z += wave * waveIntensity;
+            ` : '';
+
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <begin_vertex>',
                 `
@@ -127,8 +141,9 @@ export class RiverScene {
                 float zRel = worldPos.z - 15.0; 
                 if (zRel < 0.0) {
                     float curveFactor = zRel * zRel * 0.00003; 
-                    transformed.y -= curveFactor * (2.0 + uCurve.y); 
+                    transformed.z -= curveFactor * (2.0 + uCurve.y); 
                 }
+                ${waveCode}
                 `
             );
         };
@@ -140,15 +155,21 @@ export class RiverScene {
     }
 
     private getRiverSlopeHeight(z: number): number {
-        const k = 2 * Math.PI / 300;
-        // Periodic macro-slope: a large sine wave with a harmonic for more 'stepped' drops
-        return Math.sin(z * k) * 8.0 + Math.sin(z * k * 2) * 2.0;
+        const k = 2 * Math.PI / 100; // Period 100
+        const dropPerUnit = 0.2;
+        // Monotonic descent: h(z) = -0.2z + (0.2/k)sin(kz)
+        // h'(z) = -0.2 + 0.2cos(kz). Range [-0.4, 0].
+        return z * dropPerUnit + Math.sin(z * k) * (dropPerUnit / k);
     }
 
     private getIsRapids(z: number): number {
-        const k = 2 * Math.PI / 300;
-        const r = Math.sin(z * k * 3) * Math.cos(z * k);
-        return THREE.MathUtils.clamp((r - 0.2) * 2.0, 0, 1);
+        const k = 2 * Math.PI / 100;
+        const dropPerUnit = 0.2;
+        // Derivative of (0.2z + A*sin(kz)) is 0.2 + A*k*cos(kz).
+        // With A = 0.2/k, deriv = 0.2 + 0.2*cos(kz).
+        // Range: 0.0 to 0.4.
+        const slope = dropPerUnit + dropPerUnit * Math.cos(z * k);
+        return THREE.MathUtils.clamp((slope - 0.2) * 5.0, 0, 1);
     }
 
     private getTerrainHeight(x: number, z: number): number {
@@ -161,9 +182,10 @@ export class RiverScene {
         let height = 0;
         if (distFromCenter < 14) {
             height = -4; 
-            // Increase rapids turbulence for "drops" look
-            height += (Math.sin(x * 1.5) * 1.5 + Math.cos(z * k * 100) * 1.5) * rapids;
-            height += Math.sin(x * 0.5 + z * k * 5) * 0.2;
+            // Turbulence correlated with rapids
+            height += (Math.sin(x * 1.5) * 1.0 + Math.cos(z * k * 120) * 1.0) * rapids;
+            // Small constant ripples
+            height += Math.sin(x * 0.5 + z * k * 10) * 0.1;
         } else {
             const slope = 0.8;
             height = 2 + (distFromCenter - 14) * slope;
@@ -181,7 +203,7 @@ export class RiverScene {
         const width = 120;
         const length = 60;
         const widthSegments = 64;
-        const lengthSegments = 48;
+        const lengthSegments = 120; 
         
         const geometry = new THREE.PlaneGeometry(width, length, widthSegments, lengthSegments);
         const posAttribute = geometry.getAttribute('position');
@@ -208,14 +230,26 @@ export class RiverScene {
         terrain.castShadow = true;
         group.add(terrain);
         
-        const waterGeo = new THREE.PlaneGeometry(28, 60, 32, 32);
+        const waterGeo = new THREE.PlaneGeometry(28, 60, 32, 60);
         const waterPos = waterGeo.getAttribute('position');
         for (let i = 0; i < waterPos.count; i++) {
             const zGlobal = zOffset - waterPos.getY(i);
+            const xLocal = waterPos.getX(i);
             const riverCenterX = this.getPathX(zGlobal);
             const slopeHeight = this.getRiverSlopeHeight(zGlobal);
-            waterPos.setX(i, waterPos.getX(i) + riverCenterX);
-            waterPos.setZ(i, slopeHeight);
+            const rapids = this.getIsRapids(zGlobal);
+            
+            waterPos.setX(i, xLocal + riverCenterX);
+            
+            // Wavier on flat water, smooth on steep drops
+            // Synchronize frequencies with the 300-unit loop for seamlessness
+            const kw = 2 * Math.PI / 300;
+            const waveIntensity = 2.5 - rapids * 2.2;
+            let noise = Math.sin(xLocal * 0.8) * 0.15 + Math.cos(zGlobal * kw * 30.0) * 0.15;
+            noise += Math.sin(xLocal * 1.5 + zGlobal * kw * 60.0) * 0.05;
+            noise += Math.cos(xLocal * 0.4 - zGlobal * kw * 15.0) * 0.1;
+            
+            waterPos.setZ(i, slopeHeight + noise * waveIntensity);
         }
         const waterMat = new THREE.MeshPhysicalMaterial({
             transparent: true,
@@ -223,7 +257,7 @@ export class RiverScene {
             metalness: 0.5,
             clearcoat: 1
         });
-        this.modifyMaterial(waterMat);
+        this.modifyMaterial(waterMat, true);
         const water = new THREE.Mesh(waterGeo, waterMat);
         water.rotation.x = -Math.PI / 2;
         water.position.y = -0.5;
@@ -359,6 +393,8 @@ export class RiverScene {
             chunk.mesh.position.z += speed * delta;
              if (chunk.mesh.position.z > 90) { 
                 chunk.mesh.position.z -= TOTAL_SIZE;
+                // Shift Y down to compensate for positive linear slope (as we move back to negative Z, height drops)
+                chunk.mesh.position.y -= TOTAL_SIZE * 0.2;
             }
         });
 
@@ -374,7 +410,29 @@ export class RiverScene {
             const targetY = this.getRiverSlopeHeight(zForSampling);
             
             k.group.position.x = THREE.MathUtils.lerp(k.group.position.x, targetX + (Math.sin(t * 0.5) * 2.5), 0.05);
-            k.group.position.y = targetY;
+            
+            // --- Wave Interaction Logic ---
+            const kw = 2 * Math.PI / 300;
+            const xPos = k.group.position.x;
+            const zPos = k.group.position.z; // World Z for dynamic waves
+            const rapids = this.getIsRapids(zForSampling);
+            
+            // 1. Dynamic Waves (matches shader)
+            const dynIntensity = 1.0 - (rapids * 0.8);
+            let dynamicWave = Math.sin(xPos * 0.8 + elapsed * 3.0) * 0.15;
+            dynamicWave += Math.cos(zPos * (kw * 30.0) + elapsed * 2.0) * 0.15;
+            dynamicWave += Math.sin(xPos * 1.5 + zPos * (kw * 60.0) + elapsed * 4.5) * 0.05;
+            dynamicWave += Math.cos(xPos * 0.4 - zPos * (kw * 15.0) + elapsed * 1.5) * 0.1;
+            
+            // 2. Static Noise (matches geometry)
+            const staticIntensity = 2.5 - rapids * 2.2;
+            let staticNoise = Math.sin(xPos * 0.8) * 0.15 + Math.cos(zForSampling * kw * 30.0) * 0.15;
+            staticNoise += Math.sin(xPos * 1.5 + zForSampling * kw * 60.0) * 0.05;
+            staticNoise += Math.cos(xPos * 0.4 - zForSampling * kw * 15.0) * 0.1;
+            
+            const waveHeight = dynamicWave * dynIntensity + staticNoise * staticIntensity;
+            k.group.position.y = targetY + waveHeight;
+            
             avgX += k.group.position.x;
             avgY += k.group.position.y;
 
@@ -389,10 +447,12 @@ export class RiverScene {
             const futureTargetY = this.getRiverSlopeHeight(zForSampling - 2);
             
             const turnDir = (futureTargetX - targetX);
-            const pitchDir = (futureTargetY - targetY);
+            const angle = Math.atan2(futureTargetY - targetY, 2.0); // More physical pitch
 
-            boatGroup.rotation.z = THREE.MathUtils.lerp(boatGroup.rotation.z, turnDir * -0.5, 0.1);
-            boatGroup.rotation.x = THREE.MathUtils.lerp(boatGroup.rotation.x, pitchDir * 0.5, 0.1);
+            // Add wave-induced roll
+            const roll = Math.sin(xPos * 1.2 + elapsed * 4.0) * 0.1 * dynIntensity;
+            boatGroup.rotation.z = THREE.MathUtils.lerp(boatGroup.rotation.z, turnDir * -0.5 + roll, 0.1);
+            boatGroup.rotation.x = THREE.MathUtils.lerp(boatGroup.rotation.x, angle, 0.1);
         });
 
         avgX /= this.kayakers.length;
@@ -413,7 +473,7 @@ export class RiverScene {
         // Combine river following (avgX) with parallax offset
         // We dampen avgX (0.5) to keep it stable, then add the user's mouse influence
         const finalCamX = (avgX * 0.5) + this.targetCameraOffset.x;
-        const finalCamY = 6 + avgY + this.targetCameraOffset.y; // Base height 6 relative to river
+        const finalCamY = 8 + avgY + this.targetCameraOffset.y; // Base height 8 relative to river
 
         this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, finalCamX, 0.05);
         this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, finalCamY, 0.05);
