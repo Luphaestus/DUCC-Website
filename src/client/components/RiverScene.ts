@@ -25,6 +25,10 @@ export class RiverScene {
 
     chunks: ChunkState[] = [];
     kayakers: KayakerState[] = [];
+    planes: { mesh: THREE.Group, speed: number }[] = [];
+    birds: { mesh: THREE.Group, speed: number, wingSpeed: number }[] = [];
+    lastPlaneTime: number = 0;
+    lastBirdTime: number = 0;
     
     clock: THREE.Clock;
     requestID: number | null = null;
@@ -33,6 +37,7 @@ export class RiverScene {
         uTime: { value: number };
         uCurve: { value: THREE.Vector2 };
         uSpeed: { value: number };
+        uWeather: { value: number };
     };
     
     lights: {
@@ -86,6 +91,7 @@ export class RiverScene {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.setClearColor(0x000000, 0); 
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.container.appendChild(this.renderer.domElement);
@@ -331,8 +337,6 @@ export class RiverScene {
     }
 
     private getMoonPhase(): number {
-        // Returns 0.0 (New) to 1.0 (Full) back to 0.0
-        // Simple approximation based on known new moon Jan 6 2000
         const now = new Date();
         let year = now.getFullYear();
         let month = now.getMonth();
@@ -351,15 +355,13 @@ export class RiverScene {
         ++month;
         c = 365.25 * year;
         e = 30.6 * month;
-        jd = c + e + day - 694039.09; // jd is total days elapsed
-        jd /= 29.5305882; // divide by the moon cycle
-        b = parseInt(jd.toString()); // int(jd) -> b, take integer part of jd
-        jd -= b; // subtract integer part to leave fractional part of original jd
-        b = Math.round(jd * 8); // scale fraction from 0-8 and round
+        jd = c + e + day - 694039.09; 
+        jd /= 29.5305882; 
+        b = parseInt(jd.toString()); 
+        jd -= b; 
+        b = Math.round(jd * 8); 
 
-        if (b >= 8 ) b = 0; // 0 and 8 are the same so turn 8 into 0
-        
-        // Return phase angle for light positioning (0 to 2PI)
+        if (b >= 8 ) b = 0; 
         return jd * Math.PI * 2;
     }
 
@@ -385,10 +387,7 @@ export class RiverScene {
         // Light for Moon Phase
         this.moonLight = new THREE.DirectionalLight(0xffffff, 2.0);
         this.scene.add(this.moonLight);
-        
-        // Calculate Phase
         const phaseAngle = this.getMoonPhase();
-        // Position light to create phase shadow
         this.moonLight.position.set(
             this.moon.position.x + Math.sin(phaseAngle) * 10,
             this.moon.position.y,
@@ -415,7 +414,7 @@ export class RiverScene {
         const count = 1500;
         const geo = new THREE.BufferGeometry();
         const positions = new Float32Array(count * 3);
-        const vels = new Float32Array(count); // fall speed variance
+        const vels = new Float32Array(count);
 
         for(let i = 0; i < count; i++) {
             positions[i * 3] = (Math.random() - 0.5) * 140;
@@ -426,7 +425,6 @@ export class RiverScene {
         
         geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geo.setAttribute('velocity', new THREE.BufferAttribute(vels, 1));
-        
         const mat = new THREE.PointsMaterial({
             color: 0xeeeeee,
             size: 0.4,
@@ -434,35 +432,66 @@ export class RiverScene {
             opacity: 0.6,
             blending: THREE.AdditiveBlending
         });
-
         this.weatherSystem = new THREE.Points(geo, mat);
         this.scene.add(this.weatherSystem);
+    }
+
+    private spawnBird() {
+        const group = new THREE.Group();
+        const startX = Math.random() > 0.5 ? -100 : 100;
+        group.position.set(startX, 15 + Math.random() * 15, this.camera.position.z - 30 - Math.random() * 50);
+        const birdMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.3), birdMat);
+        wingL.position.x = -0.4;
+        group.add(wingL);
+        const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.3), birdMat);
+        wingR.position.x = 0.4;
+        group.add(wingR);
+        this.scene.add(group);
+        this.birds.push({ 
+            mesh: group, 
+            speed: (startX < 0 ? 1 : -1) * (15 + Math.random() * 10),
+            wingSpeed: 5 + Math.random() * 5
+        });
+    }
+
+    private spawnPlane() {
+        const group = new THREE.Group();
+        const fromLeft = Math.random() > 0.5;
+        const startX = fromLeft ? -120 : 120;
+        const endX = fromLeft ? 120 : -120;
+        group.position.set(startX, 50 + Math.random() * 20, this.camera.position.z - 80 - Math.random() * 40);
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(1, 8, 4, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        body.rotation.z = Math.PI / 2;
+        group.add(body);
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(2, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+        group.add(wing);
+        const tail = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.2), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+        tail.position.set(-3.5, 1, 0);
+        group.add(tail);
+        group.lookAt(endX, group.position.y, group.position.z);
+        this.scene.add(group);
+        this.planes.push({ mesh: group, speed: (fromLeft ? 1 : -1) * (40 + Math.random() * 20) });
     }
 
     private createKayaker(pos: [number, number, number], color: string, paddlerColor: string, offset: number) {
         const group = new THREE.Group();
         group.position.set(...pos);
-        
-        // --- Improved Hull using LatheGeometry ---
         const points = [];
-        // Define profile for half the hull
-        points.push(new THREE.Vector2(0, -2.2)); // stern tip
+        points.push(new THREE.Vector2(0, -2.2)); 
         points.push(new THREE.Vector2(0.25, -1.5));
-        points.push(new THREE.Vector2(0.35, 0)); // mid
+        points.push(new THREE.Vector2(0.35, 0)); 
         points.push(new THREE.Vector2(0.25, 1.5));
-        points.push(new THREE.Vector2(0, 2.2)); // bow tip
-        
+        points.push(new THREE.Vector2(0, 2.2)); 
         const hullGeo = new THREE.LatheGeometry(points, 12);
         const hullMat = new THREE.MeshStandardMaterial({ color, roughness: 0.1 });
         this.modifyMaterial(hullMat);
         const hull = new THREE.Mesh(hullGeo, hullMat);
-        hull.rotation.x = -Math.PI / 2; // Orient along Z
-        hull.scale.set(1, 1, 0.5); // Flatten slightly
+        hull.rotation.x = -Math.PI / 2; 
+        hull.scale.set(1, 1, 0.5); 
         hull.position.y = 0.2;
         hull.castShadow = true;
         group.add(hull);
-
-        // Cockpit rim
         const rimGeo = new THREE.TorusGeometry(0.25, 0.03, 8, 16);
         const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
         const rim = new THREE.Mesh(rimGeo, rimMat);
@@ -470,22 +499,16 @@ export class RiverScene {
         rim.position.set(0, 0.45, 0);
         rim.scale.set(1, 1.5, 1);
         group.add(rim);
-
-        // Paddler body
         const bodyMat = new THREE.MeshStandardMaterial({ color: paddlerColor });
         this.modifyMaterial(bodyMat);
         const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.55, 8), bodyMat);
         body.position.set(0, 0.6, 0);
         group.add(body);
-
-        // Head
         const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0a9 });
         this.modifyMaterial(headMat);
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), headMat);
         head.position.set(0, 1.0, 0);
         group.add(head);
-
-        // Paddle
         const paddleGroup = new THREE.Group();
         paddleGroup.position.set(0, 0.8, 0);
         const shaftMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
@@ -493,7 +516,6 @@ export class RiverScene {
         const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.6, 8), shaftMat);
         shaft.rotation.z = Math.PI / 2;
         paddleGroup.add(shaft);
-
         const bladeMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
         this.modifyMaterial(bladeMat);
         const leftBlade = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.25, 0.05), bladeMat);
@@ -504,7 +526,6 @@ export class RiverScene {
         rightBlade.rotation.x = Math.PI / 4;
         paddleGroup.add(rightBlade);
         group.add(paddleGroup);
-
         const wrapper = new THREE.Group();
         wrapper.add(group);
         return { wrapper, paddle: paddleGroup, offset };
@@ -513,16 +534,13 @@ export class RiverScene {
     private initKayakers() {
         const wrapper = new THREE.Group();
         wrapper.position.y = -5.5; 
-        
         const k1 = this.createKayaker([3, 0, -5], '#D97706', '#ef4444', 0);
         const k2 = this.createKayaker([-2, 0, -2], '#68246D', '#22c55e', 2);
         const k3 = this.createKayaker([1.5, 0, -8], '#0ea5e9', '#f59e0b', 4);
-
         wrapper.add(k1.wrapper);
         wrapper.add(k2.wrapper);
         wrapper.add(k3.wrapper);
         this.scene.add(wrapper);
-
         this.kayakers.push({ group: k1.wrapper, paddle: k1.paddle, offset: 0 });
         this.kayakers.push({ group: k2.wrapper, paddle: k2.paddle, offset: 2 });
         this.kayakers.push({ group: k3.wrapper, paddle: k3.paddle, offset: 4 });
@@ -530,27 +548,18 @@ export class RiverScene {
 
     private getAutoBiome(): Biome {
         const now = new Date();
-        const month = now.getMonth(); // 0-11
+        const month = now.getMonth(); 
         const day = now.getDate();
-
-        // Winter/Christmas: Nov 15th to End of Feb
         if (month === 10 && day >= 15) return 'winter';
         if (month === 11 || month === 0 || month === 1) return 'winter';
-
-        // Autumn: Sept 1st to Nov 14th
         if (month === 8 || month === 9) return 'autumn';
         if (month === 10 && day < 15) return 'autumn';
-
         return 'sunny';
     }
 
     public updateTheme(theme: Theme) {
         this.theme = theme;
-        // Map theme to behavior, but keep automatic seasonal biome
         const seasonalBiome = this.getAutoBiome();
-        
-        // If it's dark mode and the seasonal biome is sunny, maybe switch to rainy for atmosphere
-        // otherwise respect the seasonal biome.
         if (theme === 'dark' && seasonalBiome === 'sunny') {
             this.updateBiome('rainy');
         } else {
@@ -564,24 +573,20 @@ export class RiverScene {
         const isWinter = biome === 'winter';
         const isAutumn = biome === 'autumn';
         
-        // Background & Fog
-        let bgColor = '#e0f2fe'; // sunny
+        let bgColor = '#e0f2fe'; 
         if (biome === 'rainy') bgColor = '#1e293b';
-        if (biome === 'winter') bgColor = '#f8fafc'; // bright white/grey
-        if (biome === 'autumn') bgColor = '#fef3c7'; // warm yellow/orange
-        if (this.theme === 'dark' && biome === 'winter') bgColor = '#0f172a'; // dark winter night
-        if (this.theme === 'dark' && biome === 'autumn') bgColor = '#451a03'; // dark autumn night
+        if (biome === 'winter') bgColor = '#f8fafc'; 
+        if (biome === 'autumn') bgColor = '#fef3c7'; 
+        if (this.theme === 'dark' && biome === 'winter') bgColor = '#0f172a'; 
+        if (this.theme === 'dark' && biome === 'autumn') bgColor = '#451a03'; 
 
         const fogColor = new THREE.Color(bgColor);
         this.fog.color = fogColor;
         this.scene.background = fogColor;
-        
-        // Lighting
         this.lights.ambient.intensity = isDark ? 0.3 : 0.8;
         this.lights.directional.intensity = isDark ? 0.5 : 1.5;
         this.lights.directional.color.set(isWinter ? '#cceeff' : (isAutumn ? '#fbbf24' : (isDark ? '#818cf8' : '#fff7ed')));
 
-        // Celestial Bodies
         if (biome === 'sunny' || (biome === 'autumn' && this.theme === 'light')) {
             this.sun.visible = true;
             this.moon.visible = false;
@@ -594,11 +599,10 @@ export class RiverScene {
             this.stars.visible = true;
         }
 
-        // Weather Particles
         this.weatherSystem.visible = biome === 'rainy' || biome === 'winter';
         const weatherMat = this.weatherSystem.material as THREE.PointsMaterial;
         if (biome === 'rainy') {
-            weatherMat.color.set(0x94a3b8); // blue-grey
+            weatherMat.color.set(0x94a3b8);
             weatherMat.size = 0.5;
             weatherMat.opacity = 0.6;
         } else if (biome === 'winter') {
@@ -607,31 +611,30 @@ export class RiverScene {
             weatherMat.opacity = 0.8;
         }
 
-        // Terrain Colors
         this.chunks.forEach(chunk => {
             const terrain = chunk.mesh.children[0] as THREE.Mesh;
             const water = chunk.mesh.children[1] as THREE.Mesh;
-            
-            let tColor = '#22c55e'; // sunny green
-            if (biome === 'rainy') tColor = '#14532d'; // dark muddy green
-            if (biome === 'winter') tColor = '#f1f5f9'; // snow
-            if (biome === 'autumn') tColor = '#92400e'; // orange-brown
-            if (this.theme === 'dark' && biome === 'winter') tColor = '#cbd5e1'; // dark snow
-            if (this.theme === 'dark' && biome === 'autumn') tColor = '#78350f'; // dark autumn
+            let tColor = '#22c55e'; 
+            if (biome === 'rainy') tColor = '#14532d'; 
+            if (biome === 'winter') tColor = '#f1f5f9'; 
+            if (biome === 'autumn') tColor = '#92400e'; 
+            if (this.theme === 'dark' && biome === 'winter') tColor = '#cbd5e1'; 
+            if (this.theme === 'dark' && biome === 'autumn') tColor = '#78350f'; 
             
             let wColor = '#00A8CC';
-            if (biome === 'rainy') wColor = '#0f172a'; // dark water
-            if (biome === 'winter') wColor = '#38bdf8'; // icy blue
-            if (biome === 'autumn') wColor = '#0369a1'; // deep blue
+            if (biome === 'rainy') wColor = '#0f172a'; 
+            if (biome === 'winter') wColor = '#38bdf8'; 
+            if (biome === 'autumn') wColor = '#0369a1'; 
 
             (terrain.material as THREE.MeshStandardMaterial).color.set(tColor);
             (water.material as THREE.MeshPhysicalMaterial).color.set(wColor);
             
-            // Trees
             for(let i=2; i<chunk.mesh.children.length; i++) {
                 const tree = chunk.mesh.children[i] as THREE.Mesh;
+                if (!tree || !tree.material) continue;
                 const mat = tree.material as THREE.MeshStandardMaterial;
-                if (biome === 'winter') mat.color.set(0xffffff); // snowy trees
+                if (!mat.color) continue;
+                if (biome === 'winter') mat.color.set(0xffffff); 
                 else if (biome === 'autumn') {
                     const colors = [0xb91c1c, 0xc2410c, 0xd97706, 0xeab308];
                     mat.color.set(colors[Math.floor(Math.random() * colors.length)]);
@@ -652,35 +655,60 @@ export class RiverScene {
     animate = () => {
         this.requestID = requestAnimationFrame(this.animate);
         const delta = this.clock.getDelta();
-        const elapsed = this.clock.elapsedTime; // Use property to avoid double getDelta()
+        const elapsed = this.clock.elapsedTime;
         this.uniforms.uTime.value = elapsed;
 
         const speed = this.uniforms.uSpeed.value;
         const CHUNK_SIZE = 60;
         const TOTAL_SIZE = CHUNK_SIZE * 5;
         
+        if (elapsed - this.lastPlaneTime > 20 + Math.random() * 40) {
+            this.spawnPlane();
+            this.lastPlaneTime = elapsed;
+        }
+        for (let i = this.planes.length - 1; i >= 0; i--) {
+            const p = this.planes[i];
+            p.mesh.position.x += p.speed * delta;
+            if (Math.abs(p.mesh.position.x) > 200) {
+                this.scene.remove(p.mesh);
+                this.planes.splice(i, 1);
+            }
+        }
+
+        if (elapsed - this.lastBirdTime > 5 + Math.random() * 10) {
+            this.spawnBird();
+            this.lastBirdTime = elapsed;
+        }
+        for (let i = this.birds.length - 1; i >= 0; i--) {
+            const b = this.birds[i];
+            b.mesh.position.x += b.speed * delta;
+            const wingAngle = Math.sin(elapsed * b.wingSpeed) * 0.8;
+            b.mesh.children[0].rotation.z = wingAngle;
+            b.mesh.children[1].rotation.z = -wingAngle;
+            if (Math.abs(b.mesh.position.x) > 150) {
+                this.scene.remove(b.mesh);
+                this.birds.splice(i, 1);
+            }
+        }
+
         this.chunks.forEach(chunk => {
             chunk.mesh.position.z += speed * delta;
              if (chunk.mesh.position.z > 90) { 
                 chunk.mesh.position.z -= TOTAL_SIZE;
-                // Shift Y down to compensate for positive linear slope (as we move back to negative Z, height drops)
                 chunk.mesh.position.y -= TOTAL_SIZE * 0.2;
             }
         });
         
-        // Animate Weather
         if (this.weatherSystem.visible) {
             const positions = this.weatherSystem.geometry.attributes.position.array as Float32Array;
             const vels = this.weatherSystem.geometry.attributes.velocity.array as Float32Array;
             const count = positions.length / 3;
-            const fallSpeed = this.biome === 'rainy' ? 40 : 10; // Rain fast, snow slow
+            const fallSpeed = this.biome === 'rainy' ? 40 : 10; 
             const windX = this.biome === 'rainy' ? -5 : 2; 
 
             for(let i=0; i<count; i++) {
-                positions[i*3] += windX * delta; // wind x
-                positions[i*3 + 1] -= fallSpeed * vels[i] * delta; // gravity y
-                
-                // Reset if out of bounds (relative to camera position)
+                positions[i*3] += windX * delta; 
+                positions[i*3 + 1] -= fallSpeed * vels[i] * delta; 
                 if (positions[i*3 + 1] < 0) {
                     positions[i*3 + 1] = 80;
                     positions[i*3] = (Math.random() - 0.5) * 140 + (this.camera.position.x - this.weatherSystem.position.x);
@@ -697,51 +725,34 @@ export class RiverScene {
             const zGlobal = k.group.position.z - 4; 
             const pathOffset = speed * elapsed;
             const zForSampling = zGlobal - pathOffset;
-
             const targetX = this.getPathX(zForSampling);
             const targetY = this.getRiverSlopeHeight(zForSampling);
-            
             k.group.position.x = THREE.MathUtils.lerp(k.group.position.x, targetX + (Math.sin(t * 0.5) * 2.5), 0.05);
-            
-            // --- Wave Interaction Logic ---
             const kw = 2 * Math.PI / 300;
             const xPos = k.group.position.x;
-            const zPos = k.group.position.z; // World Z for dynamic waves
+            const zPos = k.group.position.z;
             const rapids = this.getIsRapids(zForSampling);
-            
-            // 1. Dynamic Waves (matches shader)
             const dynIntensity = 1.0 - (rapids * 0.8);
             let dynamicWave = Math.sin(xPos * 0.8 + elapsed * 3.0) * 0.15;
             dynamicWave += Math.cos(zPos * (kw * 30.0) + elapsed * 2.0) * 0.15;
             dynamicWave += Math.sin(xPos * 1.5 + zPos * (kw * 60.0) + elapsed * 4.5) * 0.05;
             dynamicWave += Math.cos(xPos * 0.4 - zPos * (kw * 15.0) + elapsed * 1.5) * 0.1;
-            
-            // 2. Static Noise (matches geometry)
-            const staticIntensity = 2.5 - rapids * 2.2;
+            const staticIntensity = 0.5 + rapids * 3.0; 
             let staticNoise = Math.sin(xPos * 0.8) * 0.15 + Math.cos(zForSampling * kw * 30.0) * 0.15;
             staticNoise += Math.sin(xPos * 1.5 + zForSampling * kw * 60.0) * 0.05;
             staticNoise += Math.cos(xPos * 0.4 - zForSampling * kw * 15.0) * 0.1;
-            
             const waveHeight = dynamicWave * dynIntensity + staticNoise * staticIntensity;
             k.group.position.y = targetY + waveHeight;
-            
             avgX += k.group.position.x;
             avgY += k.group.position.y;
-
             k.paddle.rotation.x = Math.sin(t * 3) * 0.5;
             k.paddle.rotation.y = Math.cos(t * 3) * 0.4;
             k.paddle.position.y = 0.8 + Math.sin(t * 6) * 0.05;
-            
             const boatGroup = k.group.children[0];
-            boatGroup.position.y = Math.sin(t * 2) * 0.05;
-            
             const futureTargetX = this.getPathX(zForSampling - 2);
             const futureTargetY = this.getRiverSlopeHeight(zForSampling - 2);
-            
             const turnDir = (futureTargetX - targetX);
-            const angle = Math.atan2(futureTargetY - targetY, 2.0); // More physical pitch
-
-            // Add wave-induced roll
+            const angle = Math.atan2(futureTargetY - targetY, 2.0); 
             const roll = Math.sin(xPos * 1.2 + elapsed * 4.0) * 0.1 * dynIntensity;
             boatGroup.rotation.z = THREE.MathUtils.lerp(boatGroup.rotation.z, turnDir * -0.5 + roll, 0.1);
             boatGroup.rotation.x = THREE.MathUtils.lerp(boatGroup.rotation.x, angle, 0.1);
@@ -749,45 +760,24 @@ export class RiverScene {
 
         avgX /= this.kayakers.length;
         avgY /= this.kayakers.length;
-
-        // --- Parallax Logic ---
-        // We gently shift the camera based on mouse position
-        // X: +/- 5 units based on mouse X (lateral shift)
-        // Y: +1 to +3 based on mouse Y (vertical tilt/height)
-        
         const parallaxX = this.mouse.x * 5.0;
         const parallaxY = this.mouse.y * 2.0;
-
-        // Smoothly interpolate current parallax offset
         this.targetCameraOffset.x = THREE.MathUtils.lerp(this.targetCameraOffset.x, parallaxX, 0.05);
         this.targetCameraOffset.y = THREE.MathUtils.lerp(this.targetCameraOffset.y, parallaxY, 0.05);
-
-        // Combine river following (avgX) with parallax offset
-        // We dampen avgX (0.5) to keep it stable, then add the user's mouse influence
         const finalCamX = (avgX * 0.5) + this.targetCameraOffset.x;
-        const finalCamY = 8 + avgY + this.targetCameraOffset.y; // Base height 8 relative to river
-
+        const finalCamY = 8 + avgY + this.targetCameraOffset.y;
         this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, finalCamX, 0.05);
         this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, finalCamY, 0.05);
-        
-        // Look slightly ahead of the pack, but also react to height changes
         this.camera.lookAt((avgX * 0.5), avgY + 2 + (this.targetCameraOffset.y * 0.5), -30);
-
-        // Keep Sky & Weather following the camera's descent
         this.sun.position.y = this.camera.position.y + 20;
         this.moon.position.y = this.camera.position.y + 30;
         this.moonLight.position.y = this.camera.position.y + 30;
         this.stars.position.y = this.camera.position.y;
         this.weatherSystem.position.y = this.camera.position.y - 20;
-        
-        // Dynamic Weather Clearing
-        // Sine wave 0 to 1 over approx 30 seconds
         const weatherCycle = (Math.sin(elapsed * 0.2) + 1.0) * 0.5;
-        // Clamp so it stays fully clear or fully rainy for a bit
         const weatherOpacity = THREE.MathUtils.clamp((weatherCycle - 0.2) * 1.5, 0, 1);
         (this.weatherSystem.material as THREE.PointsMaterial).opacity = weatherOpacity * 0.8;
         this.weatherSystem.visible = this.biome !== 'sunny' && this.biome !== 'autumn' && weatherOpacity > 0.01;
-
         this.renderer.render(this.scene, this.camera);
     }
 
