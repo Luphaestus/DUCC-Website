@@ -29,6 +29,7 @@ export class RiverScene {
     uniforms: {
         uTime: { value: number };
         uCurve: { value: THREE.Vector2 };
+        uSpeed: { value: number };
     };
     
     lights: {
@@ -51,7 +52,8 @@ export class RiverScene {
         
         this.uniforms = {
             uTime: { value: 0 },
-            uCurve: { value: new THREE.Vector2(0, 0) }
+            uCurve: { value: new THREE.Vector2(0, 0) },
+            uSpeed: { value: 12.0 }
         };
 
         this.scene = new THREE.Scene();
@@ -111,26 +113,38 @@ export class RiverScene {
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uTime = this.uniforms.uTime;
             shader.uniforms.uCurve = this.uniforms.uCurve;
+            shader.uniforms.uSpeed = this.uniforms.uSpeed;
             this.materials.push(shader);
 
             shader.vertexShader = `
                 uniform float uTime;
+                uniform float uSpeed;
                 uniform vec2 uCurve;
+                ${isWater ? 'varying float vFoam;' : ''}
                 ${shader.vertexShader}
             `;
 
             const waveCode = isWater ? `
                 float k_s = 2.0 * 3.14159 / 100.0;
                 float kw = 2.0 * 3.14159 / 300.0;
-                float s_val = abs(0.2 + 0.2 * cos(worldPos.z * k_s));
+                float zRiver = worldPos.z - uTime * uSpeed;
+                
+                // Rapids logic locked to terrain
+                float s_val = abs(0.2 + 0.2 * cos(zRiver * k_s));
                 float r_val = clamp((s_val - 0.2) * 5.0, 0.0, 1.0);
-                float waveIntensity = 1.0 - (r_val * 0.8);
+                float waveIntensity = 0.4 + (r_val * 2.0);
 
-                float wave = sin(worldPos.x * 0.8 + uTime * 3.0) * 0.15;
-                wave += cos(worldPos.z * (kw * 30.0) + uTime * 2.0) * 0.15;
-                wave += sin(worldPos.x * 1.5 + worldPos.z * (kw * 60.0) + uTime * 4.5) * 0.05;
-                wave += cos(worldPos.x * 0.4 - worldPos.z * (kw * 15.0) + uTime * 1.5) * 0.1;
+                // Waves relative to flow
+                float wave = sin(worldPos.x * 0.8 + zRiver * 0.2 + uTime * 2.0) * 0.15;
+                wave += cos(zRiver * (kw * 30.0) + uTime * 1.5) * 0.15;
+                wave += sin(worldPos.x * 1.5 + zRiver * (kw * 60.0) + uTime * 3.0) * 0.05;
+                wave += cos(worldPos.x * 0.4 - zRiver * (kw * 15.0) + uTime * 1.0) * 0.1;
                 transformed.z += wave * waveIntensity;
+                
+                // Foam is only visible on rapids (steep downslopes)
+                // We use r_val as a mask for the wave-based foam
+                float foamBase = 0.4 + smoothstep(0.1, 0.25, wave * waveIntensity) * 0.6;
+                vFoam = r_val * foamBase;
             ` : '';
 
             shader.vertexShader = shader.vertexShader.replace(
@@ -146,6 +160,20 @@ export class RiverScene {
                 ${waveCode}
                 `
             );
+
+            if (isWater) {
+                shader.fragmentShader = `
+                    varying float vFoam;
+                    ${shader.fragmentShader}
+                `.replace(
+                    '#include <color_fragment>',
+                    `
+                    #include <color_fragment>
+                    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), vFoam * 0.5);
+                    diffuseColor.a = mix(diffuseColor.a, 1.0, vFoam * 0.4);
+                    `
+                );
+            }
         };
     }
 
@@ -241,10 +269,9 @@ export class RiverScene {
             
             waterPos.setX(i, xLocal + riverCenterX);
             
-            // Wavier on flat water, smooth on steep drops
-            // Synchronize frequencies with the 300-unit loop for seamlessness
+            // Wavier on steep drops, smoother on flat water
             const kw = 2 * Math.PI / 300;
-            const waveIntensity = 2.5 - rapids * 2.2;
+            const waveIntensity = 0.5 + rapids * 3.0;
             let noise = Math.sin(xLocal * 0.8) * 0.15 + Math.cos(zGlobal * kw * 30.0) * 0.15;
             noise += Math.sin(xLocal * 1.5 + zGlobal * kw * 60.0) * 0.05;
             noise += Math.cos(xLocal * 0.4 - zGlobal * kw * 15.0) * 0.1;
@@ -382,10 +409,10 @@ export class RiverScene {
     animate = () => {
         this.requestID = requestAnimationFrame(this.animate);
         const delta = this.clock.getDelta();
-        const elapsed = this.clock.getElapsedTime();
+        const elapsed = this.clock.elapsedTime; // Use property to avoid double getDelta()
         this.uniforms.uTime.value = elapsed;
 
-        const speed = 12;
+        const speed = this.uniforms.uSpeed.value;
         const CHUNK_SIZE = 60;
         const TOTAL_SIZE = CHUNK_SIZE * 5;
         
