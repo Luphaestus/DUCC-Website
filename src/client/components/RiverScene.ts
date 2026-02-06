@@ -139,6 +139,12 @@ export class RiverScene {
         return Math.sin(z * k * 2) * 6.0 + Math.cos(z * k) * 3.0;
     }
 
+    private getRiverSlopeHeight(z: number): number {
+        const k = 2 * Math.PI / 300;
+        // Periodic macro-slope: a large sine wave with a harmonic for more 'stepped' drops
+        return Math.sin(z * k) * 8.0 + Math.sin(z * k * 2) * 2.0;
+    }
+
     private getIsRapids(z: number): number {
         const k = 2 * Math.PI / 300;
         const r = Math.sin(z * k * 3) * Math.cos(z * k);
@@ -150,11 +156,13 @@ export class RiverScene {
         const riverCenterX = this.getPathX(z);
         const distFromCenter = Math.abs(x - riverCenterX);
         const rapids = this.getIsRapids(z);
+        const slopeHeight = this.getRiverSlopeHeight(z);
         
         let height = 0;
         if (distFromCenter < 14) {
             height = -4; 
-            height += (Math.sin(x * 1.5) * 0.8 + Math.cos(z * k * 75) * 0.8) * rapids;
+            // Increase rapids turbulence for "drops" look
+            height += (Math.sin(x * 1.5) * 1.5 + Math.cos(z * k * 100) * 1.5) * rapids;
             height += Math.sin(x * 0.5 + z * k * 5) * 0.2;
         } else {
             const slope = 0.8;
@@ -163,7 +171,7 @@ export class RiverScene {
             const biomeMix = Math.sin(z * k) * 0.5 + 0.5;
             height += noise * THREE.MathUtils.lerp(1.5, 4.0, biomeMix);
         }
-        return height;
+        return height + slopeHeight;
     }
 
     private createRiverChunk(zOffset: number): ChunkState {
@@ -205,7 +213,9 @@ export class RiverScene {
         for (let i = 0; i < waterPos.count; i++) {
             const zGlobal = zOffset - waterPos.getY(i);
             const riverCenterX = this.getPathX(zGlobal);
+            const slopeHeight = this.getRiverSlopeHeight(zGlobal);
             waterPos.setX(i, waterPos.getX(i) + riverCenterX);
+            waterPos.setZ(i, slopeHeight);
         }
         const waterMat = new THREE.MeshPhysicalMaterial({
             transparent: true,
@@ -353,14 +363,20 @@ export class RiverScene {
         });
 
         let avgX = 0;
+        let avgY = 0;
         this.kayakers.forEach(k => {
             const t = elapsed + k.offset;
             const zGlobal = k.group.position.z - 4; 
             const pathOffset = speed * elapsed;
-            const targetX = this.getPathX(zGlobal - pathOffset);
+            const zForSampling = zGlobal - pathOffset;
+
+            const targetX = this.getPathX(zForSampling);
+            const targetY = this.getRiverSlopeHeight(zForSampling);
             
             k.group.position.x = THREE.MathUtils.lerp(k.group.position.x, targetX + (Math.sin(t * 0.5) * 2.5), 0.05);
+            k.group.position.y = targetY;
             avgX += k.group.position.x;
+            avgY += k.group.position.y;
 
             k.paddle.rotation.x = Math.sin(t * 3) * 0.5;
             k.paddle.rotation.y = Math.cos(t * 3) * 0.4;
@@ -368,12 +384,19 @@ export class RiverScene {
             
             const boatGroup = k.group.children[0];
             boatGroup.position.y = Math.sin(t * 2) * 0.05;
-            const futureTargetX = this.getPathX(zGlobal - pathOffset - 2);
+            
+            const futureTargetX = this.getPathX(zForSampling - 2);
+            const futureTargetY = this.getRiverSlopeHeight(zForSampling - 2);
+            
             const turnDir = (futureTargetX - targetX);
+            const pitchDir = (futureTargetY - targetY);
+
             boatGroup.rotation.z = THREE.MathUtils.lerp(boatGroup.rotation.z, turnDir * -0.5, 0.1);
+            boatGroup.rotation.x = THREE.MathUtils.lerp(boatGroup.rotation.x, pitchDir * 0.5, 0.1);
         });
 
         avgX /= this.kayakers.length;
+        avgY /= this.kayakers.length;
 
         // --- Parallax Logic ---
         // We gently shift the camera based on mouse position
@@ -390,13 +413,13 @@ export class RiverScene {
         // Combine river following (avgX) with parallax offset
         // We dampen avgX (0.5) to keep it stable, then add the user's mouse influence
         const finalCamX = (avgX * 0.5) + this.targetCameraOffset.x;
-        const finalCamY = 6 + this.targetCameraOffset.y; // Base height 6
+        const finalCamY = 6 + avgY + this.targetCameraOffset.y; // Base height 6 relative to river
 
         this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, finalCamX, 0.05);
         this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, finalCamY, 0.05);
         
         // Look slightly ahead of the pack, but also react to height changes
-        this.camera.lookAt((avgX * 0.5), 2 + (this.targetCameraOffset.y * 0.5), -30);
+        this.camera.lookAt((avgX * 0.5), avgY + 2 + (this.targetCameraOffset.y * 0.5), -30);
 
         this.renderer.render(this.scene, this.camera);
     }
