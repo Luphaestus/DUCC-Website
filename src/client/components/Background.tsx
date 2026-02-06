@@ -9,6 +9,10 @@ export default function Background() {
     if (containerRef) {
       // Initialize the scene
       riverScene = new RiverScene(containerRef, 'dark');
+
+      // Expose to console for manual biome switching
+      (window as any).riverScene = riverScene;
+      (window as any).setBiome = (name: any) => riverScene?.updateBiome(name);
       
       // Check system preference for theme
       const matcher = window.matchMedia('(prefers-color-scheme: dark)');
@@ -23,6 +27,8 @@ export default function Background() {
       matcher.addEventListener('change', updateTheme);
       
       onCleanup(() => {
+        delete (window as any).riverScene;
+        delete (window as any).setBiome;
         matcher.removeEventListener('change', updateTheme);
         riverScene?.dispose();
       });
