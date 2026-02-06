@@ -1,4 +1,5 @@
 import { For, Show, createMemo } from "solid-js";
+import { GlassButtonSmall } from "./LiquidButton";
 
 interface PaginationProps {
     currentPage: number;
@@ -40,37 +41,39 @@ export default function Pagination(props: PaginationProps) {
     return (
         <Show when={props.totalPages > 1}>
             <nav class="pagination-container glass-pagination">
-                <button
-                    class="nav-btn prev-btn"
+                <GlassButtonSmall
+                    class="nav-btn prev-btn outline secondary"
                     disabled={props.currentPage === 1}
                     onClick={() => props.onPageChange(props.currentPage - 1)}
+                    style={{ opacity: props.currentPage === 1 ? 0.5 : 1, cursor: props.currentPage === 1 ? 'not-allowed' : 'pointer' }}
                 >
                     Prev
-                </button>
+                </GlassButtonSmall>
 
-                <div class="page-buttons">
+                <div class="page-buttons" style={{ display: 'flex', gap: '0.25rem' }}>
                     <For each={visiblePages()}>
                         {(page) => (
-                            <Show when={page !== '...'} fallback={<span class="pagination-ellipsis">...</span>}>
-                                <button
-                                    class="page-btn"
-                                    classList={{ active: page === props.currentPage }}
+                            <Show when={page !== '...'} fallback={<span class="pagination-ellipsis" style={{ display: 'flex', 'align-items': 'center', 'padding': '0 0.5rem' }}>...</span>}>
+                                <GlassButtonSmall
+                                    class={`page-btn ${page === props.currentPage ? 'primary' : 'outline secondary'}`}
                                     onClick={() => props.onPageChange(page as number)}
+                                    padding="0.4rem 0.8rem"
                                 >
                                     {page}
-                                </button>
+                                </GlassButtonSmall>
                             </Show>
                         )}
                     </For>
                 </div>
 
-                <button
-                    class="nav-btn next-btn"
+                <GlassButtonSmall
+                    class="nav-btn next-btn outline secondary"
                     disabled={props.currentPage === props.totalPages}
                     onClick={() => props.onPageChange(props.currentPage + 1)}
+                    style={{ opacity: props.currentPage === props.totalPages ? 0.5 : 1, cursor: props.currentPage === props.totalPages ? 'not-allowed' : 'pointer' }}
                 >
                     Next
-                </button>
+                </GlassButtonSmall>
             </nav>
         </Show>
     );

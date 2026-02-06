@@ -10,15 +10,16 @@ interface AdminNavBarProps {
 export default function AdminNavBar(props: AdminNavBarProps) {
     const location = useLocation();
     
-    const canManageUsers = createMemo(() => props.permissions.includes('user.manage') || props.permissions.includes('transaction.manage') || props.permissions.length > 0);
-    const canManageEvents = createMemo(() => props.permissions.includes('event.manage.all') || props.permissions.includes('event.manage.scoped'));
-    const canManageTags = createMemo(() => props.permissions.includes('event.manage.all') || props.permissions.includes('event.manage.scoped'));
-    const canManageFiles = createMemo(() => props.permissions.includes('document.write') || props.permissions.includes('document.edit'));
-    const canManageQuotes = createMemo(() => props.permissions.includes('quote.manage'));
-    const canManageRoles = createMemo(() => props.permissions.includes('role.manage'));
-    const canManageKit = createMemo(() => props.permissions.includes('kit.manage'));
-    const canViewStats = createMemo(() => props.permissions.includes('transaction.manage') || props.permissions.includes('event.manage.all'));
-    const isExec = createMemo(() => props.permissions.length > 0);
+    const perms = () => props.permissions || [];
+    const canManageUsers = createMemo(() => perms().includes('user.manage') || perms().includes('transaction.manage') || perms().length > 0);
+    const canManageEvents = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
+    const canManageTags = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
+    const canManageFiles = createMemo(() => perms().includes('document.write') || perms().includes('document.edit'));
+    const canManageQuotes = createMemo(() => perms().includes('quote.manage'));
+    const canManageRoles = createMemo(() => perms().includes('role.manage'));
+    const canManageKit = createMemo(() => perms().includes('kit.manage'));
+    const canViewStats = createMemo(() => perms().includes('transaction.manage') || perms().includes('event.manage.all'));
+    const isExec = createMemo(() => perms().length > 0);
     const isPresident = () => props.isPresident;
 
     const isActive = (path: string) => location.pathname.startsWith(path);

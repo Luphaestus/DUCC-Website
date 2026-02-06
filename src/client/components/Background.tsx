@@ -34,23 +34,38 @@ export default function Background() {
   });
 
   return (
-    <div id="animated-background">
-      <For each={blobs()}>
-        {(blob) => (
-          <div 
-            class="bg-blob" 
-            style={{
-              width: blob.size,
-              height: blob.size,
-              top: blob.top,
-              left: blob.left,
-              "background-color": blob.colour,
-              animation: `floatAround ${blob.duration} infinite ease-in-out`,
-              "animation-delay": blob.delay
-            }}
-          />
-        )}
-      </For>
-    </div>
+    <>
+      <svg style="display: none;">
+        <filter id="glass-noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncR type="linear" slope="0.05" />
+            <feFuncG type="linear" slope="0.05" />
+            <feFuncB type="linear" slope="0.05" />
+            <feFuncA type="linear" slope="0.05" />
+          </feComponentTransfer>
+        </filter>
+      </svg>
+      <div id="animated-background">
+        <div class="noise-overlay" style="position: absolute; inset: 0; filter: url(#glass-noise); pointer-events: none; opacity: 0.4; z-index: 1;"></div>
+        <For each={blobs()}>
+          {(blob) => (
+            <div 
+              class="bg-blob" 
+              style={{
+                width: blob.size,
+                height: blob.size,
+                top: blob.top,
+                left: blob.left,
+                "background-color": blob.colour,
+                animation: `floatAround ${blob.duration} infinite ease-in-out`,
+                "animation-delay": blob.delay
+              }}
+            />
+          )}
+        </For>
+      </div>
+    </>
   );
 }

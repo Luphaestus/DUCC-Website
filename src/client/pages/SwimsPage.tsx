@@ -66,7 +66,8 @@ export default function SwimsPage() {
 
         apiRequest('GET', '/api/user/elements/permissions')
             .then(userRes => {
-                setCanManage(userRes.permissions?.includes('swims.manage') || false);
+                const perms = userRes.permissions || [];
+                setCanManage(perms.includes('swims.manage') || false);
             })
             .catch(() => { });
     });

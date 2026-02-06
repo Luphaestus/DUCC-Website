@@ -120,7 +120,7 @@ export default function ProfilePage() {
     const [userKitPrefs, { refetch: refetchKitPrefs }] = createResource(async () => {
         try {
             const res = await apiRequest('GET', '/api/kit/preferences');
-            return (res.data || []) as KitItem[];
+            return (res || []) as KitItem[];
         } catch { return []; }
     });
 
@@ -147,8 +147,9 @@ export default function ProfilePage() {
 
     const [kitItems] = createResource(async () => {
         try {
-            return await apiRequest('GET', '/api/kit');
-        } catch { return { data: [] }; }
+            const res = await apiRequest('GET', '/api/kit');
+            return res || [];
+        } catch { return []; }
     });
 
     const [globals] = createResource(async () => {
@@ -664,7 +665,7 @@ export default function ProfilePage() {
                                     
                                     <form onSubmit={handleUpdateKitPrefs} class="modern-form">
                                         <div class="item-list">
-                                            <For each={kitItems()?.data || []}>
+                                            <For each={kitItems() || []}>
                                                 {(item) => (
                                                     <label class="list-item checkbox-item">
                                                         <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>

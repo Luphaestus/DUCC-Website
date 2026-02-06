@@ -1,12 +1,13 @@
 import { createSignal, createResource, onMount, For, Show, createMemo, batch } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { ADD_SVG, SEARCH_SVG } from '@/utils/icons';
+import { ADD_SVG, SEARCH_SVG, FORMAT_QUOTE_SVG } from '@/utils/icons';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate } from "@solidjs/router";
+import LiquidContainer from "@/components/LiquidContainer";
 
 interface QuoteUser {
     id: number;
@@ -76,18 +77,21 @@ export default function QuotesPage() {
         <div class="quotes-grid">
             <For each={props.data?.quotes}>
                 {(quote) => (
-                    <div class="quote-card">
-                        <div class="quote-card-header">
-                            <Avatar user={quote.quoted_user} classes="mini" />
-                            <p class="quote-author">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</p>
-                        </div>
-                        <p class="quote-text">"{quote.text}"</p>
-                        <Show when={quote.submitted_by}>
-                            <div class="quote-card-footer">
-                                <p class="quote-submitter">Submitted by {quote.submitted_by!.first_name}</p>
+                    <LiquidContainer borderRadius={32} tintOpacity={0.1}>
+                        <div class="quote-card" style={{ background: 'transparent', border: 'none', 'box-shadow': 'none' }}>
+                            <div class="quote-icon-bg" innerHTML={FORMAT_QUOTE_SVG} />
+                            <div class="quote-card-header">
+                                <Avatar user={quote.quoted_user} classes="mini" />
+                                <p class="quote-author">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</p>
                             </div>
-                        </Show>
-                    </div>
+                            <p class="quote-text">"{quote.text}"</p>
+                            <Show when={quote.submitted_by}>
+                                <div class="quote-card-footer">
+                                    <p class="quote-submitter">Submitted by {quote.submitted_by!.first_name}</p>
+                                </div>
+                            </Show>
+                        </div>
+                    </LiquidContainer>
                 )}
             </For>
         </div>

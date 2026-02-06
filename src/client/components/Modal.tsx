@@ -1,6 +1,7 @@
 import { JSX, createEffect, createSignal, onCleanup } from "solid-js";
 import { CLOSE_SVG } from "@/utils/icons";
 import { incrementModals, decrementModals } from "@/utils/modal-state";
+import LiquidContainer from "./LiquidContainer";
 
 interface ModalProps {
     title?: string;
@@ -54,33 +55,44 @@ export default function Modal(props: ModalProps) {
             classList={{ visible: isVisible() }}
             onClick={() => handleClose()}
         >
-            <div 
+            <LiquidContainer 
                 class="c-modal-content" 
-                style={props.maxWidth ? { "max-width": props.maxWidth } : {}}
-                onClick={(e) => e.stopPropagation()}
+                style={{
+                    background: 'transparent',
+                    border: 'none',
+                    'box-shadow': 'none',
+                    ...(props.maxWidth ? { "max-width": props.maxWidth } : {})
+                }}
+                borderRadius={28}
+                tintOpacity={0.2}
             >
-                <button 
-                    class="c-modal-close-btn" 
-                    onClick={() => handleClose()}
-                    innerHTML={CLOSE_SVG}
-                />
-                
-                {props.title && (
-                    <div class="c-modal-header">
-                        <h2>{props.title}</h2>
-                    </div>
-                )}
+                <div 
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ padding: 'var(--pico-spacing)' }}
+                >
+                    <button 
+                        class="c-modal-close-btn" 
+                        onClick={() => handleClose()}
+                        innerHTML={CLOSE_SVG}
+                    />
+                    
+                    {props.title && (
+                        <div class="c-modal-header">
+                            <h2>{props.title}</h2>
+                        </div>
+                    )}
 
-                <div class="c-modal-body">
-                    {props.children}
+                    <div class="c-modal-body">
+                        {props.children}
+                    </div>
+
+                    {props.footer && (
+                        <div class="modal-actions">
+                            {props.footer}
+                        </div>
+                    )}
                 </div>
-
-                {props.footer && (
-                    <div class="modal-actions">
-                        {props.footer}
-                    </div>
-                )}
-            </div>
+            </LiquidContainer>
         </div>
     );
 }

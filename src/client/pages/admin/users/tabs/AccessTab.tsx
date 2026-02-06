@@ -1,5 +1,6 @@
 import { createResource, For, Show, createMemo, createSignal } from "solid-js";
 import { apiRequest } from "@/utils/api";
+import { getContrastColour } from "@/widgets/Tag";
 import { useNotifications } from "@/stores/notifications";
 import { 
     ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG, LOCAL_ACTIVITY_SVG, LOCK_SVG,
@@ -7,6 +8,7 @@ import {
 } from '@/utils/icons';
 import Panel from "@/components/Panel";
 import Modal from "@/components/Modal";
+import LiquidButton from "@/components/LiquidButton";
 import { triggerPresidentGoodbye } from "@/stores/presidentGoodbye";
 
 export default function AccessTab(props: { user: any, refetchUser: () => void }) {
@@ -148,10 +150,15 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                 maxWidth="600px"
                 footer={
                     <>
-                        <button class="secondary outline" onClick={closePresidentModal}>Cancel</button>
-                        <button class="error" onClick={confirmPresidentTransfer} disabled={!password() || isSubmitting()}>
+                        <LiquidButton class="secondary outline" onClick={closePresidentModal} borderRadius={12}>Cancel</LiquidButton>
+                        <LiquidButton 
+                            class="error" 
+                            onClick={confirmPresidentTransfer} 
+                            borderRadius={12}
+                            disabled={!password() || isSubmitting()}
+                        >
                             {isSubmitting() ? 'Processing...' : 'Confirm Transfer'}
-                        </button>
+                        </LiquidButton>
                     </>
                 }
             >
@@ -292,7 +299,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                             <div 
                                                 class="tag-badge" 
                                                 classList={{ selected: isActive() }} 
-                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "background-color": isActive() ? "var(--tag-colour)" : undefined, "border-color": "var(--tag-colour)", "cursor": "pointer" }}
+                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || ''), "background-color": isActive() ? "var(--tag-colour)" : undefined, "border-color": "var(--tag-colour)", "cursor": "pointer" }}
                                                 onClick={() => toggleWhitelist(tag.id, !isActive())}
                                             >
                                                 {tag.name}
@@ -312,7 +319,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                             <div 
                                                 class="tag-badge" 
                                                 classList={{ selected: isActive() }} 
-                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "background-color": isActive() ? "var(--tag-colour)" : undefined, "border-color": "var(--tag-colour)", "cursor": "pointer" }}
+                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || ''), "background-color": isActive() ? "var(--tag-colour)" : undefined, "border-color": "var(--tag-colour)", "cursor": "pointer" }}
                                                 onClick={() => toggleManaged(tag.id, !isActive())}
                                             >
                                                 {tag.name}

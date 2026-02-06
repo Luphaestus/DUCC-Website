@@ -175,13 +175,13 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
         } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
-    const AttendeeTable = (props: { list: Attendee[] }) => (
+    const AttendeeTable = (innerProps: { list: Attendee[] }) => (
         <table class="glass-table">
             <thead>
                 <tr><th>Attendee</th><th>Status</th><th class="text-right">Action</th></tr>
             </thead>
             <tbody>
-                <For each={props.list}>
+                <For each={innerProps.list}>
                     {a => (
                         <tr>
                             <td class="primary-text">
@@ -200,7 +200,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                     <Show when={a.is_attending && !props.costsReleased}>
                                         <button class="small-btn outline delete" onClick={() => handleRemoveAttendee(a.id)}>Remove</button>
                                     </Show>
-                                    <Show when={(props.userPerms.includes('transaction.manage') || props.userPerms.includes('event.manage.all')) && a.payment_transaction_id && !a.upfront_refunded}>
+                                    <Show when={((props.userPerms || []).includes('transaction.manage') || (props.userPerms || []).includes('event.manage.all')) && a.payment_transaction_id && !a.upfront_refunded}>
                                         <button class="small-btn outline secondary" onClick={() => handleRefundUpfront(a.id)}>Refund</button>
                                     </Show>
                                 </div>
@@ -208,7 +208,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                         </tr>
                     )}
                 </For>
-                <Show when={props.list.length === 0}>
+                <Show when={innerProps.list.length === 0}>
                     <tr><td colspan="3" class="empty-cell">No participants found.</td></tr>
                 </Show>
             </tbody>

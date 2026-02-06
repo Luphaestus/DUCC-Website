@@ -6,30 +6,33 @@ import {
     ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG,
     KAYAKING_SVG, TRENDING_UP_SVG, LIST_SVG, FORMAT_QUOTE_SVG
 } from '@/utils/icons';
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function DashboardPage() {
     const { user } = useAuth();
     
-    const permissions = createMemo(() => user()?.permissions || []);
-    const canManageUsers = createMemo(() => permissions().includes('user.manage') || permissions().includes('transaction.manage') || permissions().length > 0);
-    const canManageEvents = createMemo(() => permissions().includes('event.manage.all') || permissions().includes('event.manage.scoped'));
-    const canManageTags = createMemo(() => permissions().includes('event.manage.all') || permissions().includes('event.manage.scoped'));
-    const canManageFiles = createMemo(() => permissions().includes('document.write') || permissions().includes('document.edit'));
-    const canManageQuotes = createMemo(() => permissions().includes('quote.manage'));
-    const canManageRoles = createMemo(() => permissions().includes('role.manage'));
-    const canManageKit = createMemo(() => permissions().includes('kit.manage'));
-    const canViewStats = createMemo(() => permissions().includes('transaction.manage') || permissions().includes('event.manage.all'));
-    const isExec = createMemo(() => permissions().length > 0);
+    const perms = createMemo(() => user()?.permissions || []);
+    const canManageUsers = createMemo(() => perms().includes('user.manage') || perms().includes('transaction.manage') || perms().length > 0);
+    const canManageEvents = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
+    const canManageTags = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
+    const canManageFiles = createMemo(() => perms().includes('document.write') || perms().includes('document.edit'));
+    const canManageQuotes = createMemo(() => perms().includes('quote.manage'));
+    const canManageRoles = createMemo(() => perms().includes('role.manage'));
+    const canManageKit = createMemo(() => perms().includes('kit.manage'));
+    const canViewStats = createMemo(() => perms().includes('transaction.manage') || perms().includes('event.manage.all'));
+    const isExec = createMemo(() => perms().length > 0);
     const canAccessGlobals = createMemo(() => true);
 
     const Card = (props: { title: string, desc: string, icon: string, href: string }) => (
-        <A href={props.href} class="dashboard-card">
-            <div class="card-icon" innerHTML={props.icon} />
-            <div class="card-content">
-                <h3>{props.title}</h3>
-                <p>{props.desc}</p>
-            </div>
-        </A>
+        <LiquidContainer borderRadius={32} tintOpacity={0.1}>
+            <A href={props.href} class="dashboard-card" style={{ background: 'transparent', border: 'none', 'box-shadow': 'none' }}>
+                <div class="card-icon" innerHTML={props.icon} />
+                <div class="card-content">
+                    <h3>{props.title}</h3>
+                    <p>{props.desc}</p>
+                </div>
+            </A>
+        </LiquidContainer>
     );
 
     return (

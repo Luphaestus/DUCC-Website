@@ -40,6 +40,8 @@
         border: var(--glass-border);
         background: var(--glass-bg);
         text-decoration: none;
+        position: relative;
+        overflow: hidden;
 
         &:hover {
             transform: translateY(-5px);
@@ -48,18 +50,22 @@
 
             .card-icon {
                 color: var(--pico-primary);
-                transform: scale(1.1);
+                transform: scale(1.1) rotate(10deg);
             }
         }
 
         .card-icon {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
             color: var(--pico-muted-color);
-            margin-bottom: 1rem;
+            opacity: 0.2;
             transition: all 0.3s ease;
+            z-index: 1;
 
             svg {
-                width: 2.5rem;
-                height: 2.5rem;
+                width: 3.5rem;
+                height: 3.5rem;
             }
         }
 
@@ -67,6 +73,8 @@
             font-size: 1.25rem;
             margin-bottom: 0.5rem;
             color: var(--pico-contrast);
+            position: relative;
+            z-index: 2;
         }
 
         p {
@@ -74,6 +82,9 @@
             color: var(--pico-muted-color);
             margin-bottom: 0;
             line-height: 1.4;
+            position: relative;
+            z-index: 2;
+            max-width: 80%;
         }
     }
 }

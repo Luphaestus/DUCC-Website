@@ -2,18 +2,24 @@
 
 /* Panel Component */
 .panel-widget {
-    @include glass-panel;
+    /* Layout only - Visuals handled by Liquid Glass */
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
     padding: 1.5rem;
+    border-radius: var(--border-radius-lg);
+    position: relative;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    /* Ensure text is readable over the glass */
+    color: var(--pico-color);
 
     // Reset Pico CSS defaults
     header, footer {
         background: transparent;
         border: none;
         padding: 0;
-        margin: 0;
+        margin: 0 !important;
     }
 
     .box-header {

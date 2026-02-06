@@ -357,6 +357,24 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
         }
     }
 
+    // Seed Kit Items
+    const kitCount = await db.get('SELECT COUNT(*) as count FROM kit_items');
+    if (kitCount.count === 0 || newlyCreatedTables.includes('kit_items')) {
+        if (process.env.NODE_ENV !== 'test') Logger.info('Seeding kit items...');
+        const kitItems = [
+            { name: 'Cag', type: 'cag', size: 'M', quantity: 10 },
+            { name: 'Cag', type: 'cag', size: 'L', quantity: 10 },
+            { name: 'Spraydeck', type: 'other', size: 'None', quantity: 15 },
+            { name: 'Spraydeck', type: 'other', size: 'None', quantity: 15 },
+            { name: 'Buoyancy Aid', type: 'ba', size: 'M', quantity: 20 },
+            { name: 'Helmet', type: 'helmet', size: 'None', quantity: 20 },
+            { name: 'Paddle', type: 'paddle', size: 'None', quantity: 30 }
+        ];
+        for (const item of kitItems) {
+            await db.run('INSERT INTO kit_items (name, type, size, total_quantity) VALUES (?, ?, ?, ?)', [item.name, item.type, item.size, item.quantity]);
+        }
+    }
+
     adminUser = await db.get("SELECT id FROM users WHERE email = 'admin@durham.ac.uk'");
     if (adminUser) {
         await db.run('UPDATE users SET is_instructor = 1 WHERE id = ?', [adminUser.id]);

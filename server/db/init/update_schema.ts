@@ -93,6 +93,37 @@ import Logger from '../../misc/Logger.js';
             Logger.error('Error updating user_roles primary key:', e);
         }
 
+        // 6. Create sessions table
+        try {
+            await db.run(`
+                CREATE TABLE IF NOT EXISTS sessions (
+                    id VARCHAR(255) PRIMARY KEY,
+                    data JSON NOT NULL,
+                    expires_at DATETIME NOT NULL,
+                    INDEX idx_expires (expires_at)
+                )
+            `);
+            Logger.info('Ensured sessions table exists.');
+            
+            // Check if 'id' column exists (in case table was created with different schema previously)
+            const columns: any[] = await db.all("SHOW COLUMNS FROM sessions");
+            if (!columns.some(c => c.Field === 'id')) {
+                Logger.info('Sessions table is missing "id" column. Recreating...');
+                await db.run('DROP TABLE sessions');
+                await db.run(`
+                    CREATE TABLE sessions (
+                        id VARCHAR(255) PRIMARY KEY,
+                        data JSON NOT NULL,
+                        expires_at DATETIME NOT NULL,
+                        INDEX idx_expires (expires_at)
+                    )
+                `);
+                Logger.info('Recreated sessions table with correct schema.');
+            }
+        } catch (e) {
+            Logger.error('Error ensuring sessions table:', e);
+        }
+
         await db.close();
         Logger.info('Schema update complete.');
         process.exit(0);

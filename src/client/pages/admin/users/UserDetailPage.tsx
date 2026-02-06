@@ -4,13 +4,12 @@ import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Avatar from "@/components/Avatar";
 import {
-    PERSON_SVG, SHIELD_SVG, ID_CARD_SVG, KAYAKING_SVG,
+    PERSON_SVG, SHIELD_SVG, ID_CARD_SVG,
     WALLET_SVG, POOL_SVG, DASHBOARD_SVG, UPLOAD_SVG
 } from '@/utils/icons';
 import ProfileTab from "./tabs/ProfileTab";
 import OverviewTab from "./tabs/OverviewTab";
 import AccessTab from "./tabs/AccessTab";
-import KitTab from "./tabs/KitTab";
 import TransactionsTab from "./tabs/TransactionsTab";
 import SwimsTab from "./tabs/SwimsTab";
 import Panel from "@/components/Panel";
@@ -156,9 +155,6 @@ export default function UserDetailPage() {
                                         <button class="nav-item" classList={{ active: currentTab() === 'access' }} onClick={() => setSearchParams({ tab: 'access' })}>
                                             <span innerHTML={SHIELD_SVG} /> Access
                                         </button>
-                                        <button class="nav-item" classList={{ active: currentTab() === 'kit' }} onClick={() => setSearchParams({ tab: 'kit' })}>
-                                            <span innerHTML={KAYAKING_SVG} /> Kit
-                                        </button>
                                     </Show>
                                     <Show when={canManageTransactions()}>
                                         <button class="nav-item" classList={{ active: currentTab() === 'transactions' }} onClick={() => setSearchParams({ tab: 'transactions' })}>
@@ -186,9 +182,6 @@ export default function UserDetailPage() {
                                     <ProfileTab user={userData()} permissions={viewerPerms() || []} canManageUsers={canManageUsers() || false} isExec={isExec()} refetchUser={refetch} />
                                 </Show>                            <Show when={currentTab() === 'access'}>
                                     <AccessTab user={userData()} refetchUser={refetch} />
-                                </Show>
-                                <Show when={currentTab() === 'kit'}>
-                                    <KitTab userId={userData().id} />
                                 </Show>
                                 <Show when={currentTab() === 'transactions'}>
                                     <TransactionsTab userId={userData().id} />

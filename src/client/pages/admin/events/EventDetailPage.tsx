@@ -11,6 +11,7 @@ import DetailsTab from "./tabs/DetailsTab";
 import FinanceTab from "./tabs/FinanceTab";
 import KitTab from "./tabs/KitTab";
 import Panel from "@/components/Panel";
+import { TabNav } from "@/widgets/TabNav";
 
 export default function EventDetailPage() {
     const params = useParams();

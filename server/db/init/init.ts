@@ -66,7 +66,7 @@ ${config.mysql.database}
       Logger.info('Dropping tables for schema refresh...');
       await db.run('SET FOREIGN_KEY_CHECKS = 0');
       const tables = [
-        'event_kit_requests', 'kit_items',
+        'event_kit_requests', 'kit_items', 'sessions',
         'event_attendees', 'event_waiting_list', 'transactions', 'swim_history',
         'quotes', 'cars', 'trips', 'event_drivers', 'event_expenses', 'trip_exclusions',
         'expense_exclusions', 'user_managed_tags', 'user_permissions', 'user_roles',
@@ -84,6 +84,17 @@ ${config.mysql.database}
     Logger.info('Initializing database schema...');
 
     const newlyCreatedTables = await createTables(db);
+
+    // Ensure sessions table is correct (it might exist but with wrong columns from previous versions)
+    try {
+        const columns: any[] = await db.all("SHOW COLUMNS FROM sessions");
+        if (!columns.some(c => c.Field === 'id')) {
+            Logger.info('Sessions table is invalid. Recreating...');
+            await db.run('DROP TABLE sessions');
+            await createTables(db);
+        }
+    } catch (e) {}
+
     const tablesToForceSeed = shouldWipe ? [
       'users', 'events', 'tags', 'roles', 'slides', 'quotes', 'cars', 'swim_history', 'exec_committee'
     ] : [];

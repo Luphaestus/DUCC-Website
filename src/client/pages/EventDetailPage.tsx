@@ -73,15 +73,16 @@ export default function EventDetailPage() {
 
     const [kitItems] = createResource(async () => {
         try {
-            return await apiRequest('GET', '/api/kit');
-        } catch { return { data: [] }; }
+            const res = await apiRequest('GET', '/api/kit');
+            return res || [];
+        } catch { return []; }
     });
 
     const [userKitRequests, { refetch: refetchUserKit }] = createResource(eventId, async (id) => {
         if (!id) return [];
         try {
             const res = await apiRequest('GET', `/api/kit/event/${id}/my-request`);
-            return (res.data || []) as KitItem[];
+            return (res || []) as KitItem[];
         } catch { return []; }
     });
 
@@ -227,7 +228,7 @@ export default function EventDetailPage() {
                 <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title="Request Club Kit">
                     <form onSubmit={handleRequestKit} class="modern-form">
                         <div class="item-list mb-4" style={{ "max-height": "400px", "overflow-y": "auto" }}>
-                            <For each={kitItems()?.data || []}>
+                            <For each={kitItems() || []}>
                                 {(item: KitItem) => (
                                     <label class="list-item checkbox-item">
                                         <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>

@@ -3,6 +3,7 @@ import { useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { ACCOUNT_BOX_SVG } from '@/utils/icons';
+import { GlassButtonLarge } from "../components/LiquidButton";
 
 export default function SignupPage() {
     const navigate = useNavigate();
@@ -144,8 +145,10 @@ export default function SignupPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div id="signup-footer">
-                                <button type="submit">Sign Up</button>
+                            <div id="signup-footer" style="margin-top: 1.5rem;">
+                                <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                                    Sign Up
+                                </GlassButtonLarge>
                             </div>
                         </form>
                     </article>

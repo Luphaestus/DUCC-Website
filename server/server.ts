@@ -21,6 +21,7 @@ import colors from 'ansi-colors';
 import cliProgress from 'cli-progress';
 
 import { connect, DatabaseWrapper } from './db/db.js';
+import MySQLStore from './misc/SessionStore.js';
 import Globals from './misc/globals.js';
 import Logger from './misc/Logger.js';
 import config from './config.js';
@@ -69,10 +70,15 @@ const startServer = async () => {
     });
     await fastify.register(fastifyCookie);
     
+    const sessionStore = new MySQLStore(db);
+    // Periodically clean up expired sessions (every hour)
+    setInterval(() => sessionStore.clearExpiredSessions().catch(() => {}), 3600000);
+
     await fastify.register(fastifySession, {
       secret: config.session.secret,
       cookieName: config.session.cookieName,
       saveUninitialized: false,
+      store: sessionStore,
       cookie: {
         secure: false, // Set to true if using HTTPS
         httpOnly: true,

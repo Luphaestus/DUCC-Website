@@ -1,12 +1,14 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, createResource, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { 
     PERSON_SVG, EDIT_SVG, 
     ID_CARD_SVG, CLOSE_SVG,
-    CONTRACT_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG
+    CONTRACT_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG,
+    KAYAKING_SVG
 } from '@/utils/icons';
 import Panel from "@/components/Panel";
+import LiquidButton from "@/components/LiquidButton";
 
 export default function ProfileTab(props: { user: any, permissions: string[], canManageUsers: boolean, isExec: boolean, refetchUser: () => void }) {
     const { notify } = useNotifications();
@@ -14,6 +16,33 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
     const [isEditing, setIsEditing] = createSignal(false);
 
     const isSigned = () => !!props.user.filled_legal_info;
+
+    const [kitItems] = createResource(async () => {
+        try {
+            const res = await apiRequest('GET', '/api/kit');
+            return res || [];
+        } catch { return []; }
+    });
+
+    const [userKitPrefs, { refetch: refetchKitPrefs }] = createResource(() => props.user.id, async (id) => {
+        try {
+            const res = await apiRequest('GET', `/api/kit/preferences/${id}`);
+            return (res || []) as any[];
+        } catch { return []; }
+    });
+
+    const handleUpdateKitPrefs = async (e: Event) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt((cb as HTMLInputElement).value));
+        try {
+            await apiRequest('POST', `/api/kit/preferences/${props.user.id}`, { itemIds: selected });
+            notify('Success', 'Kit preferences updated.', 'success');
+            refetchKitPrefs();
+        } catch (err: any) {
+            notify('Error', err.message, 'error');
+        }
+    };
 
     const handleSaveProfile = async (e: Event) => {
         e.preventDefault();
@@ -46,7 +75,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
 
             <div class="dual-grid">
                 <Panel title="Health Information" icon={MEDICAL_INFORMATION_SVG} class="no-margin">
-                    <div class="detail-info-group">
+                    <div class="detail-info-group" style="gap: 0">
                         <div class="medical-section">
                             <div class="info-item-modern compact">
                                 <span class="label">Medical Conditions:</span> 
@@ -79,9 +108,14 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                     class="no-margin"
                     action={
                         <Show when={props.permissions.includes('user.manage.advanced')}>
-                            <button class="small-btn secondary" onClick={() => setIsEditing(!isEditing())}>
+                            <LiquidButton 
+                                class="small-btn secondary" 
+                                onClick={() => setIsEditing(!isEditing())}
+                                borderRadius={12}
+                                tintOpacity={0.2}
+                            >
                                 <span innerHTML={isEditing() ? CLOSE_SVG : EDIT_SVG} /> {isEditing() ? 'Cancel' : 'Edit'}
-                            </button>
+                            </LiquidButton>
                         </Show>
                     }
                 >
@@ -134,13 +168,42 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                 <label><input type="checkbox" name="is_member" checked={props.user.is_member} /> Is Member</label>
                             </Show>
                             <div class="form-actions mt-2">
-                                <button type="submit" class="small-btn">Save</button>
-                                <button type="button" class="small-btn secondary outline" onClick={() => setIsEditing(false)}>Cancel</button>
+                                <LiquidButton htmlType="submit" class="small-btn" borderRadius={12}>Save</LiquidButton>
+                                <LiquidButton htmlType="button" class="small-btn secondary outline" onClick={() => setIsEditing(false)} borderRadius={12}>Cancel</LiquidButton>
                             </div>
                         </form>
                     </Show>
                 </Panel>
             </div>
+
+            <Panel 
+                title="Default Kit Requirements" 
+                icon={KAYAKING_SVG}
+                class="mt-4"
+            >
+                <p>Manage the equipment this user usually needs to borrow from the club for trips.</p>
+                
+                <form onSubmit={handleUpdateKitPrefs} class="modern-form">
+                    <div class="kit-selection-grid">
+                        <For each={kitItems()} fallback={<p class="text-muted">No kit items available.</p>}>
+                            {(item) => (
+                                <label class="kit-grid-item">
+                                    <div class="item-details">
+                                        <span class="item-title">{item.name}</span>
+                                        <span class="item-subtitle">{item.type} • {item.size}</span>
+                                    </div>
+                                    <input 
+                                        type="checkbox" 
+                                        value={item.id} 
+                                        checked={userKitPrefs()?.some((p: any) => p.id === item.id)} 
+                                    />
+                                </label>
+                            )}
+                        </For>
+                    </div>
+                    <LiquidButton htmlType="submit" class="primary full-width mt-4" borderRadius={12}>Save Preferences</LiquidButton>
+                </form>
+            </Panel>
         </div>
     );
 }

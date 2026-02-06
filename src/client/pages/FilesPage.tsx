@@ -58,7 +58,8 @@ export default function FilesPage() {
     onMount(async () => {
         try {
             const userData = await apiRequest('GET', '/api/user/elements/permissions').catch(() => ({}));
-            setCanManage(userData.permissions?.includes('file.write') || userData.permissions?.includes('file.edit') || false);
+            const perms = userData.permissions || [];
+            setCanManage(perms.includes('file.write') || perms.includes('file.edit') || false);
             
             const catsRes = await apiRequest('GET', '/api/file-categories');
             setCategories(catsRes.data || []);

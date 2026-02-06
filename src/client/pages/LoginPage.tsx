@@ -6,6 +6,7 @@ import { useNotifications } from "@/stores/notifications";
 import { useAuth } from "@/stores/auth";
 import { LoginEvent } from "@/utils/events/events";
 import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
+import { GlassButtonLarge, GlassButtonSmall } from "../components/LiquidButton";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -93,9 +94,14 @@ export default function LoginPage() {
                             </div>
                             
                             <div class="passkey-quick-login center-text" style="margin-bottom: 1.5rem;">
-                                <button type="button" class="secondary outline full-width" onClick={() => startPasskeyLogin(email() ? (email().includes('@') ? email() : email() + '@durham.ac.uk') : null)}>
-                                    <span innerHTML={KEY_SVG} /> Sign in with Passkey
-                                </button>
+                                <GlassButtonLarge 
+                                    type="button" 
+                                    class="secondary outline full-width" 
+                                    onClick={() => startPasskeyLogin(email() ? (email().includes('@') ? email() : email() + '@durham.ac.uk') : null)}
+                                    borderRadius={16}
+                                >
+                                    <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Sign in with Passkey
+                                </GlassButtonLarge>
                                 <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
                             </div>
 
@@ -125,7 +131,9 @@ export default function LoginPage() {
                                 />
                                 
                                 <div style="margin-top: 1rem;">
-                                    <button type="submit" class="primary full-width">Continue with Password</button>
+                                    <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                                        Continue with Password
+                                    </GlassButtonLarge>
                                 </div>
                             </form>
                         </Show>
@@ -150,7 +158,9 @@ export default function LoginPage() {
                                         value={totpCode()}
                                         onInput={(e) => setTotpCode(e.currentTarget.value)}
                                     />
-                                    <button type="submit" class="primary full-width">Verify Code</button>
+                                    <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                                        Verify Code
+                                    </GlassButtonLarge>
                                 </form>
                             </Show>
 
@@ -159,14 +169,16 @@ export default function LoginPage() {
                                     <Show when={methods().totp}>
                                         <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
                                     </Show>
-                                    <button class="secondary full-width" onClick={() => startPasskeyLogin()}>
-                                        <span innerHTML={KEY_SVG} /> Use Passkey
-                                    </button>
+                                    <GlassButtonLarge class="secondary full-width" onClick={() => startPasskeyLogin()} borderRadius={16}>
+                                        <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Use Passkey
+                                    </GlassButtonLarge>
                                 </div>
                             </Show>
 
                             <div class="center-text" style="margin-top: 2rem;">
-                                <button class="outline secondary" onClick={() => setRequires2FA(false)}>Back to Login</button>
+                                <GlassButtonSmall class="outline secondary" onClick={() => setRequires2FA(false)}>
+                                    Back to Login
+                                </GlassButtonSmall>
                             </div>
                         </Show>
 

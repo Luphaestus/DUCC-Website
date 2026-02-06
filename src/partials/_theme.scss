@@ -5,14 +5,15 @@
 @mixin dark-mode-vars {
   --theme: black;
   --theme-opposite: white;
-  --translucent-bg: rgba(20, 20, 25, 0.65);
-  --glass-bg: rgba(30, 30, 35, 0.6);
-  --glass-highlight: rgba(255, 255, 255, 0.1);
+  --translucent-bg: rgba(15, 15, 20, 0.5);
+  --glass-bg: rgba(25, 25, 30, 0.45);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
   --glass-border: 1px solid var(--glass-highlight);
-  --nav-bg: rgba(20, 20, 25, 0.85);
+  --nav-bg: rgba(15, 15, 20, 0.7);
   --glass-text-colour: #ffffff;
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
-  --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   --table-border: 1px solid rgba(255, 255, 255, 0.05);
   --table-bg-body: rgba(30, 30, 35, 0.4);
   --table-bg-hover-body: rgba(40, 40, 45, 0.6);
@@ -49,14 +50,14 @@ body {
   --border-radius-pill: 9999px;
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
   --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
-  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --shadow-glass: 0 12px 40px rgba(31, 38, 135, 0.1);
 
   /* Light Mode Defaults */
-  --translucent-bg: rgba(255, 255, 255, 0.65);
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-highlight: rgba(0, 0, 0, 0.1);
+  --translucent-bg: rgba(255, 255, 255, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.35);
+  --glass-highlight: rgba(255, 255, 255, 0.5);
   --glass-border: 1px solid var(--glass-highlight);
-  --nav-bg: rgba(255, 255, 255, 0.85);
+  --nav-bg: rgba(255, 255, 255, 0.8);
   --glass-text-colour: #373c44;
   --theme: white;
   --theme-opposite: black;

@@ -19,38 +19,33 @@ export default class KitAPI {
         this.app.get('/api/kit', async (request: any, reply: FastifyReply) => {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
             const result = await KitDB.getAllItems(this.db);
-            return reply.status(result.status).send(result);
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         // Admin: Create Item
         this.app.post('/api/kit', { preHandler: [check('perm:kit.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
             const result = await KitDB.createItem(this.db, request.body as any);
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Admin: Update Item
         this.app.put('/api/kit/:id', { preHandler: [check('perm:kit.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
             const result = await KitDB.updateItem(this.db, parseInt(request.params.id), request.body as any);
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Admin: Delete Item
         this.app.delete('/api/kit/:id', { preHandler: [check('perm:kit.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
             const result = await KitDB.deleteItem(this.db, parseInt(request.params.id));
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Get requests for event (Admin or Event Manager)
-        this.app.get('/api/kit/event/:id', async (request: any, reply: FastifyReply) => {
-            if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
-            
-            const user = request.user as any;
-            if (!user.permissions.includes('event.manage.all') && !user.permissions.includes('kit.manage') && !user.permissions.includes('event.manage.scoped')) {
-                 return reply.status(403).send({ error: 'Forbidden' });
-            }
-
+        this.app.get('/api/kit/event/:id', { preHandler: [check('perm:event.manage.all | perm:kit.manage | perm:event.manage.scoped')] }, async (request: any, reply: FastifyReply) => {
             const result = await KitDB.getRequestsForEvent(this.db, parseInt(request.params.id));
-            return reply.status(result.status).send(result);
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         // Request Kit (User)
@@ -58,7 +53,7 @@ export default class KitAPI {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
             const { event_id, kit_item_id } = request.body as any;
             const result = await KitDB.requestKit(this.db, request.user.id, event_id, kit_item_id);
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Set Event Kit (User) - Multiple items
@@ -66,7 +61,7 @@ export default class KitAPI {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
             const { event_id, itemIds } = request.body as any;
             const result = await KitDB.setUserEventKit(this.db, request.user.id, parseInt(event_id), itemIds);
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Get Event Kit for User
@@ -79,7 +74,7 @@ export default class KitAPI {
                     JOIN kit_items k ON r.kit_item_id = k.id
                     WHERE r.event_id = ? AND r.user_id = ?
                 `, [parseInt(request.params.id), request.user.id]);
-                return reply.status(200).send({ data: requests });
+                return reply.status(200).send(requests);
             } catch (e) {
                 return reply.status(500).send({ error: 'Database error' });
             }
@@ -89,26 +84,28 @@ export default class KitAPI {
         this.app.delete('/api/kit/request/:id', async (request: any, reply: FastifyReply) => {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
             const result = await KitDB.deleteRequest(this.db, parseInt(request.params.id), request.user.id);
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Toggle Fulfillment (Admin)
         this.app.post('/api/kit/request/:id/fulfill', { preHandler: [check('perm:kit.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
             const result = await KitDB.toggleFulfillment(this.db, parseInt(request.params.id));
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Get user preferences
         this.app.get('/api/kit/preferences', async (request: any, reply: FastifyReply) => {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
             const result = await KitDB.getUserPreferences(this.db, request.user.id);
-            return reply.status(result.status).send(result);
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         // Get specific user preferences (Admin)
         this.app.get('/api/kit/preferences/:userId', { preHandler: [check('perm:user.read | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { userId: string } }>, reply: FastifyReply) => {
             const result = await KitDB.getUserPreferences(this.db, parseInt(request.params.userId));
-            return reply.status(result.status).send(result);
+            if (result.isError()) return result.getResponse(reply);
+            return reply.send(result.getData());
         });
 
         // Update user preferences
@@ -116,14 +113,14 @@ export default class KitAPI {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
             const { itemIds } = request.body as any;
             const result = await KitDB.setUserPreferences(this.db, request.user.id, itemIds);
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
 
         // Update specific user preferences (Admin)
         this.app.post('/api/kit/preferences/:userId', { preHandler: [check('perm:user.manage')] }, async (request: FastifyRequest<{ Params: { userId: string }, Body: { itemIds: any } }>, reply: FastifyReply) => {
             const { itemIds } = request.body;
             const result = await KitDB.setUserPreferences(this.db, parseInt(request.params.userId), itemIds);
-            return reply.status(result.status).send(result);
+            return result.getResponse(reply);
         });
     }
 }

@@ -472,7 +472,7 @@
         justify-content: center;
         background-color: transparent;
         border: 2px solid var(--tag-colour, var(--pico-primary));
-        color: var(--tag-colour, var(--pico-primary)); // Text matches border
+        color: var(--pico-color); // Text matches theme text
         opacity: 0.6;
         transition: all 0.2s ease;
         padding: 0.4rem 0.8rem;
@@ -489,7 +489,7 @@
         &.selected {
             // Active state: filled
             background-color: var(--tag-colour, var(--pico-primary)) !important;
-            color: white; // Text becomes white
+            color: var(--tag-text-colour, white); // Text becomes high contrast
             opacity: 1 !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transform: scale(1.05);
@@ -511,7 +511,6 @@
 
     /* Legal Tab */
     .info-item-modern {
-        margin-bottom: 1rem;
         &.compact {
             margin-bottom: 0.5rem;
         }
@@ -525,7 +524,7 @@
         .box-value-grid {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0;
 
             .row {
                 display: flex;
@@ -550,7 +549,6 @@
     }
 
     .medical-section {
-        margin-bottom: 1rem;
         &:last-child {
             margin-bottom: 0;
         }
@@ -641,5 +639,62 @@
 
     .border-top {
         border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+    }
+
+    /* Kit Preferences */
+    .kit-selection-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .kit-grid-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        border-radius: var(--border-radius-md);
+        transition: background 0.2s ease, transform 0.1s ease;
+        cursor: pointer;
+        margin-bottom: 0;
+
+        &:hover {
+            background: var(--glass-highlight);
+            transform: translateY(-1px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+
+        .item-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            
+            .item-title {
+                font-weight: 600;
+                font-size: 0.95rem;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
+            }
+            
+            .item-subtitle {
+                font-size: 0.75rem;
+                color: var(--pico-muted-color);
+            }
+        }
+
+        input[type="checkbox"] {
+            margin-left: 1.5rem;
+            margin-bottom: 0;
+            flex-shrink: 0;
+            width: 1.2rem;
+            height: 1.2rem;
+        }
     }
 }

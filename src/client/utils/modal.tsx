@@ -1,6 +1,7 @@
 import { render } from "solid-js/web";
 import { createSignal, JSX } from "solid-js";
 import Modal from "@/components/Modal";
+import { GlassButtonSmall } from "@/components/LiquidButton";
 
 /**
  * Utility to show a confirmation modal.
@@ -27,8 +28,8 @@ export function showConfirmModal(title: string, message: string): Promise<boolea
                 onClose={() => close(false)}
                 footer={
                     <>
-                        <button class="btn-cancel" onClick={() => close(false)}>Cancel</button>
-                        <button class="btn-confirm" onClick={() => close(true)}>Confirm</button>
+                        <GlassButtonSmall class="btn-cancel secondary outline" onClick={() => close(false)}>Cancel</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-confirm primary" onClick={() => close(true)}>Confirm</GlassButtonSmall>
                     </>
                 }
             >
@@ -64,8 +65,8 @@ export function showPasswordModal(title: string, message: string): Promise<strin
                 onClose={() => close(null)}
                 footer={
                     <>
-                        <button class="btn-cancel" onClick={() => close(null)}>Cancel</button>
-                        <button class="btn-confirm" onClick={() => close(password())}>Confirm</button>
+                        <GlassButtonSmall class="btn-cancel secondary outline" onClick={() => close(null)}>Cancel</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-confirm primary" onClick={() => close(password())}>Confirm</GlassButtonSmall>
                     </>
                 }
             >
@@ -111,8 +112,8 @@ export function showChangePasswordModal(): Promise<{ currentPassword: string; ne
                 onClose={() => close(null)}
                 footer={
                     <>
-                        <button class="btn-cancel" onClick={() => close(null)}>Cancel</button>
-                        <button class="btn-confirm" onClick={() => close({ currentPassword: currentPassword(), newPassword: newPassword() })}>Change Password</button>
+                        <GlassButtonSmall class="btn-cancel secondary outline" onClick={() => close(null)}>Cancel</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-confirm primary" onClick={() => close({ currentPassword: currentPassword(), newPassword: newPassword() })}>Change Password</GlassButtonSmall>
                     </>
                 }
             >

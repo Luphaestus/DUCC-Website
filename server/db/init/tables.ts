@@ -471,6 +471,15 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         FOREIGN KEY (expense_id) REFERENCES event_expenses(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
+    },
+    {
+      name: 'sessions',
+      schema: `
+        id VARCHAR(255) PRIMARY KEY,
+        data JSON NOT NULL,
+        expires_at DATETIME NOT NULL,
+        INDEX idx_expires (expires_at)
+      `
     }
   ];
 
