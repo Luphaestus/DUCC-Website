@@ -15,6 +15,7 @@ import {
 import { onUpdate } from "@/utils/updates";
 import PaginationSlider from "@/components/PaginationSlider";
 import LiquidContainer from "@/components/LiquidContainer";
+import PageTitle from "@/components/PageTitle";
 
 interface PageData {
     events: EventData[];
@@ -142,6 +143,7 @@ export default function EventsPage() {
 
     return (
         <div id="events-view" class="view small-container">
+            <PageTitle text="Upcoming Events" />
             <div class="events-controls-modern">
                 <LiquidContainer class="week-navigator" padding="0.5rem 1.25rem">
                     <button class="nav-btn prev-week" title="Previous Page" onClick={() => setSearchParams({ page: page() - 1 })}>

@@ -1,218 +1,349 @@
 @use "../../mixins" as *;
 
 .calendar-container {
-    @include glass-panel;
-    padding: 1.5rem;
-    position: relative;
-    min-height: 600px;
+    // @include glass-panel; 
+    // We already have glass-panel class on the container div in JSX usually, 
+    // but here we define internal layout
     display: flex;
     flex-direction: column;
+    height: calc(100vh - 180px); // Fill remaining height
+    min-height: 600px;
+    position: relative;
 
-    .calendar-header {
+    .calendar-header-toolbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
-        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
 
-        .calendar-controls {
+        .cal-controls {
             display: flex;
             align-items: center;
             gap: 1rem;
 
-            h2 {
+            .cal-title {
                 margin: 0;
-                font-size: 1.5rem;
-                min-width: 200px;
+                font-size: 1.25rem;
+                font-weight: 700;
+                width: 200px;
                 text-align: center;
             }
 
             .icon-btn {
                 background: transparent;
-                border: none;
-                padding: 0.5rem;
+                border: 1px solid rgba(255,255,255,0.1);
+                padding: 0.4rem;
+                border-radius: 50%;
                 color: var(--pico-color);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
 
                 &:hover {
-                    color: var(--pico-primary);
-                    background: rgba(var(--pico-color-rgb), 0.1);
-                    border-radius: 50%;
+                    background: rgba(255,255,255,0.1);
                 }
-
-                svg {
-                    width: 1.25rem;
-                    height: 1.25rem;
-                }
+                
+                svg { width: 1.2rem; height: 1.2rem; }
             }
         }
 
-        .view-toggles {
+        .cal-actions {
             display: flex;
-            background: rgba(var(--pico-background-color-rgb), 0.5);
-            border-radius: var(--border-radius-pill);
-            padding: 0.25rem;
-            border: 1px solid rgba(var(--pico-color-rgb), 0.1);
-
+            gap: 0.5rem;
+            
             button {
-                background: transparent;
-                border: none;
                 padding: 0.4rem 1rem;
-                border-radius: var(--border-radius-pill);
                 font-size: 0.9rem;
-                color: var(--pico-muted-color);
-                box-shadow: none;
                 margin-bottom: 0;
-
-                &.active {
+                border-radius: 20px;
+                
+                &.outline {
+                    background: transparent;
+                    border: 1px solid rgba(255,255,255,0.2);
+                    color: var(--pico-muted-color);
+                }
+                
+                &.primary {
                     background: var(--pico-primary);
+                    border: 1px solid var(--pico-primary);
                     color: white;
                 }
             }
         }
     }
 
-    .calendar-grid {
+    // Week View Grid
+    .week-view-grid {
+        display: flex;
+        flex: 1;
+        overflow-y: auto;
+        position: relative;
+        background: rgba(0,0,0,0.1); // Slight darkness for slots
+
+        .time-gutter {
+            width: 60px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.1);
+            
+            .time-label {
+                height: 60px; // 1 hour = 60px height
+                position: relative;
+                border-bottom: 1px solid transparent; 
+                
+                span {
+                    position: absolute;
+                    top: -10px;
+                    right: 8px;
+                    font-size: 0.75rem;
+                    color: var(--pico-muted-color);
+                }
+            }
+        }
+
+        .day-column {
+            flex: 1;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            min-width: 120px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+
+            &.today {
+                background: rgba(var(--pico-primary-rgb), 0.05);
+                .day-header {
+                    color: var(--pico-primary);
+                    
+                    .day-num {
+                        background: var(--pico-primary);
+                        color: white;
+                    }
+                }
+            }
+
+            .day-header {
+                height: 50px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                position: sticky;
+                top: 0;
+                background: var(--glass-bg);
+                z-index: 10;
+                backdrop-filter: blur(10px);
+                
+                .day-name { 
+                    font-size: 0.75rem; 
+                    text-transform: uppercase; 
+                    letter-spacing: 1px;
+                }
+                
+                .day-num {
+                    font-size: 1.1rem;
+                    font-weight: 700;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+            }
+
+            .day-slots {
+                position: relative;
+                height: 1440px; // 24 * 60px
+                flex-grow: 1;
+
+                .hour-slot {
+                    height: 60px;
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                    box-sizing: border-box;
+                    &:after {
+                        content: '';
+                        display: block;
+                        height: 30px;
+                        border-bottom: 1px dotted rgba(255,255,255,0.03);
+                    }
+                }
+            }
+        }
+    }
+
+    // Month View Grid (Simplified)
+    .month-view-grid {
+        padding: 1rem;
         flex: 1;
         display: flex;
         flex-direction: column;
-
+        
         .weekdays-row {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             text-align: center;
+            margin-bottom: 0.5rem;
             font-weight: 600;
             color: var(--pico-muted-color);
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
-            margin-bottom: 0.5rem;
         }
 
         .days-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-auto-rows: minmax(100px, 1fr);
-            gap: 1px;
-            background: rgba(var(--pico-color-rgb), 0.1); // Grid lines color
-            border: 1px solid rgba(var(--pico-color-rgb), 0.1);
-            border-radius: var(--border-radius);
-            overflow: hidden;
-
-            .calendar-day {
-                background: var(--glass-bg); // Cell background
+            grid-auto-rows: 1fr; // Equal height
+            flex: 1;
+            gap: 2px;
+            
+            .month-day {
+                background: rgba(255,255,255,0.05);
                 padding: 0.5rem;
-                display: flex;
-                flex-direction: column;
-                gap: 0.25rem;
+                min-height: 80px;
                 cursor: pointer;
                 transition: background 0.2s;
-                min-height: 100px;
+                border-radius: 4px;
 
-                &:hover {
-                    background: rgba(var(--pico-background-color-rgb), 0.8);
+                &:hover { background: rgba(255,255,255,0.1); }
+                
+                &.today { 
+                    border: 1px solid var(--pico-primary);
+                    background: rgba(var(--pico-primary-rgb), 0.1);
                 }
+                
+                &.other-month { opacity: 0.3; }
 
-                &.other-month {
-                    background: rgba(var(--pico-background-color-rgb), 0.4);
-                    opacity: 0.6;
-
-                    .day-number {
-                        opacity: 0.5;
-                    }
-                }
-
-                &.today {
-                    background: rgba(var(--pico-primary-rgb), 0.05);
-
-                    .day-number {
-                        background: var(--pico-primary);
-                        color: white;
-                        width: 24px;
-                        height: 24px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
+                .day-number { font-weight: bold; font-size: 0.9rem; display: block; margin-bottom: 0.5rem; }
+                
+                .day-events-dots {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 4px;
+                    
+                    .event-dot {
+                        width: 8px;
+                        height: 8px;
                         border-radius: 50%;
-                    }
-                }
-
-                .day-number {
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    align-self: flex-start;
-                    margin-bottom: 0.25rem;
-                }
-
-                .day-events {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.25rem;
-                    overflow-y: auto;
-                    max-height: 120px;
-                }
-
-                .event-chip {
-                    font-size: 0.75rem;
-                    padding: 0.2rem 0.4rem;
-                    border-radius: 4px;
-                    background: var(--pico-primary);
-                    color: white;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    cursor: grab;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.3rem;
-
-                    &:active {
-                        cursor: grabbing;
-                    }
-
-                    .event-time {
-                        opacity: 0.8;
-                        font-size: 0.7rem;
-                    }
-
-                    &.status-pending {
-                        background: var(--pico-muted-color);
-                        border: 1px dashed rgba(255, 255, 255, 0.5);
-                    }
-
-                    &.status-scheduled {
-                        background: #f39c12; // Orange
+                        background: var(--pico-primary);
+                        
+                        &.status-draft { background: gray; }
+                        &.status-scheduled { background: orange; }
                     }
                 }
             }
         }
     }
 
-    .fab-btn {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        width: 3.5rem;
-        height: 3.5rem;
-        border-radius: 50%;
+    .calendar-event {
+        position: absolute;
         background: var(--pico-primary);
         color: white;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 0.75rem;
+        overflow: hidden;
+        cursor: grab;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        z-index: 5;
+        border-left: 3px solid rgba(0,0,0,0.2);
+        transition: transform 0.1s, box-shadow 0.1s;
+        
+        &:hover {
+            z-index: 20;
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+        
+        &:active { cursor: grabbing; }
+
+        &.ghost-create {
+            background: rgba(var(--pico-primary-rgb), 0.6);
+            pointer-events: none;
+            border: 2px dashed var(--pico-primary-inverse);
+            z-index: 30;
+        }
+
+        .ev-time {
+            font-weight: 700;
+            font-size: 0.7rem;
+            margin-bottom: 1px;
+        }
+        
+        .ev-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+
+        &.status-scheduled { background: #e67e22; }
+        &.status-draft, &.status-pending { background: #95a5a6; }
+    }
+}
+
+// Context Menu
+.context-menu {
+    position: fixed;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-card-border-color);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-radius: 8px;
+    z-index: 2000;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    backdrop-filter: blur(20px);
+
+    button {
+        background: transparent;
         border: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        padding: 0.6rem 1rem;
+        text-align: left;
+        color: var(--pico-color);
+        cursor: pointer;
         display: flex;
         align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s, background 0.2s;
-        z-index: 100;
+        gap: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        box-shadow: none;
+        width: 100%;
 
         &:hover {
-            transform: scale(1.1);
-            background: var(--pico-primary-hover);
+            background: rgba(255,255,255,0.1);
+            color: var(--pico-primary);
+        }
+        
+        &.delete {
+             color: #e74c3c;
+             &:hover { background: rgba(231, 76, 60, 0.1); }
         }
 
-        svg {
-            width: 1.75rem;
-            height: 1.75rem;
-        }
+        svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+    }
+}
+
+.clipboard-fab {
+    position: fixed;
+    bottom: 3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--pico-primary);
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 100px;
+    box-shadow: 0 10px 30px rgba(var(--pico-primary-rgb), 0.4);
+    cursor: pointer;
+    font-weight: 700;
+    z-index: 100;
+    animation: slide-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid rgba(255,255,255,0.2);
+    
+    &:hover {
+        transform: translateX(-50%) scale(1.05);
+        background: var(--pico-primary-hover);
     }
 }

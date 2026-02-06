@@ -6,6 +6,8 @@ import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from
 import { LegalEvent } from "@/utils/events/events";
 import LiquidContainer from "@/components/LiquidContainer";
 
+import PageTitle from "@/components/PageTitle";
+
 export default function LegalPage() {
     const { notify } = useNotifications();
     const [colleges, setColleges] = createSignal<any[]>([]);
@@ -71,7 +73,7 @@ export default function LegalPage() {
     return (
         <div id="legal-view" class="view">
             <div class="legal-container">
-                <h1>Legal & Medical Information Form</h1>
+                <PageTitle text="Legal & Medical Information Form" />
                 <Show when={!loading()} fallback={<p>Loading...</p>}>
                     <form onSubmit={handleSubmit}>
                         <div class="legal-grid">

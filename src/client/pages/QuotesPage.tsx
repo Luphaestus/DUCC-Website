@@ -9,6 +9,8 @@ import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate } from "@solidjs/router";
 import LiquidContainer from "@/components/LiquidContainer";
 
+import PageTitle from "@/components/PageTitle";
+
 interface QuoteUser {
     id: number;
     first_name: string;
@@ -101,7 +103,7 @@ export default function QuotesPage() {
         <div id="quotes-view" class="view small-container">
             <div class="quotes-header">
                 <div class="quotes-title-row">
-                    <h1>Club Quotes</h1>
+                    <PageTitle text="Club Quotes" />
                 </div>
                 <div class="quotes-controls">
                     <Show when={canManage()}>

@@ -9,6 +9,8 @@ import Modal from "@/components/Modal";
 import { showConfirmModal } from "@/utils/modal";
 import LiquidContainer from "@/components/LiquidContainer";
 
+import PageTitle from "@/components/PageTitle";
+
 interface ExecMember {
     id: number;
     user_id?: number;
@@ -147,7 +149,7 @@ export default function ExecPage() {
             <div class="container">
                 <header class="page-header">
                     <div class="header-text">
-                        <h1>Executive Committee</h1>
+                        <PageTitle text="Executive Committee" />
                         <p>The team running the club for the current academic year.</p>
                     </div>
                     <Show when={canManage()}>

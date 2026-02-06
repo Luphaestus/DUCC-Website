@@ -226,11 +226,14 @@ export default function LiquidContainer(props: LiquidProps) {
 
   const resize = () => {
     if (!canvasRef || !gl || !containerRef) return;
-    const rect = containerRef.getBoundingClientRect();
+    const width = containerRef.offsetWidth;
+    const height = containerRef.offsetHeight;
     const dpr = window.devicePixelRatio || 1;
-    canvasRef.width = rect.width * dpr;
-    canvasRef.height = rect.height * dpr;
+    
+    canvasRef.width = width * dpr;
+    canvasRef.height = height * dpr;
     gl.viewport(0, 0, canvasRef.width, canvasRef.height);
+    
     const uResolution = gl.getUniformLocation(program!, 'uResolution');
     gl.uniform2f(uResolution, canvasRef.width, canvasRef.height);
     updateTintCache();
@@ -283,12 +286,19 @@ export default function LiquidContainer(props: LiquidProps) {
     updateTintCache();
     initWebGL();
     resize();
-    render(true); // Paint first frame immediately
-    window.addEventListener('resize', resize);
+    render(true);
+
+    const resizeObserver = new ResizeObserver(() => {
+        resize();
+    });
+    if (containerRef) resizeObserver.observe(containerRef);
+
+    onCleanup(() => {
+        resizeObserver.disconnect();
+    });
   });
 
   onCleanup(() => {
-    window.removeEventListener('resize', resize);
     cancelAnimationFrame(animationFrameId);
   });
 
@@ -304,13 +314,26 @@ export default function LiquidContainer(props: LiquidProps) {
           position: 'relative',
           padding: merged.padding,
           'border-radius': `${effectiveCornerRadius()}px`,
-          'backdrop-filter': `blur(${effectiveBlurPx()}px) saturate(${merged.saturation}%)`,
-          '-webkit-backdrop-filter': `blur(${effectiveBlurPx()}px) saturate(${merged.saturation}%)`,
           'border': '1px solid rgba(255, 255, 255, 0.2)',
           'box-shadow': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+          'will-change': 'transform, opacity',
           ...merged.style
         }}
       >
+        {/* CSS Fallback Blur (Always visible as base layer) */}
+        <div 
+          style={{
+            position: 'absolute',
+            inset: 0,
+            'background': 'var(--glass-bg)',
+            'backdrop-filter': `blur(${effectiveBlurPx()}px) saturate(${merged.saturation}%)`,
+            '-webkit-backdrop-filter': `blur(${effectiveBlurPx()}px) saturate(${merged.saturation}%)`,
+            'border-radius': `${effectiveCornerRadius()}px`,
+            'z-index': 0,
+            'pointer-events': 'none'
+          }}
+        />
+
         <canvas
           ref={canvasRef}
           style={{
