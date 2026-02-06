@@ -50,8 +50,7 @@ export default function Modal(props: ModalProps) {
 
     return (
         <div 
-            class="c-modal-overlay" 
-            style={{ display: isRendered() ? "flex" : "none" }}
+            class="c-modal-overlay" classList={{ 'modal-display': isRendered(), 'modal-hidden': !isRendered() }}
             classList={{ visible: isVisible() }}
             onClick={() => handleClose()}
         >

@@ -84,7 +84,7 @@ export default function GlobalsPage() {
                                                 <div class="image-global-display">
                                                     <div 
                                                         class="image-preview-global" 
-                                                        style={{ 'background-image': `url('${setting.data || '/images/misc/ducc.png'}')` }}
+                                                        style={{ '--setting-url': `url('${setting.data || '/images/misc/ducc.png'}')` }}
                                                         onClick={(e) => {
                                                             const el = e.currentTarget;
                                                             el.classList.toggle('preview-open');

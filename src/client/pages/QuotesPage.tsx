@@ -78,7 +78,7 @@ export default function QuotesPage() {
             <For each={props.data?.quotes}>
                 {(quote) => (
                     <LiquidContainer borderRadius={32} tintOpacity={0.1}>
-                        <div class="quote-card" style={{ background: 'transparent', border: 'none', 'box-shadow': 'none' }}>
+                        <div class="quote-card">
                             <div class="quote-icon-bg" innerHTML={FORMAT_QUOTE_SVG} />
                             <div class="quote-card-header">
                                 <Avatar user={quote.quoted_user} classes="mini" />

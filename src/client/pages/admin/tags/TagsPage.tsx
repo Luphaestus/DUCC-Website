@@ -53,7 +53,7 @@ export default function TagsPage() {
                                         <td data-label="Name" class="primary-text">{tag.name}</td>
                                         <td data-label="Colour">
                                             {/* We use the Tag component or simple badge */}
-                                            <span class="badge" style={{ "background-color": tag.color }}>{tag.name}</span>
+                                            <span class="badge tag-badge-simple" style={{ "--tag-colour": tag.color }}>{tag.name}</span>
                                         </td>
                                         <td data-label="Min Difficulty">
                                             <span class={`badge ${tag.min_difficulty ? `difficulty-${tag.min_difficulty}` : 'neutral'}`}>

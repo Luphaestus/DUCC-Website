@@ -28,6 +28,7 @@ interface TagProps {
     color?: string;
     class?: string;
     style?: any;
+    dimmed?: boolean;
 }
 
 interface TagComponent {
@@ -42,10 +43,12 @@ export const Tag: TagComponent = (props: TagProps) => {
     
     return (
         <span 
-            class={`tag-badge ${props.class || ''}`} 
+            class={`tag-badge tag-badge-style ${props.class || ''}`} 
+            classList={{ 'tag-dimmed': props.dimmed }}
             style={{
                 "--tag-colour": colour(),
                 "--tag-text-colour": textColour(),
+                "--original-color": colour(),
                 ...props.style
             }}
         >

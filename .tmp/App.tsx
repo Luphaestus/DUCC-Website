@@ -31,21 +31,25 @@ const App: React.FC = () => {
   if (!mounted) return null;
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-gray-50 dark:bg-slate-900 transition-colors duration-500">
-      
+    <div className="app-container">
+
       {/* 3D Background - Full Screen */}
-      <div className="absolute inset-0 z-0">
+      <div className="scene-wrapper">
         <Scene theme={theme} />
       </div>
 
       {/* Floating Theme Toggle */}
-      <div className="absolute top-6 right-6 z-50">
+      <div className="theme-toggle-wrapper">
         <button
           onClick={toggleTheme}
-          className="p-3 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 text-slate-900 dark:text-white transition-all shadow-xl hover:scale-105 active:scale-95"
+          className="theme-toggle-btn"
           aria-label="Toggle Theme"
         >
-          {theme === 'dark' ? <Sun size={24} className="text-yellow-400" /> : <Moon size={24} className="text-slate-700" />}
+          {theme === 'dark' ? (
+            <Sun size={24} className="sun-icon" />
+          ) : (
+            <Moon size={24} className="moon-icon" />
+          )}
         </button>
       </div>
 

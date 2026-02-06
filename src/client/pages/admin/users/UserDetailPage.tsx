@@ -18,6 +18,7 @@ import { onUpdate } from "@/utils/updates";
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
 import { useNotifications } from "@/stores/notifications";
 import { ProfilePictureChangedEvent } from "@/utils/events/events";
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function UserDetailPage() {
     const { notify } = useNotifications();
@@ -123,27 +124,16 @@ export default function UserDetailPage() {
                     return (
                         <div class="dashboard-container">
                             <aside class="dashboard-sidebar">
-                                <div class="user-identity-card" style={{
-                                    background: "var(--glass-bg)",
-                                    border: "var(--glass-border)",
-                                    padding: "1.5rem",
-                                    "border-radius": "var(--border-radius-lg)",
-                                    display: "flex",
-                                    "flex-direction": "column",
-                                    "align-items": "center",
-                                    gap: "1rem",
-                                    "backdrop-filter": "blur(12px)",
-                                    "margin-bottom": "1rem"
-                                }}>
+                                <LiquidContainer class="user-identity-card flex-column-gap-half mb-4" padding="1.5rem">
                                     <div class="profile-picture-container clickable" onClick={() => uploadWidget?.inputEl.click()}>
                                         <Avatar user={userData()} classes="large" />
                                         <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
                                     </div>
-                                    <div class="user-info" style={{ "text-align": "center" }}>
-                                        <h2 style={{ margin: 0, "font-size": "1.25rem" }}>{userData().first_name} {userData().last_name}</h2>
+                                    <div class="user-info full-width-center">
+                                        <h2 class="text-xl m-0">{userData().first_name} {userData().last_name}</h2>
                                         <span class="badge neutral">ID: {userData().id}</span>
                                     </div>
-                                </div>
+                                </LiquidContainer>
 
                                 <TabNav class="vertical-sidebar">
                                     <button class="nav-item" classList={{ active: currentTab() === 'overview' }} onClick={() => setSearchParams({ tab: 'overview' })}>

@@ -15,13 +15,19 @@
 @use "partials/base";
 @use "partials/utilities";
 @use "partials/page_layouts";
+@use "partials/temporary_landing";
 
 // --- Components ---
 @use "partials/components/common";
+@use "partials/components/utilities_extra";
 @use "partials/components/avatar";
 @use "partials/components/navbar";
 @use "partials/components/notification";
 @use "partials/components/background";
+@use "partials/components/disciplines";
+@use "partials/components/hero";
+@use "partials/components/events" as comp_events;
+@use "partials/components/footer" as comp_footer;
 
 // --- Widgets ---
 @use "partials/widgets/upload";

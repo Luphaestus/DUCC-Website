@@ -12,6 +12,7 @@ import { TabNav } from "@/widgets/TabNav";
 import Panel from "@/components/Panel";
 import { ProfilePictureChangedEvent } from "@/utils/events/events";
 import { onCleanup, onMount } from "solid-js";
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -170,7 +171,7 @@ export default function UsersPage() {
 
     return (
         <div class="glass-layout">
-             <div class="glass-toolbar">
+             <LiquidContainer class="glass-toolbar" padding="0.5rem 1rem" borderRadius={100}>
                 <div class="toolbar-left">
                     <TabNav class="tab-nav-simple">
                         <button 
@@ -193,7 +194,7 @@ export default function UsersPage() {
                         <button type="submit" class="search-icon-btn" innerHTML={SEARCH_SVG} />
                     </form>
                  </div>
-            </div>
+            </LiquidContainer>
 
             <Panel class="glass-table-container">
                 <div class="table-responsive">

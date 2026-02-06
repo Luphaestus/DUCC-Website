@@ -55,7 +55,7 @@ export default function SlidesPage() {
                         </Show>
                         <For each={slides()}>
                             {(slide) => (
-                                <div class="image-item slide-item" style={{ 'background-image': `url('${slide.url}')` }}>
+                                <div class="image-item slide-item slide-item-bg" style={{ '--slide-url': `url('${slide.url}')` }}>
                                     <div class="slide-actions">
                                         <button class="delete-slide-btn delete-icon-btn" onClick={() => handleDelete(slide.id)} title="Delete Slide" innerHTML={DELETE_SVG} />
                                     </div>
@@ -70,12 +70,29 @@ export default function SlidesPage() {
                 <UploadWidget 
                     selectMode="single"
                     autoUpload={true}
-                    onImageSelect={async ({ id }) => {
-                        setShowUpload(false);
+                    enableLibrary={true}
+                    onUploadComplete={async (id) => {
                         if (id) {
-                            await apiRequest('POST', '/api/slides/import', { fileId: id });
-                            notify('Success', 'Slide added', 'success');
-                            refetch();
+                            try {
+                                await apiRequest('POST', '/api/slides/import', { fileId: id });
+                                notify('Success', 'Slide added', 'success');
+                                setShowUpload(false);
+                                refetch();
+                            } catch (e: any) {
+                                notify('Error', e.message, 'error');
+                            }
+                        }
+                    }}
+                    onImageSelect={async ({ id }) => {
+                        if (id) {
+                            try {
+                                await apiRequest('POST', '/api/slides/import', { fileId: id });
+                                notify('Success', 'Slide added', 'success');
+                                setShowUpload(false);
+                                refetch();
+                            } catch (e: any) {
+                                notify('Error', e.message, 'error');
+                            }
                         }
                     }}
                 />

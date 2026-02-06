@@ -45,9 +45,9 @@ export default function SwimsTab(props: { user: any }) {
     };
 
     return (
-        <div class="swims-management-grid" style={{ display: "grid", "grid-template-columns": "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
+        <div class="swims-management-grid swims-grid">
             <Panel title="Manage Swims" icon={POOL_SVG}>
-                <div class="current-count" style={{ "font-size": "1.2rem", "margin-bottom": "1rem" }}>
+                <div class="current-count">
                     <span class="count-label">Current Swims: </span>
                     <strong class="count-value">
                         <Show when={!counts.loading} fallback="...">
@@ -56,15 +56,14 @@ export default function SwimsTab(props: { user: any }) {
                     </strong>
                 </div>
                 <div class="control-actions">
-                    <div class="input-group" style={{ display: "flex", gap: "0.5rem" }}>
-                        <input type="number" style={{ width: "80px", margin: 0 }} value={swimAmount()} onInput={e => setSwimAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
-                        <button class="primary" style={{ margin: 0, flex: 1 }} onClick={() => handleAdd('swims', swimAmount())}><span innerHTML={ADD_SVG} /> Add</button>
-                    </div>
+                    <div class="input-group input-group-row">
+                    <input type="number" class="input-number-small" value={swimAmount()} onInput={e => setSwimAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
+                    <button class="primary btn-flex-1" onClick={() => handleAdd('swims', swimAmount())}><span innerHTML={ADD_SVG} /> Add</button>                    </div>
                 </div>
             </Panel>
 
             <Panel title="Manage Booties" icon={<div class="bootie-icon">🥾</div>}>
-                <div class="current-count" style={{ "font-size": "1.2rem", "margin-bottom": "1rem" }}>
+                <div class="current-count">
                     <span class="count-label">Current Booties: </span>
                     <strong class="count-value">
                         <Show when={!counts.loading} fallback="...">
@@ -73,10 +72,9 @@ export default function SwimsTab(props: { user: any }) {
                     </strong>
                 </div>
                 <div class="control-actions">
-                    <div class="input-group" style={{ display: "flex", gap: "0.5rem" }}>
-                        <input type="number" style={{ width: "80px", margin: 0 }} value={bootieAmount()} onInput={e => setBootieAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
-                        <button class="secondary" style={{ margin: 0, flex: 1 }} onClick={() => handleAdd('booties', bootieAmount())}><span innerHTML={ADD_SVG} /> Add</button>
-                    </div>
+                    <div class="input-group input-group-row">
+                    <input type="number" class="input-number-small" value={bootieAmount()} onInput={e => setBootieAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
+                    <button class="secondary btn-flex-1" onClick={() => handleAdd('booties', bootieAmount())}><span innerHTML={ADD_SVG} /> Add</button>                    </div>
                 </div>
             </Panel>
         </div>

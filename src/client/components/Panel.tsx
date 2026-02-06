@@ -18,7 +18,7 @@ export default function Panel(props: PanelProps) {
             borderRadius={24}
             tintOpacity={0.15}
         >
-            <article id={props.id} style={{ background: 'transparent', border: 'none', 'box-shadow': 'none' }}>
+            <article id={props.id} class="panel-transparent">
                 <Show when={props.title}>
                     <header class="box-header">
                         <h3>

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "@solidjs/router";
 import { useAuth } from "@/stores/auth";
 import AdminNavBar from "@/components/admin/AdminNavBar";
 import { apiRequest } from "@/utils/api";
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function AdminLayout(props: ParentProps) {
     const { user, isAuthenticated, isAdmin } = useAuth();
@@ -40,7 +41,7 @@ export default function AdminLayout(props: ParentProps) {
             </header>
             
             <Show when={hasNav() && !isDashboard() && !isDetailsPage()}>
-                <div class="glass-toolbar">
+                <LiquidContainer class="glass-toolbar" padding="0.5rem 1rem" borderRadius={100}>
                     <div class="toolbar-left">
                         <AdminNavBar 
                             permissions={user()!.permissions} 
@@ -50,7 +51,7 @@ export default function AdminLayout(props: ParentProps) {
                     <div class="toolbar-right">
                         <div id="admin-header-actions" class="header-actions"></div>
                     </div>
-                </div>
+                </LiquidContainer>
             </Show>
 
             <div id="admin-content-wrapper" class="admin-content-wrapper">

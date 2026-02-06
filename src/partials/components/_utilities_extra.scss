@@ -1,0 +1,152 @@
+@use "../mixins" as *;
+
+.panel-transparent {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.item-list-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.item-list-scroll-small {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}
+
+.full-width-center {
+    text-align: center;
+    display: block;
+    width: 100%;
+}
+
+.flex-column-gap-half {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.quote-card {
+    @extend .panel-transparent;
+}
+
+.event-image-header {
+    background-image: var(--event-image-url);
+}
+
+.tag-badge-style {
+    background-color: var(--tag-colour);
+    color: var(--tag-text-colour);
+}
+
+.tag-badge-simple {
+    background-color: var(--tag-colour);
+}
+
+.dashboard-card {
+    @extend .panel-transparent;
+}
+
+.upload-preview-image {
+    background-image: var(--preview-url);
+}
+
+.avatar-style {
+    background-color: var(--avatar-color);
+}
+
+.slide-item-bg {
+    background-image: var(--slide-url);
+}
+
+.global-setting-bg {
+    background-image: var(--setting-url);
+}
+
+.progress-bar-style {
+    width: var(--progress-width);
+}
+
+.bar-height-style {
+    height: var(--bar-height);
+}
+
+.filter-panel-position {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.5rem;
+    width: 300px;
+    z-index: 100;
+}
+
+.modal-display {
+    display: flex;
+}
+
+.modal-hidden {
+    display: none;
+}
+
+.page-buttons {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.pagination-ellipsis {
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+}
+
+.pagination-disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+}
+
+.pagination-enabled {
+    opacity: 1;
+    cursor: pointer;
+}
+
+.swims-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.current-count {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.input-group-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-number-small {
+    width: 80px;
+    margin: 0;
+}
+
+.btn-flex-1 {
+    margin: 0;
+    flex: 1;
+}
+
+.profile-avatar-size {
+    width: auto;
+    aspect-ratio: 1;
+    height: auto;
+}
+
+.tag-dimmed {
+    --tag-colour: color-mix(in srgb, var(--original-color) 40%, transparent);
+}

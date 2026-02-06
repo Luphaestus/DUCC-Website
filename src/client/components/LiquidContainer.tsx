@@ -1,4 +1,5 @@
-import { onMount, onCleanup, mergeProps, ParentProps, createContext, useContext } from 'solid-js';
+import { onMount, onCleanup, mergeProps, ParentProps, createContext, useContext, splitProps, createSignal } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 
 const LiquidContext = createContext<any>(null);
 
@@ -7,12 +8,14 @@ export function useLiquidContainer() {
 }
 
 interface LiquidProps extends ParentProps {
+  as?: string;
   class?: string;
+  classList?: { [k: string]: boolean | undefined };
   style?: any; 
   borderRadius?: number;
   tintOpacity?: number;
   type?: 'rounded' | 'circle' | 'pill';
-  blurRadius?: number;
+  blurAmount?: number;
   edgeIntensity?: number;
   rimIntensity?: number;
   displacementScale?: number;
@@ -22,6 +25,7 @@ interface LiquidProps extends ParentProps {
   padding?: string;
   onClick?: (e: MouseEvent) => void;
   mouseContainer?: HTMLElement | null;
+  [key: string]: any; // Allow other props
 }
 
 const VERTEX_SHADER = `
@@ -44,6 +48,8 @@ const FRAGMENT_SHADER = `
   uniform float uCornerRadius;
   uniform float uGrainIntensity;
   uniform float uFrostIntensity;
+  uniform vec3 uTint;
+  uniform float uTintOpacity;
   
   varying vec2 vUv;
 
@@ -123,16 +129,23 @@ const FRAGMENT_SHADER = `
     float dist = sdRoundedBox(p, boxSize, uCornerRadius);
     float alpha = 1.0 - smoothstep(-1.0, 1.0, dist);
     
-    vec3 finalColor = vec3(1.0) * (specular + rim);
+    vec3 finalColor = uTint * (uTintOpacity + specular + rim);
     finalColor += refractionColor * 0.15;
     finalColor += grain;
     
-    gl_FragColor = vec4(finalColor, alpha * 0.15 + specular * alpha);
+    gl_FragColor = vec4(finalColor, alpha * (uTintOpacity + 0.05) + specular * alpha);
   }
 `;
 
 export default function LiquidContainer(props: LiquidProps) {
+  const [local, others] = splitProps(props, [
+    'as', 'class', 'style', 'displacementScale', 'blurAmount', 
+    'saturation', 'aberrationIntensity', 'elasticity', 
+    'borderRadius', 'padding', 'type', 'children'
+  ]);
+
   const merged = mergeProps({
+    as: 'div',
     class: '',
     style: {},
     displacementScale: 64,
@@ -143,23 +156,40 @@ export default function LiquidContainer(props: LiquidProps) {
     borderRadius: 20,
     padding: '0px',
     type: 'rounded'
-  }, props);
+  }, local);
 
+  const [isReady, setIsReady] = createSignal(false);
   let canvasRef: HTMLCanvasElement | undefined;
-  let containerRef: HTMLDivElement | undefined;
+  let containerRef: HTMLElement | undefined;
   let gl: WebGLRenderingContext | null = null;
   let program: WebGLProgram | null = null;
   let animationFrameId: number;
   
   const mouseState = { current: { x: 0, y: 0 }, target: { x: 0, y: 0 }, velocity: { x: 0, y: 0 } };
   const startTime = Date.now();
+  let cachedTint = { r: 1.0, g: 1.0, b: 1.0, a: 0.15 };
 
   const effectiveCornerRadius = () => merged.borderRadius;
   const effectiveBlurPx = () => merged.blurAmount * 160; 
 
+  const updateTintCache = () => {
+    if (typeof window === 'undefined') return;
+    const style = window.getComputedStyle(document.body);
+    const glassBg = style.getPropertyValue('--glass-bg').trim();
+    const match = glassBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    if (match) {
+      cachedTint = {
+        r: parseInt(match[1]) / 255,
+        g: parseInt(match[2]) / 255,
+        b: parseInt(match[3]) / 255,
+        a: match[4] ? parseFloat(match[4]) : 1.0
+      };
+    }
+  };
+
   const initWebGL = () => {
     if (!canvasRef) return;
-    gl = canvasRef.getContext('webgl', { alpha: true, antialias: true });
+    gl = canvasRef.getContext('webgl', { alpha: true, antialias: true, preserveDrawingBuffer: false });
     if (!gl) return;
 
     const createShader = (type: number, source: string) => {
@@ -167,7 +197,10 @@ export default function LiquidContainer(props: LiquidProps) {
       if (!shader) return null;
       gl!.shaderSource(shader, source);
       gl!.compileShader(shader);
-      if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) return null;
+      if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
+        console.error(gl!.getShaderInfoLog(shader));
+        return null;
+      }
       return shader;
     };
 
@@ -200,9 +233,10 @@ export default function LiquidContainer(props: LiquidProps) {
     gl.viewport(0, 0, canvasRef.width, canvasRef.height);
     const uResolution = gl.getUniformLocation(program!, 'uResolution');
     gl.uniform2f(uResolution, canvasRef.width, canvasRef.height);
+    updateTintCache();
   };
 
-  const render = () => {
+  const render = (isInitial = false) => {
     if (!gl || !program) return;
     const time = (Date.now() - startTime) * 0.001;
     const spring = 0.1, friction = 0.8;
@@ -220,11 +254,18 @@ export default function LiquidContainer(props: LiquidProps) {
     gl.uniform1f(gl.getUniformLocation(program, 'uElasticity'), merged.elasticity);
     gl.uniform1f(gl.getUniformLocation(program, 'uAberration'), merged.aberrationIntensity);
     gl.uniform1f(gl.getUniformLocation(program, 'uCornerRadius'), merged.borderRadius * dpr);
-    gl.uniform1f(gl.getUniformLocation(program, 'uGrainIntensity'), 0.02); // Permanently 0.02
-    gl.uniform1f(gl.getUniformLocation(program, 'uFrostIntensity'), 0.0); // Permanently 0.0
+    gl.uniform1f(gl.getUniformLocation(program, 'uGrainIntensity'), 0.02);
+    gl.uniform1f(gl.getUniformLocation(program, 'uFrostIntensity'), 0.0);
+
+    gl.uniform3f(gl.getUniformLocation(program, 'uTint'), cachedTint.r, cachedTint.g, cachedTint.b);
+    gl.uniform1f(gl.getUniformLocation(program, 'uTintOpacity'), cachedTint.a);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-    animationFrameId = requestAnimationFrame(render);
+    
+    if (isInitial) {
+        setIsReady(true);
+    }
+    animationFrameId = requestAnimationFrame(() => render(false));
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -232,12 +273,17 @@ export default function LiquidContainer(props: LiquidProps) {
     const rect = containerRef.getBoundingClientRect();
     mouseState.target.x = e.clientX - rect.left;
     mouseState.target.y = e.clientY - rect.top;
+    
+    if (typeof others.onMouseMove === 'function') {
+        others.onMouseMove(e);
+    }
   };
 
   onMount(() => {
+    updateTintCache();
     initWebGL();
     resize();
-    render();
+    render(true); // Paint first frame immediately
     window.addEventListener('resize', resize);
   });
 
@@ -248,11 +294,12 @@ export default function LiquidContainer(props: LiquidProps) {
 
   return (
     <LiquidContext.Provider value={null}>
-      <div
+      <Dynamic
+        component={merged.as}
         ref={containerRef}
         class={`liquid-container ${merged.class}`}
-        onClick={merged.onClick}
         onMouseMove={handleMouseMove}
+        {...others}
         style={{
           position: 'relative',
           padding: merged.padding,
@@ -275,7 +322,8 @@ export default function LiquidContainer(props: LiquidProps) {
             'pointer-events': 'none',
             'border-radius': `${effectiveCornerRadius()}px`,
             'z-index': 0,
-            opacity: 0.8
+            opacity: isReady() ? 0.8 : 0,
+            transition: 'opacity 0.5s ease-in-out'
           }}
         />
         <div style={{ 
@@ -283,14 +331,15 @@ export default function LiquidContainer(props: LiquidProps) {
             'z-index': 1, 
             display: 'flex', 
             'align-items': 'inherit', 
-            'justify-content': 'inherit',
-            'flex-direction': 'inherit',
+            'justify-content': 'inherit', 
+            'flex-direction': 'inherit', 
+            'gap': 'inherit',
             width: '100%',
             height: '100%'
         }}>
           {merged.children}
         </div>
-      </div>
+      </Dynamic>
     </LiquidContext.Provider>
   );
 }

@@ -108,8 +108,8 @@ export default function StatsPage() {
                                         <For each={financeData()?.monthly || []} fallback={<div class="no-data-msg">No data available</div>}>
                                             {m => (
                                                 <div class="month-col">
-                                                    <div class="bar income" style={{ height: `${((m.income || 0) / maxFinance()) * 130}px` }} title={`Income: £${m.income}`}></div>
-                                                    <div class="bar expense" style={{ height: `${((m.expense || 0) / maxFinance()) * 130}px` }} title={`Expense: £${m.expense}`}></div>
+                                                    <div class="bar income bar-height-style" style={{ "--bar-height": `${((m.income || 0) / maxFinance()) * 130}px` }} title={`Income: £${m.income}`}></div>
+                                                    <div class="bar expense bar-height-style" style={{ "--bar-height": `${((m.expense || 0) / maxFinance()) * 130}px` }} title={`Expense: £${m.expense}`}></div>
                                                     <span class="label">{m.month?.split('-')[1] || '?'}</span>
                                                 </div>
                                             )}
@@ -128,7 +128,7 @@ export default function StatsPage() {
                                             <div class="cat-row">
                                                 <span class="cat-name">{c.category}</span>
                                                 <div class="progress-bg">
-                                                    <div class="progress-fill" style={{ width: `${((c.total || 0) / maxCategory()) * 100}%` }}></div>
+                                                    <div class="progress-fill progress-bar-style" style={{ "--progress-width": `${((c.total || 0) / maxCategory()) * 100}%` }}></div>
                                                 </div>
                                                 <span class="cat-val">£{(c.total || 0).toFixed(0)}</span>
                                             </div>
@@ -164,7 +164,7 @@ export default function StatsPage() {
                                             <div class="cat-row">
                                                 <span class="cat-name">{t.name}</span>
                                                 <div class="progress-bg">
-                                                    <div class="progress-fill" style={{ width: `${((t.count || 0) / maxType()) * 100}%` }}></div>
+                                                    <div class="progress-fill progress-bar-style" style={{ "--progress-width": `${((t.count || 0) / maxType()) * 100}%` }}></div>
                                                 </div>
                                                 <span class="cat-val">{t.count}</span>
                                             </div>

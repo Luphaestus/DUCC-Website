@@ -11,6 +11,7 @@ import { Tag } from '../widgets/Tag';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import { onUpdate } from "@/utils/updates";
+import LiquidContainer from "@/components/LiquidContainer";
 
 interface KitItem {
     id: number;
@@ -142,11 +143,11 @@ export default function EventDetailPage() {
                 <Show when={eventData()} fallback={<div id="event-detail" class="c-modal-body"><p aria-busy="true">Loading event...</p></div>}>
                     {(event) => (
                         <div id="event-detail">
-                            <div class="event-modal-header" style={{ "--event-image-url": `url('${event().image_url || '/images/misc/ducc.png'}')` }}>
+                            <div class="event-modal-header event-image-header" style={{ "--event-image-url": `url('${event().image_url || '/images/misc/ducc.png'}')` }}>
                                 <div class="header-content">
                                     <div class="event-tags">
                                         <For each={event().tags}>
-                                            {(tag) => <Tag name={tag.name} color={tag.color} style={{ "--tag-colour": `${tag.color}65` }} />}
+                                            {(tag) => <Tag name={tag.name} color={tag.color} dimmed={true} />}
                                         </For>
                                     </div>
                                     <h2 class="event-title">{event().title}</h2>
@@ -166,7 +167,7 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
 
-                                <div class="glass-panel event-details-content">
+                                <LiquidContainer class="event-details-content" padding="1.25rem">
                                     <div class="description-section">
                                         <h3 class="section-title"><span innerHTML={DESCRIPTION_SVG} /> Description</h3>
                                         <p class="description-text">{event().description || 'No description provided.'}</p>
@@ -184,7 +185,7 @@ export default function EventDetailPage() {
                                             </For>
                                         </div>
                                     </div>
-                                </div>
+                                </LiquidContainer>
 
                                 <div class="event-actions">
                                     <Show when={!isAttending()}>
@@ -227,7 +228,7 @@ export default function EventDetailPage() {
 
                 <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title="Request Club Kit">
                     <form onSubmit={handleRequestKit} class="modern-form">
-                        <div class="item-list mb-4" style={{ "max-height": "400px", "overflow-y": "auto" }}>
+                        <div class="item-list mb-4 item-list-scroll">
                             <For each={kitItems() || []}>
                                 {(item: KitItem) => (
                                     <label class="list-item checkbox-item">

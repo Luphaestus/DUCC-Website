@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: resolve(__dirname, 'dist'),
-    emptyOutDir: true,
+    emptyOutDir: mode === 'production',
     sourcemap: true,
     minify: mode === 'production',
     rollupOptions: {

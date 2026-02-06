@@ -222,8 +222,8 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                         return (
                                             <div 
                                                 class="tag-badge" 
-                                                classList={{ selected: isActive() }} 
-                                                style={{ "--tag-colour": "var(--pico-primary)", "background-color": isActive() ? "var(--tag-colour)" : undefined, "border-color": "var(--tag-colour)", "cursor": "pointer" }}
+                                                classList={{ selected: isActive(), 'tag-badge-style': true }}
+                                                style={{ "--tag-colour": "var(--pico-primary)", "--tag-text-colour": "var(--pico-primary-inverse)" }}
                                                 onClick={() => (isActive() && role.name !== 'President') ? handleRemoveRole(role.id) : handleAddRole(role.id)}
                                                 onMouseEnter={() => setHoveredRole(role.id)}
                                                 onMouseLeave={() => setHoveredRole(null)}
@@ -257,17 +257,17 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                         class="tag-badge" 
                                         classList={{ 
                                             selected: isActive(), 
-                                            inherited: isInherited() 
+                                            inherited: isInherited(),
+                                            'tag-badge-style': isHoveredInherited() || isActive()
                                         }} 
                                         style={{ 
-                                            "--tag-colour": "var(--pico-color)", 
-                                            "background-color": isHoveredInherited() ? "var(--pico-primary)" : (isActive() ? (isInherited() ? "rgba(var(--pico-color-rgb), 0.1)" : "var(--pico-color)") : undefined), 
-                                            "color": isHoveredInherited() ? "var(--pico-primary-inverse)" : undefined,
+                                            "--tag-colour": isHoveredInherited() ? "var(--pico-primary)" : (isActive() ? (isInherited() ? "rgba(var(--pico-color-rgb), 0.1)" : "var(--pico-color)") : undefined), 
+                                            "--tag-text-colour": isHoveredInherited() ? "var(--pico-primary-inverse)" : undefined,
                                             "border-color": isHoveredInherited() ? "var(--pico-primary)" : "var(--pico-color)", 
                                             "cursor": isInherited() ? "not-allowed" : "pointer",
                                             "opacity": (hoveredRole() && !isHoveredInherited() && isActive()) ? 0.5 : 1,
                                             "transition": "all 0.2s ease"
-                                        }}
+                                        } as any}
                                         onClick={() => {
                                             if (isInherited()) return;
                                             isDirect() ? handleRemovePerm(perm.id) : handleAddPerm(perm.id);
@@ -298,8 +298,8 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                         return (
                                             <div 
                                                 class="tag-badge" 
-                                                classList={{ selected: isActive() }} 
-                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || ''), "background-color": isActive() ? "var(--tag-colour)" : undefined, "border-color": "var(--tag-colour)", "cursor": "pointer" }}
+                                                classList={{ selected: isActive(), 'tag-badge-style': true }}
+                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || '') }}
                                                 onClick={() => toggleWhitelist(tag.id, !isActive())}
                                             >
                                                 {tag.name}
@@ -318,8 +318,8 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                         return (
                                             <div 
                                                 class="tag-badge" 
-                                                classList={{ selected: isActive() }} 
-                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || ''), "background-color": isActive() ? "var(--tag-colour)" : undefined, "border-color": "var(--tag-colour)", "cursor": "pointer" }}
+                                                classList={{ selected: isActive(), 'tag-badge-style': true }}
+                                                style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || '') }}
                                                 onClick={() => toggleManaged(tag.id, !isActive())}
                                             >
                                                 {tag.name}

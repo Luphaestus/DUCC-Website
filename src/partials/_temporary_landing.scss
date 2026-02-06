@@ -1,0 +1,66 @@
+@use "theme";
+
+.app-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f9fafb;
+  transition: background-color 0.5s ease;
+
+  body[data-theme="dark"] & {
+    background-color: #0f172a;
+  }
+}
+
+.scene-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.theme-toggle-wrapper {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+}
+
+.theme-toggle-btn {
+  padding: 0.75rem !important;
+  border-radius: 9999px !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+  min-height: auto !important;
+  width: auto !important;
+
+  body[data-theme="dark"] & {
+    color: white !important;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.05) !important;
+  }
+
+  &:active {
+    transform: scale(0.95) !important;
+  }
+
+  .sun-icon {
+    color: #fbbf24;
+  }
+
+  .moon-icon {
+    color: #334155;
+  }
+}
+
+.scene-canvas {
+  transition: background-color 0.5s ease;
+}

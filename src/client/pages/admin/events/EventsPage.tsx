@@ -7,6 +7,7 @@ import CalendarView from "./CalendarView";
 import { 
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG
 } from '@/utils/icons';
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function EventsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -148,7 +149,7 @@ export default function EventsPage() {
 
     return (
         <div class="glass-layout">
-            <div class="glass-toolbar">
+            <LiquidContainer class="glass-toolbar" padding="0.5rem 1rem" borderRadius={100}>
                  <div class="toolbar-content">
                     <div class="toolbar-left">
                         <Show when={viewMode() === 'list'}>
@@ -176,7 +177,7 @@ export default function EventsPage() {
                          <button onClick={() => navigate('/admin/event/new')} class="small-btn">Create Event</button>
                         
                         <Show when={showFilters() && viewMode() === 'list'}>
-                            <div class="glass-filter-panel">
+                            <LiquidContainer class="glass-filter-panel filter-panel-position" padding="1.5rem">
                                 <form class="filter-grid" onSubmit={handleApplyFilters}>
                                     <label>
                                         Events Display
@@ -214,26 +215,24 @@ export default function EventsPage() {
                                         <button type="submit" class="small-btn">Apply Filters</button>
                                     </div>
                                 </form>
-                            </div>
+                            </LiquidContainer>
                         </Show>
                     </div>
                 </div>
-            </div>
+            </LiquidContainer>
 
             <Show when={viewMode() === 'list'}>
-                <div class="glass-table-container">
-                    <div class="table-responsive">
-                        <Show when={data.loading && !data() && !oldData()}>
-                            <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
-                        </Show>
-                        <PaginationSlider 
-                            currentPage={page()} 
-                            oldContent={<EventTable data={oldData()} />}
-                        >
-                            <EventTable data={data()} />
-                        </PaginationSlider>
-                    </div>
-                </div>
+                <LiquidContainer class="table-responsive" padding="0">
+                    <Show when={data.loading && !data() && !oldData()}>
+                        <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
+                    </Show>
+                    <PaginationSlider 
+                        currentPage={page()} 
+                        oldContent={<EventTable data={oldData()} />}
+                    >
+                        <EventTable data={data()} />
+                    </PaginationSlider>
+                </LiquidContainer>
                 
                 <Show when={data()?.totalPages}>
                     <Pagination 

@@ -93,7 +93,7 @@ const startServer = async () => {
     await fastify.register(fastifyStatic, {
       root: [path.join(__dirname, '..', 'dist'), path.join(__dirname, '..', 'public')],
       prefix: '/',
-      wildcard: true,
+      wildcard: false,
       setHeaders: (res, filePath) => {
         if (isDev) {
           // Disable caching entirely in development for all files
@@ -126,7 +126,7 @@ const startServer = async () => {
 
     /** Security Headers & CSP */
     fastify.addHook('onSend', async (request, reply, payload) => {
-      if (request.url.startsWith('/api/files/') && request.url.endsWith('/download')) {
+      if (payload === null || payload === undefined || (request.url.startsWith('/api/files/') && request.url.endsWith('/download'))) {
         return payload;
       }
 
@@ -155,7 +155,8 @@ const startServer = async () => {
         const liveReloadServer = livereload.createServer({
           host: 'localhost',
           port: 35729,
-          debug: false
+          debug: false,
+          delay: 500
         });
         
         const watchDirs = [
@@ -299,13 +300,42 @@ const startServer = async () => {
         return reply.status(404).send({ message: 'Not Found' });
       }
 
+      // Try to serve static file if it looks like one (has an extension)
+      const pathname = decodeURIComponent(request.url.split('?')[0]);
+      if (pathname.includes('.') && pathname.length > 1) {
+        try {
+          return await reply.sendFile(pathname.startsWith('/') ? pathname.slice(1) : pathname);
+        } catch (e) {
+          return reply.status(404).send({ message: 'Not Found' });
+        }
+      }
+
       if (isDev) {
         reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         reply.header('Pragma', 'no-cache');
         reply.header('Expires', '0');
       }
 
-      return reply.sendFile('index.html', path.join(__dirname, '..', 'dist'));
+      const distIndex = path.join(__dirname, '..', 'dist', 'index.html');
+      
+      // In development, wait for the file to exist (Vite might be rebuilding)
+      if (isDev && !fs.existsSync(distIndex)) {
+        Logger.info(`Waiting for index.html to be built...`);
+        for (let i = 0; i < 30; i++) { // Wait up to 3 seconds
+          if (fs.existsSync(distIndex)) break;
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      if (fs.existsSync(distIndex)) {
+        return reply.status(200).sendFile('index.html', path.join(__dirname, '..', 'dist'));
+      } else {
+        if (isDev) {
+          Logger.warn(`SPA fallback: index.html not found in dist after waiting. URL: ${request.url}`);
+          return reply.status(404).type('text/html').send('<h1>404 - Client not built</h1><p>Vite might still be building the client. Please wait and reload.</p>');
+        }
+        return reply.status(404).send({ message: 'Not Found' });
+      }
     });
 
     if (process.env.NODE_ENV !== 'test') {

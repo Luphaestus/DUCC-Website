@@ -4,6 +4,7 @@ import { useNotifications } from "@/stores/notifications";
 import { requireAuth } from "@/utils/auth";
 import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from "@/utils/icons";
 import { LegalEvent } from "@/utils/events/events";
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function LegalPage() {
     const { notify } = useNotifications();
@@ -74,7 +75,7 @@ export default function LegalPage() {
                 <Show when={!loading()} fallback={<p>Loading...</p>}>
                     <form onSubmit={handleSubmit}>
                         <div class="legal-grid">
-                            <article class="glass-panel">
+                            <LiquidContainer padding="1.25rem">
                                 <header>
                                     <h3><span innerHTML={ACCOUNT_BOX_SVG} /> Personal Information</h3>
                                 </header>
@@ -94,17 +95,17 @@ export default function LegalPage() {
                                     </label>
                                 </div>
                                 <label>Home Address* <textarea name="home_address" rows="3" value={userData().home_address || ''}></textarea></label>
-                            </article>
+                            </LiquidContainer>
 
-                            <article class="glass-panel">
+                            <LiquidContainer padding="1.25rem">
                                 <header>
                                     <h3><span innerHTML={CALL_SVG} /> Emergency Contact</h3>
                                 </header>
                                 <label>Name* <input type="text" name="emergency_contact_name" value={userData().emergency_contact_name || ''} /></label>
                                 <label>Phone Number* <input type="tel" name="emergency_contact_phone" value={userData().emergency_contact_phone || ''} /></label>
-                            </article>
+                            </LiquidContainer>
 
-                            <article class="glass-panel">
+                            <LiquidContainer padding="1.25rem">
                                 <header>
                                     <h3><span innerHTML={MEDICAL_INFORMATION_SVG} /> Medical Information</h3>
                                 </header>
@@ -137,9 +138,9 @@ export default function LegalPage() {
                                 <fieldset>
                                     <label><input type="checkbox" name="agrees_to_fitness_statement" checked={userData().agrees_to_fitness_statement} /> I am not suffering from any medical condition or injury that prevents full participation.*</label>
                                 </fieldset>
-                            </article>
+                            </LiquidContainer>
 
-                            <article class="glass-panel form-box full-width">
+                            <LiquidContainer class="form-box full-width" padding="1.25rem">
                                 <header>
                                     <h3><span innerHTML={CONTRACT_SVG} /> Terms and Conditions</h3>
                                 </header>
@@ -152,7 +153,7 @@ export default function LegalPage() {
                                 </div>
                                 
                                 <button type="submit">Submit Information</button>
-                            </article>
+                            </LiquidContainer>
                         </div>
                     </form>
                 </Show>

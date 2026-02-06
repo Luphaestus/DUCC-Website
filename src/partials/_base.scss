@@ -86,13 +86,16 @@ a[data-nav] {
 }
 
 main.container {
-  padding-top: 5rem;
+  padding-top: 6rem;
   padding-bottom: 2rem;
   min-height: 100vh;
   width: 100vw;
   margin: 0 !important;
   max-width: 100vw;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
+
 
 /* Inline Helpers */
 p button {
@@ -283,5 +286,22 @@ table {
 article {
   header {
     background-color: transparent;
+  }
+}
+
+/* Global Glass Effect for Liquid Components */
+.liquid-container, .liquid-button-wrapper {
+  background: var(--glass-bg) !important;
+  border: var(--glass-border) !important;
+  box-shadow: var(--shadow-glass) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  
+  // Reset inner div if it exists (from LiquidContainer.tsx)
+  & > div {
+    background: transparent !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
   }
 }

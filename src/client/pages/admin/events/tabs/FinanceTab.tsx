@@ -9,6 +9,7 @@ import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
+import LiquidContainer from "@/components/LiquidContainer";
 
 // --- Types ---
 interface Attendee {
@@ -272,7 +273,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                     const totalBoats = createMemo(() => tripDrivers().filter(d => d.status === 'accepted').reduce((sum, d) => sum + d.boats, 0));
 
                                     return (
-                                        <div class="trip-admin-card glass-panel secondary-bg">
+                                        <LiquidContainer class="trip-admin-card secondary-bg" padding="1.25rem">
                                             <div class="trip-info"><strong>{trip.name}</strong><br /><small>{totalSeats()} Seats / {totalBoats()} Boats</small></div>
                                             <div class="trip-actions mt-4">
                                                 <button class="small-btn secondary full-width mb-2" onClick={() => setManageDriversTripId(trip.id)}>{!props.costsReleased ? 'Drivers' : 'View Drivers'} ({tripDrivers().length})</button>
@@ -280,7 +281,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                                     <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'trip', id: trip.id })}>Exclusions</button>
                                                 </Show>
                                             </div>
-                                        </div>
+                                        </LiquidContainer>
                                     );
                                 }}
                             </For>
@@ -308,14 +309,14 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                     <div class="finance-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
                         <For each={expenses()}>
                             {e => (
-                                <div class="expense-admin-card glass-panel secondary-bg">
+                                <LiquidContainer class="expense-admin-card secondary-bg" padding="1.25rem">
                                     <div class="expense-info"><strong>£{e.amount.toFixed(2)}</strong> - {e.first_name}<p class="desc small-text mt-1">{e.description}</p></div>
                                     <Show when={!props.costsReleased}>
                                         <div class="expense-actions mt-4">
                                             <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'expense', id: e.id })}>Exclusions</button>
                                         </div>
                                     </Show>
-                                </div>
+                                </LiquidContainer>
                             )}
                         </For>
                         <Show when={expenses()?.length === 0}>
@@ -419,19 +420,21 @@ function AttendeeSearch(props: { eventId: number, onAdded: () => void }) {
             <div class="form-group">
                 <label>Search Member</label>
                 <input type="text" placeholder="Type name or email..." class="modern-input" onInput={e => setQuery(e.currentTarget.value)} />
-                <div class="glass-panel mt-2" style="max-height: 200px; overflow-y: auto;">
-                    <For each={results()}>
-                        {u => (
-                            <div class="search-result-item" onClick={() => handleAdd(u)} style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.1); display: flex; align-items: center; gap: 0.75rem;">
-                                <Avatar user={u} classes="mini" />
-                                <div>
-                                    <strong>{u.first_name} {u.last_name}</strong><br />
-                                    <small class="muted-text">{u.email}</small>
+                <Show when={results().length > 0}>
+                    <LiquidContainer class="mt-2 item-list-scroll-small" padding="0px">
+                        <For each={results()}>
+                            {u => (
+                                <div class="search-result-item" onClick={() => handleAdd(u)} style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.1); display: flex; align-items: center; gap: 0.75rem;">
+                                    <Avatar user={u} classes="mini" />
+                                    <div>
+                                        <strong>{u.first_name} {u.last_name}</strong><br />
+                                        <small class="muted-text">{u.email}</small>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </For>
-                </div>
+                            )}
+                        </For>
+                    </LiquidContainer>
+                </Show>
             </div>
         </div>
     );

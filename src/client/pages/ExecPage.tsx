@@ -7,6 +7,7 @@ import {
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import { showConfirmModal } from "@/utils/modal";
+import LiquidContainer from "@/components/LiquidContainer";
 
 interface ExecMember {
     id: number;
@@ -257,7 +258,7 @@ export default function ExecPage() {
                                 />
                             </div>
                             <Show when={userResults().length > 0}>
-                                <div class="glass-panel mt-2" style="max-height: 200px; overflow-y: auto;">
+                                <LiquidContainer class="mt-2 item-list-scroll-small" padding="0px">
                                     <For each={userResults()}>
                                         {(u) => (
                                             <div class="search-result-item" onClick={() => {
@@ -273,7 +274,7 @@ export default function ExecPage() {
                                             </div>
                                         )}
                                     </For>
-                                </div>
+                                </LiquidContainer>
                             </Show>
                         </div>
                         <input type="hidden" name="userId" value={selectedUser()?.id || editingMember()?.user_id || ''} />

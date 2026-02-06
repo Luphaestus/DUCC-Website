@@ -2,17 +2,18 @@
 
 /* Toggle Group (Merged Buttons / Sliding look) */
 .toggle-group {
-    background: var(--glass-bg);
-    border: var(--glass-border);
     border-radius: var(--border-radius-pill);
     padding: 0.25rem;
     display: flex;
     justify-content: flex-start;
     flex-wrap: wrap;
     position: relative;
-    backdrop-filter: blur(12px);
     width: fit-content;
     gap: 0;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
 
     .toggle-bg {
         position: absolute;

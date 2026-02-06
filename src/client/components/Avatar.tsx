@@ -43,8 +43,8 @@ export default function Avatar(props: AvatarProps) {
 
     return (
         <div
-            class={`avatar-bubble ${props.classes || ''} ${fontClass()}`}
-            style={{ "background-color": color() }}
+            class={`avatar-bubble avatar-style ${props.classes || ''} ${fontClass()}`}
+            style={{ "--avatar-color": color() }}
             onClick={() => props.onClick?.()}
         >
             {props.user?.profile_picture_path && (

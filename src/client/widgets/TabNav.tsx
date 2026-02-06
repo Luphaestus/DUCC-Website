@@ -1,4 +1,5 @@
 import { createEffect, onMount, onCleanup, ParentProps, splitProps, createMemo, Show } from "solid-js";
+import LiquidContainer from "../components/LiquidContainer";
 
 interface TabNavProps extends ParentProps {
     class?: string;
@@ -72,10 +73,17 @@ export function TabNav(props: TabNavProps) {
 
     return (
         <Show when={hasChildren()}>
-            <nav ref={navRef} class={`toggle-group ${props.class || ''}`} id={props.id}>
+            <LiquidContainer 
+                as="nav" 
+                ref={navRef} 
+                class={`toggle-group ${props.class || ''}`} 
+                id={props.id} 
+                borderRadius={100} 
+                padding="0.25rem"
+            >
                 <div ref={bgRef} class="toggle-bg"></div>
                 {props.children}
-            </nav>
+            </LiquidContainer>
         </Show>
     );
 }

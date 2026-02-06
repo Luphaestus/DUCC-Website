@@ -5,6 +5,7 @@ import {
 import Panel from "@/components/Panel";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function OverviewTab(props: { user: any, stats: any, minMoney: number, permissions: string[], refetchUser: () => void }) {
     const { notify } = useNotifications();
@@ -21,7 +22,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
     return (
         <div class="dashboard-section active">
             {/* Finance Overview */}
-            <article class="value-header" style={{ height: "100%", margin: 0 }}>
+            <article class="value-header full-height-no-margin">
                 <div class="value-info">
                     <span class="value-title">Current Balance</span>
                     <div class="value-display" classList={{
@@ -34,7 +35,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 </div>
             </article>
 
-            <article class="glass-panel no-margin">
+            <LiquidContainer class="no-margin" padding="1.25rem">
                 <Show when={props.stats}>
                     <div class="stats-grid compact">
                         <div class="stat-item">
@@ -55,10 +56,10 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                         </div>
                     </div>
                 </Show>
-            </article>
+            </LiquidContainer>
 
             {/* Attendance Overview */}
-            <article class="value-header" style={{ height: "100%", margin: 0 }}>
+            <article class="value-header full-height-no-margin">
                 <div class="value-info">
                     <span class="value-title">Membership Status</span>
                     <div class="value-display" classList={{ 'positive': props.user.is_member }}>
@@ -68,7 +69,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 <div class="value-actions" innerHTML={DASHBOARD_SVG}></div>
             </article>
 
-            <article class="glass-panel no-margin">
+            <LiquidContainer class="no-margin" padding="1.25rem">
                 <Show when={props.stats}>
                     <div class="stats-grid compact">
                         <div class="stat-item">
@@ -89,7 +90,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                         </div>
                     </div>
                 </Show>
-            </article>
+            </LiquidContainer>
 
             {/* Swimming Stats */}
             <Panel

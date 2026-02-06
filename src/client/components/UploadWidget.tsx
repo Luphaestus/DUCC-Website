@@ -65,7 +65,8 @@ export default function UploadWidget(props: UploadWidgetProps) {
                 });
                 if (id) uploadedIds.push(id);
             }
-            props.onUploadComplete?.(props.selectMode === 'single' ? uploadedIds[0] : uploadedIds);
+            const result = props.selectMode === 'single' ? uploadedIds[0] : uploadedIds;
+            props.onUploadComplete?.(result);
             setFiles([]);
             notify('Success', 'Upload complete', 'success');
         } catch (e: any) {
@@ -94,7 +95,7 @@ export default function UploadWidget(props: UploadWidgetProps) {
     return (
         <div class="upload-widget">
             <Show when={previewUrl() && props.selectMode === 'single'}>
-                <div class="image-preview" style={{ "background-image": `url(${previewUrl()})` }}>
+                <div class="image-preview upload-preview-image" style={{ "--preview-url": `url(${previewUrl()})` }}>
                     <Show when={props.enableRemove !== false}>
                         <button class="remove-icon-btn" onClick={handleRemove} innerHTML={CLOSE_SVG} />
                     </Show>

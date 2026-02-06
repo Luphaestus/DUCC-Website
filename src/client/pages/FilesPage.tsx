@@ -4,6 +4,7 @@ import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, A
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate } from "@solidjs/router";
+import LiquidContainer from "@/components/LiquidContainer";
 
 interface FileCategory {
     id: string;
@@ -171,7 +172,7 @@ export default function FilesPage() {
                 </div>
             </div>
 
-            <div class="files-table-wrapper">
+            <LiquidContainer class="files-table-wrapper" padding="0">
                 <Show when={filesData.loading && !filesData() && !oldFilesData()}>
                     <p class="text-centre">Loading...</p>
                 </Show>
@@ -182,7 +183,7 @@ export default function FilesPage() {
                 >
                     <FileTable data={filesData()} />
                 </PaginationSlider>
-            </div>
+            </LiquidContainer>
 
             <Pagination 
                 currentPage={page()} 

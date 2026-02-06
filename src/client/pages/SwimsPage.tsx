@@ -4,6 +4,7 @@ import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG, POOL_SVG } from '@/utils
 import Avatar from "@/components/Avatar";
 import { useNavigate } from "@solidjs/router";
 import { onUpdate } from "@/utils/updates";
+import LiquidContainer from "@/components/LiquidContainer";
 
 interface LeaderboardUser {
     id: number;
@@ -164,7 +165,7 @@ export default function SwimsPage() {
                             <div class="leaderboard-list-track">
                                 {/* Old List Layer */}
                                 <Show when={isAnimating() && oldLeaderboard()}>
-                                    <div class="leaderboard-list old-layer glass-panel">
+                                    <LiquidContainer class="leaderboard-list old-layer" padding="1.25rem">
                                         <For each={oldListData()}>
                                             {(user) => (
                                                 <div class="leaderboard-row">
@@ -182,11 +183,11 @@ export default function SwimsPage() {
                                                 </div>
                                             )}
                                         </For>
-                                    </div>
+                                    </LiquidContainer>
                                 </Show>
 
                                 {/* New List Layer */}
-                                <div class="leaderboard-list new-layer glass-panel">
+                                <LiquidContainer class="leaderboard-list new-layer" padding="1.25rem">
                                     <For each={listData()}>
                                         {(user) => (
                                             <div class="leaderboard-row" classList={{ highlight: user.is_me }}>
@@ -207,7 +208,7 @@ export default function SwimsPage() {
                                             </div>
                                         )}
                                     </For>
-                                </div>
+                                </LiquidContainer>
                             </div>
                         </div>
                     </Show>

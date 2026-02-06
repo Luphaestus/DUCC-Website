@@ -63,7 +63,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
 
     return (
         <div class="dashboard-section active">
-            <article class="value-header no-margin" style={{ margin: "0 0 1.5rem 0" }}>
+            <article class="value-header no-margin mb-4">
                 <div class="value-info">
                     <span class="value-title">Legal Status</span>
                     <div class="value-display" classList={{ 'positive': isSigned() }}>

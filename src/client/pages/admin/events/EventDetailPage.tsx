@@ -75,28 +75,10 @@ export default function EventDetailPage() {
             {res => (
                 <div class="dashboard-container">
                     <aside class="dashboard-sidebar">
-                        <div class="event-identity-card" style={{ 
-                            background: "var(--glass-bg)", 
-                            border: "var(--glass-border)", 
-                            padding: "1.5rem", 
-                            "border-radius": "var(--border-radius-lg)",
-                            display: "flex",
-                            "flex-direction": "column",
-                            "align-items": "center",
-                            gap: "1rem",
-                            "backdrop-filter": "blur(12px)",
-                            "margin-bottom": "1rem"
-                        }}>
-                            <div class="event-preview-image" style={{
-                                width: "100%",
-                                height: "120px",
-                                "border-radius": "var(--border-radius-md)",
-                                "background-image": `url('${res().event.image_url || res().globalDefaultUrl}')`,
-                                "background-size": "cover",
-                                "background-position": "center"
-                            }}></div>
-                            <div class="event-info" style={{ "text-align": "center" }}>
-                                <h2 style={{ margin: 0, "font-size": "1.25rem" }}>{res().event.title || 'New Event'}</h2>
+                        <div class="event-identity-card user-identity-card flex-column-gap-half mb-4">
+                            <div class="event-preview-image event-image-header" style={{ "--event-image-url": `url('${res().event.image_url || res().globalDefaultUrl}')` }}></div>
+                            <div class="event-info full-width-center">
+                                <h2 class="text-xl m-0">{res().event.title || 'New Event'}</h2>
                                 <span class="badge" classList={{ success: res().event.costs_released, neutral: !res().event.costs_released }}>
                                     {res().event.costs_released ? 'Costs Released' : 'Finance Open'}
                                 </span>
@@ -105,7 +87,7 @@ export default function EventDetailPage() {
 
                         <TabNav class="vertical-sidebar">
                             <button class="nav-item" classList={{ active: currentTab() === 'details' }} onClick={() => setSearchParams({ tab: 'details' })}>
-                                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} style={{ transform: "rotate(180deg)" }} /> Details
+                                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} class="rotate-180" /> Details
                             </button>
                             <Show when={!isNew()}>
                                 <button class="nav-item" classList={{ active: currentTab() === 'finance' }} onClick={() => setSearchParams({ tab: 'finance' })}>
@@ -118,8 +100,8 @@ export default function EventDetailPage() {
                         </TabNav>
 
                         <Show when={!isNew()}>
-                            <div class="sidebar-actions mt-4" style={{ display: "flex", "flex-direction": "column", gap: "0.5rem" }}>
-                                <a href={`/api/admin/event/${id()}/attendees/csv`} target="_blank" class="small-btn outline full-width" style={{ "text-align": "center", display: "block" }}>
+                            <div class="sidebar-actions mt-4 flex-column-gap-half">
+                                <a href={`/api/admin/event/${id()}/attendees/csv`} target="_blank" class="small-btn outline full-width full-width-center">
                                     <span innerHTML={CLOUD_DOWNLOAD_SVG} /> Export CSV
                                 </a>
                                 <button class="small-btn outline secondary full-width" onClick={handleDuplicate}><span innerHTML={CONTENT_COPY_SVG} /> Duplicate</button>

@@ -2,6 +2,7 @@ import { createSignal, createResource, For, Show } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { CURRENCY_POUND_SVG, TRIP_SVG, WALLET_SVG, CLOSE_SVG } from '@/utils/icons';
+import LiquidContainer from "@/components/LiquidContainer";
 
 export default function SettlementPage() {
     const params = useParams();
@@ -32,12 +33,12 @@ export default function SettlementPage() {
                             <>
                                 <h1>{CURRENCY_POUND_SVG} Financial Settlement: {res().event.title}</h1>
                                 
-                                <div class="glass-panel p-4 mb-4">
+                                <LiquidContainer class="p-4 mb-4">
                                     <h3>Summary</h3>
                                     <p>Total Expenses: £{res().summary?.total_expenses?.toFixed(2) || '0.00'}</p>
-                                </div>
+                                </LiquidContainer>
 
-                                <div class="glass-table-container">
+                                <LiquidContainer class="table-responsive" padding="0">
                                     <table class="glass-table">
                                         <thead>
                                             <tr>
@@ -58,7 +59,7 @@ export default function SettlementPage() {
                                             </For>
                                         </tbody>
                                     </table>
-                                </div>
+                                </LiquidContainer>
                             </>
                         )}
                     </Show>

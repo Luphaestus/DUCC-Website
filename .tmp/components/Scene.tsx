@@ -404,7 +404,7 @@ const SceneContent: React.FC<{ theme: Theme }> = ({ theme }) => {
 // Main Scene component rendering the Canvas
 const Scene: React.FC<SceneProps> = ({ theme }) => {
   return (
-    <Canvas dpr={[1, 2]} shadows className="transition-colors duration-500">
+    <Canvas dpr={[1, 2]} shadows className="scene-canvas">
       <SceneContent theme={theme} />
     </Canvas>
   );

@@ -40,11 +40,7 @@ async function updateConnectionStatus(newStatus: boolean | null): Promise<void> 
         }
 
         currentNotification = notify('Connection Restored', 'You are reconnected.', NotificationTypes.SUCCESS, 5000);
-        
-        if (isCurrentPath('/no-internet')) {
-            const prev = getPreviousPath();
-            switchView(prev || '/home');
-        }
+        NoInternetEvent.notify();
     } else {
         if (!reconnectInterval) {
             reconnectInterval = setInterval(() => {
@@ -54,7 +50,6 @@ async function updateConnectionStatus(newStatus: boolean | null): Promise<void> 
 
         currentNotification = notify('Connection Lost', 'Disconnected from server.', NotificationTypes.ERROR, 10000);
         NoInternetEvent.notify();
-        switchView('/no-internet');
     }
 }
 

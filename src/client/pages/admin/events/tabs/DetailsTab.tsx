@@ -160,7 +160,7 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                             {tag => (
                                 <label class="tag-checkbox">
                                     <input type="checkbox" checked={selectedTags().includes(tag.id)} onChange={() => toggleTag(tag.id)} style="display:none;" />
-                                    <span class="tag-badge" classList={{ selected: selectedTags().includes(tag.id) }} style={{ "--tag-colour": tag.color, "background-color": "var(--tag-colour)" }}>{tag.name}</span>
+                                    <span class="tag-badge tag-badge-simple" classList={{ selected: selectedTags().includes(tag.id) }} style={{ "--tag-colour": tag.color }}>{tag.name}</span>
                                 </label>
                             )}
                         </For>

@@ -18,6 +18,7 @@ import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
 import { TabNav } from "@/widgets/TabNav";
 import { onUpdate } from "@/utils/updates";
+import LiquidContainer from "@/components/LiquidContainer";
 
 interface UserProfile {
     // ... same as before
@@ -549,7 +550,7 @@ export default function ProfilePage() {
                                                                     <div
                                                                         class="preset-item color-preset"
                                                                         classList={{ active: profile()!.profile_picture_color === color }}
-                                                                        style={{ width: "auto", "aspect-ratio": "1", height: "auto" }}
+                                                                        class="profile-avatar-size"
                                                                         onClick={() => updatePP({ color })}
                                                                     >
                                                                         <Avatar user={{ ...profile()!, profile_picture_color: color, profile_picture_path: null }} classes="mini-avatar" />
@@ -566,7 +567,7 @@ export default function ProfilePage() {
                                                                             <div
                                                                                 class="preset-item initials-preset"
                                                                                 classList={{ active: profile()!.profile_picture_initials === opt.value }}
-                                                                                style={{ width: "auto", "aspect-ratio": "1", height: "auto" }}
+                                                                                class="profile-avatar-size"
                                                                                 onClick={() => updatePP({ initials: opt.value })}
                                                                             >
                                                                                 <Avatar user={{ ...profile()!, profile_picture_initials: opt.value, profile_picture_path: null }} classes="mini-avatar" />
@@ -583,7 +584,7 @@ export default function ProfilePage() {
                                                                             <div
                                                                                 class={`preset-item font-preset font-preset-${f.value}`}
                                                                                 classList={{ active: profile()!.profile_picture_font === f.value }}
-                                                                                style={{ width: "auto", "aspect-ratio": "1", height: "auto" }}
+                                                                                class="profile-avatar-size"
                                                                                 onClick={() => updatePP({ font: f.value })}
                                                                             >
                                                                                 <Avatar user={{ ...profile()!, profile_picture_font: f.value, profile_picture_path: null }} classes="mini-avatar" />
@@ -740,7 +741,7 @@ export default function ProfilePage() {
                                 <Panel title="Account Security">
                                     <div class="settings-grid">
                                         <div class="two-fa-grid dual-grid mt-4">
-                                            <div class="glass-panel embedded-panel">
+                                            <LiquidContainer class="embedded-panel" padding="1.25rem">
                                                 <div class="setting-info">
                                                     <strong>Password</strong>
                                                     <p>Manage your account password</p>
@@ -756,9 +757,9 @@ export default function ProfilePage() {
                                                         }
                                                     }
                                                 }}>Change</button>
-                                            </div>
+                                            </LiquidContainer>
 
-                                            <div class="glass-panel embedded-panel">
+                                            <LiquidContainer class="embedded-panel" padding="1.25rem">
                                                 <div class="setting-info">
                                                     <strong>Authenticator (TOTP)</strong>
                                                     <span class="status-tag" classList={{ 'success': profile()!.totp_enabled, 'warning': !profile()!.totp_enabled }}>
@@ -771,17 +772,17 @@ export default function ProfilePage() {
                                                 <Show when={profile()!.totp_enabled}>
                                                     <button class="small-btn outline delete" onClick={handleDisableTOTP}>Disable</button>
                                                 </Show>
-                                            </div>
+                                            </LiquidContainer>
 
-                                            <div class="glass-panel embedded-panel">
+                                            <LiquidContainer class="embedded-panel" padding="1.25rem">
                                                 <div class="setting-info">
                                                     <strong>Passkey</strong>
                                                     <p>{passkeys()?.length || 0} keys registered</p>
                                                 </div>
                                                 <button class="small-btn secondary" onClick={() => setIsPasskeyModalOpen(true)}>Manage</button>
-                                            </div>
+                                            </LiquidContainer>
 
-                                            <div class="glass-panel embedded-panel danger-zone">
+                                            <LiquidContainer class="embedded-panel danger-zone" padding="1.25rem">
                                                 <div class="setting-info">
                                                     <strong style="color: var(--colour-bad)">Delete Account</strong>
                                                     <p>Permanently remove your account</p>
@@ -798,7 +799,7 @@ export default function ProfilePage() {
                                                         }
                                                     }
                                                 }}>Delete</button>
-                                            </div>
+                                            </LiquidContainer>
                                         </div>
                                     </div>
                                 </Panel>

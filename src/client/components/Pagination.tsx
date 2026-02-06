@@ -45,15 +45,15 @@ export default function Pagination(props: PaginationProps) {
                     class="nav-btn prev-btn outline secondary"
                     disabled={props.currentPage === 1}
                     onClick={() => props.onPageChange(props.currentPage - 1)}
-                    style={{ opacity: props.currentPage === 1 ? 0.5 : 1, cursor: props.currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                    classList={{ 'pagination-disabled': props.currentPage === 1, 'pagination-enabled': props.currentPage !== 1 }}
                 >
                     Prev
                 </GlassButtonSmall>
 
-                <div class="page-buttons" style={{ display: 'flex', gap: '0.25rem' }}>
+                <div class="page-buttons">
                     <For each={visiblePages()}>
                         {(page) => (
-                            <Show when={page !== '...'} fallback={<span class="pagination-ellipsis" style={{ display: 'flex', 'align-items': 'center', 'padding': '0 0.5rem' }}>...</span>}>
+                            <Show when={page !== '...'} fallback={<span class="pagination-ellipsis">...</span>}>
                                 <GlassButtonSmall
                                     class={`page-btn ${page === props.currentPage ? 'primary' : 'outline secondary'}`}
                                     onClick={() => props.onPageChange(page as number)}
@@ -70,7 +70,7 @@ export default function Pagination(props: PaginationProps) {
                     class="nav-btn next-btn outline secondary"
                     disabled={props.currentPage === props.totalPages}
                     onClick={() => props.onPageChange(props.currentPage + 1)}
-                    style={{ opacity: props.currentPage === props.totalPages ? 0.5 : 1, cursor: props.currentPage === props.totalPages ? 'not-allowed' : 'pointer' }}
+                    classList={{ 'pagination-disabled': props.currentPage === props.totalPages, 'pagination-enabled': props.currentPage !== props.totalPages }}
                 >
                     Next
                 </GlassButtonSmall>

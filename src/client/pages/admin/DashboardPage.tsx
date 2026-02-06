@@ -25,7 +25,7 @@ export default function DashboardPage() {
 
     const Card = (props: { title: string, desc: string, icon: string, href: string }) => (
         <LiquidContainer borderRadius={32} tintOpacity={0.1}>
-            <A href={props.href} class="dashboard-card" style={{ background: 'transparent', border: 'none', 'box-shadow': 'none' }}>
+            <A href={props.href} class="dashboard-card panel-transparent">
                 <div class="card-icon" innerHTML={props.icon} />
                 <div class="card-content">
                     <h3>{props.title}</h3>

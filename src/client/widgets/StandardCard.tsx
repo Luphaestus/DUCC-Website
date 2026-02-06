@@ -4,6 +4,7 @@ import {
 } from '@/utils/icons';
 import { Tag } from './Tag';
 import { Show, For } from "solid-js";
+import LiquidContainer from '../components/LiquidContainer';
 
 export interface EventData {
     id: number;
@@ -46,10 +47,9 @@ export function StandardCard(props: { event: EventData }) {
     const isWaitlistActive = () => isFull() && props.event.enable_waitlist;
 
     return (
-        <div 
+        <LiquidContainer 
             classList={{
                 'event-card': true,
-                'glass-panel': true,
                 'past-event': isPast(),
                 'canceled-event': isCanceled(),
                 'waitlist-active': isWaitlistActive(),
@@ -60,7 +60,7 @@ export function StandardCard(props: { event: EventData }) {
             tabindex="0"
         >
             <div class="event-image-container">
-                <div class="event-image" style={{ "--event-image-url": `url('${imageUrl()}')` }}></div>
+                <div class="event-image event-image-header" style={{ "--event-image-url": `url('${imageUrl()}')` }}></div>
                 <div class="image-overlay"></div>
                 <div class="event-image-content">
                     <div class="event-tags">
@@ -122,6 +122,6 @@ export function StandardCard(props: { event: EventData }) {
                     </div>
                 </div>
             </div>
-        </div>
+        </LiquidContainer>
     );
 }
