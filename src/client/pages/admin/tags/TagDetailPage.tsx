@@ -206,6 +206,7 @@ export default function TagDetailPage() {
                                     <UploadWidget 
                                         selectMode="single"
                                         autoUpload={true}
+                                        enableLibrary={true}
                                         defaultPreview={tag()!.image_id ? `/api/files/${tag()!.image_id}/download?view=true` : globalDefaultUrl()}
                                         onImageSelect={({ id }) => updateField('image_id', id)}
                                         onRemove={async () => {
@@ -238,7 +239,6 @@ export default function TagDetailPage() {
             </div>
 
             <Show when={!isNew()}>
-                <div class="divider"></div>
                 <div class="dual-grid">
                     {/* Managers */}
                     <div class="panel">
@@ -248,7 +248,7 @@ export default function TagDetailPage() {
                         <div class="panel-content">
                             <p class="helper-text">Users allowed to manage events with this tag.</p>
                             <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('managers', input.value); input.value = ''; }}>
-                                <input list="users-datalist" placeholder="Search users..." />
+                                <input list="users-datalist" placeholder="Search users..." class="no-margin" />
                                 <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
                             </form>
                             <div class="glass-table-container">
@@ -278,7 +278,7 @@ export default function TagDetailPage() {
                         <div class="panel-content">
                             <p class="helper-text">Restricts event visibility/joining to specific users.</p>
                             <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('whitelist', input.value); input.value = ''; }}>
-                                <input list="users-datalist" placeholder="Search users..." />
+                                <input list="users-datalist" placeholder="Search users..." class="no-margin" />
                                 <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
                             </form>
                             <div class="glass-table-container">

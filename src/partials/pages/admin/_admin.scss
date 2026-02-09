@@ -137,12 +137,39 @@
         gap: 0.5rem;
     }
 
-    .search-bar {
+    .search-bar, .category-filter-pill {
         position: relative;
         display: flex;
         align-items: center;
         flex: 1;
         max-width: 350px;
+
+        &.category-filter-pill {
+            max-width: 250px;
+            @include liquid-glass(0, var(--border-radius-pill));
+            background: rgba(var(--pico-background-color-rgb), 0.35);
+            min-height: 2.25rem;
+
+            .icon {
+                position: absolute;
+                left: 0.8rem;
+                pointer-events: none;
+                opacity: 0.6;
+                display: flex;
+                align-items: center;
+                svg { width: 1.1rem; height: 1.1rem; }
+            }
+
+            select {
+                padding-left: 2.5rem !important;
+                background: transparent !important;
+                border: none !important;
+                margin-bottom: 0 !important;
+                height: 100%;
+                font-size: 0.85rem;
+                cursor: pointer;
+            }
+        }
 
         input {
             width: 100%;
@@ -315,6 +342,18 @@
                         align-items: center;
                         justify-content: flex-start;
                         min-width: 200px;
+                    }
+
+                    .row-actions {
+                        display: flex;
+                        gap: 0.5rem;
+                        align-items: center;
+                    }
+
+                    .action-select {
+                        width: auto;
+                        min-width: 140px;
+                        margin-bottom: 0 !important;
                     }
                 }
             }
@@ -980,6 +1019,134 @@ textarea[name="description"] {
     }
 }
 
+/* Event Details Tab Layout */
+.details-grid-layout {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+    align-items: flex-start;
+
+    @media (max-width: 1200px) {
+        grid-template-columns: 1fr;
+    }
+
+    .details-main-col, .details-side-col {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .details-side-col {
+        position: sticky;
+        top: 2rem;
+    }
+}
+
+.settings-group-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.tags-selection-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.form-actions-sticky {
+    padding: 1.5rem;
+    @include glass-panel;
+    background: rgba(var(--pico-background-color-rgb), 0.6);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Categories Management Modal */
+.categories-list {
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+
+    .category-item {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        background: rgba(var(--pico-background-color-rgb), 0.2);
+        padding: 0.6rem;
+        border-radius: var(--border-radius-md);
+        border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+        transition: border-color 0.2s;
+
+        &:focus-within {
+            border-color: var(--pico-primary);
+        }
+
+        .cat-name-input {
+            flex: 2;
+            margin-bottom: 0 !important;
+            background: transparent;
+            border-color: transparent;
+            &:focus {
+                background: rgba(var(--pico-background-color-rgb), 0.4);
+                border-color: var(--pico-primary);
+            }
+        }
+        
+        .cat-visibility-select {
+            flex: 1;
+            margin-bottom: 0 !important;
+            min-width: 120px;
+        }
+
+        .icon-btn.delete {
+            color: #e74c3c;
+            background: transparent;
+            box-shadow: none;
+            padding: 0.4rem;
+            
+            &:hover {
+                background: rgba(231, 76, 60, 0.1);
+                color: #c0392b;
+            }
+        }
+    }
+}
+
+.inline-add-form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding-top: 1.5rem;
+    border-top: 1px dashed rgba(var(--pico-color-rgb), 0.2);
+    margin-top: 1rem;
+
+    input {
+        flex: 2;
+        margin-bottom: 0 !important;
+    }
+    
+    select {
+        flex: 1;
+        margin-bottom: 0 !important;
+        min-width: 120px;
+    }
+
+    button {
+        width: auto;
+        margin-bottom: 0;
+        padding: 0.5rem 1rem;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}
 /* Admin Finance Section */
 .admin-finance-transport-section {
     .finance-grid {

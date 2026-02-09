@@ -112,18 +112,28 @@ export default function QuotesPage() {
                             <td data-label="Person">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</td>
                             <td data-label="Submitter">{quote.submitted_by ? `${quote.submitted_by.first_name} ${quote.submitted_by.last_name}` : 'Unknown'}</td>
                             <td data-label="Status">
-                                <span class={`status-badge status-${quote.visibility}`}>{quote.visibility}</span>
+                                <span class={`badge ${quote.visibility === 'public' ? 'success' : quote.visibility === 'pending' ? 'warning' : 'neutral'}`}>{quote.visibility}</span>
                             </td>
                             <td data-label="Actions" class="text-right action-cell">
-                                <div class="button-group">
+                                <select 
+                                    class="modern-select compact action-select" 
+                                    onChange={(e) => {
+                                        const val = e.currentTarget.value;
+                                        if (val === 'release') handleAction(quote.id, 'release');
+                                        else if (val === 'hide') handleAction(quote.id, 'hide');
+                                        else if (val === 'delete') handleAction(quote.id, 'delete');
+                                        e.currentTarget.value = ''; // reset
+                                    }}
+                                >
+                                    <option value="">Manage...</option>
                                     <Show when={quote.visibility !== 'public'}>
-                                        <button class="button success icon-only mini-btn" onClick={() => handleAction(quote.id, 'release')} title="Release" innerHTML={CHECK_SVG} />
+                                        <option value="release">Make Public</option>
                                     </Show>
                                     <Show when={quote.visibility !== 'hidden'}>
-                                        <button class="button warning icon-only mini-btn" onClick={() => handleAction(quote.id, 'hide')} title="Hide" innerHTML={CLOSE_SVG} />
+                                        <option value="hide">Hide Quote</option>
                                     </Show>
-                                    <button class="button danger icon-only mini-btn" onClick={() => handleAction(quote.id, 'delete')} title="Delete" innerHTML={DELETE_SVG} />
-                                </div>
+                                    <option value="delete">Delete Permanently</option>
+                                </select>
                             </td>
                         </tr>
                     )}
@@ -136,14 +146,16 @@ export default function QuotesPage() {
         <div class="glass-layout">
             <div class="glass-toolbar">
                 <div class="toolbar-content">
-                    <div class="search-bar">
-                        <input 
-                            type="text" 
-                            placeholder="Search quotes..." 
-                            value={search()} 
-                            onInput={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
-                        />
-                        <button class="search-icon-btn" innerHTML={SEARCH_SVG} />
+                    <div class="toolbar-left">
+                        <div class="search-bar">
+                            <input 
+                                type="text" 
+                                placeholder="Search quotes..." 
+                                value={search()} 
+                                onInput={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
+                            />
+                            <button class="search-icon-btn" innerHTML={SEARCH_SVG} />
+                        </div>
                     </div>
                 </div>
             </div>

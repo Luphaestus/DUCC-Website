@@ -81,7 +81,7 @@ export default class FilesAPI {
                 sort: query.sort as string,
                 order: query.order as 'asc' | 'desc',
                 categoryId: query.categoryId as string,
-                includeUsed: query.includeUsed === 'true'
+                includeUsed: query.includeUsed !== 'false'
             };
 
             const status = await FilesDB.getFiles(this.db, options, role);
@@ -210,21 +210,104 @@ export default class FilesAPI {
         });
 
         /**
-         * Edit file metadata.
+         * Edit file metadata or replace file content.
          */
-        this.app.put<{ Params: { id: string }, Body: any }>('/api/files/:id', { preHandler: [check('file.edit')] }, async (request, reply) => {
+        this.app.put<{ Params: { id: string } }>('/api/files/:id', { preHandler: [check('file.edit')] }, async (request: any, reply: FastifyReply) => {
             const id = request.params.id;
-            const body = request.body as any;
-            const data = {
-                title: body.title,
-                author: body.author,
-                date: body.date,
-                visibility: body.visibility,
-                category_id: body.categoryId
-            };
+            const isMultipart = request.isMultipart();
+            
+            if (isMultipart) {
+                const parts = request.files();
+                let body: any = {};
+                let newFileData: any = null;
 
-            const status = await FilesDB.updateFile(this.db, id, data);
-            return status.getResponse(reply);
+                for await (const part of parts) {
+                    if (part.type === 'file') {
+                        const tempFilename = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                        const tempPath = path.join(this.uploadDir, tempFilename);
+                        await pipeline(part.file, fs.createWriteStream(tempPath));
+
+                        let fileTypeResult = await fileTypeFromFile(tempPath);
+                        if (!fileTypeResult && part.filename.endsWith('.txt')) {
+                            fileTypeResult = { mime: 'text/plain', ext: 'txt' };
+                        }
+
+                        if (!fileTypeResult) {
+                            await fs.promises.unlink(tempPath).catch(() => {});
+                            return reply.status(400).send({ message: 'Invalid file content.' });
+                        }
+
+                        const finalFilename = tempFilename + '.' + fileTypeResult.ext;
+                        const finalPath = tempPath + '.' + fileTypeResult.ext;
+                        await fs.promises.rename(tempPath, finalPath);
+
+                        const hash = await this.calculateHash(finalPath);
+                        const stats = await fs.promises.stat(finalPath);
+
+                        newFileData = {
+                            filename: finalFilename,
+                            hash: hash,
+                            size: stats.size
+                        };
+                    } else {
+                        body[part.fieldname] = part.value;
+                    }
+                }
+
+                // If libraryFileId is provided, copy that file
+                if (body.libraryFileId && !newFileData) {
+                    const libFileStatus = await FilesDB.getFileById(this.db, body.libraryFileId);
+                    if (!libFileStatus.isError()) {
+                        const libFile = libFileStatus.getData();
+                        const finalFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(libFile.filename);
+                        await fs.promises.copyFile(
+                            path.join(this.uploadDir, libFile.filename),
+                            path.join(this.uploadDir, finalFilename)
+                        );
+                        newFileData = {
+                            filename: finalFilename,
+                            hash: libFile.hash,
+                            size: libFile.size
+                        };
+                    }
+                }
+
+                // If replacing file, get old file to delete from disk
+                if (newFileData) {
+                    const oldFileStatus = await FilesDB.getFileById(this.db, id);
+                    if (!oldFileStatus.isError()) {
+                        const oldFile = oldFileStatus.getData();
+                        // Only delete if it's not the same physical file (though hashes might be same)
+                        if (oldFile.filename !== newFileData.filename) {
+                            await fs.promises.unlink(path.join(this.uploadDir, oldFile.filename)).catch(() => {});
+                        }
+                    }
+                }
+
+                const data = {
+                    title: body.title,
+                    author: body.author,
+                    date: body.date,
+                    visibility: body.visibility,
+                    category_id: body.categoryId,
+                    ...(newFileData || {})
+                };
+
+                const status = await FilesDB.updateFile(this.db, id, data);
+                return status.getResponse(reply);
+            } else {
+                const body = request.body as any;
+                const data = {
+                    title: body.title,
+                    author: body.author,
+                    date: body.date,
+                    visibility: body.visibility,
+                    category_id: body.categoryId
+                };
+
+                const status = await FilesDB.updateFile(this.db, id, data);
+                return status.getResponse(reply);
+            }
         });
 
         /**
@@ -237,6 +320,11 @@ export default class FilesAPI {
             if (fileStatus.isError()) return fileStatus.getResponse(reply);
 
             const file = fileStatus.getData();
+            
+            if (file.author === 'System') {
+                return reply.status(403).send({ message: 'Cannot delete system-authored files.' });
+            }
+
             const filePath = path.join(this.uploadDir, file.filename);
 
             try {

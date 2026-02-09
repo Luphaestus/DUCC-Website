@@ -1,7 +1,7 @@
 import { createSignal, createResource, For, Show, onMount } from "solid-js";
 import { uploadFile, apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { UPLOAD_SVG, CLOSE_SVG, IMAGE_SVG, INFO_SVG } from "@/utils/icons";
+import { UPLOAD_SVG, CLOSE_SVG, IMAGE_SVG, INFO_SVG, SEARCH_SVG, FILTER_LIST_SVG } from "@/utils/icons";
 import Modal from "@/components/Modal";
 
 interface UploadWidgetProps {
@@ -22,15 +22,33 @@ export default function UploadWidget(props: UploadWidgetProps) {
     const [files, setFiles] = createSignal<File[]>([]);
     const [previewUrl, setPreviewUrl] = createSignal<string | null>(props.defaultPreview || null);
     const [isUploading, setIsUploading] = createSignal(false);
+    const [isDragOver, setIsDragOver] = createSignal(false);
     const [progress, setProgress] = createSignal(0);
     const [showLibrary, setShowLibrary] = createSignal(false);
     const [showUrlInput, setShowUrlInput] = createSignal(false);
     const [urlValue, setUrlValue] = createSignal('');
+    const [librarySearch, setLibrarySearch] = createSignal('');
+    const [libraryCategory, setLibraryCategory] = createSignal('');
 
-    const [libraryFiles] = createResource(showLibrary, async (open) => {
-        if (!open) return [];
-        const res = await apiRequest('GET', '/api/files?limit=200');
-        return res.data.files || [];
+    const [categories] = createResource(async () => {
+        const res = await apiRequest('GET', '/api/file-categories');
+        return res.data || [];
+    });
+
+    const [libraryFiles] = createResource(() => ({
+        open: showLibrary(),
+        search: librarySearch(),
+        categoryId: libraryCategory()
+    }), async (params) => {
+        if (!params.open) return [];
+        const query = new URLSearchParams({
+            limit: '50',
+            search: params.search,
+            categoryId: params.categoryId,
+            includeUsed: 'true'
+        });
+        const res = await apiRequest('GET', `/api/files?${query.toString()}`);
+        return res.data?.files || [];
     });
 
     const handleFiles = (fileList: FileList | null) => {
@@ -99,12 +117,35 @@ export default function UploadWidget(props: UploadWidgetProps) {
         setShowLibrary(false);
     };
 
+    const onDragOver = (e: DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const onDragLeave = () => {
+        setIsDragOver(false);
+    };
+
+    const onDrop = (e: DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        if (e.dataTransfer?.files) {
+            handleFiles(e.dataTransfer.files);
+        }
+    };
+
     return (
-        <div class="upload-widget">
+        <div 
+            class="upload-widget" 
+            classList={{ 'drag-over': isDragOver() }}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+        >
             <Show when={previewUrl() && props.selectMode === 'single'}>
-                <div class="image-preview upload-preview-image" style={{ "--preview-url": `url(${previewUrl()})` }}>
+                <div class="image-preview" style={{ "background-image": `url(${previewUrl()})` }}>
                     <Show when={props.enableRemove !== false}>
-                        <button class="remove-icon-btn" onClick={handleRemove} innerHTML={CLOSE_SVG} />
+                        <button class="remove-icon-btn" onClick={handleRemove} innerHTML={CLOSE_SVG} title="Remove Image" />
                     </Show>
                 </div>
             </Show>
@@ -125,13 +166,14 @@ export default function UploadWidget(props: UploadWidgetProps) {
             <Show when={isUploading()}>
                 <div class="progress-container">
                     <progress value={progress()} max="100" />
-                    <span>{Math.round(progress())}%</span>
+                    <span>Uploading... {Math.round(progress())}%</span>
                 </div>
             </Show>
 
             <div class="actions-row">
-                <label class="upload-btn-label small-btn">
-                    <span innerHTML={UPLOAD_SVG} /> {props.selectMode === 'single' ? 'Select File' : 'Select Files'}
+                <label class="upload-btn-label">
+                    <span innerHTML={UPLOAD_SVG} /> 
+                    <span>{props.selectMode === 'single' ? 'Select File' : 'Select Files'}</span>
                     <input 
                         type="file" 
                         multiple={props.selectMode === 'multiple'} 
@@ -156,21 +198,60 @@ export default function UploadWidget(props: UploadWidgetProps) {
 
             <Show when={showUrlInput()}>
                 <div class="url-input-container">
-                    <input type="text" value={urlValue()} onInput={e => setUrlValue(e.currentTarget.value)} placeholder="https://..." />
-                    <button onClick={() => { setPreviewUrl(urlValue()); props.onImageSelect?.({ url: urlValue(), id: null }); setShowUrlInput(false); }}>Apply</button>
+                    <div class="url-input-group">
+                        <input 
+                            type="text" 
+                            value={urlValue()} 
+                            onInput={e => setUrlValue(e.currentTarget.value)} 
+                            placeholder="https://..." 
+                            autofocus
+                        />
+                        <button class="small-btn" onClick={() => { setPreviewUrl(urlValue()); props.onImageSelect?.({ url: urlValue(), id: null }); setShowUrlInput(false); }}>Apply</button>
+                    </div>
                 </div>
             </Show>
 
-            <Modal isOpen={showLibrary()} onClose={() => setShowLibrary(false)} title="Choose from Library">
-                <div class="library-grid">
-                    <For each={libraryFiles()}>
-                        {file => (
-                            <div class="library-item" onClick={() => selectFromLibrary(file)}>
-                                <img src={`/api/files/${file.id}/download?view=true`} />
-                                <span>{file.title}</span>
-                            </div>
-                        )}
-                    </For>
+            <Modal isOpen={showLibrary()} onClose={() => setShowLibrary(false)} title="Choose from Library" maxWidth="900px">
+                <div class="library-modal-content">
+                    <div class="library-controls">
+                        <div class="glass-input-group liquid-container search-box">
+                            <span class="icon" innerHTML={SEARCH_SVG} />
+                            <input 
+                                type="text" 
+                                placeholder="Search images..." 
+                                value={librarySearch()}
+                                onInput={e => setLibrarySearch(e.currentTarget.value)}
+                            />
+                        </div>
+                        <div class="glass-input-group liquid-container category-filter">
+                            <span class="icon" innerHTML={FILTER_LIST_SVG} />
+                            <select value={libraryCategory()} onChange={e => setLibraryCategory(e.currentTarget.value)}>
+                                <option value="">All Categories</option>
+                                <For each={categories()}>
+                                    {cat => <option value={cat.id}>{cat.name}</option>}
+                                </For>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="library-grid">
+                        <Show when={libraryFiles.loading}>
+                            <div class="loading-cell text-centre" style="grid-column: 1/-1; padding: 3rem;">Loading Library...</div>
+                        </Show>
+                        <Show when={!libraryFiles.loading && libraryFiles()?.length === 0}>
+                            <div class="empty-cell text-centre" style="grid-column: 1/-1; padding: 3rem;">No images found.</div>
+                        </Show>
+                        <For each={libraryFiles()}>
+                            {file => (
+                                <div class="library-item" onClick={() => selectFromLibrary(file)}>
+                                    <div class="lib-img-wrapper">
+                                        <img src={`/api/files/${file.id}/download?view=true`} />
+                                    </div>
+                                    <span>{file.title}</span>
+                                </div>
+                            )}
+                        </For>
+                    </div>
                 </div>
             </Modal>
         </div>

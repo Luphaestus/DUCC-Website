@@ -15,7 +15,7 @@ export default function DashboardPage() {
     const canManageUsers = createMemo(() => perms().includes('user.manage') || perms().includes('transaction.manage') || perms().length > 0);
     const canManageEvents = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
     const canManageTags = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
-    const canManageFiles = createMemo(() => perms().includes('document.write') || perms().includes('document.edit'));
+    const canManageFiles = createMemo(() => perms().includes('file.write') || perms().includes('file.edit'));
     const canManageQuotes = createMemo(() => perms().includes('quote.manage'));
     const canManageRoles = createMemo(() => perms().includes('role.manage'));
     const canManageKit = createMemo(() => perms().includes('kit.manage'));

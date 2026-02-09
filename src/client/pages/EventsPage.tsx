@@ -16,6 +16,7 @@ import {
 import { onUpdate } from "@/utils/updates";
 import PaginationSlider from "@/components/PaginationSlider";
 import PageTitle from "@/components/PageTitle";
+import CalendarWidget, { CalendarViewMode } from "../widgets/CalendarWidget";
 
 interface PageData {
     events: EventData[];
@@ -31,12 +32,11 @@ export default function EventsPage(props: ParentProps) {
     const [isRefreshing, setIsRefreshing] = createSignal(false);
     const [oldPageData, setOldData] = createSignal<PageData | null>(null);
     const [isTransitioning, setIsTransitioning] = createSignal(false);
-    const [viewMode, setViewMode] = createSignal<'list' | 'weekly'>((localStorage.getItem('events_view_mode') as any) || 'list');
+    const [viewMode, setViewMode] = createSignal<'list' | 'week' | 'month'>((localStorage.getItem('events_view_mode') as any) || 'list');
 
-    const toggleViewMode = () => {
-        const next = viewMode() === 'list' ? 'weekly' : 'list';
-        setViewMode(next);
-        localStorage.setItem('events_view_mode', next);
+    const setView = (mode: 'list' | 'week' | 'month') => {
+        setViewMode(mode);
+        localStorage.setItem('events_view_mode', mode);
     };
 
     const page = () => {
@@ -212,7 +212,7 @@ export default function EventsPage(props: ParentProps) {
     };
 
     const EventList = (props: { data: PageData | null | undefined }) => (
-        <Show when={viewMode() === 'weekly' && isDesktop()} fallback={
+        <Show when={viewMode() !== 'list' && isDesktop()} fallback={
             <div class="events-page-content">
                 <For each={getGroupedEvents(props.data)}>
                     {(group) => (
@@ -237,7 +237,10 @@ export default function EventsPage(props: ParentProps) {
                 </For>
             </div>
         }>
-            <WeeklyGridView data={props.data} />
+            <CalendarWidget 
+                initialMode={viewMode() as CalendarViewMode} 
+                onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)} 
+            />
         </Show>
     );
 
@@ -249,8 +252,8 @@ export default function EventsPage(props: ParentProps) {
         const handleResize = () => {
             const desktop = window.innerWidth > 992;
             setIsDesktop(desktop);
-            if (!desktop && viewMode() === 'weekly') {
-                setViewMode('list');
+            if (!desktop && viewMode() !== 'list') {
+                setView('list');
             }
         };
         window.addEventListener('resize', handleResize);
@@ -260,28 +263,25 @@ export default function EventsPage(props: ParentProps) {
         });
     });
 
-    const currentTimePosition = () => {
-        const d = now();
-        return ((d.getHours() * 60 + d.getMinutes()) / 1440) * 100;
-    };
-
     return (
         <div id="events-view" class="view small-container">
             <PageTitle text="Upcoming Events" />
             <div class="events-controls-modern">
                 <div class="admin-control-wrapper">
                     <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 0.75rem" }} {...{ paused: isTransitioning() } as any}>
-                        <Show when={isAdmin()} fallback={
-                            <button class="view-toggle-btn" title="Toggle View" onClick={toggleViewMode}>
-                                <span innerHTML={viewMode() === 'list' ? POOL_SVG : DASHBOARD_SVG} />
-                                <span class="btn-text">{viewMode() === 'list' ? 'Weekly' : 'List'}</span>
-                            </button>
-                        }>
+                        <Show when={isAdmin()}>
                             <button class="admin-link-btn" title="Event Admin" onClick={() => navigate('/admin/events')}>
                                 <span innerHTML={SETTINGS_SVG} />
                                 <span class="btn-text">Admin</span>
                             </button>
                         </Show>
+                        <div class="toggle-group-mini">
+                            <button classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
+                            <Show when={isDesktop()}>
+                                <button classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
+                                <button classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
+                            </Show>
+                        </div>
                     </div>
                 </div>
 
@@ -301,11 +301,6 @@ export default function EventsPage(props: ParentProps) {
 
                 <div class="today-control-wrapper">
                     <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 0.75rem" }} {...{ paused: isTransitioning() } as any}>
-                        <Show when={isAdmin()}>
-                            <button class="view-toggle-btn mr-2" title="Toggle View" onClick={toggleViewMode}>
-                                <span innerHTML={viewMode() === 'list' ? POOL_SVG : DASHBOARD_SVG} />
-                            </button>
-                        </Show>
                         <button 
                             class="today-btn" 
                             classList={{ disabled: page() === 0, 'spin-active': isRefreshing() }} 

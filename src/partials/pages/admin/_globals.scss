@@ -41,7 +41,7 @@
                 .uncropped-hover-preview {
                     opacity: 1;
                     visibility: visible;
-                    transform: translate(-50%, -105%) scale(1);
+                    transform: translateY(-105%) scale(1);
                 }
             }
         }
@@ -49,10 +49,11 @@
         .uncropped-hover-preview {
             position: absolute;
             top: 0;
-            left: 50%;
-            transform: translate(-50%, -95%) scale(0.95);
-            max-width: 400px;
-            max-height: 400px;
+            right: 0;
+            transform: translateY(-95%) scale(0.95);
+            transform-origin: bottom right;
+            max-width: min(300px, calc(100vw - 40px));
+            max-height: 250px;
             width: auto;
             height: auto;
             border-radius: 12px;
@@ -64,6 +65,7 @@
             transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
             background: #1a1a1a;
+            object-fit: contain;
         }
     }
 

@@ -296,6 +296,16 @@ export default function CalendarView() {
         }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            setContextMenu(null);
+            setDragState(null);
+        }
+        if (e.key === 'c' && (e.ctrlKey || e.metaKey) && contextMenu()) {
+            copyEvent(contextMenu()!.event);
+        }
+    };
+
     // --- Global Click to close context menu ---
     onMount(() => {
         const handleGlobalClick = () => setContextMenu(null);

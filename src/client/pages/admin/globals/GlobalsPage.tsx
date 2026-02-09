@@ -58,15 +58,14 @@ export default function GlobalsPage() {
                                 <th>Setting</th>
                                 <th>Description</th>
                                 <th>Value</th>
-                                <th class="action-col">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <Show when={globals.loading}>
-                                <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
+                                <tr><td colspan="3" class="loading-cell">Loading...</td></tr>
                             </Show>
                             <Show when={!globals.loading && Object.keys(globals() || {}).length === 0}>
-                                <tr><td colspan="4" class="empty-cell">No settings found.</td></tr>
+                                <tr><td colspan="3" class="empty-cell">No settings found.</td></tr>
                             </Show>
                             <For each={Object.entries(globals() || {})}>
                                 {([key, setting]) => (
@@ -84,28 +83,17 @@ export default function GlobalsPage() {
                                             }>
                                                 <div class="image-global-display">
                                                     <div 
-                                                        class="image-preview-global" 
+                                                        class="image-preview-global clickable-preview" 
                                                         style={{ '--setting-url': `url('${setting.data || '/api/files/1/download?view=true'}')` }}
-                                                        onClick={(e) => {
-                                                            const el = e.currentTarget;
-                                                            el.classList.toggle('preview-open');
-                                                            const close = () => { el.classList.remove('preview-open'); document.removeEventListener('click', close); };
-                                                            setTimeout(() => document.addEventListener('click', close), 0);
-                                                        }}
+                                                        onClick={() => setActivePickerKey(key)}
+                                                        title="Click to change image"
                                                     >
+                                                        <div class="image-overlay-hint">
+                                                            <span innerHTML={IMAGE_SVG} />
+                                                        </div>
                                                         <img src={setting.data || '/api/files/1/download?view=true'} class="uncropped-hover-preview" />
                                                     </div>
                                                 </div>
-                                            </Show>
-                                        </td>
-                                        <td data-label="Actions">
-                                            <Show when={setting.type === 'image'} fallback={
-                                                <button class="save-global-btn icon-btn" onClick={() => {
-                                                    const input = document.querySelector(`.global-input[data-key="${key}"]`) as HTMLInputElement;
-                                                    if(input) updateGlobal(key, input.value);
-                                                }} title="Save" innerHTML={SAVE_SVG} />
-                                            }>
-                                                <button class="small-btn picker-btn" onClick={() => setActivePickerKey(key)} title="Change Image" innerHTML={IMAGE_SVG} />
                                             </Show>
                                         </td>
                                     </tr>

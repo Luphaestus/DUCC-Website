@@ -7,7 +7,7 @@ export default class FilesDB {
      * Fetch a paginated, searchable, and filterable list of files.
      */
     static async getFiles(db: DatabaseWrapper, options: any, userRole: string = 'public'): Promise<statusObject> {
-        const { page = 1, limit = 20, search, sort, order, categoryId, includeUsed = false } = options;
+        const { page = 1, limit = 20, search, sort, order, categoryId, includeUsed = true } = options;
         const offset = (Number(page) - 1) * Number(limit);
 
         const allowedSorts = ['title', 'author', 'date', 'size', 'category_name'];
@@ -147,7 +147,7 @@ export default class FilesDB {
      * Update an existing file's metadata.
      */
     static async updateFile(db: DatabaseWrapper, id: number | string, data: any): Promise<statusObject> {
-        const { title, author, date, visibility, category_id, content } = data;
+        const { title, author, date, visibility, category_id, content, filename, hash, size } = data;
         const updates: string[] = [];
         const params: any[] = [];
 
@@ -157,6 +157,9 @@ export default class FilesDB {
         if (visibility !== undefined) { updates.push("visibility = ?"); params.push(visibility); }
         if (category_id !== undefined) { updates.push("category_id = ?"); params.push(category_id); }
         if (content !== undefined) { updates.push("content = ?"); params.push(content); }
+        if (filename !== undefined) { updates.push("filename = ?"); params.push(filename); }
+        if (hash !== undefined) { updates.push("hash = ?"); params.push(hash); }
+        if (size !== undefined) { updates.push("size = ?"); params.push(size); }
 
         if (updates.length === 0) return new statusObject(400, 'No fields to update');
 

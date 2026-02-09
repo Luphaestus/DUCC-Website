@@ -8,7 +8,7 @@ import PaginationSlider from "@/components/PaginationSlider";
 import UploadWidget from "@/components/UploadWidget";
 import { 
     SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, 
-    DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG 
+    DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, ADD_SVG
 } from '@/utils/icons';
 
 // --- Types ---
@@ -80,15 +80,16 @@ const CategoriesModal = (props: {
     };
 
     return (
-        <Modal isOpen={props.isOpen} onClose={props.onClose} title="Manage Categories">
+        <Modal isOpen={props.isOpen} onClose={props.onClose} title="Manage Categories" maxWidth="800px">
             <div class="categories-list">
                 <For each={props.categories}>
                     {(cat) => (
                         <div class="category-item">
                             <input 
                                 type="text" 
-                                class="cat-name-input compact-input" 
+                                class="cat-name-input" 
                                 value={cat.name} 
+                                placeholder="Category Name"
                                 onChange={(e) => handleUpdate(cat.id, e.currentTarget.value, cat.default_visibility)}
                             />
                             <select 
@@ -100,19 +101,24 @@ const CategoriesModal = (props: {
                                 <option value="public">Public</option>
                                 <option value="execs">Execs</option>
                             </select>
-                            <button class="icon-btn delete" onClick={() => handleDelete(cat.id)} title="Delete" innerHTML={DELETE_SVG} />
+                            <button class="icon-btn delete" onClick={() => handleDelete(cat.id)} title="Delete Category" innerHTML={DELETE_SVG} />
                         </div>
                     )}
                 </For>
+                <Show when={props.categories.length === 0}>
+                    <p class="empty-cell">No categories yet.</p>
+                </Show>
             </div>
             <form class="inline-add-form" onSubmit={handleCreate}>
-                <input type="text" name="name" placeholder="New Category Name" required class="flex-grow" />
+                <input type="text" name="name" placeholder="New Category Name" required />
                 <select name="default_visibility" class="modern-select compact">
                     <option value="members">Members</option>
                     <option value="public">Public</option>
-                    <option value="execs">Execs</option>
+                    <option value="execs">Execs Only</option>
                 </select>
-                <button type="submit" class="icon-btn" innerHTML={UPLOAD_SVG} />
+                <button type="submit" class="small-btn">
+                    <span innerHTML={ADD_SVG} /> Create
+                </button>
             </form>
         </Modal>
     );
@@ -126,34 +132,39 @@ const EditFileModal = (props: {
     onSave: () => void
 }) => {
     const { notify } = useNotifications();
-    
-    // We can use a ref or derived state. Since modal mounts/unmounts or stays open, 
-    // it's better to key it or use effects.
+    const [isSaving, setIsSaving] = createSignal(false);
+    const [selectedFile, setSelectedFile] = createSignal<File | null>(null);
+    const [libraryFileId, setLibraryFileId] = createSignal<number | null>(null);
     
     const handleSubmit = async (e: Event) => {
         e.preventDefault();
-        if (!props.file) return;
+        if (!props.file || isSaving()) return;
+        setIsSaving(true);
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
+
+        if (selectedFile()) {
+            formData.append('file', selectedFile()!);
+        } else if (libraryFileId()) {
+            formData.append('libraryFileId', String(libraryFileId()));
+        }
         
         try {
-            await apiRequest('PUT', `/api/files/${props.file.id}`, {
-                title: formData.get('title'),
-                author: formData.get('author'),
-                date: formData.get('date'),
-                categoryId: formData.get('categoryId'),
-                visibility: formData.get('visibility')
-            });
+            await apiRequest('PUT', `/api/files/${props.file.id}`, formData);
             props.onSave();
             notify('Success', 'File updated', 'success');
             props.onClose();
+            setSelectedFile(null);
+            setLibraryFileId(null);
         } catch (e: any) {
             notify('Error', 'Update failed', 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
     return (
-        <Modal isOpen={props.isOpen} onClose={props.onClose} title="Edit File">
+        <Modal isOpen={props.isOpen} onClose={props.onClose} title="Edit File" maxWidth="800px">
             <Show when={props.file}>
                 <form class="modern-form" onSubmit={handleSubmit}>
                     <label>Title
@@ -183,8 +194,29 @@ const EditFileModal = (props: {
                             </select>
                         </label>
                     </div>
+                    <label>Replace File (Optional)
+                        <UploadWidget 
+                            selectMode="single"
+                            autoUpload={false}
+                            enableLibrary={true}
+                            enableRemove={true}
+                            onFileSelect={(files) => {
+                                setSelectedFile(files[0] || null);
+                                setLibraryFileId(null);
+                            }}
+                            onImageSelect={({ id }) => {
+                                setLibraryFileId(id);
+                                setSelectedFile(null);
+                            }}
+                            onRemove={() => {
+                                setSelectedFile(null);
+                                setLibraryFileId(null);
+                                return true;
+                            }}
+                        />
+                    </label>
                     <footer>
-                        <button type="submit" class="wide-btn">Save Changes</button>
+                        <button type="submit" class="wide-btn" disabled={isSaving()}>{isSaving() ? 'Saving...' : 'Save Changes'}</button>
                     </footer>
                 </form>
             </Show>
@@ -320,7 +352,13 @@ export default function FilesPage() {
                             <td data-label="Actions">
                                 <div class="row-actions">
                                     <button class="icon-btn edit-file" onClick={() => setEditingFile(file)} title="Edit" innerHTML={EDIT_SVG} />
-                                    <button class="icon-btn delete-file delete" onClick={() => handleDelete(file.id)} title="Delete" innerHTML={DELETE_SVG} />
+                                    <button 
+                                        class="icon-btn delete-file delete" 
+                                        onClick={() => handleDelete(file.id)} 
+                                        title={file.author === 'System' ? 'Cannot delete system files' : 'Delete'} 
+                                        disabled={file.author === 'System'}
+                                        innerHTML={DELETE_SVG} 
+                                    />
                                 </div>
                             </td>
                         </tr>
@@ -344,19 +382,22 @@ export default function FilesPage() {
                             />
                             <button class="search-icon-btn" innerHTML={SEARCH_SVG} />
                         </div>
+                        <div class="glass-input-group liquid-container category-filter-pill">
+                            <span class="icon" innerHTML={FOLDER_SVG} />
+                            <select 
+                                class="modern-select compact" 
+                                value={categoryId()} 
+                                onChange={(e) => { setCategoryId(e.currentTarget.value); setPage(1); }}
+                            >
+                                <option value="">All Categories</option>
+                                <For each={categories()}>
+                                    {cat => <option value={cat.id}>{cat.name}</option>}
+                                </For>
+                            </select>
+                        </div>
                     </div>
                     <div class="toolbar-right">
-                        <select 
-                            class="modern-select compact" 
-                            value={categoryId()} 
-                            onChange={(e) => { setCategoryId(e.currentTarget.value); setPage(1); }}
-                        >
-                            <option value="">All Categories</option>
-                            <For each={categories()}>
-                                {cat => <option value={cat.id}>{cat.name}</option>}
-                            </For>
-                        </select>
-                        <button class="small-btn outline secondary" onClick={() => setShowCats(true)}>
+                        <button class="small-btn secondary" onClick={() => setShowCats(true)}>
                             <span innerHTML={FOLDER_SVG} /> Categories
                         </button>
                         <button class="small-btn" onClick={() => setShowUpload(true)}>
@@ -404,11 +445,12 @@ export default function FilesPage() {
                 onSave={refetchFiles}
             />
 
-            <Modal isOpen={showUpload()} onClose={() => setShowUpload(false)} title="Upload Files">
+            <Modal isOpen={showUpload()} onClose={() => setShowUpload(false)} title="Upload Files" maxWidth="800px">
                 <form class="modern-form" onSubmit={handleUploadSubmit}>
                     <UploadWidget 
                         selectMode="multiple" 
                         autoUpload={false} 
+                        enableLibrary={true}
                         onUploadComplete={() => { setShowUpload(false); refetchFiles(); }}
                     />
                     

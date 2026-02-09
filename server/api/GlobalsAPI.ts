@@ -67,8 +67,18 @@ export default class GlobalsAPI {
          * Fetch all global settings.
          */
         this.app.get('/api/globals', { preHandler: [check('perm:globals.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
-            const globals = new Globals().getAll();
-            return reply.send({ res: globals });
+            const allGlobals = new Globals().getAll();
+            const filteredGlobals: any = {};
+            
+            if (allGlobals) {
+                for (const [key, value] of Object.entries(allGlobals)) {
+                    if (!value.hidden) {
+                        filteredGlobals[key] = value;
+                    }
+                }
+            }
+            
+            return reply.send({ res: filteredGlobals });
         });
 
         /**

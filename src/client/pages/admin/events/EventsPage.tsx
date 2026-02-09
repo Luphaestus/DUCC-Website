@@ -4,10 +4,10 @@ import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
-import CalendarView from "./CalendarView";
+import CalendarWidget from "@/widgets/CalendarWidget";
 import { 
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG, CHECK_SVG,
-    IOS_SHARE_SVG
+    IOS_SHARE_SVG, DASHBOARD_SVG, ADD_SVG
 } from '@/utils/icons';
 import { showConfirmModal } from "@/utils/modal";
 import { useNotifications } from "@/stores/notifications";
@@ -170,7 +170,7 @@ export default function EventsPage() {
 
     return (
         <div class="glass-layout">
-            <div class="liquid-container glass-toolbar" style={{ "--liquid-padding": "0.5rem 1rem", "--liquid-border-radius": "100px" }}>
+            <div class="glass-toolbar">
                  <div class="toolbar-content">
                     <div class="toolbar-left">
                         <Show when={viewMode() === 'list'}>
@@ -179,29 +179,36 @@ export default function EventsPage() {
                                 <button type="submit" class="search-icon-btn" innerHTML={SEARCH_SVG} />
                             </form>
                         </Show>
-                        <div class="toggle-group">
-                            <button class={viewMode() === 'list' ? 'active' : ''} onClick={() => setSearchParams({ view: 'list' })}>
-                                <span innerHTML={LIST_SVG} style="vertical-align: middle; margin-right: 0.5rem;" /> List
+                        <div class="toggle-group liquid-container" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px" }}>
+                            <button classList={{ active: viewMode() === 'list' }} onClick={() => setSearchParams({ view: 'list' })}>
+                                <span innerHTML={LIST_SVG} /> List
                             </button>
-                            <button class={viewMode() === 'calendar' ? 'active' : ''} onClick={() => setSearchParams({ view: 'calendar' })}>
-                                <span innerHTML={CALENDAR_TODAY_SVG} style="vertical-align: middle; margin-right: 0.5rem;" /> Calendar
+                            <button classList={{ active: viewMode() === 'week' }} onClick={() => setSearchParams({ view: 'week' })}>
+                                <span innerHTML={CALENDAR_TODAY_SVG} /> Week
+                            </button>
+                            <button classList={{ active: viewMode() === 'month' }} onClick={() => setSearchParams({ view: 'month' })}>
+                                <span innerHTML={DASHBOARD_SVG} /> Month
                             </button>
                         </div>
                     </div>
                     
                     <div class="toolbar-right">
-                         <Show when={viewMode() === 'list'}>
-                            <button class="small-btn outline secondary" onClick={() => setShowFilters(!showFilters())}>
-                                <span innerHTML={FILTER_LIST_SVG} /> Filters
+                         <div class="button-group mini">
+                            <Show when={viewMode() === 'list'}>
+                                <button class="small-btn outline secondary" onClick={() => setShowFilters(!showFilters())}>
+                                    <span innerHTML={FILTER_LIST_SVG} /> Filters
+                                </button>
+                            </Show>
+                            <button class="small-btn secondary" onClick={handlePublishStaged}>
+                                <span innerHTML={CHECK_SVG} /> Publish Staged
                             </button>
-                         </Show>
-                         <button class="small-btn warning" onClick={handlePublishStaged}>
-                            <span innerHTML={CHECK_SVG} /> Publish Staged
-                         </button>
-                         <button class="small-btn secondary" onClick={() => navigate('/admin/events/share')}>
-                            <span innerHTML={IOS_SHARE_SVG} /> Share
-                         </button>
-                         <button onClick={() => navigate('/admin/event/new')} class="small-btn">Create Event</button>
+                            <button class="small-btn secondary" onClick={() => navigate('/admin/events/share')}>
+                                <span innerHTML={IOS_SHARE_SVG} /> Share
+                            </button>
+                            <button onClick={() => navigate('/admin/event/new')} class="small-btn primary">
+                                <span innerHTML={ADD_SVG} /> Create Event
+                            </button>
+                         </div>
                         
                         <Show when={showFilters() && viewMode() === 'list'}>
                             <div class="liquid-container glass-filter-panel filter-panel-position" style={{ "--liquid-padding": "1.5rem" }}>
@@ -249,16 +256,18 @@ export default function EventsPage() {
             </div>
 
             <Show when={viewMode() === 'list'}>
-                <div class="liquid-container table-responsive" style={{ "--liquid-padding": "0" }}>
-                    <Show when={data.loading && !data() && !oldData()}>
-                        <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
-                    </Show>
-                    <PaginationSlider 
-                        currentPage={page()} 
-                        oldContent={<EventTable data={oldData()} />}
-                    >
-                        <EventTable data={data()} />
-                    </PaginationSlider>
+                <div class="glass-table-container">
+                    <div class="table-responsive">
+                        <Show when={data.loading && !data() && !oldData()}>
+                            <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
+                        </Show>
+                        <PaginationSlider 
+                            currentPage={page()} 
+                            oldContent={<EventTable data={oldPageData()} />}
+                        >
+                            <EventTable data={data()} />
+                        </PaginationSlider>
+                    </div>
                 </div>
                 
                 <Show when={data()?.totalPages}>
@@ -270,8 +279,12 @@ export default function EventsPage() {
                 </Show>
             </Show>
 
-            <Show when={viewMode() === 'calendar'}>
-                <CalendarView />
+            <Show when={viewMode() === 'week' || viewMode() === 'month'}>
+                <CalendarWidget 
+                    adminMode={true} 
+                    initialMode={viewMode() as CalendarViewMode}
+                    onEventClick={(e) => navigate(`/admin/event/${e.id}`)}
+                />
             </Show>
         </div>
     );

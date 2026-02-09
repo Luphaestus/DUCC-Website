@@ -16,6 +16,7 @@ interface GlobalItem {
     regexp: string;
     error: string;
     permission: string;
+    hidden?: boolean;
 }
 
 interface GlobalCache {
@@ -98,6 +99,7 @@ export default class Globals {
                     regexp: "^/(images|api/files)/.+$",
                     error: "Value must be a valid path or file API URL.",
                     permission: "President",
+                    hidden: true,
                 },
                 BoathouseImage: {
                     data: "/api/files/3/download?view=true",
@@ -107,6 +109,7 @@ export default class Globals {
                     regexp: "^/(images|api/files)/.+$",
                     error: "Value must be a valid path or file API URL.",
                     permission: "President",
+                    hidden: true,
                 },
                 MileageCost: {
                     data: 0.45,

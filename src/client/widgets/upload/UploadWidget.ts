@@ -137,7 +137,7 @@ export class UploadWidget {
 
                 ${this.options.showActions ? `
                 <div class="actions-row">
-                    <label class="upload-btn-label small-btn">
+                    <label class="upload-btn-label">
                         ${UPLOAD_SVG} <span>${this.options.selectMode === 'single' ? 'Select File' : 'Select Files'}</span>
                         <input type="file" 
                             ${this.options.selectMode === 'multiple' ? 'multiple' : ''} 
@@ -161,8 +161,8 @@ export class UploadWidget {
                 ` : `<input type="file" accept="${this.options.accept}" class="upload-widget-input" style="display:none;">`}
 
                 <div class="url-input-container hidden">
-                    <div class="glass-input-group">
-                        <input type="text" placeholder="https://example.com/image.jpg" class="modern-input url-input-field">
+                    <div class="url-input-group">
+                        <input type="text" placeholder="https://example.com/image.jpg" class="url-input-field">
                         <button type="button" class="small-btn apply-url-btn">Apply</button>
                     </div>
                 </div>

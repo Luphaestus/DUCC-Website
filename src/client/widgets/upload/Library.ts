@@ -1,6 +1,5 @@
-//todo refine 
-
 import { apiRequest } from '@/utils/api';
+import { SEARCH_SVG, FILTER_LIST_SVG } from '@/utils/icons';
 
 interface LibraryOptions {
     exclude?: string[];
@@ -24,60 +23,99 @@ export async function renderLibrary(
     if (!container) return;
 
     const exclude = options.exclude || [];
+    let currentSearch = '';
+    let currentCategory = '';
 
     container.innerHTML = /*html*/`
-        <div class="image-library-grid">
-            <p class="loading-cell">Loading images...</p>
+        <div class="library-modal-content">
+            <div class="library-controls">
+                <div class="glass-input-group liquid-container search-box">
+                    <span class="icon">${SEARCH_SVG}</span>
+                    <input type="text" placeholder="Search images..." class="lib-search-input">
+                </div>
+                <div class="glass-input-group liquid-container category-filter">
+                    <span class="icon">${FILTER_LIST_SVG}</span>
+                    <select class="lib-category-select">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+            </div>
+            <div class="library-grid">
+                <div class="loading-cell text-centre" style="grid-column: 1/-1; padding: 3rem;">Loading Library...</div>
+            </div>
         </div>
     `;
 
-    const grid = container.querySelector('.image-library-grid') as HTMLElement;
+    const grid = container.querySelector('.library-grid') as HTMLElement;
+    const searchInput = container.querySelector('.lib-search-input') as HTMLInputElement;
+    const categorySelect = container.querySelector('.lib-category-select') as HTMLSelectElement;
 
     (container as LibraryContainer)._libraryParams = { onSelect, options };
 
-    try {
-        const [filesRes, slidesRes] = await Promise.all([
-            apiRequest('GET', '/api/files?limit=50&includeUsed=true'),
-            apiRequest('GET', '/api/slides/images')
-        ]);
-
-        const files = (filesRes.data?.files || []).filter((f: any) => {
-            const isImage = f.filename.match(/\.(jpg|jpeg|png|webp|gif)$/i);
-            const isExcluded = exclude.includes(f.id.toString()) || exclude.includes(`/api/files/${f.id}/download?view=true`);
-            return isImage && !isExcluded;
+    // Fetch categories
+    apiRequest('GET', '/api/file-categories').then(res => {
+        const cats = res.data || [];
+        cats.forEach((cat: any) => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            categorySelect.appendChild(opt);
         });
-        
-        const slides = (slidesRes.images || []).filter((url: string) => !exclude.includes(url));
+    });
 
-        grid.innerHTML = '';
+    const loadFiles = async () => {
+        grid.innerHTML = '<div class="loading-cell text-centre" style="grid-column: 1/-1; padding: 3rem;">Loading Library...</div>';
+        try {
+            const query = new URLSearchParams({
+                limit: '50',
+                search: currentSearch,
+                categoryId: currentCategory,
+                includeUsed: 'true'
+            });
+            const res = await apiRequest('GET', `/api/files?${query.toString()}`);
+            const files = (res.data?.files || []).filter((f: any) => {
+                const isImage = f.filename.match(/\.(jpg|jpeg|png|webp|gif)$/i);
+                const isExcluded = exclude.includes(f.id.toString()) || exclude.includes(`/api/files/${f.id}/download?view=true`);
+                return isImage && !isExcluded;
+            });
 
-        slides.forEach((url: string) => {
-            const item = document.createElement('div');
-            item.className = 'image-item';
-            item.style.backgroundImage = `url('${url}')`;
-            item.title = url;
-            item.onclick = () => onSelect(url, null);
-            grid.appendChild(item);
-        });
+            grid.innerHTML = '';
 
-        files.forEach((f: any) => {
-            const url = `/api/files/${f.id}/download?view=true`;
-            const item = document.createElement('div');
-            item.className = 'image-item';
-            item.style.backgroundImage = `url('${url}')`;
-            item.title = f.title;
-            item.onclick = () => onSelect(url, f.id);
-            grid.appendChild(item);
-        });
+            if (files.length === 0) {
+                grid.innerHTML = '<div class="empty-cell text-centre" style="grid-column: 1/-1; padding: 3rem;">No images found.</div>';
+                return;
+            }
 
-        if (slides.length === 0 && files.length === 0) {
-            grid.innerHTML = '<p class="empty-cell">No images found.</p>';
+            files.forEach((f: any) => {
+                const url = `/api/files/${f.id}/download?view=true`;
+                const item = document.createElement('div');
+                item.className = 'library-item';
+                item.innerHTML = /*html*/`
+                    <div class="lib-img-wrapper">
+                        <img src="${url}" alt="${f.title}" loading="lazy">
+                    </div>
+                    <span>${f.title}</span>
+                `;
+                item.onclick = () => onSelect(url, f.id);
+                grid.appendChild(item);
+            });
+        } catch (e) {
+            console.error(e);
+            grid.innerHTML = '<div class="error-cell text-centre" style="grid-column: 1/-1; padding: 3rem;">Failed to load library.</div>';
         }
+    };
 
-    } catch (e) {
-        console.error(e);
-        grid.innerHTML = '<p class="error-cell">Failed to load library.</p>';
-    }
+    searchInput.addEventListener('input', (e) => {
+        currentSearch = (e.target as HTMLInputElement).value;
+        loadFiles();
+    });
+
+    categorySelect.addEventListener('change', (e) => {
+        currentCategory = (e.target as HTMLSelectElement).value;
+        loadFiles();
+    });
+
+    await loadFiles();
 }
 
 /**
