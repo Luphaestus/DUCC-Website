@@ -5,12 +5,26 @@
 /* UI Component Mixins */
 
 /** Glassmorphism */
+@mixin glass-effect-base {
+  background-color: var(--glass-bg);
+  border: var(--glass-border, 1px solid rgba(255, 255, 255, 0.2));
+  box-shadow: var(--shadow-glass, 0 8px 32px 0 rgba(0, 0, 0, 0.15));
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  transition: backdrop-filter 0.5s ease, -webkit-backdrop-filter 0.5s ease, background-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+@mixin glass-effect($bg: rgba(255, 255, 255, 0.1), $blur: 10px, $border: rgba(255, 255, 255, 0.2)) {
+  background: $bg;
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid $border;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: backdrop-filter 0.5s ease, -webkit-backdrop-filter 0.5s ease;
+}
+
 @mixin glass-panel {
-  background: var(--glass-bg);
-  border: var(--glass-border);
-  box-shadow: var(--shadow-glass);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  @include glass-effect;
   border-radius: var(--border-radius-lg);
   padding: 1.25rem;
   position: relative;
@@ -24,7 +38,8 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: var(--border-radius-lg);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-hover);
@@ -35,6 +50,7 @@
 @mixin card-highlights {
   position: relative;
   overflow: hidden;
+
   &::before {
     content: '';
     position: absolute;
@@ -45,18 +61,23 @@
     background: var(--highlight);
     border-radius: 4px;
   }
+
   svg {
     color: var(--highlight);
   }
+
   &:nth-child(1) {
     --highlight: #9b59b6;
   }
+
   &:nth-child(2) {
     --highlight: #f39c12;
   }
+
   &:nth-child(3) {
     --highlight: #2ecc71;
   }
+
   &:nth-child(4) {
     --highlight: #3498db;
   }
@@ -79,6 +100,7 @@
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
     border-color: color-mix(in srgb, var(--pico-primary), transparent 60%);
     animation: card-pulse 2s infinite ease-in-out;
+
     .event-image {
       transform: scale(1.1);
     }
@@ -98,20 +120,24 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+
   @media (max-width: $bp1) {
     min-height: 2.75rem !important;
     padding: 0 1.25rem;
   }
+
   @media (max-width: $bp2) {
     min-height: 2.5rem !important;
     padding: 0 1rem;
     font-size: 0.9rem !important;
+
     svg,
     img {
       width: 1.25rem !important;
       height: 1.25rem !important;
     }
   }
+
   @media (max-width: $bp3) {
     min-height: 2.25rem !important;
     padding: 0 0.75rem;
@@ -122,21 +148,26 @@
 /** Scaling Element */
 @mixin scaling-element($bp1: 1200px, $bp2: 768px, $bp3: 480px) {
   padding: 0.75rem 1rem;
+
   @media (max-width: $bp1) {
     padding: 0.6rem 0.9rem;
     font-size: 0.95em;
   }
+
   @media (max-width: $bp2) {
     padding: 0.5rem 0.75rem;
     font-size: 0.9em;
+
     svg,
     img {
       width: 1.5rem;
       height: 1.5rem;
     }
   }
+
   @media (max-width: $bp3) {
     padding: 0.4rem 0.5rem;
+
     svg,
     img {
       width: 1.2rem;
@@ -150,12 +181,15 @@
   width: 100%;
   margin-bottom: 0;
   table-layout: auto;
+
   th,
   td {
     text-align: left;
     border-bottom: var(--table-border);
     @include scaling-element($bp1, $bp2, $bp3);
+
     @media (max-width: $bp2) {
+
       td svg,
       td img,
       td span:has(svg) {

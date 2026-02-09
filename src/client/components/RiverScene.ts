@@ -27,8 +27,10 @@ export class RiverScene {
     kayakers: KayakerState[] = [];
     planes: { mesh: THREE.Group, speed: number }[] = [];
     birds: { mesh: THREE.Group, speed: number, wingSpeed: number }[] = [];
+    fish: THREE.Group[] = [];
     lastPlaneTime: number = 0;
     lastBirdTime: number = 0;
+    lastFishTime: number = 0;
     
     clock: THREE.Clock;
     requestID: number | null = null;
@@ -47,7 +49,7 @@ export class RiverScene {
     };
     
     fog: THREE.Fog;
-    materials: THREE.Shader[] = [];
+    materials: any[] = [];
 
     // Sky Elements
     sun!: THREE.Mesh;
@@ -311,6 +313,24 @@ export class RiverScene {
         water.position.y = -0.5;
         group.add(water);
 
+        // Add Rocks
+        for (let k = 0; k < 5; k++) {
+            const pZLocal = (Math.random() - 0.5) * 50;
+            const pZGlobal = pZLocal + zOffset;
+            const riverX = this.getPathX(pZGlobal);
+            const offset = (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 4);
+            const pX = riverX + offset;
+            
+            const rockGeo = new THREE.DodecahedronGeometry(Math.random() * 0.8 + 0.5, 0);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.8 });
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            const h = this.getTerrainHeight(pX, pZGlobal);
+            rock.position.set(pX, h + 0.5, pZLocal);
+            rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            rock.castShadow = true;
+            group.add(rock);
+        }
+
         for (let k = 0; k < 12; k++) {
             const pZLocal = (Math.random() - 0.5) * 60;
             const pZGlobal = pZLocal + zOffset;
@@ -321,6 +341,7 @@ export class RiverScene {
             this.modifyMaterial(treeMat);
             const tree = new THREE.Mesh(new THREE.ConeGeometry(1.5, 6, 8), treeMat);
             tree.position.set(pX, h + 3, pZLocal);
+            tree.castShadow = true;
             group.add(tree);
         }
 
@@ -474,6 +495,25 @@ export class RiverScene {
         this.planes.push({ mesh: group, speed: (fromLeft ? 1 : -1) * (40 + Math.random() * 20) });
     }
 
+    private spawnFish() {
+        const group = new THREE.Group();
+        const fishGeo = new THREE.ConeGeometry(0.2, 0.8, 8);
+        const fishMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2 });
+        const fish = new THREE.Mesh(fishGeo, fishMat);
+        fish.rotation.x = Math.PI / 2;
+        group.add(fish);
+        
+        const z = this.camera.position.z - 15 - Math.random() * 20;
+        const x = this.getPathX(z) + (Math.random() - 0.5) * 4;
+        group.position.set(x, -2, z);
+        
+        const userData = { velocity: new THREE.Vector3(0, 8, 0), age: 0 };
+        group.userData = userData;
+        
+        this.scene.add(group);
+        this.fish.push(group);
+    }
+
     private createKayaker(pos: [number, number, number], color: string, paddlerColor: string, offset: number) {
         const group = new THREE.Group();
         group.position.set(...pos);
@@ -531,19 +571,29 @@ export class RiverScene {
         return { wrapper, paddle: paddleGroup, offset };
     }
 
-    private initKayakers() {
-        const wrapper = new THREE.Group();
-        wrapper.position.y = -5.5; 
-        const k1 = this.createKayaker([3, 0, -5], '#D97706', '#ef4444', 0);
-        const k2 = this.createKayaker([-2, 0, -2], '#68246D', '#22c55e', 2);
-        const k3 = this.createKayaker([1.5, 0, -8], '#0ea5e9', '#f59e0b', 4);
-        wrapper.add(k1.wrapper);
-        wrapper.add(k2.wrapper);
-        wrapper.add(k3.wrapper);
+        private initKayakers() {
+
+            const wrapper = new THREE.Group();
+
+            wrapper.position.y = -5.5; 
+
+            
+
+            const colors = [
+            ['#D97706', '#ef4444'], ['#68246D', '#22c55e'], ['#0ea5e9', '#f59e0b'],
+            ['#be185d', '#f472b6'], ['#15803d', '#86efac'], ['#b91c1c', '#fca5a5']
+        ];
+
+        for (let i = 0; i < 6; i++) {
+            const z = -2 - (i * 3);
+            const x = (i % 2 === 0 ? 1 : -1) * (1.5 + Math.random());
+            const c = colors[i % colors.length];
+            const k = this.createKayaker([x, 0, z], c[0], c[1], i * 1.5);
+            wrapper.add(k.wrapper);
+            this.kayakers.push({ group: k.wrapper, paddle: k.paddle, offset: i * 1.5 });
+        }
+        
         this.scene.add(wrapper);
-        this.kayakers.push({ group: k1.wrapper, paddle: k1.paddle, offset: 0 });
-        this.kayakers.push({ group: k2.wrapper, paddle: k2.paddle, offset: 2 });
-        this.kayakers.push({ group: k3.wrapper, paddle: k3.paddle, offset: 4 });
     }
 
     private getAutoBiome(): Biome {
@@ -630,10 +680,18 @@ export class RiverScene {
             (water.material as THREE.MeshPhysicalMaterial).color.set(wColor);
             
             for(let i=2; i<chunk.mesh.children.length; i++) {
-                const tree = chunk.mesh.children[i] as THREE.Mesh;
-                if (!tree || !tree.material) continue;
-                const mat = tree.material as THREE.MeshStandardMaterial;
+                const item = chunk.mesh.children[i] as THREE.Mesh;
+                if (!item || !item.material) continue;
+                const mat = item.material as THREE.MeshStandardMaterial;
                 if (!mat.color) continue;
+                
+                // Rocks are gray regardless of biome mostly, but maybe snowy
+                if (item.geometry.type === 'DodecahedronGeometry') {
+                    if (biome === 'winter') mat.color.set(0xcbd5e1);
+                    else mat.color.set(0x57534e);
+                    continue;
+                }
+
                 if (biome === 'winter') mat.color.set(0xffffff); 
                 else if (biome === 'autumn') {
                     const colors = [0xb91c1c, 0xc2410c, 0xd97706, 0xeab308];
@@ -691,6 +749,24 @@ export class RiverScene {
             }
         }
 
+        if (elapsed - this.lastFishTime > 2 + Math.random() * 8) {
+             this.spawnFish();
+             this.lastFishTime = elapsed;
+        }
+        for (let i = this.fish.length - 1; i >= 0; i--) {
+            const f = this.fish[i];
+            const ud = f.userData;
+            ud.age += delta;
+            ud.velocity.y -= 15 * delta; // Gravity
+            f.position.y += ud.velocity.y * delta;
+            f.rotation.x = Math.atan2(ud.velocity.y, 5) - Math.PI/2;
+            
+            if (f.position.y < -3) { // Below water
+                this.scene.remove(f);
+                this.fish.splice(i, 1);
+            }
+        }
+
         this.chunks.forEach(chunk => {
             chunk.mesh.position.z += speed * delta;
              if (chunk.mesh.position.z > 90) { 
@@ -722,11 +798,17 @@ export class RiverScene {
         let avgY = 0;
         this.kayakers.forEach(k => {
             const t = elapsed + k.offset;
-            const zGlobal = k.group.position.z - 4; 
+            const zGlobal = k.group.position.z; 
             const pathOffset = speed * elapsed;
             const zForSampling = zGlobal - pathOffset;
+            
+            // Sample height at two points to anchor the boat better to the slope
+            const sampleDist = 1.0;
+            const yFront = this.getRiverSlopeHeight(zForSampling - sampleDist);
+            const yBack = this.getRiverSlopeHeight(zForSampling + sampleDist);
+            const targetY = (yFront + yBack) / 2;
             const targetX = this.getPathX(zForSampling);
-            const targetY = this.getRiverSlopeHeight(zForSampling);
+            
             k.group.position.x = THREE.MathUtils.lerp(k.group.position.x, targetX + (Math.sin(t * 0.5) * 2.5), 0.05);
             const kw = 2 * Math.PI / 300;
             const xPos = k.group.position.x;
@@ -742,17 +824,24 @@ export class RiverScene {
             staticNoise += Math.sin(xPos * 1.5 + zForSampling * kw * 60.0) * 0.05;
             staticNoise += Math.cos(xPos * 0.4 - zForSampling * kw * 15.0) * 0.1;
             const waveHeight = dynamicWave * dynIntensity + staticNoise * staticIntensity;
-            k.group.position.y = targetY + waveHeight;
+            
+            // Apply vertex shader curvature to JS position
+            const zRel = zGlobal - 15.0;
+            let curveDrop = 0;
+            if (zRel < 0) {
+                curveDrop = (zRel * zRel * 0.00003) * 2.0;
+            }
+            
+            k.group.position.y = targetY + waveHeight - curveDrop;
             avgX += k.group.position.x;
             avgY += k.group.position.y;
             k.paddle.rotation.x = Math.sin(t * 3) * 0.5;
             k.paddle.rotation.y = Math.cos(t * 3) * 0.4;
             k.paddle.position.y = 0.8 + Math.sin(t * 6) * 0.05;
             const boatGroup = k.group.children[0];
-            const futureTargetX = this.getPathX(zForSampling - 2);
-            const futureTargetY = this.getRiverSlopeHeight(zForSampling - 2);
-            const turnDir = (futureTargetX - targetX);
-            const angle = Math.atan2(futureTargetY - targetY, 2.0); 
+            const turnDir = (this.getPathX(zForSampling - 2.0) - targetX);
+            // Use the sampled points for more accurate pitch
+            const angle = Math.atan2(yFront - yBack, sampleDist * 2); 
             const roll = Math.sin(xPos * 1.2 + elapsed * 4.0) * 0.1 * dynIntensity;
             boatGroup.rotation.z = THREE.MathUtils.lerp(boatGroup.rotation.z, turnDir * -0.5 + roll, 0.1);
             boatGroup.rotation.x = THREE.MathUtils.lerp(boatGroup.rotation.x, angle, 0.1);

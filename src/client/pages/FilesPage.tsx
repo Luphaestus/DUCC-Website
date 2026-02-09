@@ -1,10 +1,10 @@
+// todo clean up
 import { createSignal, createResource, onMount, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG } from '@/utils/icons';
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate } from "@solidjs/router";
-import LiquidContainer from "@/components/LiquidContainer";
 
 interface FileCategory {
     id: string;
@@ -21,6 +21,13 @@ interface FileEntry {
     size: number;
 }
 
+interface FilesPageData {
+    files: FileEntry[];
+    totalPages: number;
+    search: string;
+    categoryId: string;
+}
+
 export default function FilesPage() {
     const navigate = useNavigate();
     const [search, setSearch] = createSignal("");
@@ -32,14 +39,14 @@ export default function FilesPage() {
     const [categories, setCategories] = createSignal<FileCategory[]>([]);
     const [oldFilesData, setOldFilesData] = createSignal<any>(null);
 
-    const [filesData] = createResource(() => ({ 
+    const [filesData] = createResource<FilesPageData, any>(() => ({ 
         page: page(), 
         search: search(), 
         categoryId: categoryId(),
         sort: sort(),
         order: order()
     }), async (params, { value }) => {
-        if (value && params.search === (filesData() as any)?.search && params.categoryId === (filesData() as any)?.categoryId) {
+        if (value && params.search === (filesData as any).latest?.search && params.categoryId === (filesData as any).latest?.categoryId) {
             setOldFilesData(value);
         } else {
             setOldFilesData(null);
@@ -172,7 +179,7 @@ export default function FilesPage() {
                 </div>
             </div>
 
-            <LiquidContainer class="files-table-wrapper" padding="0">
+            <div class="liquid-container files-table-wrapper" style={{ "--liquid-padding": "0" }}>
                 <Show when={filesData.loading && !filesData() && !oldFilesData()}>
                     <p class="text-centre">Loading...</p>
                 </Show>
@@ -183,7 +190,7 @@ export default function FilesPage() {
                 >
                     <FileTable data={filesData()} />
                 </PaginationSlider>
-            </LiquidContainer>
+            </div>
 
             <Pagination 
                 currentPage={page()} 

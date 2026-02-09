@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, Show, createResource, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -168,8 +169,8 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                 <label><input type="checkbox" name="is_member" checked={props.user.is_member} /> Is Member</label>
                             </Show>
                             <div class="form-actions mt-2">
-                                <LiquidButton htmlType="submit" class="small-btn" borderRadius={12}>Save</LiquidButton>
-                                <LiquidButton htmlType="button" class="small-btn secondary outline" onClick={() => setIsEditing(false)} borderRadius={12}>Cancel</LiquidButton>
+                                <LiquidButton type="submit" class="small-btn" borderRadius={12}>Save</LiquidButton>
+                                <LiquidButton type="button" class="small-btn secondary outline" onClick={() => setIsEditing(false)} borderRadius={12}>Cancel</LiquidButton>
                             </div>
                         </form>
                     </Show>
@@ -201,7 +202,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                             )}
                         </For>
                     </div>
-                    <LiquidButton htmlType="submit" class="primary full-width mt-4" borderRadius={12}>Save Preferences</LiquidButton>
+                    <LiquidButton type="submit" class="primary full-width mt-4" borderRadius={12}>Save Preferences</LiquidButton>
                 </form>
             </Panel>
         </div>

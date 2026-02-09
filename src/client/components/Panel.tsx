@@ -1,5 +1,4 @@
 import { JSX, ParentProps, Show } from "solid-js";
-import LiquidContainer from "./LiquidContainer";
 
 interface PanelProps extends ParentProps {
     id?: string;
@@ -7,16 +6,17 @@ interface PanelProps extends ParentProps {
     icon?: string | JSX.Element;
     action?: JSX.Element;
     class?: string;
-    style?: string;
+    style?: any;
 }
 
 export default function Panel(props: PanelProps) {
     return (
-        <LiquidContainer 
-            class={`panel-widget ${props.class || ''}`} 
-            style={props.style}
-            borderRadius={24}
-            tintOpacity={0.15}
+        <div 
+            class={`liquid-container panel-widget ${props.class || ''}`} 
+            style={{
+                '--liquid-border-radius': '24px',
+                ...props.style
+            }}
         >
             <article id={props.id} class="panel-transparent">
                 <Show when={props.title}>
@@ -36,6 +36,6 @@ export default function Panel(props: PanelProps) {
                 </Show>
                 {props.children}
             </article>
-        </LiquidContainer>
+        </div>
     );
 }

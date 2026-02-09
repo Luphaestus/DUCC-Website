@@ -28,6 +28,7 @@
 @use "partials/components/hero";
 @use "partials/components/events" as comp_events;
 @use "partials/components/footer" as comp_footer;
+@use "partials/components/pwa";
 
 // --- Widgets ---
 @use "partials/widgets/upload";

@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, onMount } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";

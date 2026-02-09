@@ -12,6 +12,7 @@ import EventRules from '../rules/EventRules.js';
 import Globals from '../misc/globals.js';
 import Logger from '../misc/Logger.js';
 import { DatabaseWrapper } from './db.js';
+import NotificationsAPI from '../api/NotificationsAPI.js';
 
 interface EventData {
     id?: number;
@@ -432,6 +433,15 @@ export default class EventsDB {
                 if (user && !user.is_member) {
                     await tx.run('UPDATE users SET free_sessions = free_sessions + 1 WHERE id = ?', [attendee.user_id]);
                 }
+
+                // Send Push Notification
+                await NotificationsAPI.sendNotificationToUser(
+                    tx, 
+                    attendee.user_id, 
+                    'Event Canceled', 
+                    `The event "${event.title}" has been canceled.`, 
+                    `/events`
+                );
             }
 
             await tx.run('DELETE FROM event_waiting_list WHERE event_id = ?', [id]);

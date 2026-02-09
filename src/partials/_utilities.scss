@@ -1,9 +1,15 @@
+@use "mixins" as *;
+
 /* Utility Classes & Animations */
 .small-container {
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
   padding-right: 1rem;
+}
+
+.glass-effect {
+  @include glass-effect-base;
 }
 .hidden {
   display: none !important;
@@ -202,4 +208,12 @@
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+.liquid-container {
+  @extend .glass-effect;
+  border-radius: 20px;
+  padding: 1.5rem;
+
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }

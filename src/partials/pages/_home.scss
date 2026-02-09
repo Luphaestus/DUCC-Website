@@ -11,7 +11,7 @@
     flex-direction: column;
     width: 100vw;
     min-height: 90vh;
-    padding: 2rem;
+    padding: 2rem 1rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -124,11 +124,15 @@
 
       .hero-offer-boxes {
         display: flex;
-        flex-direction: row;
         width: 100%;
         gap: 2rem;
-        padding: 0 2rem;
+        padding: 0;
         margin-top: 0;
+        flex-direction: column;
+
+        @media (min-width: 900px) {
+          flex-direction: row;
+        }
 
         .hero-offer-box-wrapper {
           flex: 1;
@@ -139,7 +143,6 @@
           position: relative;
           flex: 1;
           width: 100%;
-          display: flex;
           justify-content: center;
           align-items: center;
           flex-direction: column;
@@ -162,7 +165,7 @@
             justify-content: center;
             position: relative;
             z-index: 2;
-            filter: drop-shadow(0 0 10px rgba(var(--pico-primary-rgb), 0.3));
+            filter: drop-shadow(0 0 10px rgba(var(--shadow-soft), 0.3));
           }
 
           h3 {
@@ -179,30 +182,22 @@
             font-size: 1rem;
             line-height: 1.5;
             margin-bottom: 0;
-            opacity: 0.9;
             text-shadow: none;
             position: relative;
+            color: var(--theme-opposite);
             z-index: 2;
           }
         }
       }
 
       @media (max-width: 900px) {
-        position: relative;
-        bottom: auto;
-        left: auto;
-        transform: none;
-        margin-top: 4rem;
-        margin-bottom: -8rem;
-
         .hero-offer-boxes {
-          flex-direction: column;
-          padding: 0;
+          gap: 0;
 
           .hero-offer-box-wrapper {
             width: 100%;
             margin-right: 0 !important;
-            margin-bottom: 1.5vh;
+            margin-bottom: 1rem;
           }
         }
       }
@@ -210,7 +205,6 @@
   }
 
   .about-us-section {
-    display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 4rem;
@@ -234,9 +228,8 @@
   }
 
   .find-us-section {
-    display: flex;
     flex-direction: column;
-    margin: 1rem; 
+    margin: 1rem;
   }
 
   .about-us-para {
@@ -248,7 +241,7 @@
     p {
       margin-bottom: 1.5rem;
       break-inside: avoid;
-      padding-right: 2rem; 
+      padding-right: 2rem;
     }
 
     @media (max-width: 992px) {

@@ -1,3 +1,4 @@
+// todo clean up
 import { createResource, For, Show, createMemo, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import Panel from "@/components/Panel";

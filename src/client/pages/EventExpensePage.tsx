@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, Show } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";

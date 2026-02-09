@@ -1,10 +1,10 @@
+// todo clean up
 import { createSignal, createResource, For, Show, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_SVG } from '@/utils/icons';
 import Panel from "@/components/Panel";
 import { onUpdate } from "@/utils/updates";
-import LiquidContainer from "@/components/LiquidContainer";
 
 interface Transaction {
     id: number;
@@ -95,13 +95,13 @@ export default function TransactionsTab(props: { userId: number }) {
             </div>
 
             <Panel title="Transaction History" icon={WALLET_SVG}>
-                <LiquidContainer class="transaction-item new-entry-row" padding="1.25rem">
+                <div class="liquid-container transaction-item new-entry-row" style={{ "--liquid-padding": "1.25rem" }}>
                     <form class="tx-edit-grid" onSubmit={handleAdd}>
                         <input name="description" type="text" placeholder="Description (e.g. Top Up)" class="compact-input" required />
                         <input name="amount" type="number" step="0.01" placeholder="Amount" class="compact-input" required />
                         <button type="submit" class="small-btn icon-text-btn min-w-100"><span innerHTML={ADD_SVG} /> Add</button>
                     </form>
-                </LiquidContainer>
+                </div>
 
                 <div id="admin-tx-list" class="mt-4">
                     <For each={data()?.transactions}>
@@ -111,7 +111,7 @@ export default function TransactionsTab(props: { userId: number }) {
                             const isEditing = () => editingId() === tx.id;
 
                             return (
-                                <LiquidContainer class="transaction-item item-list-row" classList={{ editing: isEditing() }} padding="1.25rem">
+                                <div class="liquid-container transaction-item item-list-row" classList={{ editing: isEditing() }} style={{ "--liquid-padding": "1.25rem" }}>
                                     <div class="item-icon" classList={{ negative: isNegative, positive: !isNegative }} innerHTML={isNegative ? REMOVE_SVG : ADD_SVG} />
                                     
                                     <Show when={!isEditing()} fallback={
@@ -146,7 +146,7 @@ export default function TransactionsTab(props: { userId: number }) {
                                             <button class="icon-btn cancel-tx-btn warning" onClick={() => setEditingId(null)} title="Cancel" innerHTML={CLOSE_SVG} />
                                         </Show>
                                     </div>
-                                </LiquidContainer>
+                                </div>
                             );
                         }}
                     </For>

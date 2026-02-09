@@ -1,3 +1,4 @@
+// todo clean up
 import { Show } from "solid-js";
 import {
     POOL_SVG, ADD_SVG, WALLET_SVG, DASHBOARD_SVG
@@ -5,7 +6,6 @@ import {
 import Panel from "@/components/Panel";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import LiquidContainer from "@/components/LiquidContainer";
 
 export default function OverviewTab(props: { user: any, stats: any, minMoney: number, permissions: string[], refetchUser: () => void }) {
     const { notify } = useNotifications();
@@ -35,7 +35,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 </div>
             </article>
 
-            <LiquidContainer class="no-margin" padding="1.25rem">
+            <div class="liquid-container no-margin" style={{ "--liquid-padding": "1.25rem" }}>
                 <Show when={props.stats}>
                     <div class="stats-grid compact">
                         <div class="stat-item">
@@ -56,7 +56,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                         </div>
                     </div>
                 </Show>
-            </LiquidContainer>
+            </div>
 
             {/* Attendance Overview */}
             <article class="value-header full-height-no-margin">
@@ -69,7 +69,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 <div class="value-actions" innerHTML={DASHBOARD_SVG}></div>
             </article>
 
-            <LiquidContainer class="no-margin" padding="1.25rem">
+            <div class="liquid-container no-margin" style={{ "--liquid-padding": "1.25rem" }}>
                 <Show when={props.stats}>
                     <div class="stats-grid compact">
                         <div class="stat-item">
@@ -90,7 +90,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                         </div>
                     </div>
                 </Show>
-            </LiquidContainer>
+            </div>
 
             {/* Swimming Stats */}
             <Panel

@@ -46,24 +46,15 @@ export default function Pagination(props: PaginationProps) {
                     disabled={props.currentPage === 1}
                     onClick={() => props.onPageChange(props.currentPage - 1)}
                     classList={{ 'pagination-disabled': props.currentPage === 1, 'pagination-enabled': props.currentPage !== 1 }}
+                    padding="0.3rem 0.6rem"
                 >
                     Prev
                 </GlassButtonSmall>
 
-                <div class="page-buttons">
-                    <For each={visiblePages()}>
-                        {(page) => (
-                            <Show when={page !== '...'} fallback={<span class="pagination-ellipsis">...</span>}>
-                                <GlassButtonSmall
-                                    class={`page-btn ${page === props.currentPage ? 'primary' : 'outline secondary'}`}
-                                    onClick={() => props.onPageChange(page as number)}
-                                    padding="0.4rem 0.8rem"
-                                >
-                                    {page}
-                                </GlassButtonSmall>
-                            </Show>
-                        )}
-                    </For>
+                <div class="page-buttons" style={{ "align-items": "center", "display": "flex", "gap": "0.5rem" }}>
+                    <span class="pagination-info" style={{ "font-size": "0.85rem", "font-weight": "600", "color": "var(--pico-muted-color)" }}>
+                        Page {props.currentPage} of {props.totalPages}
+                    </span>
                 </div>
 
                 <GlassButtonSmall
@@ -71,6 +62,7 @@ export default function Pagination(props: PaginationProps) {
                     disabled={props.currentPage === props.totalPages}
                     onClick={() => props.onPageChange(props.currentPage + 1)}
                     classList={{ 'pagination-disabled': props.currentPage === props.totalPages, 'pagination-enabled': props.currentPage !== props.totalPages }}
+                    padding="0.3rem 0.6rem"
                 >
                     Next
                 </GlassButtonSmall>

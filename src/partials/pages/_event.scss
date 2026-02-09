@@ -115,9 +115,7 @@
                 display: flex;
                 flex-direction: column;
                 gap: 0.5rem;
-                background-color: var(--glass-bg);
-                border: var(--glass-border);
-                box-shadow: var(--shadow-glass);
+                @include glass-effect-base;
 
                 .box-title {
                     font-size: 0.75rem;
@@ -249,10 +247,7 @@
             }
 
             .waitlist-info {
-                padding: 1.25rem 0 0 0;
-                border: var(--glass-border);
-                background: var(--glass-bg);
-                border-radius: var(--border-radius-md);
+                @include glass-effect-base;
                 padding: 1rem;
                 border-left: 2px solid #f39c12;
                 margin-top: 1.25rem;
@@ -370,9 +365,7 @@
         }
 
         .embedded-trip-panel {
-            background: rgba(var(--pico-background-color-rgb), 0.15);
-            border: var(--glass-border);
-            box-shadow: var(--shadow-glass);
+            @include glass-effect-base;
             padding: 1.25rem;
 
             &:last-child { margin-bottom: 0 !important; }

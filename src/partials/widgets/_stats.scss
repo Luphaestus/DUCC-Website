@@ -11,14 +11,10 @@
     }
 
     .stat-item {
-        background: var(--glass-bg);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        @include glass-effect-base;
         padding: 1rem;
         border-radius: var(--border-radius-md);
         text-align: center;
-        border: var(--glass-border);
-        box-shadow: var(--shadow-glass);
 
         .stat-value {
             display: block;

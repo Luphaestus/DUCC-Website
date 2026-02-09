@@ -4,9 +4,11 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: -10;
+    z-index: 0;
     pointer-events: none;
     overflow: hidden;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 
     .bg-blob {
         position: absolute;

@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, Show, For } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
@@ -5,9 +6,17 @@ import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import CalendarView from "./CalendarView";
 import { 
-    UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG
+    UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG, CHECK_SVG,
+    IOS_SHARE_SVG
 } from '@/utils/icons';
-import LiquidContainer from "@/components/LiquidContainer";
+import { showConfirmModal } from "@/utils/modal";
+import { useNotifications } from "@/stores/notifications";
+
+interface EventsPageData {
+    events: any[];
+    totalPages: number;
+    viewMode: string;
+}
 
 export default function EventsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -34,7 +43,7 @@ export default function EventsPage() {
     const location = () => getParam('location') || '';
     const status = () => getParam('status') || '';
 
-    const [data, { refetch }] = createResource(
+    const [data, { refetch }] = createResource<EventsPageData, any>(
         () => ({ 
             page: page(), search: search(), sort: sort(), order: order(), 
             showPast: showPast(), minCost: minCost(), maxCost: maxCost(), 
@@ -42,9 +51,9 @@ export default function EventsPage() {
             view: viewMode()
         }),
         async (params, { value }) => {
-            if (params.view === 'calendar') return { events: [], totalPages: 0 }; // Calendar handles its own data fetching
+            if (params.view === 'calendar') return { events: [], totalPages: 0, viewMode: 'calendar' }; 
 
-            if (value && params.view === (data() as any)?.viewMode) {
+            if (value && params.view === (data as any).latest?.viewMode) {
                 setOldData(value);
             } else {
                 setOldData(null);
@@ -87,6 +96,18 @@ export default function EventsPage() {
             page: 1
         });
         setShowFilters(false);
+    };
+
+    const handlePublishStaged = async () => {
+        if (await showConfirmModal("Publish All Staged?", "This will confirm all current draft/pending events and make them visible to users.")) {
+            try {
+                await apiRequest('POST', '/api/admin/events/publish-staged');
+                notify('Success', 'Events published!', 'success');
+                refetch();
+            } catch (err: any) {
+                notify('Error', err.message, 'error');
+            }
+        }
     };
 
     const EventTable = (props: { data: any }) => (
@@ -149,7 +170,7 @@ export default function EventsPage() {
 
     return (
         <div class="glass-layout">
-            <LiquidContainer class="glass-toolbar" padding="0.5rem 1rem" borderRadius={100}>
+            <div class="liquid-container glass-toolbar" style={{ "--liquid-padding": "0.5rem 1rem", "--liquid-border-radius": "100px" }}>
                  <div class="toolbar-content">
                     <div class="toolbar-left">
                         <Show when={viewMode() === 'list'}>
@@ -174,10 +195,16 @@ export default function EventsPage() {
                                 <span innerHTML={FILTER_LIST_SVG} /> Filters
                             </button>
                          </Show>
+                         <button class="small-btn warning" onClick={handlePublishStaged}>
+                            <span innerHTML={CHECK_SVG} /> Publish Staged
+                         </button>
+                         <button class="small-btn secondary" onClick={() => navigate('/admin/events/share')}>
+                            <span innerHTML={IOS_SHARE_SVG} /> Share
+                         </button>
                          <button onClick={() => navigate('/admin/event/new')} class="small-btn">Create Event</button>
                         
                         <Show when={showFilters() && viewMode() === 'list'}>
-                            <LiquidContainer class="glass-filter-panel filter-panel-position" padding="1.5rem">
+                            <div class="liquid-container glass-filter-panel filter-panel-position" style={{ "--liquid-padding": "1.5rem" }}>
                                 <form class="filter-grid" onSubmit={handleApplyFilters}>
                                     <label>
                                         Events Display
@@ -215,14 +242,14 @@ export default function EventsPage() {
                                         <button type="submit" class="small-btn">Apply Filters</button>
                                     </div>
                                 </form>
-                            </LiquidContainer>
+                            </div>
                         </Show>
                     </div>
                 </div>
-            </LiquidContainer>
+            </div>
 
             <Show when={viewMode() === 'list'}>
-                <LiquidContainer class="table-responsive" padding="0">
+                <div class="liquid-container table-responsive" style={{ "--liquid-padding": "0" }}>
                     <Show when={data.loading && !data() && !oldData()}>
                         <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
                     </Show>
@@ -232,7 +259,7 @@ export default function EventsPage() {
                     >
                         <EventTable data={data()} />
                     </PaginationSlider>
-                </LiquidContainer>
+                </div>
                 
                 <Show when={data()?.totalPages}>
                     <Pagination 

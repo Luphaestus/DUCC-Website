@@ -1,4 +1,5 @@
-import { createSignal, createResource, onMount, For, Show, createMemo } from "solid-js";
+// todo clean up
+import { createSignal, createResource, onMount, onCleanup, For, Show, createMemo } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import {
@@ -7,7 +8,6 @@ import {
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import { showConfirmModal } from "@/utils/modal";
-import LiquidContainer from "@/components/LiquidContainer";
 
 import PageTitle from "@/components/PageTitle";
 
@@ -131,6 +131,18 @@ export default function ExecPage() {
     const [selectedUser, setSelectedSelectedUser] = createSignal<any | null>(null);
 
     onMount(() => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+
+        onCleanup(() => observer.disconnect());
+
         createMemo(async () => {
             const query = userSearch();
             if (query.length < 2) {
@@ -147,19 +159,17 @@ export default function ExecPage() {
     return (
         <div id="exec-view" class="view">
             <div class="container">
-                <header class="page-header">
-                    <div class="header-text">
+                <div class="standard-page-header">
+                    <div>
                         <PageTitle text="Executive Committee" />
                         <p>The team running the club for the current academic year.</p>
                     </div>
                     <Show when={canManage()}>
-                        <div class="header-actions">
-                            <button class="primary" onClick={() => handleOpenModal()}>
-                                <span innerHTML={ADD_SVG} /> Add Member
-                            </button>
-                        </div>
+                        <button class="primary" onClick={() => handleOpenModal()}>
+                            <span innerHTML={ADD_SVG} /> Add Member
+                        </button>
                     </Show>
-                </header>
+                </div>
 
                 <section id="current-exec-section">
                     <Show when={execData.loading}>
@@ -168,11 +178,11 @@ export default function ExecPage() {
                     <div id="current-exec-grid" class="exec-grid">
                         <For each={groupedCurrent()}>
                             {(group) => (
-                                <div class={`exec-rank-row rank-${group.rank}-row`}>
+                                <div class={`exec-rank-row rank-${group.rank}-row scroll-reveal`}>
                                     <div class="exec-grid">
                                         <For each={group.members}>
                                             {(member) => (
-                                                <article class={`exec-card rank-${group.rank}`}>
+                                                <article class={`exec-card rank-${group.rank} glass-effect`}>
                                                     <div class="exec-image">
                                                         <Show when={group.rank <= 2}>
                                                             <div class="waves"><div class="wave"></div><div class="wave"></div><div class="wave"></div></div>
@@ -205,7 +215,7 @@ export default function ExecPage() {
                 </section>
 
                 <Show when={groupedPast().length > 0}>
-                    <section id="past-exec-section" class="past-exec-section">
+                    <section id="past-exec-section" class="past-exec-section scroll-reveal">
                         <h2>Past Committees</h2>
                         <div id="past-exec-container" class="past-exec-container">
                             <For each={groupedPast()}>
@@ -260,7 +270,7 @@ export default function ExecPage() {
                                 />
                             </div>
                             <Show when={userResults().length > 0}>
-                                <LiquidContainer class="mt-2 item-list-scroll-small" padding="0px">
+                                <div class="liquid-container mt-2 item-list-scroll-small" style={{ "--liquid-padding": "0px" }}>
                                     <For each={userResults()}>
                                         {(u) => (
                                             <div class="search-result-item" onClick={() => {
@@ -276,7 +286,7 @@ export default function ExecPage() {
                                             </div>
                                         )}
                                     </For>
-                                </LiquidContainer>
+                                </div>
                             </Show>
                         </div>
                         <input type="hidden" name="userId" value={selectedUser()?.id || editingMember()?.user_id || ''} />

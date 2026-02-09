@@ -23,7 +23,7 @@ export default class ExecAPI {
         /**
          * Get current and past exec committee.
          */
-        this.app.get('/api/exec', async (request: FastifyRequest<{ Querystring: { admin?: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Querystring: { admin?: string } }>('/api/exec', async (request, reply) => {
             const user = (request as any).user;
             const includeHidden = request.query.admin === 'true' && 
                                   user && 
@@ -44,7 +44,7 @@ export default class ExecAPI {
         /**
          * Toggle exec member visibility (publish/unpublish).
          */
-        this.app.post('/api/exec/:id/toggle-visibility', { preHandler: [check('exec.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { is_hidden: boolean } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { is_hidden: boolean } }>('/api/exec/:id/toggle-visibility', { preHandler: [check('exec.manage')] }, async (request, reply) => {
             const status = await ExecDB.updateExecMember(this.db, parseInt(request.params.id), { is_hidden: request.body.is_hidden ? 1 : 0 });
             return status.getResponse(reply);
         });
@@ -52,7 +52,7 @@ export default class ExecAPI {
         /**
          * Add an exec member.
          */
-        this.app.post('/api/exec', { preHandler: [check('exec.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+        this.app.post('/api/exec', { preHandler: [check('exec.manage')] }, async (request, reply) => {
             const status = await ExecDB.addExecMember(this.db, request.body as any);
             return status.getResponse(reply);
         });
@@ -60,7 +60,7 @@ export default class ExecAPI {
         /**
          * Update an exec member.
          */
-        this.app.put('/api/exec/:id', { preHandler: [check('exec.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.put<{ Params: { id: string } }>('/api/exec/:id', { preHandler: [check('exec.manage')] }, async (request, reply) => {
             const status = await ExecDB.updateExecMember(this.db, parseInt(request.params.id), request.body as any);
             return status.getResponse(reply);
         });
@@ -68,7 +68,7 @@ export default class ExecAPI {
         /**
          * Delete an exec member.
          */
-        this.app.delete('/api/exec/:id', { preHandler: [check('exec.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/exec/:id', { preHandler: [check('exec.manage')] }, async (request, reply) => {
             const status = await ExecDB.deleteExecMember(this.db, parseInt(request.params.id));
             return status.getResponse(reply);
         });

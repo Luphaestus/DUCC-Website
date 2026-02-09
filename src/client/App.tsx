@@ -8,8 +8,12 @@ import { initUpdates } from "./utils/updates";
 import { ErrorView, NoInternetPage } from "./pages/ErrorPage";
 import { BRIGHTNESS_ALERT_SVG } from "./utils/icons";
 import PresidentGoodbyeOverlay from "./components/PresidentGoodbyeOverlay";
+import InstallOverlay from "./components/InstallOverlay";
 import { NoInternetEvent } from "./utils/events/events";
 import { isServerConnected } from "./connection";
+import { initPWA } from "./utils/pwa";
+
+import { initScrollReveal } from "./utils/scroll";
 
 export default function App(props: ParentProps) {
   const navigate = useNavigate();
@@ -17,11 +21,16 @@ export default function App(props: ParentProps) {
   const [isOffline, setIsOffline] = createSignal(!isServerConnected);
 
   onMount(() => {
+    initPWA();
     initUpdates();
+    const scrollCleanup = initScrollReveal();
     const cleanup = NoInternetEvent.subscribe(() => {
         setIsOffline(!isServerConnected);
     });
-    onCleanup(cleanup);
+    onCleanup(() => {
+        scrollCleanup();
+        cleanup();
+    });
   });
 
   return (
@@ -46,9 +55,11 @@ export default function App(props: ParentProps) {
           </ErrorBoundary>
         </div>
       </main>
-      <NotificationContainer />
-      <Footer />
-      <PresidentGoodbyeOverlay />
-    </>
-  );
-}
+            <NotificationContainer />
+            <Footer />
+            <PresidentGoodbyeOverlay />
+            <InstallOverlay />
+          </>
+        );
+      }
+      

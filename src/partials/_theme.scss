@@ -5,29 +5,22 @@
 @mixin dark-mode-vars {
   --theme: black;
   --theme-opposite: white;
-  --translucent-bg: rgba(15, 15, 20, 0.5);
-  --glass-bg: rgba(25, 25, 30, 0.45);
-  --glass-highlight: rgba(255, 255, 255, 0.08);
+  --translucent-bg: rgba(18, 18, 18, 0.5);
+  --glass-bg: rgba(28, 28, 28, 0.45);
+  --glass-highlight: rgba(255, 255, 255, 0.15);
   --glass-border: 1px solid var(--glass-highlight);
-  --nav-bg: rgba(15, 15, 20, 0.7);
+  --nav-bg: rgba(18, 18, 18, 0.7);
   --glass-text-colour: #ffffff;
   --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.4);
   --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.6);
   --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   --table-border: 1px solid rgba(255, 255, 255, 0.05);
-  --table-bg-body: rgba(30, 30, 35, 0.4);
-  --table-bg-hover-body: rgba(40, 40, 45, 0.6);
+  --table-bg-body: rgba(32, 32, 32, 0.4);
+  --table-bg-hover-body: rgba(42, 42, 42, 0.6);
   --pico-primary-rgb: 212, 125, 228;
   --pico-color-rgb: 194, 199, 208;
   --colour-primary: #d47de4;
   --colour-secondary: #9b59b6;
-
-  /* Dark Mode Blobs */
-  --blob-colour-1: rgba(155, 89, 182, 0.12);
-  --blob-colour-2: rgba(52, 152, 219, 0.12);
-  --blob-colour-3: rgba(41, 128, 185, 0.12);
-  --blob-colour-4: rgba(26, 188, 156, 0.12);
-  --blob-colour-5: rgba(46, 204, 113, 0.12);
 
   #animated-background {
     opacity: 0.4;
@@ -50,7 +43,7 @@ body {
   --border-radius-pill: 9999px;
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
   --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.12);
-  --shadow-glass: 0 12px 40px rgba(31, 38, 135, 0.1);
+  --shadow-glass: 0 12px 40px rgba(0, 0, 0, 0.1);
 
   /* Light Mode Defaults */
   --translucent-bg: rgba(255, 255, 255, 0.4);
@@ -73,31 +66,6 @@ body {
   --table-bg-hover-head: rgba(var(--pico-primary-rgb), 0.1);
   --table-bg-body: rgba(255, 255, 255, 0.4);
   --table-bg-hover-body: rgba(255, 255, 255, 0.6);
-
-  /* Light Mode Blobs */
-  --blob-colour-1: rgba(170, 64, 191, 0.19);
-  --blob-colour-2: rgba(188, 203, 235, 0.303);
-  --blob-colour-3: rgba(89, 186, 255, 0.245);
-  --blob-colour-4: rgba(65, 249, 249, 0.161);
-  --blob-colour-5: rgba(58, 243, 151, 0.155);
-
-  #animated-background {
-    opacity: 0.6;
-  }
-
-  .bg-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-  }
-
-  .bg-icon {
-    position: absolute;
-    opacity: 0.12;
-    color: var(--pico-color);
-    pointer-events: none;
-    z-index: 1;
-  }
 }
 
 /* Dark Mode Activation */

@@ -1,0 +1,21 @@
+{
+  "name": "Durham University Canoe Club",
+  "short_name": "DUCC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#11001c",
+  "theme_color": "#6c5ce7",
+  "description": "Paddle, Compete, Explore. The official app for DUCC.",
+  "icons": [
+    {
+      "src": "/images/misc/ducc.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/misc/ducc.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

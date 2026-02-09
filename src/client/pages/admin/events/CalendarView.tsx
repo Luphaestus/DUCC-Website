@@ -1,8 +1,8 @@
+// todo clean up
 import { createSignal, createResource, Show, For, onMount, onCleanup, createEffect } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, ADD_SVG, CLOSE_SVG } from "@/utils/icons";
-import LiquidContainer from "@/components/LiquidContainer";
 import { useNotifications } from "@/stores/notifications";
 
 type ViewMode = 'month' | 'week';
@@ -238,7 +238,7 @@ export default function CalendarView() {
             // Optimistic UI
             mutate((prev) => prev?.map(e => e.id === id ? { ...e, start: newStart.toISOString(), end: newEnd.toISOString() } : e));
 
-            await apiRequest('PUT', `/api/admin/events/${id}/time`, {
+            await apiRequest('PUT', `/api/admin/event/${id}`, {
                 start: newStart.toISOString(),
                 end: newEnd.toISOString()
             });
@@ -246,6 +246,23 @@ export default function CalendarView() {
         } catch (e) {
             notify('Error', 'Failed to move event', 'error');
             refetch();
+        }
+    };
+
+    const stagePreviousWeek = async () => {
+        if (await showConfirmModal("Stage Previous Week?", "This will copy all events from last week to this week as 'pending' (staged).")) {
+            try {
+                const prev = new Date(currentDate());
+                prev.setDate(prev.getDate() - 7);
+                await apiRequest('POST', '/api/admin/events/duplicate-week', {
+                    sourceDate: prev.toISOString(),
+                    targetDate: currentDate().toISOString()
+                });
+                notify('Success', 'Previous week staged!', 'success');
+                refetch();
+            } catch (err: any) {
+                notify('Error', err.message, 'error');
+            }
         }
     };
 
@@ -320,19 +337,18 @@ export default function CalendarView() {
         const newEnd = new Date(newStart.getTime() + duration);
 
         try {
-            await apiRequest('POST', '/api/events', {
+            await apiRequest('POST', '/api/admin/event', {
+                ...clip,
+                id: undefined,
                 title: clip.title + ' (Copy)',
                 start: newStart.toISOString(),
                 end: newEnd.toISOString(),
-                location: clip.location,
-                description: "Copied from " + clip.title,
-                type: 'social', // Default
-                status: 'scheduled'
+                status: 'pending' // Default to draft
             });
             notify('Success', 'Event pasted', 'success');
             refetch();
-        } catch (e) {
-            notify('Error', 'Failed to paste', 'error');
+        } catch (e: any) {
+            notify('Error', e.message || 'Failed to paste', 'error');
         }
         setContextMenu(null);
     };
@@ -348,9 +364,15 @@ export default function CalendarView() {
                         {currentDate().toLocaleString('default', { month: 'long', year: 'numeric' })}
                     </h2>
                 </div>
-                <div class="cal-actions">
-                    <button class={viewMode() === 'month' ? 'primary' : 'outline'} onClick={() => setViewMode('month')}>Month</button>
-                    <button class={viewMode() === 'week' ? 'primary' : 'outline'} onClick={() => setViewMode('week')}>Week</button>
+                <div class="cal-actions" style={{ gap: '0.5rem', display: 'flex' }}>
+                    <Show when={viewMode() === 'week'}>
+                        <button class="outline secondary" onClick={stagePreviousWeek}>Stage Prev Week</button>
+                    </Show>
+                    <Show when={clipboard()}>
+                        <button class="primary" onClick={() => pasteEvent(new Date())}>Paste Event</button>
+                    </Show>
+                    <button class={viewMode() === 'month' ? 'primary' : 'outline'} style={{ "min-width": "80px" }} onClick={() => setViewMode('month')}>Month</button>
+                    <button class={viewMode() === 'week' ? 'primary' : 'outline'} style={{ "min-width": "80px" }} onClick={() => setViewMode('week')}>Week</button>
                 </div>
             </div>
 
@@ -360,7 +382,7 @@ export default function CalendarView() {
                     {/* Time Gutter */}
                     <div class="time-gutter">
                         <For each={Array.from({length: 24})}>{(_, i) => (
-                            <div class="time-label"><span>{i}:00</span></div>
+                            <div class="time-label"><span>{i()}:00</span></div>
                         )}</For>
                     </div>
 
@@ -369,18 +391,19 @@ export default function CalendarView() {
                         {(day) => (
                             <div class="day-column" 
                                 classList={{ 'today': isToday(day) }}
-                                onMouseDown={(e) => handleGridMouseDown(e, day)}
-                                onMouseMove={(e) => {
-                                    handleColumnMouseMove(e, day);
-                                    handleColumnMoveDrag(e, day);
-                                }}
                             >
                                 <div class="day-header">
                                     <span class="day-name">{day.toLocaleDateString('en-UK', { weekday: 'short' })}</span>
                                     <span class="day-num">{day.getDate()}</span>
                                 </div>
                                 
-                                <div class="day-slots">
+                                <div class="day-slots"
+                                    onMouseDown={(e) => handleGridMouseDown(e, day)}
+                                    onMouseMove={(e) => {
+                                        handleColumnMouseMove(e, day);
+                                        handleColumnMoveDrag(e, day);
+                                    }}
+                                >
                                     <For each={Array.from({length: 24})}>{() => <div class="hour-slot"></div>}</For>
                                     
                                     {/* Render Events */}
@@ -407,6 +430,9 @@ export default function CalendarView() {
                                                 >
                                                     <div class="ev-time">{displayStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
                                                     <div class="ev-title">{event.title}</div>
+                                                    <div class="copy-btn" onClick={(e) => { e.stopPropagation(); copyEvent(event); }} title="Copy">
+                                                        <span innerHTML={ADD_SVG} style="transform: rotate(45deg)"/>
+                                                    </div>
                                                 </div>
                                             );
                                         }}
@@ -441,7 +467,10 @@ export default function CalendarView() {
                             {(day) => (
                                 <div class="month-day" 
                                     classList={{ 'today': isToday(day), 'other-month': day.getMonth() !== currentDate().getMonth() }}
-                                    onClick={() => navigate(`/admin/event/new?date=${day.toISOString()}`)}
+                                    onClick={() => {
+                                        setCurrentDate(day);
+                                        setViewMode('week');
+                                    }}
                                 >
                                     <span class="day-number">{day.getDate()}</span>
                                     <div class="day-events-dots">

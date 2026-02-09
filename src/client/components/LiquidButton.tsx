@@ -1,13 +1,11 @@
 import { ParentProps, splitProps, JSX, mergeProps } from "solid-js";
-import LiquidContainer from "./LiquidContainer";
 
 interface LiquidButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
     borderRadius?: number;
     tintOpacity?: number;
-    type?: 'rounded' | 'circle' | 'pill';
+    variant?: 'rounded' | 'circle' | 'pill';
     size?: number; 
     warp?: boolean;
-    htmlType?: 'submit' | 'button' | 'reset';
     displacementScale?: number;
     blurAmount?: number;
     saturation?: number;
@@ -19,36 +17,51 @@ interface LiquidButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> 
 export default function LiquidButton(props: LiquidButtonProps) {
     const [local, others] = splitProps(props, [
         "children", "class", "style", "borderRadius", "tintOpacity", 
-        "type", "size", "warp", "onClick", "htmlType", "padding",
+        "variant", "size", "warp", "onClick", "padding",
         "displacementScale", "blurAmount", "saturation", "aberrationIntensity", "elasticity"
     ]);
     
+    // Check if disabled is in others (it's a standard HTML attribute)
+    const isDisabled = () => (others as any).disabled;
+
     const containerProps = {
         borderRadius: local.borderRadius ?? (local.size ? local.size : 20),
         tintOpacity: local.tintOpacity ?? 0.2,
-        type: local.type || 'rounded',
-        elasticity: props.elasticity ?? 0.25, 
-        displacementScale: props.displacementScale,
-        blurAmount: props.blurAmount,
-        saturation: props.saturation,
-        aberrationIntensity: props.aberrationIntensity,
+        variant: local.variant || 'rounded',
+        elasticity: local.elasticity ?? 0.25, 
+        displacementScale: local.displacementScale,
+        blurAmount: local.blurAmount,
+        saturation: local.saturation,
+        aberrationIntensity: local.aberrationIntensity,
         padding: local.padding || '0.6rem 1.25rem',
         class: `liquid-button-wrapper ${local.class || ''}`,
-        onClick: (e: MouseEvent) => local.onClick?.(e as any),
-        style: {
-            cursor: 'pointer',
+        onClick: (e: MouseEvent) => {
+            if (isDisabled()) return;
+            (local.onClick as any)?.(e);
+        },
+        style: mergeProps({
+            cursor: isDisabled() ? 'not-allowed' : 'pointer',
             display: 'inline-flex',
             'align-items': 'center',
             'justify-content': 'center',
             border: 'none',
-            ...local.style
-        }
+            opacity: isDisabled() ? 0.5 : 1
+        }, typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties
     };
 
     return (
-        <LiquidContainer {...containerProps}>
+        <div 
+            class={`liquid-container ${containerProps.class}`}
+            style={mergeProps({
+                '--liquid-border-radius': `${containerProps.borderRadius}px`,
+                '--liquid-padding': containerProps.padding,
+                '--liquid-blur': containerProps.blurAmount !== undefined ? `${containerProps.blurAmount * 160}px` : undefined,
+                '--liquid-saturation': containerProps.saturation !== undefined ? `${containerProps.saturation}%` : undefined,
+            }, containerProps.style) as any}
+            onClick={containerProps.onClick}
+        >
             <button 
-                type={local.htmlType || 'button'}
+                type={others.type || 'button'}
                 style={{
                     background: 'transparent',
                     border: 'none',
@@ -69,7 +82,7 @@ export default function LiquidButton(props: LiquidButtonProps) {
             >
                 {local.children}
             </button>
-        </LiquidContainer>
+        </div>
     );
 }
 

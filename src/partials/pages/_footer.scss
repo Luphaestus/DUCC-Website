@@ -1,9 +1,9 @@
+@use "../mixins" as *;
+
 /* Footer */
 footer {
     width: 100%; 
-    background-color: var(--glass-bg); 
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    @include glass-effect-base;
     z-index: 10;
     border-top: 1px solid var(--glass-highlight); 
     padding: 2rem 0; 

@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, onMount, Show, For, createMemo, onCleanup } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest, clearApiCache, uploadFile } from "@/utils/api";
@@ -10,7 +11,7 @@ import Panel from "@/components/Panel";
 import {
     SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
     LOGOUT_SVG, EDIT_SVG, GROUP_SVG, KAYAKING_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG,
-    CONTENT_COPY_SVG, UPLOAD_SVG, SHIELD_SVG
+    CONTENT_COPY_SVG, UPLOAD_SVG, SHIELD_SVG, DOWNLOAD_SVG
 } from '@/utils/icons';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
 import { Tag } from "@/widgets/Tag";
@@ -18,7 +19,7 @@ import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
 import { TabNav } from "@/widgets/TabNav";
 import { onUpdate } from "@/utils/updates";
-import LiquidContainer from "@/components/LiquidContainer";
+import { isPWAInstalled, installPWA, isManualInstall, deferredPrompt } from "@/utils/pwa";
 
 interface UserProfile {
     // ... same as before
@@ -548,9 +549,8 @@ export default function ProfilePage() {
                                                             <For each={colors}>
                                                                 {(color) => (
                                                                     <div
-                                                                        class="preset-item color-preset"
+                                                                        class="preset-item color-preset profile-avatar-size"
                                                                         classList={{ active: profile()!.profile_picture_color === color }}
-                                                                        class="profile-avatar-size"
                                                                         onClick={() => updatePP({ color })}
                                                                     >
                                                                         <Avatar user={{ ...profile()!, profile_picture_color: color, profile_picture_path: null }} classes="mini-avatar" />
@@ -565,9 +565,8 @@ export default function ProfilePage() {
                                                                     <For each={initialsOptions}>
                                                                         {(opt) => (
                                                                             <div
-                                                                                class="preset-item initials-preset"
+                                                                                class="preset-item initials-preset profile-avatar-size"
                                                                                 classList={{ active: profile()!.profile_picture_initials === opt.value }}
-                                                                                class="profile-avatar-size"
                                                                                 onClick={() => updatePP({ initials: opt.value })}
                                                                             >
                                                                                 <Avatar user={{ ...profile()!, profile_picture_initials: opt.value, profile_picture_path: null }} classes="mini-avatar" />
@@ -582,9 +581,8 @@ export default function ProfilePage() {
                                                                     <For each={fonts}>
                                                                         {(f) => (
                                                                             <div
-                                                                                class={`preset-item font-preset font-preset-${f.value}`}
+                                                                                class={`preset-item font-preset font-preset-${f.value} profile-avatar-size`}
                                                                                 classList={{ active: profile()!.profile_picture_font === f.value }}
-                                                                                class="profile-avatar-size"
                                                                                 onClick={() => updatePP({ font: f.value })}
                                                                             >
                                                                                 <Avatar user={{ ...profile()!, profile_picture_font: f.value, profile_picture_path: null }} classes="mini-avatar" />
@@ -741,7 +739,7 @@ export default function ProfilePage() {
                                 <Panel title="Account Security">
                                     <div class="settings-grid">
                                         <div class="two-fa-grid dual-grid mt-4">
-                                            <LiquidContainer class="embedded-panel" padding="1.25rem">
+                                            <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
                                                 <div class="setting-info">
                                                     <strong>Password</strong>
                                                     <p>Manage your account password</p>
@@ -757,9 +755,9 @@ export default function ProfilePage() {
                                                         }
                                                     }
                                                 }}>Change</button>
-                                            </LiquidContainer>
+                                            </div>
 
-                                            <LiquidContainer class="embedded-panel" padding="1.25rem">
+                                            <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
                                                 <div class="setting-info">
                                                     <strong>Authenticator (TOTP)</strong>
                                                     <span class="status-tag" classList={{ 'success': profile()!.totp_enabled, 'warning': !profile()!.totp_enabled }}>
@@ -772,17 +770,17 @@ export default function ProfilePage() {
                                                 <Show when={profile()!.totp_enabled}>
                                                     <button class="small-btn outline delete" onClick={handleDisableTOTP}>Disable</button>
                                                 </Show>
-                                            </LiquidContainer>
+                                            </div>
 
-                                            <LiquidContainer class="embedded-panel" padding="1.25rem">
+                                            <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
                                                 <div class="setting-info">
                                                     <strong>Passkey</strong>
                                                     <p>{passkeys()?.length || 0} keys registered</p>
                                                 </div>
                                                 <button class="small-btn secondary" onClick={() => setIsPasskeyModalOpen(true)}>Manage</button>
-                                            </LiquidContainer>
+                                            </div>
 
-                                            <LiquidContainer class="embedded-panel danger-zone" padding="1.25rem">
+                                            <div class="liquid-container embedded-panel danger-zone" style={{ "--liquid-padding": "1.25rem" }}>
                                                 <div class="setting-info">
                                                     <strong style="color: var(--colour-bad)">Delete Account</strong>
                                                     <p>Permanently remove your account</p>
@@ -799,7 +797,30 @@ export default function ProfilePage() {
                                                         }
                                                     }
                                                 }}>Delete</button>
-                                            </LiquidContainer>
+                                            </div>
+
+                                            <Show when={!isPWAInstalled()}>
+                                                <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
+                                                    <div class="setting-info">
+                                                        <strong>Install App</strong>
+                                                        <p>
+                                                            <Show when={isManualInstall()} fallback="Get the official DUCC app for your device">
+                                                                Tap the Share button or menu and select "Add to Home Screen" (or "Add to Dock")
+                                                            </Show>
+                                                        </p>
+                                                    </div>
+                                                    <Show when={!isManualInstall()}>
+                                                        <button 
+                                                            class="small-btn primary" 
+                                                            onClick={installPWA}
+                                                            disabled={!deferredPrompt()}
+                                                        >
+                                                            <span innerHTML={DOWNLOAD_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" /> 
+                                                            {deferredPrompt() ? 'Install' : 'Waiting for browser...'}
+                                                        </button>
+                                                    </Show>
+                                                </div>
+                                            </Show>
                                         </div>
                                     </div>
                                 </Panel>

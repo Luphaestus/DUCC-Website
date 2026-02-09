@@ -1,7 +1,6 @@
 import { JSX, createEffect, createSignal, onCleanup } from "solid-js";
 import { CLOSE_SVG } from "@/utils/icons";
 import { incrementModals, decrementModals } from "@/utils/modal-state";
-import LiquidContainer from "./LiquidContainer";
 
 interface ModalProps {
     title?: string;
@@ -50,20 +49,23 @@ export default function Modal(props: ModalProps) {
 
     return (
         <div 
-            class="c-modal-overlay" classList={{ 'modal-display': isRendered(), 'modal-hidden': !isRendered() }}
-            classList={{ visible: isVisible() }}
+            class="c-modal-overlay" 
+            classList={{ 
+                'modal-display': isRendered(), 
+                'modal-hidden': !isRendered(),
+                'visible': isVisible() 
+            }}
             onClick={() => handleClose()}
         >
-            <LiquidContainer 
-                class="c-modal-content" 
+            <div 
+                class="liquid-container c-modal-content" 
                 style={{
+                    '--liquid-border-radius': '28px',
                     background: 'transparent',
                     border: 'none',
                     'box-shadow': 'none',
                     ...(props.maxWidth ? { "max-width": props.maxWidth } : {})
                 }}
-                borderRadius={28}
-                tintOpacity={0.2}
             >
                 <div 
                     onClick={(e) => e.stopPropagation()}
@@ -91,7 +93,7 @@ export default function Modal(props: ModalProps) {
                         </div>
                     )}
                 </div>
-            </LiquidContainer>
+            </div>
         </div>
     );
 }

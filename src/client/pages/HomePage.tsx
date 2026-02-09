@@ -1,7 +1,7 @@
+// todo clean up
 import { createSignal, onMount, onCleanup } from "solid-js";
 import { apiRequest, clearApiCache } from "@/utils/api";
 import { KAYAKING_SVG, SOCIAL_LEADERBOARD_SVG, CAMPING_SVG } from "@/utils/icons";
-import LiquidContainer from "@/components/LiquidContainer";
 
 export default function HomePage() {
   const [slideImages, setSlideImages] = createSignal<string[]>([]);
@@ -52,38 +52,38 @@ export default function HomePage() {
         </div>
 
         <div class="hero-title">
-          <h1>Welcome to<br />Durham University<br />Canoe Club</h1>
+          <h1>Welcome to<br />Durham  University<br />Canoe Club</h1>
           <p>Paddle, Compete, Explore. Connect.</p>
         </div>
 
         <div class="hero-offer">
           <div class="hero-offer-boxes">
             <div class="hero-offer-box-wrapper">
-              <LiquidContainer class="hero-offer-box" padding="2rem">
+              <div class="liquid-container hero-offer-box" style={{ "--liquid-padding": "2rem" }}>
                 <span innerHTML={KAYAKING_SVG} />
                 <h3>Weekly Sessions</h3>
                 <p>Beginner-friendly trips of the Wear & Tees plus pool sessions.</p>
-              </LiquidContainer>
+              </div>
             </div>
             <div class="hero-offer-box-wrapper">
-              <LiquidContainer class="hero-offer-box" padding="2rem">
+              <div class="liquid-container hero-offer-box" style={{ "--liquid-padding": "2rem" }}>
                 <span innerHTML={CAMPING_SVG} />
                 <h3>UK & Europe Trips</h3>
                 <p>Exciting whitewater adventures year-round.</p>
-              </LiquidContainer>
+              </div>
             </div>
             <div class="hero-offer-box-wrapper">
-              <LiquidContainer class="hero-offer-box" padding="2rem">
+              <div class="liquid-container hero-offer-box" style={{ "--liquid-padding": "2rem" }}>
                 <span innerHTML={SOCIAL_LEADERBOARD_SVG} />
                 <h3>Competitive Teams</h3>
                 <p>White Water Racing, Canoe Polo, Slalom & Freestyle.</p>
-              </LiquidContainer>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <LiquidContainer class="about-us-section" padding="3rem" borderRadius={24}>
+      <div class="liquid-container about-us-section" style={{ "--liquid-padding": "3rem", "--liquid-border-radius": "24px" }}>
         <h1>About Us</h1>
         <div class="about-us-para">
           <p>Durham University Canoe Club is one of the most successful university canoe clubs in the country.</p>
@@ -93,9 +93,9 @@ export default function HomePage() {
           <p>If you're interested in joining, talk to an exec member or email us. Membership is only £55/year.</p>
           <p>Email: <a href="mailto:canoe.club@durham.ac.uk">canoe.club@durham.ac.uk</a></p>
         </div>
-      </LiquidContainer>
+      </div>
 
-      <LiquidContainer class="find-us-section" padding="3rem" borderRadius={24}>
+      <div class="liquid-container find-us-section" style={{ "--liquid-padding": "3rem", "--liquid-border-radius": "24px" }}>
         <h1>Where to Find Us</h1>
         <p>Our boathouse is located at the Maiden Castle sports centre.</p>
         <div class="find-us-para">
@@ -108,7 +108,7 @@ export default function HomePage() {
           <img src="/images/misc/maiden-castle-outside.jpg" alt="Maiden Castle entrance" />
           <img src="/images/misc/boathouse-outside.jpg" alt="Path to boathouse" />
         </div>
-      </LiquidContainer>
+      </div>
     </div>
   );
 }

@@ -64,7 +64,7 @@ export default class SlidesAPI {
         /**
          * Import a file from the central library into the slideshow.
          */
-        this.app.post('/api/slides/import', { preHandler: [check('file.write')] }, async (request: FastifyRequest<{ Body: { fileId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Body: { fileId: string } }>('/api/slides/import', { preHandler: [check('file.write')] }, async (request, reply) => {
             const { fileId } = request.body;
             if (!fileId) return reply.status(400).send({ message: 'fileId is required' });
 
@@ -75,7 +75,7 @@ export default class SlidesAPI {
         /**
          * Remove a slide from the slideshow.
          */
-        this.app.delete('/api/slides', { preHandler: [check('file.write')] }, async (request: FastifyRequest<{ Body: { fileId: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Body: { fileId: string } }>('/api/slides', { preHandler: [check('file.write')] }, async (request, reply) => {
             const { fileId } = request.body;
             if (!fileId) return reply.status(400).send({ message: 'fileId is required' });
 

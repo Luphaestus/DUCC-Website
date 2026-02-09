@@ -20,14 +20,14 @@ export default class AdminCarsAPI {
 
     registerRoutes() {
         /** Fetch all drivers for an event. */
-        this.app.get('/api/admin/events/:eventId/drivers', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { eventId: string } }>('/api/admin/events/:eventId/drivers', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { eventId } = request.params;
             const status = await CarsDB.getEventDrivers(this.db, eventId);
             return status.getResponse(reply);
         });
 
         /** Moderate a driver volunteer. */
-        this.app.post('/api/admin/drivers/:id/status', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { status: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { status: string } }>('/api/admin/drivers/:id/status', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { id } = request.params;
             const { status } = request.body;
 

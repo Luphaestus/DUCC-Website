@@ -38,7 +38,7 @@ export default class AdminRoles {
         /**
          * Update a permission description.
          */
-        this.app.put('/api/admin/permissions/:id', { preHandler: [check('perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { description: string } }>, reply: FastifyReply) => {
+        this.app.put<{ Params: { id: string }, Body: { description: string } }>('/api/admin/permissions/:id', { preHandler: [check('perm:role.manage')] }, async (request, reply) => {
             const { description } = request.body;
             const { id } = request.params;
             try {
@@ -52,7 +52,7 @@ export default class AdminRoles {
         /**
          * List all defined roles and their metadata.
          */
-        this.app.get('/api/admin/roles', { preHandler: [check('perm:is_exec')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+        this.app.get('/api/admin/roles', { preHandler: [check('perm:is_exec')] }, async (request, reply) => {
             const result = await RolesDB.getAllRoles(this.db);
             if (result.isError()) return result.getResponse(reply);
             return reply.send(result.getData());
@@ -61,7 +61,7 @@ export default class AdminRoles {
         /**
          * Fetch a specific role by ID.
          */
-        this.app.get('/api/admin/roles/:id', { preHandler: [check('perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/admin/roles/:id', { preHandler: [check('perm:role.manage')] }, async (request, reply) => {
             const result = await RolesDB.getRoleById(this.db, request.params.id);
             if (result.isError()) return result.getResponse(reply);
             return reply.send(result.getData());
@@ -70,7 +70,7 @@ export default class AdminRoles {
         /**
          * Create a new role.
          */
-        this.app.post('/api/admin/roles', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request: FastifyRequest, reply: FastifyReply) => {
+        this.app.post('/api/admin/roles', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request, reply) => {
             const { name, description, permissions, execRanking } = request.body as any;
             const result = await RolesDB.createRole(this.db, name, description, permissions, execRanking);
             return result.getResponse(reply);
@@ -79,7 +79,7 @@ export default class AdminRoles {
         /**
          * Update an existing role definition.
          */
-        this.app.put('/api/admin/roles/:id', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.put<{ Params: { id: string } }>('/api/admin/roles/:id', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request, reply) => {
             const { name, description, permissions, execRanking } = request.body as any;
             const result = await RolesDB.updateRole(this.db, request.params.id, name, description, permissions, execRanking);
             if (result.isError()) return result.getResponse(reply);
@@ -89,7 +89,7 @@ export default class AdminRoles {
         /**
          * Delete a role definition.
          */
-        this.app.delete('/api/admin/roles/:id', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/admin/roles/:id', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request, reply) => {
             const result = await RolesDB.deleteRole(this.db, request.params.id);
             if (result.isError()) return result.getResponse(reply);
             return reply.send({ message: result.getMessage() });

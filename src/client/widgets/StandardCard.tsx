@@ -4,7 +4,6 @@ import {
 } from '@/utils/icons';
 import { Tag } from './Tag';
 import { Show, For } from "solid-js";
-import LiquidContainer from '../components/LiquidContainer';
 
 export interface EventData {
     id: number;
@@ -24,7 +23,7 @@ export interface EventData {
     location?: string;
 }
 
-export function StandardCard(props: { event: EventData }) {
+export function StandardCard(props: { event: EventData, paused?: boolean }) {
     const navigate = useNavigate();
     
     const startDate = () => new Date(props.event.start);
@@ -47,17 +46,20 @@ export function StandardCard(props: { event: EventData }) {
     const isWaitlistActive = () => isFull() && props.event.enable_waitlist;
 
     return (
-        <LiquidContainer 
+        <div 
+            class="liquid-container"
             classList={{
                 'event-card': true,
                 'past-event': isPast(),
                 'canceled-event': isCanceled(),
                 'waitlist-active': isWaitlistActive(),
-                'unavailable-event': props.event.can_attend === false && !props.event.is_attending
+                'unavailable-event': props.event.can_attend === false && !props.event.is_attending,
+                'no-blur': true
             }} 
             onClick={() => navigate(`/event/${props.event.id}`)} 
             role="button" 
             tabindex="0"
+            {...{ paused: props.paused } as any}
         >
             <div class="event-image-container">
                 <div class="event-image event-image-header" style={{ "--event-image-url": `url('${imageUrl()}')` }}></div>
@@ -122,6 +124,6 @@ export function StandardCard(props: { event: EventData }) {
                     </div>
                 </div>
             </div>
-        </LiquidContainer>
+        </div>
     );
 }

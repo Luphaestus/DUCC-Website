@@ -40,9 +40,7 @@
 }
 
 .c-modal-content {
-    background: var(--glass-bg);
-    border: var(--glass-border);
-    box-shadow: var(--shadow-glass);
+    @include glass-effect-base;
     border-radius: var(--border-radius-lg);
     width: 100%;
     max-width: 500px; 

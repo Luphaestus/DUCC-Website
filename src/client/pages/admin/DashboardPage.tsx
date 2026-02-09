@@ -1,3 +1,4 @@
+// todo clean up
 import { createMemo } from "solid-js";
 import { A } from "@solidjs/router";
 import { useAuth } from "@/stores/auth";
@@ -6,7 +7,6 @@ import {
     ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG,
     KAYAKING_SVG, TRENDING_UP_SVG, LIST_SVG, FORMAT_QUOTE_SVG
 } from '@/utils/icons';
-import LiquidContainer from "@/components/LiquidContainer";
 
 export default function DashboardPage() {
     const { user } = useAuth();
@@ -24,15 +24,13 @@ export default function DashboardPage() {
     const canAccessGlobals = createMemo(() => true);
 
     const Card = (props: { title: string, desc: string, icon: string, href: string }) => (
-        <LiquidContainer borderRadius={32} tintOpacity={0.1}>
-            <A href={props.href} class="dashboard-card panel-transparent">
-                <div class="card-icon" innerHTML={props.icon} />
-                <div class="card-content">
-                    <h3>{props.title}</h3>
-                    <p>{props.desc}</p>
-                </div>
-            </A>
-        </LiquidContainer>
+        <A href={props.href} class="dashboard-card panel-transparent" style={{ "border-radius": "32px" }}>
+            <div class="card-icon" innerHTML={props.icon} />
+            <div class="card-content">
+                <h3>{props.title}</h3>
+                <p>{props.desc}</p>
+            </div>
+        </A>
     );
 
     return (

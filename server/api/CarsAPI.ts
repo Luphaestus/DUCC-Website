@@ -27,7 +27,7 @@ export default class CarsAPI {
         });
 
         /** Fetch drivers for an event (Member view). */
-        this.app.get('/api/events/:eventId/drivers', { preHandler: [checkAuthentication()] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { eventId: string } }>('/api/events/:eventId/drivers', { preHandler: [checkAuthentication()] }, async (request, reply) => {
             const status = await CarsDB.getEventDrivers(this.db, request.params.eventId);
             return status.getResponse(reply);
         });

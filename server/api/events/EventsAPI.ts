@@ -155,7 +155,7 @@ export default class EventsAPI {
         /**
          * Calculate fallback image for an event based on tag IDs.
          */
-        this.app.post('/api/admin/events/calculate-fallback-image', { preHandler: [check('perm:event.manage.all | perm:event.manage.scoped')] }, async (request: FastifyRequest<{ Body: { tagIds: number[] } }>, reply: FastifyReply) => {
+        this.app.post<{ Body: { tagIds: number[] } }>('/api/admin/events/calculate-fallback-image', { preHandler: [check('perm:event.manage.all | perm:event.manage.scoped')] }, async (request, reply) => {
             const tagIds = request.body.tagIds;
             if (!Array.isArray(tagIds)) {
                 return reply.status(400).send({ message: 'tagIds must be an array' });

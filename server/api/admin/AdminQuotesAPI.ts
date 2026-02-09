@@ -40,7 +40,7 @@ export default class AdminQuotesAPI {
         });
 
         /** Update quote visibility (Release/Private/Hidden). */
-        this.app.post('/api/admin/quotes/:id/visibility', { preHandler: [checkAuthentication('quote.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { visibility: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { visibility: string } }>('/api/admin/quotes/:id/visibility', { preHandler: [checkAuthentication('quote.manage')] }, async (request, reply) => {
             const { visibility } = request.body;
             const { id } = request.params;
 
@@ -53,7 +53,7 @@ export default class AdminQuotesAPI {
         });
 
         /** Delete a quote. */
-        this.app.delete('/api/admin/quotes/:id', { preHandler: [checkAuthentication('quote.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/admin/quotes/:id', { preHandler: [checkAuthentication('quote.manage')] }, async (request, reply) => {
             const { id } = request.params;
             const status = await QuotesDB.deleteQuote(this.db, id);
             return status.getResponse(reply);

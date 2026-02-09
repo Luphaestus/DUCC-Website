@@ -480,6 +480,19 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         expires_at DATETIME NOT NULL,
         INDEX idx_expires (expires_at)
       `
+    },
+    {
+      name: 'push_subscriptions',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(255) NOT NULL,
+        auth VARCHAR(255) NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
     }
   ];
 

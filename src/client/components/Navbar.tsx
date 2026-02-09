@@ -1,7 +1,6 @@
 import { createSignal, createMemo, onMount, onCleanup, For, Show, createEffect } from "solid-js";
 import { A, useLocation } from "@solidjs/router";
 import { useAuth } from "../stores/auth";
-import LiquidContainer from "./LiquidContainer";
 import LiquidButton, { GlassButtonSmall } from "./LiquidButton";
 
 const navEntries = [
@@ -82,14 +81,11 @@ export default function Navbar() {
             'scrolled': isScrolled() 
         }}
       >
-        <LiquidContainer 
-            class="nav-glass-wrapper" 
-            borderRadius={999} 
-            tintOpacity={isScrolled() ? 0.6 : 0.1}
-            blurAmount={isScrolled() ? 0.3 : 0.1}
-            edgeIntensity={0.4}
-            padding="0" // Padding handled by inner layout
+        <div 
+            class="liquid-container nav-glass-wrapper" 
             style={{ 
+                '--liquid-blur': isScrolled() ? '48px' : '16px',
+                '--liquid-padding': '0px',
                 transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
         >
@@ -154,16 +150,21 @@ export default function Navbar() {
                   </div>
                 </div>
             </div>
-        </LiquidContainer>
+        </div>
 
         {/* Mobile Nav Dropdown */}
         <div class="mobile-nav-container">
-            <LiquidContainer 
-                class="mobile-nav-glass" 
-                borderRadius={24} 
-                tintOpacity={0.8}
-                blurAmount={0.4}
-                style={{ width: '100%', height: '100%', display: 'flex', 'flex-direction': 'column', padding: '1rem' }}
+            <div 
+                class="liquid-container mobile-nav-glass" 
+                style={{ 
+                    '--liquid-border-radius': '24px',
+                    '--liquid-blur': '64px',
+                    width: '100%', 
+                    height: '100%', 
+                    display: 'flex', 
+                    'flex-direction': 'column', 
+                    padding: '1rem' 
+                }}
             >
                 <ul class="mobile-items">
                 <For each={filteredEntries()}>
@@ -185,7 +186,7 @@ export default function Navbar() {
                     </li>
                 </Show>
                 </ul>
-            </LiquidContainer>
+            </div>
         </div>
       </nav>
       

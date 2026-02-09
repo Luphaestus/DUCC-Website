@@ -29,7 +29,7 @@ export default class AdminTransactions {
         /**
          * Fetch full transaction history for a specific user.
          */
-        this.app.get('/api/admin/user/:id/transactions', { preHandler: [check('perm:transaction.read | perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/admin/user/:id/transactions', { preHandler: [check('perm:transaction.read | perm:transaction.manage')] }, async (request, reply) => {
             const userId = parseInt(request.params.id);
             if (isNaN(userId)) {
                 return reply.status(400).send({ message: 'Invalid user ID' });
@@ -42,7 +42,7 @@ export default class AdminTransactions {
         /**
          * Manually add a transaction to a user's account.
          */
-        this.app.post('/api/admin/user/:id/transaction', { preHandler: [check('perm:transaction.write | perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { amount: number, description: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { amount: number, description: string } }>('/api/admin/user/:id/transaction', { preHandler: [check('perm:transaction.write | perm:transaction.manage')] }, async (request, reply) => {
             const userId = parseInt(request.params.id);
             if (isNaN(userId)) {
                 return reply.status(400).send({ message: 'Invalid user ID' });
@@ -61,7 +61,7 @@ export default class AdminTransactions {
         /**
          * Update an existing transaction record.
          */
-        this.app.put('/api/admin/transaction/:id', { preHandler: [check('perm:transaction.write | perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { amount: number, description: string } }>, reply: FastifyReply) => {
+        this.app.put<{ Params: { id: string }, Body: { amount: number, description: string } }>('/api/admin/transaction/:id', { preHandler: [check('perm:transaction.write | perm:transaction.manage')] }, async (request, reply) => {
             const transactionId = parseInt(request.params.id);
             if (isNaN(transactionId)) return reply.status(400).send({ message: 'Invalid transaction ID' });
             
@@ -83,7 +83,7 @@ export default class AdminTransactions {
         /**
          * Delete a transaction record.
          */
-        this.app.delete('/api/admin/transaction/:id', { preHandler: [check('perm:transaction.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/admin/transaction/:id', { preHandler: [check('perm:transaction.manage')] }, async (request, reply) => {
             const transactionId = parseInt(request.params.id);
             if (isNaN(transactionId)) return reply.status(400).send({ message: 'Invalid transaction ID' });
             

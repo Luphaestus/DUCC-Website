@@ -70,7 +70,7 @@ export default class TagsAPI {
         /**
          * Delete a tag.
          */
-        this.app.delete('/api/tags/:id', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/tags/:id', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request, reply) => {
             const result = await TagsDB.deleteTag(this.db, request.params.id);
             return result.getResponse(reply);
         });
@@ -78,7 +78,7 @@ export default class TagsAPI {
         /**
          * Fetch whitelisted users for a tag.
          */
-        this.app.get('/api/tags/:id/whitelist', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/tags/:id/whitelist', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request, reply) => {
             const result = await TagsDB.getWhitelist(this.db, request.params.id);
             return result.getResponse(reply);
         });
@@ -86,7 +86,7 @@ export default class TagsAPI {
         /**
          * Add a user to a tag's whitelist.
          */
-        this.app.post('/api/tags/:id/whitelist', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { userId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { userId: string } }>('/api/tags/:id/whitelist', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request, reply) => {
             const result = await TagsDB.addToWhitelist(this.db, request.params.id, request.body.userId);
             return result.getResponse(reply);
         });
@@ -94,7 +94,7 @@ export default class TagsAPI {
         /**
          * Remove a user from a tag's whitelist.
          */
-        this.app.delete('/api/tags/:id/whitelist/:userId', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string, userId: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string, userId: string } }>('/api/tags/:id/whitelist/:userId', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request, reply) => {
             const result = await TagsDB.removeFromWhitelist(this.db, request.params.id, request.params.userId);
             return result.getResponse(reply);
         });
@@ -102,7 +102,7 @@ export default class TagsAPI {
         /**
          * Fetch managers for a tag.
          */
-        this.app.get('/api/tags/:id/managers', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/tags/:id/managers', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request, reply) => {
             const result = await TagsDB.getManagers(this.db, request.params.id);
             return result.getResponse(reply);
         });
@@ -110,7 +110,7 @@ export default class TagsAPI {
         /**
          * Assign a manager to a tag.
          */
-        this.app.post('/api/tags/:id/managers', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { userId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { userId: string } }>('/api/tags/:id/managers', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request, reply) => {
             const result = await TagsDB.addManager(this.db, request.params.id, request.body.userId);
             return result.getResponse(reply);
         });
@@ -118,7 +118,7 @@ export default class TagsAPI {
         /**
          * Remove a manager from a tag.
          */
-        this.app.delete('/api/tags/:id/managers/:userId', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string, userId: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string, userId: string } }>('/api/tags/:id/managers/:userId', { preHandler: [check('perm:event.manage.all | perm:user.manage')] }, async (request, reply) => {
             const result = await TagsDB.removeManager(this.db, request.params.id, request.params.userId);
             return result.getResponse(reply);
         });

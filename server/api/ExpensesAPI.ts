@@ -24,7 +24,7 @@ export default class ExpensesAPI {
 
     registerRoutes() {
         /** Fetch trips for an event. */
-        this.app.get('/api/events/:eventId/trips', { preHandler: [checkAuthentication()] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { eventId: string } }>('/api/events/:eventId/trips', { preHandler: [checkAuthentication()] }, async (request, reply) => {
             const status = await ExpensesDB.getTrips(this.db, request.params.eventId);
             return status.getResponse(reply);
         });
@@ -130,7 +130,7 @@ export default class ExpensesAPI {
         });
 
         /** Fetch financial settlement for an event (only if released). */
-        this.app.get('/api/events/:eventId/settlement', { preHandler: [checkAuthentication()] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { eventId: string } }>('/api/events/:eventId/settlement', { preHandler: [checkAuthentication()] }, async (request, reply) => {
             const event = await EventsDB.getEventById(this.db, parseInt(request.params.eventId));
             if (!event) return reply.status(404).send({ message: 'Event not found.' });
             

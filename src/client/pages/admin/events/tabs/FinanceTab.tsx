@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, For, Show, createMemo, createEffect } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -9,7 +10,6 @@ import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
-import LiquidContainer from "@/components/LiquidContainer";
 
 // --- Types ---
 interface Attendee {
@@ -273,7 +273,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                     const totalBoats = createMemo(() => tripDrivers().filter(d => d.status === 'accepted').reduce((sum, d) => sum + d.boats, 0));
 
                                     return (
-                                        <LiquidContainer class="trip-admin-card secondary-bg" padding="1.25rem">
+                                        <div class="liquid-container trip-admin-card secondary-bg" style={{ "--liquid-padding": "1.25rem" }}>
                                             <div class="trip-info"><strong>{trip.name}</strong><br /><small>{totalSeats()} Seats / {totalBoats()} Boats</small></div>
                                             <div class="trip-actions mt-4">
                                                 <button class="small-btn secondary full-width mb-2" onClick={() => setManageDriversTripId(trip.id)}>{!props.costsReleased ? 'Drivers' : 'View Drivers'} ({tripDrivers().length})</button>
@@ -281,7 +281,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                                     <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'trip', id: trip.id })}>Exclusions</button>
                                                 </Show>
                                             </div>
-                                        </LiquidContainer>
+                                        </div>
                                     );
                                 }}
                             </For>
@@ -309,14 +309,14 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                     <div class="finance-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
                         <For each={expenses()}>
                             {e => (
-                                <LiquidContainer class="expense-admin-card secondary-bg" padding="1.25rem">
+                                <div class="liquid-container expense-admin-card secondary-bg" style={{ "--liquid-padding": "1.25rem" }}>
                                     <div class="expense-info"><strong>£{e.amount.toFixed(2)}</strong> - {e.first_name}<p class="desc small-text mt-1">{e.description}</p></div>
                                     <Show when={!props.costsReleased}>
                                         <div class="expense-actions mt-4">
                                             <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'expense', id: e.id })}>Exclusions</button>
                                         </div>
                                     </Show>
-                                </LiquidContainer>
+                                </div>
                             )}
                         </For>
                         <Show when={expenses()?.length === 0}>
@@ -421,7 +421,7 @@ function AttendeeSearch(props: { eventId: number, onAdded: () => void }) {
                 <label>Search Member</label>
                 <input type="text" placeholder="Type name or email..." class="modern-input" onInput={e => setQuery(e.currentTarget.value)} />
                 <Show when={results().length > 0}>
-                    <LiquidContainer class="mt-2 item-list-scroll-small" padding="0px">
+                    <div class="liquid-container mt-2 item-list-scroll-small" style={{ "--liquid-padding": "0px" }}>
                         <For each={results()}>
                             {u => (
                                 <div class="search-result-item" onClick={() => handleAdd(u)} style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.1); display: flex; align-items: center; gap: 0.75rem;">
@@ -433,7 +433,7 @@ function AttendeeSearch(props: { eventId: number, onAdded: () => void }) {
                                 </div>
                             )}
                         </For>
-                    </LiquidContainer>
+                    </div>
                 </Show>
             </div>
         </div>

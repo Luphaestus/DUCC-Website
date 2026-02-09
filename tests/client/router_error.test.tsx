@@ -1,6 +1,6 @@
 import { render } from "solid-js/web";
 import { Router, Route } from "@solidjs/router";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import App from "../../src/client/App";
 
 // Mock apiRequest to avoid network calls during test

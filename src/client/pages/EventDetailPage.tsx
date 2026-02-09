@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, onMount, For, Show, createMemo, onCleanup, Switch, Match } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
@@ -11,7 +12,6 @@ import { Tag } from '../widgets/Tag';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import { onUpdate } from "@/utils/updates";
-import LiquidContainer from "@/components/LiquidContainer";
 
 interface KitItem {
     id: number;
@@ -167,7 +167,7 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
 
-                                <LiquidContainer class="event-details-content" padding="1.25rem">
+                                <div class="liquid-container event-details-content" style={{ "--liquid-padding": "1.25rem" }}>
                                     <div class="description-section">
                                         <h3 class="section-title"><span innerHTML={DESCRIPTION_SVG} /> Description</h3>
                                         <p class="description-text">{event().description || 'No description provided.'}</p>
@@ -185,7 +185,7 @@ export default function EventDetailPage() {
                                             </For>
                                         </div>
                                     </div>
-                                </LiquidContainer>
+                                </div>
 
                                 <div class="event-actions">
                                     <Show when={!isAttending()}>

@@ -116,7 +116,7 @@ export default class AdminUsers {
         /**
          * Update profile elements for any user.
          */
-        this.app.post('/api/admin/user/:id/elements', { preHandler: [check('perm:user.write | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: any }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: any }>('/api/admin/user/:id/elements', { preHandler: [check('perm:user.write | perm:user.manage')] }, async (request, reply) => {
             const body = request.body as any;
             if (body.email) body.email = body.email.toLowerCase();
             const result = await UserDB.writeElements(this.db, parseInt(request.params.id), body);
@@ -126,26 +126,28 @@ export default class AdminUsers {
         /**
          * Assign a role to a user.
          */
-        this.app.post('/api/admin/user/:id/role', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: any, reply: FastifyReply) => {
-            const roleId = request.body.roleId;
+        this.app.post<{ Params: { id: string }, Body: any }>('/api/admin/user/:id/role', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request, reply) => {
+            const body = request.body as any;
+            const roleId = body.roleId;
             const roleRes = await RolesDB.getRoleById(this.db, roleId);
             if (roleRes.isError()) return roleRes.getResponse(reply);
             
             const role = roleRes.getData();
+            const user = (request as any).user;
             
             if (role.name === 'President') {
-                const isPresident = await Permissions.hasRole(this.db, request.user.id, 'President');
+                const isPresident = await Permissions.hasRole(this.db, user.id, 'President');
                 
                 if (!isPresident) {
                     return reply.status(403).send({ message: 'Only the current President can transfer this role.' });
                 }
 
-                const { password } = request.body;
+                const { password } = body;
                 if (!password) {
                     return reply.status(400).send({ message: 'Password is required to transfer the President role.' });
                 }
 
-                const isMatch = await bcrypt.compare(password, request.user.hashed_password);
+                const isMatch = await bcrypt.compare(password, user.hashed_password);
                 if (!isMatch) {
                     return reply.status(403).send({ message: 'Incorrect password.' });
                 }
@@ -157,7 +159,7 @@ export default class AdminUsers {
        
             if (role.permissions) {
                 for (const permSlug of role.permissions) {
-                    if (!await Permissions.hasPermission(this.db, request.user.id, permSlug)) {
+                    if (!await Permissions.hasPermission(this.db, user.id, permSlug)) {
                         return reply.status(403).send({ 
                             message: `You cannot assign a role with permission '${permSlug}' because you do not have it.` 
                         });
@@ -172,7 +174,7 @@ export default class AdminUsers {
         /**
          * Remove a role from a user.
          */
-        this.app.delete('/api/admin/user/:id/role/:roleId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string, roleId: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string, roleId: string } }>('/api/admin/user/:id/role/:roleId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request, reply) => {
             const result = await RolesDB.removeRole(this.db, request.params.id, request.params.roleId);
             return result.getResponse(reply);
         });
@@ -180,7 +182,7 @@ export default class AdminUsers {
         /**
          * Add a direct permission override to a user.
          */
-        this.app.post('/api/admin/user/:id/permission', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { permissionId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { permissionId: string } }>('/api/admin/user/:id/permission', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request, reply) => {
             const result = await RolesDB.addUserPermission(this.db, request.params.id, request.body.permissionId);
             return result.getResponse(reply);
         });
@@ -188,7 +190,7 @@ export default class AdminUsers {
         /**
          * Remove a direct permission override from a user.
          */
-        this.app.delete('/api/admin/user/:id/permission/:permId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string, permId: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string, permId: string } }>('/api/admin/user/:id/permission/:permId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request, reply) => {
             const result = await RolesDB.removeUserPermission(this.db, request.params.id, request.params.permId);
             return result.getResponse(reply);
         });
@@ -196,7 +198,7 @@ export default class AdminUsers {
         /**
          * Grant an Exec direct management scope over events with a specific tag.
          */
-        this.app.post('/api/admin/user/:id/managed_tag', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { tagId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { tagId: string } }>('/api/admin/user/:id/managed_tag', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request, reply) => {
             const result = await RolesDB.addManagedTag(this.db, request.params.id, request.body.tagId);
             return result.getResponse(reply);
         });
@@ -204,7 +206,7 @@ export default class AdminUsers {
         /**
          * Revoke an Exec's direct management scope over a specific tag.
          */
-        this.app.delete('/api/admin/user/:id/managed_tag/:tagId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request: FastifyRequest<{ Params: { id: string, tagId: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string, tagId: string } }>('/api/admin/user/:id/managed_tag/:tagId', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request, reply) => {
             const result = await RolesDB.removeManagedTag(this.db, request.params.id, request.params.tagId);
             return result.getResponse(reply);
         });

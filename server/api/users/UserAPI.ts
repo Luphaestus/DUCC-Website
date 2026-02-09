@@ -339,7 +339,7 @@ export default class User {
                 const cost = globals.getFloat('MembershipCost') || 50;
 
                 const tx = await transactionsDB.add_transaction(this.db, request.user.id, -cost, 'Membership Fee');
-                if (typeof tx === 'number' && tx >= 400) return reply.status(tx).send({ message: 'Transaction failed' });
+                if (tx.isError()) return tx.getResponse(reply);
 
                 const update = await UserDB.setMembershipStatus(this.db, request.user.id, true);
                 if (update.isError()) return update.getResponse(reply);

@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, Show, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -17,6 +18,11 @@ interface Quote {
     created_at: string;
 }
 
+interface QuotesPageData {
+    quotes: Quote[];
+    totalPages: number;
+}
+
 export default function QuotesPage() {
     const { notify } = useNotifications();
     const [page, setPage] = createSignal(1);
@@ -25,7 +31,7 @@ export default function QuotesPage() {
     const [order, setOrder] = createSignal('desc');
     const [oldData, setOldData] = createSignal<any>(null);
 
-    const [data, { refetch }] = createResource(
+    const [data, { refetch }] = createResource<QuotesPageData, any>(
         () => ({ page: page(), search: search(), sort: sort(), order: order() }),
         async (params, { value }) => {
             if (value) {

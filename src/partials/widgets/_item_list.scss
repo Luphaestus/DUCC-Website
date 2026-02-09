@@ -10,12 +10,8 @@
         flex-direction: row;
         align-items: center;
         padding: 1rem;
-        border: var(--glass-border);
-        background: var(--glass-bg);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        @include glass-effect-base;
         border-radius: var(--border-radius-md);
-        box-shadow: var(--shadow-glass);
         transition: transform 0.2s ease;
 
         &:hover {

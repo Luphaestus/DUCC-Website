@@ -16,7 +16,7 @@
   "scripts": {
     "db:init": "cross-env-shell \"tsx server/db/init/init.ts $NODE_ENV $1\"",
     "reseed": "cross-env NODE_ENV=dev tsx server/db/init/init.ts dev --seed",
-    "start": "cross-env NODE_ENV=prod npm run --silent db:init && npm run build:client && cross-env NODE_ENV=prod tsx server/server.ts",
+    "start": "cross-env NODE_ENV=prod npm run --silent db:init && cross-env NODE_ENV=prod tsx server/server.ts",
     "build:client": "vite build",
     "build:client:watch": "vite build --mode development --watch",
     "sass": "sass src/styles.scss public/assets/main.css --watch",
@@ -70,7 +70,8 @@
     "qrcode": "^1.5.4",
     "sass": "^1.94.0",
     "solid-js": "^1.9.11",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@fastify/middie": "^9.0.3",

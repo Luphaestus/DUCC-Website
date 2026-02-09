@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, For, Show, onMount, onCleanup, createMemo, createEffect } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
@@ -14,7 +15,6 @@ import {
 } from '@/utils/events/events';
 import { onUpdate } from "@/utils/updates";
 import PaginationSlider from "@/components/PaginationSlider";
-import LiquidContainer from "@/components/LiquidContainer";
 import PageTitle from "@/components/PageTitle";
 
 interface PageData {
@@ -29,6 +29,7 @@ export default function EventsPage() {
     const { user, isAdmin } = useAuth();
     const [isRefreshing, setIsRefreshing] = createSignal(false);
     const [oldPageData, setOldData] = createSignal<PageData | null>(null);
+    const [isTransitioning, setIsTransitioning] = createSignal(false);
 
     const page = () => {
         const p = searchParams.page;
@@ -36,7 +37,14 @@ export default function EventsPage() {
         return parseInt(pageStr || '0');
     };
 
-    const [pageData, { mutate, refetch }] = createResource(page, async (p, { value }) => {
+    createEffect(() => {
+        page();
+        setIsTransitioning(true);
+        const timer = setTimeout(() => setIsTransitioning(false), 600);
+        onCleanup(() => clearTimeout(timer));
+    });
+
+    const [pageData, { mutate, refetch }] = createResource<PageData, number>(page, async (p, { value }) => {
         if (value) setOldData(value);
         return await apiRequest('GET', `/api/events/paged/${p}`) as PageData;
     });
@@ -99,7 +107,7 @@ export default function EventsPage() {
         return `${formatDate(data.startDate)} - ${formatDate(data.endDate)}`;
     };
 
-    const getGroupedEvents = (data: PageData | null) => {
+    const getGroupedEvents = (data: PageData | null | undefined) => {
         const events = data?.events || [];
         const groups: { date: Date; events: EventData[] }[] = [];
         let currentGroup: { date: Date; events: EventData[] } | null = null;
@@ -117,22 +125,33 @@ export default function EventsPage() {
         return groups;
     };
 
-    const EventList = (props: { data: PageData | null }) => (
+    const EventList = (props: { data: PageData | null | undefined }) => (
         <div class="events-page">
             <For each={getGroupedEvents(props.data)}>
                 {(group) => (
-                    <div class="day-group">
-                        <div class="date-strip">
-                            <span class="date-num">{group.date.getDate()}</span>
-                            <div class="date-text-group">
-                                <span class="day-name">{group.date.toLocaleDateString('en-UK', { weekday: 'long' })}</span>
-                                <div class="date-line"></div>
-                                <span class="month-name">{group.date.toLocaleDateString('en-UK', { month: 'short' })}</span>
+                    <div class="day-group scroll-reveal">
+                        <div 
+                            class="liquid-container date-strip-container" 
+                            style={{ 
+                                "--liquid-padding": "0.25rem 1rem", 
+                                "--liquid-border-radius": "12px",
+                                margin: '1rem 0 1.5rem 0', 
+                                width: 'fit-content' 
+                            }}
+                            {...{ paused: isTransitioning() } as any}
+                        >
+                            <div class="date-strip">
+                                <span class="date-num">{group.date.getDate()}</span>
+                                <div class="date-text-group">
+                                    <span class="day-name">{group.date.toLocaleDateString('en-UK', { weekday: 'long' })}</span>
+                                    <div class="date-line"></div>
+                                    <span class="month-name">{group.date.toLocaleDateString('en-UK', { month: 'short' })}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="day-events-grid">
                             <For each={group.events}>
-                                {(event) => <StandardCard event={event} />}
+                                {(event) => <StandardCard event={event} paused={isTransitioning()} />}
                             </For>
                         </div>
                     </div>
@@ -145,39 +164,47 @@ export default function EventsPage() {
         <div id="events-view" class="view small-container">
             <PageTitle text="Upcoming Events" />
             <div class="events-controls-modern">
-                <LiquidContainer class="week-navigator" padding="0.5rem 1.25rem">
-                    <button class="nav-btn prev-week" title="Previous Page" onClick={() => setSearchParams({ page: page() - 1 })}>
-                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
-                    </button>
-                    <div class="current-week-display">
-                        <span id="page-range-text">{rangeText()}</span>
+                <div 
+                    class="liquid-container combined-controls" 
+                    style={{ "--liquid-padding": "0.5rem 1.25rem" }} 
+                    {...{ paused: isTransitioning() } as any}
+                >
+                    <div class="admin-control-wrapper">
+                        <Show when={isAdmin()} fallback={<div class="placeholder-btn" />}>
+                            <button class="admin-link-btn" title="Event Admin" onClick={() => navigate('/admin/events')}>
+                                <span innerHTML={SETTINGS_SVG} />
+                                <span class="btn-text">Admin</span>
+                            </button>
+                        </Show>
                     </div>
-                    <button class="nav-btn next-week" title="Next Page" onClick={() => setSearchParams({ page: page() + 1 })}>
-                        <span innerHTML={ARROW_FORWARD_IOS_SVG} />
-                    </button>
-                </LiquidContainer>
 
-                <LiquidContainer class="controls-group" padding="0.5rem 1.25rem">
-                    <Show when={isAdmin()}>
-                        <button class="admin-link-btn" title="Event Admin" onClick={() => navigate('/admin/events')}>
-                            <span innerHTML={SETTINGS_SVG} />
-                            <span>Admin</span>
+                    <div class="week-navigator">
+                        <button class="nav-btn prev-week" title="Previous Page" onClick={() => setSearchParams({ page: page() - 1 })}>
+                            <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
                         </button>
-                    </Show>
-                    
-                    <button 
-                        class="today-btn" 
-                        classList={{ disabled: page() === 0, 'spin-active': isRefreshing() }} 
-                        title="Back to Today" 
-                        onClick={() => {
-                            if (page() === 0) refresh();
-                            else setSearchParams({ page: 0 });
-                        }}
-                    >
-                        <span innerHTML={REFRESH_SVG} />
-                        <span>Today</span>
-                    </button>
-                </LiquidContainer>
+                        <div class="current-week-display">
+                            <span id="page-range-text">{rangeText()}</span>
+                        </div>
+                        <button class="nav-btn next-week" title="Next Page" onClick={() => setSearchParams({ page: page() + 1 })}>
+                            <span innerHTML={ARROW_FORWARD_IOS_SVG} />
+                        </button>
+                    </div>
+
+                    <div class="today-control-wrapper">
+                        <button 
+                            class="today-btn" 
+                            classList={{ disabled: page() === 0, 'spin-active': isRefreshing() }} 
+                            title="Back to Today" 
+                            onClick={() => {
+                                if (page() === 0) refresh();
+                                else setSearchParams({ page: 0 });
+                            }}
+                        >
+                            <span innerHTML={REFRESH_SVG} />
+                            <span class="btn-text">Today</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div id="events-list-container">

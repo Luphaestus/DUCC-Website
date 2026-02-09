@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, Show, For } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
@@ -12,7 +13,13 @@ import { TabNav } from "@/widgets/TabNav";
 import Panel from "@/components/Panel";
 import { ProfilePictureChangedEvent } from "@/utils/events/events";
 import { onCleanup, onMount } from "solid-js";
-import LiquidContainer from "@/components/LiquidContainer";
+
+interface UsersPageData {
+    users: any[];
+    totalPages: number;
+    minMoney: number;
+    tab: string;
+}
 
 export default function UsersPage() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -33,10 +40,10 @@ export default function UsersPage() {
         onCleanup(ppCleanup);
     });
 
-    const [data, { refetch }] = createResource(
+    const [data, { refetch }] = createResource<UsersPageData, any>(
         () => ({ page: page(), search: search(), sort: sort(), order: order(), tab: tab() }),
         async (params, { value }) => {
-            if (value && params.tab === (data() as any)?.tab) {
+            if (value && params.tab === (data as any).latest?.tab) {
                 setOldData(value);
             } else {
                 setOldData(null);
@@ -170,33 +177,35 @@ export default function UsersPage() {
     );
 
     return (
-        <div class="glass-layout">
-             <LiquidContainer class="glass-toolbar" padding="0.5rem 1rem" borderRadius={100}>
-                <div class="toolbar-left">
-                    <TabNav class="tab-nav-simple">
-                        <button 
-                            class={`tab-btn ${tab() !== 'swims' ? 'active' : ''}`} 
-                            onClick={() => setSearchParams({ tab: 'default' })}
-                        >
-                            Details
-                        </button>
-                        <button 
-                            class={`tab-btn ${tab() === 'swims' ? 'active' : ''}`} 
-                            onClick={() => setSearchParams({ tab: 'swims' })}
-                        >
-                            Swims
-                        </button>
-                    </TabNav>
+        <div>
+             <div class="liquid-container glass-toolbar" style={{ "--liquid-padding": "0.5rem 1rem", "--liquid-border-radius": "100px" }}>
+                <div class="toolbar-content">
+                    <div class="toolbar-left">
+                        <TabNav class="tab-nav-simple">
+                            <button 
+                                class={`tab-btn ${tab() !== 'swims' ? 'active' : ''}`} 
+                                onClick={() => setSearchParams({ tab: 'default' })}
+                            >
+                                Details
+                            </button>
+                            <button 
+                                class={`tab-btn ${tab() === 'swims' ? 'active' : ''}`} 
+                                onClick={() => setSearchParams({ tab: 'swims' })}
+                            >
+                                Swims
+                            </button>
+                        </TabNav>
+                        <form class="search-bar" onSubmit={handleSearch}>
+                            <input type="text" placeholder="Search users..." value={search()} />
+                            <button type="submit" class="search-icon-btn" innerHTML={SEARCH_SVG} />
+                        </form>
+                    </div>
+                    <div class="toolbar-right">
+                    </div>
                 </div>
-                 <div class="toolbar-right">
-                    <form class="search-bar" onSubmit={handleSearch}>
-                        <input type="text" placeholder="Search users..." value={search()} />
-                        <button type="submit" class="search-icon-btn" innerHTML={SEARCH_SVG} />
-                    </form>
-                 </div>
-            </LiquidContainer>
+            </div>
 
-            <Panel class="glass-table-container">
+            <div class="glass-table-container">
                 <div class="table-responsive">
                     <Show when={data.loading && !data() && !oldData()}>
                         <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
@@ -208,7 +217,7 @@ export default function UsersPage() {
                         <UserTable data={data()} />
                     </PaginationSlider>
                 </div>
-            </Panel>
+            </div>
             
             <Show when={data()?.totalPages}>
                 <Pagination 

@@ -30,13 +30,13 @@ export default class KitAPI {
         });
 
         // Admin: Update Item
-        this.app.put('/api/kit/:id', { preHandler: [check('perm:kit.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.put<{ Params: { id: string } }>('/api/kit/:id', { preHandler: [check('perm:kit.manage')] }, async (request, reply) => {
             const result = await KitDB.updateItem(this.db, parseInt(request.params.id), request.body as any);
             return result.getResponse(reply);
         });
 
         // Admin: Delete Item
-        this.app.delete('/api/kit/:id', { preHandler: [check('perm:kit.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/kit/:id', { preHandler: [check('perm:kit.manage')] }, async (request, reply) => {
             const result = await KitDB.deleteItem(this.db, parseInt(request.params.id));
             return result.getResponse(reply);
         });
@@ -88,7 +88,7 @@ export default class KitAPI {
         });
 
         // Toggle Fulfillment (Admin)
-        this.app.post('/api/kit/request/:id/fulfill', { preHandler: [check('perm:kit.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string } }>('/api/kit/request/:id/fulfill', { preHandler: [check('perm:kit.manage')] }, async (request, reply) => {
             const result = await KitDB.toggleFulfillment(this.db, parseInt(request.params.id));
             return result.getResponse(reply);
         });
@@ -102,7 +102,7 @@ export default class KitAPI {
         });
 
         // Get specific user preferences (Admin)
-        this.app.get('/api/kit/preferences/:userId', { preHandler: [check('perm:user.read | perm:user.manage')] }, async (request: FastifyRequest<{ Params: { userId: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { userId: string } }>('/api/kit/preferences/:userId', { preHandler: [check('perm:user.read | perm:user.manage')] }, async (request, reply) => {
             const result = await KitDB.getUserPreferences(this.db, parseInt(request.params.userId));
             if (result.isError()) return result.getResponse(reply);
             return reply.send(result.getData());
@@ -117,7 +117,7 @@ export default class KitAPI {
         });
 
         // Update specific user preferences (Admin)
-        this.app.post('/api/kit/preferences/:userId', { preHandler: [check('perm:user.manage')] }, async (request: FastifyRequest<{ Params: { userId: string }, Body: { itemIds: any } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { userId: string }, Body: { itemIds: any } }>('/api/kit/preferences/:userId', { preHandler: [check('perm:user.manage')] }, async (request, reply) => {
             const { itemIds } = request.body;
             const result = await KitDB.setUserPreferences(this.db, parseInt(request.params.userId), itemIds);
             return result.getResponse(reply);

@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, Show, createEffect, onMount, onCleanup } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
@@ -18,7 +19,6 @@ import { onUpdate } from "@/utils/updates";
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
 import { useNotifications } from "@/stores/notifications";
 import { ProfilePictureChangedEvent } from "@/utils/events/events";
-import LiquidContainer from "@/components/LiquidContainer";
 
 export default function UserDetailPage() {
     const { notify } = useNotifications();
@@ -124,7 +124,7 @@ export default function UserDetailPage() {
                     return (
                         <div class="dashboard-container">
                             <aside class="dashboard-sidebar">
-                                <LiquidContainer class="user-identity-card flex-column-gap-half mb-4" padding="1.5rem">
+                                <div class="liquid-container user-identity-card flex-column-gap-half mb-4" style={{ "--liquid-padding": "1.5rem" }}>
                                     <div class="profile-picture-container clickable" onClick={() => uploadWidget?.inputEl.click()}>
                                         <Avatar user={userData()} classes="large" />
                                         <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
@@ -133,7 +133,7 @@ export default function UserDetailPage() {
                                         <h2 class="text-xl m-0">{userData().first_name} {userData().last_name}</h2>
                                         <span class="badge neutral">ID: {userData().id}</span>
                                     </div>
-                                </LiquidContainer>
+                                </div>
 
                                 <TabNav class="vertical-sidebar">
                                     <button class="nav-item" classList={{ active: currentTab() === 'overview' }} onClick={() => setSearchParams({ tab: 'overview' })}>

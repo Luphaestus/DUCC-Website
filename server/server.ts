@@ -46,6 +46,7 @@ if (isProd && !config.session.secret) {
 
 const fastify = Fastify({
   logger: false, // We use our own Logger
+  pluginTimeout: 30000,
 });
 
 /** Decorate request with DB */

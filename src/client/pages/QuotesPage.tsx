@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, onMount, For, Show, createMemo, batch } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -7,7 +8,6 @@ import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate } from "@solidjs/router";
-import LiquidContainer from "@/components/LiquidContainer";
 
 import PageTitle from "@/components/PageTitle";
 
@@ -24,6 +24,12 @@ interface Quote {
     submitted_by?: QuoteUser;
 }
 
+interface QuotesPageData {
+    quotes: Quote[];
+    totalPages: number;
+    search: string;
+}
+
 export default function QuotesPage() {
     const navigate = useNavigate();
     const { notify } = useNotifications();
@@ -34,10 +40,10 @@ export default function QuotesPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = createSignal(false);
     const [oldQuotesData, setOldQuotesData] = createSignal<any>(null);
 
-    const [quotesData, { refetch }] = createResource(
-        () => ({ page: page(), search: search() }), 
+    const [quotesData, { refetch }] = createResource<QuotesPageData, any>(
+        () => ({ page: page(), search: search() }),
         async ({ page, search }, { value }) => {
-            if (value && search === (quotesData() as any)?.search) {
+            if (value && search === (quotesData as any).latest?.search) {
                 setOldQuotesData(value);
             } else {
                 setOldQuotesData(null);
@@ -79,21 +85,19 @@ export default function QuotesPage() {
         <div class="quotes-grid">
             <For each={props.data?.quotes}>
                 {(quote) => (
-                    <LiquidContainer borderRadius={32} tintOpacity={0.1}>
-                        <div class="quote-card">
-                            <div class="quote-icon-bg" innerHTML={FORMAT_QUOTE_SVG} />
-                            <div class="quote-card-header">
-                                <Avatar user={quote.quoted_user} classes="mini" />
-                                <p class="quote-author">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</p>
-                            </div>
-                            <p class="quote-text">"{quote.text}"</p>
-                            <Show when={quote.submitted_by}>
-                                <div class="quote-card-footer">
-                                    <p class="quote-submitter">Submitted by {quote.submitted_by!.first_name}</p>
-                                </div>
-                            </Show>
+                    <div class="quote-card">
+                        <div class="quote-icon-bg" innerHTML={FORMAT_QUOTE_SVG} />
+                        <div class="quote-card-header">
+                            <Avatar user={quote.quoted_user} classes="mini" />
+                            <p class="quote-author">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</p>
                         </div>
-                    </LiquidContainer>
+                        <p class="quote-text">"{quote.text}"</p>
+                        <Show when={quote.submitted_by}>
+                            <div class="quote-card-footer">
+                                <p class="quote-submitter">Submitted by {quote.submitted_by!.first_name}</p>
+                            </div>
+                        </Show>
+                    </div>
                 )}
             </For>
         </div>
@@ -137,9 +141,9 @@ export default function QuotesPage() {
                 <Show when={!quotesData.loading && !quotesData.error && quotesData()?.quotes.length === 0}>
                     <p class="no-results">No quotes found.</p>
                 </Show>
-                
-                <PaginationSlider 
-                    currentPage={page()} 
+
+                <PaginationSlider
+                    currentPage={page()}
                     oldContent={<QuoteGrid data={oldQuotesData()} />}
                 >
                     <QuoteGrid data={quotesData()} />

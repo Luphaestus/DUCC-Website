@@ -156,7 +156,7 @@ export default class Auth {
         this.app.post('/api/auth/login', async (request: any, reply: FastifyReply) => {
             try {
                 // @ts-ignore - passport.authenticate returns a function in some versions, but in fastify-passport it can be used as a hook or directly
-                const result = await this.passport.authenticate('local', async (request, reply, err, user, info) => {
+                const result = await this.passport.authenticate('local', async (request: any, reply: any, err: any, user: any, info: any) => {
                     if (err) return reply.status(500).send({ message: 'Authentication error.' });
                     if (!user) return reply.status(401).send({ message: info?.message || 'Authentication failed.' });
 

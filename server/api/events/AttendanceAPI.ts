@@ -17,6 +17,7 @@ import KitDB from '../../db/kitDB.js';
 import Logger from '../../misc/Logger.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
+import NotificationsAPI from '../NotificationsAPI.js';
 
 export default class AttendanceAPI {
     app: FastifyInstance;
@@ -254,6 +255,15 @@ export default class AttendanceAPI {
 
                             await AttendanceDB.attend_event(this.db, nextUserId, eventId, transactionId);
                             await WaitlistDB.remove_user_from_waiting_list(this.db, eventId, nextUserId);
+
+                            // Send Push Notification
+                            await NotificationsAPI.sendNotificationToUser(
+                                this.db,
+                                nextUserId,
+                                'Waitlist Update',
+                                `Good news! You've been promoted to the attendee list for "${event.title}".`,
+                                `/event/${eventId}`
+                            );
                         }
                     }
                 } catch (e) {

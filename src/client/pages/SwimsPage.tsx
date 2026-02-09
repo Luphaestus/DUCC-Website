@@ -4,7 +4,6 @@ import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG, POOL_SVG } from '@/utils
 import Avatar from "@/components/Avatar";
 import { useNavigate } from "@solidjs/router";
 import { onUpdate } from "@/utils/updates";
-import LiquidContainer from "@/components/LiquidContainer";
 
 interface LeaderboardUser {
     id: number;
@@ -24,7 +23,7 @@ export default function SwimsPage() {
     const [isAnimating, setIsAnimating] = createSignal(false);
     const [oldLeaderboard, setOldLeaderboard] = createSignal<LeaderboardUser[] | null>(null);
 
-    const [leaderboard, { refetch }] = createResource(
+    const [leaderboard, { refetch }] = createResource<LeaderboardUser[], { yearly: boolean }>(
         () => ({ yearly: isYearly() }), 
         async ({ yearly }, { value }) => {
             const res = await apiRequest('GET', `/api/user/swims/leaderboard?yearly=${yearly}`);
@@ -107,7 +106,7 @@ export default function SwimsPage() {
                     </div>
                 </Show>
 
-                <div id="leaderboard-content" classList={{ 'is-crossfading': isAnimating() }}>
+                <div id="leaderboard-content" classList={{ 'is-crossfading': isAnimating() }} class="scroll-reveal">
                     <Show when={leaderboard.loading && !leaderboard() && !oldLeaderboard()}>
                         <p class="leaderboard-status" aria-busy="true">Loading leaderboard...</p>
                     </Show>
@@ -165,7 +164,7 @@ export default function SwimsPage() {
                             <div class="leaderboard-list-track">
                                 {/* Old List Layer */}
                                 <Show when={isAnimating() && oldLeaderboard()}>
-                                    <LiquidContainer class="leaderboard-list old-layer" padding="1.25rem">
+                                    <div class="liquid-container leaderboard-list old-layer" style={{ "--liquid-padding": "1.25rem" }}>
                                         <For each={oldListData()}>
                                             {(user) => (
                                                 <div class="leaderboard-row">
@@ -183,11 +182,11 @@ export default function SwimsPage() {
                                                 </div>
                                             )}
                                         </For>
-                                    </LiquidContainer>
+                                    </div>
                                 </Show>
 
                                 {/* New List Layer */}
-                                <LiquidContainer class="leaderboard-list new-layer" padding="1.25rem">
+                                <div class="liquid-container leaderboard-list new-layer" style={{ "--liquid-padding": "1.25rem" }}>
                                     <For each={listData()}>
                                         {(user) => (
                                             <div class="leaderboard-row" classList={{ highlight: user.is_me }}>
@@ -208,7 +207,7 @@ export default function SwimsPage() {
                                             </div>
                                         )}
                                     </For>
-                                </LiquidContainer>
+                                </div>
                             </div>
                         </div>
                     </Show>

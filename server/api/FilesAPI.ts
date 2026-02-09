@@ -71,16 +71,17 @@ export default class FilesAPI {
         /**
          * List files with pagination, sorting, and category filtering.
          */
-        this.app.get('/api/files', async (request: FastifyRequest<{ Querystring: any }>, reply: FastifyReply) => {
+        this.app.get<{ Querystring: any }>('/api/files', async (request, reply) => {
             const role = await this.getUserRole(request);
+            const query = request.query as any;
             const options = {
-                page: parseInt(request.query.page as string) || 1,
-                limit: parseInt(request.query.limit as string) || 20,
-                search: request.query.search as string,
-                sort: request.query.sort as string,
-                order: request.query.order as 'asc' | 'desc',
-                categoryId: request.query.categoryId as string,
-                includeUsed: request.query.includeUsed === 'true'
+                page: parseInt(query.page as string) || 1,
+                limit: parseInt(query.limit as string) || 20,
+                search: query.search as string,
+                sort: query.sort as string,
+                order: query.order as 'asc' | 'desc',
+                categoryId: query.categoryId as string,
+                includeUsed: query.includeUsed === 'true'
             };
 
             const status = await FilesDB.getFiles(this.db, options, role);
@@ -211,7 +212,7 @@ export default class FilesAPI {
         /**
          * Edit file metadata.
          */
-        this.app.put('/api/files/:id', { preHandler: [check('file.edit')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: any }>, reply: FastifyReply) => {
+        this.app.put<{ Params: { id: string }, Body: any }>('/api/files/:id', { preHandler: [check('file.edit')] }, async (request, reply) => {
             const id = request.params.id;
             const body = request.body as any;
             const data = {
@@ -229,7 +230,7 @@ export default class FilesAPI {
         /**
          * Delete a file and its disk file.
          */
-        this.app.delete('/api/files/:id', { preHandler: [check('file.write')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/files/:id', { preHandler: [check('file.write')] }, async (request, reply) => {
             const id = request.params.id;
             const fileStatus = await FilesDB.getFileById(this.db, id);
 
@@ -323,7 +324,7 @@ export default class FilesAPI {
         /**
          * Update an existing category.
          */
-        this.app.put('/api/file-categories/:id', { preHandler: [check('file.category.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.put<{ Params: { id: string } }>('/api/file-categories/:id', { preHandler: [check('file.category.manage')] }, async (request, reply) => {
             const status = await FilesDB.updateCategory(this.db, request.params.id, request.body as any);
             return status.getResponse(reply);
         });
@@ -331,7 +332,7 @@ export default class FilesAPI {
         /**
          * Delete a category.
          */
-        this.app.delete('/api/file-categories/:id', { preHandler: [check('file.category.manage')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/file-categories/:id', { preHandler: [check('file.category.manage')] }, async (request, reply) => {
             const status = await FilesDB.deleteCategory(this.db, request.params.id);
             return status.getResponse(reply);
         });

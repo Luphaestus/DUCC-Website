@@ -90,7 +90,7 @@ export default class GlobalsAPI {
         /**
          * Update a global setting.
          */
-        this.app.post('/api/globals/:key', { preHandler: [check('perm:globals.manage')] }, async (request: FastifyRequest<{ Params: { key: string }, Body: { value: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { key: string }, Body: { value: string } }>('/api/globals/:key', { preHandler: [check('perm:globals.manage')] }, async (request, reply) => {
             const key = request.params.key;
             const globals = new Globals();
             try {

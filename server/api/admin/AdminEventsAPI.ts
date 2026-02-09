@@ -63,7 +63,7 @@ export default class AdminEvents {
         /**
          * Fetch event details by ID for administrative editing.
          */
-        this.app.get('/api/admin/event/:id', { preHandler: [check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/admin/event/:id', { preHandler: [check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped')] }, async (request, reply) => {
             const result = await EventsDB.getEventByIdAdmin(this.db, parseInt(request.params.id));
             if (result.isError()) return result.getResponse(reply);
             return reply.send(result.getData());
@@ -72,7 +72,7 @@ export default class AdminEvents {
         /**
          * Fetch raw event details.
          */
-        this.app.get('/api/admin/event/:id/raw', { preHandler: [check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/admin/event/:id/raw', { preHandler: [check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped')] }, async (request, reply) => {
             try {
                 const event = await EventsDB.getEventById(this.db, parseInt(request.params.id));
                 if (!event) return reply.status(404).send({ message: 'Event not found' });
@@ -85,7 +85,7 @@ export default class AdminEvents {
         /**
          * Export event attendees as CSV.
          */
-        this.app.get('/api/admin/event/:id/attendees/csv', { preHandler: [check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/admin/event/:id/attendees/csv', { preHandler: [check('perm:event.read.all | perm:event.manage.all | perm:event.read.scoped | perm:event.manage.scoped')] }, async (request, reply) => {
             try {
                 const eventId = parseInt(request.params.id);
                 const eventRes = await EventsDB.getEventByIdAdmin(this.db, eventId);
@@ -147,6 +147,79 @@ export default class AdminEvents {
 
                 const createRes = await EventsDB.createEvent(this.db, newData);
                 return createRes.getResponse(reply);
+            } catch (e: any) {
+                return reply.status(500).send({ message: e.message });
+            }
+        });
+
+        /**
+         * Duplicate an entire week of events to another week.
+         */
+        this.app.post<{ Body: { sourceDate: string, targetDate: string } }>('/api/admin/events/duplicate-week', { preHandler: [check('perm:event.write.all | perm:event.manage.all')] }, async (request: any, reply: FastifyReply) => {
+            const { sourceDate, targetDate } = request.body;
+            if (!sourceDate || !targetDate) return reply.status(400).send({ message: 'Missing dates' });
+
+            try {
+                const s = new Date(sourceDate);
+                const t = new Date(targetDate);
+                
+                // Find start of both weeks (Monday)
+                const sMon = new Date(s); sMon.setDate(s.getDate() - (s.getDay() === 0 ? 6 : s.getDay() - 1)); sMon.setHours(0,0,0,0);
+                const tMon = new Date(t); tMon.setDate(t.getDate() - (t.getDay() === 0 ? 6 : t.getDay() - 1)); tMon.setHours(0,0,0,0);
+                
+                const sSun = new Date(sMon); sSun.setDate(sMon.getDate() + 6); sSun.setHours(23,59,59,999);
+                
+                const eventsToCopy = await this.db.all("SELECT * FROM events WHERE start BETWEEN ? AND ? AND is_canceled = 0", [sMon, sSun]);
+                
+                const weekDiff = tMon.getTime() - sMon.getTime();
+                let count = 0;
+
+                for (const ev of eventsToCopy) {
+                    const newStart = new Date(new Date(ev.start).getTime() + weekDiff);
+                    const newEnd = new Date(new Date(ev.end).getTime() + weekDiff);
+                    const newRefund = ev.upfront_refund_cutoff ? new Date(new Date(ev.upfront_refund_cutoff).getTime() + weekDiff) : null;
+
+                    const tags = await this.db.all("SELECT tag_id FROM event_tags WHERE event_id = ?", [ev.id]);
+
+                    const newData = {
+                        ...ev,
+                        start: newStart,
+                        end: newEnd,
+                        upfront_refund_cutoff: newRefund,
+                        status: 'pending', // Stage them!
+                        visible_at: null,
+                        costs_released: 0
+                    };
+                    delete newData.id;
+                    delete newData.created_at;
+                    delete newData.updated_at;
+
+                    const result = await EventsDB.createEvent(this.db, { ...newData, tags: tags.map(t => t.tag_id) });
+                    if (!result.isError()) count++;
+                }
+
+                return reply.send({ message: `Staged ${count} events for the week of ${tMon.toLocaleDateString()}.` });
+            } catch (e: any) {
+                return reply.status(500).send({ message: e.message });
+            }
+        });
+
+        /**
+         * Publish all staged (pending) events.
+         */
+        this.app.post('/api/admin/events/publish-staged', { preHandler: [check('perm:event.write.all | perm:event.manage.all')] }, async (request: any, reply: FastifyReply) => {
+            try {
+                const result = await this.db.run("UPDATE events SET status = 'confirmed' WHERE status = 'pending' AND start >= NOW()");
+                
+                if (result.changes > 0) {
+                    const EventHub = (await import('../../misc/EventHub.js')).default;
+                    EventHub.broadcast('event_update', { action: 'bulk_published' });
+                    
+                    // Optional: Send notification to all users?
+                    // await NotificationsAPI.broadcastNotification(this.db, 'New Events Published!', 'Check out the new events scheduled for this week.', '/events');
+                }
+                
+                return reply.send({ message: `${result.changes} events published.` });
             } catch (e: any) {
                 return reply.status(500).send({ message: e.message });
             }

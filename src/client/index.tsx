@@ -30,6 +30,7 @@ const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminUsersPage = lazy(() => import("./pages/admin/users/UsersPage"));
 const AdminUserDetailPage = lazy(() => import("./pages/admin/users/UserDetailPage"));
 const AdminEventsPage = lazy(() => import("./pages/admin/events/EventsPage"));
+const AdminShareWeekPage = lazy(() => import("./pages/admin/events/ShareWeekPage"));
 const AdminEventDetailPage = lazy(() => import("./pages/admin/events/EventDetailPage"));
 const AdminFilesPage = lazy(() => import("./pages/admin/files/FilesPage"));
 const AdminQuotesPage = lazy(() => import("./pages/admin/quotes/QuotesPage"));
@@ -76,6 +77,7 @@ if (root) {
              <Route path="/users" component={AdminUsersPage} />
              <Route path="/user/:id" component={AdminUserDetailPage} />
              <Route path="/events" component={AdminEventsPage} />
+             <Route path="/events/share" component={AdminShareWeekPage} />
              <Route path="/event/:id" component={AdminEventDetailPage} />
              <Route path="/files" component={AdminFilesPage} />
              <Route path="/quotes" component={AdminQuotesPage} />

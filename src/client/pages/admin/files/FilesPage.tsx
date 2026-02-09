@@ -1,3 +1,4 @@
+// todo clean up
 import { createSignal, createResource, Show, For, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -193,6 +194,12 @@ const EditFileModal = (props: {
 
 // --- Main Page ---
 
+interface FilesPageData {
+    files: FileRecord[];
+    totalPages: number;
+    categoryId: string;
+}
+
 export default function FilesPage() {
     const { notify } = useNotifications();
     
@@ -210,10 +217,10 @@ export default function FilesPage() {
     const [editingFile, setEditingFile] = createSignal<FileRecord | null>(null);
 
     // Data Fetching
-    const [filesData, { refetch: refetchFiles }] = createResource(
+    const [filesData, { refetch: refetchFiles }] = createResource<FilesPageData, any>(
         () => ({ page: page(), search: search(), categoryId: categoryId(), sort: sort(), order: order() }),
         async (params, { value }) => {
-            if (value && params.categoryId === (filesData() as any)?.categoryId) {
+            if (value && params.categoryId === (filesData as any).latest?.categoryId) {
                 setOldData(value);
             } else {
                 setOldData(null);

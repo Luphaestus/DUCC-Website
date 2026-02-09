@@ -1,0 +1,104 @@
+@use "../mixins" as *;
+
+.pwa-overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fade-in 0.3s ease-out;
+}
+
+.pwa-overlay-container {
+    width: 90%;
+    max-width: 400px;
+    animation: slide-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    .pwa-card {
+        position: relative;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: transparent;
+        border: none;
+        color: var(--pico-muted-color);
+        padding: 0.5rem;
+        z-index: 10;
+        
+        &:hover {
+            color: var(--pico-color);
+        }
+    }
+
+    .pwa-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+
+        .pwa-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 4px 20px rgba(var(--pico-primary-rgb), 0.3);
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .pwa-benefits {
+            list-style: none;
+            padding: 0;
+            margin: 0.5rem 0 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            
+            li {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 0.5rem 1rem;
+                border-radius: 50px;
+                font-size: 0.9rem;
+                font-weight: 500;
+            }
+        }
+
+        .install-btn {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .text-btn {
+            background: transparent;
+            border: none;
+            font-size: 0.85rem;
+            text-decoration: underline;
+            cursor: pointer;
+            box-shadow: none;
+        }
+    }
+}
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

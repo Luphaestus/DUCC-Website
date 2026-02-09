@@ -21,7 +21,7 @@ export default class AdminExpensesAPI {
 
     registerRoutes() {
         /** Create a new trip for an event. */
-        this.app.post('/api/admin/events/:eventId/trips', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { eventId: string }, Body: { name: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { eventId: string }, Body: { name: string } }>('/api/admin/events/:eventId/trips', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { name } = request.body;
             if (!name) return reply.status(400).send({ message: 'Trip name is required.' });
 
@@ -30,57 +30,57 @@ export default class AdminExpensesAPI {
         });
 
         /** Set exclusions for a trip. */
-        this.app.post('/api/admin/trips/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { userIds: number[] } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { userIds: number[] } }>('/api/admin/trips/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { userIds } = request.body;
             const status = await ExpensesDB.setExclusions(this.db, 'trip', request.params.id, userIds || []);
             return status.getResponse(reply);
         });
 
         /** Get exclusions for a trip. */
-        this.app.get('/api/admin/trips/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/admin/trips/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const status = await ExpensesDB.getExclusions(this.db, 'trip', request.params.id);
             return status.getResponse(reply);
         });
 
         /** Set exclusions for an expense. */
-        this.app.post('/api/admin/expenses/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: { userIds: number[] } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { userIds: number[] } }>('/api/admin/expenses/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { userIds } = request.body;
             const status = await ExpensesDB.setExclusions(this.db, 'expense', request.params.id, userIds || []);
             return status.getResponse(reply);
         });
 
         /** Get exclusions for an expense. */
-        this.app.get('/api/admin/expenses/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { id: string } }>('/api/admin/expenses/:id/exclusions', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const status = await ExpensesDB.getExclusions(this.db, 'expense', request.params.id);
             return status.getResponse(reply);
         });
 
         /** Get financial summary/preview for an event. */
-        this.app.get('/api/admin/events/:eventId/finance-summary', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
+        this.app.get<{ Params: { eventId: string } }>('/api/admin/events/:eventId/finance-summary', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const status = await ExpensesDB.getFinanceSummary(this.db, request.params.eventId);
             return status.getResponse(reply);
         });
 
         /** Release event costs. */
-        this.app.post('/api/admin/events/:eventId/release-costs', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { eventId: string } }>('/api/admin/events/:eventId/release-costs', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const status = await ExpensesDB.releaseEventCosts(this.db, request.params.eventId);
             return status.getResponse(reply);
         });
 
         /** Refund upfront fee for an attendee. */
-        this.app.post('/api/admin/events/:eventId/attendees/:userId/refund-upfront', { preHandler: [checkAuthentication('transaction.manage|event.manage.all')] }, async (request: FastifyRequest<{ Params: { eventId: string, userId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { eventId: string, userId: string } }>('/api/admin/events/:eventId/attendees/:userId/refund-upfront', { preHandler: [checkAuthentication('transaction.manage|event.manage.all')] }, async (request, reply) => {
             const status = await ExpensesDB.refundUpfrontFee(this.db, request.params.eventId, request.params.userId);
             return status.getResponse(reply);
         });
 
         /** Remove an attendee from an event. */
-        this.app.delete('/api/admin/events/:eventId/attendees/:userId', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { eventId: string, userId: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { eventId: string, userId: string } }>('/api/admin/events/:eventId/attendees/:userId', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const status = await ExpensesDB.removeAttendee(this.db, request.params.eventId, request.params.userId);
             return status.getResponse(reply);
         });
 
         /** Manually add an attendee to an event. */
-        this.app.post('/api/admin/events/:eventId/attendees', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { eventId: string }, Body: { userId: string } }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { eventId: string }, Body: { userId: string } }>('/api/admin/events/:eventId/attendees', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { userId } = request.body;
             if (!userId) return reply.status(400).send({ message: 'User ID is required.' });
             const status = await ExpensesDB.addAttendee(this.db, request.params.eventId, userId);
@@ -88,7 +88,7 @@ export default class AdminExpensesAPI {
         });
 
         /** Create a new expense for an event (Admin action). */
-        this.app.post('/api/admin/events/:eventId/expenses', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { eventId: string }, Body: any }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { eventId: string }, Body: any }>('/api/admin/events/:eventId/expenses', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { amount, description, userId, receiptFileId } = request.body as any;
             const eventId = request.params.eventId;
 
@@ -103,7 +103,7 @@ export default class AdminExpensesAPI {
         });
 
         /** Add a driver to a trip (Admin action). */
-        this.app.post('/api/admin/trips/:tripId/drivers', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { tripId: string }, Body: any }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { tripId: string }, Body: any }>('/api/admin/trips/:tripId/drivers', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { userId, carId } = request.body as any;
             const { tripId } = request.params;
 
@@ -116,13 +116,13 @@ export default class AdminExpensesAPI {
         });
 
         /** Remove a driver from a trip (Admin action). */
-        this.app.delete('/api/admin/drivers/:id', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        this.app.delete<{ Params: { id: string } }>('/api/admin/drivers/:id', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const status = await CarsDB.removeDriver(this.db, request.params.id);
             return status.getResponse(reply);
         });
 
         /** Manually update driver mileage (Admin action). */
-        this.app.post('/api/admin/drivers/:id/mileage', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request: FastifyRequest<{ Params: { id: string }, Body: any }>, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: any }>('/api/admin/drivers/:id/mileage', { preHandler: [checkAuthentication('event.manage.all|event.manage.scoped')] }, async (request, reply) => {
             const { startMileage, endMileage } = request.body as any;
             const { id } = request.params;
 
