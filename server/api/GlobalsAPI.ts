@@ -11,6 +11,7 @@ import { Permissions } from '../misc/permissions.js';
 import FileCleanup from '../misc/FileCleanup.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../db/db.js';
+import FilesDB from '../db/filesDB.js';
 
 export default class GlobalsAPI {
     app: FastifyInstance;
@@ -90,25 +91,34 @@ export default class GlobalsAPI {
         /**
          * Update a global setting.
          */
-        this.app.post<{ Params: { key: string }, Body: { value: string } }>('/api/globals/:key', { preHandler: [check('perm:globals.manage')] }, async (request, reply) => {
+        this.app.post<{ Params: { key: string }, Body: { value: string | number } }>('/api/globals/:key', { preHandler: [check('perm:globals.manage')] }, async (request, reply) => {
             const key = request.params.key;
             const globals = new Globals();
             try {
                 const config = globals.get(key);
                 if (!config) throw new Error("Global key not found.");
 
-                if (config.type === 'image' && (!request.body.value || request.body.value.trim() === '')) {
-                    throw new Error("Image settings cannot be empty.");
+                let newValue = request.body.value;
+
+                if (config.type === 'image') {
+                    if (!newValue) throw new Error("Image settings cannot be empty.");
+                    
+                    // If we got an ID, resolve it to a URL
+                    if (typeof newValue === 'number') {
+                        const fileStatus = await FilesDB.getFileById(this.db, newValue);
+                        if (fileStatus.isError()) throw new Error("Image file not found.");
+                        newValue = `/api/files/${newValue}/download?view=true`;
+                    }
                 }
 
                 if (key === 'DefaultEventImage') {
                     const oldVal = config.data;
-                    globals.set(key, request.body.value);
-                    if (oldVal !== request.body.value) {
+                    globals.set(key, newValue);
+                    if (oldVal !== newValue) {
                         await FileCleanup.checkAndDeleteIfUnused(this.db, oldVal);
                     }
                 } else {
-                    globals.set(key, request.body.value);
+                    globals.set(key, newValue);
                 }
             } catch (error: any) {
                 return reply.status(400).send({ message: error.message });

@@ -2,8 +2,8 @@
 
 /* Containers */
 .sub-container {
-    @include glass-effect-base;
-    width: 100%; padding: 1.25rem; border-radius: var(--border-radius-md); margin-bottom: 1rem;
+    @include liquid-glass(1.25rem, var(--border-radius-md));
+    width: 100%; margin-bottom: 1rem;
     :first-child { --success: #2ecc71; --warning: #f39c12; --error: #e74c3c; --ok: #3498db; font-weight: 600; margin-top: 0; }
     :last-child { margin-bottom: 0; }
 }
@@ -17,7 +17,8 @@
 .form-info {
     display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 2rem;
     .form-box {
-        @include glass-panel; flex: 1 1 320px; padding: 2rem; margin-bottom: 0; @include card-highlights;
+        @include liquid-glass(2rem, var(--border-radius-lg));
+        flex: 1 1 320px; margin-bottom: 0; @include card-highlights;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         &:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
         
@@ -76,17 +77,28 @@
 
 /* Email Input Group */
 .durham-email-wrapper {
+    @include liquid-glass(0, var(--border-radius-md));
+    @include common-element-size;
     position: relative;
     display: flex;
     align-items: center;
     width: 100%;
     margin-bottom: var(--pico-spacing) !important;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 
     input {
         padding-right: 8.5rem !important; // Sufficient space for @durham.ac.uk
         margin-bottom: 0; 
         width: 100%;
         text-overflow: ellipsis;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 
     .email-suffix {

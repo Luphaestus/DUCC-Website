@@ -1,5 +1,5 @@
 // todo clean up
-import { createSignal, onMount, onCleanup } from "solid-js";
+import { createSignal, onMount, onCleanup, createResource } from "solid-js";
 import { apiRequest, clearApiCache } from "@/utils/api";
 import { KAYAKING_SVG, SOCIAL_LEADERBOARD_SVG, CAMPING_SVG } from "@/utils/icons";
 
@@ -9,6 +9,14 @@ export default function HomePage() {
   const [layers, setLayers] = createSignal<[string | null, string | null]>([null, null]);
   const [currentIdx, setCurrentIdx] = createSignal(0);
   let slideshowInterval: any;
+
+  const [globals] = createResource(async () => {
+    const res = await apiRequest('GET', '/api/globals/MaidenCastleImage,BoathouseImage');
+    return {
+      maidenCastle: res.res?.MaidenCastleImage?.data || "/api/files/2/download?view=true",
+      boathouse: res.res?.BoathouseImage?.data || "/api/files/3/download?view=true"
+    };
+  });
 
   onMount(async () => {
     try {
@@ -105,8 +113,8 @@ export default function HomePage() {
             referrerpolicy="no-referrer-when-downgrade"></iframe>
         </div>
         <div class="find-us-images">
-          <img src="/images/misc/maiden-castle-outside.jpg" alt="Maiden Castle entrance" />
-          <img src="/images/misc/boathouse-outside.jpg" alt="Path to boathouse" />
+          <img src={globals()?.maidenCastle} alt="Maiden Castle entrance" />
+          <img src={globals()?.boathouse} alt="Path to boathouse" />
         </div>
       </div>
     </div>

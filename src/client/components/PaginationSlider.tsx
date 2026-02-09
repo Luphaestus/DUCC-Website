@@ -20,10 +20,8 @@ export default function PaginationSlider(props: JSX.HTMLAttributes<HTMLDivElemen
         const current = props.currentPage;
         if (current !== lastPage) {
             if (containerRef) {
-                // Capture current height before we do anything
                 const currentHeight = containerRef.offsetHeight;
                 setHeight(`${currentHeight}px`);
-                // Force a reflow so the browser recognizes the fixed height before we change it
                 void containerRef.offsetHeight;
             }
 
@@ -31,18 +29,14 @@ export default function PaginationSlider(props: JSX.HTMLAttributes<HTMLDivElemen
             setSlideDirection(current > lastPage ? 'right' : 'left');
             setIsAnimating(true);
             
-            // Wait for the new content to be rendered in the track to measure it
-            // We use requestAnimationFrame to ensure the DOM has updated with the new items
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     if (containerRef && trackRef && isAnimating()) {
                         const items = trackRef.querySelectorAll('.slider-item');
                         let newHeight = 0;
                         if (slideDirection() === 'right') {
-                            // [Old, New] -> New is second
                             newHeight = (items[1] as HTMLElement)?.offsetHeight || 0;
                         } else {
-                            // [New, Old] -> New is first
                             newHeight = (items[0] as HTMLElement)?.offsetHeight || 0;
                         }
                         
@@ -58,7 +52,6 @@ export default function PaginationSlider(props: JSX.HTMLAttributes<HTMLDivElemen
                 setSlideDirection('');
                 setCachedOldContent(null);
                 
-                // Keep the fixed height for a tiny bit longer to ensure animation is 100% done
                 setTimeout(() => {
                     if (!isAnimating()) {
                         setHeight('auto');

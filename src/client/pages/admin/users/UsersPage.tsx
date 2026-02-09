@@ -10,7 +10,7 @@ import {
 } from '@/utils/icons';
 import { useNotifications } from "@/stores/notifications";
 import { TabNav } from "@/widgets/TabNav";
-import Panel from "@/components/Panel";
+import Modal from "@/components/Modal";
 import { ProfilePictureChangedEvent } from "@/utils/events/events";
 import { onCleanup, onMount } from "solid-js";
 
@@ -92,6 +92,25 @@ export default function UsersPage() {
         }
     };
 
+    const [transactionUser, setTransactionUser] = createSignal<any | null>(null);
+    const handleQuickTransaction = async (e: Event) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const formData = new FormData(form);
+        const userId = transactionUser()?.id;
+        try {
+            await apiRequest('POST', `/api/admin/user/${userId}/transaction`, {
+                amount: parseFloat(formData.get('amount') as string),
+                description: formData.get('description') as string
+            });
+            notify('Success', 'Transaction recorded.', 'success');
+            setTransactionUser(null);
+            refetch();
+        } catch (err: any) {
+            notify('Error', err.message, 'error');
+        }
+    };
+
     const UserTable = (props: { data: any }) => (
         <table class="glass-table users-table">
             <thead>
@@ -101,31 +120,41 @@ export default function UsersPage() {
                             <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                         </Show>
                     </th>
-                    <Show when={tab() === 'swims'}>
-                        <th class="sortable" onClick={() => handleSort('swims')}>
-                            Swims <Show when={sort() === 'swims'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                            </Show>
-                        </th>
-                        <th>Quick Add</th>
-                    </Show>
-                    <Show when={tab() !== 'swims'}>
-                        <th class="sortable" onClick={() => handleSort('college_id')}>
-                            College <Show when={sort() === 'college_id'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                    <Switch>
+                        <Match when={tab() === 'swims'}>
+                            <th class="sortable" onClick={() => handleSort('swims')}>
+                                Swims <Show when={sort() === 'swims'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
                                     <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                            </Show>
-                        </th>
-                        <th class="sortable" onClick={() => handleSort('difficulty_level')}>
-                            Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                            </Show>
-                        </th>
-                        <th class="sortable" onClick={() => handleSort('balance')}>
-                            Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
-                            </Show>
-                        </th>
-                    </Show>
+                                </Show>
+                            </th>
+                            <th>Quick Add</th>
+                        </Match>
+                        <Match when={tab() === 'transactions'}>
+                            <th class="sortable" onClick={() => handleSort('balance')}>
+                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                </Show>
+                            </th>
+                            <th>Quick Actions</th>
+                        </Match>
+                        <Match when={true}>
+                            <th class="sortable" onClick={() => handleSort('college_id')}>
+                                College <Show when={sort() === 'college_id'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                </Show>
+                            </th>
+                            <th class="sortable" onClick={() => handleSort('difficulty_level')}>
+                                Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                </Show>
+                            </th>
+                            <th class="sortable" onClick={() => handleSort('balance')}>
+                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                </Show>
+                            </th>
+                        </Match>
+                    </Switch>
                 </tr>
             </thead>
             <tbody>
@@ -142,7 +171,7 @@ export default function UsersPage() {
                         const lastInitial = user.last_name ? user.last_name.charAt(0) + '.' : '';
 
                         return (
-                            <tr class="user-row clickable-row" onClick={() => navigate(`/admin/user/${user.id}?tab=${tab() === 'swims' ? 'swims' : ''}`)}>
+                            <tr class="user-row clickable-row" onClick={() => navigate(`/admin/user/${user.id}${tab() === 'swims' ? '?tab=swims' : (tab() === 'transactions' ? '?tab=finance' : '')}`)}>
                                 <td data-label="Name" class="primary-text name-column">
                                     <div class="user-info-cell">
                                         <Avatar user={user} classes="mini" />
@@ -153,21 +182,29 @@ export default function UsersPage() {
                                     </div>
                                 </td>
                                 
-                                <Show when={tab() === 'swims'}>
-                                    <td data-label="Swims">{user.swims || 0}</td>
-                                    <td data-label="Quick Add" class="quick-actions-cell" onClick={(e) => e.stopPropagation()}>
-                                        <button class="small-btn primary mini-btn" onClick={() => handleQuickAdd(user.id, 'swims')}>+1 Swim</button>
-                                        <button class="small-btn secondary mini-btn" onClick={() => handleQuickAdd(user.id, 'booties')}>+1 Bootie</button>
-                                    </td>
-                                </Show>
-
-                                <Show when={tab() !== 'swims'}>
-                                    <td data-label="College">{user.college_name || 'N/A'}</td>
-                                    <td data-label="Difficulty">
-                                        <span class={`badge difficulty-${user.difficulty_level || 1}`}>{user.difficulty_level || 1}</span>
-                                    </td>
-                                    <td data-label="Balance" class={balClass}>£{bal.toFixed(2)}</td>
-                                </Show>
+                                <Switch>
+                                    <Match when={tab() === 'swims'}>
+                                        <td data-label="Swims">{user.swims || 0}</td>
+                                        <td data-label="Quick Add" class="quick-actions-cell" onClick={(e) => e.stopPropagation()}>
+                                            <button class="small-btn primary mini-btn" onClick={() => handleQuickAdd(user.id, 'swims')} title="Add 1 Swim">+1 Swim</button>
+                                            <button class="small-btn secondary mini-btn" onClick={() => handleQuickAdd(user.id, 'booties')} title="Add 1 Bootie">+1 Bootie</button>
+                                        </td>
+                                    </Match>
+                                    <Match when={tab() === 'transactions'}>
+                                        <td data-label="Balance" class={balClass}>£{bal.toFixed(2)}</td>
+                                        <td data-label="Quick Actions" class="quick-actions-cell" onClick={(e) => e.stopPropagation()}>
+                                            <button class="small-btn primary mini-btn" onClick={() => setTransactionUser(user)} title="Add Transaction">Add</button>
+                                            <button class="small-btn secondary mini-btn" onClick={() => navigate(`/admin/user/${user.id}?tab=finance`)} title="Manage Transactions">Manage</button>
+                                        </td>
+                                    </Match>
+                                    <Match when={true}>
+                                        <td data-label="College">{user.college_name || 'N/A'}</td>
+                                        <td data-label="Difficulty">
+                                            <span class={`badge difficulty-${user.difficulty_level || 1}`}>{user.difficulty_level || 1}</span>
+                                        </td>
+                                        <td data-label="Balance" class={balClass}>£{bal.toFixed(2)}</td>
+                                    </Match>
+                                </Switch>
                             </tr>
                         );
                     }}
@@ -183,7 +220,7 @@ export default function UsersPage() {
                     <div class="toolbar-left">
                         <TabNav class="tab-nav-simple">
                             <button 
-                                class={`tab-btn ${tab() !== 'swims' ? 'active' : ''}`} 
+                                class={`tab-btn ${tab() === 'default' ? 'active' : ''}`} 
                                 onClick={() => setSearchParams({ tab: 'default' })}
                             >
                                 Details
@@ -194,13 +231,19 @@ export default function UsersPage() {
                             >
                                 Swims
                             </button>
+                            <button 
+                                class={`tab-btn ${tab() === 'transactions' ? 'active' : ''}`} 
+                                onClick={() => setSearchParams({ tab: 'transactions' })}
+                            >
+                                Transactions
+                            </button>
                         </TabNav>
+                    </div>
+                    <div class="toolbar-right">
                         <form class="search-bar" onSubmit={handleSearch}>
                             <input type="text" placeholder="Search users..." value={search()} />
                             <button type="submit" class="search-icon-btn" innerHTML={SEARCH_SVG} />
                         </form>
-                    </div>
-                    <div class="toolbar-right">
                     </div>
                 </div>
             </div>
@@ -226,6 +269,22 @@ export default function UsersPage() {
                     onPageChange={(p) => setSearchParams({ page: p })} 
                 />
             </Show>
+
+            <Modal 
+                isOpen={!!transactionUser()} 
+                onClose={() => setTransactionUser(null)} 
+                title={`Quick Transaction: ${transactionUser()?.first_name}`}
+            >
+                <form onSubmit={handleQuickTransaction} class="modern-form">
+                    <label>Amount (£)
+                        <input name="amount" type="number" step="0.01" placeholder="5.00 or -5.00" required autofocus />
+                    </label>
+                    <label>Description
+                        <input name="description" type="text" placeholder="Reason for transaction" required />
+                    </label>
+                    <button type="submit" class="primary full-width mt-4">Record Transaction</button>
+                </form>
+            </Modal>
         </div>
     );
 }

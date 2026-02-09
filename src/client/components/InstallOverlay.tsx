@@ -1,9 +1,19 @@
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, onMount, Show, createResource } from "solid-js";
 import { deferredPrompt, installPWA, installPWA as installPWAAction, isPWAInstalled } from "../utils/pwa";
 import { CLOSE_SVG, DOWNLOAD_SVG } from "../utils/icons";
+import { apiRequest } from "@/utils/api";
 
 export default function InstallOverlay() {
     const [isVisible, setIsVisible] = createSignal(false);
+
+    const [logo] = createResource(async () => {
+        try {
+            const res = await apiRequest('GET', '/api/globals/ClubLogo');
+            return res.res?.ClubLogo?.data || "/api/files/1/download?view=true";
+        } catch {
+            return "/api/files/1/download?view=true";
+        }
+    });
 
     onMount(() => {
         // Don't show if already installed
@@ -50,7 +60,7 @@ export default function InstallOverlay() {
                         <button class="close-btn" onClick={() => handleDismiss(false)} innerHTML={CLOSE_SVG} />
                         
                         <div class="pwa-content">
-                            <img src="/images/misc/ducc.png" alt="DUCC Logo" class="pwa-logo" />
+                            <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" class="pwa-logo" />
                             <h2>Install the App</h2>
                             <p>Get instant notifications for cancelled events, waitlist updates, and easier access to your profile.</p>
                             

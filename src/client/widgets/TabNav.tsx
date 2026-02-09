@@ -76,10 +76,6 @@ export function TabNav(props: TabNavProps) {
                 ref={navRef} 
                 class={`liquid-container toggle-group ${props.class || ''}`} 
                 id={props.id} 
-                style={{
-                    '--liquid-border-radius': '100px',
-                    '--liquid-padding': '0.25rem'
-                }}
             >
                 <div ref={bgRef} class="toggle-bg"></div>
                 {props.children}

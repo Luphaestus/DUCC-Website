@@ -4,6 +4,8 @@ import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG, POOL_SVG } from '@/utils
 import Avatar from "@/components/Avatar";
 import { useNavigate } from "@solidjs/router";
 import { onUpdate } from "@/utils/updates";
+import Modal from "@/components/Modal";
+import SwimsTab from "@/pages/admin/users/tabs/SwimsTab";
 
 interface LeaderboardUser {
     id: number;
@@ -20,6 +22,7 @@ export default function SwimsPage() {
     const navigate = useNavigate();
     const [isYearly, setIsYearly] = createSignal(true);
     const [canManage, setCanManage] = createSignal(false);
+    const [selectedUser, setSelectedUser] = createSignal<LeaderboardUser | null>(null);
     const [isAnimating, setIsAnimating] = createSignal(false);
     const [oldLeaderboard, setOldLeaderboard] = createSignal<LeaderboardUser[] | null>(null);
 
@@ -98,15 +101,7 @@ export default function SwimsPage() {
                     </div>
                 </div>
 
-                <Show when={canManage()}>
-                    <div class="admin-leaderboard-actions">
-                        <button class="small-btn primary" onClick={() => navigate('/admin/users?tab=swims')}>
-                            <span innerHTML={POOL_SVG} /> Manage Swims
-                        </button>
-                    </div>
-                </Show>
-
-                <div id="leaderboard-content" classList={{ 'is-crossfading': isAnimating() }} class="scroll-reveal">
+                <div id="leaderboard-content" classList={{ 'is-crossfading': isAnimating() }}>
                     <Show when={leaderboard.loading && !leaderboard() && !oldLeaderboard()}>
                         <p class="leaderboard-status" aria-busy="true">Loading leaderboard...</p>
                     </Show>
@@ -143,7 +138,11 @@ export default function SwimsPage() {
                                                 <div class="crown-icon" innerHTML={CROWN_SVG} />
                                             </Show>
                                             <div class="swimmer-avatar">
-                                                <Avatar user={p.user!} classes="clickable" onClick={() => navigate(`/admin/user/${p.user!.id}`)} />
+                                                <Avatar 
+                                                    user={p.user!} 
+                                                    classes="clickable" 
+                                                    onClick={() => canManage() ? setSelectedUser(p.user!) : navigate(`/admin/user/${p.user!.id}`)} 
+                                                />
                                             </div>
                                             <div class="swimmer-name">{p.user!.first_name} {p.user!.is_me ? '(You)' : ''}</div>
                                             <div class="swim-count">{p.user!.swims} Swims</div>
@@ -189,7 +188,11 @@ export default function SwimsPage() {
                                 <div class="liquid-container leaderboard-list new-layer" style={{ "--liquid-padding": "1.25rem" }}>
                                     <For each={listData()}>
                                         {(user) => (
-                                            <div class="leaderboard-row" classList={{ highlight: user.is_me }}>
+                                            <div 
+                                                class="leaderboard-row" 
+                                                classList={{ highlight: user.is_me, clickable: canManage() }}
+                                                onClick={() => canManage() && setSelectedUser(user)}
+                                            >
                                                 <div class="rank-box">{user.rank}</div>
                                                 <div class="swimmer-info">
                                                     <Avatar user={user} classes="mini" />
@@ -212,6 +215,17 @@ export default function SwimsPage() {
                         </div>
                     </Show>
                 </div>
+
+                <Modal 
+                    isOpen={!!selectedUser()} 
+                    onClose={() => setSelectedUser(null)}
+                    title={`Manage Swims: ${selectedUser()?.first_name} ${selectedUser()?.last_name}`}
+                    maxWidth="800px"
+                >
+                    <Show when={selectedUser()}>
+                        <SwimsTab user={selectedUser()!} />
+                    </Show>
+                </Modal>
             </div>
         </div>
     );

@@ -7,23 +7,18 @@ export default function Background() {
 
   onMount(() => {
     if (containerRef) {
-      // Initialize the scene
       riverScene = new RiverScene(containerRef, 'dark');
 
-      // Expose to console for manual biome switching
       (window as any).riverScene = riverScene;
       (window as any).setBiome = (name: any) => riverScene?.updateBiome(name);
       
-      // Check system preference for theme
       const matcher = window.matchMedia('(prefers-color-scheme: dark)');
       const updateTheme = (e: MediaQueryListEvent | MediaQueryList) => {
         riverScene?.updateTheme(e.matches ? 'dark' : 'light');
       };
       
-      // Set initial theme
       updateTheme(matcher);
       
-      // Listen for changes
       matcher.addEventListener('change', updateTheme);
       
       onCleanup(() => {

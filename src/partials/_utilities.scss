@@ -9,24 +9,30 @@
 }
 
 .glass-effect {
-  @include glass-effect-base;
+  @include liquid-glass;
 }
+
 .hidden {
   display: none !important;
 }
+
 .text-right {
   text-align: right !important;
 }
+
 .text-centre,
 .center-text {
   text-align: center !important;
 }
+
 .no-margin {
   margin: 0 !important;
 }
+
 .no-padding {
   padding: 0 !important;
 }
+
 .no-dot {
   list-style: none !important;
   padding: 0 !important;
@@ -51,6 +57,7 @@
   &:not(:empty)::before {
     margin-right: 1rem;
   }
+
   &:not(:empty)::after {
     margin-left: 1rem;
   }
@@ -88,6 +95,7 @@
 .text-success {
   color: var(--colour-good) !important;
 }
+
 .text-error {
   color: var(--colour-bad) !important;
 }
@@ -106,7 +114,8 @@
     margin-bottom: 0;
   }
 
-  svg, span:has(svg) {
+  svg,
+  span:has(svg) {
     width: 1.1rem;
     height: 1.1rem;
     flex-shrink: 0;
@@ -120,24 +129,31 @@
 .mt-1 {
   margin-top: 0.25rem !important;
 }
+
 .mt-2 {
   margin-top: 0.5rem !important;
 }
+
 .mt-3 {
   margin-top: 0.75rem !important;
 }
+
 .mt-4 {
   margin-top: 1rem !important;
 }
+
 .mt-5 {
   margin-top: 1.25rem !important;
 }
+
 .mt-6 {
   margin-top: 1.5rem !important;
 }
+
 .mt-7 {
   margin-top: 1.75rem !important;
 }
+
 .mt-8 {
   margin-top: 2rem !important;
 }
@@ -145,26 +161,41 @@
 .mb-1 {
   margin-bottom: 0.25rem !important;
 }
+
 .mb-2 {
   margin-bottom: 0.5rem !important;
 }
+
 .mb-3 {
   margin-bottom: 0.75rem !important;
 }
+
 .mb-4 {
   margin-bottom: 1rem !important;
 }
+
 .mb-5 {
   margin-bottom: 1.25rem !important;
 }
+
 .mb-6 {
   margin-bottom: 1.5rem !important;
 }
+
 .mb-7 {
   margin-bottom: 1.75rem !important;
 }
+
 .mb-8 {
   margin-bottom: 2rem !important;
+}
+
+.modal-display {
+    display: flex !important;
+}
+
+.modal-hidden {
+    display: none !important;
 }
 
 .mini-input {
@@ -177,6 +208,7 @@
 .fade-out {
   animation: fadeOut 0.3s forwards ease-out;
 }
+
 @keyframes fadeOut {
   from {
     margin-top: 0.5rem;
@@ -186,6 +218,7 @@
     opacity: 1;
     max-height: 150px;
   }
+
   to {
     margin-top: 0;
     margin-bottom: 0;
@@ -199,11 +232,13 @@
 .fade-in {
   animation: fadeIn 0.3s forwards ease-out;
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateX(100%);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -211,9 +246,8 @@
 }
 
 .liquid-container {
-  @extend .glass-effect;
-  border-radius: 20px;
-  padding: 1.5rem;
-
+  @include liquid-glass(var(--liquid-padding, 1.5rem), var(--liquid-border-radius, 20px));
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }

@@ -13,7 +13,7 @@ import { NoInternetEvent } from "./utils/events/events";
 import { isServerConnected } from "./connection";
 import { initPWA } from "./utils/pwa";
 
-import { initScrollReveal } from "./utils/scroll";
+import { apiRequest } from "./utils/api";
 
 export default function App(props: ParentProps) {
   const navigate = useNavigate();
@@ -23,12 +23,23 @@ export default function App(props: ParentProps) {
   onMount(() => {
     initPWA();
     initUpdates();
-    const scrollCleanup = initScrollReveal();
     const cleanup = NoInternetEvent.subscribe(() => {
         setIsOffline(!isServerConnected);
     });
+
+    // Preload files list
+    const filesQuery = new URLSearchParams({
+      page: '1',
+      limit: '15',
+      search: '',
+      sort: 'date',
+      order: 'desc',
+      categoryId: ''
+    });
+    apiRequest('GET', `/api/files?${filesQuery.toString()}`, true).catch(() => {});
+    apiRequest('GET', '/api/file-categories', true).catch(() => {});
+
     onCleanup(() => {
-        scrollCleanup();
         cleanup();
     });
   });
@@ -47,6 +58,7 @@ export default function App(props: ParentProps) {
               id="global-error"
               viewId="error"
               icon={BRIGHTNESS_ALERT_SVG}
+              iconClass="critical-error-icon"
               title="Something went wrong"
               message={`We've encountered an unexpected error.<br><small>${err?.message || err}</small>`}
             />

@@ -85,7 +85,7 @@ export default function QuotesPage() {
         <div class="quotes-grid">
             <For each={props.data?.quotes}>
                 {(quote) => (
-                    <div class="quote-card">
+                    <div class="quote-card liquid-container">
                         <div class="quote-icon-bg" innerHTML={FORMAT_QUOTE_SVG} />
                         <div class="quote-card-header">
                             <Avatar user={quote.quoted_user} classes="mini" />
@@ -113,7 +113,7 @@ export default function QuotesPage() {
                     <Show when={canManage()}>
                         <button class="secondary" onClick={() => navigate('/admin/quotes')}>Manage Quotes</button>
                     </Show>
-                    <div class="search-box">
+                    <div class="search-box liquid-container">
                         <span class="icon" innerHTML={SEARCH_SVG} />
                         <input
                             type="text"
@@ -168,12 +168,15 @@ export default function QuotesPage() {
                     </div>
                     <div class="form-group">
                         <label for="new-quote-user">Who said it?</label>
-                        <select name="quotedUserId" id="new-quote-user" required>
-                            <option value="" disabled selected>Select a person</option>
-                            <For each={users()}>
-                                {(u) => <option value={u.id}>{u.first_name} {u.last_name}</option>}
-                            </For>
-                        </select>
+                        <div class="glass-input-group liquid-container">
+                            <span class="icon" innerHTML={PERSON_SVG} />
+                            <select name="quotedUserId" id="new-quote-user" required>
+                                <option value="" disabled selected>Select a person</option>
+                                <For each={users()}>
+                                    {(u) => <option value={u.id}>{u.first_name} {u.last_name}</option>}
+                                </For>
+                            </select>
+                        </div>
                     </div>
                     <button type="submit" class="button primary full-width">Submit Quote</button>
                 </form>

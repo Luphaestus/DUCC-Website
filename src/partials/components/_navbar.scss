@@ -22,7 +22,7 @@ nav.small-container {
   .nav-glass-wrapper {
     position: relative;
     padding: 0.4rem 0.6rem !important;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: auto; // Re-enable clicks for the actual navbar
     max-width: 100%;
   }

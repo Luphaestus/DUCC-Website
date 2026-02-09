@@ -40,7 +40,7 @@ export default function EventDetailPage() {
             event,
             rawEvent,
             allTags: allTagsRes.data || [],
-            globalDefaultUrl: globalDefaultRes.res?.DefaultEventImage?.data || '/images/misc/ducc.png',
+            globalDefaultUrl: globalDefaultRes.res?.DefaultEventImage?.data || '/api/files/1/download?view=true',
             userPerms: userPermsRes.permissions || []
         };
     });

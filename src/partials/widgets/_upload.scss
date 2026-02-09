@@ -71,8 +71,8 @@
                 /* Red glass theme */
                 background: rgba(231, 76, 60, 0.25) !important;
                 border: 1px solid rgba(231, 76, 60, 0.4) !important;
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
                 color: white !important;
                 
                 /* Reset global button constraints */
@@ -253,7 +253,7 @@
     justify-content: center;
 }
 
-.image-library-grid {
+.image-library-grid, .library-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 1rem;
@@ -262,19 +262,44 @@
     padding: 0.5rem;
     margin-top: 1rem;
 
-    .image-item {
-        aspect-ratio: 1;
-        background-size: cover;
-        background-position: center;
-        border-radius: var(--border-radius-md);
+    .image-item, .library-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
         cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;
-        border: 2px solid transparent;
+
+        img {
+            aspect-ratio: 1;
+            object-fit: cover;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius-md);
+            border: 2px solid transparent;
+            width: 100%;
+        }
+
+        span {
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--pico-muted-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            padding: 0 0.25rem;
+        }
 
         &:hover {
             transform: scale(1.03);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            border-color: var(--pico-primary);
+            
+            img {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                border-color: var(--pico-primary);
+            }
+
+            span {
+                color: var(--pico-primary);
+            }
         }
     }
 }

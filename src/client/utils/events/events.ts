@@ -57,9 +57,15 @@ const MembershipChangedEvent = new Event();
 const ProfilePictureChangedEvent = new Event();
 
 /**
+ * Event fired when the club logo is updated.
+ * @type {Event}
+ */
+const ClubLogoChangedEvent = new Event();
+
+/**
  * Event fired when the connection to the server is lost.
  * @type {Event}
  */
 const NoInternetEvent = new Event();
 
-export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent, NoInternetEvent };
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent, ClubLogoChangedEvent, NoInternetEvent };

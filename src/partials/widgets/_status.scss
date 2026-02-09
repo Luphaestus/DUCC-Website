@@ -8,8 +8,8 @@
     flex-direction: column;
     gap: 0.5rem;
     border: var(--glass-border);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 
     .indicator-header {
         display: flex;

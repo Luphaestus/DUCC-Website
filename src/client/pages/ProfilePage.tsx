@@ -37,6 +37,7 @@ interface UserProfile {
     free_sessions: number;
     balance: number;
     swims: number;
+    booties: number;
     swimmer_rank: number;
     profile_picture_path: string;
     profile_picture_color: string;
@@ -102,7 +103,7 @@ export default function ProfilePage() {
 
     const [profile, { refetch }] = createResource(async () => {
         try {
-            return await apiRequest('GET', `/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled,swimmer_stats?t=${Date.now()}`) as UserProfile;
+            return await apiRequest('GET', `/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,booties,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled,swimmer_stats?t=${Date.now()}`) as UserProfile;
         } catch (e) {
             navigate('/login');
             throw e;
@@ -414,7 +415,7 @@ export default function ProfilePage() {
             <div id="avatar-upload-container" style="display: none;"></div>
             <div class="dashboard-container">
                 <aside class="dashboard-sidebar">
-                    <TabNav class="vertical-sidebar">
+                    <TabNav class="vertical-sidebar liquid-container">
                         <button class="nav-item" classList={{ active: activeTab() === 'overview' }} onClick={() => setSearchParams({ tab: 'overview' })}>
                             <span innerHTML={DASHBOARD_SVG} /> Overview
                         </button>
@@ -442,7 +443,7 @@ export default function ProfilePage() {
                         <Show when={activeTab() === 'overview'}>
                             <section class="dashboard-section active">
                                 <Show when={!profile()!.is_member}>
-                                    <article class="accent-panel">
+                                    <article class="accent-panel liquid-container glass-panel" style={{ "--liquid-border-radius": "24px", "border": "none" }}>
                                         <div class="panel-content">
                                             <h2>You aren't a member yet</h2>
                                             <p>You have <strong>{profile()!.free_sessions}</strong> free trial events remaining before membership is required.</p>
@@ -453,39 +454,42 @@ export default function ProfilePage() {
                                     </article>
                                 </Show>
 
-                                <Panel 
-                                    title="Swimming Stats" 
-                                    icon={POOL_SVG}
-                                    action={
-                                        <button class="small-btn secondary" onClick={() => navigate('/swims')}>
-                                            <span innerHTML={SOCIAL_LEADERBOARD_SVG} /> Leaderboard
-                                        </button>
-                                    }
-                                    class="no-margin"
-                                >
-                                    <div class="stats-grid">
-                                        <div class="stat-item">
-                                            <span class="stat-value">{profile()!.swimmer_stats?.yearly.swims || 0}</span>
-                                            <span class="stat-label">Yearly Swims</span>
-                                        </div>
-                                        <div class="stat-item">
-                                            <span class="stat-value">{profile()!.swimmer_stats?.yearly.rank || '-'}</span>
-                                            <span class="stat-label">Yearly Rank</span>
-                                        </div>
-                                        <div class="stat-item">
-                                            <span class="stat-value">{profile()!.swims}</span>
-                                            <span class="stat-label">Total Swims</span>
-                                        </div>
-                                        <div class="stat-item">
-                                            <span class="stat-value">#{profile()!.swimmer_rank}</span>
-                                            <span class="stat-label">All Time Rank</span>
-                                        </div>
-                                    </div>
-                                </Panel>
+                                <div class="profile-overview-grid">
+                                    <div class="overview-main">
+                                        <Panel 
+                                            title="Swimming Statistics" 
+                                            icon={POOL_SVG}
+                                            action={
+                                                <button class="small-btn secondary" onClick={() => navigate('/swims')}>
+                                                    <span innerHTML={SOCIAL_LEADERBOARD_SVG} /> Leaderboard
+                                                </button>
+                                            }
+                                        >
+                                            <div class="stats-grid">
+                                                <div class="stat-item">
+                                                    <span class="stat-value">{profile()!.swimmer_stats?.yearly.swims || 0}</span>
+                                                    <span class="stat-label">Yearly Swims</span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-value">{profile()!.swimmer_stats?.yearly.rank || '-'}</span>
+                                                    <span class="stat-label">Yearly Rank</span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-value">{profile()!.swims}</span>
+                                                    <span class="stat-label">Total Swims</span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-value">{profile()!.booties}</span>
+                                                    <span class="stat-label">Total Booties</span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="stat-value">#{profile()!.swimmer_rank}</span>
+                                                    <span class="stat-label">All Time Rank</span>
+                                                </div>
+                                            </div>
+                                        </Panel>
 
-                                <div class="dual-grid">
-                                    <div class="column">
-                                        <Panel title="Administration & Safety" style="margin-bottom: 2rem;" icon={SHIELD_SVG}>
+                                        <Panel title="Club Status & Roles" icon={GROUP_SVG} class="glass-panel mt-4">
                                             <div class="info-rows">
                                                 <div class="info-row">
                                                     <span>Membership</span>
@@ -495,48 +499,42 @@ export default function ProfilePage() {
                                                 </div>
                                                 <div class="info-row">
                                                     <span>Legal Waiver</span>
-                                                    <span class={`badge ${profile()!.filled_legal_info ? 'success' : 'warning'}`} onClick={() => navigate('/legal')} style="cursor: pointer">
-                                                        {profile()!.filled_legal_info ? 'Signed' : 'Not Signed'}
-                                                    </span>
-                                                </div>
-                                                <div class="info-row">
-                                                    <span>First Aid</span>
-                                                    <span>{profile()!.first_aid_expiry || 'N/A'}</span>
-                                                </div>
-                                                <div class="info-row">
-                                                    <span>Emergency Contact</span>
-                                                    <span>{profile()!.phone_number || 'N/A'}</span>
+                                                    <button 
+                                                        class="small-btn mini-bt no-margin" 
+                                                        classList={{ 
+                                                            'warning': !profile()!.filled_legal_info,
+                                                            'secondary': profile()!.filled_legal_info
+                                                        }} 
+                                                        onClick={() => navigate('/legal')}
+                                                    >
+                                                        {profile()!.filled_legal_info ? 'Signed' : 'Sign Now'}
+                                                    </button>
                                                 </div>
                                                 <div class="info-row">
                                                     <span>Instructor</span>
-                                                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                                        <span class={`badge ${profile()!.is_instructor ? 'primary' : 'neutral'}`}>{profile()!.is_instructor ? 'Active' : 'No'}</span>
-                                                        <button class="small-btn mini-btn" onClick={handleToggleInstructor}>
+                                                    <div>
+                                                        <button class="small-btn mini-bt no-margin" onClick={handleToggleInstructor}>
                                                             {profile()!.is_instructor ? 'Resign' : 'Apply'}
                                                         </button>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="form-actions mt-4">
-                                                <button class="small-btn secondary full-width" onClick={() => setIsEditingSafety(true)}>
-                                                    <span innerHTML={EDIT_SVG} /> Edit Safety Info
-                                                </button>
-                                            </div>
-                                        </Panel>
 
-                                        <Show when={tags()?.length > 0}>
-                                            <Panel title="Groups & Teams" class="no-margin" icon={GROUP_SVG}>
-                                                <div class="tags-list">
-                                                    <For each={tags()}>
-                                                        {(tag) => <Tag name={tag.name} color={tag.color} />}
-                                                    </For>
+                                            <Show when={tags()?.length > 0}>
+                                                <div class="tags-section" style="border-top: 1px solid rgba(var(--pico-color-rgb), 0.1); padding-top: 1rem;">
+                                                    <h4 class="small-title mb-2">My Groups</h4>
+                                                    <div class="tags-list">
+                                                        <For each={tags()}>
+                                                            {(tag) => <Tag name={tag.name} color={tag.color} />}
+                                                        </For>
+                                                    </div>
                                                 </div>
-                                            </Panel>
-                                        </Show>
+                                            </Show>
+                                        </Panel>
                                     </div>
 
-                                    <div class="column">
-                                        <Panel title="Profile Customization" class="no-margin" icon={ID_CARD_SVG}>
+                                    <div class="overview-side">
+                                        <Panel title="Profile Appearance" class="glass-panel" icon={ID_CARD_SVG}>
                                             <div class="profile-avatar-row compact-customization">
                                                 <div class="profile-picture-container" onClick={() => uploadWidget?.inputEl.click()}>
                                                     <Avatar user={profile()!} classes="large" />
@@ -545,7 +543,7 @@ export default function ProfilePage() {
                                                 <div class="profile-avatar-controls">
                                                     <div class="avatar-presets">
                                                         <h4 class="small-title">Colour Presets</h4>
-                                                        <div class="presets-grid" style="grid-template-columns: repeat(10, 1fr); gap: 0.5rem;">
+                                                        <div class="presets-grid" style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
                                                             <For each={colors}>
                                                                 {(color) => (
                                                                     <div
@@ -561,7 +559,7 @@ export default function ProfilePage() {
                                                         <div class="grid mt-4" style="gap: 1rem;">
                                                             <div>
                                                                 <h4 class="small-title">Initials</h4>
-                                                                <div class="presets-grid" style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
+                                                                <div class="presets-grid" style="grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                                                                     <For each={initialsOptions}>
                                                                         {(opt) => (
                                                                             <div
@@ -575,25 +573,27 @@ export default function ProfilePage() {
                                                                     </For>
                                                                 </div>
                                                             </div>
-                                                            <div>
-                                                                <h4 class="small-title">Fonts</h4>
-                                                                <div class="presets-grid" style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
-                                                                    <For each={fonts}>
-                                                                        {(f) => (
-                                                                            <div
-                                                                                class={`preset-item font-preset font-preset-${f.value} profile-avatar-size`}
-                                                                                classList={{ active: profile()!.profile_picture_font === f.value }}
-                                                                                onClick={() => updatePP({ font: f.value })}
-                                                                            >
-                                                                                <Avatar user={{ ...profile()!, profile_picture_font: f.value, profile_picture_path: null }} classes="mini-avatar" />
-                                                                            </div>
-                                                                        )}
-                                                                    </For>
-                                                                </div>
-                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </div>
+                                        </Panel>
+
+                                        <Panel title="Safety & Contact" icon={SHIELD_SVG} class="glass-panel mt-4">
+                                            <div class="info-rows">
+                                                <div class="info-row">
+                                                    <span>Emergency Contact</span>
+                                                    <span>{profile()!.phone_number || 'N/A'}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <span>First Aid</span>
+                                                    <span>{profile()!.first_aid_expiry || 'N/A'}</span>
+                                                </div>
+                                            </div>
+                                            <div class="form-actions mt-4">
+                                                <button class="small-btn secondary full-width" onClick={() => setIsEditingSafety(true)}>
+                                                    <span innerHTML={EDIT_SVG} /> Edit Safety Info
+                                                </button>
                                             </div>
                                         </Panel>
                                     </div>
@@ -621,6 +621,7 @@ export default function ProfilePage() {
                                 <Panel 
                                     title="My Vehicles" 
                                     icon={GROUP_SVG}
+                                    class="glass-panel"
                                     action={
                                         <button class="small-btn primary" onClick={() => handleOpenCarModal()}>
                                             <span innerHTML={ADD_SVG} /> Add Car
@@ -659,6 +660,7 @@ export default function ProfilePage() {
                                 <Panel 
                                     title="Default Kit Requirements" 
                                     icon={KAYAKING_SVG}
+                                    class="glass-panel"
                                 >
                                     <p>Select the equipment you usually need to borrow from the club for trips. These will be your default requests when you join an event.</p>
                                     
@@ -689,7 +691,7 @@ export default function ProfilePage() {
 
                         <Show when={activeTab() === 'balance'}>
                             <section class="dashboard-section active">
-                                <article class="value-header">
+                                <article class="value-header liquid-container glass-panel no-margin">   
                                     <div class="value-info">
                                         <span class="value-title">Current Balance</span>
                                         <div class="value-display" classList={{
@@ -708,7 +710,7 @@ export default function ProfilePage() {
                                     </div>
                                 </article>
 
-                                <Panel title="Transaction History">
+                                <Panel title="Transaction History" class="glass-panel no-margin">
                                     <div class="item-list">
                                         <For each={transactions()} fallback={<p>No transactions found.</p>}>
                                             {(tx) => (
@@ -736,10 +738,10 @@ export default function ProfilePage() {
 
                         <Show when={activeTab() === 'settings'}>
                             <section class="dashboard-section active">
-                                <Panel title="Account Security">
+                                <Panel title="Account Security" class="glass-panel">
                                     <div class="settings-grid">
                                         <div class="two-fa-grid dual-grid mt-4">
-                                            <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
+                                            <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
                                                 <div class="setting-info">
                                                     <strong>Password</strong>
                                                     <p>Manage your account password</p>
@@ -757,7 +759,7 @@ export default function ProfilePage() {
                                                 }}>Change</button>
                                             </div>
 
-                                            <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
+                                            <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
                                                 <div class="setting-info">
                                                     <strong>Authenticator (TOTP)</strong>
                                                     <span class="status-tag" classList={{ 'success': profile()!.totp_enabled, 'warning': !profile()!.totp_enabled }}>
@@ -772,7 +774,7 @@ export default function ProfilePage() {
                                                 </Show>
                                             </div>
 
-                                            <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
+                                            <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
                                                 <div class="setting-info">
                                                     <strong>Passkey</strong>
                                                     <p>{passkeys()?.length || 0} keys registered</p>
@@ -780,7 +782,7 @@ export default function ProfilePage() {
                                                 <button class="small-btn secondary" onClick={() => setIsPasskeyModalOpen(true)}>Manage</button>
                                             </div>
 
-                                            <div class="liquid-container embedded-panel danger-zone" style={{ "--liquid-padding": "1.25rem" }}>
+                                            <div class="liquid-container embedded-panel danger-zone" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
                                                 <div class="setting-info">
                                                     <strong style="color: var(--colour-bad)">Delete Account</strong>
                                                     <p>Permanently remove your account</p>
@@ -800,11 +802,15 @@ export default function ProfilePage() {
                                             </div>
 
                                             <Show when={!isPWAInstalled()}>
-                                                <div class="liquid-container embedded-panel" style={{ "--liquid-padding": "1.25rem" }}>
+                                                <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
                                                     <div class="setting-info">
                                                         <strong>Install App</strong>
                                                         <p>
-                                                            <Show when={isManualInstall()} fallback="Get the official DUCC app for your device">
+                                                            <Show when={isManualInstall()} fallback={
+                                                                deferredPrompt() 
+                                                                    ? "Get the official DUCC app for your device." 
+                                                                    : "Look for the install icon in your address bar, or check your browser menu. If not visible, ensure you have used the site for a few minutes."
+                                                            }>
                                                                 Tap the Share button or menu and select "Add to Home Screen" (or "Add to Dock")
                                                             </Show>
                                                         </p>
@@ -814,9 +820,10 @@ export default function ProfilePage() {
                                                             class="small-btn primary" 
                                                             onClick={installPWA}
                                                             disabled={!deferredPrompt()}
+                                                            title={!deferredPrompt() ? "Browser is still checking if the app can be installed. This usually takes a few moments of browsing." : "Install DUCC"}
                                                         >
                                                             <span innerHTML={DOWNLOAD_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" /> 
-                                                            {deferredPrompt() ? 'Install' : 'Waiting for browser...'}
+                                                            {deferredPrompt() ? 'Install' : 'Preparing...'}
                                                         </button>
                                                     </Show>
                                                 </div>

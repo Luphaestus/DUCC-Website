@@ -3,10 +3,9 @@
 /* Footer */
 footer {
     width: 100%; 
-    @include glass-effect-base;
+    @include liquid-glass(2rem 0, 0);
     z-index: 10;
     border-top: 1px solid var(--glass-highlight); 
-    padding: 2rem 0; 
     margin-top: auto;
     @media (max-width: 768px) { padding-top: 5rem; }
 

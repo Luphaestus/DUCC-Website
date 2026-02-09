@@ -4,7 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import UploadWidget from "@/components/UploadWidget";
-import { IMAGE_SVG, DELETE_SVG, ADD_SVG } from '@/utils/icons';
+import { IMAGE_SVG, DELETE_SVG, ADD_SVG, DRAG_HANDLE_SVG } from '@/utils/icons';
 
 interface Slide {
     id: number;
@@ -14,14 +14,14 @@ interface Slide {
 export default function SlidesPage() {
     const { notify } = useNotifications();
     const [showUpload, setShowUpload] = createSignal(false);
+    const [draggedId, setDraggedId] = createSignal<number | null>(null);
 
-    const [slides, { refetch }] = createResource(async () => {
+    const [slides, { refetch, mutate }] = createResource(async () => {
         const res = await apiRequest('GET', '/api/slides/images');
         return res.slides as Slide[];
     });
 
     const handleDelete = async (fileId: number) => {
-        if (!confirm('Are you sure you want to delete this slide?')) return;
         try {
             await apiRequest('DELETE', '/api/slides', { fileId });
             notify('Success', 'Slide deleted', 'success');
@@ -29,6 +29,39 @@ export default function SlidesPage() {
         } catch (e: any) {
             notify('Error', e.message || 'Failed to delete slide', 'error');
         }
+    };
+
+    const handleDragStart = (id: number) => {
+        setDraggedId(id);
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = async (targetId: number) => {
+        const id = draggedId();
+        if (id === null || id === targetId) return;
+
+        const currentSlides = [...(slides() || [])];
+        const dragIdx = currentSlides.findIndex(s => s.id === id);
+        const targetIdx = currentSlides.findIndex(s => s.id === targetId);
+
+        if (dragIdx === -1 || targetIdx === -1) return;
+
+        // Reorder locally first
+        const [moved] = currentSlides.splice(dragIdx, 1);
+        currentSlides.splice(targetIdx, 0, moved);
+        mutate(currentSlides);
+
+        try {
+            const orders = currentSlides.map((s, i) => ({ fileId: s.id, order: i }));
+            await apiRequest('PUT', '/api/slides/reorder', { orders });
+        } catch (e: any) {
+            notify('Error', 'Failed to save new order', 'error');
+            refetch();
+        }
+        setDraggedId(null);
     };
 
     return (
@@ -56,7 +89,16 @@ export default function SlidesPage() {
                         </Show>
                         <For each={slides()}>
                             {(slide) => (
-                                <div class="image-item slide-item slide-item-bg" style={{ '--slide-url': `url('${slide.url}')` }}>
+                                <div 
+                                    class="image-item slide-item slide-item-bg" 
+                                    style={{ '--slide-url': `url('${slide.url}')` }}
+                                    draggable={true}
+                                    onDragStart={() => handleDragStart(slide.id)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={() => handleDrop(slide.id)}
+                                    classList={{ 'is-dragging': draggedId() === slide.id }}
+                                >
+                                    <div class="drag-handle" innerHTML={DRAG_HANDLE_SVG} />
                                     <div class="slide-actions">
                                         <button class="delete-slide-btn delete-icon-btn" onClick={() => handleDelete(slide.id)} title="Delete Slide" innerHTML={DELETE_SVG} />
                                     </div>
@@ -72,18 +114,6 @@ export default function SlidesPage() {
                     selectMode="single"
                     autoUpload={true}
                     enableLibrary={true}
-                    onUploadComplete={async (id) => {
-                        if (id) {
-                            try {
-                                await apiRequest('POST', '/api/slides/import', { fileId: id });
-                                notify('Success', 'Slide added', 'success');
-                                setShowUpload(false);
-                                refetch();
-                            } catch (e: any) {
-                                notify('Error', e.message, 'error');
-                            }
-                        }
-                    }}
                     onImageSelect={async ({ id }) => {
                         if (id) {
                             try {

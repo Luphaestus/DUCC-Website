@@ -131,18 +131,6 @@ export default function ExecPage() {
     const [selectedUser, setSelectedSelectedUser] = createSignal<any | null>(null);
 
     onMount(() => {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
-
-        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
-
-        onCleanup(() => observer.disconnect());
-
         createMemo(async () => {
             const query = userSearch();
             if (query.length < 2) {
@@ -178,11 +166,11 @@ export default function ExecPage() {
                     <div id="current-exec-grid" class="exec-grid">
                         <For each={groupedCurrent()}>
                             {(group) => (
-                                <div class={`exec-rank-row rank-${group.rank}-row scroll-reveal`}>
+                                <div class={`exec-rank-row rank-${group.rank}-row`}>
                                     <div class="exec-grid">
                                         <For each={group.members}>
                                             {(member) => (
-                                                <article class={`exec-card rank-${group.rank} glass-effect`}>
+                                                <article class={`exec-card rank-${group.rank}`}>
                                                     <div class="exec-image">
                                                         <Show when={group.rank <= 2}>
                                                             <div class="waves"><div class="wave"></div><div class="wave"></div><div class="wave"></div></div>
@@ -215,7 +203,7 @@ export default function ExecPage() {
                 </section>
 
                 <Show when={groupedPast().length > 0}>
-                    <section id="past-exec-section" class="past-exec-section scroll-reveal">
+                    <section id="past-exec-section" class="past-exec-section">
                         <h2>Past Committees</h2>
                         <div id="past-exec-container" class="past-exec-container">
                             <For each={groupedPast()}>
@@ -260,7 +248,7 @@ export default function ExecPage() {
                         <h3>Member Link</h3>
                         <div class="search-field mb-4">
                             <label>Search Existing Member</label>
-                            <div class="glass-input-group">
+                            <div class="glass-input-group liquid-container">
                                 <span class="icon" innerHTML={SEARCH_SVG} />
                                 <input 
                                     type="text" 

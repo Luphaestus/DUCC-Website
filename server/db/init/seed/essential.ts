@@ -5,9 +5,13 @@
  */
 
 import bcrypt from 'bcrypt';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 import { generateRandomPassword } from '../utils.js';
 import Logger from '../../../misc/Logger.js';
 import config from '../../../config.js';
+import Globals from '../../../misc/globals.js';
 import { DatabaseWrapper } from '../../db.js';
 
 /**
@@ -129,6 +133,54 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
             // Sync exec status so they appear on the page
             const ExecDB = (await import('../../execDB.js')).default;
             await ExecDB.syncExecMember(db, adminId!);
+        }
+    }
+
+    // Seed Site Images
+    const siteImages = [
+        { key: 'ClubLogo', filename: 'ducc.png', title: 'Club Logo' },
+        { key: 'MaidenCastleImage', filename: 'maiden-castle-outside.jpg', title: 'Maiden Castle' },
+        { key: 'BoathouseImage', filename: 'boathouse-outside.jpg', title: 'Club Boathouse' }
+    ];
+
+    const globals = new Globals();
+    const uploadDir = config.paths.files;
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+    for (const img of siteImages) {
+        const sourcePath = path.join(path.dirname(new URL(import.meta.url).pathname), 'assets', img.filename);
+        if (!fs.existsSync(sourcePath)) {
+            Logger.warn(`Seed asset not found at ${sourcePath}`);
+            continue;
+        }
+
+        const fileBuffer = fs.readFileSync(sourcePath);
+        const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+        // Check if already in DB
+        let fileId: number | null = null;
+        const existing = await db.get('SELECT id FROM files WHERE hash = ? LIMIT 1', [hash]);
+        
+        if (existing) {
+            fileId = existing.id;
+        } else {
+            const finalFilename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(img.filename)}`;
+            fs.copyFileSync(sourcePath, path.join(uploadDir, finalFilename));
+            
+            const stats = fs.statSync(path.join(uploadDir, finalFilename));
+            const result = await db.run(
+                'INSERT INTO files (title, author, date, size, filename, hash, visibility) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [img.title, 'System', new Date().toISOString().slice(0, 19).replace('T', ' '), stats.size, finalFilename, hash, 'public']
+            );
+            fileId = result.lastID;
+        }
+
+        if (fileId) {
+            try {
+                globals.set(img.key, `/api/files/${fileId}/download?view=true`);
+            } catch (e) {
+                // If regex fails (e.g. key doesn't exist yet), we might need to handle it
+            }
         }
     }
 }

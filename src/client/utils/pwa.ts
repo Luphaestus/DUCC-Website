@@ -41,19 +41,21 @@ export const initPWA = async () => {
         }
     }
 
-    // Capture install prompt
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        console.log("Install prompt captured");
-    });
-
     window.addEventListener('appinstalled', () => {
         setIsPWAInstalled(true);
         setDeferredPrompt(null);
         console.log('PWA installed');
     });
 };
+
+// Capture install prompt as early as possible (top level)
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        console.log("Install prompt captured");
+    });
+}
 
 const urlBase64ToUint8Array = (base64String: string) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);

@@ -65,6 +65,27 @@ export default class SlidesDB {
     }
 
     /**
+     * Update the display order of slides.
+     */
+    static async reorderSlides(db: DatabaseWrapper, orders: { fileId: number; order: number }[]): Promise<statusObject> {
+        try {
+            await db.run('START TRANSACTION');
+            for (const item of orders) {
+                await db.run(
+                    'UPDATE slides SET display_order = ? WHERE file_id = ?',
+                    [item.order, item.fileId]
+                );
+            }
+            await db.run('COMMIT');
+            return new statusObject(200, 'Order updated');
+        } catch (error) {
+            await db.run('ROLLBACK');
+            Logger.error('Database error in reorderSlides:', error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Count the number of slides.
      */
     static async getSlideCount(db: DatabaseWrapper): Promise<statusObject> {

@@ -7,6 +7,15 @@ export default function ShareWeekPage() {
     const [searchParams] = useSearchParams();
     const date = () => searchParams.date ? new Date(searchParams.date as string) : new Date();
 
+    const [logo] = createResource(async () => {
+        try {
+            const res = await apiRequest('GET', '/api/globals/ClubLogo');
+            return res.res?.ClubLogo?.data || "/api/files/1/download?view=true";
+        } catch {
+            return "/api/files/1/download?view=true";
+        }
+    });
+
     const [events] = createResource(date, async (d) => {
         const res = await apiRequest('GET', `/api/admin/events?showPast=true&limit=100`);
         const startOfWeek = new Date(d);
@@ -26,7 +35,7 @@ export default function ShareWeekPage() {
         <div id="share-week-view" class="view">
             <div class="share-container glass-effect" id="capture-area">
                 <header class="share-header">
-                    <img src="/images/misc/ducc.png" alt="DUCC Logo" class="share-logo" />
+                    <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" class="share-logo" />
                     <div class="header-text">
                         <h1>What's On This Week</h1>
                         <p>{date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</p>

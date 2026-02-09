@@ -29,7 +29,7 @@ export default function UploadWidget(props: UploadWidgetProps) {
 
     const [libraryFiles] = createResource(showLibrary, async (open) => {
         if (!open) return [];
-        const res = await apiRequest('GET', '/api/files?limit=50');
+        const res = await apiRequest('GET', '/api/files?limit=200');
         return res.data.files || [];
     });
 
@@ -67,6 +67,13 @@ export default function UploadWidget(props: UploadWidgetProps) {
             }
             const result = props.selectMode === 'single' ? uploadedIds[0] : uploadedIds;
             props.onUploadComplete?.(result);
+            
+            if (props.selectMode === 'single' && uploadedIds.length > 0) {
+                const id = uploadedIds[0];
+                const url = `/api/files/${id}/download?view=true`;
+                props.onImageSelect?.({ url, id });
+            }
+
             setFiles([]);
             notify('Success', 'Upload complete', 'success');
         } catch (e: any) {

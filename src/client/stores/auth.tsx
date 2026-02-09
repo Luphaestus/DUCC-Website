@@ -12,6 +12,7 @@ export interface User {
     email: string;
     is_member: boolean;
     swims: number;
+    booties: number;
     balance: number;
     permissions: string[];
 }
@@ -20,7 +21,7 @@ const [user, { mutate: setUser, refetch: refetchUser }] = createResource<User | 
     try {
         const status = await apiRequest('GET', '/api/auth/status');
         if (status.authenticated) {
-            return await apiRequest('GET', '/api/user/elements/permissions,is_member,id,swims,balance,first_name,last_name,email');
+            return await apiRequest('GET', '/api/user/elements/permissions,is_member,id,swims,booties,balance,first_name,last_name,email');
         }
     } catch (e) {
         return null;

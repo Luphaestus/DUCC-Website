@@ -1,4 +1,5 @@
 @use "../mixins" as *;
+@use "../base" as *;
 
 @keyframes leadership-pulse {
     0% { 
@@ -78,19 +79,7 @@
         z-index: -1;
         pointer-events: none;
         border-radius: 50%;
-        filter: blur(40px);
-    }
-}
-
-/* Scroll Animation Shenanigans */
-.scroll-reveal {
-    opacity: 0;
-    transform: translateY(40px) scale(0.95);
-    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    
-    &.visible {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+        filter: blur(20px);
     }
 }
 
@@ -280,9 +269,8 @@
 .rank-2 {
     flex: 0 1 450px;
     padding: 3rem 2.5rem;
-    @include glass-effect-base;
+    @include liquid-glass;
     border: 1px solid color-mix(in srgb, var(--pico-primary), transparent 85%) !important;
-    animation: leadership-pulse-subtle 6s infinite ease-in-out;
 
     &:hover {
         border-color: color-mix(in srgb, var(--pico-primary), transparent 60%) !important;
@@ -394,28 +382,7 @@
         }
 
         .glass-input-group {
-            position: relative;
-            display: flex;
-            align-items: center;
-
-            .icon {
-                position: absolute;
-                left: 1rem;
-                display: flex;
-                align-items: center;
-                pointer-events: none;
-                opacity: 0.5;
-                
-                svg, span:has(svg) {
-                    width: 1.2rem;
-                    height: 1.2rem;
-                }
-            }
-
-            input {
-                padding-left: 3rem !important;
-                margin-bottom: 0;
-            }
+            @extend .glass-input-group;
         }
 
         #exec-user-results {
@@ -491,7 +458,7 @@
     align-items: center;
     gap: 1.25rem;
     padding: 1.5rem;
-    @include glass-effect-base;
+    @include liquid-glass;
     border: 1px solid color-mix(in srgb, var(--pico-color), transparent 96%);
     border-radius: 1.5rem;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);

@@ -21,13 +21,18 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: resolve(__dirname, 'dist'),
-    emptyOutDir: mode === 'production',
+    emptyOutDir: true,
     sourcemap: true,
     minify: mode === 'production',
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/client/index.html'),
       },
+      output: {
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`
+      }
     },
   },
 }));

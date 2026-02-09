@@ -1,11 +1,5 @@
 @use "../mixins" as *;
 
-.panel-transparent {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
 .item-list-scroll {
     max-height: 400px;
     overflow-y: auto;
@@ -32,10 +26,6 @@
     gap: 0.5rem;
 }
 
-.quote-card {
-    @extend .panel-transparent;
-}
-
 .event-image-header {
     background-image: var(--event-image-url);
 }
@@ -47,10 +37,6 @@
 
 .tag-badge-simple {
     background-color: var(--tag-colour);
-}
-
-.dashboard-card {
-    @extend .panel-transparent;
 }
 
 .upload-preview-image {
@@ -106,7 +92,7 @@
 }
 
 .pagination-disabled {
-    opacity: 0.5;
+    opacity: 1;
     cursor: not-allowed !important;
 }
 

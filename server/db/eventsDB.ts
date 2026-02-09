@@ -16,17 +16,17 @@ import NotificationsAPI from '../api/NotificationsAPI.js';
 
 interface EventData {
     id?: number;
-    title: string;
-    description: string;
-    location: string;
-    start: Date | string;
-    end: Date | string;
-    difficulty_level: number;
-    max_attendees: number;
-    upfront_cost: number;
-    tags?: number[];
-    signup_required: boolean;
-    is_offsite: boolean;
+    title?: string;
+    description?: string;
+    location?: string;
+    start?: Date | string;
+    end?: Date | string;
+    difficulty_level?: number;
+    max_attendees?: number;
+    upfront_cost?: number;
+    tags?: (number | any)[];
+    signup_required?: boolean;
+    is_offsite?: boolean;
     image_id?: number | null;
     upfront_refund_cutoff?: Date | string | null;
     status?: 'confirmed' | 'pending' | 'scheduled';
@@ -95,7 +95,7 @@ export default class EventsDB {
             if (bestTag) {
                 event.image_url = `/api/files/${bestTag.image_id}/download?view=true`;
             } else {
-                event.image_url = new Globals().get('DefaultEventImage')?.data || '/images/misc/ducc.png';
+                event.image_url = new Globals().get('DefaultEventImage')?.data || '/api/files/1/download?view=true';
             }
         }
         return event;
@@ -355,13 +355,16 @@ export default class EventsDB {
             const eventId = result.lastID;
 
             if (tags && Array.isArray(tags)) {
-                for (const tagId of tags) await TagsDB.associateTag(tx, eventId, tagId);
+                for (const tag of tags) {
+                    const tagId = typeof tag === 'object' ? tag.id : tag;
+                    await TagsDB.associateTag(tx, eventId, tagId);
+                }
             }
 
             return new statusObject(201, null, { id: eventId });
         }).catch((error: any) => {
             Logger.error(error);
-            return new statusObject(500, 'Database error');
+            return new statusObject(500, 'Database error: ' + error.message);
         });
     }
 
@@ -370,7 +373,11 @@ export default class EventsDB {
      */
     static async updateEvent(db: DatabaseWrapper, id: number, data: EventData): Promise<statusObject> {
         return db.transaction(async (tx) => {
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff, status, visible_at } = data;
+            const existing = await tx.get('SELECT * FROM events WHERE id = ?', [id]);
+            if (!existing) return new statusObject(404, 'Event not found');
+
+            const merged = { ...existing, ...data };
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff, status, visible_at } = merged;
 
             if (!signup_required && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
@@ -383,7 +390,10 @@ export default class EventsDB {
 
             if (tags && Array.isArray(tags)) {
                 await TagsDB.clearEventTags(tx, id);
-                for (const tagId of tags) await TagsDB.associateTag(tx, id, tagId);
+                for (const tag of tags) {
+                    const tagId = typeof tag === 'object' ? tag.id : tag;
+                    await TagsDB.associateTag(tx, id, tagId);
+                }
             }
 
             return new statusObject(200, 'Event updated');
@@ -475,7 +485,7 @@ export default class EventsDB {
         if (bestTag) {
             return `/api/files/${bestTag.image_id}/download?view=true`;
         } else {
-            return new Globals().get('DefaultEventImage')?.data || '/images/misc/ducc.png';
+            return new Globals().get('DefaultEventImage')?.data || '/api/files/1/download?view=true';
         }
     }
 }

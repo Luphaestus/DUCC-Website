@@ -1,10 +1,10 @@
 // todo clean up
-import { createSignal, createResource, For, Show, onMount, onCleanup, createMemo, createEffect } from "solid-js";
-import { useSearchParams, useNavigate } from "@solidjs/router";
+import { createSignal, createResource, For, Show, onMount, onCleanup, createMemo, createEffect, ParentProps } from "solid-js";
+import { useSearchParams, useNavigate, useLocation } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import {
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG,
-    REFRESH_SVG, SETTINGS_SVG
+    REFRESH_SVG, SETTINGS_SVG, DASHBOARD_SVG, POOL_SVG
 } from '@/utils/icons';
 import { StandardCard, EventData } from '../widgets/StandardCard';
 import { useAuth } from "@/stores/auth";
@@ -23,13 +23,21 @@ interface PageData {
     endDate: string;
 }
 
-export default function EventsPage() {
+export default function EventsPage(props: ParentProps) {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, isAdmin } = useAuth();
     const [isRefreshing, setIsRefreshing] = createSignal(false);
     const [oldPageData, setOldData] = createSignal<PageData | null>(null);
     const [isTransitioning, setIsTransitioning] = createSignal(false);
+    const [viewMode, setViewMode] = createSignal<'list' | 'weekly'>((localStorage.getItem('events_view_mode') as any) || 'list');
+
+    const toggleViewMode = () => {
+        const next = viewMode() === 'list' ? 'weekly' : 'list';
+        setViewMode(next);
+        localStorage.setItem('events_view_mode', next);
+    };
 
     const page = () => {
         const p = searchParams.page;
@@ -125,60 +133,160 @@ export default function EventsPage() {
         return groups;
     };
 
+    const isToday = (date: Date) => {
+        const today = new Date();
+        return date.getDate() === today.getDate() &&
+               date.getMonth() === today.getMonth() &&
+               date.getFullYear() === today.getFullYear();
+    };
+
+    const getEventStyle = (event: EventData) => {
+        const start = new Date(event.start);
+        const end = new Date(event.end);
+        const startMinutes = start.getHours() * 60 + start.getMinutes();
+        const top = (startMinutes / 1440) * 100;
+        let duration = (end.getTime() - start.getTime()) / (1000 * 60);
+        if (duration < 45) duration = 45; 
+        const height = (duration / 1440) * 100;
+        return { top: `${top}%`, height: `${height}%`, left: '4px', right: '4px' };
+    };
+
+    const WeeklyGridView = (props: { data: PageData | null | undefined }) => {
+        const days = createMemo(() => {
+            if (!props.data) return [];
+            const start = new Date(props.data.startDate);
+            const d = [];
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(start);
+                day.setDate(start.getDate() + i);
+                d.push(day);
+            }
+            return d;
+        });
+
+        return (
+            <div class="events-page-content weekly-mode liquid-container">
+                <div class="week-grid-container">
+                    <div class="time-gutter">
+                        <div class="time-header-spacer" style="height: 60px;"></div>
+                        <For each={Array.from({length: 24})}>{(_, i) => (
+                            <div class="time-label"><span>{i()}:00</span></div>
+                        )}</For>
+                    </div>
+                    <div class="day-columns">
+                        <For each={days()}>
+                            {(day) => (
+                                <div class="day-column" classList={{ 'today': isToday(day) }}>
+                                    <div class="day-header">
+                                        <span class="day-name">{day.toLocaleDateString('en-UK', { weekday: 'short' })}</span>
+                                        <span class="day-num">{day.getDate()}</span>
+                                    </div>
+                                    <div class="day-slots">
+                                        <For each={Array.from({length: 24})}>{() => <div class="hour-slot"></div>}</For>
+                                        <Show when={isToday(day)}>
+                                            <div class="current-time-line" style={{ top: `${currentTimePosition()}%` }}>
+                                                <div class="time-dot"></div>
+                                            </div>
+                                        </Show>
+                                        <For each={props.data?.events.filter(e => new Date(e.start).toDateString() === day.toDateString()) || []}>
+                                            {(event) => (
+                                                <div 
+                                                    class="grid-event" 
+                                                    classList={{ 'canceled': event.is_canceled, 'past': new Date(event.end) < new Date() }}
+                                                    style={getEventStyle(event)}
+                                                    onClick={() => navigate(`/events/${event.id}${location.search}`)}
+                                                >
+                                                    <div class="event-time">{new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                    <div class="event-title">{event.title}</div>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                </div>
+                            )}
+                        </For>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const EventList = (props: { data: PageData | null | undefined }) => (
-        <div class="events-page">
-            <For each={getGroupedEvents(props.data)}>
-                {(group) => (
-                    <div class="day-group scroll-reveal">
-                        <div 
-                            class="liquid-container date-strip-container" 
-                            style={{ 
-                                "--liquid-padding": "0.25rem 1rem", 
-                                "--liquid-border-radius": "12px",
-                                margin: '1rem 0 1.5rem 0', 
-                                width: 'fit-content' 
-                            }}
-                            {...{ paused: isTransitioning() } as any}
-                        >
-                            <div class="date-strip">
-                                <span class="date-num">{group.date.getDate()}</span>
-                                <div class="date-text-group">
-                                    <span class="day-name">{group.date.toLocaleDateString('en-UK', { weekday: 'long' })}</span>
-                                    <div class="date-line"></div>
-                                    <span class="month-name">{group.date.toLocaleDateString('en-UK', { month: 'short' })}</span>
+        <Show when={viewMode() === 'weekly' && isDesktop()} fallback={
+            <div class="events-page-content">
+                <For each={getGroupedEvents(props.data)}>
+                    {(group) => (
+                        <div class="day-group">
+                            <div class="date-strip-container" style={{ margin: '2.5rem 0 1.5rem 0' }}>
+                                <div class="date-strip">
+                                    <span class="date-num">{group.date.getDate()}</span>
+                                    <div class="date-text-group">
+                                        <span class="day-name">{group.date.toLocaleDateString('en-UK', { weekday: 'long' })}</span>
+                                        <div class="date-line"></div>
+                                        <span class="month-name">{group.date.toLocaleDateString('en-UK', { month: 'short' })}</span>
+                                    </div>
                                 </div>
                             </div>
+                            <div class="day-events-grid">
+                                <For each={group.events}>
+                                    {(event) => <StandardCard event={event} paused={isTransitioning()} />}
+                                </For>
+                            </div>
                         </div>
-                        <div class="day-events-grid">
-                            <For each={group.events}>
-                                {(event) => <StandardCard event={event} paused={isTransitioning()} />}
-                            </For>
-                        </div>
-                    </div>
-                )}
-            </For>
-        </div>
+                    )}
+                </For>
+            </div>
+        }>
+            <WeeklyGridView data={props.data} />
+        </Show>
     );
+
+    const [isDesktop, setIsDesktop] = createSignal(window.innerWidth > 992);
+    const [now, setNow] = createSignal(new Date());
+
+    onMount(() => {
+        const timer = setInterval(() => setNow(new Date()), 60000);
+        const handleResize = () => {
+            const desktop = window.innerWidth > 992;
+            setIsDesktop(desktop);
+            if (!desktop && viewMode() === 'weekly') {
+                setViewMode('list');
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        onCleanup(() => {
+            clearInterval(timer);
+            window.removeEventListener('resize', handleResize);
+        });
+    });
+
+    const currentTimePosition = () => {
+        const d = now();
+        return ((d.getHours() * 60 + d.getMinutes()) / 1440) * 100;
+    };
 
     return (
         <div id="events-view" class="view small-container">
             <PageTitle text="Upcoming Events" />
             <div class="events-controls-modern">
-                <div 
-                    class="liquid-container combined-controls" 
-                    style={{ "--liquid-padding": "0.5rem 1.25rem" }} 
-                    {...{ paused: isTransitioning() } as any}
-                >
-                    <div class="admin-control-wrapper">
-                        <Show when={isAdmin()} fallback={<div class="placeholder-btn" />}>
+                <div class="admin-control-wrapper">
+                    <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 0.75rem" }} {...{ paused: isTransitioning() } as any}>
+                        <Show when={isAdmin()} fallback={
+                            <button class="view-toggle-btn" title="Toggle View" onClick={toggleViewMode}>
+                                <span innerHTML={viewMode() === 'list' ? POOL_SVG : DASHBOARD_SVG} />
+                                <span class="btn-text">{viewMode() === 'list' ? 'Weekly' : 'List'}</span>
+                            </button>
+                        }>
                             <button class="admin-link-btn" title="Event Admin" onClick={() => navigate('/admin/events')}>
                                 <span innerHTML={SETTINGS_SVG} />
                                 <span class="btn-text">Admin</span>
                             </button>
                         </Show>
                     </div>
+                </div>
 
-                    <div class="week-navigator">
+                <div class="week-navigator">
+                    <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 1.25rem" }} {...{ paused: isTransitioning() } as any}>
                         <button class="nav-btn prev-week" title="Previous Page" onClick={() => setSearchParams({ page: page() - 1 })}>
                             <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
                         </button>
@@ -189,8 +297,15 @@ export default function EventsPage() {
                             <span innerHTML={ARROW_FORWARD_IOS_SVG} />
                         </button>
                     </div>
+                </div>
 
-                    <div class="today-control-wrapper">
+                <div class="today-control-wrapper">
+                    <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 0.75rem" }} {...{ paused: isTransitioning() } as any}>
+                        <Show when={isAdmin()}>
+                            <button class="view-toggle-btn mr-2" title="Toggle View" onClick={toggleViewMode}>
+                                <span innerHTML={viewMode() === 'list' ? POOL_SVG : DASHBOARD_SVG} />
+                            </button>
+                        </Show>
                         <button 
                             class="today-btn" 
                             classList={{ disabled: page() === 0, 'spin-active': isRefreshing() }} 
@@ -219,6 +334,7 @@ export default function EventsPage() {
                     <EventList data={pageData()} />
                 </PaginationSlider>
             </div>
+            {props.children}
         </div>
     );
 }

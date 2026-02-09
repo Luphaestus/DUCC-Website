@@ -1,10 +1,10 @@
 // todo clean up
 import { createSignal, createResource, onMount, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
-import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG } from '@/utils/icons';
+import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG } from '@/utils/icons';
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
-import { useNavigate } from "@solidjs/router";
+import { useNavigate, useSearchParams } from "@solidjs/router";
 
 interface FileCategory {
     id: string;
@@ -30,18 +30,21 @@ interface FilesPageData {
 
 export default function FilesPage() {
     const navigate = useNavigate();
-    const [search, setSearch] = createSignal("");
-    const [categoryId, setCategoryId] = createSignal("");
-    const [page, setPage] = createSignal(1);
-    const [sort, setSort] = createSignal("date");
-    const [order, setOrder] = createSignal("desc");
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const search = () => searchParams.search || "";
+    const categoryId = () => searchParams.categoryId || "";
+    const page = () => parseInt(searchParams.page || "1");
+    const sort = () => searchParams.sort || "date";
+    const order = () => searchParams.order || "desc";
+
     const [canManage, setCanManage] = createSignal(false);
     const [categories, setCategories] = createSignal<FileCategory[]>([]);
     const [oldFilesData, setOldFilesData] = createSignal<any>(null);
 
-    const [filesData] = createResource<FilesPageData, any>(() => ({ 
-        page: page(), 
-        search: search(), 
+    const [filesData] = createResource<FilesPageData, any>(() => ({
+        page: page(),
+        search: search(),
         categoryId: categoryId(),
         sort: sort(),
         order: order()
@@ -59,7 +62,7 @@ export default function FilesPage() {
             order: params.order,
             categoryId: params.categoryId
         });
-        const res = await apiRequest('GET', `/api/files?${query.toString()}`);
+        const res = await apiRequest('GET', `/api/files?${query.toString()}`, true);
         return { ...res.data, search: params.search, categoryId: params.categoryId } as { files: FileEntry[]; totalPages: number, search: string, categoryId: string };
     });
 
@@ -68,10 +71,10 @@ export default function FilesPage() {
             const userData = await apiRequest('GET', '/api/user/elements/permissions').catch(() => ({}));
             const perms = userData.permissions || [];
             setCanManage(perms.includes('file.write') || perms.includes('file.edit') || false);
-            
-            const catsRes = await apiRequest('GET', '/api/file-categories');
+
+            const catsRes = await apiRequest('GET', '/api/file-categories', true);
             setCategories(catsRes.data || []);
-        } catch (e) {}
+        } catch (e) { }
     });
 
     const formatSize = (bytes: number) => {
@@ -84,10 +87,9 @@ export default function FilesPage() {
 
     const toggleSort = (field: string) => {
         if (sort() === field) {
-            setOrder(order() === 'asc' ? 'desc' : 'asc');
+            setSearchParams({ order: order() === 'asc' ? 'desc' : 'asc', page: 1 });
         } else {
-            setSort(field);
-            setOrder('asc');
+            setSearchParams({ sort: field, order: 'asc', page: 1 });
         }
     };
 
@@ -103,7 +105,7 @@ export default function FilesPage() {
                     ]}>
                         {(c) => (
                             <th class="sortable" onClick={() => toggleSort(c.sort)}>
-                                {c.label} 
+                                {c.label}
                                 <span innerHTML={sort() === c.sort ? (order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG} />
                             </th>
                         )}
@@ -155,47 +157,44 @@ export default function FilesPage() {
                     <Show when={canManage()}>
                         <button class="secondary" onClick={() => navigate('/admin/files')}>Manage Files</button>
                     </Show>
-                    <div class="search-box">
+                    <div class="search-box liquid-container">
                         <span class="icon" innerHTML={SEARCH_SVG} />
-                        <input 
-                            type="text" 
-                            placeholder="Search title, content or filename:" 
+                        <input
+                            type="text"
+                            placeholder="Search title, content or filename:"
                             value={search()}
                             onInput={(e) => {
-                                setSearch(e.currentTarget.value);
-                                setPage(1);
+                                setSearchParams({ search: e.currentTarget.value, page: 1 });
                             }}
                         />
                     </div>
-                    <select value={categoryId()} onChange={(e) => {
-                        setCategoryId(e.currentTarget.value);
-                        setPage(1);
-                    }}>
-                        <option value="">All Categories</option>
-                        <For each={categories()}>
-                            {(c) => <option value={c.id}>{c.name}</option>}
-                        </For>
-                    </select>
+                    <div class="glass-input-group liquid-container" style="width: auto; min-width: 200px;">
+                        <span class="icon" innerHTML={FILTER_LIST_SVG} />
+                        <select value={categoryId()} onChange={(e) => {
+                            setSearchParams({ categoryId: e.currentTarget.value, page: 1 });
+                        }}>
+                            <option value="">All Categories</option>
+                            <For each={categories()}>
+                                {(c) => <option value={c.id}>{c.name}</option>}
+                            </For>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div class="liquid-container files-table-wrapper" style={{ "--liquid-padding": "0" }}>
-                <Show when={filesData.loading && !filesData() && !oldFilesData()}>
-                    <p class="text-centre">Loading...</p>
-                </Show>
-
-                <PaginationSlider 
-                    currentPage={page()} 
+            <div class="liquid-container files-table-wrapper">
+                <PaginationSlider
+                    currentPage={page()}
                     oldContent={<FileTable data={oldFilesData()} />}
                 >
                     <FileTable data={filesData()} />
                 </PaginationSlider>
             </div>
 
-            <Pagination 
-                currentPage={page()} 
-                totalPages={filesData()?.totalPages || 0} 
-                onPageChange={setPage} 
+            <Pagination
+                currentPage={page()}
+                totalPages={filesData()?.totalPages || 0}
+                onPageChange={(p) => setSearchParams({ page: p })}
             />
         </div>
     );

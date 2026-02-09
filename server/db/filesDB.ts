@@ -44,7 +44,7 @@ export default class FilesDB {
             }
 
             if (useFts && searchTerm) {
-                const cleanedSearch = searchTerm.replace(/"/g, '');
+                const cleanedSearch = searchTerm.replace(/[+\-><()~*"]/g, ' ');
                 const ftsQuery = cleanedSearch.split(/\s+/).filter((s: string) => s).map((s: string) => `+${s}*`).join(' ');
                 
                 conditions.push("MATCH (d.title, d.filename, d.content) AGAINST (? IN BOOLEAN MODE)");

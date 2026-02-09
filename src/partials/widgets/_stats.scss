@@ -11,9 +11,7 @@
     }
 
     .stat-item {
-        @include glass-effect-base;
-        padding: 1rem;
-        border-radius: var(--border-radius-md);
+        @include liquid-glass(1rem, var(--border-radius-md));
         text-align: center;
 
         .stat-value {

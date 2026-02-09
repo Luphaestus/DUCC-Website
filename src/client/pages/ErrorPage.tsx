@@ -15,6 +15,7 @@ interface ErrorViewProps {
   message: string;
   viewId: string;
   hidden?: boolean;
+  iconClass?: string;
 }
 
 export function ErrorView(props: ErrorViewProps) {
@@ -42,12 +43,12 @@ export function ErrorView(props: ErrorViewProps) {
 
   return (
     <div id={props.id} class="view" classList={{ 'hidden': props.hidden ?? false }}>
-      <div class="container" style="text-align: center; padding: 4rem 1rem;">
-        <div class="error-icon" style="margin-bottom: 2rem;">
+      <div class="container" style="text-align: center; padding: 4rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div class={`error-icon ${props.iconClass || ''}`} style="margin-bottom: 2rem;">
           <span style="display: block; width: 80px; height: 80px; margin: 0 auto;" innerHTML={props.icon} />
         </div>
-        <h1>{props.title}</h1>
-        <p style="font-size: 1.2rem; opacity: 0.8; margin-bottom: 2rem;" innerHTML={props.message} />
+        <h1 style="text-align: center; justify-content: center;">{props.title}</h1>
+        <p style="font-size: 1.2rem; opacity: 0.8; margin-bottom: 2rem; text-align: center;" innerHTML={props.message} />
         <div class="error-actions" style="display: flex; gap: 1rem; justify-content: center;">
           <Show when={checking()}>
             <button disabled aria-busy="true" class="secondary outline">Checking status...</button>

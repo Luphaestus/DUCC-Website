@@ -1,4 +1,4 @@
-import { useNavigate } from "@solidjs/router";
+import { useNavigate, useLocation } from "@solidjs/router";
 import {
     CHECK_SVG, LOCATION_ON_SVG, SCHEDULE_SVG, GROUP_SVG, CURRENCY_POUND_SVG
 } from '@/utils/icons';
@@ -35,7 +35,7 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
     const startTime = () => startDate().toLocaleTimeString('en-UK', timeOptions);
     const endTime = () => endDate().toLocaleTimeString('en-UK', timeOptions);
 
-    const imageUrl = () => props.event.image_url || '/images/misc/ducc.png';
+    const imageUrl = () => props.event.image_url || '/api/files/1/download?view=true';
     
     const count = () => props.event.attendee_count !== undefined ? Number(props.event.attendee_count) : 0;
     const max = () => props.event.max_attendees;
@@ -56,7 +56,7 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
                 'unavailable-event': props.event.can_attend === false && !props.event.is_attending,
                 'no-blur': true
             }} 
-            onClick={() => navigate(`/event/${props.event.id}`)} 
+            onClick={() => navigate(`/events/${props.event.id}${location.search}`)} 
             role="button" 
             tabindex="0"
             {...{ paused: props.paused } as any}

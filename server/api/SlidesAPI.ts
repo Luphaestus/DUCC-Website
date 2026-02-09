@@ -73,6 +73,17 @@ export default class SlidesAPI {
         });
 
         /**
+         * Reorder slides.
+         */
+        this.app.put<{ Body: { orders: { fileId: number; order: number }[] } }>('/api/slides/reorder', { preHandler: [check('file.write')] }, async (request, reply) => {
+            const { orders } = request.body;
+            if (!orders || !Array.isArray(orders)) return reply.status(400).send({ message: 'orders array is required' });
+
+            const status = await SlidesDB.reorderSlides(this.db, orders);
+            return status.getResponse(reply);
+        });
+
+        /**
          * Remove a slide from the slideshow.
          */
         this.app.delete<{ Body: { fileId: string } }>('/api/slides', { preHandler: [check('file.write')] }, async (request, reply) => {

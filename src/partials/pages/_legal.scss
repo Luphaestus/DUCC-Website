@@ -44,6 +44,7 @@
   }
 
   .glass-panel {
+    @include liquid-glass(1.5rem, var(--border-radius-lg));
     fieldset {
       margin-bottom: 1rem;
       border: none;

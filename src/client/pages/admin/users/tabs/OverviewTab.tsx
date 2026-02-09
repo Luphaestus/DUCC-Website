@@ -97,14 +97,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 class="no-margin"
                 title="Swimming Stats"
                 icon={POOL_SVG}
-                action={
-                    <Show when={canManageSwims()}>
-                        <div class="panel-actions">
-                            <button class="small-btn" onClick={() => handleLogAction('swims')}><span innerHTML={ADD_SVG} /> Log Swim</button>
-                            <button class="small-btn secondary" onClick={() => handleLogAction('booties')}><span innerHTML={ADD_SVG} /> Log Bootie</button>
-                        </div>
-                    </Show>
-                }
+                titleCentered={true}
             >
                 <div class="stats-grid">
                     <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.yearly?.swims || 0}</span><span class="stat-label">Yearly Swims</span></div>
@@ -112,6 +105,12 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                     <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.allTime?.swims || 0}</span><span class="stat-label">Total Swims</span></div>
                     <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.allTime?.booties || 0}</span><span class="stat-label">Total Booties</span></div>
                 </div>
+                <Show when={canManageSwims()}>
+                    <div class="panel-actions-centered mt-6" style="display: flex; justify-content: center; gap: 1rem;">
+                        <button class="small-btn primary" onClick={() => handleLogAction('swims')}><span innerHTML={ADD_SVG} /> Log Swim</button>
+                        <button class="small-btn secondary" onClick={() => handleLogAction('booties')}><span innerHTML={ADD_SVG} /> Log Bootie</button>
+                    </div>
+                </Show>
             </Panel>
         </div>
     );

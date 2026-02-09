@@ -36,6 +36,15 @@
     }
 }
 
+.critical-error-icon {
+    color: #e74c3c !important;
+    
+    svg {
+        height: 120px !important;
+        width: 120px !important;
+    }
+}
+
 /* No Internet Overlay Override */
 #no-connection-view {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;

@@ -112,6 +112,7 @@ export class Modal {
         if (this.element) {
             this.element.classList.add('hidden');
             this.element.classList.remove('visible');
+            this.element.classList.remove('modal-display');
             
             if (this._isVisible) {
                 Modal.decrement();
@@ -123,6 +124,7 @@ export class Modal {
     show() {
         if (this.element) {
             this.element.classList.remove('hidden');
+            this.element.classList.add('modal-display');
     
             requestAnimationFrame(() => {
                 if (this.element) this.element.classList.add('visible');

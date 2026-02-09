@@ -29,14 +29,12 @@
     .swims-toggle-container {
         display: flex;
         justify-content: center;
-        margin-bottom: 2rem;
+        margin-bottom: 3rem;
         position: relative;
         z-index: 5;
 
         .toggle-wrapper {
-            @include glass-panel;
-            border-radius: var(--border-radius-pill);
-            padding: 0.25rem;
+            @include liquid-glass(0.25rem, var(--border-radius-pill));
             display: flex;
             position: relative;
 
@@ -148,7 +146,7 @@
         justify-content: center;
         align-items: flex-end;
         height: 480px;
-        margin: 4rem auto 0;
+        margin: 5rem auto 0;
         width: 100%;
         max-width: 600px;
         z-index: 1;
@@ -176,11 +174,19 @@
             text-align: center;
             flex: 1;
             position: relative;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             min-width: 0;
 
             &:hover {
-                transform: translateY(-8px);
+                .podium-step {
+                    height: calc(var(--podium-height) + 20px) !important;
+                }
+
+                @media (max-width: 600px) {
+                    .podium-step {
+                        height: calc(var(--podium-mobile-height) + 15px) !important;
+                    }
+                }
 
                 .crown-icon,
                 .medal-icon {
@@ -262,9 +268,8 @@
 
             .podium-step {
                 width: 100%;
-                @include glass-effect-base;
+                @include liquid-glass(null, var(--border-radius-md) var(--border-radius-md) 0 0);
                 border-bottom: none;
-                border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -272,6 +277,12 @@
                 padding-top: 1.5rem;
                 position: relative;
                 overflow: hidden;
+                height: var(--podium-height);
+                transition: height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+                @media (max-width: 600px) {
+                    height: var(--podium-mobile-height);
+                }
 
                 &::after {
                     content: '';
@@ -331,14 +342,13 @@
             &.gold {
                 order: 2;
                 z-index: 3;
+                --podium-height: 320px;
+                --podium-mobile-height: 260px;
 
                 .podium-step {
-                    height: 320px;
                     background: linear-gradient(180deg, rgba(255, 215, 0, 0.25) 0%, var(--glass-bg) 100%);
                     border-color: rgba(255, 215, 0, 0.4);
                     box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), var(--shadow-glass);
-
-                    @media (max-width: 600px) { height: 260px; }
                 }
 
                 .rank-circle { background: linear-gradient(135deg, #f1c40f, #d4af37); }
@@ -348,13 +358,12 @@
             &.silver {
                 order: 1;
                 z-index: 2;
+                --podium-height: 240px;
+                --podium-mobile-height: 190px;
 
                 .podium-step {
-                    height: 240px;
                     background: linear-gradient(180deg, rgba(192, 192, 192, 0.2) 0%, var(--glass-bg) 100%);
                     border-color: rgba(192, 192, 192, 0.4);
-
-                    @media (max-width: 600px) { height: 190px; }
                 }
 
                 .rank-circle { background: linear-gradient(135deg, #bdc3c7, #95a5a6); }
@@ -364,13 +373,12 @@
             &.bronze {
                 order: 3;
                 z-index: 1;
+                --podium-height: 200px;
+                --podium-mobile-height: 150px;
 
                 .podium-step {
-                    height: 200px;
                     background: linear-gradient(180deg, rgba(205, 127, 50, 0.2) 0%, var(--glass-bg) 100%);
                     border-color: rgba(205, 127, 50, 0.4);
-
-                    @media (max-width: 600px) { height: 150px; }
                 }
 
                 .rank-circle { background: linear-gradient(135deg, #cd7f32, #a0522d); }
@@ -382,7 +390,6 @@
     /* Leaderboard List */
     .leaderboard-container-list {
         width: 100%;
-        margin-top: -1rem;
         margin-bottom: 2rem;
         position: relative;
         z-index: 4;
@@ -420,15 +427,17 @@
                 display: grid;
                 grid-template-columns: 3.5rem 1fr auto;
                 align-items: center;
-                padding: 0.75rem 1.25rem;
+                @include liquid-glass(0.75rem 1.25rem, var(--border-radius-md));
                 gap: 1rem;
-                border-radius: var(--border-radius-md);
-                @include glass-effect-base;
                 transition: transform 0.2s ease, background 0.2s ease;
 
                 &:hover {
                     transform: scale(1.005);
                     background: var(--glass-highlight);
+                }
+
+                &.clickable {
+                    cursor: pointer;
                 }
 
                 &.highlight {

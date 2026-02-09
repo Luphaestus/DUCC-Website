@@ -266,7 +266,10 @@ export default function CalendarView() {
         }
     };
 
+    const [longPressTimer, setLongPressTimer] = createSignal<any>(null);
+
     const handleEventMouseDown = (e: MouseEvent, event: CalendarEvent) => {
+        if (e.button !== 0) return; // Only left click for dragging
         e.stopPropagation();
         e.preventDefault();
         setDragState({
@@ -276,21 +279,36 @@ export default function CalendarView() {
         });
     };
 
-    // Global Key Listener for Copy/Paste
-    const handleKeyDown = (e: KeyboardEvent) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-           // Copy logic requires selection. For now, we only have context menu copy.
+    const handleTouchStart = (e: TouchEvent, event: CalendarEvent) => {
+        const touch = e.touches[0];
+        const timer = setTimeout(() => {
+            setContextMenu({ x: touch.clientX, y: touch.clientY, event });
+            setLongPressTimer(null);
+        }, 500); // 500ms for long press
+        setLongPressTimer(timer);
+    };
+
+    const handleTouchEnd = () => {
+        const timer = longPressTimer();
+        if (timer) {
+            clearTimeout(timer);
+            setLongPressTimer(null);
         }
     };
 
+    // --- Global Click to close context menu ---
     onMount(() => {
+        const handleGlobalClick = () => setContextMenu(null);
+        window.addEventListener('click', handleGlobalClick);
         window.addEventListener('mouseup', handleMouseUp);
+        window.addEventListener('touchend', handleMouseUp);
         window.addEventListener('keydown', handleKeyDown);
-    });
-
-    onCleanup(() => {
-        window.removeEventListener('mouseup', handleMouseUp);
-        window.removeEventListener('keydown', handleKeyDown);
+        onCleanup(() => {
+            window.removeEventListener('click', handleGlobalClick);
+            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('touchend', handleMouseUp);
+            window.removeEventListener('keydown', handleKeyDown);
+        });
     });
 
     // Helper for move drag
@@ -423,6 +441,8 @@ export default function CalendarView() {
                                                     class={`calendar-event status-${event.status}`}
                                                     style={style}
                                                     onMouseDown={(e) => handleEventMouseDown(e, event)}
+                                                    onTouchStart={(e) => handleTouchStart(e, event)}
+                                                    onTouchEnd={handleTouchEnd}
                                                     onContextMenu={(e) => {
                                                         e.preventDefault();
                                                         setContextMenu({ x: e.clientX, y: e.clientY, event });

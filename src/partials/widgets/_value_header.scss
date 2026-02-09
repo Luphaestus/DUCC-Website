@@ -1,8 +1,7 @@
 @use "../mixins" as *;
 
 .value-header {
-    @include glass-panel;
-    padding: 2rem;
+    @include liquid-glass(2rem, var(--border-radius-lg));
     display: flex;
     justify-content: space-between;
     align-items: center;

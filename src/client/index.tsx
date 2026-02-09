@@ -4,7 +4,7 @@ import { Router, Route } from "@solidjs/router";
 import { lazy, onMount, onCleanup } from "solid-js";
 import App from "./App";
 import "../styles.scss";
-import "./mos.css";
+import "./mos.scss";
 import { switchView } from "./utils/view";
 
 // Lazy load pages for better performance
@@ -55,8 +55,10 @@ if (root) {
         <Route path="" component={App}>
           <Route path="/" component={HomePage} />
           <Route path="/home" component={HomePage} />
-          <Route path="/events" component={EventsPage} />
-          <Route path="/events/:id" component={EventDetailPage} />
+          <Route path="/events" component={EventsPage}>
+            <Route path="/" component={() => null} />
+            <Route path="/:id" component={EventDetailPage} />
+          </Route>
           <Route path="/event/:id" component={EventDetailPage} />
           <Route path="/events/:id/expense/:expenseId" component={EventExpensePage} />
           <Route path="/legal" component={LegalPage} />

@@ -28,6 +28,7 @@
             border-radius: 8px;
             background-size: cover;
             background-position: center;
+            background-image: var(--setting-url);
             border: 1px solid rgba(128, 128, 128, 0.2);
             cursor: pointer;
             transition: all 0.2s;
@@ -63,6 +64,17 @@
             transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
             background: #1a1a1a;
+        }
+    }
+
+    .image-item {
+        &.is-dragging {
+            opacity: 0.4;
+            transform: scale(0.9);
+
+            .drag-handle {
+                cursor: grabbing;
+            }
         }
     }
 
@@ -121,8 +133,31 @@
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
                 border-color: var(--pico-primary);
 
-                .slide-actions {
+                .slide-actions, .drag-handle {
                     opacity: 1;
+                }
+            }
+
+            .drag-handle {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.4);
+                color: white;
+                padding: 0.5rem;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                cursor: grab;
+                pointer-events: none; 
+
+                svg {
+                    width: 1.5rem;
+                    height: 1.5rem;
                 }
             }
 

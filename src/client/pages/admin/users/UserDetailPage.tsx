@@ -151,11 +151,6 @@ export default function UserDetailPage() {
                                             <span innerHTML={WALLET_SVG} /> Finance
                                         </button>
                                     </Show>
-                                    <Show when={canManageSwims()}>
-                                        <button class="nav-item" classList={{ active: currentTab() === 'swims' }} onClick={() => setSearchParams({ tab: 'swims' })}>
-                                            <span innerHTML={POOL_SVG} /> Swims
-                                        </button>
-                                    </Show>
                                 </TabNav>
                             </aside>
 
@@ -175,9 +170,6 @@ export default function UserDetailPage() {
                                 </Show>
                                 <Show when={currentTab() === 'transactions'}>
                                     <TransactionsTab userId={userData().id} />
-                                </Show>
-                                <Show when={currentTab() === 'swims'}>
-                                    <SwimsTab user={userData()} />
                                 </Show>
                             </main>
                         </div>

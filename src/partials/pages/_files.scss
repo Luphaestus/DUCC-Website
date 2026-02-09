@@ -1,4 +1,5 @@
 @use "../mixins" as *;
+@use "../base" as *;
 
 /* Files View Layout */
 #files-view {
@@ -31,31 +32,9 @@
         justify-content: center;
 
         .search-box {
-            @include common-element-size;
-            padding: 0 !important;
-            position: relative;
+            @extend .glass-input-group;
             flex: 1 1 300px;
             max-width: 500px;
-
-            .icon {
-                position: absolute;
-                left: 0.75rem;
-                top: 50%;
-                transform: translateY(-50%);
-                opacity: 0.5;
-                display: flex;
-                z-index: 2;
-
-                svg {
-                    width: 1.5em;
-                    height: 1.5em;
-                }
-            }
-
-            input {
-                padding-left: 2.8em;
-                margin-bottom: 0;
-            }
         }
 
         select {
@@ -66,17 +45,12 @@
     }
 
     .files-table-wrapper {
-        @include glass-panel;
+        @include liquid-glass(0, var(--border-radius-lg));
         overflow-x: auto;
         margin-top: 1rem;
-        padding: 0;
 
         table {
             margin-bottom: 0;
-        }
-
-        th {
-            background: rgba(var(--pico-primary-rgb), 0.05);
         }
     }
 
@@ -127,7 +101,6 @@
         }
 
         th {
-            background: rgba(255, 255, 255, 0.03);
             font-weight: bold;
             color: var(--pico-contrast);
             white-space: nowrap;
@@ -171,10 +144,9 @@
         .download-btn {
             display: inline-flex;
             border-radius: 0.4rem;
-            background: rgba(var(--pico-primary-rgb), 0.1);
             color: var(--pico-primary);
             transition: all 0.2s;
-            padding-left: 0.5rem;
+            padding-left: 0;
 
             &:hover {
                 background: var(--pico-primary);

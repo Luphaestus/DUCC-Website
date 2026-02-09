@@ -46,7 +46,7 @@ if (isProd && !config.session.secret) {
 
 const fastify = Fastify({
   logger: false, // We use our own Logger
-  pluginTimeout: 30000,
+  pluginTimeout: 60000,
 });
 
 /** Decorate request with DB */
@@ -102,8 +102,12 @@ const startServer = async () => {
           res.setHeader('Pragma', 'no-cache');
           res.setHeader('Expires', '0');
         } else {
-          // In production, cache images and assets for a long time
-          if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico|webp|js|css|woff2?|ttf|otf)$/i)) {
+          // In production, cache based on file type
+          if (filePath.match(/\.(js|css)$/i)) {
+            // JS and CSS are no longer hashed, so use a shorter cache and no 'immutable'
+            res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+          } else if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico|webp|woff2?|ttf|otf)$/i)) {
+            // Images and fonts usually change less often
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
           } else if (filePath.endsWith('index.html')) {
             // Never cache index.html so updates are immediate
@@ -142,7 +146,7 @@ const startServer = async () => {
       reply.header("X-Frame-Options", "DENY");
       reply.header("X-Content-Type-Options", "nosniff");
       reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
-      reply.header("X-Powered-By", ""); // Fastify doesn't add this by default but just in case
+      reply.header("X-Powered-By", ""); 
       
       return payload;
     });
@@ -168,7 +172,6 @@ const startServer = async () => {
         
         Logger.info(`LiveReload server started, watching: ${watchDirs.join(', ')}`);
         
-        // Use middie to support connect-style middleware
         (fastify as any).use(connectLiveReload({
           ignore: [
             /^\/api\/.*/,
@@ -194,14 +197,12 @@ const startServer = async () => {
     /** CSRF Protection (Modern Double Submit Cookie Implementation) */
     if (isProd) {
       fastify.addHook('preHandler', async (request, reply) => {
-        // Generate token if it doesn't exist in session
         let token = (request.session as any).get('csrfToken');
         if (!token) {
           token = crypto.randomBytes(32).toString('hex');
           (request.session as any).set('csrfToken', token);
         }
 
-        // Set token in a client-readable cookie
         reply.setCookie('XSRF-TOKEN', token, { 
           httpOnly: false, 
           sameSite: 'lax',
@@ -209,7 +210,6 @@ const startServer = async () => {
           path: '/'
         });
 
-        // Verify token for state-changing methods
         const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
         if (!safeMethods.includes(request.method)) {
           const headerToken = request.headers['x-csrf-token'];
@@ -234,7 +234,6 @@ const startServer = async () => {
       const EventHub = (await import('./misc/EventHub.js')).default;
       EventHub.addClient(reply.raw as any, request.user?.id);
 
-      // Keep connection alive with heartbeat
       const heartbeat = setInterval(() => {
         reply.raw.write(': heartbeat\n\n');
       }, 30000);
@@ -248,51 +247,37 @@ const startServer = async () => {
     const auth = new Auth(fastify, db, fastifyPassport);
     auth.registerRoutes();
 
-    /** Recursive helper to find all API definition files. */
-    const getAllApiFiles = (dir: string, fileList: string[] = []) => {
-      const files = fs.readdirSync(dir, { withFileTypes: true });
-      for (const dirent of files) {
-        const fullPath = path.join(dir, dirent.name);
-        if (dirent.isDirectory()) {
-          getAllApiFiles(fullPath, fileList);
-        } else if (dirent.isFile() && (dirent.name.endsWith('.js') || dirent.name.endsWith('.ts')) && !dirent.name.endsWith('.d.ts') && !dirent.name.startsWith('AuthAPI.')) {
-          fileList.push(fullPath);
-        }
-      }
-      return fileList;
-    };
+    const apiModules = [
+      './api/CarsAPI.js',
+      './api/CollegesAPI.js',
+      './api/ExecAPI.js',
+      './api/ExpensesAPI.js',
+      './api/FilesAPI.js',
+      './api/GlobalsAPI.js',
+      './api/KitAPI.js',
+      './api/NotificationsAPI.js',
+      './api/QuotesAPI.js',
+      './api/SlidesAPI.js',
+      './api/TagsAPI.js',
+      './api/admin/AdminCarsAPI.js',
+      './api/admin/AdminEventsAPI.js',
+      './api/admin/AdminExpensesAPI.js',
+      './api/admin/AdminQuotesAPI.js',
+      './api/admin/AdminRolesAPI.js',
+      './api/admin/AdminStatsAPI.js',
+      './api/admin/AdminTransactionsAPI.js',
+      './api/admin/AdminUsersAPI.js',
+      './api/events/AttendanceAPI.js',
+      './api/events/EventsAPI.js',
+      './api/events/WaitlistAPI.js',
+      './api/users/SwimsAPI.js',
+      './api/users/UserAPI.js'
+    ];
 
-    const apiDir = path.join(__dirname, 'api');
-    const apiFiles = getAllApiFiles(apiDir);
-
-    /** Dynamically register all API modules. */
-    if (isProd && apiFiles.length > 0) {
-      Logger.info('Registering API modules...');
-      const progressBar = new cliProgress.SingleBar({
-        format: colors.cyan('APIs |') + colors.cyan('{bar}') + '| {percentage}% || {value}/{total} Modules || {file}',
-        barCompleteChar: '\u2588',
-        barIncompleteChar: '\u2591',
-        hideCursor: true
-      });
-
-      progressBar.start(apiFiles.length, 0, { file: 'Initializing...' });
-
-      for (let i = 0; i < apiFiles.length; i++) {
-        const fullPath = apiFiles[i];
-        const fileName = path.basename(fullPath);
-        progressBar.update(i + 1, { file: fileName });
-
-        const ApiClass = (await import(pathToFileURL(fullPath).href)).default;
-        const apiInstance = new ApiClass(fastify, db, fastifyPassport);
-        apiInstance.registerRoutes();
-      }
-      progressBar.stop();
-    } else {
-      for (const fullPath of apiFiles) {
-        const ApiClass = (await import(pathToFileURL(fullPath).href)).default;
-        const apiInstance = new ApiClass(fastify, db, fastifyPassport);
-        apiInstance.registerRoutes();
-      }
+    for (const modulePath of apiModules) {
+      const ApiClass = (await import(modulePath)).default;
+      const apiInstance = new ApiClass(fastify, db, fastifyPassport);
+      apiInstance.registerRoutes();
     }
 
     /** Catch-all route for SPA. */
@@ -359,6 +344,8 @@ serverReady.then(async ({ db }) => {
     const simulator = new ActivitySimulator(db);
     simulator.start();
   }
+}).catch(() => {
+  // Errors are handled and logged inside startServer
 });
 
 export { fastify as app, serverReady };

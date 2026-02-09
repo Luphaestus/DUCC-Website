@@ -1,7 +1,8 @@
-import { createSignal, createMemo, onMount, onCleanup, For, Show, createEffect } from "solid-js";
+import { createSignal, createMemo, onMount, onCleanup, For, Show, createEffect, createResource } from "solid-js";
 import { A, useLocation } from "@solidjs/router";
 import { useAuth } from "../stores/auth";
 import LiquidButton, { GlassButtonSmall } from "./LiquidButton";
+import { apiRequest } from "@/utils/api";
 
 const navEntries = [
   { name: 'Events', path: '/events', id: 'nav-events' },
@@ -19,6 +20,15 @@ export default function Navbar() {
   const [isMobileOpen, setIsMobileOpen] = createSignal(false);
   const [isScrolled, setIsScrolled] = createSignal(false);
   const location = useLocation();
+
+  const [logo] = createResource(async () => {
+    try {
+      const res = await apiRequest('GET', '/api/globals/ClubLogo');
+      return res.res?.ClubLogo?.data || "/api/files/1/download?view=true";
+    } catch {
+      return "/api/files/1/download?view=true";
+    }
+  });
   
   // Spotlight effect state
   const [spotlightStyle, setSpotlightStyle] = createSignal({ opacity: 0, left: 0, width: 0 });
@@ -84,14 +94,14 @@ export default function Navbar() {
         <div 
             class="liquid-container nav-glass-wrapper" 
             style={{ 
-                '--liquid-blur': isScrolled() ? '48px' : '16px',
+                '--liquid-blur': isScrolled() ? '16px' : '8px',
                 '--liquid-padding': '0px',
-                transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
         >
             <div class="nav-inner-content">
                 <A href="/home" class="nav-logo" id="nav-home">
-                  <img src="/images/misc/ducc.png" alt="DUCC Logo" />
+                  <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" />
                 </A>
 
                 {/* Desktop Nav */}
@@ -158,7 +168,7 @@ export default function Navbar() {
                 class="liquid-container mobile-nav-glass" 
                 style={{ 
                     '--liquid-border-radius': '24px',
-                    '--liquid-blur': '64px',
+                    '--liquid-blur': '24px',
                     width: '100%', 
                     height: '100%', 
                     display: 'flex', 

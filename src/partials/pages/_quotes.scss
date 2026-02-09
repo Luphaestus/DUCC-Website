@@ -6,6 +6,7 @@
 
 @use "../theme" as *;
 @use "../mixins" as *;
+@use "../base" as *;
 
 #quotes-view {
     width: 100%;
@@ -37,31 +38,9 @@
         justify-content: center;
 
         .search-box {
-            @include common-element-size;
-            padding: 0 !important;
-            position: relative;
+            @extend .glass-input-group;
             flex: 1 1 300px;
             max-width: 500px;
-
-            .icon {
-                position: absolute;
-                left: 0.75rem;
-                top: 50%;
-                transform: translateY(-50%);
-                opacity: 0.5;
-                display: flex;
-                z-index: 2;
-
-                svg {
-                    width: 1.5em;
-                    height: 1.5em;
-                }
-            }
-
-            input {
-                padding-left: 2.8em;
-                margin-bottom: 0;
-            }
         }
 
         select {
@@ -80,14 +59,12 @@
 }
 
 .quote-card {
-    @include glass-panel;
-    padding: 2rem;
+    --liquid-padding: 2rem;
+    --liquid-border-radius: 2rem;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
     position: relative;
-    border-radius: 2rem;
     
 
     &:hover {

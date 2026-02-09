@@ -139,15 +139,11 @@ input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   @include common-element-size;
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: var(--border-radius-sm);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  @include liquid-glass(null, var(--border-radius-md));
   transition: all 0.2s ease;
 
   @media (prefers-color-scheme: dark) {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   &:focus {
@@ -168,6 +164,50 @@ textarea {
   &[aria-invalid="false"] {
     border-color: var(--colour-good);
     background: rgba(46, 204, 113, 0.05);
+  }
+}
+
+.glass-input-group {
+  @include liquid-glass(0, var(--border-radius-md));
+  @include common-element-size;
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: 100%;
+
+  &.liquid-container {
+    --liquid-padding: 0;
+    --liquid-border-radius: var(--border-radius-md);
+  }
+
+  .icon {
+    position: absolute;
+    left: 1rem;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    opacity: 0.5;
+    z-index: 2;
+
+    svg,
+    span:has(svg) {
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+  }
+
+  input,
+  select {
+    padding-left: 3rem !important;
+    margin-bottom: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    width: 100%;
+    height: 100%;
   }
 }
 
@@ -213,7 +253,7 @@ a[role="button"] {
   }
 
   &.secondary {
-    @include glass-effect(var(--glass-bg), 10px, var(--glass-highlight));
+    @include liquid-glass(null, var(--border-radius-md));
     color: var(--pico-color);
     box-shadow: var(--shadow-soft);
 
@@ -277,20 +317,28 @@ table {
   }
 
   tbody tr {
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    background-color: transparent !important;
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.05);
+      background-color: var(--table-bg-hover-body);
+
+      td {
+        background-color: transparent !important;
+        color: var(--pico-contrast);
+      }
     }
 
     td {
+      background-color: transparent !important;
       font-size: 0.95rem;
+      transition: all 0.2s ease;
     }
   }
 }
 
 article {
-    header {
-        background-color: transparent;
-    }
+  header {
+    background-color: transparent;
+  }
 }

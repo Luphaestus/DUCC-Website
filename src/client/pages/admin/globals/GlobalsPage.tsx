@@ -85,7 +85,7 @@ export default function GlobalsPage() {
                                                 <div class="image-global-display">
                                                     <div 
                                                         class="image-preview-global" 
-                                                        style={{ '--setting-url': `url('${setting.data || '/images/misc/ducc.png'}')` }}
+                                                        style={{ '--setting-url': `url('${setting.data || '/api/files/1/download?view=true'}')` }}
                                                         onClick={(e) => {
                                                             const el = e.currentTarget;
                                                             el.classList.toggle('preview-open');
@@ -93,7 +93,7 @@ export default function GlobalsPage() {
                                                             setTimeout(() => document.addEventListener('click', close), 0);
                                                         }}
                                                     >
-                                                        <img src={setting.data || '/images/misc/ducc.png'} class="uncropped-hover-preview" />
+                                                        <img src={setting.data || '/api/files/1/download?view=true'} class="uncropped-hover-preview" />
                                                     </div>
                                                 </div>
                                             </Show>
@@ -120,9 +120,10 @@ export default function GlobalsPage() {
                 <UploadWidget 
                     selectMode="single"
                     autoUpload={true}
-                    onImageSelect={({ url }) => {
-                        if (activePickerKey()) {
-                            updateGlobal(activePickerKey()!, url);
+                    enableLibrary={true}
+                    onImageSelect={({ id }) => {
+                        if (activePickerKey() && id) {
+                            updateGlobal(activePickerKey()!, id);
                             setActivePickerKey(null);
                         }
                     }}

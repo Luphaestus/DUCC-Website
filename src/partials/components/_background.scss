@@ -15,7 +15,7 @@
         width: var(--blob-size);
         height: var(--blob-size);
         background-color: var(--blob-colour);
-        filter: blur(30px);
+        filter: blur(15px);
         top: var(--blob-top);
         left: var(--blob-left);
         animation: floatAround var(--blob-duration) infinite ease-in-out;

@@ -9,39 +9,40 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     z-index: 2000;
-    display: flex;
+    display: none; // Absolutely hidden by default
     justify-content: center;
     align-items: center;
     padding: 2rem;
-    overflow-y: auto;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 
-    &.visible {
+    &.modal-display,
+    &.view:not(.hidden) {
+        display: flex;
+    }
+
+    &.visible, 
+    &.view:not(.hidden) {
         opacity: 1;
+        visibility: visible;
         pointer-events: auto;
     }
 
-    &.view {
-        opacity: 1; 
-        pointer-events: auto;
-        &.hidden {
-            display: none;
-            opacity: 0;
-            pointer-events: none;
-        }
+    &.hidden {
+        display: none !important;
     }
 
     @media (max-width: 600px) { padding: 0; }
 }
 
 .c-modal-content {
-    @include glass-effect-base;
-    border-radius: var(--border-radius-lg);
+    @include liquid-glass(null, var(--border-radius-lg));
+    box-shadow: var(--shadow-glass);
     width: 100%;
     max-width: 500px; 
     max-height: 90vh;
@@ -52,12 +53,13 @@
     transform: scale(0.95);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     
-    .c-modal-overlay.visible & {
+    .c-modal-overlay.visible &,
+    .c-modal-overlay.modal-display &,
+    .c-modal-overlay.view:not(.hidden) & {
         transform: scale(1);
     }
     
     .c-modal-overlay.view:not(.hidden) & {
-        transform: scale(1);
         animation: modal-expand 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -117,22 +119,19 @@
     top: 1rem;
     right: 1rem;
     z-index: 20;
-    background: rgba(0, 0, 0, 0.3) !important;
-    border: var(--glass-border) !important;
+    @include liquid-glass(0, 50%);
+    background: rgba(0, 0, 0, 0.3);
     color: white !important;
-    padding: 0 !important;
     width: auto;
     height: 2.5rem !important;
     aspect-ratio: 1;
-    border-radius: 50% !important;
-    backdrop-filter: blur(10px);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.2s ease;
 
-    &:hover { background: rgba(0, 0, 0, 0.5) !important; }
+    &:hover { background: rgba(0, 0, 0, 0.5); }
     svg, span:has(svg) { width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center; fill: currentColor; }
 }
 
@@ -156,6 +155,11 @@
     padding-top: 0;
     overflow-y: auto;
     flex: 1;
+    max-height: calc(90vh - 120px); 
+
+    @media (max-width: 600px) {
+        max-height: calc(100vh - 120px);
+    }
 }
 
 @keyframes modal-expand {
@@ -191,24 +195,18 @@
 }
 
 .glass-warning {
+    @include liquid-glass(0.35rem 1rem, var(--border-radius-md));
     background: rgba(243, 156, 18, 0.1);
-    border: var(--glass-border);
     border-color: rgba(243, 156, 18, 0.3);
-    padding: 0.35rem 1rem;
-    border-radius: var(--border-radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
     font-size: 0.8rem;
     color: #f39c12;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     text-align: center;
     margin-bottom: -1rem;
     &.hidden { display: none; }
     svg, span:has(svg) { width: 1.1rem; height: 1.1rem; fill: #f39c12; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
     p { margin: 0; line-height: 1.4; }
 }
-
-

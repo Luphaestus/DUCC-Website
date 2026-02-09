@@ -12,6 +12,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Logger from '../../../misc/Logger.js';
 import { DatabaseWrapper } from '../../db.js';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,13 +54,35 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
 
     const seedFile = async (filename: string, dir: string = 'slides') => {
         const title = filename.split('.')[0];
-        const pathSuffix = dir === 'misc' ? '/images/misc/' : '/images/slides/';
-        await db.run(
-            'INSERT IGNORE INTO files (title, filename, visibility, hash) VALUES (?, ?, ?, ?)',
-            [title, filename, 'public', filename]
+        const currentDir = path.dirname(new URL(import.meta.url).pathname);
+        const sourcePath = dir === 'misc' 
+            ? path.join(currentDir, 'assets', filename)
+            : path.join(currentDir, '..', '..', '..', 'public', 'images', 'slides', filename);
+        
+        if (!fs.existsSync(sourcePath)) {
+            Logger.warn(`Seed file not found: ${sourcePath}`);
+            return null;
+        }
+
+        const fileBuffer = fs.readFileSync(sourcePath);
+        const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+        // Check if already in DB
+        const existing = await db.get('SELECT id FROM files WHERE hash = ? LIMIT 1', [hash]);
+        if (existing) return existing.id;
+
+        const uploadDir = path.join(__dirname, '..', '..', '..', '..', 'data', 'files');
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+        const finalFilename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(filename)}`;
+        fs.copyFileSync(sourcePath, path.join(uploadDir, finalFilename));
+        const stats = fs.statSync(path.join(uploadDir, finalFilename));
+
+        const result = await db.run(
+            'INSERT INTO files (title, filename, visibility, hash, size, author, date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [title, finalFilename, 'public', hash, stats.size, 'System', new Date().toISOString().slice(0, 19).replace('T', ' ')]
         );
-        const row = await db.get('SELECT id FROM files WHERE filename = ?', [filename]);
-        return row ? row.id : null;
+        return result.lastID;
     };
 
     const seededFileIds: number[] = [];

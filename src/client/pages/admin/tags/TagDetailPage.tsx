@@ -68,7 +68,7 @@ export default function TagDetailPage() {
 
     const [globalDefaultUrl] = createResource(async () => {
         const res = await apiRequest('GET', '/api/globals/DefaultEventImage');
-        return res.res?.DefaultEventImage?.data || '/images/misc/ducc.png';
+        return res.res?.DefaultEventImage?.data || '/api/files/1/download?view=true';
     });
 
     // --- Actions ---

@@ -104,7 +104,7 @@ export default class UserDB {
                 ? `u.id, u.first_name, u.last_name`
                 : `u.id, u.first_name, u.last_name, u.email, 
                    u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
-                   u.swims, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance,
+                   u.swims, u.booties, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance,
                    u.profile_picture_id, u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
                    (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path`;
 

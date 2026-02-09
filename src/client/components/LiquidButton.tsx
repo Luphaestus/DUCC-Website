@@ -44,8 +44,7 @@ export default function LiquidButton(props: LiquidButtonProps) {
             display: 'inline-flex',
             'align-items': 'center',
             'justify-content': 'center',
-            border: 'none',
-            opacity: isDisabled() ? 0.5 : 1
+            border: 'none'
         }, typeof local.style === 'object' ? local.style : {}) as JSX.CSSProperties
     };
 
@@ -55,7 +54,7 @@ export default function LiquidButton(props: LiquidButtonProps) {
             style={mergeProps({
                 '--liquid-border-radius': `${containerProps.borderRadius}px`,
                 '--liquid-padding': containerProps.padding,
-                '--liquid-blur': containerProps.blurAmount !== undefined ? `${containerProps.blurAmount * 160}px` : undefined,
+                '--liquid-blur': containerProps.blurAmount !== undefined ? `${containerProps.blurAmount * 40}px` : undefined,
                 '--liquid-saturation': containerProps.saturation !== undefined ? `${containerProps.saturation}%` : undefined,
             }, containerProps.style) as any}
             onClick={containerProps.onClick}

@@ -58,7 +58,7 @@ export default function SwimsTab(props: { user: any }) {
                 </div>
                 <div class="control-actions">
                     <div class="input-group input-group-row">
-                    <input type="number" class="input-number-small" value={swimAmount()} onInput={e => setSwimAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
+                    <input type="number" class="input-number-small no-margin" value={swimAmount()} onInput={e => setSwimAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
                     <button class="primary btn-flex-1" onClick={() => handleAdd('swims', swimAmount())}><span innerHTML={ADD_SVG} /> Add</button>                    </div>
                 </div>
             </Panel>
@@ -74,7 +74,7 @@ export default function SwimsTab(props: { user: any }) {
                 </div>
                 <div class="control-actions">
                     <div class="input-group input-group-row">
-                    <input type="number" class="input-number-small" value={bootieAmount()} onInput={e => setBootieAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
+                    <input type="number" class="input-number-small no-margin" value={bootieAmount()} onInput={e => setBootieAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
                     <button class="secondary btn-flex-1" onClick={() => handleAdd('booties', bootieAmount())}><span innerHTML={ADD_SVG} /> Add</button>                    </div>
                 </div>
             </Panel>
