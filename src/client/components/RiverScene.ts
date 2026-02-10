@@ -81,6 +81,9 @@ export class RiverScene {
     mouse: { x: number; y: number } = { x: 0, y: 0 };
     targetCameraOffset: { x: number; y: number } = { x: 0, y: 0 };
     scrollProgress: number = 0;
+    isMouseDown: boolean = false;
+    mouseDownTime: number = 0;
+    cameraMode: 'default' | 'fpv' = 'default';
 
     constructor(container: HTMLElement, theme: Theme = 'dark') {
         this.container = container;
@@ -96,10 +99,10 @@ export class RiverScene {
 
         // 1. Init Scene & Camera
         this.scene = new THREE.Scene();
-        this.fog = new THREE.Fog(0x020617, 20, 180);
+        this.fog = new THREE.Fog(0x020617, 10, 210); // Fog ends just before the chunks recycle
         this.scene.fog = this.fog;
 
-        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 250);
+        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 2000);
         this.camera.position.set(0, 6, 15);
         this.camera.lookAt(0, 2, -30);
 
@@ -139,8 +142,23 @@ export class RiverScene {
         window.addEventListener('resize', this.handleResize);
         window.addEventListener('mousemove', this.handleMouseMove);
         window.addEventListener('scroll', this.handleScroll);
+        window.addEventListener('mousedown', this.handleMouseDown);
+        window.addEventListener('mouseup', this.handleMouseUp);
+        // Touch support for mobile
+        window.addEventListener('touchstart', this.handleMouseDown);
+        window.addEventListener('touchend', this.handleMouseUp);
 
         this.animate();
+    }
+
+    handleMouseDown = () => {
+        this.isMouseDown = true;
+        this.mouseDownTime = this.clock.elapsedTime;
+    }
+
+    handleMouseUp = () => {
+        this.isMouseDown = false;
+        this.cameraMode = 'default';
     }
 
     private setupLights() {
@@ -174,28 +192,25 @@ export class RiverScene {
 
     private getRiverSlopeHeight(z: number): number {
         const dropPerUnit = 0.2;
-        // "Pool and Drop" river profile.
-        // Base linear slope + Sine wave = Staircase-like effect
-        // High variation creates "flats" (pools) and "steeps" (drops/rapids).
-        // Period 60 matches the chunk size nicely.
+        // "Pool and Drop" river profile, but strictly downward.
+        // To ensure it never goes upwards, amplitude * k must be < dropPerUnit.
+        // k = 2*PI / 60 = 0.1047. 
+        // 0.2 / 0.1047 = 1.91. We use 1.5 to be safe.
         const k = 2 * Math.PI / 60;
-        const organicSteps = Math.sin(z * k) * 3.0;
+        const organicSteps = Math.sin(z * k) * 1.5;
 
-        return z * dropPerUnit + organicSteps;
+        // Subtracting 30 to keep the river roughly at its original base level in the main view area
+        return -z * dropPerUnit + organicSteps - 30;
     }
 
     private getIsRapids(z: number): number {
-        // Calculate slope derivative to find rapids
-        // h(z) = 0.2z + 3sin(kz)
-        // h'(z) = 0.2 + 3k*cos(kz)
         const k = 2 * Math.PI / 60;
-        // 3 * k approx 0.31. 
-        // Slope ranges from 0.2 - 0.31 (-0.11, upstream/eddy) to 0.2 + 0.31 (0.51, steep).
-
-        const slope = 0.2 + 3.0 * k * Math.cos(z * k);
-
-        // If slope > 0.35, it's a rapid.
-        const rapidIntensity = THREE.MathUtils.smoothstep(slope, 0.3, 0.5);
+        // The slope is -0.2 + 1.5 * k * cos(z * k)
+        // We look for the steepest downward sections (most negative slope)
+        const slope = -0.2 + 1.5 * k * Math.cos(z * k);
+        
+        // Map slope range [-0.35, -0.05] to intensity
+        const rapidIntensity = THREE.MathUtils.smoothstep(-slope, 0.2, 0.35);
 
         // Add some noise rapids in other areas
         const noise = Math.sin(z * 0.5) * Math.cos(z * 0.1);
@@ -250,11 +265,14 @@ export class RiverScene {
         const staticIntensity = 0.5 + rapids * 3.0;
         let staticNoise = Math.sin(xLocal * 0.8) * 0.15 + Math.cos(zForSampling * kw * 30.0) * 0.15;
         staticNoise += Math.cos(xLocal * 0.4 - zForSampling * kw * 15.0) * 0.1;
+        staticNoise += Math.sin(xLocal * 2.0 + zForSampling * 0.5) * 0.05;
 
         // Dynamic waves
         const waveIntensity = 0.4 + (rapids * 2.0);
         let dynamicWave = Math.sin(xGlobal * 0.8 + zForSampling * 0.2 + elapsed * 2.0) * 0.15;
         dynamicWave += Math.cos(zForSampling * (kw * 30.0) + elapsed * 1.5) * 0.15;
+        dynamicWave += Math.sin(xGlobal * 1.5 - zForSampling * 0.4 + elapsed * 4.0) * 0.05;
+        dynamicWave += Math.cos(xGlobal * 3.0 + zForSampling * 0.8 + elapsed * 6.0) * 0.02;
 
         // Match Shader Curvature
         const zRel = zGlobal - 15.0;
@@ -291,11 +309,13 @@ export class RiverScene {
                 float k_s = 2.0 * 3.14159 / 60.0;
                 float kw = 2.0 * 3.14159 / 300.0;
                 float zRiver = worldPos.z - uTime * uSpeed;
-                float slope_deriv = 0.2 + 0.3 * cos(zRiver * k_s);
-                float r_val = smoothstep(0.35, 0.5, slope_deriv);
+                float slope_deriv = -0.2 + 0.15 * cos(zRiver * k_s);
+                float r_val = smoothstep(0.2, 0.35, -slope_deriv);
                 float waveIntensity = 0.4 + (r_val * 2.5);
                 float wave = sin(worldPos.x * 0.8 + zRiver * 0.2 + uTime * 2.0) * 0.15;
                 wave += cos(zRiver * (kw * 30.0) + uTime * 1.5) * 0.15;
+                wave += sin(worldPos.x * 1.5 - zRiver * 0.4 + uTime * 4.0) * 0.05;
+                wave += cos(worldPos.x * 3.0 + zRiver * 0.8 + uTime * 6.0) * 0.02;
                 transformed.z += wave * waveIntensity;
                 vFoam = r_val * (0.4 + smoothstep(0.1, 0.25, wave * waveIntensity) * 0.6);
             ` : '';
@@ -429,16 +449,14 @@ export class RiverScene {
             const riverX = this.getPathX(pZGlobal);
             const width = this.getRiverWidth(pZGlobal);
 
-            // Place rocks either in river or on banks
-            const inRiver = Math.random() > 0.4;
-            const offset = inRiver
-                ? (Math.random() - 0.5) * width * 0.8
-                : (Math.random() > 0.5 ? 1 : -1) * (width + 2 + Math.random() * 5);
+            // Rocks always on banks
+            const offset = (Math.random() > 0.5 ? 1 : -1) * (width + 2 + Math.random() * 5);
 
             const pX = riverX + offset;
 
             const rockGeo = new THREE.DodecahedronGeometry(Math.random() * 0.8 + 0.5, 0);
             const rockMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.8 });
+            this.modifyMaterial(rockMat);
             const rock = new THREE.Mesh(rockGeo, rockMat);
             const h = this.getTerrainHeight(pX, pZGlobal);
             rock.position.set(pX, h + 0.3, pZLocal);
@@ -539,8 +557,8 @@ export class RiverScene {
         shaft.castShadow = true;
         paddleGroup.add(shaft);
 
-        const bladeMat = new THREE.MeshStandardMaterial({ 
-            color: 0xeeeeee, 
+        const bladeMat = new THREE.MeshStandardMaterial({
+            color: 0xeeeeee,
             side: THREE.DoubleSide,
             roughness: 0.3,
             metalness: 0.2
@@ -663,23 +681,62 @@ export class RiverScene {
 
     private spawnFish() {
         const group = new THREE.Group();
-        const bodyGeo = new THREE.SphereGeometry(0.2, 8, 8);
-        const fishMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3 });
+        
+        // Bigger, more elongated body for a salmon
+        const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        
+        // Salmon colors: varying between deep spawning red and silvery-pink
+        const isSpawning = Math.random() > 0.4;
+        const fishColor = isSpawning ? 0x9b2226 : 0xfa8072; 
+        const fishMat = new THREE.MeshStandardMaterial({ 
+            color: fishColor, 
+            roughness: 0.4,
+            metalness: 0.3
+        });
+        
         const body = new THREE.Mesh(bodyGeo, fishMat);
-        body.scale.set(0.6, 1, 1.8);
+        body.scale.set(0.5, 1.2, 2.2); // Sleek and powerful profile
         group.add(body);
 
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.3, 3), fishMat);
-        tail.position.z = 0.4;
-        tail.rotation.x = Math.PI / 2;
+        // Larger tail for the bigger body
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 3), fishMat);
+        tail.position.z = -0.8;
+        tail.rotation.x = -Math.PI / 2;
         group.add(tail);
 
-        const z = this.camera.position.z - 15 - Math.random() * 30; // Closer spawn range
-        const x = this.getPathX(z) + (Math.random() - 0.5) * 4;
-        group.position.set(x, -2, z); // Start slightly submerged
+        // Add a dorsal fin
+        const finGeo = new THREE.BoxGeometry(0.04, 0.4, 0.6);
+        const fin = new THREE.Mesh(finGeo, fishMat);
+        fin.position.set(0, 0.45, -0.1);
+        // Slightly taper the fin
+        const finPos = finGeo.attributes.position;
+        for (let i = 0; i < finPos.count; i++) {
+            if (finPos.getY(i) > 0) {
+                finPos.setZ(i, finPos.getZ(i) - 0.2);
+            }
+        }
+        group.add(fin);
 
-        const userData = { velocity: new THREE.Vector3(0, 12, 0), age: 0 }; // Higher jump
+        const z = this.camera.position.z - 20 - Math.random() * 40;
+        const x = this.getPathX(z) + (Math.random() - 0.5) * 6;
+        
+        // Determine if this fish should jump or swim based on rapids
+        const rapids = this.getIsRapids(z);
+        const shouldJump = rapids > 0.3 || Math.random() > 0.7;
+        
+        const userData = { 
+            velocity: new THREE.Vector3(
+                (Math.random() - 0.5) * 2, 
+                shouldJump ? 10 + Math.random() * 5 : 0, 
+                -this.uniforms.uSpeed.value - (5 + Math.random() * 5)
+            ), 
+            age: 0,
+            state: shouldJump ? 'jumping' : 'swimming',
+            swimPhase: Math.random() * Math.PI * 2
+        };
+        
         group.userData = userData;
+        group.position.set(x, -5.5 + this.getWaterHeight(x, z, this.clock.elapsedTime), z);
 
         this.scene.add(group);
         this.fish.push(group);
@@ -698,32 +755,35 @@ export class RiverScene {
 
     private initSky() {
         // Sun
-        const sunGeo = new THREE.SphereGeometry(3, 32, 32);
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd88 });
+        const sunGeo = new THREE.SphereGeometry(30, 32, 32); // Larger for distance
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, fog: false });
         this.sun = new THREE.Mesh(sunGeo, sunMat);
         this.scene.add(this.sun);
 
         // Moon
-        const moonGeo = new THREE.SphereGeometry(2, 32, 32);
-        const moonMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.1 });
+        const moonGeo = new THREE.SphereGeometry(20, 32, 32); // Larger for distance
+        const moonMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.1, fog: false });
         this.moon = new THREE.Mesh(moonGeo, moonMat);
         this.scene.add(this.moon);
 
         // Light for Moon
         this.moonLight = new THREE.DirectionalLight(0xffffff, 2.0);
         this.scene.add(this.moonLight);
+        this.scene.add(this.moonLight.target); // Ensure target is in scene
 
         // Stars
-        const starCount = 500;
+        const starCount = 1500;
         const positions = new Float32Array(starCount * 3);
         for (let i = 0; i < starCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 300;
-            positions[i * 3 + 1] = Math.random() * 100 + 10;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 300 - 50;
+            // Spread stars over a much larger area, but ENSURE they are all very far back
+            // relative to the object's origin.
+            positions[i * 3] = (Math.random() - 0.5) * 5000;
+            positions[i * 3 + 1] = Math.random() * 2000 - 200;
+            positions[i * 3 + 2] = -Math.random() * 2000 - 500; // All between 500 and 2500 units away
         }
         const starGeo = new THREE.BufferGeometry();
         starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        this.stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true }));
+        this.stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 4.0, transparent: true, fog: false }));
         this.scene.add(this.stars);
     }
 
@@ -912,23 +972,78 @@ export class RiverScene {
             boatGroup.rotation.x = THREE.MathUtils.lerp(boatGroup.rotation.x, pitch, 0.1);
         });
 
-        // Camera Follow
-        avgX /= this.kayakers.length;
-        avgY /= this.kayakers.length;
+        // Mode Switching
+        if (this.isMouseDown && (elapsed - this.mouseDownTime > 2.0)) {
+            this.cameraMode = 'fpv';
+        }
 
-        const camTargetX = avgX * 0.5 + this.mouse.x * 5.0;
-        const camTargetY = Math.max(8 + avgY, avgY + 5.0) + this.mouse.y * 2.0;
+        let camTargetX = 0;
+        let camTargetY = 0;
+        let camTargetZ = 0;
+        let lookAtX = 0;
+        let lookAtY = 0;
+        let lookAtZ = 0;
+
+        if (this.cameraMode === 'fpv' && this.kayakers.length >= 2) {
+            // FPV of second to last kayaker
+            const targetK = this.kayakers[this.kayakers.length - 2];
+            
+            // "Eyes" position: slightly up and forward from the boat center
+            // Boat center is at targetK.group.position
+            // We want to be where the head is.
+            camTargetX = targetK.group.position.x;
+            camTargetY = targetK.group.position.y + 1.2; // Head height
+            camTargetZ = targetK.group.position.z + 0.5; // Slightly behind the center? No, slightly forward for eyes.
+            
+            // Look slightly forward and down
+            lookAtX = camTargetX;
+            lookAtY = camTargetY - 0.5;
+            lookAtZ = camTargetZ - 10;
+        } else {
+            // Default Camera
+            avgX /= this.kayakers.length;
+            avgY /= this.kayakers.length;
+            
+            // Lower camera height (reduced offset from previous 8 / 5)
+            camTargetX = avgX * 0.5 + this.mouse.x * 5.0;
+            camTargetY = Math.max(4 + avgY, avgY + 3.0) + this.mouse.y * 2.0;
+            camTargetZ = 15;
+            
+            lookAtX = avgX * 0.5;
+            lookAtY = avgY + 2;
+            lookAtZ = -30;
+        }
 
         this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, camTargetX, 0.05);
         this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, camTargetY, 0.05);
-        this.camera.lookAt(avgX * 0.5, avgY + 2, -30);
+        this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, camTargetZ, 0.05);
+
+        // Safety check: Terrain Clipping
+        // We sample terrain at current camera X/Z, adjusted for river speed
+        const speed = this.uniforms.uSpeed.value;
+        const zForSampling = this.camera.position.z - (speed * elapsed);
+        const terrainH = this.getTerrainHeight(this.camera.position.x, zForSampling) - 5; // -5 is chunk base Y
+        const minCamY = terrainH + 1.0; // 1.0 clearance
+
+        if (this.camera.position.y < minCamY) {
+            this.camera.position.y = minCamY;
+        }
+
+        this.camera.lookAt(lookAtX, lookAtY, lookAtZ);
 
         // Sky Position Lock (Skybox effect)
-        this.sun.position.set(this.camera.position.x - 20, this.camera.position.y + 25, this.camera.position.z - 80);
-        this.moon.position.set(this.camera.position.x + 20, this.camera.position.y + 30, this.camera.position.z - 80);
-        this.moonLight.position.copy(this.moon.position).add(new THREE.Vector3(5, 5, 5));
-        this.moonLight.target = this.moon;
-        this.stars.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z - 20);
+        // By following the camera 1:1, these objects appear at infinity (no parallax)
+        const skyDist = 1500;
+        this.sun.position.set(this.camera.position.x - 400, this.camera.position.y + 500, this.camera.position.z - skyDist);
+        this.moon.position.set(this.camera.position.x + 400, this.camera.position.y + 550, this.camera.position.z - skyDist);
+        
+        this.moonLight.position.copy(this.moon.position).add(new THREE.Vector3(100, 100, 100));
+        this.moonLight.target.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z - 200);
+        this.moonLight.target.updateMatrixWorld();
+
+        // Since star positions are already -500 to -2500 relative to their origin, 
+        // setting the origin to the camera position puts them at the correct distance.
+        this.stars.position.copy(this.camera.position);
         this.weatherSystem.position.y = this.camera.position.y - 20;
     }
 
@@ -939,15 +1054,10 @@ export class RiverScene {
             // Recycling
             if (chunk.mesh.position.z > 90) {
                 chunk.mesh.position.z -= TOTAL_RIVER_LENGTH;
-                // Since our slope is relative to z, we just move it back.
-                // But the mesh slope height is baked in `getRiverSlopeHeight(zInitial)`.
-                // When we recycle, we are NOT regenerating the mesh geometry.
-                // We are just moving the group.
-                // BUT the terrain function `0.2 * z` is linear.
-                // Moving back 300 units means the "physical" height at new Z is lower.
-                // The mesh group needs to be lowered to match the continuity.
+                // Since our slope is strictly downward as Z increases, 
+                // moving back 300 units means moving to a HIGHER section.
                 // Drop over 300 units = 300 * 0.2 = 60.
-                chunk.mesh.position.y -= 60;
+                chunk.mesh.position.y += 60;
             }
         });
     }
@@ -996,15 +1106,49 @@ export class RiverScene {
             const f = this.fish[i];
             const ud = f.userData;
             ud.age += delta;
-            ud.velocity.y -= 25 * delta; // Gravity
-            f.position.y += ud.velocity.y * delta;
-
-            f.lookAt(f.position.x, f.position.y + ud.velocity.y, f.position.z - 5);
-            f.children[1].rotation.z = Math.sin(elapsed * 25) * 0.5; // Tail
-
-            // Remove if deep underwater
+            
             const waterY = -5.5 + this.getWaterHeight(f.position.x, f.position.z, elapsed);
-            if (f.position.y < waterY - 2.0 && ud.velocity.y < 0) {
+
+            if (ud.state === 'jumping') {
+                ud.velocity.y -= 25 * delta; // Gravity
+                f.position.x += ud.velocity.x * delta;
+                f.position.y += ud.velocity.y * delta;
+                f.position.z += ud.velocity.z * delta;
+
+                // Orientation: look in direction of velocity
+                f.lookAt(f.position.x + ud.velocity.x, f.position.y + ud.velocity.y, f.position.z + ud.velocity.z);
+                
+                // Remove if it falls back into water
+                if (f.position.y < waterY && ud.velocity.y < 0 && ud.age > 0.2) {
+                    this.scene.remove(f);
+                    this.fish.splice(i, 1);
+                    continue;
+                }
+            } else {
+                // Swimming logic
+                ud.swimPhase += delta * 10;
+                
+                // Move upstream relative to water flow
+                f.position.z += ud.velocity.z * delta;
+                f.position.x += Math.sin(ud.swimPhase * 0.5) * 2 * delta;
+                
+                // Stay at water surface, slightly submerged
+                f.position.y = THREE.MathUtils.lerp(f.position.y, waterY - 0.2, 0.1);
+                
+                // Orientation: look slightly side-to-side while swimming
+                const targetLookAt = new THREE.Vector3(
+                    f.position.x + Math.sin(ud.swimPhase * 0.5),
+                    f.position.y,
+                    f.position.z - 5
+                );
+                f.lookAt(targetLookAt);
+            }
+
+            // Tail wagging
+            f.children[1].rotation.z = Math.sin(ud.age * 25) * 0.5;
+
+            // Remove if too far behind or ahead
+            if (f.position.z > this.camera.position.z + 20 || f.position.z < this.camera.position.z - 100) {
                 this.scene.remove(f);
                 this.fish.splice(i, 1);
             }
@@ -1037,6 +1181,10 @@ export class RiverScene {
         window.removeEventListener('resize', this.handleResize);
         window.removeEventListener('mousemove', this.handleMouseMove);
         window.removeEventListener('scroll', this.handleScroll);
+        window.removeEventListener('mousedown', this.handleMouseDown);
+        window.removeEventListener('mouseup', this.handleMouseUp);
+        window.removeEventListener('touchstart', this.handleMouseDown);
+        window.removeEventListener('touchend', this.handleMouseUp);
         if (this.container && this.renderer.domElement.parentNode === this.container) {
             this.container.removeChild(this.renderer.domElement);
         }
