@@ -1,5 +1,5 @@
 // todo clean up
-import { createSignal, createResource, Show, For } from "solid-js";
+import { createSignal, createResource, Show, For, Switch, Match } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Avatar from "@/components/Avatar";

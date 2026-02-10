@@ -4,80 +4,6 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { useNavigate } from "@solidjs/router";
 import UploadWidget from "@/components/UploadWidget";
-import { INFO_SVG, IMAGE_SVG } from '@/utils/icons';
-
-interface Tag {
-    id: number;
-    name: string;
-    color: string;
-}
-
-interface EventData {
-    id?: number;
-    title: string;
-    start: string;
-    end: string;
-    location: string;
-    description: string;
-    difficulty_level: number;
-    upfront_cost: number;
-    signup_required: boolean;
-    max_attendees: number;
-    upfront_refund_cutoff: string | null;
-    is_offsite: boolean;
-    image_id: number | null;
-    image_url?: string;
-    tags?: Tag[];
-    status?: string;
-    visible_at?: string | null;
-}
-
-export default function DetailsTab(props: { event: EventData, allTags: Tag[], globalDefaultUrl: string }) {
-    const { notify } = useNotifications();
-    const navigate = useNavigate();
-    const isNew = () => !props.event.id;
-
-    const [formState, setFormState] = createSignal<EventData>({ ...props.event });
-    const [selectedTags, setSelectedTagIds] = createSignal<number[]>(props.event.tags?.map(t => t.id) || []);
-
-    const updateField = (key: keyof EventData, value: any) => {
-        setFormState({ ...formState(), [key]: value });
-    };
-
-    const toggleTag = (tagId: number) => {
-        const current = selectedTags();
-        const next = current.includes(tagId) ? current.filter(id => id !== tagId) : [...current, tagId];
-        setSelectedTagIds(next);
-    };
-
-    const handleSubmit = async (e: Event) => {
-        e.preventDefault();
-        const data = { 
-            ...formState(), 
-            tags: selectedTags(),
-            upfront_refund_cutoff: formState().upfront_refund_cutoff || null,
-            visible_at: formState().visible_at || null
-        };
-
-        try {
-            if (isNew()) {
-                const res = await apiRequest('POST', '/api/admin/event', data);
-                notify('Success', 'Event created', 'success');
-                navigate(`/admin/event/${res.data.id}`);
-            } else {
-                await apiRequest('PUT', `/api/admin/event/${props.event.id}`, data);
-                notify('Success', 'Event updated', 'success');
-            }
-        } catch (err: any) {
-            notify('Error', err.message, 'error');
-        }
-    };
-
-import { createSignal, createResource, For, Show, onMount } from "solid-js";
-import { apiRequest } from "@/utils/api";
-import { useNotifications } from "@/stores/notifications";
-import { useNavigate } from "@solidjs/router";
-import UploadWidget from "@/components/UploadWidget";
 import Panel from "@/components/Panel";
 import { INFO_SVG, IMAGE_SVG, LOCAL_ACTIVITY_SVG, CALENDAR_TODAY_SVG, SETTINGS_SVG } from '@/utils/icons';
 
@@ -127,8 +53,8 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
 
     const handleSubmit = async (e: Event) => {
         e.preventDefault();
-        const data = { 
-            ...formState(), 
+        const data = {
+            ...formState(),
             tags: selectedTags(),
             upfront_refund_cutoff: formState().upfront_refund_cutoff || null,
             visible_at: formState().visible_at || null
@@ -159,14 +85,14 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                             </label>
                         </div>
                         <div class="grid-2-col">
-                            <label>Location 
+                            <label>Location
                                 <input type="text" value={formState().location} onInput={e => updateField('location', e.currentTarget.value)} placeholder="Where is it happening?" />
                             </label>
-                            <label>Difficulty (1-5) 
+                            <label>Difficulty (1-5)
                                 <input type="number" min="1" max="5" value={formState().difficulty_level} onInput={e => updateField('difficulty_level', parseInt(e.currentTarget.value))} required />
                             </label>
                         </div>
-                        <label>Description 
+                        <label>Description
                             <textarea rows="6" value={formState().description} onInput={e => updateField('description', e.currentTarget.value)} placeholder="What's the plan?"></textarea>
                         </label>
                     </Panel>
@@ -195,12 +121,12 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
 
                     <Panel title="Settings & Policies" icon={SETTINGS_SVG}>
                         <div class="grid-2-col">
-                            <label>Upfront Cost (£) 
+                            <label>Upfront Cost (£)
                                 <input type="number" step="0.01" value={formState().upfront_cost} onInput={e => updateField('upfront_cost', parseFloat(e.currentTarget.value) || 0)} />
                             </label>
                             <div class="signup-policy pt-4">
                                 <label class="checkbox-label">
-                                    <input type="checkbox" checked={formState().is_offsite} onChange={e => updateField('is_offsite', e.currentTarget.checked)} /> 
+                                    <input type="checkbox" checked={formState().is_offsite} onChange={e => updateField('is_offsite', e.currentTarget.checked)} />
                                     Requires Transport
                                 </label>
                             </div>
@@ -211,7 +137,7 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                         <div class="settings-group-compact">
                             <div class="signup-policy">
                                 <label class="checkbox-label">
-                                    <input type="checkbox" checked={formState().signup_required} onChange={e => updateField('signup_required', e.currentTarget.checked)} /> 
+                                    <input type="checkbox" checked={formState().signup_required} onChange={e => updateField('signup_required', e.currentTarget.checked)} />
                                     Limit Attendees
                                 </label>
                                 <Show when={formState().signup_required}>
@@ -225,7 +151,7 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
 
                             <div class="refund-policy mt-4">
                                 <label class="checkbox-label">
-                                    <input type="checkbox" checked={!!formState().upfront_refund_cutoff} onChange={e => updateField('upfront_refund_cutoff', e.currentTarget.checked ? new Date().toISOString() : null)} /> 
+                                    <input type="checkbox" checked={!!formState().upfront_refund_cutoff} onChange={e => updateField('upfront_refund_cutoff', e.currentTarget.checked ? new Date().toISOString() : null)} />
                                     Enable Refund Deadline
                                 </label>
                                 <Show when={!!formState().upfront_refund_cutoff}>
@@ -242,7 +168,7 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
 
                 <div class="details-side-col">
                     <Panel title="Event Image" icon={IMAGE_SVG}>
-                        <UploadWidget 
+                        <UploadWidget
                             selectMode="single"
                             autoUpload={true}
                             enableLibrary={true}
@@ -286,7 +212,4 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
             </div>
         </form>
     );
-}
-    );
-}
 }

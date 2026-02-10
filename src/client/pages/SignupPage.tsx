@@ -74,85 +74,96 @@ export default function SignupPage() {
     };
 
     return (
-        <div id="signup-view" class="view">
-            <div class="small-container">
-                <h1>Sign Up</h1>
-                <div class="form-info">
-                    <article class="form-box">
-                        <h3>
-                            <span innerHTML={ACCOUNT_BOX_SVG} />
+        <div id="signup-view" class="auth-page-wrapper">
+            <div class="auth-card" style={{ "max-width": "550px" }}>
+                <div class="center-text">
+                    <h2>
+                        <span innerHTML={ACCOUNT_BOX_SVG} />
+                        Join the Club
+                    </h2>
+                    <p class="auth-subtitle">Create your account to start paddling!</p>
+                </div>
+
+                <form onSubmit={handleSignup}>
+                    <div class="grid">
+                        <div class="modern-form-group">
+                            <label for="signup-first-name">First Name</label>
+                            <input 
+                                type="text" 
+                                id="signup-first-name" 
+                                placeholder="Durham" 
+                                autocomplete="given-name"
+                                value={firstName()}
+                                onInput={(e) => handleFirstNameInput(e.currentTarget.value)}
+                                required
+                            />
+                        </div>
+                        <div class="modern-form-group">
+                            <label for="signup-last-name">Last Name</label>
+                            <input 
+                                type="text" 
+                                id="signup-last-name" 
+                                placeholder="Student" 
+                                autocomplete="family-name"
+                                value={lastName()}
+                                onInput={(e) => handleLastNameInput(e.currentTarget.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label for="signup-email">Durham Email Address</label>
+                        <div class="durham-email-wrapper">
+                            <input 
+                                type="text" 
+                                id="signup-email" 
+                                placeholder="username" 
+                                autocomplete="username"
+                                value={email()}
+                                onInput={(e) => handleEmailInput(e.currentTarget.value)}
+                                required
+                            />
+                            <span class="email-suffix">@durham.ac.uk</span>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="modern-form-group">
+                            <label for="signup-password">Password</label>
+                            <input 
+                                type="password" 
+                                id="signup-password" 
+                                autocomplete="new-password"
+                                placeholder="••••••••"
+                                value={password()}
+                                onInput={(e) => setPassword(e.currentTarget.value)}
+                                required
+                            />
+                        </div>
+                        <div class="modern-form-group">
+                            <label for="signup-confirm-password">Confirm Password</label>
+                            <input 
+                                type="password" 
+                                id="signup-confirm-password" 
+                                autocomplete="new-password"
+                                placeholder="••••••••"
+                                value={confirmPassword()}
+                                onInput={(e) => setConfirmPassword(e.currentTarget.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div id="signup-footer" style="margin-top: 1rem;">
+                        <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
                             Create Account
-                        </h3>
-                        <form onSubmit={handleSignup}>
-                            <div>
-                                <div class="grid">
-                                    <div>
-                                        <label for="first-name">First Name:</label>
-                                        <input 
-                                            type="text" 
-                                            id="signup-first-name" 
-                                            placeholder="First Name" 
-                                            autocomplete="given-name"
-                                            value={firstName()}
-                                            onInput={(e) => handleFirstNameInput(e.currentTarget.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label for="last-name">Last Name:</label>
-                                        <input 
-                                            type="text" 
-                                            id="signup-last-name" 
-                                            placeholder="Last Name" 
-                                            autocomplete="family-name"
-                                            value={lastName()}
-                                            onInput={(e) => handleLastNameInput(e.currentTarget.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label for="email">Email:</label>
-                                    <div class="durham-email-wrapper">
-                                        <input 
-                                            type="text" 
-                                            id="signup-email" 
-                                            placeholder="username" 
-                                            autocomplete="username"
-                                            value={email()}
-                                            onInput={(e) => handleEmailInput(e.currentTarget.value)}
-                                        />
-                                        <span class="email-suffix">@durham.ac.uk</span>
-                                    </div>
-                                </div>
-                                <div class="grid">
-                                    <div>
-                                        <label for="password">Password:</label>
-                                        <input 
-                                            type="password" 
-                                            id="signup-password" 
-                                            autocomplete="new-password"
-                                            value={password()}
-                                            onInput={(e) => setPassword(e.currentTarget.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label for="confirm-password">Confirm Password:</label>
-                                        <input 
-                                            type="password" 
-                                            id="signup-confirm-password" 
-                                            autocomplete="new-password"
-                                            value={confirmPassword()}
-                                            onInput={(e) => setConfirmPassword(e.currentTarget.value)}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="signup-footer" style="margin-top: 1.5rem;">
-                                <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
-                                    Sign Up
-                                </GlassButtonLarge>
-                            </div>
-                        </form>
-                    </article>
+                        </GlassButtonLarge>
+                    </div>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Already have an account? <a onClick={() => navigate('/login')}>Sign in instead</a></p>
                 </div>
             </div>
         </div>

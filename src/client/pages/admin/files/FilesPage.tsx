@@ -200,7 +200,7 @@ const EditFileModal = (props: {
                             autoUpload={false}
                             enableLibrary={true}
                             enableRemove={true}
-                            onFileSelect={(files) => {
+                            onFileSelect={(files: File[]) => {
                                 setSelectedFile(files[0] || null);
                                 setLibraryFileId(null);
                             }}

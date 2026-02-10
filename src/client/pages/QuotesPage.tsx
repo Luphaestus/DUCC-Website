@@ -2,7 +2,7 @@
 import { createSignal, createResource, onMount, For, Show, createMemo, batch } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { ADD_SVG, SEARCH_SVG, FORMAT_QUOTE_SVG } from '@/utils/icons';
+import { ADD_SVG, SEARCH_SVG, FORMAT_QUOTE_SVG, PERSON_SVG } from '@/utils/icons';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";

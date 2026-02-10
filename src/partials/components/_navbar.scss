@@ -144,7 +144,21 @@ nav.small-container {
   }
 
   .auth-action {
-    margin-left: 0.25rem;
+    margin-left: 0.5rem;
+    display: flex;
+    align-items: center;
+
+    .login-btn {
+        min-height: 2.25rem !important;
+        padding: 0 1.25rem !important;
+        font-weight: 700;
+        font-size: 0.85rem;
+        box-shadow: 0 4px 12px rgba(var(--pico-primary-rgb), 0.2);
+        
+        &:hover {
+            box-shadow: 0 6px 16px rgba(var(--pico-primary-rgb), 0.4);
+        }
+    }
   }
 
   // --- Hamburger ---

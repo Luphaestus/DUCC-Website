@@ -214,13 +214,16 @@ export default class FilesAPI {
          */
         this.app.put<{ Params: { id: string } }>('/api/files/:id', { preHandler: [check('file.edit')] }, async (request: any, reply: FastifyReply) => {
             const id = request.params.id;
+            if (isNaN(Number(id))) {
+                return reply.status(404).send({ message: 'File not found' });
+            }
             const isMultipart = request.isMultipart();
             
+            let body: any = {};
+            let newFileData: any = null;
+
             if (isMultipart) {
                 const parts = request.files();
-                let body: any = {};
-                let newFileData: any = null;
-
                 for await (const part of parts) {
                     if (part.type === 'file') {
                         const tempFilename = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -253,61 +256,50 @@ export default class FilesAPI {
                         body[part.fieldname] = part.value;
                     }
                 }
-
-                // If libraryFileId is provided, copy that file
-                if (body.libraryFileId && !newFileData) {
-                    const libFileStatus = await FilesDB.getFileById(this.db, body.libraryFileId);
-                    if (!libFileStatus.isError()) {
-                        const libFile = libFileStatus.getData();
-                        const finalFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(libFile.filename);
-                        await fs.promises.copyFile(
-                            path.join(this.uploadDir, libFile.filename),
-                            path.join(this.uploadDir, finalFilename)
-                        );
-                        newFileData = {
-                            filename: finalFilename,
-                            hash: libFile.hash,
-                            size: libFile.size
-                        };
-                    }
-                }
-
-                // If replacing file, get old file to delete from disk
-                if (newFileData) {
-                    const oldFileStatus = await FilesDB.getFileById(this.db, id);
-                    if (!oldFileStatus.isError()) {
-                        const oldFile = oldFileStatus.getData();
-                        // Only delete if it's not the same physical file (though hashes might be same)
-                        if (oldFile.filename !== newFileData.filename) {
-                            await fs.promises.unlink(path.join(this.uploadDir, oldFile.filename)).catch(() => {});
-                        }
-                    }
-                }
-
-                const data = {
-                    title: body.title,
-                    author: body.author,
-                    date: body.date,
-                    visibility: body.visibility,
-                    category_id: body.categoryId,
-                    ...(newFileData || {})
-                };
-
-                const status = await FilesDB.updateFile(this.db, id, data);
-                return status.getResponse(reply);
             } else {
-                const body = request.body as any;
-                const data = {
-                    title: body.title,
-                    author: body.author,
-                    date: body.date,
-                    visibility: body.visibility,
-                    category_id: body.categoryId
-                };
-
-                const status = await FilesDB.updateFile(this.db, id, data);
-                return status.getResponse(reply);
+                body = request.body as any;
             }
+
+            // If libraryFileId is provided, copy that file
+            if (body.libraryFileId && !newFileData) {
+                const libFileStatus = await FilesDB.getFileById(this.db, body.libraryFileId);
+                if (!libFileStatus.isError()) {
+                    const libFile = libFileStatus.getData();
+                    const finalFilename = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(libFile.filename);
+                    await fs.promises.copyFile(
+                        path.join(this.uploadDir, libFile.filename),
+                        path.join(this.uploadDir, finalFilename)
+                    );
+                    newFileData = {
+                        filename: finalFilename,
+                        hash: libFile.hash,
+                        size: libFile.size
+                    };
+                }
+            }
+
+            // If replacing file, get old file to delete from disk
+            if (newFileData) {
+                const oldFileStatus = await FilesDB.getFileById(this.db, id);
+                if (!oldFileStatus.isError()) {
+                    const oldFile = oldFileStatus.getData();
+                    if (oldFile.filename !== newFileData.filename) {
+                        await fs.promises.unlink(path.join(this.uploadDir, oldFile.filename)).catch(() => {});
+                    }
+                }
+            }
+
+            const data = {
+                title: body.title,
+                author: body.author,
+                date: body.date,
+                visibility: body.visibility,
+                category_id: body.categoryId,
+                ...(newFileData || {})
+            };
+
+            const status = await FilesDB.updateFile(this.db, id, data);
+            return status.getResponse(reply);
         });
 
         /**

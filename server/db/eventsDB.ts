@@ -191,8 +191,11 @@ export default class EventsDB {
      * Administrative fetch of events with full filtering and no visibility restrictions.
      */
     static async getEventsAdmin(db: DatabaseWrapper, options: EventsAdminOptions): Promise<statusObject> {
-        const { page = 1, limit = 20, search, sort, order, showPast, minCost, maxCost, difficulty, location, permissions, status } = options;
-        const offset = (Number(page) - 1) * Number(limit);
+        let { page = 1, limit = 20, search, sort, order, showPast, minCost, maxCost, difficulty, location, permissions, status } = options;
+        
+        page = Math.max(1, parseInt(String(page)) || 1);
+        limit = Math.max(1, parseInt(String(limit)) || 20);
+        const offset = (page - 1) * limit;
 
         const allowedSorts = ['title', 'start', 'location', 'difficulty_level', 'upfront_cost'];
         const sortCol = (sort && allowedSorts.includes(sort)) ? sort : 'start';
@@ -249,13 +252,13 @@ export default class EventsDB {
                 ORDER BY e.${sortCol} ${sortOrder} 
                 LIMIT ? OFFSET ?
             `;
-            const rawEvents = await db.all(query, [...params, Number(limit), Number(offset)]);
+            const rawEvents = await db.all(query, [...params, limit, offset]);
             const events = rawEvents.map(e => this._processEvent(e));
 
             const countResult = await db.get(`SELECT COUNT(*) as count FROM events e ${whereClause}`, params);
-            const totalPages = Math.ceil((countResult ? countResult.count : 0) / Number(limit));
+            const totalPages = Math.ceil((countResult ? countResult.count : 0) / limit);
 
-            return new statusObject(200, null, { events, totalPages, currentPage: Number(page) });
+            return new statusObject(200, null, { events, totalPages, currentPage: page });
         } catch (error) {
             Logger.error('Database error in getEventsAdmin:', error);
             return new statusObject(500, 'Database error');
@@ -343,7 +346,7 @@ export default class EventsDB {
         return db.transaction(async (tx) => {
             let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff, status, visible_at } = data;
             
-            if (!signup_required && max_attendees > 0) {
+            if (!signup_required && max_attendees && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
@@ -379,7 +382,7 @@ export default class EventsDB {
             const merged = { ...existing, ...data };
             let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff, status, visible_at } = merged;
 
-            if (!signup_required && max_attendees > 0) {
+            if (!signup_required && max_attendees && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 

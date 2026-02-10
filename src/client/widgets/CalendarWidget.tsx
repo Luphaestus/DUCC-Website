@@ -3,10 +3,12 @@ import { useNavigate, useLocation } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { 
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, ADD_SVG, CLOSE_SVG,
-    CONTENT_COPY_SVG, DELETE_SVG, EDIT_SVG, PUBLIC_SVG, VISIBILITY_OFF_SVG
+    CONTENT_COPY_SVG, DELETE_SVG, EDIT_SVG,
+    BLOCK_SVG, CHECK_SVG, CURRENCY_POUND_SVG
 } from "@/utils/icons";
 import { useNotifications } from "@/stores/notifications";
 import { showConfirmModal } from "@/utils/modal";
+import ContextMenu from "../components/ContextMenu";
 
 export type CalendarViewMode = 'month' | 'week';
 
@@ -19,6 +21,7 @@ interface CalendarEvent {
     location: string;
     difficulty_level: number;
     is_canceled?: boolean;
+    costs_released?: boolean;
 }
 
 interface CalendarWidgetProps {
@@ -26,6 +29,12 @@ interface CalendarWidgetProps {
     initialDate?: Date;
     initialMode?: CalendarViewMode;
     onEventClick?: (event: CalendarEvent) => void;
+    onDayClick?: (date: Date) => void;
+    // New props for external control
+    viewMode?: CalendarViewMode;
+    date?: Date;
+    onDateChange?: (date: Date) => void;
+    hideHeader?: boolean;
 }
 
 export default function CalendarWidget(props: CalendarWidgetProps) {
@@ -33,8 +42,22 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
     const location = useLocation();
     const { notify } = useNotifications();
     
-    const [currentDate, setCurrentDate] = createSignal(props.initialDate || new Date());
-    const [viewMode, setViewMode] = createSignal<CalendarViewMode>(props.initialMode || (localStorage.getItem('cal_view_mode') as any) || 'week');
+    // Internal state used if props aren't provided
+    const [internalDate, setInternalDate] = createSignal(props.initialDate || new Date());
+    const [internalViewMode, setInternalViewMode] = createSignal<CalendarViewMode>(props.initialMode || (localStorage.getItem('cal_view_mode') as any) || 'week');
+    
+    const currentDate = () => props.date || internalDate();
+    const setCurrentDate = (d: Date) => {
+        if (props.onDateChange) props.onDateChange(d);
+        else setInternalDate(d);
+    };
+
+    const viewMode = () => props.viewMode || internalViewMode();
+    const setViewMode = (m: CalendarViewMode) => {
+        setInternalViewMode(m);
+        localStorage.setItem('cal_view_mode', m);
+    };
+
     const [now, setNow] = createSignal(new Date());
     
     const [dragState, setDragState] = createSignal<{
@@ -144,7 +167,6 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         return ((d.getHours() * 60 + d.getMinutes()) / 1440) * 100;
     };
 
-    // Styling
     const snapToGrid = (date: Date, minutes = 15): Date => {
         const d = new Date(date);
         const m = d.getMinutes();
@@ -153,20 +175,114 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         return d;
     };
 
-    const getEventStyle = (event: CalendarEvent) => {
-        const start = new Date(event.start);
-        const end = new Date(event.end);
+    // --- Layout Logic ---
+
+    const getProcessedEvents = (day: Date) => {
+        const state = dragState();
+        const dayStart = new Date(day); dayStart.setHours(0,0,0,0);
+        const dayEnd = new Date(day); dayEnd.setHours(23,59,59,999);
+
+        let dayEvents = events()?.filter(e => {
+            const isDragging = state?.type === 'move' && state?.originEvent?.id === e.id;
+            if (isDragging) return false;
+
+            const s = new Date(e.start);
+            const en = new Date(e.end);
+            // Overlap check: event starts before day ends AND ends after day starts
+            return s <= dayEnd && en >= dayStart;
+        }) || [];
+
+        // If we are dragging an event and it's over THIS day, add it
+        if (state?.type === 'move' && state.tempStart && state.originEvent) {
+            if (state.tempStart.getDate() === day.getDate() && 
+                state.tempStart.getMonth() === day.getMonth() && 
+                state.tempStart.getFullYear() === day.getFullYear()) {
+                
+                dayEvents.push({
+                    ...state.originEvent,
+                    start: state.tempStart.toISOString(),
+                    end: state.tempEnd!.toISOString()
+                });
+            }
+        }
+
+        // Map events to their day-local times for layout
+        const localEvents = dayEvents.map(e => {
+            const s = new Date(e.start);
+            const en = new Date(e.end);
+            return {
+                ...e,
+                // Local start/end for this column
+                _localStart: s < dayStart ? dayStart : s,
+                _localEnd: en > dayEnd ? dayEnd : en
+            };
+        });
+
+        const sorted = [...localEvents].sort((a, b) => a._localStart.getTime() - b._localStart.getTime());
+        
+        const groups: any[][] = [];
+        for (const event of sorted) {
+            let placed = false;
+            for (const group of groups) {
+                if (group.some(e => {
+                    return (event._localStart < e._localEnd && event._localEnd > e._localStart);
+                })) {
+                    group.push(event);
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) groups.push([event]);
+        }
+
+        const processed: { event: CalendarEvent; col: number; total: number; localStart: Date; localEnd: Date }[] = [];
+        for (const group of groups) {
+            const columns: any[][] = [];
+            for (const event of group) {
+                let colIdx = 0;
+                while (columns[colIdx]?.some(e => {
+                    return (event._localStart < e._localEnd && event._localEnd > e._localStart);
+                })) {
+                    colIdx++;
+                }
+                if (!columns[colIdx]) columns[colIdx] = [];
+                columns[colIdx].push(event);
+            }
+            for (let i = 0; i < columns.length; i++) {
+                for (const event of columns[i]) {
+                    processed.push({ 
+                        event, 
+                        col: i, 
+                        total: columns.length,
+                        localStart: event._localStart,
+                        localEnd: event._localEnd
+                    });
+                }
+            }
+        }
+        return processed;
+    };
+
+    const getEventStyle = (event: CalendarEvent, col = 0, total = 1, localStart?: Date, localEnd?: Date) => {
+        const start = localStart || new Date(event.start);
+        const end = localEnd || new Date(event.end);
+        
         const startMinutes = start.getHours() * 60 + start.getMinutes();
         const top = (startMinutes / 1440) * 100;
+        
         let duration = (end.getTime() - start.getTime()) / (1000 * 60);
         if (duration < 30) duration = 30;
         const height = (duration / 1440) * 100;
 
+        const width = 98 / total;
+        const left = (col * width) + 1;
+
         return {
             top: `${top}%`,
             height: `${height}%`,
-            left: '2px',
-            right: '2px'
+            left: `${left}%`,
+            width: `${width}%`,
+            "z-index": 5 + col
         };
     };
 
@@ -285,31 +401,54 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
+    const handleUpdateStatus = async (id: number, status: string) => {
+        try {
+            await apiRequest('PUT', `/api/admin/event/${id}`, { status });
+            notify('Success', `Status updated to ${status}`, 'success');
+            refetch();
+        } catch (e: any) { notify('Error', e.message, 'error'); }
+        setContextMenu(null);
+    };
+
+    const handleReleaseCosts = async (id: number) => {
+        if (await showConfirmModal("Release Costs?", "This will calculate and finalize all finances for this event.")) {
+            try {
+                await apiRequest('POST', `/api/admin/events/${id}/release-costs`);
+                notify('Success', 'Costs released!', 'success');
+                refetch();
+            } catch (e: any) { notify('Error', e.message, 'error'); }
+        }
+        setContextMenu(null);
+    };
+
     return (
         <div class="calendar-widget-container" classList={{ 'admin-mode': props.adminMode }}>
-            <div class="calendar-header-toolbar">
-                <div class="cal-controls">
-                    <button class="icon-btn" onClick={() => changeDate(-1)}><span innerHTML={ARROW_BACK_IOS_NEW_SVG}/></button>
-                    <button class="icon-btn" onClick={() => changeDate(1)}><span innerHTML={ARROW_FORWARD_IOS_SVG}/></button>
-                    <h2 class="cal-title">
-                        {currentDate().toLocaleString('default', { month: 'long', year: 'numeric' })}
-                    </h2>
-                </div>
-                <div class="cal-actions">
-                    <Show when={clipboard()}>
-                        <button class="small-btn primary mr-2" onClick={() => pasteEvent(new Date())}>Paste</button>
-                    </Show>
-                    <div class="toggle-group liquid-container" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px" }}>
-                        <button class={`tab-btn ${viewMode() === 'week' ? 'active' : ''}`} onClick={() => setViewMode('week')}>Week</button>
-                        <button class={`tab-btn ${viewMode() === 'month' ? 'active' : ''}`} onClick={() => setViewMode('month')}>Month</button>
+            <Show when={!props.hideHeader}>
+                <div class="calendar-header-toolbar">
+                    <div class="cal-controls">
+                        <button class="icon-btn" onClick={() => changeDate(-1)}><span innerHTML={ARROW_BACK_IOS_NEW_SVG}/></button>
+                        <button class="icon-btn" onClick={() => changeDate(1)}><span innerHTML={ARROW_FORWARD_IOS_SVG}/></button>
+                        <h2 class="cal-title">
+                            {currentDate().toLocaleString('default', { month: 'long', year: 'numeric' })}
+                        </h2>
+                    </div>
+                    <div class="cal-actions">
+                        <Show when={clipboard()}>
+                            <button class="small-btn primary mr-2" onClick={() => pasteEvent(new Date())}>Paste</button>
+                        </Show>
+                        <div class="toggle-group liquid-container" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px" }}>
+                            <button class={`tab-btn ${viewMode() === 'week' ? 'active' : ''}`} onClick={() => setViewMode('week')}>Week</button>
+                            <button class={`tab-btn ${viewMode() === 'month' ? 'active' : ''}`} onClick={() => setViewMode('month')}>Month</button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </Show>
 
             <div class="calendar-body-wrapper">
                 <Show when={viewMode() === 'week'}>
                     <div class="week-view-grid">
                         <div class="time-gutter">
+                            <div class="time-header-spacer" style="height: 65px; border-bottom: 1px solid rgba(255,255,255,0.08);"></div>
                             <For each={Array.from({length: 24})}>{(_, i) => (
                                 <div class="time-label"><span>{i()}:00</span></div>
                             )}</For>
@@ -336,15 +475,12 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                                 </div>
                                             </Show>
 
-                                            <For each={events()?.filter(e => {
-                                                const s = new Date(e.start);
-                                                return s.getDate() === day.getDate() && s.getMonth() === day.getMonth();
-                                            })}>
-                                                {(event) => {
+                                            <For each={getProcessedEvents(day)}>
+                                                {({ event, col, total, localStart, localEnd }) => {
                                                     const isDragging = dragState()?.type === 'move' && dragState()?.originEvent?.id === event.id;
-                                                    const displayStart = isDragging && dragState()?.tempStart ? dragState()!.tempStart! : new Date(event.start);
-                                                    const displayEnd = isDragging && dragState()?.tempEnd ? dragState()!.tempEnd! : new Date(event.end);
-                                                    const style = getEventStyle({ ...event, start: displayStart.toISOString(), end: displayEnd.toISOString() });
+                                                    const displayStart = isDragging && dragState()?.tempStart ? dragState()!.tempStart! : localStart;
+                                                    const displayEnd = isDragging && dragState()?.tempEnd ? dragState()!.tempEnd! : localEnd;
+                                                    const style = getEventStyle(event, col, total, displayStart, displayEnd);
                                                     
                                                     return (
                                                         <div 
@@ -363,7 +499,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                                             <div class="ev-title">{event.title}</div>
                                                             <Show when={props.adminMode}>
                                                                 <div class="ev-actions-overlay">
-                                                                    <button class="mini-icon-btn" onClick={(e) => { e.stopPropagation(); copyEvent(event); }} title="Copy">{CONTENT_COPY_SVG}</button>
+                                                                    <button class="mini-icon-btn" onClick={(e) => { e.stopPropagation(); copyEvent(event); }} title="Copy" innerHTML={CONTENT_COPY_SVG} />
                                                                 </div>
                                                             </Show>
                                                         </div>
@@ -398,7 +534,13 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                 {(day) => (
                                     <div class="month-day" 
                                         classList={{ 'today': isToday(day), 'other-month': day.getMonth() !== currentDate().getMonth() }}
-                                        onClick={() => { setCurrentDate(day); setViewMode('week'); }}
+                                        onClick={() => {
+                                            if (props.onDayClick) props.onDayClick(day);
+                                            else {
+                                                setCurrentDate(day);
+                                                setViewMode('week');
+                                            }
+                                        }}
                                     >
                                         <span class="day-number">{day.getDate()}</span>
                                         <div class="day-events-dots">
@@ -408,6 +550,16 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                                         class={`event-bar status-${e.status}`} 
                                                         classList={{ 'canceled': e.is_canceled }}
                                                         title={e.title}
+                                                        onClick={(ev) => {
+                                                            ev.stopPropagation();
+                                                            props.onEventClick?.(e);
+                                                        }}
+                                                        onContextMenu={(ev) => {
+                                                            if (!props.adminMode) return;
+                                                            ev.preventDefault();
+                                                            ev.stopPropagation();
+                                                            setContextMenu({ x: ev.clientX, y: ev.clientY, event: e });
+                                                        }}
                                                     >
                                                         {e.title}
                                                     </div>
@@ -422,15 +574,28 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                 </Show>
             </div>
 
-            <Show when={contextMenu()}>
-                <div class="context-menu glass-panel" style={{ top: `${contextMenu()!.y}px`, left: `${contextMenu()!.x}px` }}>
-                    <div class="cm-header">{contextMenu()!.event.title}</div>
-                    <button onClick={() => navigate(`/admin/event/${contextMenu()!.event.id}`)}><span innerHTML={EDIT_SVG}/> Edit</button>
-                    <button onClick={() => copyEvent(contextMenu()!.event)}><span innerHTML={CONTENT_COPY_SVG}/> Copy</button>
-                    <div class="divider"></div>
-                    <button class="delete" onClick={() => setContextMenu(null)}><span innerHTML={CLOSE_SVG}/> Close</button>
-                </div>
-            </Show>
+            <ContextMenu 
+                isOpen={!!contextMenu()} 
+                x={contextMenu()?.x || 0} 
+                y={contextMenu()?.y || 0} 
+                header={contextMenu()?.event.title}
+                onClose={() => setContextMenu(null)}
+            >
+                <button onClick={() => navigate(`/admin/event/${contextMenu()!.event.id}`)}><span innerHTML={EDIT_SVG}/> Edit Details</button>
+                <button onClick={() => copyEvent(contextMenu()!.event)}><span innerHTML={CONTENT_COPY_SVG}/> Copy Event</button>
+                <div class="divider"></div>
+                <Show when={contextMenu()?.event.status !== 'confirmed'}>
+                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'confirmed')}><span innerHTML={CHECK_SVG}/> Confirm/Release</button>
+                </Show>
+                <Show when={contextMenu()?.event.status !== 'pending'}>
+                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'pending')}><span innerHTML={BLOCK_SVG}/> Move to Draft</button>
+                </Show>
+                <Show when={!contextMenu()?.event.costs_released}>
+                    <button onClick={() => handleReleaseCosts(contextMenu()!.event.id)}><span innerHTML={CURRENCY_POUND_SVG}/> Release Costs</button>
+                </Show>
+                <div class="divider"></div>
+                <button class="delete" onClick={() => setContextMenu(null)}><span innerHTML={CLOSE_SVG}/> Close Menu</button>
+            </ContextMenu>
         </div>
     );
 }

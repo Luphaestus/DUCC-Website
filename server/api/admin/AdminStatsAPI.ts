@@ -188,7 +188,7 @@ export default class AdminStats {
                     this.db.get(`
                         SELECT SUM(share) as val FROM (
                             SELECT 
-                                (SELECT SUM((ed.end_mileage - ed.start_mileage) * ?) 
+                                (SELECT IFNULL(SUM((ed.end_mileage - ed.start_mileage) * ?), 0)
                                  FROM event_drivers ed 
                                  JOIN trips t ON ed.trip_id = t.id 
                                  WHERE t.event_id = e.id AND ed.status = 'accepted' AND ed.end_mileage IS NOT NULL AND ed.start_mileage IS NOT NULL

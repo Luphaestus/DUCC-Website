@@ -1,0 +1,145 @@
+@use "../mixins" as *;
+
+.auth-page-wrapper {
+    min-height: calc(100vh - 6rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: radial-gradient(circle at top right, rgba(var(--pico-primary-rgb), 0.05), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(var(--pico-primary-rgb), 0.05), transparent 40%);
+}
+
+.auth-card {
+    @include liquid-glass(2.5rem, 28px);
+    width: 100%;
+    max-width: 450px;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    h2 {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--pico-contrast) 0%, var(--pico-primary) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        
+        svg {
+            margin-right: 0.75rem;
+            -webkit-text-fill-color: var(--pico-primary);
+        }
+    }
+
+    .auth-subtitle {
+        text-align: center;
+        color: var(--pico-muted-color);
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+
+        label {
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--pico-muted-color);
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        input {
+            margin-bottom: 0;
+        }
+    }
+
+    .durham-email-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        input {
+            padding-right: 8.5rem !important;
+        }
+
+        .email-suffix {
+            position: absolute;
+            right: 1rem;
+            font-weight: 600;
+            color: var(--pico-muted-color);
+            pointer-events: none;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+    }
+
+    .auth-footer {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        a {
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--pico-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+
+            &:hover {
+                color: var(--pico-primary-hover);
+                text-decoration: underline;
+            }
+
+            &.secondary {
+                color: var(--pico-muted-color);
+                font-weight: 500;
+                &:hover { color: var(--pico-contrast); }
+            }
+        }
+    }
+
+    .passkey-section {
+        margin-bottom: 2rem;
+    }
+}
+
+/* 2FA Specific */
+.two-fa-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    background: rgba(var(--pico-primary-rgb), 0.1);
+    color: var(--pico-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    
+    svg {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+#totp-code {
+    letter-spacing: 0.5em;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-family: var(--font-family-mono);
+}

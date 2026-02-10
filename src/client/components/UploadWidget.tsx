@@ -14,6 +14,7 @@ interface UploadWidgetProps {
     enableRemove?: boolean;
     onUploadComplete?: (result: number | number[] | string) => void;
     onImageSelect?: (data: { url: string; id: number | null }) => void;
+    onFileSelect?: (files: File[]) => void;
     onRemove?: () => boolean | Promise<boolean>;
 }
 
@@ -63,6 +64,10 @@ export default function UploadWidget(props: UploadWidgetProps) {
             reader.readAsDataURL(file);
         } else {
             setFiles([...files(), ...newFiles]);
+        }
+
+        if (props.onFileSelect) {
+            props.onFileSelect(files());
         }
 
         if (props.autoUpload) {

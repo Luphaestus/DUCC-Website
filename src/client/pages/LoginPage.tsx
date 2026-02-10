@@ -82,112 +82,117 @@ export default function LoginPage() {
     };
 
     return (
-        <div id="login-view" class="view">
-            <div class="small-container">
-                <div class="form-info">
-                    <article class="form-box shadow">
-                        <Show when={!requires2FA()}>
-                            <div class="center-text" style="margin-bottom: 2rem;">
-                                <h2 class="no-margin">
-                                    <span innerHTML={LOGIN_SVG} />
-                                    Sign In
-                                </h2>
-                            </div>
-                            
-                            <div class="passkey-quick-login center-text" style="margin-bottom: 1.5rem;">
-                                <GlassButtonLarge 
-                                    type="button" 
-                                    class="secondary outline full-width" 
-                                    onClick={() => startPasskeyLogin(email() ? (email().includes('@') ? email() : email() + '@durham.ac.uk') : null)}
-                                    borderRadius={16}
-                                >
-                                    <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Sign in with Passkey
-                                </GlassButtonLarge>
-                                <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
-                            </div>
+        <div id="login-view" class="auth-page-wrapper">
+            <div class="auth-card">
+                <Show when={!requires2FA()}>
+                    <div class="center-text">
+                        <h2>
+                            <span innerHTML={LOGIN_SVG} />
+                            Sign In
+                        </h2>
+                        <p class="auth-subtitle">Welcome back! Please sign in to continue.</p>
+                    </div>
+                    
+                    <div class="passkey-section center-text">
+                        <GlassButtonLarge 
+                            type="button" 
+                            class="secondary outline full-width" 
+                            onClick={() => startPasskeyLogin(email() ? (email().includes('@') ? email() : email() + '@durham.ac.uk') : null)}
+                            borderRadius={16}
+                        >
+                            <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Sign in with Passkey
+                        </GlassButtonLarge>
+                        <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
+                    </div>
 
-                            <form onSubmit={handlePasswordLogin}>
-                                <label for="email">Email address</label>
-                                <div class="durham-email-wrapper">
-                                    <input 
-                                        id="email" 
-                                        name="email" 
-                                        placeholder="username" 
-                                        autocomplete="username"
-                                        value={email()}
-                                        onInput={(e) => setEmail(e.currentTarget.value.split('@')[0])}
-                                    />
-                                    <span class="email-suffix">@durham.ac.uk</span>
-                                </div>
-
-                                <label for="password">Password</label>
+                    <form onSubmit={handlePasswordLogin}>
+                        <div class="modern-form-group">
+                            <label for="email">Email address</label>
+                            <div class="durham-email-wrapper">
                                 <input 
-                                    type="password" 
-                                    id="password" 
-                                    name="password" 
-                                    autocomplete="current-password" 
-                                    placeholder="••••••••"
-                                    value={password()}
-                                    onInput={(e) => setPassword(e.currentTarget.value)}
+                                    id="email" 
+                                    name="email" 
+                                    placeholder="username" 
+                                    autocomplete="username"
+                                    value={email()}
+                                    onInput={(e) => setEmail(e.currentTarget.value.split('@')[0])}
                                 />
-                                
-                                <div style="margin-top: 1rem;">
-                                    <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
-                                        Continue with Password
-                                    </GlassButtonLarge>
-                                </div>
-                            </form>
-                        </Show>
-
-                        <Show when={requires2FA()}>
-                            <div class="center-text" style="margin-bottom: 2rem;">
-                                <h2 class="no-margin">Verify Identity</h2>
+                                <span class="email-suffix">@durham.ac.uk</span>
                             </div>
-                            <p class="center-text secondary">Your account is protected with 2FA.</p>
-                            
-                            <Show when={methods().totp}>
-                                <form onSubmit={handleTOTPVerify} class="modern-form">
-                                    <label for="totp-code">Authenticator Code</label>
-                                    <input 
-                                        type="text" 
-                                        id="totp-code" 
-                                        placeholder="123456" 
-                                        pattern="[0-9]*" 
-                                        inputmode="numeric" 
-                                        required 
-                                        autofocus
-                                        value={totpCode()}
-                                        onInput={(e) => setTotpCode(e.currentTarget.value)}
-                                    />
-                                    <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
-                                        Verify Code
-                                    </GlassButtonLarge>
-                                </form>
-                            </Show>
-
-                            <Show when={methods().passkey}>
-                                <div class="passkey-login-section">
-                                    <Show when={methods().totp}>
-                                        <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
-                                    </Show>
-                                    <GlassButtonLarge class="secondary full-width" onClick={() => startPasskeyLogin()} borderRadius={16}>
-                                        <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Use Passkey
-                                    </GlassButtonLarge>
-                                </div>
-                            </Show>
-
-                            <div class="center-text" style="margin-top: 2rem;">
-                                <GlassButtonSmall class="outline secondary" onClick={() => setRequires2FA(false)}>
-                                    Back to Login
-                                </GlassButtonSmall>
-                            </div>
-                        </Show>
-
-                        <div class="center-text" style="margin-top: 2rem; border-top: 1px solid var(--pico-muted-border-color); padding-top: 1rem;">
-                            <p class="no-margin"><a onClick={() => navigate('/reset-password')} class="secondary">Forgot password?</a></p>
-                            <p class="no-margin" style="margin-top: 0.5rem;">New here? <a onClick={() => navigate('/signup')}>Create an account</a></p>
                         </div>
-                    </article>
+
+                        <div class="modern-form-group">
+                            <label for="password">Password</label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                autocomplete="current-password" 
+                                placeholder="••••••••"
+                                value={password()}
+                                onInput={(e) => setPassword(e.currentTarget.value)}
+                            />
+                        </div>
+                        
+                        <div style="margin-top: 0.5rem;">
+                            <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                                Continue with Password
+                            </GlassButtonLarge>
+                        </div>
+                    </form>
+                </Show>
+
+                <Show when={requires2FA()}>
+                    <div class="center-text">
+                        <div class="two-fa-icon-wrapper">
+                            <span innerHTML={KEY_SVG} />
+                        </div>
+                        <h2>Verify Identity</h2>
+                        <p class="auth-subtitle">Your account is protected with 2FA.</p>
+                    </div>
+                    
+                    <Show when={methods().totp}>
+                        <form onSubmit={handleTOTPVerify} class="modern-form">
+                            <label for="totp-code">Authenticator Code</label>
+                            <input 
+                                type="text" 
+                                id="totp-code" 
+                                placeholder="000000" 
+                                pattern="[0-9]*" 
+                                inputmode="numeric" 
+                                maxlength="6"
+                                required 
+                                autofocus
+                                value={totpCode()}
+                                onInput={(e) => setTotpCode(e.currentTarget.value)}
+                            />
+                            <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                                Verify Code
+                            </GlassButtonLarge>
+                        </form>
+                    </Show>
+
+                    <Show when={methods().passkey}>
+                        <div class="passkey-login-section">
+                            <Show when={methods().totp}>
+                                <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
+                            </Show>
+                            <GlassButtonLarge class="secondary full-width" onClick={() => startPasskeyLogin()} borderRadius={16}>
+                                <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Use Passkey
+                            </GlassButtonLarge>
+                        </div>
+                    </Show>
+
+                    <div class="center-text" style="margin-top: 1.5rem;">
+                        <a onClick={() => setRequires2FA(false)} class="secondary clickable">
+                            Back to Login
+                        </a>
+                    </div>
+                </Show>
+
+                <div class="auth-footer">
+                    <p><a onClick={() => navigate('/reset-password')} class="secondary">Forgot your password?</a></p>
+                    <p>New to DUCC? <a onClick={() => navigate('/signup')}>Create an account</a></p>
                 </div>
             </div>
         </div>

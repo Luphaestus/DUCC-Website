@@ -32,11 +32,16 @@ export default function FilesPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const search = () => searchParams.search || "";
-    const categoryId = () => searchParams.categoryId || "";
-    const page = () => parseInt(searchParams.page || "1");
-    const sort = () => searchParams.sort || "date";
-    const order = () => searchParams.order || "desc";
+    const getParam = (key: string) => {
+        const val = searchParams[key];
+        return Array.isArray(val) ? val[0] : val;
+    };
+
+    const search = () => getParam('search') || "";
+    const categoryId = () => getParam('categoryId') || "";
+    const page = () => parseInt(getParam('page') || "1");
+    const sort = () => getParam('sort') || "date";
+    const order = () => (getParam('order') as any) || "desc";
 
     const [canManage, setCanManage] = createSignal(false);
     const [categories, setCategories] = createSignal<FileCategory[]>([]);

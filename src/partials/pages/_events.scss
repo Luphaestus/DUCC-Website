@@ -151,6 +151,49 @@
             animation: spin-cycle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
+        .toggle-group-mini {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 99px;
+            padding: 4px;
+            margin-left: 1rem;
+
+            .tab-btn {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0.4rem 0.8rem;
+                border-radius: 99px;
+                color: var(--pico-muted-color);
+                cursor: pointer;
+                transition: all 0.2s;
+                height: auto;
+                min-height: 0;
+                margin: 0;
+                font-size: 0.85rem;
+                font-weight: 700;
+
+                &.active {
+                    background: var(--pico-primary) !important;
+                    color: white !important;
+                    box-shadow: 0 2px 8px rgba(var(--pico-primary-rgb), 0.3);
+                }
+
+                &:hover:not(.active) {
+                    background: rgba(var(--pico-primary-rgb), 0.1) !important;
+                    color: var(--pico-primary) !important;
+                }
+
+                svg {
+                    width: 1.1rem;
+                    height: 1.1rem;
+                    display: block;
+                }
+            }
+        }
+
         @media (max-width: 768px) {
             flex-direction: column;
             gap: 1.5rem;

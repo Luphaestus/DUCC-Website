@@ -4,16 +4,10 @@ import { useSearchParams, useNavigate, useLocation } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import {
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG,
-    REFRESH_SVG, SETTINGS_SVG, DASHBOARD_SVG, POOL_SVG
+    REFRESH_SVG, SETTINGS_SVG, DASHBOARD_SVG, LIST_SVG, CALENDAR_TODAY_SVG
 } from '@/utils/icons';
 import { StandardCard, EventData } from '../widgets/StandardCard';
 import { useAuth } from "@/stores/auth";
-import { 
-    EventAttendanceChangedEvent, 
-    LegalEvent, 
-    BalanceChangedEvent,
-} from '@/utils/events/events';
-import { onUpdate } from "@/utils/updates";
 import PaginationSlider from "@/components/PaginationSlider";
 import PageTitle from "@/components/PageTitle";
 import CalendarWidget, { CalendarViewMode } from "../widgets/CalendarWidget";
@@ -33,6 +27,7 @@ export default function EventsPage(props: ParentProps) {
     const [oldPageData, setOldData] = createSignal<PageData | null>(null);
     const [isTransitioning, setIsTransitioning] = createSignal(false);
     const [viewMode, setViewMode] = createSignal<'list' | 'week' | 'month'>((localStorage.getItem('events_view_mode') as any) || 'list');
+    const [currentDate, setCurrentDate] = createSignal(new Date());
 
     const setView = (mode: 'list' | 'week' | 'month') => {
         setViewMode(mode);
@@ -45,13 +40,6 @@ export default function EventsPage(props: ParentProps) {
         return parseInt(pageStr || '0');
     };
 
-    createEffect(() => {
-        page();
-        setIsTransitioning(true);
-        const timer = setTimeout(() => setIsTransitioning(false), 600);
-        onCleanup(() => clearTimeout(timer));
-    });
-
     const [pageData, { mutate, refetch }] = createResource<PageData, number>(page, async (p, { value }) => {
         if (value) setOldData(value);
         return await apiRequest('GET', `/api/events/paged/${p}`) as PageData;
@@ -63,56 +51,51 @@ export default function EventsPage(props: ParentProps) {
         setTimeout(() => setIsRefreshing(false), 600);
     };
 
-    onMount(async () => {
-        LegalEvent.subscribe(refresh);
-        BalanceChangedEvent.subscribe(refresh);
-        EventAttendanceChangedEvent.subscribe(refresh);
-
-        const cleanup = onUpdate((event) => {
-            if (event.type === 'event_update') {
-                refetch();
-            } else if (event.type === 'attendance_update') {
-                const { eventId, action } = event.data;
-                mutate((prev: any) => {
-                    if (!prev || !prev.events) return prev;
-                    const updatedEvents = prev.events.map((e: any) => {
-                        if (Number(e.id) === Number(eventId)) {
-                            const change = action === 'joined' ? 1 : -1;
-                            return { ...e, attendee_count: (e.attendee_count || 0) + change };
-                        }
-                        return e;
-                    });
-                    return { ...prev, events: updatedEvents };
-                });
-            }
-        });
-
-        onCleanup(() => {
-            LegalEvent.unsubscribe(refresh);
-            BalanceChangedEvent.unsubscribe(refresh);
-            EventAttendanceChangedEvent.unsubscribe(refresh);
-            cleanup();
-        });
-    });
+    const handleNavigate = (delta: number) => {
+        const mode = viewMode();
+        if (mode === 'list') {
+            setSearchParams({ page: page() + delta });
+        } else if (mode === 'week') {
+            const d = new Date(currentDate());
+            d.setDate(d.getDate() + (delta * 7));
+            setCurrentDate(d);
+        } else if (mode === 'month') {
+            const d = new Date(currentDate());
+            d.setMonth(d.getMonth() + delta);
+            setCurrentDate(d);
+        }
+    };
 
     const rangeText = () => {
-        const data = pageData();
-        if (!data) return "Loading...";
+        const mode = viewMode();
+        if (mode === 'month') {
+            return currentDate().toLocaleString('default', { month: 'long', year: 'numeric' });
+        }
         
-        const formatDate = (d: string) => new Date(d).toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
+        const data = pageData();
+        if (!data && mode === 'list') return "Loading...";
+        
+        const formatDate = (d: string | Date) => new Date(d).toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const start = new Date(data.startDate);
-        const end = new Date(data.endDate);
+        const start = mode === 'list' ? new Date(data!.startDate) : new Date(currentDate());
+        if (mode === 'week') {
+            start.setDate(start.getDate() - start.getDay());
+        }
+        
+        const end = mode === 'list' ? new Date(data!.endDate) : new Date(start);
+        if (mode === 'week') {
+            end.setDate(start.getDate() + 6);
+        }
 
-        if (start.getTime() === today.getTime()) return `Today - ${formatDate(data.endDate)}`;
+        if (start.getTime() === today.getTime()) return `Today - ${formatDate(end)}`;
         
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
-        if (end.toDateString() === yesterday.toDateString()) return `${formatDate(data.startDate)} - Yesterday`;
+        if (end.toDateString() === yesterday.toDateString()) return `${formatDate(start)} - Yesterday`;
 
-        return `${formatDate(data.startDate)} - ${formatDate(data.endDate)}`;
+        return `${formatDate(start)} - ${formatDate(end)}`;
     };
 
     const getGroupedEvents = (data: PageData | null | undefined) => {
@@ -151,66 +134,6 @@ export default function EventsPage(props: ParentProps) {
         return { top: `${top}%`, height: `${height}%`, left: '4px', right: '4px' };
     };
 
-    const WeeklyGridView = (props: { data: PageData | null | undefined }) => {
-        const days = createMemo(() => {
-            if (!props.data) return [];
-            const start = new Date(props.data.startDate);
-            const d = [];
-            for (let i = 0; i < 7; i++) {
-                const day = new Date(start);
-                day.setDate(start.getDate() + i);
-                d.push(day);
-            }
-            return d;
-        });
-
-        return (
-            <div class="events-page-content weekly-mode liquid-container">
-                <div class="week-grid-container">
-                    <div class="time-gutter">
-                        <div class="time-header-spacer" style="height: 60px;"></div>
-                        <For each={Array.from({length: 24})}>{(_, i) => (
-                            <div class="time-label"><span>{i()}:00</span></div>
-                        )}</For>
-                    </div>
-                    <div class="day-columns">
-                        <For each={days()}>
-                            {(day) => (
-                                <div class="day-column" classList={{ 'today': isToday(day) }}>
-                                    <div class="day-header">
-                                        <span class="day-name">{day.toLocaleDateString('en-UK', { weekday: 'short' })}</span>
-                                        <span class="day-num">{day.getDate()}</span>
-                                    </div>
-                                    <div class="day-slots">
-                                        <For each={Array.from({length: 24})}>{() => <div class="hour-slot"></div>}</For>
-                                        <Show when={isToday(day)}>
-                                            <div class="current-time-line" style={{ top: `${currentTimePosition()}%` }}>
-                                                <div class="time-dot"></div>
-                                            </div>
-                                        </Show>
-                                        <For each={props.data?.events.filter(e => new Date(e.start).toDateString() === day.toDateString()) || []}>
-                                            {(event) => (
-                                                <div 
-                                                    class="grid-event" 
-                                                    classList={{ 'canceled': event.is_canceled, 'past': new Date(event.end) < new Date() }}
-                                                    style={getEventStyle(event)}
-                                                    onClick={() => navigate(`/events/${event.id}${location.search}`)}
-                                                >
-                                                    <div class="event-time">{new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                                    <div class="event-title">{event.title}</div>
-                                                </div>
-                                            )}
-                                        </For>
-                                    </div>
-                                </div>
-                            )}
-                        </For>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
     const EventList = (props: { data: PageData | null | undefined }) => (
         <Show when={viewMode() !== 'list' && isDesktop()} fallback={
             <div class="events-page-content">
@@ -238,7 +161,10 @@ export default function EventsPage(props: ParentProps) {
             </div>
         }>
             <CalendarWidget 
-                initialMode={viewMode() as CalendarViewMode} 
+                hideHeader={true}
+                date={currentDate()}
+                viewMode={viewMode() as CalendarViewMode}
+                onDateChange={setCurrentDate}
                 onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)} 
             />
         </Show>
@@ -275,11 +201,11 @@ export default function EventsPage(props: ParentProps) {
                                 <span class="btn-text">Admin</span>
                             </button>
                         </Show>
-                        <div class="toggle-group-mini">
-                            <button classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
+                        <div class="toggle-group-mini liquid-container" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px" }}>
+                            <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
                             <Show when={isDesktop()}>
-                                <button classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
-                                <button classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
+                                <button class="tab-btn" classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
+                                <button class="tab-btn" classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
                             </Show>
                         </div>
                     </div>
@@ -287,13 +213,13 @@ export default function EventsPage(props: ParentProps) {
 
                 <div class="week-navigator">
                     <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 1.25rem" }} {...{ paused: isTransitioning() } as any}>
-                        <button class="nav-btn prev-week" title="Previous Page" onClick={() => setSearchParams({ page: page() - 1 })}>
+                        <button class="nav-btn prev-week" title="Previous" onClick={() => handleNavigate(-1)}>
                             <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
                         </button>
                         <div class="current-week-display">
                             <span id="page-range-text">{rangeText()}</span>
                         </div>
-                        <button class="nav-btn next-week" title="Next Page" onClick={() => setSearchParams({ page: page() + 1 })}>
+                        <button class="nav-btn next-week" title="Next" onClick={() => handleNavigate(1)}>
                             <span innerHTML={ARROW_FORWARD_IOS_SVG} />
                         </button>
                     </div>
@@ -303,11 +229,18 @@ export default function EventsPage(props: ParentProps) {
                     <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 0.75rem" }} {...{ paused: isTransitioning() } as any}>
                         <button 
                             class="today-btn" 
-                            classList={{ disabled: page() === 0, 'spin-active': isRefreshing() }} 
+                            classList={{ 
+                                disabled: viewMode() === 'list' ? page() === 0 : currentDate().toDateString() === new Date().toDateString(), 
+                                'spin-active': isRefreshing() 
+                            }} 
                             title="Back to Today" 
                             onClick={() => {
-                                if (page() === 0) refresh();
-                                else setSearchParams({ page: 0 });
+                                if (viewMode() === 'list') {
+                                    if (page() === 0) refresh();
+                                    else setSearchParams({ page: 0 });
+                                } else {
+                                    setCurrentDate(new Date());
+                                }
                             }}
                         >
                             <span innerHTML={REFRESH_SVG} />

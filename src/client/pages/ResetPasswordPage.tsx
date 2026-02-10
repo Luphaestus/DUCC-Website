@@ -4,6 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { MAIL_SVG } from "@/utils/icons";
 import { useNavigate } from "@solidjs/router";
+import { GlassButtonLarge } from "@/components/LiquidButton";
 
 export default function ResetPasswordPage() {
     const { notify } = useNotifications();
@@ -26,31 +27,38 @@ export default function ResetPasswordPage() {
     };
 
     return (
-        <div id="reset-password-view" class="view">
-            <div class="small-container">
-                <h1>Reset Password</h1>
-                <div class="form-info">
-                    <article class="form-box shadow">
-                        <h3>
-                            <span innerHTML={MAIL_SVG} />
-                            Request Password Reset
-                        </h3>
-                        <form onSubmit={handleSubmit}>
-                            <label for="reset-email">Email:</label>
-                            <div class="durham-email-wrapper">
-                                <input 
-                                    id="reset-email" 
-                                    name="email" 
-                                    placeholder="username" 
-                                    value={email()}
-                                    onInput={(e) => setEmail(e.currentTarget.value.split('@')[0])}
-                                />
-                                <span class="email-suffix">@durham.ac.uk</span>
-                            </div>
-                            <button type="submit" class="full-width">Send Reset Link</button>
-                        </form>
-                        <p class="center-text mt-4">Remembered it? <a onClick={() => navigate('/login')} class="clickable">Login</a></p>
-                    </article>
+        <div id="reset-password-view" class="auth-page-wrapper">
+            <div class="auth-card">
+                <div class="center-text">
+                    <h2>
+                        <span innerHTML={MAIL_SVG} />
+                        Reset Password
+                    </h2>
+                    <p class="auth-subtitle">Enter your email and we'll send you a link to reset your password.</p>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div class="modern-form-group">
+                        <label for="reset-email">Durham Email Address</label>
+                        <div class="durham-email-wrapper">
+                            <input 
+                                id="reset-email" 
+                                name="email" 
+                                placeholder="username" 
+                                value={email()}
+                                onInput={(e) => setEmail(e.currentTarget.value.split('@')[0])}
+                                required
+                            />
+                            <span class="email-suffix">@durham.ac.uk</span>
+                        </div>
+                    </div>
+                    <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                        Send Reset Link
+                    </GlassButtonLarge>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Remembered your password? <a onClick={() => navigate('/login')}>Sign in</a></p>
                 </div>
             </div>
         </div>

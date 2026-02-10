@@ -4,6 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { LOCK_SVG } from "@/utils/icons";
 import { useNavigate, useSearchParams } from "@solidjs/router";
+import { GlassButtonLarge } from "@/components/LiquidButton";
 
 export default function SetPasswordPage() {
     const { notify } = useNotifications();
@@ -35,38 +36,47 @@ export default function SetPasswordPage() {
     };
 
     return (
-        <div id="set-password-view" class="view">
-            <div class="small-container">
-                <h1>Set New Password</h1>
-                <div class="form-info">
-                    <article class="form-box shadow">
-                        <h3>
-                            <span innerHTML={LOCK_SVG} />
-                            Create New Password
-                        </h3>
-                        <form onSubmit={handleSubmit}>
-                            <label for="new-password">New Password:</label>
-                            <input 
-                                type="password" 
-                                id="new-password" 
-                                value={password()}
-                                onInput={(e) => setPassword(e.currentTarget.value)}
-                                required
-                            />
-                            
-                            <label for="confirm-password">Confirm Password:</label>
-                            <input 
-                                type="password" 
-                                id="confirm-password" 
-                                value={confirmPassword()}
-                                onInput={(e) => setConfirmPassword(e.currentTarget.value)}
-                                required
-                            />
-                            
-                            <button type="submit" class="full-width">Update Password</button>
-                        </form>
-                    </article>
+        <div id="set-password-view" class="auth-page-wrapper">
+            <div class="auth-card">
+                <div class="center-text">
+                    <h2>
+                        <span innerHTML={LOCK_SVG} />
+                        New Password
+                    </h2>
+                    <p class="auth-subtitle">Choose a strong password for your account.</p>
                 </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div class="modern-form-group">
+                        <label for="new-password">New Password</label>
+                        <input 
+                            type="password" 
+                            id="new-password" 
+                            placeholder="••••••••"
+                            value={password()}
+                            onInput={(e) => setPassword(e.currentTarget.value)}
+                            required
+                        />
+                    </div>
+                    
+                    <div class="modern-form-group">
+                        <label for="confirm-password">Confirm Password</label>
+                        <input 
+                            type="password" 
+                            id="confirm-password" 
+                            placeholder="••••••••"
+                            value={confirmPassword()}
+                            onInput={(e) => setConfirmPassword(e.currentTarget.value)}
+                            required
+                        />
+                    </div>
+                    
+                    <div style="margin-top: 0.5rem;">
+                        <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                            Update Password
+                        </GlassButtonLarge>
+                    </div>
+                </form>
             </div>
         </div>
     );

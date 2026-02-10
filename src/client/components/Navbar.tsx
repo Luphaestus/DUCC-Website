@@ -147,7 +147,7 @@ export default function Navbar() {
                                     borderRadius={99}
                                     tintOpacity={0.4}
                                 >
-                                    Login
+                                    Sign In
                                 </GlassButtonSmall>
                              </A>
                         </Show>

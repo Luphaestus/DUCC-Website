@@ -38,6 +38,7 @@ export default class TestWorld {
         const fastifySession = (await import('@fastify/session')).default;
         const fastifyPassport = (await import('@fastify/passport')).default;
         const fastifyStatic = (await import('@fastify/static')).default;
+        const fastifyMultipart = (await import('@fastify/multipart')).default;
 
         this.app = Fastify();
         
@@ -46,6 +47,7 @@ export default class TestWorld {
             reply.status(500).send({ message: error.message });
         });
 
+        await this.app.register(fastifyMultipart);
         await this.app.register(fastifyCookie);
         await this.app.register(fastifySession, { 
             secret: 'test-secret-must-be-long-enough-for-session-plugin', 

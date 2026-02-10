@@ -4,10 +4,10 @@ import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
-import CalendarWidget from "@/widgets/CalendarWidget";
+import CalendarWidget, { CalendarViewMode } from "@/widgets/CalendarWidget";
 import { 
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG, CHECK_SVG,
-    IOS_SHARE_SVG, DASHBOARD_SVG, ADD_SVG
+    IOS_SHARE_SVG, DASHBOARD_SVG, ADD_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG
 } from '@/utils/icons';
 import { showConfirmModal } from "@/utils/modal";
 import { useNotifications } from "@/stores/notifications";
@@ -19,13 +19,52 @@ interface EventsPageData {
 }
 
 export default function EventsPage() {
+    const { notify } = useNotifications();
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const [showFilters, setShowFilters] = createSignal(false);
     const [oldData, setOldData] = createSignal<any>(null);
+    const [currentDate, setCurrentDate] = createSignal(new Date());
     
     // View mode: list or calendar
-    const viewMode = () => searchParams.view || 'list';
+    const viewMode = () => (searchParams.view as any) || 'list';
+
+    const setView = (mode: string) => {
+        setSearchParams({ view: mode, page: 1 });
+    };
+
+    const handleNavigate = (delta: number) => {
+        const mode = viewMode();
+        if (mode === 'list') {
+            setSearchParams({ page: page() + delta });
+        } else if (mode === 'week') {
+            const d = new Date(currentDate());
+            d.setDate(d.getDate() + (delta * 7));
+            setCurrentDate(d);
+        } else if (mode === 'month') {
+            const d = new Date(currentDate());
+            d.setMonth(d.getMonth() + delta);
+            setCurrentDate(d);
+        }
+    };
+
+    const rangeText = () => {
+        const mode = viewMode();
+        if (mode === 'month') {
+            return currentDate().toLocaleString('default', { month: 'long', year: 'numeric' });
+        }
+        
+        if (mode === 'week') {
+            const start = new Date(currentDate());
+            start.setDate(start.getDate() - start.getDay());
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            const f = (d: Date) => d.toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
+            return `${f(start)} - ${f(end)}`;
+        }
+
+        return `Page ${page()}`;
+    };
 
     const getParam = (key: string) => {
         const val = searchParams[key];
@@ -180,14 +219,28 @@ export default function EventsPage() {
                             </form>
                         </Show>
                         <div class="toggle-group liquid-container" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px" }}>
-                            <button classList={{ active: viewMode() === 'list' }} onClick={() => setSearchParams({ view: 'list' })}>
+                            <button classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')}>
                                 <span innerHTML={LIST_SVG} /> List
                             </button>
-                            <button classList={{ active: viewMode() === 'week' }} onClick={() => setSearchParams({ view: 'week' })}>
+                            <button classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')}>
                                 <span innerHTML={CALENDAR_TODAY_SVG} /> Week
                             </button>
-                            <button classList={{ active: viewMode() === 'month' }} onClick={() => setSearchParams({ view: 'month' })}>
+                            <button classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')}>
                                 <span innerHTML={DASHBOARD_SVG} /> Month
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="week-navigator">
+                        <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 1.25rem", "--liquid-border-radius": "100px" }}>
+                            <button class="nav-btn prev-week" onClick={() => handleNavigate(-1)}>
+                                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
+                            </button>
+                            <div class="current-week-display" style={{ "min-width": "180px", "text-align": "center" }}>
+                                <span>{rangeText()}</span>
+                            </div>
+                            <button class="nav-btn next-week" onClick={() => handleNavigate(1)}>
+                                <span innerHTML={ARROW_FORWARD_IOS_SVG} />
                             </button>
                         </div>
                     </div>
@@ -263,7 +316,7 @@ export default function EventsPage() {
                         </Show>
                         <PaginationSlider 
                             currentPage={page()} 
-                            oldContent={<EventTable data={oldPageData()} />}
+                            oldContent={<EventTable data={oldData()} />}
                         >
                             <EventTable data={data()} />
                         </PaginationSlider>
@@ -282,7 +335,16 @@ export default function EventsPage() {
             <Show when={viewMode() === 'week' || viewMode() === 'month'}>
                 <CalendarWidget 
                     adminMode={true} 
-                    initialMode={viewMode() as CalendarViewMode}
+                    hideHeader={true}
+                    viewMode={viewMode() as CalendarViewMode}
+                    date={currentDate()}
+                    onDateChange={setCurrentDate}
+                    onDayClick={(d) => {
+                        if (viewMode() === 'month') {
+                            setCurrentDate(d);
+                            setView('week');
+                        }
+                    }}
                     onEventClick={(e) => navigate(`/admin/event/${e.id}`)}
                 />
             </Show>
