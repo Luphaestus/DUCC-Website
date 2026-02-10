@@ -5,6 +5,7 @@ export type Biome = 'sunny' | 'rainy' | 'winter' | 'autumn';
 
 interface KayakerState {
     group: THREE.Group;
+    body: THREE.Mesh;
     paddle: THREE.Group;
     offset: number;
 }
@@ -42,21 +43,21 @@ export class RiverScene {
     theme: Theme = 'dark';
     biome: Biome = 'sunny';
     fog: THREE.Fog;
-    
+
     // Scene Objects
     chunks: ChunkState[] = [];
     kayakers: KayakerState[] = [];
     planes: Entity[] = [];
     birds: BirdEntity[] = [];
     fish: THREE.Group[] = [];
-    
+
     // Environment Objects
     sun!: THREE.Mesh;
     moon!: THREE.Mesh;
     moonLight!: THREE.DirectionalLight;
     stars!: THREE.Points;
     weatherSystem!: THREE.Points;
-    
+
     lights: {
         ambient: THREE.AmbientLight;
         directional: THREE.DirectionalLight;
@@ -138,7 +139,7 @@ export class RiverScene {
         window.addEventListener('resize', this.handleResize);
         window.addEventListener('mousemove', this.handleMouseMove);
         window.addEventListener('scroll', this.handleScroll);
-        
+
         this.animate();
     }
 
@@ -179,7 +180,7 @@ export class RiverScene {
         // Period 60 matches the chunk size nicely.
         const k = 2 * Math.PI / 60;
         const organicSteps = Math.sin(z * k) * 3.0;
-        
+
         return z * dropPerUnit + organicSteps;
     }
 
@@ -190,16 +191,16 @@ export class RiverScene {
         const k = 2 * Math.PI / 60;
         // 3 * k approx 0.31. 
         // Slope ranges from 0.2 - 0.31 (-0.11, upstream/eddy) to 0.2 + 0.31 (0.51, steep).
-        
+
         const slope = 0.2 + 3.0 * k * Math.cos(z * k);
-        
+
         // If slope > 0.35, it's a rapid.
         const rapidIntensity = THREE.MathUtils.smoothstep(slope, 0.3, 0.5);
-        
+
         // Add some noise rapids in other areas
         const noise = Math.sin(z * 0.5) * Math.cos(z * 0.1);
         const texture = Math.max(0, noise * 0.3);
-        
+
         return Math.min(1.0, rapidIntensity + texture);
     }
 
@@ -214,23 +215,23 @@ export class RiverScene {
             const normDist = distFromCenter / riverWidth;
             // Parabolic bottom, deeper in middle (-4)
             let h = -4 * (1.0 - Math.pow(normDist, 3));
-            
+
             // Add turbulence height based on rapids
             const rapids = this.getIsRapids(z);
             h += (Math.sin(x * 1.5) + Math.cos(z * 0.5)) * 0.5 * rapids;
-            
+
             return h + slopeHeight;
         } else {
             // Banks / Terrain
             const bankSlope = 0.8;
             let h = 2 + (distFromCenter - riverWidth) * bankSlope;
-            
+
             // Terrain noise
             const k = 2 * Math.PI / 300;
             const noise = Math.sin(x * 0.3) + Math.cos(z * k * 10);
             const biomeMix = Math.sin(z * k) * 0.5 + 0.5;
             h += noise * THREE.MathUtils.lerp(1.5, 4.0, biomeMix);
-            
+
             return h + slopeHeight;
         }
     }
@@ -254,7 +255,7 @@ export class RiverScene {
         const waveIntensity = 0.4 + (rapids * 2.0);
         let dynamicWave = Math.sin(xGlobal * 0.8 + zForSampling * 0.2 + elapsed * 2.0) * 0.15;
         dynamicWave += Math.cos(zForSampling * (kw * 30.0) + elapsed * 1.5) * 0.15;
-        
+
         // Match Shader Curvature
         const zRel = zGlobal - 15.0;
         let curveDrop = 0;
@@ -286,44 +287,39 @@ export class RiverScene {
             `;
 
             const waveCode = isWater ? `
-                float k_s = 2.0 * 3.14159 / 60.0; // Matches physical period
+                vec4 worldPos = modelMatrix * vec4(transformed, 1.0);
+                float k_s = 2.0 * 3.14159 / 60.0;
                 float kw = 2.0 * 3.14159 / 300.0;
                 float zRiver = worldPos.z - uTime * uSpeed;
-                
-                // Rapids logic: based on slope derivative approx (cosine)
-                // We want foam where slope is steep.
-                // Our height function has sin(z * k). Slope has cos(z * k).
-                // Max slope at cos = 1.
-                
                 float slope_deriv = 0.2 + 0.3 * cos(zRiver * k_s);
                 float r_val = smoothstep(0.35, 0.5, slope_deriv);
-                
                 float waveIntensity = 0.4 + (r_val * 2.5);
-
-                // Waves
                 float wave = sin(worldPos.x * 0.8 + zRiver * 0.2 + uTime * 2.0) * 0.15;
                 wave += cos(zRiver * (kw * 30.0) + uTime * 1.5) * 0.15;
-                wave += sin(worldPos.x * 1.5 + zRiver * (kw * 60.0) + uTime * 3.0) * 0.05;
-                
                 transformed.z += wave * waveIntensity;
-                
-                // Foam Base
-                float foamBase = 0.4 + smoothstep(0.1, 0.25, wave * waveIntensity) * 0.6;
-                vFoam = r_val * foamBase;
+                vFoam = r_val * (0.4 + smoothstep(0.1, 0.25, wave * waveIntensity) * 0.6);
             ` : '';
 
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <begin_vertex>',
                 `
                 #include <begin_vertex>
-                vec4 worldPos = modelMatrix * vec4(transformed, 1.0);
-                float zRel = worldPos.z - 15.0; 
+                ${waveCode}
+                `
+            );
+
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <project_vertex>',
+                `
+                vec4 curvedWorldPos = modelMatrix * vec4( transformed, 1.0 );
+                float zRel = curvedWorldPos.z - 15.0; 
                 if (zRel < 0.0) {
                     float curveFactor = zRel * zRel * 0.00003; 
-                    transformed.z -= curveFactor * (2.0 + uCurve.y); 
-                    transformed.x += curveFactor * uCurve.x * 20.0;
+                    curvedWorldPos.z -= curveFactor * (2.0 + uCurve.y); 
+                    curvedWorldPos.x += curveFactor * uCurve.x * 20.0;
                 }
-                ${waveCode}
+                vec4 mvPosition = viewMatrix * curvedWorldPos;
+                gl_Position = projectionMatrix * mvPosition;
                 `
             );
 
@@ -386,7 +382,7 @@ export class RiverScene {
         // Water needs to be wider to cover bends
         const waterGeo = new THREE.PlaneGeometry(40, length, 40, lengthSegments);
         const waterPos = waterGeo.getAttribute('position');
-        
+
         for (let i = 0; i < waterPos.count; i++) {
             const zGlobal = zOffset - waterPos.getY(i);
             const xLocal = waterPos.getX(i);
@@ -404,7 +400,7 @@ export class RiverScene {
             waterPos.setZ(i, slopeHeight + noise * waveIntensity);
         }
         waterGeo.computeVertexNormals();
-        
+
         const waterMat = new THREE.MeshPhysicalMaterial({
             transparent: true,
             opacity: 0.8,
@@ -432,13 +428,13 @@ export class RiverScene {
             const pZGlobal = pZLocal + zOffset;
             const riverX = this.getPathX(pZGlobal);
             const width = this.getRiverWidth(pZGlobal);
-            
+
             // Place rocks either in river or on banks
             const inRiver = Math.random() > 0.4;
-            const offset = inRiver 
-                ? (Math.random() - 0.5) * width * 0.8 
+            const offset = inRiver
+                ? (Math.random() - 0.5) * width * 0.8
                 : (Math.random() > 0.5 ? 1 : -1) * (width + 2 + Math.random() * 5);
-                
+
             const pX = riverX + offset;
 
             const rockGeo = new THREE.DodecahedronGeometry(Math.random() * 0.8 + 0.5, 0);
@@ -457,7 +453,7 @@ export class RiverScene {
             const pZGlobal = pZLocal + zOffset;
             const riverX = this.getPathX(pZGlobal);
             const width = this.getRiverWidth(pZGlobal);
-            
+
             // Trees always on banks
             const pX = riverX + (Math.random() > 0.5 ? 1 : -1) * (width + 4 + Math.random() * 20);
 
@@ -484,7 +480,7 @@ export class RiverScene {
     private createKayaker(pos: [number, number, number], color: string, paddlerColor: string, offset: number) {
         const group = new THREE.Group();
 
-        // Hull
+        // --- 1. Hull & Cockpit (Base of the boat) ---
         const points = [
             new THREE.Vector2(0, -2.2),
             new THREE.Vector2(0.25, -1.5),
@@ -502,65 +498,100 @@ export class RiverScene {
         hull.castShadow = true;
         group.add(hull);
 
-        // Cockpit
+        const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        this.modifyMaterial(rimMat);
         const rim = new THREE.Mesh(
             new THREE.TorusGeometry(0.25, 0.03, 8, 16),
-            new THREE.MeshStandardMaterial({ color: 0x111111 })
+            rimMat
         );
         rim.rotation.x = -Math.PI / 2;
         rim.position.set(0, 0.45, 0);
         rim.scale.set(1, 1.5, 1);
         group.add(rim);
 
-        // Paddler
+        // --- 2. The Paddler (Body) ---
         const bodyMat = new THREE.MeshStandardMaterial({ color: paddlerColor });
         this.modifyMaterial(bodyMat);
+        // Body is the parent for Head and Paddle
         const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.55, 8), bodyMat);
-        body.position.set(0, 0.6, 0);
+        body.position.set(0, 0.6, 0); // Position relative to Boat
+        body.castShadow = true;
         group.add(body);
 
+        // Head (Child of Body)
         const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0a9 });
         this.modifyMaterial(headMat);
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), headMat);
-        head.position.set(0, 1.0, 0);
-        group.add(head);
+        head.position.set(0, 0.4, 0); // Relative to Body center (0.55 height / 2 approx)
+        head.castShadow = true;
+        body.add(head);
 
-        // Paddle - Fixed Geometry
+        // --- 3. The Paddle (Child of Body) ---
         const paddleGroup = new THREE.Group();
-        // Lowered position to be closer to hands/water. Adjusted Z to be in front of body.
-        paddleGroup.position.set(0, 0.7, 0.3);
+        // Position relative to BODY. 
+        // Body center is 0. We want it slightly up (shoulders) and forward.
+        paddleGroup.position.set(0, 0.2, -0.4);
 
         const shaftMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
         this.modifyMaterial(shaftMat);
-        // Thicker shaft
         const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.8, 8), shaftMat);
         shaft.rotation.z = Math.PI / 2;
+        shaft.castShadow = true;
         paddleGroup.add(shaft);
 
-        const bladeMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, side: THREE.DoubleSide });
+        const bladeMat = new THREE.MeshStandardMaterial({ 
+            color: 0xeeeeee, 
+            side: THREE.DoubleSide,
+            roughness: 0.3,
+            metalness: 0.2
+        });
         this.modifyMaterial(bladeMat);
-        const bladeGeo = new THREE.BoxGeometry(0.6, 0.35, 0.05);
+
+        // Create a realistic asymmetric teardrop shape for the blade
+        const bladeShape = new THREE.Shape();
+        bladeShape.moveTo(0, 0.03);
+        bladeShape.bezierCurveTo(0.2, 0.03, 0.4, 0.18, 0.75, 0.15);
+        bladeShape.bezierCurveTo(0.85, 0.12, 0.85, -0.12, 0.75, -0.15);
+        bladeShape.bezierCurveTo(0.4, -0.18, 0.2, -0.03, 0, -0.03);
+        bladeShape.lineTo(0, 0.03);
+
+        const bladeGeo = new THREE.ShapeGeometry(bladeShape, 12);
+        // Add a "spoon" curve to the blade vertices
+        const positions = bladeGeo.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i);
+            positions.setZ(i, Math.pow(x, 1.5) * 0.15);
+        }
+        bladeGeo.computeVertexNormals();
 
         const leftBlade = new THREE.Mesh(bladeGeo, bladeMat);
         leftBlade.position.set(-1.4, 0, 0);
+        leftBlade.rotation.y = Math.PI; // Point outwards and face the right way
+        leftBlade.rotation.x = Math.PI / 8; // Slight angle for realism
+        leftBlade.castShadow = true;
         paddleGroup.add(leftBlade);
 
         const rightBlade = new THREE.Mesh(bladeGeo, bladeMat);
         rightBlade.position.set(1.4, 0, 0);
-        rightBlade.rotation.x = Math.PI / 2; // Feathered
+        rightBlade.rotation.x = Math.PI / 2 + Math.PI / 8; // Feathered + slight angle
+        rightBlade.castShadow = true;
         paddleGroup.add(rightBlade);
 
-        group.add(paddleGroup);
+        // Attach Paddle to Body
+        body.add(paddleGroup);
 
+        // Wrapper for the whole kayak
         const wrapper = new THREE.Group();
-        wrapper.position.set(...pos); 
+        wrapper.position.set(...pos);
         wrapper.add(group);
-        return { wrapper, paddle: paddleGroup, offset };
+
+        // Return body in the object so we can animate it
+        return { wrapper, paddle: paddleGroup, body, offset };
     }
 
     private initKayakers() {
         const wrapper = new THREE.Group();
-        wrapper.position.y = -5.5; // Base water level
+        wrapper.position.y = -5.5;
 
         const colors = [
             ['#D97706', '#ef4444'], ['#68246D', '#22c55e'], ['#0ea5e9', '#f59e0b'],
@@ -571,10 +602,17 @@ export class RiverScene {
             const z = -2 - (i * 3);
             const x = (i % 2 === 0 ? 1 : -1) * (1.5 + Math.random());
             const c = colors[i % colors.length];
-            // Offset logic for animation phase
+
             const k = this.createKayaker([x, 0, z], c[0], c[1], i * 1.5);
+
             wrapper.add(k.wrapper);
-            this.kayakers.push({ group: k.wrapper, paddle: k.paddle, offset: i * 1.5 });
+            // Store body here
+            this.kayakers.push({
+                group: k.wrapper,
+                paddle: k.paddle,
+                body: k.body,
+                offset: i * 1.5
+            });
         }
         this.scene.add(wrapper);
     }
@@ -585,7 +623,7 @@ export class RiverScene {
         const group = new THREE.Group();
         const startX = Math.random() > 0.5 ? -100 : 100;
         group.position.set(startX, 15 + Math.random() * 15, this.camera.position.z - 30 - Math.random() * 50);
-        
+
         const birdMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.3), birdMat);
         wingL.position.x = -0.4;
@@ -593,7 +631,7 @@ export class RiverScene {
         const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.3), birdMat);
         wingR.position.x = 0.4;
         group.add(wingR);
-        
+
         this.scene.add(group);
         this.birds.push({
             mesh: group,
@@ -608,7 +646,7 @@ export class RiverScene {
         const startX = fromLeft ? -120 : 120;
         const endX = fromLeft ? 120 : -120;
         group.position.set(startX, 50 + Math.random() * 20, this.camera.position.z - 80 - Math.random() * 40);
-        
+
         const body = new THREE.Mesh(new THREE.CapsuleGeometry(1, 8, 4, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
         body.rotation.z = Math.PI / 2;
         group.add(body);
@@ -617,7 +655,7 @@ export class RiverScene {
         const tail = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.2), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
         tail.position.set(-3.5, 1, 0);
         group.add(tail);
-        
+
         group.lookAt(endX, group.position.y, group.position.z);
         this.scene.add(group);
         this.planes.push({ mesh: group, speed: (fromLeft ? 1 : -1) * (40 + Math.random() * 20) });
@@ -734,36 +772,36 @@ export class RiverScene {
         this.biome = biome;
         const isDark = biome !== 'sunny';
         const isWinter = biome === 'winter';
-        
-        let bgColor = biome === 'rainy' ? '#1e293b' : 
-                      biome === 'winter' ? (this.theme === 'dark' ? '#0f172a' : '#f8fafc') :
-                      biome === 'autumn' ? (this.theme === 'dark' ? '#451a03' : '#fef3c7') :
-                      '#e0f2fe';
+
+        let bgColor = biome === 'rainy' ? '#1e293b' :
+            biome === 'winter' ? (this.theme === 'dark' ? '#0f172a' : '#f8fafc') :
+                biome === 'autumn' ? (this.theme === 'dark' ? '#451a03' : '#fef3c7') :
+                    '#e0f2fe';
 
         this.scene.background = new THREE.Color(bgColor);
         this.fog.color = new THREE.Color(bgColor);
-        
+
         // Light intensity
         this.lights.ambient.intensity = isDark ? 0.3 : 0.8;
         this.lights.directional.intensity = isDark ? 0.5 : 1.5;
-        
+
         // Sky visibility
         const isSunny = biome === 'sunny' || (biome === 'autumn' && this.theme === 'light');
         this.sun.visible = isSunny;
         this.moon.visible = !isSunny;
         this.moonLight.visible = !isSunny;
         this.stars.visible = !isSunny;
-        
+
         // Weather visibility
         this.weatherSystem.visible = biome === 'rainy' || biome === 'winter';
-        
+
         // Chunk colors (Simplified update loop)
         this.chunks.forEach(chunk => {
             const terrain = chunk.mesh.children[0] as THREE.Mesh;
             const water = chunk.mesh.children[1] as THREE.Mesh;
             const tMat = terrain.material as THREE.MeshStandardMaterial;
             const wMat = water.material as THREE.MeshPhysicalMaterial;
-            
+
             if (biome === 'winter') {
                 tMat.color.set(0xf1f5f9);
                 wMat.color.set(0x38bdf8);
@@ -812,7 +850,7 @@ export class RiverScene {
         this.updateChunks(delta);
         this.updateEntities(delta, elapsed);
         this.updateWeather(delta);
-        
+
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -820,11 +858,11 @@ export class RiverScene {
         // Interaction
         this.uniforms.uCurve.value.x = THREE.MathUtils.lerp(this.uniforms.uCurve.value.x, this.mouse.x * 2.0, 0.05);
         this.uniforms.uCurve.value.y = 1.0;
-        
+
         // Kayakers Logic
         let avgX = 0;
         let avgY = 0;
-        
+
         this.kayakers.forEach(k => {
             const t = elapsed + k.offset;
             const zGlobal = k.group.position.z;
@@ -835,29 +873,35 @@ export class RiverScene {
             const targetX = this.getPathX(zForSampling);
             // Limit lateral movement to river width
             const riverWidth = this.getRiverWidth(zForSampling);
-            
+
             const mouseSteer = this.mouse.x * 6.0;
             const desiredX = targetX + (Math.sin(t * 0.5) * 2.5) + mouseSteer;
-            
+
             // Soft clamp to river width
             const clampX = THREE.MathUtils.clamp(desiredX, targetX - riverWidth + 3, targetX + riverWidth - 3);
 
             k.group.position.x = THREE.MathUtils.lerp(k.group.position.x, clampX, 0.05);
-            
+
             // Sample Height
             const hCenter = this.getWaterHeight(k.group.position.x, zGlobal, elapsed);
             const hFront = this.getWaterHeight(k.group.position.x, zGlobal - 1.0, elapsed);
             const hBack = this.getWaterHeight(k.group.position.x, zGlobal + 1.0, elapsed);
-            
+
             k.group.position.y = hCenter;
-            
+
             // Stats for Camera
             avgX += k.group.position.x;
             avgY += k.group.position.y;
 
-            // Paddle Animation
+            // Paddle Animation (Rowing stroke)
             k.paddle.rotation.x = Math.sin(t * 3) * 0.8;
             k.paddle.rotation.z = Math.sin(t * 3) * 0.2;
+
+            // Torso Animation (Leaning with the stroke)
+            // Since paddle is a child of body, rotating body moves the paddle too!
+            k.body.rotation.x = 0.15; // Base forward lean
+            k.body.rotation.z = Math.cos(t * 3) * 0.15; // Lean left/right
+            k.body.rotation.y = Math.cos(t * 3) * 0.2;  // Twist torso
 
             // Boat Physics (Pitch/Roll)
             const boatGroup = k.group.children[0];
@@ -871,10 +915,10 @@ export class RiverScene {
         // Camera Follow
         avgX /= this.kayakers.length;
         avgY /= this.kayakers.length;
-        
+
         const camTargetX = avgX * 0.5 + this.mouse.x * 5.0;
         const camTargetY = Math.max(8 + avgY, avgY + 5.0) + this.mouse.y * 2.0;
-        
+
         this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, camTargetX, 0.05);
         this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, camTargetY, 0.05);
         this.camera.lookAt(avgX * 0.5, avgY + 2, -30);
@@ -954,7 +998,7 @@ export class RiverScene {
             ud.age += delta;
             ud.velocity.y -= 25 * delta; // Gravity
             f.position.y += ud.velocity.y * delta;
-            
+
             f.lookAt(f.position.x, f.position.y + ud.velocity.y, f.position.z - 5);
             f.children[1].rotation.z = Math.sin(elapsed * 25) * 0.5; // Tail
 
@@ -969,7 +1013,7 @@ export class RiverScene {
 
     private updateWeather(delta: number) {
         if (!this.weatherSystem.visible) return;
-        
+
         const positions = this.weatherSystem.geometry.attributes.position.array as Float32Array;
         const vels = this.weatherSystem.geometry.attributes.velocity.array as Float32Array;
         const count = positions.length / 3;
