@@ -4,12 +4,13 @@ import { useSearchParams, useNavigate, useLocation } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import {
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG,
-    REFRESH_SVG, SETTINGS_SVG, DASHBOARD_SVG, LIST_SVG, CALENDAR_TODAY_SVG
+    REFRESH_SVG, DASHBOARD_SVG, LIST_SVG, CALENDAR_TODAY_SVG
 } from '@/utils/icons';
 import { StandardCard, EventData } from '../widgets/StandardCard';
 import { useAuth } from "@/stores/auth";
 import PaginationSlider from "@/components/PaginationSlider";
 import PageTitle from "@/components/PageTitle";
+import { TabNav } from "../widgets/TabNav";
 import CalendarWidget, { CalendarViewMode } from "../widgets/CalendarWidget";
 
 interface PageData {
@@ -22,7 +23,7 @@ export default function EventsPage(props: ParentProps) {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, isAdmin } = useAuth();
+    const { user } = useAuth();
     const [isRefreshing, setIsRefreshing] = createSignal(false);
     const [oldPageData, setOldData] = createSignal<PageData | null>(null);
     const [isTransitioning, setIsTransitioning] = createSignal(false);
@@ -42,7 +43,7 @@ export default function EventsPage(props: ParentProps) {
 
     const [pageData, { mutate, refetch }] = createResource<PageData, number>(page, async (p, { value }) => {
         if (value) setOldData(value);
-        return await apiRequest('GET', `/api/events/paged/${p}`) as PageData;
+        return await apiRequest('GET', `/api/events/paged/${p}`, null, true) as PageData;
     });
 
     const refresh = async () => {
@@ -166,6 +167,10 @@ export default function EventsPage(props: ParentProps) {
                 viewMode={viewMode() as CalendarViewMode}
                 onDateChange={setCurrentDate}
                 onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)} 
+                onDayClick={(day) => {
+                    setCurrentDate(day);
+                    setView('list');
+                }}
             />
         </Show>
     );
@@ -194,21 +199,13 @@ export default function EventsPage(props: ParentProps) {
             <PageTitle text="Upcoming Events" />
             <div class="events-controls-modern">
                 <div class="admin-control-wrapper">
-                    <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 0.75rem" }} {...{ paused: isTransitioning() } as any}>
-                        <Show when={isAdmin()}>
-                            <button class="admin-link-btn" title="Event Admin" onClick={() => navigate('/admin/events')}>
-                                <span innerHTML={SETTINGS_SVG} />
-                                <span class="btn-text">Admin</span>
-                            </button>
+                    <TabNav class="toggle-group-mini" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px", "margin-left": "0" }}>
+                        <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
+                        <Show when={isDesktop()}>
+                            <button class="tab-btn" classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
+                            <button class="tab-btn" classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
                         </Show>
-                        <div class="toggle-group-mini liquid-container" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px" }}>
-                            <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
-                            <Show when={isDesktop()}>
-                                <button class="tab-btn" classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
-                                <button class="tab-btn" classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
-                            </Show>
-                        </div>
-                    </div>
+                    </TabNav>
                 </div>
 
                 <div class="week-navigator">

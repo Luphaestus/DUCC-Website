@@ -24,7 +24,7 @@ let reconnectInterval: ReturnType<typeof setInterval> | null = null;
  */
 async function updateConnectionStatus(newStatus: boolean | null): Promise<void> {
     if (newStatus === null) {
-        apiRequest('GET', '/api/health', false).catch();
+        apiRequest('GET', '/api/health', false, true).catch();
         return;
     }        
 

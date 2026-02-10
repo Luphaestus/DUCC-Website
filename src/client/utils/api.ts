@@ -31,9 +31,10 @@ NoInternetEvent.subscribe(() => {
  * @param {string} method - HTTP method (GET, POST, PUT, DELETE).
  * @param {string} url - Target URL.
  * @param {any} [data=null] - Json Payload, or cache controls for GET requests.
+ * @param {boolean} [silent=false] - If true, skip automatic redirects and notifications on error.
  * @returns {Promise<any>}
  */
-async function apiRequest(method: string, url: string, data: any = null): Promise<any> {
+async function apiRequest(method: string, url: string, data: any = null, silent: boolean = false): Promise<any> {
     if (method === 'GET') {
         if (data === true) {
             if (cache.has(url)) return cache.get(url)!;
@@ -90,13 +91,13 @@ async function apiRequest(method: string, url: string, data: any = null): Promis
                 // If the server responded with an error, it's NOT a connection loss
                 const error = result || { message: 'Request failed with status: ' + response.status };
                 
-                if (response.status === 401) {
+                if (response.status === 401 && !silent) {
                     // Unauthorized: Redirect to login if not already there
                     if (!window.location.pathname.startsWith('/login')) {
                         if (window.solidNavigate) window.solidNavigate('/login');
                         else window.location.href = '/login';
                     }
-                } else if (response.status === 403) {
+                } else if (response.status === 403 && !silent) {
                     // Forbidden: Redirect to unauthorised page only on GET requests
                     // For other methods (POST, etc.), we assume the caller will handle it (e.g., showing an error in a modal)
                     if (method === 'GET' && !window.location.pathname.startsWith('/unauthorised')) {
@@ -104,24 +105,25 @@ async function apiRequest(method: string, url: string, data: any = null): Promis
                         else window.location.href = '/unauthorised';
                     }
                     notify('Access Denied', error.message || 'You do not have permission to perform this action.', NotificationTypes.WARNING);
-                } else if (response.status >= 500) {
+                } else if (response.status >= 500 && !silent) {
                     notify('Server Error', error.message || 'An internal server error occurred.', NotificationTypes.ERROR);
                 }
 
                 throw error;
             }
         } catch (error: any) {
-            if (error.name === 'AbortError') throw error;
+            const isAbort = error.name === 'AbortError' || error.message?.toLowerCase().includes('aborted');
+            if (isAbort) throw error;
             
             // Only update connection status to false if it's a network error (no response)
-            if (!gotResponse) {
+            if (!gotResponse && !silent) {
                 updateConnectionStatus(false);
             }
             
             const finalError = error.message ? error : { message: 'Network error' };
             
             // If it's a generic network error (not a status-based one), notify
-            if (!gotResponse || finalError.message === 'Network error') {
+            if (!silent && !gotResponse) {
                 notify('Network Error', 'Check your connection.', NotificationTypes.ERROR, 5000, 'network-error');
             }
 

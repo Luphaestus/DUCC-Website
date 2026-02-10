@@ -113,7 +113,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                 limit: '500' 
             });
             
-            const res = await apiRequest('GET', `${endpoint}?${query.toString()}`);
+            const res = await apiRequest('GET', `${endpoint}?${query.toString()}`, null, true);
             let allEvents = (props.adminMode ? res.events : res.events) as CalendarEvent[];
             
             return allEvents.filter(e => {

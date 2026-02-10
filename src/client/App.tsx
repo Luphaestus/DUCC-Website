@@ -36,8 +36,8 @@ export default function App(props: ParentProps) {
       order: 'desc',
       categoryId: ''
     });
-    apiRequest('GET', `/api/files?${filesQuery.toString()}`, true).catch(() => {});
-    apiRequest('GET', '/api/file-categories', true).catch(() => {});
+    apiRequest('GET', `/api/files?${filesQuery.toString()}`, true, true).catch(() => {});
+    apiRequest('GET', '/api/file-categories', true, true).catch(() => {});
 
     onCleanup(() => {
         cleanup();

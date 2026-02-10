@@ -159,6 +159,11 @@
             border-radius: 99px;
             padding: 4px;
             margin-left: 1rem;
+            position: relative; // Ensure relative positioning for absolute children
+
+            .toggle-bg {
+                border-radius: 99px !important;
+            }
 
             .tab-btn {
                 background: transparent !important;
@@ -176,9 +181,8 @@
                 font-weight: 700;
 
                 &.active {
-                    background: var(--pico-primary) !important;
+                    background: transparent !important;
                     color: white !important;
-                    box-shadow: 0 2px 8px rgba(var(--pico-primary-rgb), 0.3);
                 }
 
                 &:hover:not(.active) {

@@ -44,7 +44,7 @@ const checkAuthentication = (...requirements: string[]) => {
     return async (request: FastifyRequest, reply: FastifyReply) => {
         const authReq = request as AuthenticatedRequest;
         if (!authReq.isAuthenticated || !authReq.isAuthenticated()) {
-            return reply.status(401).send({ message: 'Unauthorized: Please log in.' });
+            return reply.status(401).send({ message: 'Unauthorized' });
         }
 
         for (const requirement of requirements) {

@@ -26,7 +26,7 @@ export function ErrorView(props: ErrorViewProps) {
     if (props.viewId !== 'no-connection') {
       setChecking(true);
       try {
-        const auth = await apiRequest('GET', '/api/auth/status');
+        const auth = await apiRequest('GET', '/api/auth/status', null, true);
         setAuthStatus(auth);
       } catch {
         // Fallback if the auth request itself fails (e.g. server down)

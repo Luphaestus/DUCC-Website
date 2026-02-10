@@ -1,7 +1,6 @@
 import { Show } from "solid-js";
 import Avatar from "@/components/Avatar";
 import { showGoodbye, outgoingPresident } from "@/stores/presidentGoodbye";
-import "@/pages/PresidentGoodbyePage.scss";
 
 export default function PresidentGoodbyeOverlay() {
     return (

@@ -70,5 +70,5 @@
 }
 
 .view {
-  will-change: transform, opacity, filter;
+  // will-change removed to fix memory warning
 }

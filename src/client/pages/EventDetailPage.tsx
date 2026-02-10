@@ -63,35 +63,39 @@ export default function EventDetailPage() {
     });
 
     const [eventData, { refetch: refetchEvent, mutate: mutateEvent }] = createResource(eventId, async (id) => {
-        const res = await apiRequest('GET', `/api/event/${id}`);
+        const res = await apiRequest('GET', `/api/event/${id}`, null, true);
         return res.event;
     });
 
     const [attendees, { refetch: refetchAttendees, mutate: mutateAttendees }] = createResource(eventId, async (id) => {
-        const res = await apiRequest('GET', `/api/event/${id}/attendees`);
+        const res = await apiRequest('GET', `/api/event/${id}/attendees`, null, true);
         return res.attendees || [];
     });
 
     const [userStatus] = createResource(async () => {
-        const auth = await apiRequest('GET', '/api/auth/status', true).catch(() => ({ authenticated: false }));
+        const auth = await apiRequest('GET', '/api/auth/status', null, true).catch(() => ({ authenticated: false }));
         if (!auth.authenticated) return null;
         return await apiRequest('GET', '/api/user/elements/filled_legal_info,balance,is_member,free_sessions,is_instructor,permissions,id');
     });
 
-    const [kitItems] = createResource(async () => {
+    const [kitItems] = createResource(userStatus, async (status) => {
+        if (!status) return [];
         try {
-            const res = await apiRequest('GET', '/api/kit');
+            const res = await apiRequest('GET', '/api/kit', null, true);
             return res || [];
         } catch { return []; }
     });
 
-    const [userKitRequests, { refetch: refetchUserKit }] = createResource(eventId, async (id) => {
-        if (!id) return [];
-        try {
-            const res = await apiRequest('GET', `/api/kit/event/${id}/my-request`);
-            return (res || []) as KitItem[];
-        } catch { return []; }
-    });
+    const [userKitRequests, { refetch: refetchUserKit }] = createResource(
+        () => ({ id: eventId(), user: userStatus() }),
+        async ({ id, user }) => {
+            if (!id || !user) return [];
+            try {
+                const res = await apiRequest('GET', `/api/kit/event/${id}/my-request`, null, true);
+                return (res || []) as KitItem[];
+            } catch { return []; }
+        }
+    );
 
     const canManage = createMemo(() => (userStatus()?.permissions?.length || 0) > 0);
     const isAttending = createMemo(() => attendees()?.some((a: any) => a.id === userStatus()?.id && (a.is_attending === undefined || a.is_attending === 1)));
@@ -275,71 +279,40 @@ export default function EventDetailPage() {
     
 
                                         <div class="event-actions">
-
                                             <Show when={!isAttending()}>
-
                                                 <Switch>
-
                                                     <Match when={eventStatus() === 'ended'}>
-
                                                         <button class="secondary outline" disabled>Event Ended</button>
-
                                                     </Match>
-
                                                     <Match when={eventStatus() === 'started'}>
-
                                                         <button class="secondary outline" disabled>Already Started</button>
-
                                                     </Match>
-
                                                     <Match when={eventStatus() === 'canceled'}>
-
                                                         <button class="secondary outline" disabled>Canceled</button>
-
                                                     </Match>
-
                                                     <Match when={eventStatus() === 'full'}>
-
                                                         <button class="secondary outline" disabled>Event Full</button>
-
                                                     </Match>
-
                                                     <Match when={eventStatus() === 'open'}>
-
                                                         <button class="primary" onClick={handleAttend}>Join Event</button>
-
                                                     </Match>
-
                                                 </Switch>
-
                                             </Show>
 
                                             <Show when={isAttending()}>
-
                                                 <button class="secondary outline" disabled>Joined</button>
-
                                                 <Show when={eventStatus() !== 'ended'}>
-
                                                     <button class="secondary" onClick={() => setIsKitModalOpen(true)}>
-
                                                         <span innerHTML={KAYAKING_SVG} /> Request Kit
-
                                                     </button>
-
                                                 </Show>
-
                                             </Show>
 
                                             <Show when={canManage()}>
-
                                                 <button class="secondary" onClick={() => navigate(`/admin/event/${event().id}`)}>
-
                                                     <span innerHTML={SETTINGS_SVG} /> Edit
-
                                                 </button>
-
                                             </Show>
-
                                         </div>
 
                                     </div>

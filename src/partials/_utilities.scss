@@ -248,6 +248,6 @@
 .liquid-container {
   @include liquid-glass(var(--liquid-padding, 1.5rem), var(--liquid-border-radius, 20px));
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }

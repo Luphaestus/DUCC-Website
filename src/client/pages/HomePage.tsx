@@ -1,10 +1,9 @@
-// todo clean up
 import { createSignal, onMount, onCleanup, createResource } from "solid-js";
 import { apiRequest, clearApiCache } from "@/utils/api";
 import { KAYAKING_SVG, SOCIAL_LEADERBOARD_SVG, CAMPING_SVG } from "@/utils/icons";
 
 export default function HomePage() {
-  const [slideImages, setSlideImages] = createSignal<string[]>([]);
+  const [_, setSlideImages] = createSignal<string[]>([]);
   const [activeLayer, setActiveLayer] = createSignal(0);
   const [layers, setLayers] = createSignal<[string | null, string | null]>([null, null]);
   const [currentIdx, setCurrentIdx] = createSignal(0);

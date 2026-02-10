@@ -14,7 +14,7 @@ import { switchView } from './view.js';
  */
 export async function requireAuth() {
     try {
-        const data = await apiRequest('GET', '/api/auth/status', true);
+        const data = await apiRequest('GET', '/api/auth/status', null, true);
         
         if (!data.authenticated) {
             sessionStorage.setItem('redirect_after_login', window.location.pathname + window.location.search);

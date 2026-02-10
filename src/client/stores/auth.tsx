@@ -19,9 +19,9 @@ export interface User {
 
 const [user, { mutate: setUser, refetch: refetchUser }] = createResource<User | null>(async () => {
     try {
-        const status = await apiRequest('GET', '/api/auth/status');
+        const status = await apiRequest('GET', '/api/auth/status', null, true);
         if (status.authenticated) {
-            return await apiRequest('GET', '/api/user/elements/permissions,is_member,id,swims,booties,balance,first_name,last_name,email');
+            return await apiRequest('GET', '/api/user/elements/permissions,is_member,id,swims,booties,balance,first_name,last_name,email', null, true);
         }
     } catch (e) {
         return null;

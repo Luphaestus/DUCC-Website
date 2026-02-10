@@ -82,7 +82,7 @@ function switchView(path: string, force: boolean = false): boolean {
 
     // Handle root path: redirect to events if logged in, home if not
     if (path === '/') {
-        apiRequest('GET', '/api/auth/status').then((data: any) => {
+        apiRequest('GET', '/api/auth/status', null, true).then((data: any) => {
             if (data.authenticated) switchView('/events');
             else switchView('/home');
         }).catch(() => switchView('/home'));

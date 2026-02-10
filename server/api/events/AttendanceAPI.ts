@@ -277,14 +277,15 @@ export default class AttendanceAPI {
         /**
          * Fetch list of attendees for an event.
          */
-        this.app.get('/api/event/:id/attendees', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+        this.app.get('/api/event/:id/attendees', async (request: any, reply: FastifyReply) => {
             const eventId = parseInt(request.params.id, 10);
             if (Number.isNaN(eventId)) return reply.status(400).send({ message: 'Event ID must be an integer' });
 
-            const eventCheck = await EventsDB.get_event_by_id(this.db, request.user.id, eventId);
+            const userId = request.user ? request.user.id : null;
+            const eventCheck = await EventsDB.get_event_by_id(this.db, userId, eventId);
             if (eventCheck.isError()) return eventCheck.getResponse(reply);
 
-            const isExec = await Permissions.hasAnyPermission(this.db, request.user.id);
+            const isExec = userId ? await Permissions.hasAnyPermission(this.db, userId) : false;
 
             let attendees;
             if (isExec) {

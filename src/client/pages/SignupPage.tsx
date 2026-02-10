@@ -18,7 +18,7 @@ export default function SignupPage() {
 
     onMount(async () => {
         try {
-            const status = await apiRequest('GET', '/api/auth/status', true);
+            const status = await apiRequest('GET', '/api/auth/status', null, true);
             if (status.authenticated) {
                 navigate('/events');
             }

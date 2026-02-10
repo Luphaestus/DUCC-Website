@@ -83,7 +83,8 @@ export class RiverScene {
     scrollProgress: number = 0;
     isMouseDown: boolean = false;
     mouseDownTime: number = 0;
-    cameraMode: 'default' | 'fpv' = 'default';
+    lastClickTime: number = 0;
+    cameraMode: 'default' | 'fpv' = 'fpv';
 
     constructor(container: HTMLElement, theme: Theme = 'dark') {
         this.container = container;
@@ -147,8 +148,23 @@ export class RiverScene {
         // Touch support for mobile
         window.addEventListener('touchstart', this.handleMouseDown);
         window.addEventListener('touchend', this.handleMouseUp);
+        window.addEventListener('dblclick', this.handleDoubleClick);
 
         this.animate();
+    }
+
+    handleDoubleClick = (event: MouseEvent | TouchEvent) => {
+        const target = event.target as HTMLElement;
+        // Ignore if clicking on interactive elements
+        if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('.card') || target.closest('.interactive')) return;
+
+        const biomes: Biome[] = ['sunny', 'rainy', 'winter', 'autumn'];
+        let nextBiome: Biome;
+        do {
+            nextBiome = biomes[Math.floor(Math.random() * biomes.length)];
+        } while (nextBiome === this.biome);
+        
+        this.updateBiome(nextBiome);
     }
 
     handleMouseDown = () => {
@@ -156,9 +172,18 @@ export class RiverScene {
         this.mouseDownTime = this.clock.elapsedTime;
     }
 
-    handleMouseUp = () => {
+    handleMouseUp = (event: MouseEvent | TouchEvent) => {
         this.isMouseDown = false;
-        this.cameraMode = 'default';
+        this.cameraMode = 'fpv';
+
+        // Manual double tap detection for mobile
+        if ('touches' in event || 'changedTouches' in event) {
+            const now = this.clock.elapsedTime;
+            if (now - this.lastClickTime < 0.3) {
+                this.handleDoubleClick(event as any);
+            }
+            this.lastClickTime = now;
+        }
     }
 
     private setupLights() {
@@ -191,13 +216,13 @@ export class RiverScene {
     }
 
     private getRiverSlopeHeight(z: number): number {
-        const dropPerUnit = 0.2;
+        const dropPerUnit = 0.4; // Steeper
         // "Pool and Drop" river profile, but strictly downward.
         // To ensure it never goes upwards, amplitude * k must be < dropPerUnit.
         // k = 2*PI / 60 = 0.1047. 
-        // 0.2 / 0.1047 = 1.91. We use 1.5 to be safe.
+        // 0.4 / 0.1047 = 3.82. We use 2.5 to be safe.
         const k = 2 * Math.PI / 60;
-        const organicSteps = Math.sin(z * k) * 1.5;
+        const organicSteps = Math.sin(z * k) * 2.5;
 
         // Subtracting 30 to keep the river roughly at its original base level in the main view area
         return -z * dropPerUnit + organicSteps - 30;
@@ -205,12 +230,11 @@ export class RiverScene {
 
     private getIsRapids(z: number): number {
         const k = 2 * Math.PI / 60;
-        // The slope is -0.2 + 1.5 * k * cos(z * k)
-        // We look for the steepest downward sections (most negative slope)
-        const slope = -0.2 + 1.5 * k * Math.cos(z * k);
+        // The slope is -0.4 + 2.5 * k * cos(z * k)
+        const slope = -0.4 + 2.5 * k * Math.cos(z * k);
         
-        // Map slope range [-0.35, -0.05] to intensity
-        const rapidIntensity = THREE.MathUtils.smoothstep(-slope, 0.2, 0.35);
+        // Map slope range [-0.65, -0.15] to intensity
+        const rapidIntensity = THREE.MathUtils.smoothstep(-slope, 0.3, 0.6);
 
         // Add some noise rapids in other areas
         const noise = Math.sin(z * 0.5) * Math.cos(z * 0.1);
@@ -254,25 +278,31 @@ export class RiverScene {
     private getWaterHeight(xGlobal: number, zGlobal: number, elapsed: number): number {
         const speed = this.uniforms.uSpeed.value;
         const zForSampling = zGlobal - (speed * elapsed);
-        const kw = 2 * Math.PI / 300;
 
+        // Match Shader Params for Consistency
+        const k_path = 2 * Math.PI / 300;
+        const riverCenter = Math.sin(zForSampling * k_path * 2.0) * 6.0 + Math.cos(zForSampling * k_path) * 3.0;
+        const distFromCenter = Math.abs(xGlobal - riverCenter);
+        
         const slopeHeight = this.getRiverSlopeHeight(zForSampling);
-        const rapids = this.getIsRapids(zForSampling);
-        const riverX = this.getPathX(zForSampling);
-        const xLocal = xGlobal - riverX;
+        const rapids = this.getIsRapids(zForSampling); // 0 to 1
 
-        // Static noise (standing waves)
-        const staticIntensity = 0.5 + rapids * 3.0;
-        let staticNoise = Math.sin(xLocal * 0.8) * 0.15 + Math.cos(zForSampling * kw * 30.0) * 0.15;
-        staticNoise += Math.cos(xLocal * 0.4 - zForSampling * kw * 15.0) * 0.1;
-        staticNoise += Math.sin(xLocal * 2.0 + zForSampling * 0.5) * 0.05;
+        // Tongue Logic: Center is smoother in rapids
+        const tongueMask = Math.max(0, 1.0 - (distFromCenter / 6.0));
+        const tongueEffect = rapids * tongueMask;
 
-        // Dynamic waves
-        const waveIntensity = 0.4 + (rapids * 2.0);
-        let dynamicWave = Math.sin(xGlobal * 0.8 + zForSampling * 0.2 + elapsed * 2.0) * 0.15;
-        dynamicWave += Math.cos(zForSampling * (kw * 30.0) + elapsed * 1.5) * 0.15;
-        dynamicWave += Math.sin(xGlobal * 1.5 - zForSampling * 0.4 + elapsed * 4.0) * 0.05;
-        dynamicWave += Math.cos(xGlobal * 3.0 + zForSampling * 0.8 + elapsed * 6.0) * 0.02;
+        // Base flow movement (approximating noise with multiple sines)
+        let wave = Math.sin(zForSampling * 0.15 + elapsed * 2.0) * 0.4;
+        
+        // Edge Turbulence / Eddies
+        const edgeEffect = Math.max(0, (distFromCenter - 4.0) / 8.0);
+        wave += Math.sin(xGlobal * 1.5 + zForSampling * 0.5 + elapsed * 3.0) * 0.6 * edgeEffect * (1.0 + rapids);
+        
+        // Choppy Standing Waves in Rapids
+        const chop = Math.sin(xGlobal * 1.2) * Math.cos(zForSampling * 0.8 + elapsed * 5.0);
+        wave += chop * 0.3 * rapids * (1.0 - tongueEffect);
+
+        const waveAmp = 0.5 + (rapids * 2.0);
 
         // Match Shader Curvature
         const zRel = zGlobal - 15.0;
@@ -281,7 +311,7 @@ export class RiverScene {
             curveDrop = (zRel * zRel * 0.00003) * 3.0; // 3.0 match shader multiplier
         }
 
-        return slopeHeight + (staticNoise * staticIntensity) + (dynamicWave * waveIntensity) - curveDrop;
+        return slopeHeight + wave * waveAmp - curveDrop;
     }
 
     // =========================================
@@ -301,23 +331,70 @@ export class RiverScene {
                 uniform float uSpeed;
                 uniform vec2 uCurve;
                 ${isWater ? 'varying float vFoam;' : ''}
+                
+                // Simple pseudo-random noise for water texture
+                float hash(vec2 p) {
+                    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+                }
+                float noise(vec2 p) {
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    f = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+                }
+
                 ${shader.vertexShader}
             `;
 
             const waveCode = isWater ? `
                 vec4 worldPos = modelMatrix * vec4(transformed, 1.0);
+                
                 float k_s = 2.0 * 3.14159 / 60.0;
-                float kw = 2.0 * 3.14159 / 300.0;
                 float zRiver = worldPos.z - uTime * uSpeed;
-                float slope_deriv = -0.2 + 0.15 * cos(zRiver * k_s);
-                float r_val = smoothstep(0.2, 0.35, -slope_deriv);
-                float waveIntensity = 0.4 + (r_val * 2.5);
-                float wave = sin(worldPos.x * 0.8 + zRiver * 0.2 + uTime * 2.0) * 0.15;
-                wave += cos(zRiver * (kw * 30.0) + uTime * 1.5) * 0.15;
-                wave += sin(worldPos.x * 1.5 - zRiver * 0.4 + uTime * 4.0) * 0.05;
-                wave += cos(worldPos.x * 3.0 + zRiver * 0.8 + uTime * 6.0) * 0.02;
-                transformed.z += wave * waveIntensity;
-                vFoam = r_val * (0.4 + smoothstep(0.1, 0.25, wave * waveIntensity) * 0.6);
+                
+                // Calculate River Path
+                float k_path = 2.0 * 3.14159 / 300.0;
+                float riverCenter = sin(zRiver * k_path * 2.0) * 6.0 + cos(zRiver * k_path) * 3.0;
+                float distFromCenter = abs(worldPos.x - riverCenter);
+                
+                // Rapids / Slope Intensity
+                float slope_deriv = -0.4 + 0.25 * cos(zRiver * k_s);
+                float isRapid = smoothstep(0.3, 0.6, -slope_deriv);
+                
+                // TONGUE: The smooth V-shaped fast water in the center of rapids
+                float tongueMask = smoothstep(8.0, 1.0, distFromCenter);
+                float tongueEffect = isRapid * tongueMask;
+                
+                // WAVES & FLOW
+                float wave = 0.0;
+                
+                // 1. Longitudinal Flow Texture (Fast water look)
+                float flowLines = noise(vec2(worldPos.x * 0.8, zRiver * 0.1 + uTime * 4.0));
+                wave += flowLines * 0.4;
+                
+                // 2. Center "Tongue" Waves (Lower frequency, smoother)
+                float centerSwells = sin(zRiver * 0.15 + uTime * 2.0) * 0.5;
+                wave = mix(wave, centerSwells, tongueEffect * 0.7);
+                
+                // 3. Edge Turbulence / Eddies
+                float edgeNoise = noise(vec2(worldPos.x * 1.5, zRiver * 0.5 + uTime * 3.0));
+                float edgeEffect = smoothstep(4.0, 12.0, distFromCenter);
+                wave += edgeNoise * 0.6 * edgeEffect * (1.0 + isRapid);
+                
+                // 4. Choppy water (Standing waves in rapids)
+                float chop = sin(worldPos.x * 1.2) * cos(zRiver * 0.8 + uTime * 5.0);
+                wave += chop * 0.3 * isRapid * (1.0 - tongueEffect);
+
+                float waveAmp = 0.5 + (isRapid * 2.0);
+                transformed.z += wave * waveAmp;
+                
+                // FOAM: White water logic
+                float foamNoise = noise(vec2(worldPos.x * 3.0, zRiver * 1.5 + uTime * 6.0));
+                vFoam = isRapid * 0.4 * (1.0 - tongueEffect * 0.8) // White water in rapids
+                        + smoothstep(0.3, 0.6, wave * waveAmp * 0.1) * 0.3 // Peak foam
+                        + smoothstep(7.0, 15.0, distFromCenter) * 0.6 * foamNoise; // Bank spray
+                vFoam = clamp(vFoam, 0.0, 1.0);
             ` : '';
 
             shader.vertexShader = shader.vertexShader.replace(
@@ -351,8 +428,10 @@ export class RiverScene {
                     '#include <color_fragment>',
                     `
                     #include <color_fragment>
-                    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), vFoam * 0.6);
-                    diffuseColor.a = mix(diffuseColor.a, 1.0, vFoam * 0.5);
+                    // Foam color (white) mixed with water color
+                    vec3 foamColor = vec3(0.95, 0.98, 1.0);
+                    diffuseColor.rgb = mix(diffuseColor.rgb, foamColor, vFoam * 0.8);
+                    diffuseColor.a = mix(diffuseColor.a, 1.0, vFoam * 0.6);
                     `
                 );
             }
@@ -974,7 +1053,7 @@ export class RiverScene {
 
         // Mode Switching
         if (this.isMouseDown && (elapsed - this.mouseDownTime > 2.0)) {
-            this.cameraMode = 'fpv';
+            this.cameraMode = 'default';
         }
 
         let camTargetX = 0;
@@ -984,22 +1063,37 @@ export class RiverScene {
         let lookAtY = 0;
         let lookAtZ = 0;
 
-        if (this.cameraMode === 'fpv' && this.kayakers.length >= 2) {
-            // FPV of second to last kayaker
-            const targetK = this.kayakers[this.kayakers.length - 2];
+        if (this.cameraMode === 'fpv' && this.kayakers.length >= 1) {
+            // Very last kayaker (closest to camera in default view) is index 0
+            const targetK = this.kayakers[0];
             
-            // "Eyes" position: slightly up and forward from the boat center
-            // Boat center is at targetK.group.position
-            // We want to be where the head is.
-            camTargetX = targetK.group.position.x;
-            camTargetY = targetK.group.position.y + 1.2; // Head height
-            camTargetZ = targetK.group.position.z + 0.5; // Slightly behind the center? No, slightly forward for eyes.
+            // Hide the body and paddle of the kayaker we are "inside"
+            this.kayakers.forEach((k, idx) => {
+                k.body.visible = (idx !== 0);
+            });
             
-            // Look slightly forward and down
-            lookAtX = camTargetX;
-            lookAtY = camTargetY - 0.5;
-            lookAtZ = camTargetZ - 10;
+            // Get the hull group for rotation (pitch/roll)
+            const boatGroup = targetK.group.children[0];
+            
+            // Eye position relative to boat center: Exactly where the head is
+            const eyeOffset = new THREE.Vector3(0, -1.3, 1.3); 
+            eyeOffset.applyEuler(boatGroup.rotation);
+            
+            camTargetX = targetK.group.position.x + eyeOffset.x;
+            camTargetY = targetK.group.position.y + eyeOffset.y;
+            camTargetZ = targetK.group.position.z + eyeOffset.z;
+            
+            // Look target follows boat rotation
+            const lookOffset = new THREE.Vector3(0, -0.2, -15);
+            lookOffset.applyEuler(boatGroup.rotation);
+            
+            lookAtX = camTargetX + lookOffset.x;
+            lookAtY = camTargetY + lookOffset.y;
+            lookAtZ = camTargetZ + lookOffset.z;
         } else {
+            // Restore visibility for everyone
+            this.kayakers.forEach(k => k.body.visible = true);
+            
             // Default Camera
             avgX /= this.kayakers.length;
             avgY /= this.kayakers.length;
@@ -1056,8 +1150,8 @@ export class RiverScene {
                 chunk.mesh.position.z -= TOTAL_RIVER_LENGTH;
                 // Since our slope is strictly downward as Z increases, 
                 // moving back 300 units means moving to a HIGHER section.
-                // Drop over 300 units = 300 * 0.2 = 60.
-                chunk.mesh.position.y += 60;
+                // Drop over 300 units = 300 * 0.4 = 120.
+                chunk.mesh.position.y += 120;
             }
         });
     }
@@ -1185,6 +1279,7 @@ export class RiverScene {
         window.removeEventListener('mouseup', this.handleMouseUp);
         window.removeEventListener('touchstart', this.handleMouseDown);
         window.removeEventListener('touchend', this.handleMouseUp);
+        window.removeEventListener('dblclick', this.handleDoubleClick);
         if (this.container && this.renderer.domElement.parentNode === this.container) {
             this.container.removeChild(this.renderer.domElement);
         }
