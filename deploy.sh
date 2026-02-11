@@ -141,7 +141,7 @@ REMOTE_POST_CMD="cd DUCC-Website && DOMAIN_NAME=$DOMAIN_VAL docker compose build
 
 if [ "$MODE" = "dev" ]; then
     echo "       [INFO] Running in DEVELOPMENT mode."
-    REMOTE_POST_CMD="$REMOTE_POST_CMD && export APP_CMD='export NODE_ENV=dev && npm run db:init && node server/server.js'"
+    REMOTE_POST_CMD="$REMOTE_POST_CMD && export APP_CMD='export NODE_ENV=dev && npm run db:init && npx tsx server/server.ts'"
 else
     echo "       [INFO] Running in PRODUCTION mode."
     REMOTE_POST_CMD="$REMOTE_POST_CMD && unset APP_CMD"
