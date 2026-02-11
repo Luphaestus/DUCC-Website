@@ -155,7 +155,7 @@ const startServer = async () => {
     });
 
     /** Configure LiveReload for faster frontend development in dev mode. */
-    if (isDev) {
+    if (isDev && !process.env.DOCKER) {
       try {
         const livereload = (await import('livereload')).default;
         const connectLiveReload = (await import('connect-livereload')).default;
@@ -337,9 +337,9 @@ const startServer = async () => {
     });
 
     if (process.env.NODE_ENV !== 'test') {
-      const host = '0.0.0.0';
-      Logger.info(`Starting server in ${process.env.NODE_ENV} mode. Attempting to listen on ${host}:${PORT}...`);
-      const address = await fastify.listen({ port: PORT, host });
+      const listenHost = '0.0.0.0';
+      Logger.info(`Starting server in ${process.env.NODE_ENV} mode. Attempting to listen on ${listenHost}:${PORT}...`);
+      const address = await fastify.listen({ port: PORT, host: listenHost });
       Logger.info(`Server is running on ${address}`);
     }
 

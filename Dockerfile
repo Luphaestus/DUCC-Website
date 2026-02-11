@@ -27,10 +27,11 @@ RUN mkdir -p /app/data
 
 # Set environment to production
 ENV NODE_ENV=prod
-# Move database path via environment variable (I'll need to update server.js to use this)
+ENV DOCKER=true
+# Move database path via environment variable
 ENV DATABASE_PATH=/app/data/database.db
 
 EXPOSE 3000
 
 # Run database init then start
-CMD ["sh", "-c", "npm run db:init && npm start"]
+CMD ["npm", "start"]

@@ -151,21 +151,22 @@ fi
 
 export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
 DOMAIN_VAL="$DOMAIN_NAME"
-REMOTE_POST_CMD="cd DUCC-Website && docker compose build --progress=plain"
+
+REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && cd DUCC-Website && docker compose build --progress=plain"
 
 if [ "$MODE" = "dev" ]; then
     echo "       [INFO] Running in DEVELOPMENT mode."
-    REMOTE_POST_CMD="$REMOTE_POST_CMD && export APP_CMD='export NODE_ENV=dev && npm run db:init && npx tsx server/server.ts'"
-else
-    echo "       [INFO] Running in PRODUCTION mode."
-    REMOTE_POST_CMD="$REMOTE_POST_CMD && unset APP_CMD"
+    # In dev mode we still want to seed if requested, but we'll let the app handle normal start
+    REMOTE_SCRIPT="$REMOTE_SCRIPT && docker compose run --rm app npm run db:init -- dev --seed"
 fi
 
-REMOTE_POST_CMD="$REMOTE_POST_CMD && docker compose up -d --force-recreate --remove-orphans"
-REMOTE_POST_CMD="$REMOTE_POST_CMD && echo '--- Container Status ---' && docker compose ps"
-REMOTE_POST_CMD="$REMOTE_POST_CMD && echo '--- Recent Logs ---' && sleep 5 && docker compose logs --tail=20"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && docker compose up -d --force-recreate --remove-orphans"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Container Status ---' && docker compose ps"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Waiting for Startup ---' && sleep 10"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Recent Logs ---' && docker compose logs app --tail=20"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Local Health Check ---' && curl -s -I http://localhost:3000/api/health || echo 'Health check failed'"
 
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "export DOMAIN_NAME=$DOMAIN_VAL && $REMOTE_POST_CMD"
+sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_SCRIPT"
 
 echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$SERVER_IP if SSL pending/invalid)"
 echo ""
