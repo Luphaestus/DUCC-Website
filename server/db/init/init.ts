@@ -26,64 +26,80 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
     Logger.info(`DB Config: Host=${config.mysql.host} User=${config.mysql.user} DB=${config.mysql.database} Password=${config.mysql.password ? '******' : '(none)'}`);
     
     let canConnect = false;
-    // Test connection with target DB to verify credentials (expecting ER_BAD_DB_ERROR if creds are good but DB missing)
-    try {
-        const testPool = mysql.createPool({
-            host: config.mysql.host,
-            user: config.mysql.user,
-            password: config.mysql.password,
-            port: config.mysql.port,
-            database: config.mysql.database 
-        });
-        await testPool.query('SELECT 1');
-        await testPool.end();
-        Logger.info('Database already exists and is accessible.');
-        canConnect = true;
-    } catch (e: any) {
-        if (e.code === 'ER_BAD_DB_ERROR') {
-            Logger.info('Database does not exist (Authentication successful). Attempting to create...');
-            
-            const adminConnection = await mysql.createConnection({
-                host: config.mysql.host, 
+    let retries = 0;
+    const maxRetries = 20;
+
+    while (retries < maxRetries && !canConnect) {
+        try {
+            const testPool = mysql.createPool({
+                host: config.mysql.host,
                 user: config.mysql.user,
                 password: config.mysql.password,
-                port: config.mysql.port
+                port: config.mysql.port,
+                database: config.mysql.database,
+                connectTimeout: 10000 
             });
-            await adminConnection.query(`CREATE DATABASE IF NOT EXISTS ${config.mysql.database}`);
-            await adminConnection.end();
-            Logger.info('Database created successfully.');
+            await testPool.query('SELECT 1');
+            await testPool.end();
+            Logger.info('Database already exists and is accessible.');
             canConnect = true;
-        } else if (e.code === 'ER_HOST_NOT_PRIVILEGED' || e.code === 'ER_ACCESS_DENIED_ERROR') {
-            Logger.warn(`Access denied for user '${config.mysql.user}'. Attempting to fix permissions using root...`);
-            try {
-                const rootConnection = await mysql.createConnection({
-                    host: config.mysql.host,
-                    user: 'root',
-                    password: config.mysql.rootPassword,
-                    port: config.mysql.port
-                });
-                
-                Logger.info('Connected as root. Ensuring database and user permissions...');
-                await rootConnection.query(`CREATE DATABASE IF NOT EXISTS ${config.mysql.database}`);
-                await rootConnection.query(`CREATE USER IF NOT EXISTS '${config.mysql.user}'@'%' IDENTIFIED BY '${config.mysql.password}'`);
-                await rootConnection.query(`GRANT ALL PRIVILEGES ON ${config.mysql.database}.* TO '${config.mysql.user}'@'%'`);
-                await rootConnection.query(`ALTER USER '${config.mysql.user}'@'%' IDENTIFIED BY '${config.mysql.password}'`);
-                await rootConnection.query('FLUSH PRIVILEGES');
-                
-                await rootConnection.end();
-                Logger.info('Permissions fixed successfully.');
-                canConnect = true;
-            } catch (rootError: any) {
-                Logger.error('Failed to fix permissions as root:', rootError.message);
-                throw e; // Throw original error if root fix fails
+        } catch (e: any) {
+            if (e.code === 'ER_BAD_DB_ERROR') {
+                Logger.info('Database does not exist (Authentication successful). Attempting to create...');
+                try {
+                    const adminConnection = await mysql.createConnection({
+                        host: config.mysql.host, 
+                        user: config.mysql.user,
+                        password: config.mysql.password,
+                        port: config.mysql.port
+                    });
+                    await adminConnection.query(`CREATE DATABASE IF NOT EXISTS ${config.mysql.database}`);
+                    await adminConnection.end();
+                    Logger.info('Database created successfully.');
+                    canConnect = true;
+                } catch (adminError: any) {
+                    Logger.error('Failed to create database as user:', adminError.message);
+                    retries++;
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+            } else if (e.code === 'ER_HOST_NOT_PRIVILEGED' || e.code === 'ER_ACCESS_DENIED_ERROR') {
+                Logger.warn(`Access denied for user '${config.mysql.user}'. Attempting to fix permissions using root...`);
+                try {
+                    const rootConnection = await mysql.createConnection({
+                        host: config.mysql.host,
+                        user: 'root',
+                        password: config.mysql.rootPassword,
+                        port: config.mysql.port
+                    });
+                    
+                    Logger.info('Connected as root. Ensuring database and user permissions...');
+                    await rootConnection.query(`CREATE DATABASE IF NOT EXISTS ${config.mysql.database}`);
+                    await rootConnection.query(`CREATE USER IF NOT EXISTS '${config.mysql.user}'@'%' IDENTIFIED BY '${config.mysql.password}'`);
+                    await rootConnection.query(`GRANT ALL PRIVILEGES ON ${config.mysql.database}.* TO '${config.mysql.user}'@'%'`);
+                    await rootConnection.query(`ALTER USER '${config.mysql.user}'@'%' IDENTIFIED BY '${config.mysql.password}'`);
+                    await rootConnection.query('FLUSH PRIVILEGES');
+                    
+                    await rootConnection.end();
+                    Logger.info('Permissions fixed successfully.');
+                    canConnect = true;
+                } catch (rootError: any) {
+                    Logger.info(`Failed to fix permissions as root: ${rootError.message}. MySQL might still be initializing...`);
+                    retries++;
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+            } else if (e.code === 'ECONNREFUSED' || e.code === 'PROTOCOL_CONNECTION_LOST' || e.code === 'ETIMEDOUT') {
+                Logger.info(`Waiting for database server to start... (Attempt ${retries + 1}/${maxRetries})`);
+                retries++;
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            } else {
+                Logger.error(`Unexpected connection error: ${e.code} - ${e.message}`);
+                throw e;
             }
-        } else {
-            throw e;
         }
     }
 
     if (!canConnect) {
-        throw new Error('Could not establish database connection or fix permissions.');
+        throw new Error('Could not establish database connection after multiple attempts.');
     }
 
     Logger.info('Opening database connection...');
