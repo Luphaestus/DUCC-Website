@@ -33,6 +33,7 @@ interface Config {
         host: string;
         user: string;
         password: string;
+        rootPassword: string;
         database: string;
         port: number;
         waitForConnections: boolean;
@@ -66,6 +67,7 @@ const config: Config = {
         host: process.env.DB_HOST || 'localhost',
         user: process.env.DB_USER || 'root',
         password: process.env.DB_PASSWORD || 'password',
+        rootPassword: process.env.DB_ROOT_PASSWORD || 'root_password',
         database: (process.env.NODE_ENV === 'test' ? 'ducc_test' : (process.env.DB_NAME || 'ducc_website')) + (process.env.VITEST_WORKER_ID ? `_${process.env.VITEST_WORKER_ID}` : ''),
         port: parseInt(process.env.DB_PORT || '3306', 10),
         waitForConnections: true,

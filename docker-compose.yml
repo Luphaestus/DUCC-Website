@@ -23,6 +23,7 @@ services:
       - DB_HOST=db
       - DB_USER=ducc_user
       - DB_PASSWORD=ducc_password
+      - DB_ROOT_PASSWORD=root_password
       - DB_NAME=ducc_website
       - DB_PORT=3306
       - SESSION_SECRET=${SESSION_SECRET:-dev-secret-key}
