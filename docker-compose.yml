@@ -16,6 +16,7 @@ services:
 
   app:
     build: .
+    env_file: .env
     expose:
       - "3000"
     volumes:
@@ -29,6 +30,7 @@ services:
       - DB_NAME=ducc_website
       - DB_PORT=3306
       - SESSION_SECRET=${SESSION_SECRET:-dev-secret-key}
+      - DOMAIN_NAME=${DOMAIN_NAME}
     command: sh -c "${APP_CMD:-npm run db:init && npm start}"
     depends_on:
       - db

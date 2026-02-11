@@ -95,6 +95,12 @@ if [ -z "$SERVER_IP" ] || [ -z "$SERVER_PASSWORD" ]; then
     exit 1
 fi
 
+# Check for sshpass
+if ! command -v sshpass &> /dev/null; then
+    echo "Error: 'sshpass' is not installed. Please install it (e.g., 'brew install sshpass' or 'sudo apt install sshpass')."
+    exit 1
+fi
+
 export SSHPASS="$SERVER_PASSWORD"
 
 if [ "$SHOW_LOGS" = true ]; then
@@ -122,7 +128,7 @@ git push origin main
 
 echo "[2/3] Updating remote server..."
 
-REMOTE_PRE_CMD="cd DUCC-Website && git config --global --add safe.directory /root/DUCC-Website && (git fetch --all || echo 'Git fetch failed, continuing...') && (git reset --hard origin/main || echo 'Git reset failed, continuing...') && find . -name '._*' -delete && find . -name '.__*' -delete"
+REMOTE_PRE_CMD="mkdir -p DUCC-Website && cd DUCC-Website && git config --global --add safe.directory /root/DUCC-Website && (git init && git remote add origin https://github.com/Luphaestus/DUCC-Website.git || true) && (git fetch --all || echo 'Git fetch failed, continuing...') && (git reset --hard origin/main || echo 'Git reset failed, continuing...') && find . -name '._*' -delete && find . -name '.__*' -delete"
 
 if [ "$CLEAR_DB" = true ]; then
     echo "       [INFO] Remote database will be cleared."
@@ -130,6 +136,13 @@ if [ "$CLEAR_DB" = true ]; then
 fi
 
 sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_PRE_CMD"
+
+# Upload .env file if it exists
+if [ -f .env ]; then
+    echo "       [INFO] Pushing .env file to remote server..."
+    sshpass -e scp -o StrictHostKeyChecking=no .env root@"$SERVER_IP":DUCC-Website/.env
+    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "chmod 600 DUCC-Website/.env"
+fi
 
 if [ "$PUSH_DATA" = true ]; then
     echo "[DATA] Pushing local data to remote 'data/' folder..."
@@ -148,10 +161,16 @@ else
 fi
 
 REMOTE_POST_CMD="$REMOTE_POST_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --force-recreate --remove-orphans"
+REMOTE_POST_CMD="$REMOTE_POST_CMD && echo '--- Container Status ---' && docker compose ps"
 
 sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_POST_CMD"
 
 echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$SERVER_IP if SSL pending/invalid)"
+echo ""
+echo "Troubleshooting:"
+echo " - If the site is not loading, check logs: ./deploy.sh --logs"
+echo " - To check Caddy logs specifically: ssh root@$SERVER_IP 'cd DUCC-Website && docker compose logs caddy'"
+echo " - Ensure ports 80 and 443 are open on your server firewall."
 
 if [ "$CLEAR_DB" = true ]; then
     echo ""

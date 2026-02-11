@@ -84,7 +84,7 @@ const startServer = async () => {
       saveUninitialized: false,
       store: sessionStore,
       cookie: {
-        secure: false, // Set to true if using HTTPS
+        secure: isProd, // Use secure cookies in production (HTTPS)
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24
       }
@@ -337,8 +337,8 @@ const startServer = async () => {
     });
 
     if (process.env.NODE_ENV !== 'test') {
-      await fastify.listen({ port: PORT, host: '0.0.0.0' });
-      Logger.info(`Server is running on http://localhost:${PORT}`);
+      const address = await fastify.listen({ port: PORT, host: '0.0.0.0' });
+      Logger.info(`Server is running on ${address}`);
     }
 
     return { fastify, db };
