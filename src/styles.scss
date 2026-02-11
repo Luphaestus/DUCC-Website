@@ -29,6 +29,7 @@
 @use "partials/components/events" as comp_events;
 @use "partials/components/footer" as comp_footer;
 @use "partials/components/pwa";
+@use "partials/components/otp_input";
 
 // --- Widgets ---
 @use "partials/widgets/upload";
@@ -67,6 +68,7 @@
 @use "partials/pages/admin/admin_home";
 @use "partials/pages/admin/common" as admin_common;
 @use "partials/pages/admin/globals" as admin_globals;
+@use "partials/pages/admin/kit" as admin_kit;
 @use "partials/pages/admin/files" as admin_files;
 @use "partials/pages/admin/event/detail" as admin_event_detail;
 @use "partials/pages/admin/event/manage" as admin_event_manage;

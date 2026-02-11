@@ -38,6 +38,7 @@ export class RiverScene {
     container: HTMLElement;
     clock: THREE.Clock;
     requestID: number | null = null;
+    private isDisposed: boolean = false;
 
     // Environment State
     theme: Theme = 'dark';
@@ -980,8 +981,11 @@ export class RiverScene {
     // =========================================
 
     animate = () => {
+        if (this.isDisposed) return;
         this.requestID = requestAnimationFrame(this.animate);
-        const delta = this.clock.getDelta();
+        
+        // Cap delta to 0.1s to prevent huge jumps when tab is in background
+        const delta = Math.min(this.clock.getDelta(), 0.1);
         const elapsed = this.clock.elapsedTime;
         this.uniforms.uTime.value = elapsed;
 
@@ -1158,7 +1162,7 @@ export class RiverScene {
 
     private updateEntities(delta: number, elapsed: number) {
         // Plane Spawning (More frequent)
-        if (elapsed - this.lastPlaneTime > 15 + Math.random() * 20) {
+        if (this.planes.length < 3 && (elapsed - this.lastPlaneTime > 15 + Math.random() * 20)) {
             this.spawnPlane();
             this.lastPlaneTime = elapsed;
         }
@@ -1173,7 +1177,7 @@ export class RiverScene {
         }
 
         // Bird Spawning
-        if (elapsed - this.lastBirdTime > 4 + Math.random() * 6) {
+        if (this.birds.length < 8 && (elapsed - this.lastBirdTime > 4 + Math.random() * 6)) {
             this.spawnBird();
             this.lastBirdTime = elapsed;
         }
@@ -1191,7 +1195,7 @@ export class RiverScene {
         }
 
         // Fish Spawning
-        if (elapsed - this.lastFishTime > 1.0 + Math.random() * 2.0) {
+        if (this.fish.length < 15 && (elapsed - this.lastFishTime > 1.0 + Math.random() * 2.0)) {
             this.spawnFish();
             this.lastFishTime = elapsed;
         }
@@ -1271,6 +1275,7 @@ export class RiverScene {
     }
 
     dispose() {
+        this.isDisposed = true;
         if (this.requestID) cancelAnimationFrame(this.requestID);
         window.removeEventListener('resize', this.handleResize);
         window.removeEventListener('mousemove', this.handleMouseMove);

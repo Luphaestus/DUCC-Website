@@ -13,7 +13,7 @@
 .auth-card {
     @include liquid-glass(2.5rem, 28px);
     width: 100%;
-    max-width: 450px;
+    max-width: 1050px;
     box-shadow: var(--shadow-xl);
     border: 1px solid rgba(255, 255, 255, 0.1);
     
@@ -23,6 +23,7 @@
         margin-bottom: 0.5rem;
         justify-content: center;
         background: linear-gradient(135deg, var(--pico-contrast) 0%, var(--pico-primary) 100%);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         
@@ -37,6 +38,23 @@
         color: var(--pico-muted-color);
         margin-bottom: 2rem;
         font-size: 0.95rem;
+    }
+
+    .modern-form-group {
+        margin-bottom: 1.5rem;
+        
+        &:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .error-text {
+            color: var(--pico-error-color);
+            font-size: 0.75rem;
+            margin-top: 0.4rem;
+            display: block;
+            font-weight: 600;
+            animation: fadeIn 0.3s ease;
+        }
     }
 
     form {

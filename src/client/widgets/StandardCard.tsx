@@ -30,6 +30,18 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
     const endDate = () => new Date(props.event.end);
     const isPast = () => endDate() < new Date();
     const isCanceled = () => props.event.is_canceled;
+    const isCurrent = () => {
+        const now = new Date();
+        return now >= startDate() && now <= endDate() && !isCanceled();
+    };
+
+    const progress = () => {
+        if (!isCurrent()) return 0;
+        const now = new Date().getTime();
+        const start = startDate().getTime();
+        const end = endDate().getTime();
+        return Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+    };
 
     const timeOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
     const startTime = () => startDate().toLocaleTimeString('en-UK', timeOptions);
@@ -52,15 +64,20 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
                 'event-card': true,
                 'past-event': isPast(),
                 'canceled-event': isCanceled(),
+                'in-progress': isCurrent(),
                 'waitlist-active': isWaitlistActive(),
-                'unavailable-event': props.event.can_attend === false && !props.event.is_attending,
-                'no-blur': true
+                'unavailable-event': props.event.can_attend === false && !props.event.is_attending
             }} 
             onClick={() => navigate(`/events/${props.event.id}${location.search}`)} 
             role="button" 
             tabindex="0"
             {...{ paused: props.paused } as any}
         >
+            <Show when={isCurrent()}>
+                <div class="event-progress-bar">
+                    <div class="progress-fill" style={{ width: `${progress()}%` }}></div>
+                </div>
+            </Show>
             <div class="event-image-container">
                 <div class="event-image event-image-header" style={{ "--event-image-url": `url('${imageUrl()}')` }}></div>
                 <div class="image-overlay"></div>

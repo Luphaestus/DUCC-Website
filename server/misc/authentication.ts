@@ -54,7 +54,7 @@ const checkAuthentication = (...requirements: string[]) => {
                 const perm = getPermissionName(permDetails);
 
                 if (permDetails === 'perm:is_exec') {
-                    if (await Permissions.hasAnyPermission(authReq.db, authReq.user.id)) {
+                    if (await Permissions.hasPermission(authReq.db, authReq.user.id, 'exec.publish')) {
                         hasPermission = true;
                         break;
                     }

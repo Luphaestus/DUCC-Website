@@ -59,7 +59,7 @@ export async function initSchemaAndClean() {
         try {
             await conn.query('SET FOREIGN_KEY_CHECKS = 0');
             const tablesToDrop = [
-                'kit_items', 'event_kit_requests',
+                'kit_items', 'kit_variants', 'user_kit_preferences', 'event_kit_requests',
                 'authenticators', 'exec_committee', 'event_attendees', 'event_waiting_list', 
                 'transactions', 'swim_history', 'quotes', 'cars', 'event_drivers', 'trips', 
                 'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags', 
@@ -87,6 +87,7 @@ export async function initSchemaAndClean() {
         await conn.query('SET FOREIGN_KEY_CHECKS = 0');
         
         const tablesToClean = [
+            'kit_items', 'kit_variants', 'user_kit_preferences', 'event_kit_requests',
             'authenticators', 'exec_committee', 'event_attendees', 'event_waiting_list', 
             'transactions', 'swim_history', 'quotes', 'cars', 'event_drivers', 'trips', 
             'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags', 

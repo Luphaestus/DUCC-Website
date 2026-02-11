@@ -89,6 +89,9 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         profile_picture_initials VARCHAR(50) DEFAULT NULL,
         totp_secret VARCHAR(255),
         totp_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        email_2fa_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        is_verified TINYINT(1) NOT NULL DEFAULT 0,
+        verification_token VARCHAR(255),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_instructor (is_instructor),
@@ -187,9 +190,19 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         type ENUM('paddle', 'ba', 'boat', 'wetsuit', 'cag', 'helmet', 'other') NOT NULL,
-        size ENUM('XS', 'S', 'M', 'L', 'XL', 'XXL', 'None') DEFAULT 'None',
-        total_quantity INT NOT NULL DEFAULT 0,
+        description TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      `
+    },
+    {
+      name: 'kit_variants',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        kit_item_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        total_quantity INT NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE
       `
     },
     {
@@ -199,11 +212,13 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         event_id INT NOT NULL,
         user_id INT NOT NULL,
         kit_item_id INT NOT NULL,
+        kit_variant_id INT,
         is_fulfilled TINYINT(1) DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE
+        FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (kit_variant_id) REFERENCES kit_variants(id) ON DELETE SET NULL
       `
     },
     {
@@ -400,9 +415,11 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
       schema: `
         user_id INT NOT NULL,
         kit_item_id INT NOT NULL,
+        kit_variant_id INT,
         PRIMARY KEY (user_id, kit_item_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE
+        FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (kit_variant_id) REFERENCES kit_variants(id) ON DELETE SET NULL
       `
     },
     {

@@ -44,35 +44,24 @@ interface UserProfile {
     profile_picture_font: string;
     profile_picture_initials: string;
     totp_enabled: boolean;
+    email_2fa_enabled: boolean;
     swimmer_stats?: {
         allTime: { swims: number; rank: string };
         yearly: { swims: number; rank: string };
     };
 }
 
-interface KitItem {
+interface KitVariant {
     id: number;
     name: string;
-    type: string;
-    size: string;
 }
 
-// ... Car/Transaction interfaces same as before
-interface Car {
-    id: number;
-    name: string;
-    seats: number;
-    boats: number;
-    is_global: boolean;
-    user_id: number;
-}
-
-interface Transaction {
-    id: number;
-    amount: number;
-    description: string;
-    created_at: string;
-    after?: number;
+interface KitPref {
+    kit_item_id: number;
+    kit_variant_id: number | null;
+    item_name: string;
+    item_type: string;
+    variant_name: string | null;
 }
 
 export default function ProfilePage() {
@@ -82,6 +71,9 @@ export default function ProfilePage() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const activeTab = () => searchParams.tab || 'overview';
+
+    const [isKitModalOpen, setIsKitModalOpen] = createSignal(false);
+    const [activeKitItem, setActiveKitItem] = createSignal<KitItem | null>(null);
 
     onMount(() => {
         const cleanup = onUpdate((event) => {
@@ -103,7 +95,7 @@ export default function ProfilePage() {
 
     const [profile, { refetch }] = createResource(async () => {
         try {
-            return await apiRequest('GET', `/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,booties,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled,swimmer_stats?t=${Date.now()}`) as UserProfile;
+            return await apiRequest('GET', `/api/user/elements/id,permissions,email,first_name,last_name,is_member,is_instructor,filled_legal_info,legal_filled_at,phone_number,first_aid_expiry,free_sessions,balance,swims,booties,swimmer_rank,profile_picture_path,profile_picture_color,profile_picture_font,profile_picture_initials,totp_enabled,email_2fa_enabled,swimmer_stats?t=${Date.now()}`) as UserProfile;
         } catch (e) {
             navigate('/login');
             throw e;
@@ -123,21 +115,41 @@ export default function ProfilePage() {
     const [userKitPrefs, { refetch: refetchKitPrefs }] = createResource(async () => {
         try {
             const res = await apiRequest('GET', '/api/kit/preferences');
-            return (res || []) as KitItem[];
+            return (res || []) as KitPref[];
         } catch { return []; }
     });
 
-    const handleUpdateKitPrefs = async (e: Event) => {
-        e.preventDefault();
-        const form = e.target as HTMLFormElement;
-        const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt((cb as HTMLInputElement).value));
-        try {
-            await apiRequest('POST', '/api/kit/preferences', { itemIds: selected });
-            notify('Success', 'Kit preferences updated.', 'success');
-            refetchKitPrefs();
-        } catch (err: any) {
-            notify('Error', err.message, 'error');
+    const openKitModal = (item: KitItem) => {
+        setActiveKitItem(item);
+        setIsKitModalOpen(true);
+    };
+
+    const handleSelectVariant = async (variantId: number | null) => {
+        const item = activeKitItem();
+        if (!item) return;
+
+        const current = userKitPrefs() || [];
+        let newSelections;
+
+        if (variantId === -1) {
+            newSelections = current.filter(p => p.kit_item_id !== item.id)
+                .map(p => ({ kit_item_id: p.kit_item_id, kit_variant_id: p.kit_variant_id }));
+        } else {
+            const newPref = { kit_item_id: item.id, kit_variant_id: variantId };
+            const existing = current.find(p => p.kit_item_id === item.id);
+            if (existing) {
+                newSelections = current.map(p => p.kit_item_id === item.id ? newPref : { kit_item_id: p.kit_item_id, kit_variant_id: p.kit_variant_id });
+            } else {
+                newSelections = [...current.map(p => ({ kit_item_id: p.kit_item_id, kit_variant_id: p.kit_variant_id })), newPref];
+            }
         }
+
+        try {
+            await apiRequest('POST', '/api/kit/preferences', { selections: newSelections });
+            notify('Success', 'Preferences updated', 'success');
+            setIsKitModalOpen(false);
+            refetchKitPrefs();
+        } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
     const [tags] = createResource(async () => {
@@ -318,6 +330,24 @@ export default function ProfilePage() {
         }
     };
 
+    const handleToggleEmail2FA = async () => {
+        const currentlyEnabled = profile()?.email_2fa_enabled;
+        const action = currentlyEnabled ? 'disable' : 'enable';
+        
+        if (currentlyEnabled) {
+            if (!(await showConfirmModal('Disable Email 2FA?', 'Are you sure? This will make your account less secure.'))) return;
+        }
+
+        notify('Info', `${currentlyEnabled ? 'Disabling' : 'Enabling'} Email 2FA...`, 'info', 5000, 'email-2fa-toggle');
+        try {
+            await apiRequest('POST', `/api/auth/email-2fa/${action}`);
+            notify('Success', `Email 2FA ${currentlyEnabled ? 'disabled' : 'enabled'}.`, 'success', 3000, 'email-2fa-toggle');
+            refetch();
+        } catch (err: any) {
+            notify('Error', err.message, 'error', 5000, 'email-2fa-toggle');
+        }
+    };
+
     // Passkeys
     const [isPasskeyModalOpen, setIsPasskeyModalOpen] = createSignal(false);
     const [passkeys, { refetch: refetchPasskeys }] = createResource(async () => {
@@ -443,7 +473,7 @@ export default function ProfilePage() {
                         <Show when={activeTab() === 'overview'}>
                             <section class="dashboard-section active">
                                 <Show when={!profile()!.is_member}>
-                                    <article class="accent-panel liquid-container glass-panel" style={{ "--liquid-border-radius": "24px", "border": "none" }}>
+                                    <article class="accent-panel liquid-container glass-panel no-margin" style={{ "--liquid-border-radius": "24px", "border": "none" }}>
                                         <div class="panel-content">
                                             <h2>You aren't a member yet</h2>
                                             <p>You have <strong>{profile()!.free_sessions}</strong> free trial events remaining before membership is required.</p>
@@ -489,7 +519,7 @@ export default function ProfilePage() {
                                             </div>
                                         </Panel>
 
-                                        <Panel title="Club Status & Roles" icon={GROUP_SVG} class="glass-panel mt-4">
+                                        <Panel title="Club Status & Roles" icon={GROUP_SVG} class="glass-panel no-margin">
                                             <div class="info-rows">
                                                 <div class="info-row">
                                                     <span>Membership</span>
@@ -579,7 +609,7 @@ export default function ProfilePage() {
                                             </div>
                                         </Panel>
 
-                                        <Panel title="Safety & Contact" icon={SHIELD_SVG} class="glass-panel mt-4">
+                                        <Panel title="Safety & Contact" icon={SHIELD_SVG} class="glass-panel no-margin">
                                             <div class="info-rows">
                                                 <div class="info-row">
                                                     <span>Emergency Contact</span>
@@ -664,27 +694,33 @@ export default function ProfilePage() {
                                 >
                                     <p>Select the equipment you usually need to borrow from the club for trips. These will be your default requests when you join an event.</p>
                                     
-                                    <form onSubmit={handleUpdateKitPrefs} class="modern-form">
-                                        <div class="item-list">
-                                            <For each={kitItems() || []}>
-                                                {(item) => (
-                                                    <label class="list-item checkbox-item">
+                                    <div class="item-list">
+                                        <For each={kitItems() || []}>
+                                            {(item) => {
+                                                const pref = createMemo(() => userKitPrefs()?.find(p => p.kit_item_id === item.id));
+                                                const isSelected = () => !!pref();
+                                                const variantLabel = () => {
+                                                    const p = pref();
+                                                    if (!p) return '';
+                                                    return p.variant_name ? ` (${p.variant_name})` : ' (Not Sure)';
+                                                };
+
+                                                return (
+                                                    <div 
+                                                        class="list-item clickable" 
+                                                        classList={{ 'primary-glass': isSelected() }}
+                                                        onClick={() => openKitModal(item)}
+                                                    >
                                                         <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>
                                                         <div class="item-details">
-                                                            <span class="item-title">{item.name}</span>
-                                                            <span class="item-subtitle">{item.type} • {item.size}</span>
+                                                            <span class="item-title">{item.name}{variantLabel()}</span>
+                                                            <span class="item-subtitle">{item.type} • {item.variants?.map(v => v.name).join(', ') || 'No variants'}</span>
                                                         </div>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            value={item.id} 
-                                                            checked={userKitPrefs()?.some(p => p.id === item.id)} 
-                                                        />
-                                                    </label>
-                                                )}
-                                            </For>
-                                        </div>
-                                        <button type="submit" class="primary full-width mt-4">Save Preferences</button>
-                                    </form>
+                                                    </div>
+                                                );
+                                            }}
+                                        </For>
+                                    </div>
                                 </Panel>
                             </section>
                         </Show>
@@ -772,6 +808,22 @@ export default function ProfilePage() {
                                                 <Show when={profile()!.totp_enabled}>
                                                     <button class="small-btn outline delete" onClick={handleDisableTOTP}>Disable</button>
                                                 </Show>
+                                            </div>
+
+                                            <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
+                                                <div class="setting-info">
+                                                    <strong>Email 2FA</strong>
+                                                    <span class="status-tag" classList={{ 'success': profile()!.email_2fa_enabled, 'warning': !profile()!.email_2fa_enabled }}>
+                                                        {profile()!.email_2fa_enabled ? 'Enabled' : 'Disabled'}
+                                                    </span>
+                                                </div>
+                                                <button 
+                                                    class="small-btn" 
+                                                    classList={{ 'secondary': !profile()!.email_2fa_enabled, 'outline delete': profile()!.email_2fa_enabled }} 
+                                                    onClick={handleToggleEmail2FA}
+                                                >
+                                                    {profile()!.email_2fa_enabled ? 'Disable' : 'Enable'}
+                                                </button>
                                             </div>
 
                                             <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
@@ -910,6 +962,47 @@ export default function ProfilePage() {
                         </For>
                     </div>
                     <button class="primary full-width mt-4" onClick={handleAddPasskey}><span innerHTML={ADD_SVG} /> Add Passkey</button>
+                </div>
+            </Modal>
+
+            <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title={`Default ${activeKitItem()?.name}`}>
+                <div class="variant-selection">
+                    <p>Select your default size/variant for {activeKitItem()?.name}:</p>
+                    <div class="item-list mb-4">
+                        <For each={activeKitItem()?.variants || []}>
+                            {(variant) => (
+                                <button 
+                                    class="list-item clickable" 
+                                    onClick={() => handleSelectVariant(variant.id)}
+                                >
+                                    <div class="item-details">
+                                        <span class="item-title">{variant.name}</span>
+                                    </div>
+                                </button>
+                            )}
+                        </For>
+                        <button 
+                            class="list-item clickable" 
+                            onClick={() => handleSelectVariant(null)}
+                        >
+                            <div class="item-details">
+                                <span class="item-title">Don't Know / Not Sure</span>
+                                <span class="item-subtitle">Pick each time you join an event</span>
+                            </div>
+                        </button>
+                        
+                        <Show when={userKitPrefs()?.some(p => p.kit_item_id === activeKitItem()?.id)}>
+                            <button 
+                                class="list-item clickable danger-hover" 
+                                onClick={() => handleSelectVariant(-1)}
+                                style="margin-top: 1rem; border-color: var(--error-color);"
+                            >
+                                <div class="item-details">
+                                    <span class="item-title" style="color: var(--error-color);">Remove Default Preference</span>
+                                </div>
+                            </button>
+                        </Show>
+                    </div>
                 </div>
             </Modal>
         </div>

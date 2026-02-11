@@ -17,7 +17,7 @@ export default function Footer() {
   });
 
   return (
-    <footer>
+    <footer class="footer-main">
       <div class="small-container">
         <Show when={quote()}>
           <div id="footer-quote-container" class="footer-quote">

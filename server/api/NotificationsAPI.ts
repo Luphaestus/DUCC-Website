@@ -3,6 +3,7 @@ import webpush from 'web-push';
 import { DatabaseWrapper } from '../db/db.js';
 import Logger from '../misc/Logger.js';
 import checkAuthentication from '../misc/authentication.js';
+import { EmailManager } from '../emails/EmailManager.js';
 
 // VAPID Keys setup
 const vapidKeys = {
@@ -82,6 +83,23 @@ export default class NotificationsAPI {
     // Static Utility to send notifications to specific users from other parts of the app
     static async sendNotificationToUser(db: DatabaseWrapper, userId: number, title: string, body: string, url: string = '/') {
         try {
+            // 1. Send Email Notification
+            const user = await db.get('SELECT email, first_name FROM users WHERE id = ?', [userId]);
+            if (user && user.email) {
+                EmailManager.getInstance().sendTemplatedEmail(
+                    user.email,
+                    title,
+                    'notification',
+                    {
+                        name: user.first_name,
+                        title: title,
+                        body: body,
+                        url: url
+                    }
+                ).catch(err => Logger.error(`[NotificationsAPI] Failed to send email to user ${userId}`, err));
+            }
+
+            // 2. Send Push Notification
             const subs = await db.all('SELECT * FROM push_subscriptions WHERE user_id = ?', [userId]);
             if (subs.length === 0) return;
 

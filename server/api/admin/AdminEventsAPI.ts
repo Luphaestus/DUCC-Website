@@ -9,6 +9,8 @@ import check from '../../misc/authentication.js';
 import { Permissions } from '../../misc/permissions.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
+import { EmailManager } from '../../emails/EmailManager.js';
+import Logger from '../../misc/Logger.js';
 
 export default class AdminEvents {
     app: FastifyInstance;
@@ -209,14 +211,50 @@ export default class AdminEvents {
          */
         this.app.post('/api/admin/events/publish-staged', { preHandler: [check('perm:event.write.all | perm:event.manage.all')] }, async (request: any, reply: FastifyReply) => {
             try {
+                // Fetch pending events BEFORE update to know what to email about
+                const pendingEvents = await this.db.all("SELECT * FROM events WHERE status = 'pending' AND start >= NOW() ORDER BY start ASC");
+
                 const result = await this.db.run("UPDATE events SET status = 'confirmed' WHERE status = 'pending' AND start >= NOW()");
                 
-                if (result.changes > 0) {
+                if (result.changes > 0 && pendingEvents.length > 0) {
                     const EventHub = (await import('../../misc/EventHub.js')).default;
                     EventHub.broadcast('event_update', { action: 'bulk_published' });
                     
-                    // Optional: Send notification to all users?
-                    // await NotificationsAPI.broadcastNotification(this.db, 'New Events Published!', 'Check out the new events scheduled for this week.', '/events');
+                    // Generate HTML List
+                    let eventListHtml = '';
+                    for (const event of pendingEvents) {
+                        const date = new Date(event.start);
+                        const dayName = date.toLocaleDateString('en-GB', { weekday: 'long' });
+                        const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                        const location = event.location || 'TBA';
+                        
+                        eventListHtml += `
+                            <tr>
+                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                                    <strong style="color: #7E317B; display: block; font-size: 18px; margin-bottom: 4px;">${dayName} - ${event.title}</strong>
+                                    <span style="color: #6b7280; font-size: 14px;">${time} - ${location}</span>
+                                </td>
+                            </tr>
+                        `;
+                    }
+
+                    // Fetch all members
+                    const users = await this.db.all('SELECT email FROM users WHERE is_member = 1 AND email IS NOT NULL');
+                    const emailManager = EmailManager.getInstance();
+
+                    // Send emails asynchronously
+                    Promise.all(users.map(async (user: any) => {
+                        try {
+                            await emailManager.sendTemplatedEmail(
+                                user.email,
+                                'Weekly Update - DUCC',
+                                'weekly_update',
+                                { event_list: eventListHtml }
+                            );
+                        } catch (err) {
+                            Logger.error(`Failed to send weekly update to ${user.email}`, err);
+                        }
+                    })).then(() => Logger.info(`Sent weekly update to ${users.length} members.`));
                 }
                 
                 return reply.send({ message: `${result.changes} events published.` });

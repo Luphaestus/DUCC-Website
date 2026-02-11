@@ -26,9 +26,9 @@ export default class AuthDB {
     /**
      * Register a new user.
      */
-    static async createUser(db: DatabaseWrapper, email: string, hashedPassword: string, first_name: string, last_name: string): Promise<statusObject> {
+    static async createUser(db: DatabaseWrapper, email: string, hashedPassword: string, first_name: string, last_name: string, verificationToken: string | null = null): Promise<statusObject> {
         try {
-            await db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?, ?, ?, ?)', [email, hashedPassword, first_name, last_name]);
+            await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, verification_token) VALUES (?, ?, ?, ?, ?)', [email, hashedPassword, first_name, last_name, verificationToken]);
             return new statusObject(201, 'User registered successfully.');
         } catch (err: any) {
             Logger.error(err);
@@ -37,6 +37,29 @@ export default class AuthDB {
             }
             return new statusObject(500, 'Registration failed.');
         }
+    }
+
+    /**
+     * Verify a user's email using a token.
+     */
+    static async verifyUser(db: DatabaseWrapper, token: string): Promise<statusObject> {
+        try {
+            const user = await db.get('SELECT id FROM users WHERE verification_token = ?', [token]);
+            if (!user) return new statusObject(404, 'Invalid or expired verification token.');
+
+            await db.run('UPDATE users SET is_verified = 1, verification_token = NULL WHERE id = ?', [user.id]);
+            return new statusObject(200, 'Email verified successfully.');
+        } catch (err) {
+            Logger.error(err);
+            return new statusObject(500, 'Verification failed.');
+        }
+    }
+
+    /**
+     * Update verification token for a user.
+     */
+    static async updateVerificationToken(db: DatabaseWrapper, userId: number, token: string): Promise<void> {
+        await db.run('UPDATE users SET verification_token = ? WHERE id = ?', [token, userId]);
     }
 
     /**
@@ -109,6 +132,13 @@ export default class AuthDB {
      */
     static async setTOTPEnabled(db: DatabaseWrapper, userId: number, enabled: boolean): Promise<void> {
         await db.run('UPDATE users SET totp_enabled = ? WHERE id = ?', [enabled ? 1 : 0, userId]);
+    }
+
+    /**
+     * Enable or disable email 2FA for a user.
+     */
+    static async setEmail2FAEnabled(db: DatabaseWrapper, userId: number, enabled: boolean): Promise<void> {
+        await db.run('UPDATE users SET email_2fa_enabled = ? WHERE id = ?', [enabled ? 1 : 0, userId]);
     }
 
     /**

@@ -39,6 +39,11 @@ interface Config {
         connectionLimit: number;
         queueLimit: number;
     };
+    email: {
+        user: string | null;
+        pass: string | null;
+        test_destination: string | null;
+    };
 }
 
 const config: Config = {
@@ -66,6 +71,11 @@ const config: Config = {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0
+    },
+    email: {
+        user: process.env.EMAIL_USER || null,
+        pass: process.env.EMAIL_PASS || null,
+        test_destination: process.env.EMAIL_TEST_DESTINATION || null
     }
 };
 

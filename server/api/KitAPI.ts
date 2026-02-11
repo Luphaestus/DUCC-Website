@@ -51,16 +51,16 @@ export default class KitAPI {
         // Request Kit (User)
         this.app.post('/api/kit/request', async (request: any, reply: FastifyReply) => {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
-            const { event_id, kit_item_id } = request.body as any;
-            const result = await KitDB.requestKit(this.db, request.user.id, event_id, kit_item_id);
+            const { event_id, kit_item_id, kit_variant_id } = request.body as any;
+            const result = await KitDB.requestKit(this.db, request.user.id, event_id, kit_item_id, kit_variant_id);
             return result.getResponse(reply);
         });
 
         // Set Event Kit (User) - Multiple items
         this.app.post('/api/kit/event-request', async (request: any, reply: FastifyReply) => {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
-            const { event_id, itemIds } = request.body as any;
-            const result = await KitDB.setUserEventKit(this.db, request.user.id, parseInt(event_id), itemIds);
+            const { event_id, selections } = request.body as any;
+            const result = await KitDB.setUserEventKit(this.db, request.user.id, parseInt(event_id), selections);
             return result.getResponse(reply);
         });
 
@@ -69,9 +69,10 @@ export default class KitAPI {
             if (!request.isAuthenticated()) return reply.status(401).send({ error: 'Unauthorized' });
             try {
                 const requests = await this.db.all(`
-                    SELECT k.* 
+                    SELECT r.*, k.name as item_name, k.type as item_type, v.name as variant_name
                     FROM event_kit_requests r
                     JOIN kit_items k ON r.kit_item_id = k.id
+                    LEFT JOIN kit_variants v ON r.kit_variant_id = v.id
                     WHERE r.event_id = ? AND r.user_id = ?
                 `, [parseInt(request.params.id), request.user.id]);
                 return reply.status(200).send(requests);

@@ -59,8 +59,7 @@ export default function SettlementPage() {
                                             <tbody>
                                                 <For each={res().summary?.breakdown || []}>
                                                     {(row: any) => (
-                                                        <tr>
-                                                            <td>{row.name}</td>
+                                                        <tr><td>{row.name}</td>
                                                             <td class={row.net >= 0 ? 'text-success' : 'text-error'}>
                                                                 £{row.net.toFixed(2)}
                                                             </td>

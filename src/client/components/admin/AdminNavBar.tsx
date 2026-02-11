@@ -11,15 +11,15 @@ export default function AdminNavBar(props: AdminNavBarProps) {
     const location = useLocation();
     
     const perms = () => props.permissions || [];
-    const canManageUsers = createMemo(() => perms().includes('user.manage') || perms().includes('transaction.manage') || perms().length > 0);
+    const canManageUsers = createMemo(() => perms().includes('user.manage') || perms().includes('transaction.manage') || perms().includes('user.read'));
     const canManageEvents = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
-    const canManageTags = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
-    const canManageFiles = createMemo(() => perms().includes('file.write') || perms().includes('file.edit'));
+    const canManageTags = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped') || perms().includes('tag.write'));
+    const canManageFiles = createMemo(() => perms().includes('file.write') || perms().includes('file.edit') || perms().includes('file.category.manage'));
     const canManageQuotes = createMemo(() => perms().includes('quote.manage'));
     const canManageRoles = createMemo(() => perms().includes('role.manage'));
     const canManageKit = createMemo(() => perms().includes('kit.manage'));
-    const canViewStats = createMemo(() => perms().includes('transaction.manage') || perms().includes('event.manage.all'));
-    const isExec = createMemo(() => perms().length > 0);
+    const canViewStats = createMemo(() => perms().includes('transaction.manage') || perms().includes('event.manage.all') || perms().includes('site.admin'));
+    const canManageSlides = createMemo(() => perms().includes('exec.publish') || perms().includes('site.admin'));
     const isPresident = () => props.isPresident;
 
     const isActive = (path: string) => location.pathname.startsWith(path);
@@ -50,7 +50,7 @@ export default function AdminNavBar(props: AdminNavBarProps) {
             <Show when={canViewStats()}>
                 <A href="/admin/stats" class={`tab-btn ${isActive('/admin/stats') ? 'active' : ''}`}>Stats</A>
             </Show>
-            <Show when={isExec()}>
+            <Show when={canManageSlides()}>
                 <A href="/admin/slides" class={`tab-btn ${isActive('/admin/slides') ? 'active' : ''}`}>Slides</A>
             </Show>
             <Show when={isPresident()}>

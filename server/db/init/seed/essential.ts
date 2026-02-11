@@ -93,11 +93,14 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
         { name: 'Minutes', visibility: 'members' },
         { name: 'Policies', visibility: 'public' },
         { name: 'Training', visibility: 'members' },
+        { name: 'Systems', visibility: 'execs' },
         { name: 'Misc', visibility: 'members' }
     ];
     for (const cat of categories) {
         await db.run('INSERT IGNORE INTO file_categories (name, default_visibility) VALUES (?, ?)', [cat.name, cat.visibility]);
     }
+
+    const systemsCategory = await db.get("SELECT id FROM file_categories WHERE name = 'Systems'");
 
     const presidentExists = await db.get("SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = ? LIMIT 1", ['President']);
     if (!presidentExists) {
@@ -117,15 +120,15 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
             const password = generateRandomPassword(12);
             const hashedPassword = await bcrypt.hash(password, config.auth.bcryptSaltRounds);
             const adminResult = await db.run(
-                `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, is_member, filled_legal_info, legal_filled_at) VALUES (?, ?, ?, ?, ?, 1, 1, ?)`,
+                `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, is_member, filled_legal_info, legal_filled_at, is_verified) VALUES (?, ?, ?, ?, ?, 1, 1, ?, 1)`,
                 [email, hashedPassword, 'Admin', 'User', 5, new Date().toISOString().slice(0, 19).replace('T', ' ')]
             );
             adminId = adminResult.lastID;
             if (process.env.NODE_ENV !== 'test') console.info(`========== Admin created. ==========\nEmail: ${email}\nPassword: ${password}\n====================================`);
         } else {
             adminId = adminUser.id;
-            // Ensure existing admin is also a member and has legal info
-            await db.run('UPDATE users SET is_member = 1, filled_legal_info = 1, legal_filled_at = ? WHERE id = ?', [new Date().toISOString().slice(0, 19).replace('T', ' '), adminId]);
+            // Ensure existing admin is also a member and has legal info and is verified
+            await db.run('UPDATE users SET is_member = 1, filled_legal_info = 1, is_verified = 1, legal_filled_at = ? WHERE id = ?', [new Date().toISOString().slice(0, 19).replace('T', ' '), adminId]);
         }
         if (presidentRole) {
             await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);
@@ -169,8 +172,8 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
             
             const stats = fs.statSync(path.join(uploadDir, finalFilename));
             const result = await db.run(
-                'INSERT INTO files (title, author, date, size, filename, hash, visibility) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [img.title, 'System', new Date().toISOString().slice(0, 19).replace('T', ' '), stats.size, finalFilename, hash, 'public']
+                'INSERT INTO files (title, author, date, size, filename, hash, visibility, category_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [img.title, 'System', new Date().toISOString().slice(0, 19).replace('T', ' '), stats.size, finalFilename, hash, 'execs', systemsCategory?.id || null]
             );
             fileId = result.lastID;
         }

@@ -57,8 +57,7 @@ export default function RolesPage() {
                                 </Show>
                                 <For each={roles()}>
                                     {(role) => (
-                                        <tr class="role-row clickable-row" onClick={() => navigate(`/admin/role/${role.id}`)}>
-                                            <td data-label="Name" class="primary-text">{role.name}</td>
+                                        <tr class="role-row clickable" onClick={() => navigate(`/admin/role/${role.id}`)}><td data-label="Name" class="primary-text">{role.name}</td>
                                             <td data-label="Permissions">
                                                 <div class="permission-tags">
                                                     <For each={role.permissions}>
@@ -84,8 +83,7 @@ export default function RolesPage() {
                                 </Show>
                                 <For each={permissions()}>
                                     {(p) => (
-                                        <tr>
-                                            <td class="primary-text"><code>{p.slug}</code></td>
+                                        <tr><td class="primary-text"><code>{p.slug}</code></td>
                                             <td>
                                                 <input 
                                                     type="text" 

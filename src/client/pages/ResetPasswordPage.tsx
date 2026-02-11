@@ -1,15 +1,33 @@
-// todo clean up
 import { createSignal } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { MAIL_SVG } from "@/utils/icons";
+import { PERSON_SVG } from "@/utils/icons";
 import { useNavigate } from "@solidjs/router";
-import { GlassButtonLarge } from "@/components/LiquidButton";
 
 export default function ResetPasswordPage() {
     const { notify } = useNotifications();
     const navigate = useNavigate();
     const [email, setEmail] = createSignal("");
+    const [errors, setErrors] = createSignal<Record<string, boolean>>({});
+    const [shaking, setShaking] = createSignal<Record<string, boolean>>({});
+
+    const triggerError = (fields: string[]) => {
+        const newErrors = { ...errors() };
+        const newShaking: Record<string, boolean> = {};
+        fields.forEach(f => {
+            newErrors[f] = true;
+            newShaking[f] = true;
+        });
+        setErrors(newErrors);
+        setShaking(newShaking);
+        setTimeout(() => setShaking({}), 500);
+    };
+
+    const clearError = (field: string) => {
+        if (errors()[field]) {
+            setErrors({ ...errors(), [field]: false });
+        }
+    };
 
     const handleSubmit = async (e: Event) => {
         e.preventDefault();
@@ -19,9 +37,10 @@ export default function ResetPasswordPage() {
         }
 
         try {
-            const res = await apiRequest('POST', '/api/auth/reset-password-request', { email: fullEmail });
-            notify('Success', res.message || 'Reset link sent! Please check your email.', 'success');
+            await apiRequest('POST', '/api/auth/reset-password-request', { email: fullEmail });
+            navigate(`/email-sent?type=reset&email=${encodeURIComponent(fullEmail)}`);
         } catch (error: any) {
+            triggerError(['email']);
             notify('Error', error.message || 'Failed to send reset link.', 'error');
         }
     };
@@ -31,7 +50,6 @@ export default function ResetPasswordPage() {
             <div class="auth-card">
                 <div class="center-text">
                     <h2>
-                        <span innerHTML={MAIL_SVG} />
                         Reset Password
                     </h2>
                     <p class="auth-subtitle">Enter your email and we'll send you a link to reset your password.</p>
@@ -40,25 +58,40 @@ export default function ResetPasswordPage() {
                 <form onSubmit={handleSubmit}>
                     <div class="modern-form-group">
                         <label for="reset-email">Durham Email Address</label>
-                        <div class="durham-email-wrapper">
+                        <div class="glass-input-group durham-email-wrapper" classList={{ 'is-invalid': errors().email, 'shaking': shaking().email }}>
+                            <div class="icon">
+                                <span innerHTML={PERSON_SVG} />
+                            </div>
                             <input 
                                 id="reset-email" 
                                 name="email" 
                                 placeholder="username" 
                                 value={email()}
-                                onInput={(e) => setEmail(e.currentTarget.value.split('@')[0])}
+                                autofocus
+                                onKeyDown={(e) => {
+                                    if (e.key === '@') {
+                                        e.preventDefault();
+                                    }
+                                }}
+                                onInput={(e) => {
+                                    clearError('email');
+                                    setEmail(e.currentTarget.value.split('@')[0]);
+                                }}
                                 required
                             />
                             <span class="email-suffix">@durham.ac.uk</span>
                         </div>
                     </div>
-                    <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                    <button type="submit" class="primary full-width" style={{ "border-radius": "16px" }}>
                         Send Reset Link
-                    </GlassButtonLarge>
+                    </button>
                 </form>
 
                 <div class="auth-footer">
                     <p>Remembered your password? <a onClick={() => navigate('/login')}>Sign in</a></p>
+                    <p style="margin-top: 0.5rem; font-size: 0.85em; opacity: 0.8;">
+                        Looking for <a onClick={() => navigate('/resend-verification')}>email verification</a>?
+                    </p>
                 </div>
             </div>
         </div>

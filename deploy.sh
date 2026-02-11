@@ -109,7 +109,7 @@ git push origin main
 
 echo "[2/3] Updating remote server..."
 
-REMOTE_PRE_CMD="cd DUCC-Website && git fetch --all && git reset --hard origin/main"
+REMOTE_PRE_CMD="cd DUCC-Website && git config --global --add safe.directory /root/DUCC-Website && (git fetch --all || echo 'Git fetch failed, continuing...') && (git reset --hard origin/main || echo 'Git reset failed, continuing...') && find . -name '._*' -delete && find . -name '.__*' -delete"
 
 if [ "$CLEAR_DB" = true ]; then
     echo "       [INFO] Remote database will be cleared."

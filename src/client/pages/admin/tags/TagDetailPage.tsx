@@ -257,8 +257,7 @@ export default function TagDetailPage() {
                                     <tbody>
                                         <For each={managers()}>
                                             {u => (
-                                                <tr>
-                                                    <td>{u.first_name} {u.last_name}</td>
+                                                <tr><td>{u.first_name} {u.last_name}</td>
                                                     <td>{u.email}</td>
                                                     <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('managers', u.id)} innerHTML={DELETE_SVG} /></td>
                                                 </tr>
@@ -287,8 +286,7 @@ export default function TagDetailPage() {
                                     <tbody>
                                         <For each={whitelist()}>
                                             {u => (
-                                                <tr>
-                                                    <td>{u.first_name} {u.last_name}</td>
+                                                <tr><td>{u.first_name} {u.last_name}</td>
                                                     <td>{u.email}</td>
                                                     <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('whitelist', u.id)} innerHTML={DELETE_SVG} /></td>
                                                 </tr>

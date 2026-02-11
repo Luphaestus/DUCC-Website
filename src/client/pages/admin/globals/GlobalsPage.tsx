@@ -69,8 +69,7 @@ export default function GlobalsPage() {
                             </Show>
                             <For each={Object.entries(globals() || {})}>
                                 {([key, setting]) => (
-                                    <tr class="global-row">
-                                        <td data-label="Setting" class="primary-text"><strong>{setting.name || key}</strong></td>
+                                    <tr class="global-row"><td data-label="Setting" class="primary-text"><strong>{setting.name || key}</strong></td>
                                         <td data-label="Description" class="description-cell">{setting.description}</td>
                                         <td data-label="Value">
                                             <Show when={setting.type === 'image'} fallback={

@@ -75,7 +75,7 @@ export default class User {
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
                 "is_instructor", "first_aid_expiry", "profile_picture_path", "profile_picture_id",
                 "profile_picture_color", "profile_picture_font", "profile_picture_initials",
-                "created_at", "swims", "booties", "swimmer_rank", "swimmer_stats", "permissions", "roles", 'totp_enabled'
+                "created_at", "swims", "booties", "swimmer_rank", "swimmer_stats", "permissions", "roles", 'totp_enabled', 'email_2fa_enabled'
             ];
             const accessibleTransactionsDB = ['balance', 'transactions'];
             return [accessibleUserDB.includes(element), accessibleTransactionsDB.includes(element)];

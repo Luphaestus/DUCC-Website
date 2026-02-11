@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-# Install build dependencies for native modules (like bcrypt and sqlite3)
+# Install build dependencies for native modules (like bcrypt)
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -12,8 +12,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (skip husky and use ci for reliable builds)
+ENV HUSKY=0
+RUN npm ci
 
 # Copy project files
 COPY . .

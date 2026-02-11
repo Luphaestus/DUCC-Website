@@ -26,9 +26,10 @@ footer {
 
         cite {
             font-size: 0.85rem;
-            color: var(--pico-muted-color);
+            color: var(--pico-contrast);
+            opacity: 0.85;
             font-style: normal;
-            font-weight: 600;
+            font-weight: 700;
         }
     }
 
@@ -43,5 +44,5 @@ footer {
         }
     }
 
-    .footer-bottom { text-align: center; p { margin-bottom: 0; font-size: 0.85rem; color: var(--pico-muted-color); } }
+    .footer-bottom { text-align: center; p { margin-bottom: 0; font-size: 0.85rem; color: var(--pico-contrast); opacity: 0.8; font-weight: 500; } }
 }

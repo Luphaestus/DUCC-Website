@@ -1,10 +1,9 @@
-// todo clean up
-import { createSignal, onMount } from "solid-js";
+import { createSignal, onMount, createMemo, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { ACCOUNT_BOX_SVG } from '@/utils/icons';
-import { GlassButtonLarge } from "../components/LiquidButton";
+import { PERSON_SVG, LOCK_SVG } from '@/utils/icons';
+import { calculateEntropy, getStrengthLabel } from "@/utils/password";
 
 export default function SignupPage() {
     const navigate = useNavigate();
@@ -15,6 +14,13 @@ export default function SignupPage() {
     const [password, setPassword] = createSignal("");
     const [confirmPassword, setConfirmPassword] = createSignal("");
     const [isEmailModified, setIsEmailModified] = createSignal(false);
+    const [errors, setErrors] = createSignal<Record<string, string>>({});
+    const [shaking, setShaking] = createSignal<Record<string, boolean>>({});
+
+    const passwordStrength = createMemo(() => {
+        const entropy = calculateEntropy(password());
+        return getStrengthLabel(entropy);
+    });
 
     onMount(async () => {
         try {
@@ -25,7 +31,32 @@ export default function SignupPage() {
         } catch (e) {}
     });
 
+    const triggerError = (fieldErrors: Record<string, string>) => {
+        const newErrors = { ...errors() };
+        const newShaking: Record<string, boolean> = {};
+        Object.entries(fieldErrors).forEach(([field, message]) => {
+            newErrors[field] = message;
+            newShaking[field] = true;
+        });
+        setErrors(newErrors);
+        setShaking(newShaking);
+        
+        // Remove shake class after animation to allow re-triggering
+        setTimeout(() => {
+            setShaking({});
+        }, 500);
+    };
+
+    const clearError = (field: string) => {
+        if (errors()[field]) {
+            const updated = { ...errors() };
+            delete updated[field];
+            setErrors(updated);
+        }
+    };
+
     const handleFirstNameInput = (val: string) => {
+        clearError('firstName');
         setFirstName(val);
         if (!isEmailModified()) {
             const dot = (val !== '' && lastName() !== '') ? '.' : '';
@@ -34,6 +65,7 @@ export default function SignupPage() {
     };
 
     const handleLastNameInput = (val: string) => {
+        clearError('lastName');
         setLastName(val);
         if (!isEmailModified()) {
             const dot = (firstName() !== '' && val !== '') ? '.' : '';
@@ -42,6 +74,7 @@ export default function SignupPage() {
     };
 
     const handleEmailInput = (val: string) => {
+        clearError('email');
         setIsEmailModified(true);
         setEmail(val.split('@')[0]);
     };
@@ -49,8 +82,26 @@ export default function SignupPage() {
     const handleSignup = async (e: Event) => {
         e.preventDefault();
 
+        const currentErrors: Record<string, string> = {};
+
         if (password() !== confirmPassword()) {
-            notify('Error', 'Passwords do not match', 'error', 2000, 'signup-status');
+            currentErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        if (password().length < 8) {
+            currentErrors.password = 'Password must be at least 8 characters';
+        } else if (password().length > 72) {
+            currentErrors.password = 'Password cannot exceed 72 characters';
+        }
+
+        if (email().includes('+')) {
+            currentErrors.email = 'Plus-indexed emails are not allowed';
+        } else if (!email().includes('.')) {
+            currentErrors.email = 'Email must follow the first.last format';
+        }
+
+        if (Object.keys(currentErrors).length > 0) {
+            triggerError(currentErrors);
             return;
         }
 
@@ -66,19 +117,32 @@ export default function SignupPage() {
                 email: fullEmail,
                 password: password()
             });
-            notify('Success', 'Sign up successful! Redirecting...', 'success', 1000, 'signup-status');
-            setTimeout(() => navigate('/login'), 1000);
+            notify('Success', 'Sign up successful!', 'success', 1000, 'signup-status');
+            navigate(`/email-sent?type=signup&email=${encodeURIComponent(fullEmail)}`);
         } catch (error: any) {
-            notify('Error', error.message || 'Sign up failed.', 'error', 2000, 'signup-status');
+            const backendErrors: Record<string, string> = {};
+            
+            if (error.errors) {
+                if (error.errors.email) backendErrors.email = error.errors.email;
+                if (error.errors.first_name) backendErrors.firstName = error.errors.first_name;
+                if (error.errors.last_name) backendErrors.lastName = error.errors.last_name;
+            } else if (error.message === 'Email is already taken.') {
+                backendErrors.email = 'This email is already registered.';
+            } else {
+                notify('Error', error.message || 'Sign up failed.', 'error', 2000, 'signup-status');
+            }
+
+            if (Object.keys(backendErrors).length > 0) {
+                triggerError(backendErrors);
+            }
         }
     };
 
     return (
         <div id="signup-view" class="auth-page-wrapper">
-            <div class="auth-card" style={{ "max-width": "550px" }}>
+            <div class="auth-card" style={{ "max-width": "1050px" }}>
                 <div class="center-text">
                     <h2>
-                        <span innerHTML={ACCOUNT_BOX_SVG} />
                         Join the Club
                     </h2>
                     <p class="auth-subtitle">Create your account to start paddling!</p>
@@ -88,77 +152,151 @@ export default function SignupPage() {
                     <div class="grid">
                         <div class="modern-form-group">
                             <label for="signup-first-name">First Name</label>
-                            <input 
-                                type="text" 
-                                id="signup-first-name" 
-                                placeholder="Durham" 
-                                autocomplete="given-name"
-                                value={firstName()}
-                                onInput={(e) => handleFirstNameInput(e.currentTarget.value)}
-                                required
-                            />
+                            <div class="glass-input-group" classList={{ 'is-invalid': !!errors().firstName, 'shaking': shaking().firstName }}>
+                                <div class="icon">
+                                    <span innerHTML={PERSON_SVG} />
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="signup-first-name" 
+                                    placeholder="Durham" 
+                                    autocomplete="given-name"
+                                    value={firstName()}
+                                    onInput={(e) => handleFirstNameInput(e.currentTarget.value)}
+                                    required
+                                    autofocus
+                                />
+                            </div>
+                            <Show when={errors().firstName}>
+                                <small class="error-text">{errors().firstName}</small>
+                            </Show>
                         </div>
                         <div class="modern-form-group">
                             <label for="signup-last-name">Last Name</label>
-                            <input 
-                                type="text" 
-                                id="signup-last-name" 
-                                placeholder="Student" 
-                                autocomplete="family-name"
-                                value={lastName()}
-                                onInput={(e) => handleLastNameInput(e.currentTarget.value)}
-                                required
-                            />
+                            <div class="glass-input-group" classList={{ 'is-invalid': !!errors().lastName, 'shaking': shaking().lastName }}>
+                                <div class="icon">
+                                    <span innerHTML={PERSON_SVG} />
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="signup-last-name" 
+                                    placeholder="Student" 
+                                    autocomplete="family-name"
+                                    value={lastName()}
+                                    onInput={(e) => handleLastNameInput(e.currentTarget.value)}
+                                    required
+                                />
+                            </div>
+                            <Show when={errors().lastName}>
+                                <small class="error-text">{errors().lastName}</small>
+                            </Show>
                         </div>
                     </div>
 
                     <div class="modern-form-group">
                         <label for="signup-email">Durham Email Address</label>
-                        <div class="durham-email-wrapper">
+                        <div class="glass-input-group durham-email-wrapper" classList={{ 'is-invalid': !!errors().email, 'shaking': shaking().email }}>
+                            <div class="icon">
+                                <span innerHTML={PERSON_SVG} />
+                            </div>
                             <input 
                                 type="text" 
                                 id="signup-email" 
-                                placeholder="username" 
+                                placeholder="firstname.lastname" 
                                 autocomplete="username"
                                 value={email()}
+                                onKeyDown={(e) => {
+                                    if (e.key === '@') {
+                                        e.preventDefault();
+                                    }
+                                }}
                                 onInput={(e) => handleEmailInput(e.currentTarget.value)}
                                 required
                             />
                             <span class="email-suffix">@durham.ac.uk</span>
                         </div>
+                        <Show when={errors().email}>
+                            <small class="error-text">{errors().email}</small>
+                        </Show>
                     </div>
 
                     <div class="grid">
                         <div class="modern-form-group">
                             <label for="signup-password">Password</label>
-                            <input 
-                                type="password" 
-                                id="signup-password" 
-                                autocomplete="new-password"
-                                placeholder="••••••••"
-                                value={password()}
-                                onInput={(e) => setPassword(e.currentTarget.value)}
-                                required
-                            />
+                            <div class="glass-input-group" classList={{ 'is-invalid': !!errors().password, 'shaking': shaking().password }}>
+                                <div class="icon">
+                                    <span innerHTML={LOCK_SVG} />
+                                </div>
+                                <input 
+                                    type="password" 
+                                    id="signup-password" 
+                                    autocomplete="new-password"
+                                    placeholder="••••••••"
+                                    value={password()}
+                                    onInput={(e) => {
+                                        clearError('password');
+                                        setPassword(e.currentTarget.value);
+                                    }}
+                                    required
+                                />
+                            </div>
+                            
+                            <Show when={password().length > 0}>
+                                <div class="password-strength-meter" style="margin-top: 0.5rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                        <small style={{ color: passwordStrength().color, "font-weight": "600", "font-size": "0.75rem" }}>
+                                            {passwordStrength().label}
+                                        </small>
+                                        <small style="color: var(--pico-muted-color); font-size: 0.7rem;">
+                                            {password().length}/72
+                                        </small>
+                                    </div>
+                                    <div style="height: 4px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                        <div 
+                                            style={{
+                                                height: "100%",
+                                                width: `${(passwordStrength().score / 5) * 100}%`,
+                                                background: passwordStrength().color,
+                                                transition: "width 0.3s ease, background 0.3s ease"
+                                            }} 
+                                        />
+                                    </div>
+                                </div>
+                            </Show>
+
+                            <Show when={errors().password}>
+                                <small class="error-text">{errors().password}</small>
+                            </Show>
                         </div>
                         <div class="modern-form-group">
                             <label for="signup-confirm-password">Confirm Password</label>
-                            <input 
-                                type="password" 
-                                id="signup-confirm-password" 
-                                autocomplete="new-password"
-                                placeholder="••••••••"
-                                value={confirmPassword()}
-                                onInput={(e) => setConfirmPassword(e.currentTarget.value)}
-                                required
-                            />
+                            <div class="glass-input-group" classList={{ 'is-invalid': !!errors().confirmPassword, 'shaking': shaking().confirmPassword }}>
+                                <div class="icon">
+                                    <span innerHTML={LOCK_SVG} />
+                                </div>
+                                <input 
+                                    type="password" 
+                                    id="signup-confirm-password" 
+                                    autocomplete="new-password"
+                                    placeholder="••••••••"
+                                    value={confirmPassword()}
+                                    onInput={(e) => {
+                                        clearError('confirmPassword');
+                                        setConfirmPassword(e.currentTarget.value);
+                                    }}
+                                    required
+                                />
+                            </div>
+                            <Show when={errors().confirmPassword}>
+                                <small class="error-text">{errors().confirmPassword}</small>
+                            </Show>
                         </div>
                     </div>
 
                     <div id="signup-footer" style="margin-top: 1rem;">
-                        <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                        <button type="submit" class="primary full-width" style={{ "border-radius": "16px" }}>
                             Create Account
-                        </GlassButtonLarge>
+                        </button>
                     </div>
                 </form>
 

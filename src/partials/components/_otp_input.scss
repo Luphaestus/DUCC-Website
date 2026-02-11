@@ -1,0 +1,67 @@
+@use "../mixins" as *;
+
+.otp-input-container {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin: 1.5rem 0;
+
+    .otp-box {
+        @include liquid-glass(0rem, var(--border-radius-md));
+        width: 3.5rem;
+        height: 4.5rem;
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 800;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: var(--font-family-mono);
+        margin: 0;
+        padding: 0 !important;
+
+        &::placeholder {
+            opacity: 0.3;
+        }
+
+        &:focus {
+            border-color: var(--pico-primary);
+            background: rgba(var(--pico-primary-rgb), 0.1);
+            box-shadow: 0 0 0 4px rgba(var(--pico-primary-rgb), 0.15);
+            transform: translateY(-4px);
+            outline: none;
+        }
+    }
+
+    &.success {
+        .otp-box {
+            border-color: var(--colour-good) !important;
+            background: rgba(46, 204, 113, 0.1) !important;
+            color: var(--colour-good);
+            animation: otpSuccessPulse 0.5s ease;
+        }
+    }
+
+    &.error {
+        .otp-box {
+            border-color: var(--colour-bad) !important;
+            background: rgba(231, 76, 60, 0.1) !important;
+            color: var(--colour-bad);
+        }
+    }
+
+    @media (max-width: 600px) {
+        gap: 0.5rem;
+        
+        .otp-box {
+            width: 2.75rem;
+            height: 3.5rem;
+            font-size: 1.5rem;
+        }
+    }
+}
+
+@keyframes otpSuccessPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}

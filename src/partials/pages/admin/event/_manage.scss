@@ -1,9 +1,5 @@
 #admin-view {
     .event-row {
-        &.clickable-row {
-            cursor: pointer;
-        }
-
         .primary-text {
             font-weight: 600;
             color: var(--pico-contrast);

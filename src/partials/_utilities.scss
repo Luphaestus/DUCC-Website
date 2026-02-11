@@ -247,7 +247,20 @@
 
 .liquid-container {
   @include liquid-glass(var(--liquid-padding, 1.5rem), var(--liquid-border-radius, 20px));
+  box-shadow: var(--shadow-glass);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+}
+
+.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    transform: scale(1.01);
+    background: rgba(var(--pico-color-rgb), 0.05);
+  }
+
+  &:active {
+    transform: scale(0.99);
+  }
 }

@@ -1,4 +1,3 @@
-// todo clean up
 import { createSignal, createResource, onMount, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG } from '@/utils/icons';
@@ -73,11 +72,11 @@ export default function FilesPage() {
 
     onMount(async () => {
         try {
-            const userData = await apiRequest('GET', '/api/user/elements/permissions').catch(() => ({}));
+            const userData = await apiRequest('GET', '/api/user/elements/permissions', null, true).catch(() => ({}));
             const perms = userData.permissions || [];
             setCanManage(perms.includes('file.write') || perms.includes('file.edit') || false);
 
-            const catsRes = await apiRequest('GET', '/api/file-categories', true);
+            const catsRes = await apiRequest('GET', '/api/file-categories', null, true);
             setCategories(catsRes.data || []);
         } catch (e) { }
     });
@@ -127,8 +126,7 @@ export default function FilesPage() {
                         const ext = file.filename.split('.').pop()?.toLowerCase() || '';
                         const viewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'].includes(ext);
                         return (
-                            <tr>
-                                <td data-label="Title">
+                            <tr><td data-label="Title">
                                     <div class="file-title">
                                         <strong>{file.title}</strong>
                                         <span class="file-category">{file.category_name || 'Uncategorised'}</span>

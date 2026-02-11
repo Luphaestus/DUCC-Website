@@ -69,6 +69,32 @@
   }
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.is-invalid {
+  border-color: var(--colour-bad) !important;
+  background: rgba(231, 76, 60, 0.05) !important;
+  
+  input {
+    color: var(--colour-bad) !important;
+    &::placeholder {
+      color: rgba(231, 76, 60, 0.5) !important;
+    }
+  }
+
+  .icon {
+    color: var(--colour-bad) !important;
+  }
+}
+
+.shaking {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
 .view {
   // will-change removed to fix memory warning
 }

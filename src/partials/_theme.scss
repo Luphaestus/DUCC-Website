@@ -11,6 +11,7 @@
   --glass-border: 1px solid var(--glass-highlight);
   --nav-bg: rgba(18, 18, 18, 0.7);
   --glass-text-colour: #ffffff;
+  --glass-texture: rgba(255, 255, 255, 0.01);
   --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.4);
   --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.6);
   --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
@@ -46,12 +47,13 @@ body {
   --shadow-glass: 0 12px 40px rgba(0, 0, 0, 0.1);
 
   /* Light Mode Defaults */
-  --translucent-bg: rgba(255, 255, 255, 0.4);
-  --glass-bg: rgba(255, 255, 255, 0.35);
+  --translucent-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg: rgba(255, 255, 255, 0.5);
   --glass-highlight: rgba(255, 255, 255, 0.5);
-  --glass-border: 1px solid var(--glass-highlight);
+  --glass-border: 1px solid rgba(0, 0, 0, 0.1);
   --nav-bg: rgba(255, 255, 255, 0.8);
   --glass-text-colour: #373c44;
+  --glass-texture: rgba(0, 0, 0, 0.0025);
   --theme: white;
   --theme-opposite: black;
   --colour-good: #2ecc71;

@@ -21,7 +21,7 @@
         max-width: 1200px;
         margin: 1rem auto 2.5rem;
         position: relative;
-        padding: 0 1rem;
+        padding: 0;
         gap: 1rem;
 
         .admin-control-wrapper,
@@ -155,14 +155,9 @@
             display: flex;
             align-items: center;
             gap: 2px;
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 99px;
-            padding: 4px;
-            margin-left: 1rem;
-            position: relative; // Ensure relative positioning for absolute children
 
             .toggle-bg {
-                border-radius: 99px !important;
+                border-radius: 20px !important;
             }
 
             .tab-btn {
@@ -170,7 +165,7 @@
                 border: none !important;
                 box-shadow: none !important;
                 padding: 0.4rem 0.8rem;
-                border-radius: 99px;
+                border-radius: 20px !important;
                 color: var(--pico-muted-color);
                 cursor: pointer;
                 transition: all 0.2s;
@@ -201,8 +196,10 @@
         @media (max-width: 768px) {
             flex-direction: column;
             gap: 1.5rem;
-            
-            .admin-control-wrapper, .today-control-wrapper, .week-navigator {
+
+            .admin-control-wrapper,
+            .today-control-wrapper,
+            .week-navigator {
                 width: 100%;
                 justify-content: center;
                 flex: none;
@@ -223,17 +220,55 @@
 
         .date-strip {
             display: flex;
+            width: 100%;
             align-items: center;
             gap: 1.25rem;
             margin: 0;
-            padding: 0;
+            padding: 0.75rem 1.5rem;
+            background: var(--translucent-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+            animation: date-strip-entrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+
+            &::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 50%;
+                height: 100%;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(var(--pico-primary-rgb), 0.1),
+                    transparent
+                );
+                animation: date-strip-shimmer 8s infinite 2s;
+                pointer-events: none;
+            }
+
+            &::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, rgba(var(--pico-primary-rgb), 0.05) 0%, transparent 100%);
+                pointer-events: none;
+            }
 
             .date-num {
                 font-family: var(--font-family-display);
-                font-size: 2.5rem;
+                font-size: 2.2rem;
                 font-weight: 800;
                 line-height: 1;
-                color: var(--glass-text-colour);
+                color: var(--pico-contrast);
             }
 
             .date-text-group {
@@ -254,15 +289,16 @@
 
                 .date-line {
                     width: 100%;
-                    height: 1px;
+                    height: 2px;
                     background: linear-gradient(to right, var(--pico-primary), transparent);
-                    opacity: 0.3;
+                    opacity: 0.5;
                 }
 
                 .month-name {
                     font-size: 0.85rem;
-                    opacity: 0.7;
-                    color: var(--glass-text-colour);
+                    font-weight: 700;
+                    opacity: 0.9;
+                    color: var(--pico-contrast);
                     line-height: 1;
                 }
             }
@@ -376,7 +412,8 @@
                 opacity: 0.8;
                 text-align: left;
 
-                svg, span:has(svg) {
+                svg,
+                span:has(svg) {
                     width: 1.1rem;
                     height: 1.1rem;
                     color: var(--pico-primary);
@@ -418,7 +455,8 @@
                     border-color: rgba(255, 255, 255, 0.05);
                 }
 
-                svg, span:has(svg) {
+                svg,
+                span:has(svg) {
                     width: 0.9rem;
                     height: 0.9rem;
                     fill: currentColor;
@@ -459,12 +497,31 @@
 
         &.past-event,
         &.unavailable-event {
-            opacity: 0.7;
-            filter: grayscale(1);
-            background: rgba(0, 0, 0, 0.02);
+            filter: grayscale(0.9);
+            background: rgba(0, 0, 0, 0.5) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: white !important;
 
-            @media (prefers-color-scheme: dark) {
-                background: rgba(255, 255, 255, 0.02);
+            * {
+                color: white !important;
+            }
+
+            svg,
+            span:has(svg) {
+                color: white !important;
+                fill: white !important;
+            }
+
+            .event-image {
+                filter: grayscale(1);
+                opacity: 0.4;
+            }
+
+            .status-badge.neutral {
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white !important;
             }
         }
 
@@ -472,8 +529,60 @@
             filter: saturate(0.5) !important;
         }
 
+        &.in-progress {
+            border-color: var(--pico-primary);
+            box-shadow: 0 0 15px rgba(var(--pico-primary-rgb), 0.2);
+
+            .event-progress-bar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 4px;
+                background: rgba(var(--pico-primary-rgb), 0.1);
+                z-index: 10;
+
+                .progress-fill {
+                    height: 100%;
+                    background: var(--pico-primary);
+                    box-shadow: 0 0 8px var(--pico-primary);
+                    transition: width 0.5s ease;
+                }
+            }
+        }
+
         &.canceled-event {
-            border-color: rgba(231, 76, 60, 0.2);
+            border-color: rgba(231, 76, 60, 0.5);
+            background: rgba(150, 30, 30, 0.7) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: white !important;
+
+            * {
+                color: white !important;
+            }
+
+            svg,
+            span:has(svg) {
+                color: white !important;
+                fill: white !important;
+            }
+
+            .event-image {
+                filter: grayscale(1) brightness(0.5);
+                opacity: 0.5;
+            }
+
+            .event-title-bold {
+                color: white !important;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .status-badge.error {
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.4);
+                color: white !important;
+            }
         }
     }
 
@@ -483,7 +592,8 @@
         position: relative;
     }
 
-    .events-page, .events-page-content {
+    .events-page,
+    .events-page-content {
         flex: 0 0 100%;
         width: 100%;
     }
@@ -511,10 +621,11 @@
             display: flex;
             flex: 1;
             position: relative;
-            
+
             &::-webkit-scrollbar {
                 width: 6px;
             }
+
             &::-webkit-scrollbar-thumb {
                 background: rgba(var(--pico-primary-rgb), 0.3);
                 border-radius: 10px;
@@ -526,11 +637,11 @@
             flex-shrink: 0;
             border-right: 1px solid rgba(255, 255, 255, 0.05);
             background: rgba(0, 0, 0, 0.1);
-            
+
             .time-label {
                 height: 60px;
                 position: relative;
-                
+
                 span {
                     position: absolute;
                     top: -10px;
@@ -555,10 +666,11 @@
             display: flex;
             flex-direction: column;
 
-            &:last-child { border-right: none; }
+            &:last-child {
+                border-right: none;
+            }
 
             &.today {
-                background: rgba(var(--pico-primary-rgb), 0.03);
                 .day-header .day-num {
                     background: var(--pico-primary);
                     color: white;
@@ -573,14 +685,14 @@
                 justify-content: center;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                 background: rgba(255, 255, 255, 0.02);
-                
-                .day-name { 
-                    font-size: 0.7rem; 
-                    text-transform: uppercase; 
+
+                .day-name {
+                    font-size: 0.7rem;
+                    text-transform: uppercase;
                     font-weight: 700;
                     opacity: 0.6;
                 }
-                
+
                 .day-num {
                     font-size: 1.1rem;
                     font-weight: 800;
@@ -619,7 +731,7 @@
             z-index: 5;
             border-left: 4px solid rgba(0, 0, 0, 0.2);
             transition: transform 0.2s, filter 0.2s;
-            
+
             &:hover {
                 z-index: 10;
                 filter: brightness(1.1);
@@ -646,7 +758,7 @@
                 background: #e74c3c;
                 text-decoration: line-through;
             }
-            
+
             &.past {
                 opacity: 0.6;
                 filter: grayscale(0.5);
@@ -675,5 +787,25 @@
                 box-shadow: 0 0 10px rgba(231, 76, 60, 0.6);
             }
         }
+    }
+}
+
+@keyframes date-strip-entrance {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes date-strip-shimmer {
+    0% {
+        left: -100%;
+    }
+    20%, 100% {
+        left: 150%;
     }
 }

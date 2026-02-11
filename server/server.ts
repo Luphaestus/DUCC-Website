@@ -26,6 +26,9 @@ import Globals from './misc/globals.js';
 import Logger from './misc/Logger.js';
 import config from './config.js';
 
+import { EmailManager } from './emails/EmailManager.js';
+import { GmailProvider } from './emails/providers/GmailProvider.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -221,6 +224,15 @@ const startServer = async () => {
     }
 
     new Globals();
+
+    // Initialize Email Manager
+    const emailManager = EmailManager.getInstance();
+    if (config.email.user && config.email.pass) {
+      emailManager.setProvider(new GmailProvider(config.email.user, config.email.pass));
+      Logger.info('Email system initialized with Gmail provider.');
+    } else {
+      Logger.warn('Email system initialized without a provider (EMAIL_USER/EMAIL_PASS missing).');
+    }
 
     fastify.get('/api/health', async (request, reply) => {
       return { ok: true };

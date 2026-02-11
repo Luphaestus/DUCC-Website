@@ -25,8 +25,16 @@ export default class FileRules {
         `, [file.id, file.id]);
         if (isPublicAsset) return true;
 
-        if (new Globals().get('DefaultEventImage')?.data?.includes(`/api/files/${file.id}/download`)) {
-            return true;
+        // Check if file is referenced in ANY global setting
+        const globals = new Globals();
+        const allGlobals = globals.getAll();
+        const fileUrl = `/api/files/${file.id}/download`;
+        
+        for (const key in allGlobals) {
+            const val = allGlobals[key]?.data;
+            if (typeof val === 'string' && val.includes(fileUrl)) {
+                return true;
+            }
         }
 
         if (await EventRules.canViewImage(db, file.id, user)) return true;

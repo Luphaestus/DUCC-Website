@@ -67,7 +67,7 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
             const response = await fetch(url, options);
             gotResponse = true;
             updateConnectionStatus(true);
-            
+
             const text = await response.text();
             if (!text && response.status >= 200 && response.status < 300) {
                 return {};
@@ -90,9 +90,13 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
             } else {
                 // If the server responded with an error, it's NOT a connection loss
                 const error = result || { message: 'Request failed with status: ' + response.status };
-                
+
+
                 if (response.status === 401 && !silent) {
-                    // Unauthorized: Redirect to login if not already there
+                    // Unauthorized: Redirect to login if not already there    console.log('Unauthorized - redirecting to login');
+                    console.log('Redirecting to login due to 401 response');
+                    console.log("Caller file:", new Error().stack);
+                    console.log("Request: ", { method, url, options });
                     if (!window.location.pathname.startsWith('/login')) {
                         if (window.solidNavigate) window.solidNavigate('/login');
                         else window.location.href = '/login';
@@ -114,14 +118,14 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
         } catch (error: any) {
             const isAbort = error.name === 'AbortError' || error.message?.toLowerCase().includes('aborted');
             if (isAbort) throw error;
-            
+
             // Only update connection status to false if it's a network error (no response)
             if (!gotResponse && !silent) {
                 updateConnectionStatus(false);
             }
-            
+
             const finalError = error.message ? error : { message: 'Network error' };
-            
+
             // If it's a generic network error (not a status-based one), notify
             if (!silent && !gotResponse) {
                 notify('Network Error', 'Check your connection.', NotificationTypes.ERROR, 5000, 'network-error');

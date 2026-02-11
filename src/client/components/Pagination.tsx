@@ -42,26 +42,22 @@ export default function Pagination(props: PaginationProps) {
         <Show when={props.totalPages > 1}>
             <nav class="pagination-container glass-pagination">
                 <GlassButtonSmall
-                    class="nav-btn prev-btn outline secondary"
+                    class="nav-btn prev-btn"
                     disabled={props.currentPage === 1}
                     onClick={() => props.onPageChange(props.currentPage - 1)}
-                    classList={{ 'pagination-disabled': props.currentPage === 1, 'pagination-enabled': props.currentPage !== 1 }}
                     padding="0.3rem 0.6rem"
                 >
                     Prev
                 </GlassButtonSmall>
 
-                <div class="page-buttons" style={{ "align-items": "center", "display": "flex", "gap": "0.5rem" }}>
-                    <span class="pagination-info" style={{ "font-size": "0.85rem", "font-weight": "600", "color": "var(--pico-muted-color)" }}>
-                        Page {props.currentPage} of {props.totalPages}
-                    </span>
-                </div>
+                <span class="pagination-info">
+                    Page {props.currentPage} of {props.totalPages}
+                </span>
 
                 <GlassButtonSmall
-                    class="nav-btn next-btn outline secondary"
+                    class="nav-btn next-btn"
                     disabled={props.currentPage === props.totalPages}
                     onClick={() => props.onPageChange(props.currentPage + 1)}
-                    classList={{ 'pagination-disabled': props.currentPage === props.totalPages, 'pagination-enabled': props.currentPage !== props.totalPages }}
                     padding="0.3rem 0.6rem"
                 >
                     Next

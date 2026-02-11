@@ -171,7 +171,7 @@ export default function UsersPage() {
                         const lastInitial = user.last_name ? user.last_name.charAt(0) + '.' : '';
 
                         return (
-                            <tr class="user-row clickable-row" onClick={() => navigate(`/admin/user/${user.id}${tab() === 'swims' ? '?tab=swims' : (tab() === 'transactions' ? '?tab=finance' : '')}`)}>
+                            <tr class="user-row clickable" onClick={() => navigate(`/admin/user/${user.id}${tab() === 'swims' ? '?tab=swims' : (tab() === 'transactions' ? '?tab=finance' : '')}`)}>
                                 <td data-label="Name" class="primary-text name-column">
                                     <div class="user-info-cell">
                                         <Avatar user={user} classes="mini" />

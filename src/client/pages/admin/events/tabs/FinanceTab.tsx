@@ -184,8 +184,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
             <tbody>
                 <For each={innerProps.list}>
                     {a => (
-                        <tr>
-                            <td class="primary-text">
+                        <tr><td class="primary-text">
                                 <div class="user-info-cell">
                                     <Avatar user={a} classes="mini" />
                                     <span>{a.first_name} {a.last_name}</span>
@@ -347,8 +346,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                     <tbody>
                                         <For each={summary()?.breakdown}>
                                             {row => (
-                                                <tr>
-                                                    <td class="primary-text">{row.name}</td>
+                                                <tr><td class="primary-text">{row.name}</td>
                                                     <td class="amount text-right">£{(row.spent + row.mileage).toFixed(2)}</td>
                                                     <td class="amount text-right">-£{row.shared_cost_share.toFixed(2)}</td>
                                                     <td class="amount text-right" classList={{ 'text-success': row.net >= 0, 'text-error': row.net < 0 }}>

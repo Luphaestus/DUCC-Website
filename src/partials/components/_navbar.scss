@@ -1,19 +1,17 @@
 @use "../mixins" as *;
 
-nav.small-container {
+nav.navbar-full-width {
   position: fixed;
   top: 1.5rem;
-  left: 0;
-  right: 0;
-  width: 100%;
-  pointer-events: none; // Allow clicks to pass through the empty area of the full-width container
+  left: 1rem;
+  right: 1rem;
+  pointer-events: none; // Allow clicks to pass through the empty area
   z-index: 1000;
   display: flex;
   justify-content: center;
   align-items: center;
   background: transparent;
-  padding: 0 1rem;
-  transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   &.scrolled {
     top: 1rem;
@@ -24,12 +22,15 @@ nav.small-container {
     padding: 0.4rem 0.6rem !important;
     transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: auto; // Re-enable clicks for the actual navbar
+    width: 100%;
     max-width: 100%;
   }
 
   .nav-inner-content {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
     gap: 0.75rem;
     position: relative;
     z-index: 2;
@@ -273,6 +274,23 @@ nav.small-container {
     }
   }
 
+  .mobile-items-wrapper {
+    position: relative;
+    width: 100%;
+
+    .mobile-nav-spotlight {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: var(--pico-primary);
+      border-radius: 16px;
+      z-index: 1;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.2, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(var(--pico-primary-rgb), 0.3);
+    }
+  }
+
   .mobile-items {
     list-style: none;
     padding: 0;
@@ -280,6 +298,8 @@ nav.small-container {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    position: relative;
+    z-index: 2;
 
     li {
       width: 100%;
@@ -294,13 +314,19 @@ nav.small-container {
       font-weight: 600;
       font-size: 1.1rem;
       border-radius: 16px;
-      transition: background 0.2s ease, transform 0.2s ease;
+      transition: color 0.2s ease, transform 0.2s ease;
 
       &:hover,
       &.active {
-        background: rgba(var(--pico-primary-rgb), 0.1);
-        color: var(--pico-primary);
+        color: var(--pico-primary-inverse);
         transform: translateX(4px);
+      }
+
+      &.active {
+        color: var(--pico-primary);
+        &:hover {
+          color: var(--pico-primary-inverse);
+        }
       }
 
       &.highlight {

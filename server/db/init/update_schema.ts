@@ -124,6 +124,21 @@ import Logger from '../../misc/Logger.js';
             Logger.error('Error ensuring sessions table:', e);
         }
 
+        // 7. Add email_2fa_enabled to users
+        try {
+            await db.run(`
+                ALTER TABLE users 
+                ADD COLUMN email_2fa_enabled TINYINT(1) NOT NULL DEFAULT 0
+            `);
+            Logger.info('Added email_2fa_enabled column to users table.');
+        } catch (e: any) {
+            if (e.code === 'ER_DUP_FIELDNAME') {
+                Logger.info('email_2fa_enabled column already exists in users table.');
+            } else {
+                Logger.error('Error adding email_2fa_enabled column:', e);
+            }
+        }
+
         await db.close();
         Logger.info('Schema update complete.');
         process.exit(0);

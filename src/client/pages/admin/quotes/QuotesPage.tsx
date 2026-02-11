@@ -107,8 +107,7 @@ export default function QuotesPage() {
                 </Show>
                 <For each={props.data?.quotes}>
                     {(quote) => (
-                        <tr class="quote-row">
-                            <td data-label="Quote" class="primary-text quote-text-cell">"{quote.text}"</td>
+                        <tr class="quote-row"><td data-label="Quote" class="primary-text quote-text-cell">"{quote.text}"</td>
                             <td data-label="Person">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</td>
                             <td data-label="Submitter">{quote.submitted_by ? `${quote.submitted_by.first_name} ${quote.submitted_by.last_name}` : 'Unknown'}</td>
                             <td data-label="Status">

@@ -187,7 +187,7 @@ export default function EventsPage() {
                 </Show>
                 <For each={props.data?.events}>
                     {(event) => (
-                        <tr class="event-row clickable-row" onClick={() => navigate(`/admin/event/${event.id}`)}>
+                        <tr class="event-row clickable" onClick={() => navigate(`/admin/event/${event.id}`)}>
                             <td data-label="Title" class="primary-text">{event.title}</td>
                             <td data-label="Status">
                                 <span class={`badge ${event.status === 'confirmed' ? 'success' : event.status === 'scheduled' ? 'warning' : 'neutral'}`}>

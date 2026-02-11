@@ -341,8 +341,7 @@ export default function FilesPage() {
                 </Show>
                 <For each={props.data?.files}>
                     {(file) => (
-                        <tr>
-                            <td data-label="Title" class="primary-text"><strong>{file.title}</strong></td>
+                        <tr><td data-label="Title" class="primary-text"><strong>{file.title}</strong></td>
                             <td data-label="Category"><span class="badge neutral">{file.category_name || 'Uncategorised'}</span></td>
                             <td data-label="Author">{file.author}</td>
                             <td data-label="Visibility"><span class={`tag-badge ${file.visibility}`}>{file.visibility}</span></td>

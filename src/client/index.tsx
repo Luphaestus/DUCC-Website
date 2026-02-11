@@ -5,6 +5,7 @@ import { lazy, onMount, onCleanup } from "solid-js";
 import App from "./App";
 import "../styles.scss";
 import "./mos.scss";
+import "./mos.ts";
 import { switchView } from "./utils/view";
 
 // Lazy load pages for better performance
@@ -20,7 +21,10 @@ const QuotesPage = lazy(() => import("./pages/QuotesPage"));
 import ErrorPage, { UnauthorisedPage, NoInternetPage } from "./pages/ErrorPage";
 const LegalPage = lazy(() => import("./pages/LegalPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const ResendVerificationPage = lazy(() => import("./pages/ResendVerificationPage"));
 const SetPasswordPage = lazy(() => import("./pages/SetPasswordPage"));
+const EmailSentPage = lazy(() => import("./pages/EmailSentPage"));
+const EmailVerifiedPage = lazy(() => import("./pages/EmailVerifiedPage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
 const EventExpensePage = lazy(() => import("./pages/EventExpensePage"));
 const SettlementPage = lazy(() => import("./pages/SettlementPage"));
@@ -70,7 +74,10 @@ if (root) {
           <Route path="/swims" component={SwimsPage} />
           <Route path="/quotes" component={QuotesPage} />
           <Route path="/reset-password" component={ResetPasswordPage} />
+          <Route path="/resend-verification" component={ResendVerificationPage} />
           <Route path="/set-password" component={SetPasswordPage} />
+          <Route path="/email-sent" component={EmailSentPage} />
+          <Route path="/email-verified" component={EmailVerifiedPage} />
           <Route path="/settlement/:id" component={SettlementPage} />
           <Route path="/event/:id/settlement" component={SettlementPage} />
           

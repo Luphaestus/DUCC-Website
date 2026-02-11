@@ -5,23 +5,56 @@ import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
 import { ADD_SVG, EDIT_SVG, DELETE_SVG, CLOSE_SVG, SAVE_SVG } from '@/utils/icons';
 
+interface KitVariant {
+    id?: number;
+    name: string;
+    total_quantity: number;
+}
+
 interface KitItem {
     id: number;
     name: string;
-    type: string; // 'paddle', 'ba', etc.
-    size: string;
-    total_quantity: number;
+    type: string;
+    description?: string;
+    variants: KitVariant[];
 }
 
 export default function KitPage() {
     const { notify } = useNotifications();
     const [editingItem, setEditingItem] = createSignal<KitItem | null>(null);
     const [isCreating, setIsCreating] = createSignal(false);
+    const [tempVariants, setTempVariants] = createSignal<KitVariant[]>([]);
 
     const [items, { refetch }] = createResource(async () => {
         const res = await apiRequest('GET', '/api/kit');
         return (res || []) as KitItem[];
     });
+
+    const addVariantField = () => {
+        setTempVariants([...tempVariants(), { name: '', total_quantity: 0 }]);
+    };
+
+    const removeVariantField = (index: number) => {
+        setTempVariants(tempVariants().filter((_, i) => i !== index));
+    };
+
+    const updateVariantField = (index: number, field: keyof KitVariant, value: any) => {
+        const updated = [...tempVariants()];
+        updated[index] = { ...updated[index], [field]: value };
+        setTempVariants(updated);
+    };
+
+    const startEditing = (item: KitItem) => {
+        setEditingItem(item);
+        setTempVariants([...item.variants]);
+        setIsCreating(false);
+    };
+
+    const startCreating = () => {
+        setIsCreating(true);
+        setEditingItem(null);
+        setTempVariants([{ name: '', total_quantity: 0 }]);
+    };
 
     const handleSave = async (e: Event) => {
         e.preventDefault();
@@ -30,8 +63,8 @@ export default function KitPage() {
         const data = {
             name: formData.get('name'),
             type: formData.get('type'),
-            size: formData.get('size'),
-            total_quantity: parseInt(formData.get('total_quantity') as string)
+            description: formData.get('description'),
+            variants: tempVariants()
         };
 
         try {
@@ -66,7 +99,7 @@ export default function KitPage() {
             <Panel 
                 title="Club Kit Inventory" 
                 action={
-                    <button class="small-btn primary" onClick={() => { setIsCreating(true); setEditingItem(null); }}>
+                    <button class="small-btn primary" onClick={startCreating}>
                         <span innerHTML={ADD_SVG} /> Add Item
                     </button>
                 }
@@ -77,63 +110,23 @@ export default function KitPage() {
                             <tr>
                                 <th>Name</th>
                                 <th>Type</th>
-                                <th>Size</th>
-                                <th>Quantity</th>
+                                <th>Variants (Size/Qty)</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <Show when={isCreating()}>
-                                <tr>
-                                    <td colspan="5">
-                                        <form class="inline-form" onSubmit={handleSave} style="display: flex; gap: 0.5rem; align-items: center;">
-                                            <input name="name" placeholder="Name" required />
-                                            <select name="type">
-                                                <option value="paddle">Paddle</option>
-                                                <option value="ba">BA (Buoyancy Aid)</option>
-                                                <option value="boat">Boat</option>
-                                                <option value="wetsuit">Wetsuit</option>
-                                                <option value="cag">Cag</option>
-                                                <option value="helmet">Helmet</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                            <select name="size">
-                                                <option value="None">None</option>
-                                                <option value="XS">XS</option>
-                                                <option value="S">S</option>
-                                                <option value="M">M</option>
-                                                <option value="L">L</option>
-                                                <option value="XL">XL</option>
-                                                <option value="XXL">XXL</option>
-                                            </select>
-                                            <input name="total_quantity" type="number" placeholder="Qty" required style="width: 80px;" />
-                                            <button type="submit" class="icon-btn success" innerHTML={SAVE_SVG}></button>
-                                            <button type="button" class="icon-btn warning" onClick={() => setIsCreating(false)} innerHTML={CLOSE_SVG}></button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            </Show>
-                            <For each={items()}>
-                                {item => (
-                                    <tr>
-                                        <Show when={editingItem()?.id === item.id} fallback={
-                                            <>
-                                                <td>{item.name}</td>
-                                                <td><span class="badge neutral">{item.type}</span></td>
-                                                <td>{item.size}</td>
-                                                <td>{item.total_quantity}</td>
-                                                <td>
-                                                    <div class="action-group">
-                                                        <button class="icon-btn" onClick={() => setEditingItem(item)} innerHTML={EDIT_SVG}></button>
-                                                        <button class="icon-btn delete" onClick={() => handleDelete(item.id)} innerHTML={DELETE_SVG}></button>
-                                                    </div>
-                                                </td>
-                                            </>
-                                        }>
-                                            <td colspan="5">
-                                                <form class="inline-form" onSubmit={handleSave} style="display: flex; gap: 0.5rem; align-items: center;">
-                                                    <input name="name" value={item.name} required />
-                                                    <select name="type" value={item.type}>
+                            <Show when={isCreating() || editingItem()}>
+                                <tr class="editing-row">
+                                    <td colspan="4">
+                                        <form class="complex-form" onSubmit={handleSave}>
+                                            <div class="form-grid">
+                                                <div class="form-group">
+                                                    <label>Item Name</label>
+                                                    <input name="name" value={editingItem()?.name || ''} placeholder="e.g. Cag, Paddle" required />
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Type</label>
+                                                    <select name="type" value={editingItem()?.type || 'other'}>
                                                         <option value="paddle">Paddle</option>
                                                         <option value="ba">BA</option>
                                                         <option value="boat">Boat</option>
@@ -142,22 +135,68 @@ export default function KitPage() {
                                                         <option value="helmet">Helmet</option>
                                                         <option value="other">Other</option>
                                                     </select>
-                                                    <select name="size" value={item.size}>
-                                                        <option value="None">None</option>
-                                                        <option value="XS">XS</option>
-                                                        <option value="S">S</option>
-                                                        <option value="M">M</option>
-                                                        <option value="L">L</option>
-                                                        <option value="XL">XL</option>
-                                                        <option value="XXL">XXL</option>
-                                                    </select>
-                                                    <input name="total_quantity" type="number" value={item.total_quantity} required style="width: 80px;" />
-                                                    <button type="submit" class="icon-btn success" innerHTML={SAVE_SVG}></button>
-                                                    <button type="button" class="icon-btn warning" onClick={() => setEditingItem(null)} innerHTML={CLOSE_SVG}></button>
-                                                </form>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="variants-section">
+                                                <div class="section-header">
+                                                    <label>Variants</label>
+                                                    <button type="button" class="small-btn secondary" onClick={addVariantField}>+ Add Variant</button>
+                                                </div>
+                                                <div class="variants-list">
+                                                    <For each={tempVariants()}>
+                                                        {(v, i) => (
+                                                            <div class="variant-item">
+                                                                <input 
+                                                                    placeholder="Size/Variant" 
+                                                                    value={v.name} 
+                                                                    onInput={(e) => updateVariantField(i(), 'name', e.currentTarget.value)}
+                                                                    required 
+                                                                />
+                                                                <input 
+                                                                    type="number" 
+                                                                    placeholder="Qty" 
+                                                                    value={v.total_quantity} 
+                                                                    onInput={(e) => updateVariantField(i(), 'total_quantity', parseInt(e.currentTarget.value))}
+                                                                    required 
+                                                                    style="width: 80px;"
+                                                                />
+                                                                <button type="button" class="icon-btn delete" onClick={() => removeVariantField(i())} innerHTML={CLOSE_SVG}></button>
+                                                            </div>
+                                                        )}
+                                                    </For>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-actions">
+                                                <button type="submit" class="primary"><span innerHTML={SAVE_SVG} /> Save Item</button>
+                                                <button type="button" class="secondary" onClick={() => { setEditingItem(null); setIsCreating(false); }}><span innerHTML={CLOSE_SVG} /> Cancel</button>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </Show>
+                            <For each={items()}>
+                                {item => (
+                                    <Show when={editingItem()?.id !== item.id && !isCreating()}>
+                                        <tr>
+                                            <td>{item.name}</td>
+                                            <td><span class="badge neutral">{item.type}</span></td>
+                                            <td>
+                                                <div class="variant-badges">
+                                                    <For each={item.variants}>
+                                                        {v => <span class="badge outline">{v.name}: {v.total_quantity}</span>}
+                                                    </For>
+                                                </div>
                                             </td>
-                                        </Show>
-                                    </tr>
+                                            <td>
+                                                <div class="action-group">
+                                                    <button class="icon-btn" onClick={() => startEditing(item)} innerHTML={EDIT_SVG}></button>
+                                                    <button class="icon-btn delete" onClick={() => handleDelete(item.id)} innerHTML={DELETE_SVG}></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </Show>
                                 )}
                             </For>
                         </tbody>

@@ -15,8 +15,8 @@ export default class ValidationRules {
      */
     static validation: Record<string, ValidationRule> = {
         email: {
-            pattern: /^[^@]+\.[^@]+@durham\.ac\.uk$/i,
-            message: 'Invalid email format. Must be a Durham University email (first.last@durham.ac.uk).'
+            pattern: /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+@durham\.ac\.uk$/i,
+            message: 'Email must be in the format first.last@durham.ac.uk and cannot contain plus signs (+).'
         },
         name: {
             pattern: /^[a-zA-Z\s,.'-]{1,100}$/,
@@ -29,6 +29,10 @@ export default class ValidationRules {
         totp: {
             pattern: /^\d{6}$/,
             message: 'Invalid code format. Must be 6 digits.'
+        },
+        password: {
+            pattern: /^.{8,72}$/,
+            message: 'Password must be between 8 and 72 characters.'
         }
     };
 

@@ -1,0 +1,70 @@
+.editing-row {
+    background: rgba(var(--pico-primary-rgb), 0.05);
+    
+    .complex-form {
+        padding: 1rem;
+        border: 1px solid var(--pico-primary);
+        border-radius: 12px;
+        margin: 0.5rem 0;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .variants-section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .variants-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .variant-item {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        justify-content: flex-end;
+    }
+}
+
+.variant-badges {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.primary-glass {
+    background: rgba(var(--pico-primary-rgb), 0.15) !important;
+    border-color: var(--pico-primary) !important;
+}
+
+.kit-selection-buttons {
+    button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}

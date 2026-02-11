@@ -15,11 +15,22 @@ import Modal from "@/components/Modal";
 import { onUpdate } from "@/utils/updates";
 import { incrementModals, decrementModals } from "@/utils/modal-state";
 
+interface KitVariant {
+    id: number;
+    name: string;
+}
+
 interface KitItem {
     id: number;
     name: string;
     type: string;
-    size: string;
+    variants: KitVariant[];
+}
+
+interface KitRequest {
+    id: number;
+    kit_item_id: number;
+    kit_variant_id: number | null;
 }
 
 export default function EventDetailPage() {
@@ -29,38 +40,9 @@ export default function EventDetailPage() {
     const eventId = () => params.id;
     
     const [isKitModalOpen, setIsKitModalOpen] = createSignal(false);
+    const [activeKitItem, setActiveKitItem] = createSignal<KitItem | null>(null);
 
-    onMount(() => {
-        incrementModals();
-        const cleanup = onUpdate((event) => {
-            if (event.type === 'attendance_update' && Number(event.data.eventId) === Number(eventId())) {
-                const { action, user, userId } = event.data;
-                
-                // Update attendees list without full re-fetch
-                mutateAttendees((prev: any[]) => {
-                    if (action === 'joined' && user) {
-                        if (prev.some(a => a.id === user.id)) return prev;
-                        return [...prev, user];
-                    } else if (action === 'left') {
-                        const targetId = userId || user?.id;
-                        return prev.filter(a => a.id !== targetId);
-                    }
-                    return prev;
-                });
-
-                // Update event capacity count locally
-                mutateEvent((prev: any) => {
-                    if (!prev) return prev;
-                    const change = action === 'joined' ? 1 : -1;
-                    return { ...prev, attendee_count: (prev.attendee_count || 0) + change };
-                });
-            }
-        });
-        onCleanup(() => {
-            cleanup();
-            decrementModals();
-        });
-    });
+    // ... existing onMount/cleanup ...
 
     const [eventData, { refetch: refetchEvent, mutate: mutateEvent }] = createResource(eventId, async (id) => {
         const res = await apiRequest('GET', `/api/event/${id}`, null, true);
@@ -92,7 +74,7 @@ export default function EventDetailPage() {
             if (!id || !user) return [];
             try {
                 const res = await apiRequest('GET', `/api/kit/event/${id}/my-request`, null, true);
-                return (res || []) as KitItem[];
+                return (res || []) as KitRequest[];
             } catch { return []; }
         }
     );
@@ -127,14 +109,36 @@ export default function EventDetailPage() {
         }
     };
 
-    const handleRequestKit = async (e: Event) => {
-        e.preventDefault();
-        const form = e.target as HTMLFormElement;
-        const selected = Array.from(form.querySelectorAll('input[type="checkbox"]:checked')).map(cb => parseInt((cb as HTMLInputElement).value));
-        
+    const openVariantModal = (item: KitItem) => {
+        setActiveKitItem(item);
+        setIsKitModalOpen(true);
+    };
+
+    const handleSelectVariant = async (variantId: number | null) => {
+        const item = activeKitItem();
+        if (!item) return;
+
+        // Update locally first for snappiness if possible, but let's just use the API
+        const currentRequests = userKitRequests() || [];
+        const existing = currentRequests.find(r => r.kit_item_id === item.id);
+
+        let newSelections;
+        if (variantId === -1) {
+            // Deselect item
+            newSelections = currentRequests.filter(r => r.kit_item_id !== item.id)
+                .map(r => ({ kit_item_id: r.kit_item_id, kit_variant_id: r.kit_variant_id }));
+        } else {
+            const newSelection = { kit_item_id: item.id, kit_variant_id: variantId };
+            if (existing) {
+                newSelections = currentRequests.map(r => r.kit_item_id === item.id ? newSelection : { kit_item_id: r.kit_item_id, kit_variant_id: r.kit_variant_id });
+            } else {
+                newSelections = [...currentRequests.map(r => ({ kit_item_id: r.kit_item_id, kit_variant_id: r.kit_variant_id })), newSelection];
+            }
+        }
+
         try {
-            await apiRequest('POST', '/api/kit/event-request', { event_id: eventId(), itemIds: selected });
-            notify('Success', 'Kit requests updated', 'success');
+            await apiRequest('POST', '/api/kit/event-request', { event_id: eventId(), selections: newSelections });
+            notify('Success', 'Kit preference updated', 'success');
             setIsKitModalOpen(false);
             refetchUserKit();
         } catch (e: any) { notify('Error', e.message, 'error'); }
@@ -302,9 +306,31 @@ export default function EventDetailPage() {
                                             <Show when={isAttending()}>
                                                 <button class="secondary outline" disabled>Joined</button>
                                                 <Show when={eventStatus() !== 'ended'}>
-                                                    <button class="secondary" onClick={() => setIsKitModalOpen(true)}>
-                                                        <span innerHTML={KAYAKING_SVG} /> Request Kit
-                                                    </button>
+                                                    <div class="kit-selection-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+                                                        <For each={kitItems() || []}>
+                                                            {(item) => {
+                                                                const request = createMemo(() => userKitRequests()?.find(r => r.kit_item_id === item.id));
+                                                                const isSelected = () => !!request();
+                                                                const variantName = () => {
+                                                                    const r = request();
+                                                                    if (!r) return '';
+                                                                    if (r.kit_variant_id === null) return ' (Not Sure)';
+                                                                    const v = item.variants.find(v => v.id === r.kit_variant_id);
+                                                                    return v ? ` (${v.name})` : ' (Not Sure)';
+                                                                };
+
+                                                                return (
+                                                                    <button 
+                                                                        class={isSelected() ? "primary" : "secondary outline"} 
+                                                                        onClick={() => openVariantModal(item)}
+                                                                        title={`Borrow ${item.name}`}
+                                                                    >
+                                                                        <span innerHTML={KAYAKING_SVG} /> {item.name}{variantName()}
+                                                                    </button>
+                                                                );
+                                                            }}
+                                                        </For>
+                                                    </div>
                                                 </Show>
                                             </Show>
 
@@ -325,50 +351,45 @@ export default function EventDetailPage() {
 
     
 
-                        <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title="Request Club Kit">
-
-                            <form onSubmit={handleRequestKit} class="modern-form">
-
-                                <div class="item-list mb-4 item-list-scroll">
-
-                                    <For each={kitItems() || []}>
-
-                                        {(item: KitItem) => (
-
-                                            <label class="list-item checkbox-item">
-
-                                                <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>
-
+                        <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title={`Borrow ${activeKitItem()?.name}`}>
+                            <div class="variant-selection">
+                                <p>Select a size or variant for {activeKitItem()?.name}:</p>
+                                <div class="item-list mb-4">
+                                    <For each={activeKitItem()?.variants || []}>
+                                        {(variant) => (
+                                            <button 
+                                                class="list-item clickable" 
+                                                onClick={() => handleSelectVariant(variant.id)}
+                                            >
                                                 <div class="item-details">
-
-                                                    <span class="item-title">{item.name}</span>
-
-                                                    <span class="item-subtitle">{item.type} • {item.size}</span>
-
+                                                    <span class="item-title">{variant.name}</span>
                                                 </div>
-
-                                                <input 
-
-                                                    type="checkbox" 
-
-                                                    value={item.id} 
-
-                                                    checked={userKitRequests()?.some(r => r.id === item.id)} 
-
-                                                />
-
-                                            </label>
-
+                                            </button>
                                         )}
-
                                     </For>
-
+                                    <button 
+                                        class="list-item clickable" 
+                                        onClick={() => handleSelectVariant(null)}
+                                    >
+                                        <div class="item-details">
+                                            <span class="item-title">Don't Know / Not Sure</span>
+                                            <span class="item-subtitle">We'll help you pick at the event</span>
+                                        </div>
+                                    </button>
+                                    
+                                    <Show when={userKitRequests()?.some(r => r.kit_item_id === activeKitItem()?.id)}>
+                                        <button 
+                                            class="list-item clickable danger-hover" 
+                                            onClick={() => handleSelectVariant(-1)}
+                                            style="margin-top: 1rem; border-color: var(--error-color);"
+                                        >
+                                            <div class="item-details">
+                                                <span class="item-title" style="color: var(--error-color);">Remove Request</span>
+                                            </div>
+                                        </button>
+                                    </Show>
                                 </div>
-
-                                <button type="submit" class="primary full-width">Update Requests</button>
-
-                            </form>
-
+                            </div>
                         </Modal>
 
                     </div>

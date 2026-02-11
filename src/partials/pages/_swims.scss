@@ -436,10 +436,6 @@
                     background: var(--glass-highlight);
                 }
 
-                &.clickable {
-                    cursor: pointer;
-                }
-
                 &.highlight {
                     background: rgba(var(--pico-primary-rgb), 0.1);
                     border-color: var(--pico-primary);

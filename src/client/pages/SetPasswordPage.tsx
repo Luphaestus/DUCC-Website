@@ -1,10 +1,8 @@
-// todo clean up
 import { createSignal } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { LOCK_SVG } from "@/utils/icons";
 import { useNavigate, useSearchParams } from "@solidjs/router";
-import { GlassButtonLarge } from "@/components/LiquidButton";
 
 export default function SetPasswordPage() {
     const { notify } = useNotifications();
@@ -14,11 +12,32 @@ export default function SetPasswordPage() {
 
     const [password, setPassword] = createSignal("");
     const [confirmPassword, setConfirmPassword] = createSignal("");
+    const [errors, setErrors] = createSignal<Record<string, boolean>>({});
+    const [shaking, setShaking] = createSignal<Record<string, boolean>>({});
+
+    const triggerError = (fields: string[]) => {
+        const newErrors = { ...errors() };
+        const newShaking: Record<string, boolean> = {};
+        fields.forEach(f => {
+            newErrors[f] = true;
+            newShaking[f] = true;
+        });
+        setErrors(newErrors);
+        setShaking(newShaking);
+        setTimeout(() => setShaking({}), 500);
+    };
+
+    const clearError = (field: string) => {
+        if (errors()[field]) {
+            setErrors({ ...errors(), [field]: false });
+        }
+    };
 
     const handleSubmit = async (e: Event) => {
         e.preventDefault();
         
         if (password() !== confirmPassword()) {
+            triggerError(['password', 'confirmPassword']);
             notify('Error', 'Passwords do not match.', 'error');
             return;
         }
@@ -31,6 +50,7 @@ export default function SetPasswordPage() {
             notify('Success', 'Password updated! You can now login.', 'success');
             navigate('/login');
         } catch (error: any) {
+            triggerError(['password', 'confirmPassword']);
             notify('Error', error.message || 'Failed to set password.', 'error');
         }
     };
@@ -49,32 +69,49 @@ export default function SetPasswordPage() {
                 <form onSubmit={handleSubmit}>
                     <div class="modern-form-group">
                         <label for="new-password">New Password</label>
-                        <input 
-                            type="password" 
-                            id="new-password" 
-                            placeholder="••••••••"
-                            value={password()}
-                            onInput={(e) => setPassword(e.currentTarget.value)}
-                            required
-                        />
+                        <div class="glass-input-group" classList={{ 'is-invalid': errors().password, 'shaking': shaking().password }}>
+                            <div class="icon">
+                                <span innerHTML={LOCK_SVG} />
+                            </div>
+                            <input 
+                                type="password" 
+                                id="new-password" 
+                                placeholder="••••••••"
+                                value={password()}
+                                autofocus
+                                onInput={(e) => {
+                                    clearError('password');
+                                    setPassword(e.currentTarget.value);
+                                }}
+                                required
+                            />
+                        </div>
                     </div>
                     
                     <div class="modern-form-group">
                         <label for="confirm-password">Confirm Password</label>
-                        <input 
-                            type="password" 
-                            id="confirm-password" 
-                            placeholder="••••••••"
-                            value={confirmPassword()}
-                            onInput={(e) => setConfirmPassword(e.currentTarget.value)}
-                            required
-                        />
+                        <div class="glass-input-group" classList={{ 'is-invalid': errors().confirmPassword, 'shaking': shaking().confirmPassword }}>
+                            <div class="icon">
+                                <span innerHTML={LOCK_SVG} />
+                            </div>
+                            <input 
+                                type="password" 
+                                id="confirm-password" 
+                                placeholder="••••••••"
+                                value={confirmPassword()}
+                                onInput={(e) => {
+                                    clearError('confirmPassword');
+                                    setConfirmPassword(e.currentTarget.value);
+                                }}
+                                required
+                            />
+                        </div>
                     </div>
                     
                     <div style="margin-top: 0.5rem;">
-                        <GlassButtonLarge type="submit" class="primary full-width" borderRadius={16}>
+                        <button type="submit" class="primary full-width" style={{ "border-radius": "16px" }}>
                             Update Password
-                        </GlassButtonLarge>
+                        </button>
                     </div>
                 </form>
             </div>

@@ -4,8 +4,9 @@
 .footer-main {
   position: relative;
   z-index: 10;
-  background-color: var(--theme);
-  border-top: 1px solid var(--table-border);
+  border: var(--glass-border);
+  border-right: none;
+  border-left: none;
 
   body[data-theme="dark"] & {
     background-color: #020617;
@@ -124,7 +125,8 @@
   text-decoration: none;
   transition: all 0.2s ease;
 
-  svg {
+  svg,
+  span:has(svg) {
     margin-right: 0.5rem;
   }
 
@@ -135,8 +137,6 @@
 }
 
 .footer-bottom {
-  margin-top: 2rem;
-  padding-top: 2rem;
   border-top: 1px solid var(--table-border);
   text-align: center;
   font-size: 0.75rem;

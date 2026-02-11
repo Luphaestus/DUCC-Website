@@ -6,7 +6,7 @@ import AdminNavBar from "@/components/admin/AdminNavBar";
 import { apiRequest } from "@/utils/api";
 
 export default function AdminLayout(props: ParentProps) {
-    const { user, isAuthenticated, isAdmin } = useAuth();
+    const { user, isAuthenticated, isExec } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -22,7 +22,7 @@ export default function AdminLayout(props: ParentProps) {
         if (!user.loading) {
             if (!isAuthenticated()) {
                 navigate('/login');
-            } else if (!isAdmin()) {
+            } else if (!isExec()) {
                 navigate('/unauthorised');
             }
         }

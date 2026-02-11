@@ -40,6 +40,10 @@ export function useAuth() {
     };
 
     const isAdmin = () => (user()?.permissions?.length || 0) > 0;
+    const isExec = () => {
+        const perms = user()?.permissions || [];
+        return perms.includes('exec.publish') || perms.includes('user.manage') || perms.includes('site.admin');
+    };
     const isMember = () => user()?.is_member || false;
     const isAuthenticated = () => !!user();
 
@@ -49,6 +53,7 @@ export function useAuth() {
         refetchUser, 
         logout, 
         isAdmin, 
+        isExec,
         isMember, 
         isAuthenticated 
     };

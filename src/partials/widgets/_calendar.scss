@@ -6,8 +6,8 @@
     width: 100%;
     min-height: 600px;
     position: relative;
-    border-radius: var(--border-radius-lg);
     overflow: hidden;
+    border-radius: inherit;
 
     &.admin-mode {
         .calendar-event { cursor: grab; &:active { cursor: grabbing; } }
@@ -18,8 +18,10 @@
         justify-content: space-between;
         align-items: center;
         padding: 1.25rem;
-        background: rgba(255, 255, 255, 0.02);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-top-left-radius: inherit;
+        border-top-right-radius: inherit;
 
         .cal-controls {
             display: flex;
@@ -68,10 +70,10 @@
 
     .calendar-body-wrapper {
         flex: 1;
-        background: rgba(0, 0, 0, 0.1);
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        border-radius: inherit; // Use inherit to capture rounded corners from container
     }
 
     /* Week View */
@@ -81,6 +83,7 @@
         overflow-y: auto;
         position: relative;
         height: 70vh;
+        border-radius: inherit; // Ensure clipping for scrolling content
 
         &::-webkit-scrollbar { width: 6px; }
         &::-webkit-scrollbar-thumb { background: rgba(var(--pico-primary-rgb), 0.2); border-radius: 10px; }
@@ -120,11 +123,14 @@
             display: flex;
             flex-direction: column;
 
+            &:last-child { border-right: none; }
+
             &.today {
-                background: rgba(var(--pico-primary-rgb), 0.04);
+                background: rgba(var(--pico-primary-rgb), 0.35);
                 .day-header {
                     color: var(--pico-primary);
-                    .day-num { background: var(--pico-primary); color: white; box-shadow: 0 0 15px rgba(var(--pico-primary-rgb), 0.3); }
+                    background: rgba(var(--pico-primary-rgb), 0.3);
+                    .day-num { background: var(--pico-primary); color: white; box-shadow: 0 0 15px rgba(var(--pico-primary-rgb), 0.4); }
                 }
             }
 
@@ -137,7 +143,7 @@
                 border-bottom: 1px solid rgba(255, 255, 255, 0.08);
                 position: sticky;
                 top: 0;
-                background: rgba(var(--pico-background-color-rgb), 0.8);
+                background: rgba(var(--pico-background-color-rgb), 0.6);
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
                 z-index: 20;
@@ -173,6 +179,7 @@
         flex: 1;
         padding: 1rem;
         background: rgba(0,0,0,0.05);
+        border-radius: inherit;
 
         .weekdays-row {
             display: grid;
@@ -194,15 +201,17 @@
             flex: 1;
 
             .month-day {
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(255, 255, 255, 0.05);
+                background: rgba(255, 255, 255, 0.12);
+                border: var(--glass-border);
                 border-radius: var(--border-radius-md);
+                box-shadow: var(--shadow-soft);
                 padding: 0.75rem;
                 display: flex;
                 flex-direction: column;
                 gap: 0.5rem;
                 cursor: pointer;
                 transition: all 0.2s;
+                
 
                 &:hover { 
                     background: rgba(255, 255, 255, 0.07);
@@ -211,7 +220,7 @@
                 }
 
                 &.today {
-                    background: rgba(var(--pico-primary-rgb), 0.08);
+                    background: rgba(var(--pico-primary-rgb), 0.15);
                     border-color: var(--pico-primary);
                     .day-number { color: var(--pico-primary); font-weight: 900; }
                 }
@@ -312,22 +321,22 @@
         position: absolute;
         left: 0;
         right: 0;
-        height: 2px;
+        height: 3px;
         background: #ff4757;
         z-index: 100;
         pointer-events: none;
-        box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+        box-shadow: 0 0 15px rgba(255, 71, 87, 0.6);
 
         .time-dot {
             position: absolute;
-            left: -5px;
-            top: -4px;
-            width: 10px;
-            height: 10px;
+            left: -6px;
+            top: -5px;
+            width: 12px;
+            height: 12px;
             background: #ff4757;
             border-radius: 50%;
             border: 2px solid white;
-            box-shadow: 0 0 10px rgba(255, 71, 87, 0.8);
+            box-shadow: 0 0 12px rgba(255, 71, 87, 0.9);
         }
     }
 }

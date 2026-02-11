@@ -12,14 +12,12 @@ const navEntries = [
   { name: 'Exec', path: '/exec', id: 'nav-exec' },
   { name: 'Admin', path: '/admin', id: 'admin-button', admin: true },
   { name: 'Profile', path: '/profile', id: 'profile-button', auth: true },
-  // Login is handled separately as a button
 ];
 
 export default function Navbar() {
-  const { user, isAdmin, isAuthenticated } = useAuth();
+  const { user, isAdmin, isExec, isAuthenticated } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = createSignal(false);
   const [isScrolled, setIsScrolled] = createSignal(false);
-  const location = useLocation();
 
   const [logo] = createResource(async () => {
     try {
@@ -32,18 +30,19 @@ export default function Navbar() {
   
   // Spotlight effect state
   const [spotlightStyle, setSpotlightStyle] = createSignal({ opacity: 0, left: 0, width: 0 });
+  const [mobileSpotlightStyle, setMobileSpotlightStyle] = createSignal({ opacity: 0, top: 0, height: 0 });
   let navListRef: HTMLUListElement | undefined;
+  let mobileNavListRef: HTMLUListElement | undefined;
 
   const filteredEntries = createMemo(() => {
     const currentUser = user();
     const isLoggedIn = isAuthenticated();
     const isMember = currentUser?.is_member;
-    const hasAdmin = isAdmin();
+    const hasExec = isExec();
 
     return navEntries.filter(entry => {
-      if (entry.admin) return hasAdmin;
+      if (entry.admin) return hasExec;
       if (entry.auth) return isLoggedIn;
-      // if (entry.guest) return !isLoggedIn; // Login button separate
       if (entry.id === 'nav-quotes') return isMember;
       if (entry.id === 'nav-swims') return isLoggedIn;
       return true;
@@ -70,6 +69,22 @@ export default function Navbar() {
     });
   };
 
+  const updateMobileSpotlight = (target: HTMLElement | null) => {
+    if (!target || !mobileNavListRef) {
+        setMobileSpotlightStyle(prev => ({ ...prev, opacity: 0 }));
+        return;
+    }
+    
+    const navRect = mobileNavListRef.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+
+    setMobileSpotlightStyle({
+        opacity: 1,
+        top: targetRect.top - navRect.top,
+        height: targetRect.height
+    });
+  };
+
   onMount(() => {
     window.addEventListener('scroll', handleScroll);
     handleScroll();
@@ -79,13 +94,10 @@ export default function Navbar() {
     window.removeEventListener('scroll', handleScroll);
   });
 
-  // Watch location changes to update spotlight active state (optional, or just use hover)
-  // For this "wonky" version, let's make the spotlight follow hover strictly for fun
-  
   return (
     <>
       <nav 
-        class="small-container" 
+        class="navbar-full-width" 
         classList={{ 
             'mobile-open': isMobileOpen(), 
             'scrolled': isScrolled() 
@@ -176,26 +188,51 @@ export default function Navbar() {
                     padding: '1rem' 
                 }}
             >
-                <ul class="mobile-items">
-                <For each={filteredEntries()}>
-                    {(entry) => (
-                    <li>
-                        <A href={entry.path} class="mobile-link" activeClass="active" onClick={() => setIsMobileOpen(false)}>
-                            {entry.id === 'profile-button' && user()?.swims !== undefined 
-                            ? `Profile (${user()?.swims})` 
-                            : entry.name}
-                        </A>
-                    </li>
-                    )}
-                </For>
-                <Show when={!isAuthenticated()}>
-                    <li>
-                        <A href="/login" class="mobile-link highlight" onClick={() => setIsMobileOpen(false)}>
-                            Login
-                        </A>
-                    </li>
-                </Show>
-                </ul>
+                <div class="mobile-items-wrapper">
+                    <div 
+                        class="mobile-nav-spotlight" 
+                        style={{ 
+                            opacity: mobileSpotlightStyle().opacity,
+                            transform: `translateY(${mobileSpotlightStyle().top}px)`,
+                            height: `${mobileSpotlightStyle().height}px`
+                        }} 
+                    />
+                    <ul 
+                        class="mobile-items" 
+                        ref={mobileNavListRef}
+                        onMouseLeave={() => setMobileSpotlightStyle(prev => ({ ...prev, opacity: 0 }))}
+                    >
+                    <For each={filteredEntries()}>
+                        {(entry) => (
+                        <li>
+                            <A 
+                                href={entry.path} 
+                                class="mobile-link" 
+                                activeClass="active" 
+                                onClick={() => setIsMobileOpen(false)}
+                                onMouseEnter={(e) => updateMobileSpotlight(e.currentTarget)}
+                            >
+                                {entry.id === 'profile-button' && user()?.swims !== undefined 
+                                ? `Profile (${user()?.swims})` 
+                                : entry.name}
+                            </A>
+                        </li>
+                        )}
+                    </For>
+                    <Show when={!isAuthenticated()}>
+                        <li>
+                            <A 
+                                href="/login" 
+                                class="mobile-link highlight" 
+                                onClick={() => setIsMobileOpen(false)}
+                                onMouseEnter={(e) => updateMobileSpotlight(e.currentTarget)}
+                            >
+                                Login
+                            </A>
+                        </li>
+                    </Show>
+                    </ul>
+                </div>
             </div>
         </div>
       </nav>

@@ -161,17 +161,19 @@ export default function EventsPage(props: ParentProps) {
                 </For>
             </div>
         }>
-            <CalendarWidget 
-                hideHeader={true}
-                date={currentDate()}
-                viewMode={viewMode() as CalendarViewMode}
-                onDateChange={setCurrentDate}
-                onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)} 
-                onDayClick={(day) => {
-                    setCurrentDate(day);
-                    setView('list');
-                }}
-            />
+            <div class="liquid-container events-page-content weekly-mode" style={{ "--liquid-padding": "0", "--liquid-border-radius": "24px", "margin-top": "1rem", "width": "100%", "overflow": "hidden" }}>
+                <CalendarWidget 
+                    hideHeader={true}
+                    date={currentDate()}
+                    viewMode={viewMode() as CalendarViewMode}
+                    onDateChange={setCurrentDate}
+                    onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)} 
+                    onDayClick={(day) => {
+                        setCurrentDate(day);
+                        setView('list');
+                    }}
+                />
+            </div>
         </Show>
     );
 
@@ -199,13 +201,13 @@ export default function EventsPage(props: ParentProps) {
             <PageTitle text="Upcoming Events" />
             <div class="events-controls-modern">
                 <div class="admin-control-wrapper">
-                    <TabNav class="toggle-group-mini" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px", "margin-left": "0" }}>
-                        <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
-                        <Show when={isDesktop()}>
+                    <Show when={isDesktop()}>
+                        <TabNav class="toggle-group-mini" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px", "margin-left": "0" }}>
+                            <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
                             <button class="tab-btn" classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
                             <button class="tab-btn" classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
-                        </Show>
-                    </TabNav>
+                        </TabNav>
+                    </Show>
                 </div>
 
                 <div class="week-navigator">

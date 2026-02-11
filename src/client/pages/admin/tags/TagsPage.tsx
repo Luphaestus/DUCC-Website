@@ -50,8 +50,7 @@ export default function TagsPage() {
                             </Show>
                             <For each={tags()}>
                                 {(tag) => (
-                                    <tr class="tag-row clickable-row" onClick={() => navigate(`/admin/tag/${tag.id}`)}>
-                                        <td data-label="Name" class="primary-text">{tag.name}</td>
+                                    <tr class="tag-row clickable" onClick={() => navigate(`/admin/tag/${tag.id}`)}><td data-label="Name" class="primary-text">{tag.name}</td>
                                         <td data-label="Colour">
                                             {/* We use the Tag component or simple badge */}
                                             <span class="badge tag-badge-simple" style={{ "--tag-colour": tag.color }}>{tag.name}</span>

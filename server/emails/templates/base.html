@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{header_title}} | DUCC</title>
+    <style>
+        /* Base Styles */
+        body { margin: 0; padding: 0; background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #4b5563; }
+        table { border-spacing: 0; width: 100%; }
+        td { padding: 0; }
+        img { border: 0; display: block; }
+        
+        /* Layout */
+        .wrapper { width: 100%; table-layout: fixed; background-color: #f4f6f8; padding: 40px 0; }
+        .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08); }
+        
+        /* Header */
+        .header { background-color: #ffffff; padding: 32px 20px; text-align: center; }
+        .logo { width: 100px; height: auto; margin: 0 auto 12px; }
+        .club-name { color: #7E317B; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin: 0; }
+
+        /* Hero Section */
+        .hero { background: linear-gradient(135deg, #7E317B 0%, #5d245b 100%); color: #ffffff; padding: 50px 40px; text-align: center; position: relative; }
+        .hero h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: #ffffff; line-height: 1.25; }
+        .hero-accent { width: 40px; height: 4px; background-color: rgba(255, 255, 255, 0.3); margin: 20px auto 0; border-radius: 10px; }
+
+        /* Content Area */
+        .content { padding: 40px; line-height: 1.7; font-size: 16px; color: #374151; }
+        .content h2 { color: #111827; margin-top: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 16px; }
+        .content p { margin: 0 0 16px; }
+        .content strong { color: #7E317B; font-weight: 600; }
+        
+        /* Button */
+        .button-container { text-align: center; padding: 24px 0 8px; }
+        .button { background-color: #7E317B; color: #ffffff !important; text-decoration: none; padding: 14px 32px; border-radius: 9999px; font-weight: 600; display: inline-block; font-size: 15px; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(126, 49, 123, 0.2); border: 2px solid #7E317B; }
+        .button:hover { background-color: #692866; border-color: #692866; }
+
+        /* Footer */
+        .footer { background-color: #f9fafb; color: #9ca3af; padding: 32px 40px; text-align: center; font-size: 12px; border-top: 1px solid #e5e7eb; }
+        .footer p { margin: 6px 0; }
+        .footer a { color: #6b7280; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+        .footer a:hover { color: #7E317B; }
+        .social-icons { padding-bottom: 20px; }
+        .social-icons a { display: inline-block; margin: 0 6px; }
+        .social-icons img { width: 20px; height: 20px; opacity: 0.5; transition: opacity 0.2s; }
+        .social-icons a:hover img { opacity: 0.8; }
+
+        /* Mobile Adjustments */
+        @media screen and (max-width: 600px) {
+            .wrapper { padding: 20px 0; }
+            .hero { padding: 40px 24px; }
+            .hero h1 { font-size: 24px; }
+            .content { padding: 32px 24px; }
+            .footer { padding: 32px 24px; }
+        }
+    </style>
+</head>
+<body>
+    <center class="wrapper">
+        <table class="main">
+            <tr>
+                <td class="header">
+                    <a href="https://durhamunicanoe.co.uk" style="text-decoration: none;">
+                        <!-- Using absolute URL for logo as it must be accessible by email clients -->
+                        <img src="https://durhamunicanoe.co.uk/api/files/1/download?view=true" alt="DUCC Logo" class="logo">
+                        <p class="club-name">Durham University Canoe Club</p>
+                    </a>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="hero">
+                    <h1>{{header_title}}</h1>
+                    <div class="hero-accent"></div>
+                </td>
+            </tr>
+
+            {{body}}
+
+            <tr>
+                <td class="footer">
+                    <div class="social-icons">
+                        <a href="https://facebook.com/DurhamUniversityCanoeClub"><img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" alt="Facebook"></a>
+                        <a href="https://instagram.com/durhamuniversitycanoeclub"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram"></a>
+                    </div>
+                    <p style="color: #6b7280; font-weight: 600; margin-bottom: 12px;">Durham University Canoe Club</p>
+                    <p>
+                        <a href="https://durhamunicanoe.co.uk">Website</a> &bull; 
+                        <a href="mailto:canoe.club@durham.ac.uk">Contact Us</a>
+                    </p>
+                    <p style="margin-top: 24px; opacity: 0.7;">
+                        &copy; {{year}} DUCC. All rights reserved.
+                    </p>
+                    <p style="font-size: 11px; opacity: 0.5;">
+                        You are receiving this email because you are a member of DUCC.
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </center>
+</body>
+</html>

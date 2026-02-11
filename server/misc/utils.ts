@@ -22,4 +22,15 @@ export default class Utils {
     static getBaseUrl(req: Request): string {
         return `${req.protocol}://${req.get('host')}`;
     }
+
+    /**
+     * Generate a numeric OTP.
+     */
+    static generateOTP(length: number = 6): string {
+        let otp = '';
+        for (let i = 0; i < length; i++) {
+            otp += Math.floor(Math.random() * 10).toString();
+        }
+        return otp;
+    }
 }
