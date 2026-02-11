@@ -149,8 +149,9 @@ if [ "$PUSH_DATA" = true ]; then
     sshpass -e rsync -avz -e "ssh -o StrictHostKeyChecking=no" data/ root@"$SERVER_IP":DUCC-Website/data/
 fi
 
-DOMAIN_VAL="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
-REMOTE_POST_CMD="cd DUCC-Website && DOMAIN_NAME=$DOMAIN_VAL docker compose build --progress=plain"
+export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
+DOMAIN_VAL="$DOMAIN_NAME"
+REMOTE_POST_CMD="cd DUCC-Website && docker compose build --progress=plain"
 
 if [ "$MODE" = "dev" ]; then
     echo "       [INFO] Running in DEVELOPMENT mode."
@@ -160,10 +161,11 @@ else
     REMOTE_POST_CMD="$REMOTE_POST_CMD && unset APP_CMD"
 fi
 
-REMOTE_POST_CMD="$REMOTE_POST_CMD && DOMAIN_NAME=$DOMAIN_VAL docker compose up -d --force-recreate --remove-orphans"
+REMOTE_POST_CMD="$REMOTE_POST_CMD && docker compose up -d --force-recreate --remove-orphans"
 REMOTE_POST_CMD="$REMOTE_POST_CMD && echo '--- Container Status ---' && docker compose ps"
+REMOTE_POST_CMD="$REMOTE_POST_CMD && echo '--- Recent Logs ---' && sleep 5 && docker compose logs --tail=20"
 
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_POST_CMD"
+sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "export DOMAIN_NAME=$DOMAIN_VAL && $REMOTE_POST_CMD"
 
 echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$SERVER_IP if SSL pending/invalid)"
 echo ""

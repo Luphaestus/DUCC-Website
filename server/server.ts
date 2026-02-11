@@ -337,8 +337,9 @@ const startServer = async () => {
     });
 
     if (process.env.NODE_ENV !== 'test') {
-      Logger.info(`Starting server in ${process.env.NODE_ENV} mode on port ${PORT}...`);
-      const address = await fastify.listen({ port: PORT, host: '0.0.0.0' });
+      const host = '0.0.0.0';
+      Logger.info(`Starting server in ${process.env.NODE_ENV} mode. Attempting to listen on ${host}:${PORT}...`);
+      const address = await fastify.listen({ port: PORT, host });
       Logger.info(`Server is running on ${address}`);
     }
 
