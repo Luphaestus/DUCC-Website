@@ -7,6 +7,7 @@ CLEAR_DB=false
 SHOW_LOGS=false
 PUSH_DATA=false
 PULL_DATA=false
+OPEN_SSH=false
 
 show_help() {
     echo "Usage: ./deploy.sh [OPTIONS]"
@@ -15,6 +16,7 @@ show_help() {
     echo "  --dev, -d        Deploy in development mode (NODE_ENV=dev). Seeds the database with test data."
     echo "  --clear, -c      Remove the existing database (data/database.db) before deploying."
     echo "  --logs, -l       Skip deployment and show real-time logs from the remote server."
+    echo "  --ssh, -s        Skip deployment and open an interactive SSH session to the remote server."
     echo "  --push-data      Copy local 'data/' folder to the remote server before deploying."
     echo "  --pull-data      Copy remote 'data/' folder to the local machine before deploying."
     echo "  --help, -h       Show this help message and exit."
@@ -40,6 +42,10 @@ while [[ $# -gt 0 ]]; do
             SHOW_LOGS=true
             shift
             ;;
+        --ssh)
+            OPEN_SSH=true
+            shift
+            ;;
         --push-data)
             PUSH_DATA=true
             shift
@@ -58,6 +64,7 @@ while [[ $# -gt 0 ]]; do
                     d) MODE="dev" ;;
                     c) CLEAR_DB=true ;;
                     l) SHOW_LOGS=true ;;
+                    s) OPEN_SSH=true ;;
                     h) show_help ;;
                     *)
                         echo "Unknown option: -$char"
@@ -93,6 +100,12 @@ export SSHPASS="$SERVER_PASSWORD"
 if [ "$SHOW_LOGS" = true ]; then
     echo "--- Showing logs from $SERVER_IP ---"
     sshpass -e ssh -T -o StrictHostKeyChecking=no root@"$SERVER_IP" "cd DUCC-Website && docker compose logs -f"
+    exit 0
+fi
+
+if [ "$OPEN_SSH" = true ]; then
+    echo "--- Opening SSH session to $SERVER_IP ---"
+    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP"
     exit 0
 fi
 
