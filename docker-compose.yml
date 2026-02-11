@@ -23,6 +23,7 @@ services:
       - ./data:/app/data
     restart: always
     environment:
+      - NODE_ENV=prod
       - DB_HOST=db
       - DB_USER=ducc_user
       - DB_PASSWORD=ducc_password
