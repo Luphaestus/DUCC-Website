@@ -152,7 +152,7 @@ fi
 export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
 DOMAIN_VAL="$DOMAIN_NAME"
 
-REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && cd DUCC-Website && docker compose build --progress=plain"
+REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && export NODE_ENV='$MODE' && cd DUCC-Website && docker compose build --progress=plain"
 
 if [ "$MODE" = "dev" ]; then
     echo "       [INFO] Running in DEVELOPMENT mode."

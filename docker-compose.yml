@@ -17,13 +17,15 @@ services:
   app:
     build: .
     env_file: .env
+    ports:
+      - "127.0.0.1:3000:3000"
     expose:
       - "3000"
     volumes:
       - ./data:/app/data
     restart: always
     environment:
-      - NODE_ENV=prod
+      - NODE_ENV=${NODE_ENV:-prod}
       - DOCKER=true
       - DB_HOST=db
       - DB_USER=ducc_user

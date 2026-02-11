@@ -16,7 +16,7 @@
   "scripts": {
     "db:init": "cross-env-shell \"tsx server/db/init/init.ts $NODE_ENV $1\"",
     "reseed": "cross-env NODE_ENV=dev tsx server/db/init/init.ts dev --seed",
-    "start": "cross-env NODE_ENV=prod npm run --silent db:init && cross-env NODE_ENV=prod tsx server/server.ts",
+    "start": "npm run --silent db:init && tsx server/server.ts",
     "build:client": "vite build",
     "build:client:watch": "vite build --mode development --watch",
     "sass": "sass src/styles.scss public/assets/main.css --watch",
