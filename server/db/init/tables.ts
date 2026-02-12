@@ -519,6 +519,13 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
     },
     {
       name: 'sessions',
+      schema: `
+        id VARCHAR(255) PRIMARY KEY,
+        data JSON NOT NULL,
+        expires_at DATETIME NOT NULL,
+        INDEX idx_expires (expires_at)
+      `
+    }
   ];
 
   if (process.env.NODE_ENV !== 'test') {
