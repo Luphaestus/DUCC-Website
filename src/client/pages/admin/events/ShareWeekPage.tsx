@@ -33,7 +33,8 @@ export default function ShareWeekPage() {
 
     return (
         <div id="share-week-view" class="view">
-            <div class="share-container glass-effect" id="capture-area">
+            <PageTitle text="Share Week" centered={true} />
+            <div class="share-container glass-effect mt-6" id="capture-area">
                 <header class="share-header">
                     <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" class="share-logo" />
                     <div class="header-text">

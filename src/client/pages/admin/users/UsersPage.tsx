@@ -13,6 +13,7 @@ import { TabNav } from "@/widgets/TabNav";
 import Modal from "@/components/Modal";
 import { ProfilePictureChangedEvent } from "@/utils/events/events";
 import { onCleanup, onMount } from "solid-js";
+import PageTitle from "@/components/PageTitle";
 
 interface UsersPageData {
     users: any[];
@@ -214,7 +215,7 @@ export default function UsersPage() {
     );
 
     return (
-        <div>
+        <div class="glass-layout">
              <div class="liquid-container glass-toolbar" style={{ "--liquid-padding": "0.5rem 1rem", "--liquid-border-radius": "100px" }}>
                 <div class="toolbar-content">
                     <div class="toolbar-left">

@@ -19,6 +19,8 @@ import { onUpdate } from "@/utils/updates";
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
 import { useNotifications } from "@/stores/notifications";
 import { ProfilePictureChangedEvent } from "@/utils/events/events";
+import PageTitle from "@/components/PageTitle";
+import { ARROW_BACK_IOS_NEW_SVG } from "@/utils/icons";
 
 export default function UserDetailPage() {
     const { notify } = useNotifications();
@@ -155,7 +157,14 @@ export default function UserDetailPage() {
                             </aside>
 
                             <main class="dashboard-content">
-                                <Show when={currentTab() === 'overview'}>
+                                <div class="flex justify-between align-center mb-4">
+                                    <button class="small-btn secondary outline" onClick={() => navigate('/admin/users')}>
+                                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
+                                    </button>
+                                </div>
+                                <PageTitle text={`${userData().first_name} ${userData().last_name}`} centered={true} />
+                                <div class="mt-6">
+                                    <Show when={currentTab() === 'overview'}>
                                     <OverviewTab
                                         user={userData()}
                                         stats={stats()}
@@ -171,6 +180,7 @@ export default function UserDetailPage() {
                                 <Show when={currentTab() === 'transactions'}>
                                     <TransactionsTab userId={userData().id} />
                                 </Show>
+                                </div>
                             </main>
                         </div>
                     );

@@ -21,6 +21,7 @@ export default function AdminNavBar(props: AdminNavBarProps) {
     const canViewStats = createMemo(() => perms().includes('transaction.manage') || perms().includes('event.manage.all') || perms().includes('site.admin'));
     const canManageSlides = createMemo(() => perms().includes('exec.publish') || perms().includes('site.admin'));
     const canManageForms = createMemo(() => perms().includes('form.manage') || perms().includes('site.admin'));
+    const canSendEmails = createMemo(() => perms().includes('email.send') || perms().includes('site.admin'));
     const isPresident = () => props.isPresident;
 
     const isActive = (path: string) => location.pathname.startsWith(path);
@@ -32,6 +33,9 @@ export default function AdminNavBar(props: AdminNavBarProps) {
             </Show>
             <Show when={canManageEvents()}>
                 <A href="/admin/events" class={`tab-btn ${isActive('/admin/events') ? 'active' : ''}`}>Events</A>
+            </Show>
+            <Show when={canSendEmails()}>
+                <A href="/admin/emails" class={`tab-btn ${isActive('/admin/emails') ? 'active' : ''}`}>Emails</A>
             </Show>
             <Show when={canManageTags()}>
                 <A href="/admin/tags" class={`tab-btn ${isActive('/admin/tags') ? 'active' : ''}`}>Tags</A>

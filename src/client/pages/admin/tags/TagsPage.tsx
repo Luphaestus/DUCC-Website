@@ -3,6 +3,7 @@ import { createResource, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNavigate } from "@solidjs/router";
 import { Tag } from "@/widgets/Tag";
+import PageTitle from "@/components/PageTitle";
 
 interface TagData {
     id: number;

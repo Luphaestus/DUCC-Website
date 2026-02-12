@@ -46,6 +46,14 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
     });
     const [selectedTags, setSelectedTagIds] = createSignal<number[]>(props.event.tags?.map(t => t.id) || []);
 
+    createEffect(() => {
+        setFormState({
+            allow_kit_requests: true,
+            ...props.event
+        });
+        setSelectedTagIds(props.event.tags?.map(t => t.id) || []);
+    });
+
     const updateField = (key: keyof EventData, value: any) => {
         const oldState = formState();
         

@@ -4,6 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNavigate } from "@solidjs/router";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
+import PageTitle from "@/components/PageTitle";
 
 interface Role {
     id: number;

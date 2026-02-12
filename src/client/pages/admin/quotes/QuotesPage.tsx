@@ -8,6 +8,7 @@ import {
     SEARCH_SVG, DELETE_SVG, CHECK_SVG, CLOSE_SVG,
     UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG 
 } from '@/utils/icons';
+import PageTitle from "@/components/PageTitle";
 
 interface Quote {
     id: number;

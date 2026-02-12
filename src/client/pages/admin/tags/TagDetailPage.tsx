@@ -9,6 +9,7 @@ import {
     SHIELD_SVG, LOCAL_ACTIVITY_SVG, IMAGE_SVG 
 } from '@/utils/icons';
 import { debounce } from "@/utils/utils";
+import PageTitle from "@/components/PageTitle";
 
 interface Tag {
     id?: number | string;
@@ -139,13 +140,14 @@ export default function TagDetailPage() {
 
     return (
         <div class="glass-layout">
-            <div class="admin-header-actions-proxy">
-                {/* We can use a Portal or just render here if layout allows */}
-            </div>
+            <button class="small-btn secondary outline mb-4" onClick={() => navigate('/admin/tags')}>
+                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
+            </button>
+            <PageTitle text={isNew() ? 'Create New Tag' : 'Edit Tag'} centered={true} />
 
-            <div class="panel">
+            <div class="panel mt-6">
                 <div class="panel-header">
-                    <h3>{isNew() ? 'Create New Tag' : 'Edit Tag'}</h3>
+                    <h3 style="margin: 0;">Details</h3>
                     <div class="panel-actions">
                         <Show when={!isNew()}>
                             <button class="small-btn delete outline" onClick={handleDelete} title="Delete">

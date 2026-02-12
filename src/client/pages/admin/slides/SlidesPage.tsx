@@ -5,6 +5,7 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import UploadWidget from "@/components/UploadWidget";
 import { IMAGE_SVG, DELETE_SVG, ADD_SVG, DRAG_HANDLE_SVG } from '@/utils/icons';
+import PageTitle from "@/components/PageTitle";
 
 interface Slide {
     id: number;
@@ -70,9 +71,9 @@ export default function SlidesPage() {
                  {/* AdminNavBar is handled by Layout */}
             </div>
             
-            <div class="panel">
+            <div class="panel mt-6">
                 <div class="panel-header">
-                    <h3><span innerHTML={IMAGE_SVG} /> Manage Slideshow</h3>
+                    <h3 style="margin: 0;"><span innerHTML={IMAGE_SVG} /> Manage Slides</h3>
                     <div class="panel-actions">
                         <button class="main-btn small-btn" onClick={() => setShowUpload(true)}>
                             <span innerHTML={ADD_SVG} /> Add Slide

@@ -5,6 +5,7 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import UploadWidget from "@/components/UploadWidget";
 import { SAVE_SVG, IMAGE_SVG } from '@/utils/icons';
+import PageTitle from "@/components/PageTitle";
 
 interface GlobalSetting {
     name: string;

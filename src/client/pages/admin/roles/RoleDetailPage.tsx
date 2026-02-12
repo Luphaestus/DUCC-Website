@@ -7,6 +7,7 @@ import {
     ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG 
 } from '@/utils/icons';
 import { debounce } from "@/utils/utils";
+import PageTitle from "@/components/PageTitle";
 
 interface Role {
     name: string;
@@ -91,9 +92,13 @@ export default function RoleDetailPage() {
 
     return (
         <div class="glass-layout">
-            <div class="panel">
+            <button class="small-btn secondary outline mb-4" onClick={() => navigate('/admin/roles')}>
+                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
+            </button>
+            <PageTitle text={isNew() ? 'Create New Role' : 'Edit Role'} centered={true} />
+            <div class="panel mt-6">
                 <div class="panel-header">
-                    <h3>{isNew() ? 'Create New Role' : 'Edit Role'}</h3>
+                    <h3 style="margin: 0;">Details</h3>
                     <div class="panel-actions">
                         <Show when={!isNew()}>
                             <button class="small-btn delete outline" onClick={handleDelete} title="Delete">

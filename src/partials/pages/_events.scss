@@ -24,75 +24,58 @@
         padding: 0;
         gap: 1rem;
 
-        .admin-control-wrapper,
-        .today-control-wrapper,
-        .week-navigator {
-            .liquid-container {
-                display: flex;
-                align-items: center;
-                flex-direction: row;
-                gap: 0.5rem;
-                width: fit-content;
-            }
-        }
-
-        .admin-control-wrapper {
-            flex: 1;
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        .today-control-wrapper {
-            flex: 1;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .week-navigator {
+        .liquid-container {
             display: flex;
             align-items: center;
-            justify-content: center;
-            flex: 2;
+            flex-direction: row;
+            gap: 0.5rem;
+            width: fit-content;
 
-            .liquid-container {
-                gap: 1.5rem;
+            .toolbar-divider {
+                width: 1px;
+                height: 24px;
+                background: rgba(var(--pico-color-rgb), 0.1);
+                margin: 0 0.5rem;
+
+                @media (max-width: 768px) {
+                    display: none;
+                }
             }
+        }
+
+        .week-navigator-mini {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
 
             .nav-btn {
-                background: transparent !important;
-                border: none !important;
-                box-shadow: none !important;
-                padding: 0.25rem !important;
-                height: auto !important;
-                width: auto !important;
                 color: var(--glass-text-colour);
                 opacity: 0.7;
                 transition: all 0.2s ease;
-                --scale-base: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
 
                 &:hover {
                     opacity: 1;
-                    --scale-base: 1.2;
-                    transform: scale(var(--scale-base));
                     color: var(--pico-primary);
+                    transform: scale(1.1);
                 }
 
                 svg {
-                    width: 1.5rem;
-                    height: 1.5rem;
-                    fill: currentColor;
+                    width: 1.25rem;
+                    height: 1.25rem;
                 }
             }
 
             .current-week-display {
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
                 font-family: var(--font-family-display);
                 font-weight: 600;
-                font-size: 1.1rem;
-                white-space: nowrap;
+                font-size: 0.95rem;
                 color: var(--glass-text-colour);
+                white-space: nowrap;
+                min-width: 140px;
+                text-align: center;
             }
         }
 

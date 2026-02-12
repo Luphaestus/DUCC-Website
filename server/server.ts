@@ -302,6 +302,7 @@ const startServer = async () => {
       './api/admin/AdminStatsAPI.js',
       './api/admin/AdminTransactionsAPI.js',
       './api/admin/AdminUsersAPI.js',
+      './api/admin/EmailsAPI.js',
       './api/events/AttendanceAPI.js',
       './api/events/EventsAPI.js',
       './api/events/WaitlistAPI.js',

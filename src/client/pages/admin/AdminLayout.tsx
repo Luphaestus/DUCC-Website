@@ -36,6 +36,7 @@ export default function AdminLayout(props: ParentProps) {
         const path = location.pathname;
         if (path.includes('/users')) return 'Members';
         if (path.includes('/events')) return 'Events';
+        if (path.includes('/emails')) return 'Announcements';
         if (path.includes('/files')) return 'Documents';
         if (path.includes('/quotes')) return 'Quotes';
         if (path.includes('/tags')) return 'Categories';
@@ -49,7 +50,7 @@ export default function AdminLayout(props: ParentProps) {
 
     return (
         <div id="admin-view" class="view glass-layout">
-            <header class="admin-header-modern">
+            <header class="admin-header-modern" style={{ "justify-content": "center", "text-align": "center" }}>
                 <h1 id="admin-dashboard-title">
                     Admin <span class="admin-title-section">{pageTitle()}</span>
                 </h1>

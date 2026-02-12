@@ -7,6 +7,7 @@ import {
     ADD_SVG, DELETE_SVG, EDIT_SVG, DESCRIPTION_SVG, 
     CALENDAR_TODAY_SVG, PERSON_SVG 
 } from '@/utils/icons';
+import PageTitle from "@/components/PageTitle";
 
 interface FormSummary {
     id: number;
@@ -42,7 +43,7 @@ export default function AdminFormsPage() {
         <div class="dashboard-container">
             <main class="dashboard-content full-width">
                 <div class="flex-row-gap-1 align-center justify-between mb-4">
-                    <h2 class="text-xl m-0">Forms Management</h2>
+                    <div />
                     <button class="primary" onClick={() => navigate('/admin/forms/new')}>
                         <span innerHTML={ADD_SVG} /> New Form
                     </button>

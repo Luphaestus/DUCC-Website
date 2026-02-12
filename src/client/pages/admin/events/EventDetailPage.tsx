@@ -28,7 +28,23 @@ export default function EventDetailPage() {
     
     // ... data fetching ...
     const [data, { refetch }] = createResource(id, async (eventId) => {
-        if (eventId === 'new') return { event: { title: '', start: '', end: '', tags: [], allow_kit_requests: true }, rawEvent: {}, allTags: [], globalDefaultUrl: '', userPerms: [] };
+        if (eventId === 'new') {
+            const start = searchParams.start || '';
+            const end = searchParams.end || '';
+            return { 
+                event: { 
+                    title: '', 
+                    start, 
+                    end, 
+                    tags: [], 
+                    allow_kit_requests: true 
+                }, 
+                rawEvent: {}, 
+                allTags: [], 
+                globalDefaultUrl: '', 
+                userPerms: [] 
+            };
+        }
         
         const [event, rawEvent, allTagsRes, globalDefaultRes, userPermsRes] = await Promise.all([
             apiRequest('GET', `/api/admin/event/${eventId}`),
@@ -162,25 +178,32 @@ export default function EventDetailPage() {
                     </aside>
 
                     <main class="dashboard-content">
-                        <PageTitle text={isNew() ? 'Create Event' : 'Edit Event'} />
-                        <Show when={currentTab() === 'details'}>
-                            <DetailsTab 
-                                event={{ ...res().event, image_id: res().rawEvent.image_id }} 
-                                allTags={res().allTags} 
-                                globalDefaultUrl={res().globalDefaultUrl} 
-                            />
-                        </Show>
-                        <Show when={currentTab() === 'finance'}>
-                            <FinanceTab 
-                                eventId={parseInt(id() || '0')} 
-                                isOffsite={res().event.is_offsite} 
-                                costsReleased={res().event.costs_released} 
-                                userPerms={res().userPerms}
-                            />
-                        </Show>
-                        <Show when={currentTab() === 'kit'}>
-                            <KitTab eventId={parseInt(id() || '0')} />
-                        </Show>
+                        <div class="flex justify-between align-center mb-4">
+                            <button class="small-btn secondary outline" onClick={() => navigate('/admin/events')}>
+                                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
+                            </button>
+                        </div>
+                        <PageTitle text={isNew() ? 'Create Event' : 'Edit Event'} centered={true} />
+                        <div class="mt-6">
+                            <Show when={currentTab() === 'details'}>
+                                <DetailsTab 
+                                    event={{ ...res().event, image_id: res().rawEvent.image_id }} 
+                                    allTags={res().allTags} 
+                                    globalDefaultUrl={res().globalDefaultUrl} 
+                                />
+                            </Show>
+                            <Show when={currentTab() === 'finance'}>
+                                <FinanceTab 
+                                    eventId={parseInt(id() || '0')} 
+                                    isOffsite={res().event.is_offsite} 
+                                    costsReleased={res().event.costs_released} 
+                                    userPerms={res().userPerms}
+                                />
+                            </Show>
+                            <Show when={currentTab() === 'kit'}>
+                                <KitTab eventId={parseInt(id() || '0')} />
+                            </Show>
+                        </div>
                     </main>
 
                     <Modal isOpen={isDuplicateModalOpen()} onClose={() => setIsDuplicateModalOpen(false)} title="Duplicate Event">

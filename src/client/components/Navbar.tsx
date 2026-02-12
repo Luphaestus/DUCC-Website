@@ -1,5 +1,5 @@
 import { createSignal, createMemo, onMount, onCleanup, For, Show, createEffect, createResource } from "solid-js";
-import { A, useLocation } from "@solidjs/router";
+import { A, useLocation, useNavigate } from "@solidjs/router";
 import { useAuth } from "../stores/auth";
 import LiquidButton, { GlassButtonSmall } from "./LiquidButton";
 import { apiRequest } from "@/utils/api";
@@ -18,6 +18,7 @@ export default function Navbar() {
   const { user, isAdmin, isExec, isAuthenticated } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = createSignal(false);
   const [isScrolled, setIsScrolled] = createSignal(false);
+  const navigate = useNavigate();
 
   const [logo] = createResource(async () => {
     try {
@@ -151,19 +152,15 @@ export default function Navbar() {
                         </ul>
                     </div>
                     
-                    <div class="auth-action">
-                        <Show when={!isAuthenticated()}>
-                             <A href="/login" class="login-link-wrapper">
-                                <GlassButtonSmall 
-                                    class="login-btn"
-                                    borderRadius={99}
-                                    tintOpacity={0.4}
-                                >
-                                    Sign In
-                                </GlassButtonSmall>
-                             </A>
-                        </Show>
-                    </div>
+                    <Show when={!isAuthenticated()}>
+                        <button 
+                            class="login-btn primary" 
+                            style={{ "border-radius": "99px" }} 
+                            onClick={() => navigate('/login')}
+                        >
+                            Sign In
+                        </button>
+                    </Show>
                 </div>
 
                 <div class="hamburger-menu" onClick={() => setIsMobileOpen(!isMobileOpen())}>

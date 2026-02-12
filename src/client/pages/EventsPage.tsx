@@ -200,25 +200,24 @@ export default function EventsPage(props: ParentProps) {
         <div id="events-view" class="view small-container">
             <PageTitle text="Upcoming Events" />
             <div class="events-controls-modern">
-                <div class="admin-control-wrapper">
+                <div class="liquid-container flex align-center gap-2" style={{ "--liquid-padding": "0.4rem 0.8rem", "--liquid-border-radius": "100px" }}>
                     <Show when={isDesktop()}>
-                        <TabNav class="toggle-group-mini" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px", "margin-left": "0" }}>
+                        <TabNav class="toggle-group-mini" style={{ "--liquid-padding": "2px", "--liquid-border-radius": "100px", "margin": "0" }}>
                             <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
                             <button class="tab-btn" classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
                             <button class="tab-btn" classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
                         </TabNav>
+                        <div class="toolbar-divider hide-mobile" style={{ width: "1px", height: "24px", background: "rgba(var(--pico-color-rgb), 0.1)", margin: "0 0.5rem" }} />
                     </Show>
-                </div>
 
-                <div class="week-navigator">
-                    <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 1.25rem" }} {...{ paused: isTransitioning() } as any}>
-                        <button class="nav-btn prev-week" title="Previous" onClick={() => handleNavigate(-1)}>
+                    <div class="week-navigator-mini flex align-center gap-3">
+                        <button class="nav-btn" title="Previous" onClick={() => handleNavigate(-1)} style={{ background: "transparent", border: "none", padding: "0", height: "auto", width: "auto" }}>
                             <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
                         </button>
                         <div class="current-week-display">
-                            <span id="page-range-text">{rangeText()}</span>
+                            <span id="page-range-text" style={{ "font-weight": "600", "font-size": "0.95rem" }}>{rangeText()}</span>
                         </div>
-                        <button class="nav-btn next-week" title="Next" onClick={() => handleNavigate(1)}>
+                        <button class="nav-btn" title="Next" onClick={() => handleNavigate(1)} style={{ background: "transparent", border: "none", padding: "0", height: "auto", width: "auto" }}>
                             <span innerHTML={ARROW_FORWARD_IOS_SVG} />
                         </button>
                     </div>

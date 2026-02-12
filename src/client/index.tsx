@@ -50,6 +50,7 @@ const AdminStatsPage = lazy(() => import("./pages/admin/stats/StatsPage"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
 const AdminFormsPage = lazy(() => import("./pages/admin/forms/FormsPage"));
 const AdminFormEditor = lazy(() => import("./pages/admin/forms/FormEditor"));
+const AdminEmailsPage = lazy(() => import("./pages/admin/emails/EmailsPage"));
 
 const root = document.getElementById("root");
 
@@ -92,6 +93,7 @@ if (root) {
              <Route path="/events" component={AdminEventsPage} />
              <Route path="/events/share" component={AdminShareWeekPage} />
              <Route path="/event/:id" component={AdminEventDetailPage} />
+             <Route path="/emails" component={AdminEmailsPage} />
              <Route path="/files" component={AdminFilesPage} />
              <Route path="/quotes" component={AdminQuotesPage} />
              <Route path="/tags" component={AdminTagsPage} />

@@ -10,6 +10,7 @@ import {
     SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, 
     DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, ADD_SVG
 } from '@/utils/icons';
+import PageTitle from "@/components/PageTitle";
 
 // --- Types ---
 interface FileRecord {

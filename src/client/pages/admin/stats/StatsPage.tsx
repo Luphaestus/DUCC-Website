@@ -7,6 +7,7 @@ import {
     TRENDING_UP_SVG 
 } from '@/utils/icons';
 import { onUpdate } from "@/utils/updates";
+import PageTitle from "@/components/PageTitle";
 
 // Simple Bar Chart Component (SVG)
 const BarChart = (props: { data: { label: string, value: number, color?: string }[], height?: number }) => {
@@ -89,10 +90,6 @@ export default function StatsPage() {
 
     return (
         <div class="glass-layout">
-            <header class="admin-header-modern">
-                <h1>Club <span class="admin-title-section">Statistics</span></h1>
-            </header>
-
             <div class="stats-grid-dashboard">
                 {/* Finance Section */}
                 <Panel title="Financial Overview" icon={CURRENCY_POUND_SVG} class="full-width">

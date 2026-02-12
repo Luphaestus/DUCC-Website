@@ -4,6 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
 import { ADD_SVG, EDIT_SVG, DELETE_SVG, CLOSE_SVG, SAVE_SVG } from '@/utils/icons';
+import PageTitle from "@/components/PageTitle";
 
 interface KitVariant {
     id?: number;
@@ -99,11 +100,11 @@ export default function KitPage() {
             <Panel 
                 title="Club Kit Inventory" 
                 action={
-                    <button class="small-btn primary" onClick={startCreating}>
-                        <span innerHTML={ADD_SVG} /> Add Item
-                    </button>
-                }
-            >
+                        <button class="small-btn primary" onClick={startCreating}>
+                            <span innerHTML={ADD_SVG} /> Add Item
+                        </button>
+                    }
+                >
                 <div class="glass-table-container">
                     <table class="glass-table">
                         <thead>

@@ -69,6 +69,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         medical_conditions_details TEXT,
         takes_medication TINYINT(1) DEFAULT 0,
         medication_details TEXT,
+        dietary_requirements TEXT,
         free_sessions INT NOT NULL DEFAULT 3,
         is_member TINYINT(1) NOT NULL DEFAULT 0,
         agrees_to_fitness_statement TINYINT(1) DEFAULT 0,
