@@ -145,7 +145,20 @@ if [ -f .env ]; then
     echo "       [INFO] Pushing .env file to remote server..."
     sshpass -e scp -o StrictHostKeyChecking=no .env root@"$SERVER_IP":DUCC-Website/.env
     # Append dynamic deployment variables to the remote .env
-    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "printf '\nDOMAIN_NAME=%s\nNODE_ENV=%s\nSERVER_IP=%s\n' '$DOMAIN_VAL' '$MODE' '$SERVER_IP' >> DUCC-Website/.env && chmod 600 DUCC-Website/.env"
+    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "printf '\nDOMAIN_NAME=%s\nNODE_ENV=%s\nSERVER_IP=%s\n' '$DOMAIN_VAL' '$MODE' '$SERVER_IP' >> DUCC-Website/.env"
+    
+    # Also push email credentials if they are in the environment (e.g. from .env.deploy)
+    if [ -n "$EMAIL_USER" ]; then
+        sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "printf 'EMAIL_USER=%s\n' '$EMAIL_USER' >> DUCC-Website/.env"
+    fi
+    if [ -n "$EMAIL_PASS" ]; then
+        sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "printf 'EMAIL_PASS=%s\n' '$EMAIL_PASS' >> DUCC-Website/.env"
+    fi
+    if [ -n "$EMAIL_TEST_DESTINATION" ]; then
+        sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "printf 'EMAIL_TEST_DESTINATION=%s\n' '$EMAIL_TEST_DESTINATION' >> DUCC-Website/.env"
+    fi
+    
+    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "chmod 600 DUCC-Website/.env"
 fi
 
 if [ "$PUSH_DATA" = true ]; then
