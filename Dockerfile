@@ -21,7 +21,7 @@ COPY . .
 
 # Build assets (SASS and Client)
 ARG BUILD_ID=unknown
-RUN echo "Building with ID: $BUILD_ID"
+RUN echo "Building version: $BUILD_ID"
 RUN npm run sass:build
 RUN npm run build:client
 
