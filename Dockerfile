@@ -21,7 +21,8 @@ COPY . .
 
 # Build assets (SASS)
 ARG BUILD_ID=unknown
-RUN npm run sass:build -- --build-id=$BUILD_ID
+RUN echo "Building with ID: $BUILD_ID"
+RUN npm run sass:build
 
 # Create a directory for the database to ensure persistence
 RUN mkdir -p /app/data
