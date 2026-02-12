@@ -129,6 +129,15 @@ export default class Globals {
                     error: "Value must be a non-negative integer.",
                     permission: "Authenticated",
                 },
+                AllowFreeSignupsInDebt: {
+                    data: 1,
+                    name: "Allow Free Signups in Debt",
+                    description: "Allow users to sign up for events with £0.00 upfront cost even if they are below the debt limit.",
+                    type: "boolean",
+                    regexp: "^[01]$",
+                    error: "Value must be 0 (false) or 1 (true).",
+                    permission: "Authenticated",
+                },
             };
             fs.writeFileSync(this.path, JSON.stringify(defaults, null, 4));
             Globals.cache = defaults;

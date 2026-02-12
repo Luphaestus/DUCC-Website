@@ -4,7 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { 
     CURRENCY_POUND_SVG, ADD_SVG, TRIP_SVG, CHECK_SVG, 
-    CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG 
+    CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG, CLOUD_DOWNLOAD_SVG 
 } from '@/utils/icons';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
@@ -230,6 +230,9 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                             value={attendeeFilter()}
                             onInput={(e) => { setAttendeeFilter(e.currentTarget.value); setAttendeePage(1); }}
                         />
+                        <a href={`/api/admin/event/${props.eventId}/attendees/csv`} target="_blank" class="small-btn secondary outline">
+                            <span innerHTML={CLOUD_DOWNLOAD_SVG} /> CSV
+                        </a>
                         <Show when={!props.costsReleased}>
                             <button class="small-btn primary mini-btn" onClick={() => setShowAddAttendee(true)}>
                                 <span innerHTML={ADD_SVG} /> Add

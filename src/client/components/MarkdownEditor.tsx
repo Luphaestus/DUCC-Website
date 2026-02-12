@@ -34,11 +34,11 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
     };
 
     const handleImageUpload = () => {
-        const widget = new UploadWidget('markdown-image-upload', {
+        const widget = new UploadWidget(document.createElement('div'), {
             mode: 'hidden',
-            onImageSelect: ({ id, filename }) => {
+            onImageSelect: ({ id }) => {
                 const url = `/api/files/${id}/download?view=true`;
-                insertText(`![${filename || 'image'}](${url})`);
+                insertText(`![image](${url})`);
             }
         });
         widget.inputEl.click();
@@ -46,7 +46,6 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
 
     return (
         <div class="markdown-editor-container liquid-container glass-panel no-padding overflow-hidden" style={{ "--liquid-border-radius": "12px" }}>
-            <div id="markdown-image-upload" style="display: none;"></div>
             <div class="editor-toolbar flex-row-gap-half p-2 border-bottom">
                 <button type="button" class="toolbar-btn" onClick={() => setPreview(!preview())} title={preview() ? "Edit" : "Preview"}>
                     <span innerHTML={preview() ? EDIT_SVG : DESCRIPTION_SVG} />

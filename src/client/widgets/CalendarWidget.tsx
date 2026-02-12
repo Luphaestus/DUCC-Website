@@ -72,6 +72,36 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
     const [clipboard, setClipboard] = createSignal<CalendarEvent | null>(null);
     const [contextMenu, setContextMenu] = createSignal<{ x: number, y: number, event: CalendarEvent } | null>(null);
 
+    // Smart Dragging Logic
+    let edgeScrollTimer: ReturnType<typeof setTimeout> | null = null;
+    const checkEdgeScroll = (e: MouseEvent) => {
+        if (!dragState()) return;
+        
+        const threshold = 100; // pixels from edge
+        const width = window.innerWidth;
+        
+        if (e.clientX < threshold) {
+            if (!edgeScrollTimer) {
+                edgeScrollTimer = setTimeout(() => {
+                    changeDate(-1);
+                    edgeScrollTimer = null;
+                }, 800);
+            }
+        } else if (e.clientX > width - threshold) {
+            if (!edgeScrollTimer) {
+                edgeScrollTimer = setTimeout(() => {
+                    changeDate(1);
+                    edgeScrollTimer = null;
+                }, 800);
+            }
+        } else {
+            if (edgeScrollTimer) {
+                clearTimeout(edgeScrollTimer);
+                edgeScrollTimer = null;
+            }
+        }
+    };
+
     // Persist view mode
     createEffect(() => {
         localStorage.setItem('cal_view_mode', viewMode());
@@ -80,7 +110,10 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
     // Update 'now' for the live line
     onMount(() => {
         const timer = setInterval(() => setNow(new Date()), 60000);
-        onCleanup(() => clearInterval(timer));
+        onCleanup(() => {
+            clearInterval(timer);
+            if (edgeScrollTimer) clearTimeout(edgeScrollTimer);
+        });
     });
 
     // Data Fetching
@@ -318,6 +351,8 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         const state = dragState();
         if (!state) return;
 
+        checkEdgeScroll(e);
+
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const y = e.clientY - rect.top;
         const currentPosDate = snapToGrid(new Date(day.getTime() + (y / rect.height) * 86400000));
@@ -336,6 +371,10 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
 
     const handleMouseUp = async () => {
         const state = dragState();
+        if (edgeScrollTimer) {
+            clearTimeout(edgeScrollTimer);
+            edgeScrollTimer = null;
+        }
         if (!state) return;
 
         if (state.type === 'create' && state.start && state.end) {
@@ -376,9 +415,27 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         });
     });
 
-    const copyEvent = (e: CalendarEvent) => {
-        setClipboard(e);
-        notify('Copied', 'Event copied', 'success');
+    const copyEvent = async (e: CalendarEvent) => {
+        if (props.adminMode) {
+            const start = new Date(e.start);
+            const end = new Date(e.end);
+            start.setDate(start.getDate() + 7);
+            end.setDate(end.getDate() + 7);
+
+            try {
+                await apiRequest('POST', `/api/admin/event/${e.id}/duplicate`, {
+                    start: start.toISOString(),
+                    end: end.toISOString()
+                });
+                notify('Success', 'Event duplicated to next week', 'success');
+                refetch();
+            } catch (err: any) {
+                notify('Error', err.message, 'error');
+            }
+        } else {
+            setClipboard(e);
+            notify('Copied', 'Event copied', 'success');
+        }
         setContextMenu(null);
     };
 

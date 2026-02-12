@@ -91,7 +91,10 @@ export default class EventRules {
         }
 
         if (effectiveBalance < minMoney) {
-            return new statusObject(403, 'Outstanding debts');
+            const allowFree = new Globals().getInt('AllowFreeSignupsInDebt') === 1;
+            if (!(allowFree && Number(event.upfront_cost) === 0)) {
+                return new statusObject(403, 'Outstanding debts');
+            }
         }
 
         if (!user.is_member) {

@@ -124,13 +124,13 @@ export default function UserDetailPage() {
                     return (
                         <div class="dashboard-container">
                             <aside class="dashboard-sidebar">
-                                <div class="liquid-container user-identity-card flex-column-gap-half mb-4" style={{ "--liquid-padding": "1.5rem" }}>
-                                    <div class="profile-picture-container clickable" onClick={() => uploadWidget?.inputEl.click()}>
-                                        <Avatar user={userData()} classes="large" />
+                                <div class="liquid-container user-identity-card mb-4" style={{ "--liquid-padding": "1.5rem", "display": "flex", "align-items": "center", "gap": "1rem" }}>
+                                    <div class="profile-picture-container clickable" style={{ "width": "64px", "height": "64px", "flex-shrink": "0" }} onClick={() => uploadWidget?.inputEl.click()}>
+                                        <Avatar user={userData()} classes="medium" />
                                         <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
                                     </div>
-                                    <div class="user-info full-width-center">
-                                        <h2 class="text-xl m-0">{userData().first_name} {userData().last_name}</h2>
+                                    <div class="user-info" style={{ "flex": "1", "min-width": "0" }}>
+                                        <h2 class="text-lg m-0" style={{ "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis" }}>{userData().first_name} {userData().last_name}</h2>
                                         <span class="badge neutral">ID: {userData().id}</span>
                                     </div>
                                 </div>

@@ -7,6 +7,7 @@ import {
     ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG,
     KAYAKING_SVG, TRENDING_UP_SVG, LIST_SVG, FORMAT_QUOTE_SVG
 } from '@/utils/icons';
+import PageTitle from "@/components/PageTitle";
 
 export default function DashboardPage() {
     const { user } = useAuth();
@@ -35,7 +36,8 @@ export default function DashboardPage() {
 
     return (
         <div class="glass-layout">
-            <div class="dashboard-grid">
+            <PageTitle text="Admin Dashboard" centered={true} />
+            <div class="dashboard-grid mt-6">
                 {canManageUsers() && <Card title="Users" desc="Manage members & permissions" icon={GROUP_SVG} href="/admin/users" />}
                 {isExec() && <Card title="Slides" desc="Homepage slideshow" icon={IMAGE_SVG} href="/admin/slides" />}
                 {canManageEvents() && <Card title="Events" desc="Schedule & attendance" icon={CALENDAR_TODAY_SVG} href="/admin/events" />}

@@ -3,6 +3,7 @@ import { createEffect, onMount, onCleanup, ParentProps, splitProps, createMemo, 
 interface TabNavProps extends ParentProps {
     class?: string;
     id?: string;
+    style?: any;
 }
 
 export function TabNav(props: TabNavProps) {
@@ -76,6 +77,7 @@ export function TabNav(props: TabNavProps) {
                 ref={navRef} 
                 class={`liquid-container toggle-group ${props.class || ''}`} 
                 id={props.id} 
+                style={props.style}
             >
                 <div ref={bgRef} class="toggle-bg"></div>
                 {props.children}

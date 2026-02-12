@@ -104,7 +104,7 @@ async function sendTestEmails() {
                     to,
                     tmpl.subject,
                     tmpl.name,
-                    tmpl.placeholders
+                    tmpl.placeholders as any
                 );
                 console.log(`✅ Sent '${tmpl.name}' successfully.`);
                 successCount++;

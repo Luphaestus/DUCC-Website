@@ -8,6 +8,9 @@ import transactionsDB from '../../db/transactionDB.js';
 import check from '../../misc/authentication.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
+import { EmailManager } from '../../emails/EmailManager.js';
+import UserDB from '../../db/userDB.js';
+import Logger from '../../misc/Logger.js';
 
 export default class AdminTransactions {
     app: FastifyInstance;
@@ -81,22 +84,94 @@ export default class AdminTransactions {
         });
 
         /**
+         * Confirm a pending transaction.
+         */
+        this.app.post<{ Params: { id: string }, Body: { amount?: number, description?: string } }>('/api/admin/transaction/:id/confirm', { preHandler: [check('perm:transaction.manage')] }, async (request, reply) => {
+            const transactionId = parseInt(request.params.id);
+            if (isNaN(transactionId)) return reply.status(400).send({ message: 'Invalid transaction ID' });
+
+            const txRes = await transactionsDB.get_transaction_by_id(this.db, transactionId);
+            if (txRes.isError()) return txRes.getResponse(reply);
+            const tx = txRes.getData();
+
+            const result = await transactionsDB.confirm_transaction(this.db, transactionId, request.body);
+            
+            if (!result.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.sendToUser(tx.user_id, 'balance_update', { userId: tx.user_id });
+                EventHub.broadcast('admin_transaction_update', { userId: tx.user_id });
+
+                // Send Email Receipt
+                try {
+                    const userRes = await UserDB.getElements(this.db, tx.user_id, ['email', 'first_name', 'last_name']);
+                    if (!userRes.isError()) {
+                        const user = userRes.getData();
+                        const emailManager = EmailManager.getInstance();
+                        const finalAmount = request.body?.amount !== undefined ? request.body.amount : tx.amount;
+                        const finalDesc = request.body?.description !== undefined ? request.body.description : tx.description;
+
+                        await emailManager.sendTemplatedEmail(
+                            user.email,
+                            'Top-Up Receipt - DUCC',
+                            'payment_notification',
+                            {
+                                name: user.first_name,
+                                amount: Math.abs(finalAmount).toFixed(2),
+                                description: finalDesc
+                            }
+                        );
+                    }
+                } catch (emailErr) {
+                    Logger.error('Failed to send top-up receipt email', emailErr);
+                }
+            }
+
+            return result.getResponse(reply);
+        });
+
+        /**
          * Delete a transaction record.
          */
         this.app.delete<{ Params: { id: string } }>('/api/admin/transaction/:id', { preHandler: [check('perm:transaction.manage')] }, async (request, reply) => {
             const transactionId = parseInt(request.params.id);
             if (isNaN(transactionId)) return reply.status(400).send({ message: 'Invalid transaction ID' });
             
-            // Get user ID before delete
-            const tx = await transactionsDB.get_transaction_by_id(this.db, transactionId);
-            const userId = tx.getData()?.user_id;
+            // Get data before delete
+            const txRes = await transactionsDB.get_transaction_by_id(this.db, transactionId);
+            if (txRes.isError()) return txRes.getResponse(reply);
+            const tx = txRes.getData();
+            const userId = tx.user_id;
+            const isPending = tx.status === 'pending';
 
             const result = await transactionsDB.delete_transaction(this.db, transactionId);
             
-            if (!result.isError() && userId) {
+            if (!result.isError()) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
                 EventHub.sendToUser(userId, 'balance_update', { userId });
                 EventHub.broadcast('admin_transaction_update', { userId });
+
+                if (isPending) {
+                    // Send Discard Email
+                    try {
+                        const userRes = await UserDB.getElements(this.db, userId, ['email', 'first_name', 'last_name']);
+                        if (!userRes.isError()) {
+                            const user = userRes.getData();
+                            const emailManager = EmailManager.getInstance();
+                            await emailManager.sendTemplatedEmail(
+                                user.email,
+                                'Top-Up Request Removed - DUCC',
+                                'topup_discarded',
+                                {
+                                    name: user.first_name,
+                                    amount: Math.abs(tx.amount).toFixed(2),
+                                    description: tx.description
+                                }
+                            );
+                        }
+                    } catch (emailErr) {
+                        Logger.error('Failed to send top-up discard email', emailErr);
+                    }
+                }
             }
 
             return result.getResponse(reply);

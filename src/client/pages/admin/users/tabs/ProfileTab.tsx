@@ -196,7 +196,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                     <input 
                                         type="checkbox" 
                                         value={item.id} 
-                                        checked={userKitPrefs()?.some((p: any) => p.id === item.id)} 
+                                        checked={userKitPrefs()?.some((p: any) => p.kit_item_id === item.id)} 
                                     />
                                 </label>
                             )}

@@ -28,12 +28,12 @@ export function showConfirmModal(title: string, message: string): Promise<boolea
                 onClose={() => close(false)}
                 footer={
                     <>
-                        <GlassButtonSmall class="btn-cancel secondary outline" onClick={() => close(false)}>Cancel</GlassButtonSmall>
-                        <GlassButtonSmall class="btn-confirm primary" onClick={() => close(true)}>Confirm</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-cancel secondary" borderRadius={12} tintOpacity={0.1} onClick={() => close(false)}>Cancel</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-confirm primary" borderRadius={12} tintOpacity={0.2} onClick={() => close(true)}>Confirm</GlassButtonSmall>
                     </>
                 }
             >
-                <p>{message}</p>
+                <p innerHTML={message}></p>
             </Modal>
         ), mount);
     });
@@ -65,12 +65,12 @@ export function showPasswordModal(title: string, message: string): Promise<strin
                 onClose={() => close(null)}
                 footer={
                     <>
-                        <GlassButtonSmall class="btn-cancel secondary outline" onClick={() => close(null)}>Cancel</GlassButtonSmall>
-                        <GlassButtonSmall class="btn-confirm primary" onClick={() => close(password())}>Confirm</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-cancel secondary" borderRadius={12} tintOpacity={0.1} onClick={() => close(null)}>Cancel</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-confirm primary" borderRadius={12} tintOpacity={0.2} onClick={() => close(password())}>Confirm</GlassButtonSmall>
                     </>
                 }
             >
-                <p>{message}</p>
+                <p innerHTML={message}></p>
                 <input 
                     type="password" 
                     class="modern-input" 
@@ -112,8 +112,8 @@ export function showChangePasswordModal(): Promise<{ currentPassword: string; ne
                 onClose={() => close(null)}
                 footer={
                     <>
-                        <GlassButtonSmall class="btn-cancel secondary outline" onClick={() => close(null)}>Cancel</GlassButtonSmall>
-                        <GlassButtonSmall class="btn-confirm primary" onClick={() => close({ currentPassword: currentPassword(), newPassword: newPassword() })}>Change Password</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-cancel secondary" borderRadius={12} tintOpacity={0.1} onClick={() => close(null)}>Cancel</GlassButtonSmall>
+                        <GlassButtonSmall class="btn-confirm primary" borderRadius={12} tintOpacity={0.2} onClick={() => close({ currentPassword: currentPassword(), newPassword: newPassword() })}>Change Password</GlassButtonSmall>
                     </>
                 }
             >

@@ -27,6 +27,7 @@ interface EventData {
     tags?: (number | any)[];
     signup_required?: boolean;
     is_offsite?: boolean;
+    allow_kit_requests?: boolean;
     image_id?: number | null;
     upfront_refund_cutoff?: Date | string | null;
     status?: 'confirmed' | 'pending' | 'scheduled';
@@ -344,16 +345,16 @@ export default class EventsDB {
      */
     static async createEvent(db: DatabaseWrapper, data: EventData): Promise<statusObject> {
         return db.transaction(async (tx) => {
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff, status, visible_at } = data;
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, allow_kit_requests, image_id, upfront_refund_cutoff, status, visible_at } = data;
             
             if (!signup_required && max_attendees && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
             const result = await tx.run(
-                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, is_offsite, image_id, upfront_refund_cutoff, status, visible_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, image_id, upfront_refund_cutoff, status || 'confirmed', visible_at]
+                `INSERT INTO events (title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, is_offsite, allow_kit_requests, image_id, upfront_refund_cutoff, status, visible_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, allow_kit_requests === false ? 0 : 1, image_id, upfront_refund_cutoff, status || 'confirmed', visible_at]
             );
             const eventId = result.lastID;
 
@@ -380,15 +381,15 @@ export default class EventsDB {
             if (!existing) return new statusObject(404, 'Event not found');
 
             const merged = { ...existing, ...data };
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, image_id, upfront_refund_cutoff, status, visible_at } = merged;
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, allow_kit_requests, image_id, upfront_refund_cutoff, status, visible_at } = merged;
 
             if (!signup_required && max_attendees && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
             }
 
             await tx.run(
-                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, is_offsite=?, image_id=?, upfront_refund_cutoff=?, status=?, visible_at=? WHERE id=?`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, image_id, upfront_refund_cutoff, status, visible_at, id]
+                `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, is_offsite=?, allow_kit_requests=?, image_id=?, upfront_refund_cutoff=?, status=?, visible_at=? WHERE id=?`,
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, allow_kit_requests ? 1 : 0, image_id, upfront_refund_cutoff, status, visible_at, id]
             );
 
             if (tags && Array.isArray(tags)) {

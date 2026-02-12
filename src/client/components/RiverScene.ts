@@ -217,29 +217,37 @@ export class RiverScene {
     }
 
     private getRiverSlopeHeight(z: number): number {
-        const dropPerUnit = 0.4; // Steeper
-        // "Pool and Drop" river profile, but strictly downward.
-        // To ensure it never goes upwards, amplitude * k must be < dropPerUnit.
-        // k = 2*PI / 60 = 0.1047. 
-        // 0.4 / 0.1047 = 3.82. We use 2.5 to be safe.
-        const k = 2 * Math.PI / 60;
-        const organicSteps = Math.sin(z * k) * 2.5;
+        const segSize = 5.0;
+        const absZ = Math.abs(z);
+        const segments = Math.floor(absZ / segSize);
+        const remainder = absZ % segSize;
 
-        // Subtracting 30 to keep the river roughly at its original base level in the main view area
-        return -z * dropPerUnit + organicSteps - 30;
+        let h = 0;
+        // Delta accumulation system: guaranteed monotonic
+        for (let i = 0; i < segments; i++) {
+            const noise = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+            h += 0.1 + noise * 0.4; // 0.1 to 0.5 drop per 5 units
+        }
+        
+        const noiseRem = Math.abs(Math.sin(segments * 12.9898) * 43758.5453) % 1;
+        h += (remainder / segSize) * (0.1 + noiseRem * 0.4);
+
+        // Map height so distance (z < 0) is higher than foreground
+        return (z > 0 ? -h : h) - 30;
     }
 
     private getIsRapids(z: number): number {
-        const k = 2 * Math.PI / 60;
-        // The slope is -0.4 + 2.5 * k * cos(z * k)
-        const slope = -0.4 + 2.5 * k * Math.cos(z * k);
+        const segSize = 5.0;
+        const i = Math.floor(Math.abs(z) / segSize);
+        const noise = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+        const delta = 0.1 + noise * 0.4;
         
-        // Map slope range [-0.65, -0.15] to intensity
-        const rapidIntensity = THREE.MathUtils.smoothstep(-slope, 0.3, 0.6);
+        // Higher delta = steeper drop = rapids
+        const rapidIntensity = THREE.MathUtils.smoothstep(delta, 0.35, 0.48);
 
         // Add some noise rapids in other areas
-        const noise = Math.sin(z * 0.5) * Math.cos(z * 0.1);
-        const texture = Math.max(0, noise * 0.3);
+        const n = Math.sin(z * 0.5) * Math.cos(z * 0.1);
+        const texture = Math.max(0, n * 0.3);
 
         return Math.min(1.0, rapidIntensity + texture);
     }
@@ -309,7 +317,7 @@ export class RiverScene {
         const zRel = zGlobal - 15.0;
         let curveDrop = 0;
         if (zRel < 0) {
-            curveDrop = (zRel * zRel * 0.00003) * 3.0; // 3.0 match shader multiplier
+            curveDrop = (zRel * zRel * 0.00003) * 5.0; // 5.0 match shader multiplier
         }
 
         return slopeHeight + wave * waveAmp - curveDrop;
@@ -350,18 +358,31 @@ export class RiverScene {
 
             const waveCode = isWater ? `
                 vec4 worldPos = modelMatrix * vec4(transformed, 1.0);
-                
-                float k_s = 2.0 * 3.14159 / 60.0;
                 float zRiver = worldPos.z - uTime * uSpeed;
+                
+                // 1. Delta-based Slope Calculation (Monotonic)
+                float absZR = abs(zRiver);
+                float segSize = 5.0;
+                float segments = floor(absZR / segSize);
+                float h = 0.0;
+                
+                // Sum deltas up to current segment
+                for(float i = 0.0; i < 80.0; i++) { // Cover up to 400 units
+                    if(i >= segments) break;
+                    float noiseVal = fract(abs(sin(i * 12.9898) * 43758.5453));
+                    h += 0.1 + noiseVal * 0.4;
+                }
+                float noiseRem = fract(abs(sin(segments * 12.9898) * 43758.5453));
+                h += (fract(absZR / segSize)) * (0.1 + noiseRem * 0.4);
+                float slopeHeight = (zRiver > 0.0 ? -h : h) - 30.0;
+
+                // 2. Rapids Intensity
+                float isRapid = smoothstep(0.35, 0.48, 0.1 + noiseRem * 0.4);
                 
                 // Calculate River Path
                 float k_path = 2.0 * 3.14159 / 300.0;
                 float riverCenter = sin(zRiver * k_path * 2.0) * 6.0 + cos(zRiver * k_path) * 3.0;
                 float distFromCenter = abs(worldPos.x - riverCenter);
-                
-                // Rapids / Slope Intensity
-                float slope_deriv = -0.4 + 0.25 * cos(zRiver * k_s);
-                float isRapid = smoothstep(0.3, 0.6, -slope_deriv);
                 
                 // TONGUE: The smooth V-shaped fast water in the center of rapids
                 float tongueMask = smoothstep(8.0, 1.0, distFromCenter);
@@ -370,20 +391,20 @@ export class RiverScene {
                 // WAVES & FLOW
                 float wave = 0.0;
                 
-                // 1. Longitudinal Flow Texture (Fast water look)
+                // Longitudinal Flow Texture
                 float flowLines = noise(vec2(worldPos.x * 0.8, zRiver * 0.1 + uTime * 4.0));
                 wave += flowLines * 0.4;
                 
-                // 2. Center "Tongue" Waves (Lower frequency, smoother)
+                // Center "Tongue" Waves
                 float centerSwells = sin(zRiver * 0.15 + uTime * 2.0) * 0.5;
                 wave = mix(wave, centerSwells, tongueEffect * 0.7);
                 
-                // 3. Edge Turbulence / Eddies
+                // Edge Turbulence
                 float edgeNoise = noise(vec2(worldPos.x * 1.5, zRiver * 0.5 + uTime * 3.0));
                 float edgeEffect = smoothstep(4.0, 12.0, distFromCenter);
                 wave += edgeNoise * 0.6 * edgeEffect * (1.0 + isRapid);
                 
-                // 4. Choppy water (Standing waves in rapids)
+                // Choppy water
                 float chop = sin(worldPos.x * 1.2) * cos(zRiver * 0.8 + uTime * 5.0);
                 wave += chop * 0.3 * isRapid * (1.0 - tongueEffect);
 
@@ -415,6 +436,7 @@ export class RiverScene {
                     float curveFactor = zRel * zRel * 0.00003; 
                     curvedWorldPos.z -= curveFactor * (2.0 + uCurve.y); 
                     curvedWorldPos.x += curveFactor * uCurve.x * 20.0;
+                    curvedWorldPos.y -= curveFactor * 5.0; // Drop the horizon vertically
                 }
                 vec4 mvPosition = viewMatrix * curvedWorldPos;
                 gl_Position = projectionMatrix * mvPosition;
@@ -1147,15 +1169,22 @@ export class RiverScene {
 
     private updateChunks(delta: number) {
         const speed = this.uniforms.uSpeed.value;
+        
+        // Calculate the total drop for one full river cycle (300 units = 60 segments)
+        let totalCycleDrop = 0;
+        for (let i = 0; i < 60; i++) {
+            const noise = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+            totalCycleDrop += 0.1 + noise * 0.4;
+        }
+
         this.chunks.forEach(chunk => {
             chunk.mesh.position.z += speed * delta;
             // Recycling
             if (chunk.mesh.position.z > 90) {
                 chunk.mesh.position.z -= TOTAL_RIVER_LENGTH;
-                // Since our slope is strictly downward as Z increases, 
-                // moving back 300 units means moving to a HIGHER section.
-                // Drop over 300 units = 300 * 0.4 = 120.
-                chunk.mesh.position.y += 120;
+                // Since distance is higher (flowing towards us), moving back 300 units 
+                // means moving to a section that is HIGHER.
+                chunk.mesh.position.y += totalCycleDrop;
             }
         });
     }

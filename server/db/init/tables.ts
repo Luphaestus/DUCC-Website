@@ -157,6 +157,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         is_canceled TINYINT(1) NOT NULL DEFAULT 0,
         enable_waitlist TINYINT(1) NOT NULL DEFAULT 1,
         signup_required TINYINT(1) NOT NULL DEFAULT 1,
+        allow_kit_requests TINYINT(1) NOT NULL DEFAULT 1,
         is_offsite TINYINT(1) NOT NULL DEFAULT 0,
         costs_released TINYINT(1) NOT NULL DEFAULT 0,
         costs_released_at DATETIME,
@@ -231,8 +232,10 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         amount DECIMAL(10, 2) NOT NULL,
         description TEXT,
         event_id INT,
+        status ENUM('completed', 'pending') NOT NULL DEFAULT 'completed',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_user_created (user_id, created_at),
+        INDEX idx_status (status),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL
       `
@@ -515,6 +518,60 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         email_news TINYINT(1) NOT NULL DEFAULT 1,
         push_news TINYINT(1) NOT NULL DEFAULT 1,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'forms',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        is_global TINYINT(1) NOT NULL DEFAULT 0,
+        event_id INT,
+        created_by INT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'form_questions',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        form_id INT NOT NULL,
+        type ENUM('text', 'textarea', 'number', 'select', 'multiselect', 'rank', 'date') NOT NULL,
+        prompt TEXT NOT NULL,
+        options JSON,
+        is_required TINYINT(1) NOT NULL DEFAULT 0,
+        max_selections INT DEFAULT 1,
+        display_order INT NOT NULL DEFAULT 0,
+        dependency_question_id INT,
+        dependency_value VARCHAR(255),
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (dependency_question_id) REFERENCES form_questions(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'form_submissions',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        form_id INT NOT NULL,
+        user_id INT NOT NULL,
+        submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'form_answers',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        submission_id INT NOT NULL,
+        question_id INT NOT NULL,
+        value TEXT,
+        FOREIGN KEY (submission_id) REFERENCES form_submissions(id) ON DELETE CASCADE,
+        FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE
       `
     },
     {

@@ -13,6 +13,8 @@ import CollegesDB from '../../db/collegesDB.js';
 import Globals from '../../misc/globals.js';
 import AuthDB from '../../db/authDB.js';
 import check from '../../misc/authentication.js';
+import { Permissions } from '../../misc/permissions.js';
+import { EmailManager } from '../../emails/EmailManager.js';
 import bcrypt from 'bcrypt';
 import ValidationRules from '../../rules/ValidationRules.js';
 import Logger from '../../misc/Logger.js';
@@ -375,6 +377,59 @@ export default class User {
             } catch (err) {
                 Logger.error(err);
                 return reply.status(500).send({ message: 'Internal server error.' });
+            }
+        });
+
+        /**
+         * Submit a top-up request.
+         */
+        this.app.post('/api/user/topup-request', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            const { amount, description } = request.body as any;
+            const numericAmount = parseFloat(amount);
+
+            if (isNaN(numericAmount) || numericAmount <= 0) {
+                return reply.status(400).send({ message: 'Invalid amount. Must be greater than 0.' });
+            }
+
+            try {
+                // Add pending transaction
+                const status = await transactionsDB.add_transaction(
+                    this.db, 
+                    request.user.id, 
+                    numericAmount, 
+                    description || 'Bank Transfer Top-Up', 
+                    null, 
+                    'pending'
+                );
+
+                if (status.isError()) return status.getResponse(reply);
+
+                // Notify admins with transaction.manage permission
+                const admins = await Permissions.getUsersWithPermission(this.db, 'transaction.manage');
+                const emailManager = EmailManager.getInstance();
+
+                const userName = `${request.user.first_name} ${request.user.last_name}`;
+                const userEmail = request.user.email;
+
+                for (const admin of admins) {
+                    emailManager.sendTemplatedEmail(
+                        admin.email,
+                        'New Top-Up Request - DUCC',
+                        'topup_request',
+                        {
+                            user_name: userName,
+                            user_email: userEmail,
+                            user_id: request.user.id.toString(),
+                            amount: numericAmount.toFixed(2),
+                            description: description || 'Bank Transfer'
+                        }
+                    ).catch(err => Logger.error(`Failed to notify admin ${admin.email} of top-up`, err));
+                }
+
+                return reply.send({ success: true, message: 'Top-up request submitted for verification.' });
+            } catch (err) {
+                Logger.error('Top-up request error:', err);
+                return reply.status(500).send({ message: 'Failed to submit request.' });
             }
         });
 

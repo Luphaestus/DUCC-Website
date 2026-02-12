@@ -1,22 +1,30 @@
-// todo clean up
 import { createSignal, createResource, For, Show, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_SVG } from '@/utils/icons';
+import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_SVG, CHECK_SVG, SETTINGS_SVG } from '@/utils/icons';
 import Panel from "@/components/Panel";
+import Modal from "@/components/Modal";
 import { onUpdate } from "@/utils/updates";
+import { showConfirmModal } from "@/utils/modal";
 
 interface Transaction {
     id: number;
     description: string;
     amount: number;
     after: number;
+    status: 'completed' | 'pending';
     created_at: string;
 }
 
 export default function TransactionsTab(props: { userId: number }) {
     const { notify } = useNotifications();
     const [editingId, setEditingId] = createSignal<number | null>(null);
+    
+    // Manage Pending Modal State
+    const [managePendingId, setManagePendingId] = createSignal<number | null>(null);
+    const [pendingAmount, setPendingAmount] = createSignal("");
+    const [pendingDesc, setPendingDesc] = createSignal("");
+    const [isManaging, setIsManaging] = createSignal(false);
 
     onMount(() => {
         const cleanup = onUpdate((event) => {
@@ -38,13 +46,13 @@ export default function TransactionsTab(props: { userId: number }) {
                 apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
             ]);
             return {
-                transactions: ((transactionsRaw || []) as Transaction[]).reverse(),
+                transactions: (transactionsRaw || []) as Transaction[],
                 minMoney: Number(globalData.res?.MinMoney?.data || -25)
             };
         }
     );
 
-    const currentBalance = () => data()?.transactions[0]?.after || 0;
+    const currentBalance = () => data()?.transactions.filter(t => t.status === 'completed')[0]?.after || 0;
     const balanceClass = () => {
         const bal = currentBalance();
         const min = data()?.minMoney || -25;
@@ -68,7 +76,7 @@ export default function TransactionsTab(props: { userId: number }) {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Delete transaction?')) return;
+        if (!await showConfirmModal('Delete Transaction?', 'Are you sure you want to permanently delete this transaction?')) return;
         try {
             await apiRequest('DELETE', `/api/admin/transaction/${id}`);
             notify('Success', 'Transaction deleted', 'success');
@@ -85,6 +93,48 @@ export default function TransactionsTab(props: { userId: number }) {
             setEditingId(null);
             refetch();
         } catch (e) { notify('Error', 'Update failed', 'error'); }
+    };
+
+    const handleConfirm = async (id: number) => {
+        if (!await showConfirmModal('Confirm Top-Up?', 'Has this bank transfer been received? The user balance will be updated.')) return;
+        try {
+            await apiRequest('POST', `/api/admin/transaction/${id}/confirm`);
+            notify('Success', 'Payment confirmed', 'success');
+            refetch();
+        } catch (e: any) { notify('Error', e.message, 'error'); }
+    };
+
+    const openManageModal = (tx: Transaction) => {
+        setManagePendingId(tx.id);
+        setPendingAmount(tx.amount.toString());
+        setPendingDesc(tx.description);
+        setIsManaging(true);
+    };
+
+    const handleManageConfirm = async (e: Event) => {
+        e.preventDefault();
+        const id = managePendingId();
+        if (!id) return;
+        try {
+            await apiRequest('POST', `/api/admin/transaction/${id}/confirm`, {
+                amount: parseFloat(pendingAmount()),
+                description: pendingDesc()
+            });
+            notify('Success', 'Payment confirmed and user notified', 'success');
+            setIsManaging(false);
+            refetch();
+        } catch (e: any) { notify('Error', e.message, 'error'); }
+    };
+
+    const handleManageDiscard = async () => {
+        const id = managePendingId();
+        if (!id || !await showConfirmModal('Discard Request?', 'Are you sure you want to discard this top-up request? An email notification will be sent to the user.')) return;
+        try {
+            await apiRequest('DELETE', `/api/admin/transaction/${id}`);
+            notify('Success', 'Request discarded', 'success');
+            setIsManaging(false);
+            refetch();
+        } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
     const handleSetDebtLimit = async (e: Event) => {
@@ -113,7 +163,10 @@ export default function TransactionsTab(props: { userId: number }) {
 
             <Panel title="Payment Plan (Temporary Debt Limit)" icon={EDIT_SVG} class="mb-4">
                 <div class="liquid-container transaction-item" style={{ "--liquid-padding": "1.25rem" }}>
-                    <form class="tx-edit-grid" onSubmit={handleSetDebtLimit}>
+                    <p style="font-size: 0.8rem; margin-bottom: 1.25rem; opacity: 0.6; line-height: 1.4;">
+                        Setting a debt limit allows this user to continue joining events even with a negative balance, up to the specified amount.
+                    </p>
+                    <form style="display: flex; flex-direction: column; gap: 1rem; width: 100%;" onSubmit={handleSetDebtLimit}>
                         <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                             <label style="font-size: 0.8rem; opacity: 0.8;">Limit (£)</label>
                             <input name="debt_limit" type="number" step="0.01" placeholder="e.g. 50.00" class="compact-input" required />
@@ -122,13 +175,8 @@ export default function TransactionsTab(props: { userId: number }) {
                             <label style="font-size: 0.8rem; opacity: 0.8;">Expiry Date (Optional)</label>
                             <input name="debt_limit_expires_at" type="datetime-local" class="compact-input" />
                         </div>
-                        <div style="display: flex; align-items: flex-end;">
-                            <button type="submit" class="small-btn icon-text-btn min-w-100"><span innerHTML={SAVE_SVG} /> Update Plan</button>
-                        </div>
+                        <button type="submit" class="small-btn icon-text-btn full-width"><span innerHTML={SAVE_SVG} /> Update Plan</button>
                     </form>
-                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.6;">
-                        Setting a debt limit allows this user to continue joining events even with a negative balance, up to the specified amount.
-                    </p>
                 </div>
             </Panel>
 
@@ -149,8 +197,8 @@ export default function TransactionsTab(props: { userId: number }) {
                             const isEditing = () => editingId() === tx.id;
 
                             return (
-                                <div class="liquid-container transaction-item item-list-row" classList={{ editing: isEditing() }} style={{ "--liquid-padding": "1.25rem" }}>
-                                    <div class="item-icon" classList={{ negative: isNegative, positive: !isNegative }} innerHTML={isNegative ? REMOVE_SVG : ADD_SVG} />
+                                <div class="liquid-container transaction-item item-list-row" classList={{ editing: isEditing(), 'pending-row': tx.status === 'pending' }} style={{ "--liquid-padding": "1.25rem" }}>
+                                    <div class="item-icon" classList={{ negative: isNegative, positive: !isNegative, pending: tx.status === 'pending' }} innerHTML={tx.status === 'pending' ? '<span style="font-size: 1.2rem; font-weight: bold;">?</span>' : (isNegative ? REMOVE_SVG : ADD_SVG)} />
                                     
                                     <Show when={!isEditing()} fallback={
                                         <div class="tx-edit-grid no-btn" ref={el => {}}>
@@ -159,25 +207,38 @@ export default function TransactionsTab(props: { userId: number }) {
                                         </div>
                                     }>
                                         <div class="item-details">
-                                            <span class="item-title">{tx.description}</span>
+                                            <span class="item-title">
+                                                {tx.description}
+                                                <Show when={tx.status === 'pending'}>
+                                                    <span class="badge warning mini-badge ml-2">PENDING</span>
+                                                </Show>
+                                            </span>
                                             <span class="item-subtitle">{dateStr}</span>
                                         </div>
                                         <div class="item-value-group">
                                             <div class="amount-line">
-                                                <span class="item-value" classList={{ positive: !isNegative, negative: isNegative }}>
+                                                <span class="item-value" classList={{ positive: !isNegative && tx.status !== 'pending', negative: isNegative, muted: tx.status === 'pending' }}>
                                                     {isNegative ? '' : '+'}{tx.amount.toFixed(2)}
                                                 </span>
                                             </div>
-                                            <div class="balance-line">
-                                                <span class="item-extra">£{tx.after.toFixed(2)}</span>
-                                            </div>
+                                            <Show when={tx.status === 'completed'}>
+                                                <div class="balance-line">
+                                                    <span class="item-extra">£{tx.after.toFixed(2)}</span>
+                                                </div>
+                                            </Show>
                                         </div>
                                     </Show>
 
                                     <div class="item-actions">
                                         <Show when={!isEditing()}>
-                                            <button class="icon-btn edit-tx-btn" onClick={() => setEditingId(tx.id)} title="Edit" innerHTML={EDIT_SVG} />
-                                            <button class="icon-btn delete-tx-btn delete" onClick={() => handleDelete(tx.id)} title="Delete" innerHTML={DELETE_SVG} />
+                                            <Show when={tx.status === 'pending'}>
+                                                <button class="icon-btn success mr-2" onClick={() => handleConfirm(tx.id)} title="Quick Confirm" innerHTML={CHECK_SVG} />
+                                                <button class="small-btn secondary mini-btn mr-2" onClick={() => openManageModal(tx)}><span innerHTML={SETTINGS_SVG} /> Manage</button>
+                                            </Show>
+                                            <Show when={tx.status === 'completed'}>
+                                                <button class="icon-btn edit-tx-btn" onClick={() => setEditingId(tx.id)} title="Edit" innerHTML={EDIT_SVG} />
+                                                <button class="icon-btn delete-tx-btn delete" onClick={() => handleDelete(tx.id)} title="Delete" innerHTML={DELETE_SVG} />
+                                            </Show>
                                         </Show>
                                         <Show when={isEditing()}>
                                             <button class="icon-btn save-tx-btn success" onClick={(e) => handleSaveEdit(tx.id, (e.currentTarget.parentElement?.parentElement as HTMLElement))} title="Save" innerHTML={SAVE_SVG} />
@@ -190,6 +251,49 @@ export default function TransactionsTab(props: { userId: number }) {
                     </For>
                 </div>
             </Panel>
+
+            <Modal isOpen={isManaging()} onClose={() => setIsManaging(false)} title="Manage Top-Up Request">
+                <form class="modern-form" onSubmit={handleManageConfirm}>
+                    <p>Review and verify the reported bank transfer.</p>
+                    
+                    <div class="form-group mb-4">
+                        <label>Amount Received (£)
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                value={pendingAmount()} 
+                                onInput={e => setPendingAmount(e.currentTarget.value)}
+                                required
+                            />
+                        </label>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label>Description
+                            <input 
+                                type="text" 
+                                value={pendingDesc()} 
+                                onInput={e => setPendingDesc(e.currentTarget.value)}
+                                required
+                            />
+                        </label>
+                    </div>
+
+                    <div class="liquid-container warning-bg mb-4" style={{ "--liquid-padding": "1rem", "font-size": "0.85rem" }}>
+                        <p class="m-0"><strong>Email Notification:</strong> Confirming or discarding this request will automatically email the user with the details.</p>
+                    </div>
+
+                    <div class="form-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <button type="submit" class="primary full-width">
+                            <span innerHTML={CHECK_SVG} /> Confirm & Notify User
+                        </button>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <button type="button" class="secondary outline" onClick={() => setIsManaging(false)}>Cancel</button>
+                            <button type="button" class="delete outline" onClick={handleManageDiscard}>Discard Request</button>
+                        </div>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 }

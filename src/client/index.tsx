@@ -28,6 +28,7 @@ const EmailVerifiedPage = lazy(() => import("./pages/EmailVerifiedPage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
 const EventExpensePage = lazy(() => import("./pages/EventExpensePage"));
 const SettlementPage = lazy(() => import("./pages/SettlementPage"));
+const FormViewer = lazy(() => import("./pages/forms/FormViewer"));
 
 // Admin Components
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -47,6 +48,8 @@ const AdminGlobalsPage = lazy(() => import("./pages/admin/globals/GlobalsPage"))
 const AdminKitPage = lazy(() => import("./pages/admin/kit/KitPage"));
 const AdminStatsPage = lazy(() => import("./pages/admin/stats/StatsPage"));
 const AdminDashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
+const AdminFormsPage = lazy(() => import("./pages/admin/forms/FormsPage"));
+const AdminFormEditor = lazy(() => import("./pages/admin/forms/FormEditor"));
 
 const root = document.getElementById("root");
 
@@ -65,6 +68,7 @@ if (root) {
           </Route>
           <Route path="/event/:id" component={EventDetailPage} />
           <Route path="/events/:id/expense/:expenseId" component={EventExpensePage} />
+          <Route path="/forms/:id" component={FormViewer} />
           <Route path="/legal" component={LegalPage} />
           <Route path="/login" component={LoginPage} />
           <Route path="/signup" component={SignupPage} />
@@ -98,6 +102,8 @@ if (root) {
              <Route path="/globals" component={AdminGlobalsPage} />
              <Route path="/kit" component={AdminKitPage} />
              <Route path="/stats" component={AdminStatsPage} />
+             <Route path="/forms" component={AdminFormsPage} />
+             <Route path="/forms/:id" component={AdminFormEditor} />
           </Route>
 
           <Route path="/unauthorised" component={UnauthorisedPage} />

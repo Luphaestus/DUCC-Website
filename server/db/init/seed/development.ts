@@ -295,8 +295,8 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
             }
 
             // Assign this role to a random user from the pool
-            if (availableUsers.length > 0) {
-                const targetUser = availableUsers.shift();
+            const targetUser = availableUsers.shift();
+            if (targetUser) {
                 await db.run('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [targetUser.id, roleRow.id]);
                 
                 // If it's an exec role (has exec.publish), sync them
@@ -322,8 +322,8 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
         const years = [2025, 2024]; // Academic years ending in these
         for (const year of years) {
             for (const role of pastRolePool) {
-                if (availableUsers.length > 0) {
-                    const user = availableUsers.shift();
+                const user = availableUsers.shift();
+                if (user) {
                     await db.run(
                         `INSERT INTO exec_committee (user_id, role_name, display_order, is_current, term_start, term_end)
                          VALUES (?, ?, ?, 0, ?, ?)`,
@@ -379,10 +379,12 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
             const text = quoteTexts[i % quoteTexts.length] + (i > 20 ? ` (Part ${Math.floor(i/20) + 1})` : '');
             const quotedUser = users[Math.floor(Math.random() * users.length)];
             const submitter = users[Math.floor(Math.random() * users.length)];
-            await db.run(
-                'INSERT INTO quotes (text, quoted_user_id, submitted_by_id, visibility) VALUES (?, ?, ?, ?)',
-                [text, quotedUser.id, submitter.id, Math.random() > 0.3 ? 'public' : 'private']
-            );
+            if (quotedUser && submitter) {
+                await db.run(
+                    'INSERT INTO quotes (text, quoted_user_id, submitted_by_id, visibility) VALUES (?, ?, ?, ?)',
+                    [text, quotedUser.id, submitter.id, Math.random() > 0.3 ? 'public' : 'private']
+                );
+            }
         }
     }
 

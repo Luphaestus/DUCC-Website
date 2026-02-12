@@ -206,6 +206,53 @@
                 margin-top: 1.5rem;
             }
 
+            .attendee-list-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                max-height: 250px;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            
+                &.expanded {
+                    max-height: 2000px;
+                    overflow-y: auto;
+                }
+            
+                .attendee-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.5rem;
+                    background: rgba(var(--pico-background-color-rgb), 0.2);
+                    border-radius: var(--border-radius-md);
+                    border: 1px solid rgba(var(--pico-color-rgb), 0.05);
+            
+                    .attendee-name {
+                        font-size: 0.95rem;
+                        font-weight: 600;
+                        color: var(--glass-text-colour);
+                    }
+                }
+            }
+            
+            .expand-attendees-btn {
+                margin-top: 1rem;
+                width: 100%;
+                background: transparent !important;
+                border: 1px dashed var(--pico-muted-color) !important;
+                color: var(--pico-muted-color) !important;
+                font-size: 0.85rem !important;
+                padding: 0.5rem !important;
+                height: auto !important;
+                border-radius: var(--border-radius-md) !important;
+            
+                &:hover {
+                    border-color: var(--pico-primary) !important;
+                    color: var(--pico-primary) !important;
+                }
+            }
+
             .attendee-bubbles {
                 display: flex;
                 flex-wrap: wrap;
@@ -372,17 +419,53 @@
             }
         }
 
+        .event-actions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(var(--pico-color-rgb), 0.1);
+
+            .action-notice {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 1rem;
+                background: rgba(var(--pico-primary-rgb), 0.05);
+                border-radius: var(--border-radius-md);
+                border-left: 4px solid var(--pico-primary);
+            
+                svg {
+                    width: 1.25rem;
+                    height: 1.25rem;
+                    fill: var(--pico-primary);
+                    flex-shrink: 0;
+                    margin-top: 0.1rem;
+                }
+            
+                p {
+                    margin: 0;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: var(--glass-text-colour);
+                }
+            }
+        }
+
         .event-actions {
             display: flex;
+            flex-direction: column;
             gap: 1rem;
             margin-top: .3rem;
 
             button {
-                flex: 1;
+                width: 100%;
                 padding: 1rem !important;
                 font-weight: 700;
                 font-size: 1.1rem;
                 color: white !important;
+                margin: 0;
             }
 
             #edit-event-button {

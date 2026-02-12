@@ -13,7 +13,7 @@ import { notify } from '@/components/notification';
 declare const Cropper: any;
 
 interface UploadWidgetOptions {
-    mode?: 'inline' | 'modal';
+    mode?: 'inline' | 'modal' | 'hidden';
     selectMode?: 'single' | 'multiple';
     autoUpload?: boolean;
     accept?: string;

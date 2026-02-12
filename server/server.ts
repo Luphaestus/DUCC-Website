@@ -293,6 +293,7 @@ const startServer = async () => {
       './api/QuotesAPI.js',
       './api/SlidesAPI.js',
       './api/TagsAPI.js',
+      './api/FormsAPI.js',
       './api/admin/AdminCarsAPI.js',
       './api/admin/AdminEventsAPI.js',
       './api/admin/AdminExpensesAPI.js',

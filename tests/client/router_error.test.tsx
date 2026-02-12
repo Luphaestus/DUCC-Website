@@ -13,7 +13,7 @@ vi.mock("three", async (importOriginal) => {
   const original = await importOriginal<any>();
   return {
     ...original,
-    WebGLRenderer: function() {
+    WebGLRenderer: function(this: any) {
       this.setSize = vi.fn();
       this.setPixelRatio = vi.fn();
       this.setClearColor = vi.fn();
@@ -28,7 +28,7 @@ vi.mock("three", async (importOriginal) => {
         }
       });
     },
-    Clock: function() {
+    Clock: function(this: any) {
       this.getDelta = vi.fn().mockReturnValue(0.016);
       this.getElapsedTime = vi.fn().mockReturnValue(0);
       this.start = vi.fn();

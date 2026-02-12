@@ -39,36 +39,38 @@ export default class TransactionsDB {
      * Calculate a user's current balance.
      */
     static async get_balance(db: DatabaseWrapper, userId: number): Promise<statusObject> {
-        const result = await db.get('SELECT SUM(amount) AS balance FROM transactions WHERE user_id = ?', [userId]);
+        const result = await db.get("SELECT SUM(amount) AS balance FROM transactions WHERE user_id = ? AND status = 'completed'", [userId]);
         return new statusObject(200, null, result?.balance ?? 0);
     }
 
     /**
      * Internal method to insert a transaction record.
      */
-    static async _add_transaction_internal(db: DatabaseWrapper, userId: number, amount: number, description: string, eventId: number | null = null): Promise<statusObject> {
+    static async _add_transaction_internal(db: DatabaseWrapper, userId: number, amount: number, description: string, eventId: number | null = null, status: 'completed' | 'pending' = 'completed'): Promise<statusObject> {
         const result = await db.run(
-            'INSERT INTO transactions (user_id, amount, description, created_at, event_id) VALUES (?, ?, ?, ?, ?)',
-            [userId, amount, description, new Date().toISOString(), eventId]
+            'INSERT INTO transactions (user_id, amount, description, created_at, event_id, status) VALUES (?, ?, ?, ?, ?, ?)',
+            [userId, amount, description, new Date().toISOString(), eventId, status]
         );
 
-        // Send notification
-        const title = 'New Payment Added';
-        const body = `A payment of £${Math.abs(amount).toFixed(2)} has been added to your account for ${description}.`;
-        
-        NotificationsAPI.sendNotificationToUser(
-            db, 
-            userId, 
-            title, 
-            body, 
-            '/profile?tab=balance', 
-            NotificationType.PAYMENTS,
-            'payment_notification',
-            {
-                amount: Math.abs(amount).toFixed(2),
-                description: description
-            }
-        ).catch(err => Logger.error('Failed to send payment notification', err));
+        if (status === 'completed') {
+            // Send notification
+            const title = 'New Payment Added';
+            const body = `A payment of £${Math.abs(amount).toFixed(2)} has been added to your account for ${description}.`;
+            
+            NotificationsAPI.sendNotificationToUser(
+                db, 
+                userId, 
+                title, 
+                body, 
+                '/profile?tab=balance', 
+                NotificationType.PAYMENTS,
+                'payment_notification',
+                {
+                    amount: Math.abs(amount).toFixed(2),
+                    description: description
+                }
+            ).catch(err => Logger.error('Failed to send payment notification', err));
+        }
 
         return new statusObject(201, 'Transaction added successfully', result.lastID);
     }
@@ -76,8 +78,8 @@ export default class TransactionsDB {
     /**
      * Public method to add a transaction record.
      */
-    static async add_transaction(db: DatabaseWrapper, userId: number, amount: number, description: string, eventId: number | null = null): Promise<statusObject> {
-        return this._add_transaction_internal(db, userId, amount, description, eventId);
+    static async add_transaction(db: DatabaseWrapper, userId: number, amount: number, description: string, eventId: number | null = null, status: 'completed' | 'pending' = 'completed'): Promise<statusObject> {
+        return this._add_transaction_internal(db, userId, amount, description, eventId, status);
     }
 
     /**
@@ -93,11 +95,11 @@ export default class TransactionsDB {
      */
     static async get_transactions(db: DatabaseWrapper, userId: number): Promise<statusObject> {
         try {
-            // Using SUM() OVER () to calculate the running balance in SQL
+            // Using SUM() OVER () to calculate the running balance in SQL, only for completed transactions
             const sql = `
                 SELECT 
-                    id, amount, description, created_at,
-                    SUM(amount) OVER (ORDER BY created_at ASC, id ASC) as after
+                    id, amount, description, created_at, status,
+                    SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) OVER (ORDER BY created_at ASC, id ASC) as after
                 FROM transactions 
                 WHERE user_id = ? 
                 ORDER BY created_at DESC, id DESC
@@ -158,5 +160,41 @@ export default class TransactionsDB {
         const transaction = await db.get('SELECT * FROM transactions WHERE id = ?', [transactionId]);
         if (!transaction) return new statusObject(404, 'Transaction not found');
         return new statusObject(200, null, transaction);
+    }
+
+    /**
+     * Confirm a pending transaction.
+     */
+    static async confirm_transaction(db: DatabaseWrapper, transactionId: number, adjustedData?: { amount?: number, description?: string }): Promise<statusObject> {
+        const txRes = await this.get_transaction_by_id(db, transactionId);
+        if (txRes.isError()) return txRes;
+        
+        const tx = txRes.getData();
+        if (tx.status === 'completed') return new statusObject(400, 'Transaction already completed');
+
+        const amount = adjustedData?.amount !== undefined ? adjustedData.amount : tx.amount;
+        const description = adjustedData?.description !== undefined ? adjustedData.description : tx.description;
+
+        await db.run("UPDATE transactions SET status = 'completed', amount = ?, description = ? WHERE id = ?", [amount, description, transactionId]);
+
+        // Send notification
+        const title = 'Payment Verified';
+        const body = `Your top-up of £${Math.abs(amount).toFixed(2)} has been verified and added to your account.`;
+        
+        NotificationsAPI.sendNotificationToUser(
+            db, 
+            tx.user_id, 
+            title, 
+            body, 
+            '/profile?tab=balance', 
+            NotificationType.PAYMENTS,
+            'payment_notification',
+            {
+                amount: Math.abs(amount).toFixed(2),
+                description: description
+            }
+        ).catch(err => Logger.error('Failed to send verification notification', err));
+
+        return new statusObject(200, 'Transaction confirmed successfully');
     }
 }

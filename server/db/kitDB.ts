@@ -169,13 +169,16 @@ export default class KitDB {
         }
     }
 
-    static async setUserPreferences(db: DatabaseWrapper, userId: number, selections: { kit_item_id: number, kit_variant_id: number | null }[]): Promise<statusObject> {
+    static async setUserPreferences(db: DatabaseWrapper, userId: number, selections: any[]): Promise<statusObject> {
         try {
+            if (!selections || !Array.isArray(selections)) return new statusObject(400, 'Invalid selections');
             return await db.transaction(async (tx) => {
                 await tx.run('DELETE FROM user_kit_preferences WHERE user_id = ?', [userId]);
                 for (const s of selections) {
+                    const kitItemId = typeof s === 'number' ? s : s.kit_item_id;
+                    const kitVariantId = typeof s === 'number' ? null : s.kit_variant_id;
                     await tx.run('INSERT INTO user_kit_preferences (user_id, kit_item_id, kit_variant_id) VALUES (?, ?, ?)', 
-                        [userId, s.kit_item_id, s.kit_variant_id]);
+                        [userId, kitItemId, kitVariantId]);
                 }
                 return new statusObject(200, 'Preferences updated');
             });
@@ -206,6 +209,7 @@ export default class KitDB {
 
     static async setUserEventKit(db: DatabaseWrapper, userId: number, eventId: number, selections: { kit_item_id: number, kit_variant_id: number | null }[]): Promise<statusObject> {
         try {
+            if (!selections || !Array.isArray(selections)) return new statusObject(400, 'Invalid selections');
             return await db.transaction(async (tx) => {
                 await tx.run('DELETE FROM event_kit_requests WHERE user_id = ? AND event_id = ?', [userId, eventId]);
                 for (const s of selections) {

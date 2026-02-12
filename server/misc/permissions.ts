@@ -122,6 +122,22 @@ export class Permissions {
         return [...new Set([...roleTags.map(t => t.tag_id), ...directTags.map(t => t.tag_id)])];
     }
 
+    /** Fetch all users with a specific permission. */
+    static async getUsersWithPermission(db: DatabaseWrapper, permissionSlug: string): Promise<any[]> {
+        const implying = this.getImplyingPermissions(permissionSlug);
+        const placeholders = implying.map(() => '?').join(',');
+
+        return await db.all(`
+            SELECT DISTINCT u.id, u.email, u.first_name, u.last_name FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN role_permissions rp ON ur.role_id = rp.role_id
+            LEFT JOIN user_permissions up ON u.id = up.user_id
+            LEFT JOIN permissions p_role ON rp.permission_id = p_role.id
+            LEFT JOIN permissions p_direct ON up.permission_id = p_direct.id
+            WHERE p_role.slug IN (${placeholders}) OR p_direct.slug IN (${placeholders})
+        `, [...implying, ...implying]);
+    }
+
     /** Check if user manages specific tag. */
     static async canManageTag(db: DatabaseWrapper, userId: number, tagId: number | string): Promise<boolean> {
         if (await this.hasPermission(db, userId, 'event.manage.all') || await this.hasPermission(db, userId, 'user.manage')) return true;

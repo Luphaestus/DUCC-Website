@@ -6,7 +6,7 @@ import { useNavigate } from "@solidjs/router";
 import UploadWidget from "@/components/UploadWidget";
 import Panel from "@/components/Panel";
 import { INFO_SVG, IMAGE_SVG, LOCAL_ACTIVITY_SVG, CALENDAR_TODAY_SVG, SETTINGS_SVG } from '@/utils/icons';
-import MarkdownEditor from "@/components/MarkdownEditor";
+import RichTextEditor from "@/components/RichTextEditor";
 
 interface Tag {
     id: number;
@@ -27,6 +27,7 @@ interface EventData {
     max_attendees: number;
     upfront_refund_cutoff: string | null;
     is_offsite: boolean;
+    allow_kit_requests: boolean;
     image_id: number | null;
     image_url?: string;
     tags?: Tag[];
@@ -39,11 +40,36 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
     const navigate = useNavigate();
     const isNew = () => !props.event.id;
 
-    const [formState, setFormState] = createSignal<EventData>({ ...props.event });
+    const [formState, setFormState] = createSignal<EventData>({ 
+        allow_kit_requests: true,
+        ...props.event 
+    });
     const [selectedTags, setSelectedTagIds] = createSignal<number[]>(props.event.tags?.map(t => t.id) || []);
 
     const updateField = (key: keyof EventData, value: any) => {
-        setFormState({ ...formState(), [key]: value });
+        const oldState = formState();
+        
+        if (key === 'start' && oldState.start && oldState.end) {
+            const oldStart = new Date(oldState.start).getTime();
+            const oldEnd = new Date(oldState.end).getTime();
+            const duration = oldEnd - oldStart;
+            
+            const newStart = new Date(value).getTime();
+            const newEnd = new Date(newStart + duration);
+            
+            // Format to YYYY-MM-DDTHH:mm
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            const format = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            
+            setFormState({ 
+                ...oldState, 
+                start: value,
+                end: format(newEnd)
+            });
+            return;
+        }
+
+        setFormState({ ...oldState, [key]: value });
     };
 
     const toggleTag = (tagId: number) => {
@@ -95,7 +121,7 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                         </div>
                         <div class="form-group mt-4">
                             <label class="mb-2 block">Description</label>
-                            <MarkdownEditor 
+                            <RichTextEditor 
                                 value={formState().description} 
                                 onInput={v => updateField('description', v)} 
                                 placeholder="What's the plan?"
@@ -134,6 +160,12 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                                 <label class="checkbox-label">
                                     <input type="checkbox" checked={formState().is_offsite} onChange={e => updateField('is_offsite', e.currentTarget.checked)} />
                                     Requires Transport
+                                </label>
+                            </div>
+                            <div class="signup-policy pt-4">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" checked={formState().allow_kit_requests} onChange={e => updateField('allow_kit_requests', e.currentTarget.checked)} />
+                                    Allow Kit Requests
                                 </label>
                             </div>
                         </div>

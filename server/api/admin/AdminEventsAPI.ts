@@ -119,7 +119,7 @@ export default class AdminEvents {
         /**
          * Duplicate an event.
          */
-        this.app.post('/api/admin/event/:id/duplicate', { preHandler: [check('perm:event.write.all | perm:event.manage.all | perm:event.write.scoped | perm:event.manage.scoped')] }, async (request: any, reply: FastifyReply) => {
+        this.app.post<{ Params: { id: string }, Body: { start?: string, end?: string } }>('/api/admin/event/:id/duplicate', { preHandler: [check('perm:event.write.all | perm:event.manage.all | perm:event.write.scoped | perm:event.manage.scoped')] }, async (request: any, reply: FastifyReply) => {
             const id = parseInt(request.params.id);
             if (!await Permissions.canManageEvent(this.db, request.user.id, id)) {
                 return reply.status(403).send({ message: 'Not authorized for this event' });
@@ -136,9 +136,10 @@ export default class AdminEvents {
                     title: `Copy of ${original.title}`,
                     status: 'pending', // Reset to draft
                     visible_at: null,
-                    start: rawOriginal.start, // Keep original times
-                    end: rawOriginal.end,
+                    start: request.body?.start || rawOriginal.start,
+                    end: request.body?.end || rawOriginal.end,
                     image_id: rawOriginal.image_id,
+                    allow_kit_requests: rawOriginal.allow_kit_requests,
                     tags: original.tags.map((t: any) => t.id)
                 };
                 delete newData.id;

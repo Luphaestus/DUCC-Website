@@ -11,7 +11,7 @@ import Panel from "@/components/Panel";
 import {
     SETTINGS_SVG, CLOSE_SVG, SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, POOL_SVG, DASHBOARD_SVG, WALLET_SVG,
     LOGOUT_SVG, EDIT_SVG, GROUP_SVG, KAYAKING_SVG, ADD_SVG, REMOVE_SVG, KEY_SVG,
-    CONTENT_COPY_SVG, UPLOAD_SVG, SHIELD_SVG, DOWNLOAD_SVG
+    CONTENT_COPY_SVG, UPLOAD_SVG, SHIELD_SVG, DOWNLOAD_SVG, HOURGLASS_TOP_SVG
 } from '@/utils/icons';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
 import { Tag } from "@/widgets/Tag";
@@ -56,12 +56,35 @@ interface KitVariant {
     name: string;
 }
 
+interface KitItem {
+    id: number;
+    name: string;
+    type: string;
+    variants: KitVariant[];
+}
+
 interface KitPref {
     kit_item_id: number;
     kit_variant_id: number | null;
     item_name: string;
     item_type: string;
     variant_name: string | null;
+}
+
+interface Car {
+    id: number;
+    name: string;
+    seats: number;
+    boats: number;
+    is_global: boolean;
+}
+
+interface Transaction {
+    id: number;
+    amount: number;
+    description: string;
+    created_at: string;
+    after: number;
 }
 
 export default function ProfilePage() {
@@ -74,6 +97,32 @@ export default function ProfilePage() {
 
     const [isKitModalOpen, setIsKitModalOpen] = createSignal(false);
     const [activeKitItem, setActiveKitItem] = createSignal<KitItem | null>(null);
+
+    const [isTopUpModalOpen, setIsTopUpModalOpen] = createSignal(false);
+    const [topUpAmount, setTopUpAmount] = createSignal("");
+    const [isSubmittingTopUp, setIsSubmittingTopUp] = createSignal(false);
+
+    const handleTopUpSubmit = async (e: Event) => {
+        e.preventDefault();
+        const amount = parseFloat(topUpAmount());
+        if (isNaN(amount) || amount <= 0) {
+            notify('Error', 'Please enter a valid amount.', 'error');
+            return;
+        }
+
+        setIsSubmittingTopUp(true);
+        try {
+            await apiRequest('POST', '/api/user/topup-request', { amount, description: 'Bank Transfer' });
+            notify('Success', 'Top-up request submitted! Admin will verify soon.', 'success');
+            setIsTopUpModalOpen(false);
+            setTopUpAmount("");
+            refetchTransactions();
+        } catch (err: any) {
+            notify('Error', err.message || 'Failed to submit request.', 'error');
+        } finally {
+            setIsSubmittingTopUp(false);
+        }
+    };
 
     onMount(() => {
         const cleanup = onUpdate((event) => {
@@ -145,7 +194,7 @@ export default function ProfilePage() {
         }
 
         try {
-            await apiRequest('POST', '/api/kit/preferences', { selections: newSelections });
+            await apiRequest('POST', '/api/kit/preferences', { itemIds: newSelections });
             notify('Success', 'Preferences updated', 'success');
             setIsKitModalOpen(false);
             refetchKitPrefs();
@@ -333,7 +382,7 @@ export default function ProfilePage() {
     const handleToggleEmail2FA = async () => {
         const currentlyEnabled = profile()?.email_2fa_enabled;
         const action = currentlyEnabled ? 'disable' : 'enable';
-        
+
         if (currentlyEnabled) {
             if (!(await showConfirmModal('Disable Email 2FA?', 'Are you sure? This will make your account less secure.'))) return;
         }
@@ -507,8 +556,8 @@ export default function ProfilePage() {
 
                                 <div class="profile-overview-grid">
                                     <div class="overview-main">
-                                        <Panel 
-                                            title="Swimming Statistics" 
+                                        <Panel
+                                            title="Swimming Statistics"
                                             icon={POOL_SVG}
                                             action={
                                                 <button class="small-btn secondary" onClick={() => navigate('/swims')}>
@@ -550,12 +599,12 @@ export default function ProfilePage() {
                                                 </div>
                                                 <div class="info-row">
                                                     <span>Legal Waiver</span>
-                                                    <button 
-                                                        class="small-btn mini-bt no-margin" 
-                                                        classList={{ 
+                                                    <button
+                                                        class="small-btn mini-bt no-margin"
+                                                        classList={{
                                                             'warning': !profile()!.filled_legal_info,
                                                             'secondary': profile()!.filled_legal_info
-                                                        }} 
+                                                        }}
                                                         onClick={() => navigate('/legal')}
                                                     >
                                                         {profile()!.filled_legal_info ? 'Signed' : 'Sign Now'}
@@ -669,8 +718,8 @@ export default function ProfilePage() {
 
                         <Show when={activeTab() === 'cars'}>
                             <section class="dashboard-section active">
-                                <Panel 
-                                    title="My Vehicles" 
+                                <Panel
+                                    title="My Vehicles"
                                     icon={GROUP_SVG}
                                     class="glass-panel"
                                     action={
@@ -708,13 +757,13 @@ export default function ProfilePage() {
 
                         <Show when={activeTab() === 'kit'}>
                             <section class="dashboard-section active">
-                                <Panel 
-                                    title="Default Kit Requirements" 
+                                <Panel
+                                    title="Default Kit Requirements"
                                     icon={KAYAKING_SVG}
                                     class="glass-panel"
                                 >
                                     <p>Select the equipment you usually need to borrow from the club for trips. These will be your default requests when you join an event.</p>
-                                    
+
                                     <div class="item-list">
                                         <For each={kitItems() || []}>
                                             {(item) => {
@@ -727,15 +776,15 @@ export default function ProfilePage() {
                                                 };
 
                                                 return (
-                                                    <div 
-                                                        class="list-item clickable" 
+                                                    <div
+                                                        class="list-item clickable"
                                                         classList={{ 'primary-glass': isSelected() }}
                                                         onClick={() => openKitModal(item)}
                                                     >
                                                         <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>
                                                         <div class="item-details">
                                                             <span class="item-title">{item.name}{variantLabel()}</span>
-                                                            <span class="item-subtitle">{item.type} • {item.variants?.map(v => v.name).join(', ') || 'No variants'}</span>
+                                                            <span class="item-subtitle">{item.type} • {item.variants?.map((v: KitVariant) => v.name).join(', ') || 'No variants'}</span>
                                                         </div>
                                                     </div>
                                                 );
@@ -746,53 +795,74 @@ export default function ProfilePage() {
                             </section>
                         </Show>
 
-                        <Show when={activeTab() === 'balance'}>
-                            <section class="dashboard-section active">
-                                <article class="value-header liquid-container glass-panel no-margin">   
-                                    <div class="value-info">
-                                        <span class="value-title">Current Balance</span>
-                                        <div class="value-display" classList={{
-                                            'positive': profile()!.balance >= 0,
-                                            'negative': profile()!.balance < (globals()?.minMoney || -25),
-                                            'warning': profile()!.balance < 0 && profile()!.balance >= (globals()?.minMoney || -25)
-                                        }}>
-                                            £{profile()!.balance.toFixed(2)}
-                                        </div>
-                                    </div>
-                                    <div class="value-actions">
-                                        <button class="small-btn primary" onClick={() => {
-                                            const reference = profile()!.first_name.charAt(0).toUpperCase() + profile()!.last_name.toUpperCase() + "WEBSITE";
-                                            showConfirmModal("Top Up Balance", `Please transfer to:<br>Bank: Durham University<br>Sort: 20-27-66<br>Acc: 53770109<br>Ref: ${reference}`);
-                                        }}>Top Up</button>
-                                    </div>
-                                </article>
-
-                                <Panel title="Transaction History" class="glass-panel no-margin">
-                                    <div class="item-list">
-                                        <For each={transactions()} fallback={<p>No transactions found.</p>}>
-                                            {(tx) => (
-                                                <div class="list-item">
-                                                    <div class="item-icon" classList={{ 'positive': tx.amount > 0, 'negative': tx.amount < 0 }}>
-                                                        <span innerHTML={tx.amount > 0 ? ADD_SVG : REMOVE_SVG} />
-                                                    </div>
-                                                    <div class="item-details">
-                                                        <span class="item-title">{tx.description}</span>
-                                                        <span class="item-subtitle">{new Date(tx.created_at).toLocaleDateString('en-GB')}</span>
-                                                    </div>
-                                                    <div class="item-value-group">
-                                                        <span class="item-value" classList={{ 'positive': tx.amount > 0, 'negative': tx.amount < 0 }}>
-                                                            {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}
-                                                        </span>
-                                                        <span class="item-extra">£{tx.after?.toFixed(2) || '0.00'}</span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </For>
-                                    </div>
-                                </Panel>
-                            </section>
-                        </Show>
-
+                                                <Show when={activeTab() === 'balance'}>
+                                                    <section class="dashboard-section active">
+                                                        <article class="value-header liquid-container glass-panel no-margin mb-6">   
+                                                            <div class="value-info">
+                                                                <span class="value-title">Current Balance</span>
+                                                                <div class="value-display" classList={{
+                                                                    'positive': profile()!.balance >= 0,
+                                                                    'negative': profile()!.balance < (globals()?.minMoney || -25),
+                                                                    'warning': profile()!.balance < 0 && profile()!.balance >= (globals()?.minMoney || -25)
+                                                                }}>
+                                                                    £{profile()!.balance.toFixed(2)}
+                                                                </div>
+                                                            </div>
+                                                            <div class="value-actions">
+                                                                <button class="small-btn primary" onClick={() => setIsTopUpModalOpen(true)}>Report Top-Up</button>
+                                                            </div>
+                                                        </article>
+                        
+                                                        <div class="grid mb-6">
+                                                            <Panel title="How to Top Up" icon={WALLET_SVG} class="glass-panel no-margin">
+                                                                <p>To add funds to your account, please make a bank transfer using the details below. Once sent, use the "Report Top-Up" button to let us know!</p>
+                                                                <div class="bank-details liquid-container secondary-bg" style={{ "--liquid-padding": "1rem" }}>
+                                                                    <div class="info-rows mini">
+                                                                        <div class="info-row"><span>Bank:</span> <strong>Durham University</strong></div>
+                                                                        <div class="info-row"><span>Sort Code:</span> <strong>20-27-66</strong></div>
+                                                                        <div class="info-row"><span>Account:</span> <strong>53770109</strong></div>
+                                                                        <div class="info-row">
+                                                                            <span>Reference:</span> 
+                                                                            <strong>{profile()!.first_name.charAt(0).toUpperCase() + profile()!.last_name.toUpperCase() + "WEBSITE"}</strong>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <p class="mt-4 small-text"><em>Verification is usually completed within 24-48 hours.</em></p>
+                                                            </Panel>
+                                                        </div>
+                        
+                                                        <Panel title="Transaction History" class="glass-panel no-margin">
+                                                            <div class="item-list">
+                                                                <For each={transactions()} fallback={<p>No transactions found.</p>}>
+                                                                    {(tx) => (
+                                                                        <div class="list-item" classList={{ 'pending-tx': tx.status === 'pending' }}>
+                                                                            <div class="item-icon" classList={{ 'positive': tx.amount > 0, 'negative': tx.amount < 0, 'pending': tx.status === 'pending' }}>
+                                                                                <span innerHTML={tx.status === 'pending' ? HOURGLASS_TOP_SVG : (tx.amount > 0 ? ADD_SVG : REMOVE_SVG)} />
+                                                                            </div>
+                                                                            <div class="item-details">
+                                                                                <span class="item-title">
+                                                                                    {tx.description}
+                                                                                    <Show when={tx.status === 'pending'}>
+                                                                                        <span class="badge warning mini-badge ml-2">Pending Verification</span>
+                                                                                    </Show>
+                                                                                </span>
+                                                                                <span class="item-subtitle">{new Date(tx.created_at).toLocaleDateString('en-GB')}</span>
+                                                                            </div>
+                                                                            <div class="item-value-group">
+                                                                                <span class="item-value" classList={{ 'positive': tx.amount > 0, 'negative': tx.amount < 0, 'muted': tx.status === 'pending' }}>
+                                                                                    {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}
+                                                                                </span>
+                                                                                <Show when={tx.status === 'completed'}>
+                                                                                    <span class="item-extra">£{tx.after?.toFixed(2) || '0.00'}</span>
+                                                                                </Show>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </For>
+                                                            </div>
+                                                        </Panel>
+                                                    </section>
+                                                </Show>
                         <Show when={activeTab() === 'settings'}>
                             <section class="dashboard-section active">
                                 <Panel title="Account Security" class="glass-panel">
@@ -838,9 +908,9 @@ export default function ProfilePage() {
                                                         {profile()!.email_2fa_enabled ? 'Enabled' : 'Disabled'}
                                                     </span>
                                                 </div>
-                                                <button 
-                                                    class="small-btn" 
-                                                    classList={{ 'secondary': !profile()!.email_2fa_enabled, 'outline delete': profile()!.email_2fa_enabled }} 
+                                                <button
+                                                    class="small-btn"
+                                                    classList={{ 'secondary': !profile()!.email_2fa_enabled, 'outline delete': profile()!.email_2fa_enabled }}
                                                     onClick={handleToggleEmail2FA}
                                                 >
                                                     {profile()!.email_2fa_enabled ? 'Disable' : 'Enable'}
@@ -873,34 +943,6 @@ export default function ProfilePage() {
                                                     }
                                                 }}>Delete</button>
                                             </div>
-
-                                            <Show when={!isPWAInstalled()}>
-                                                <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
-                                                    <div class="setting-info">
-                                                        <strong>Install App</strong>
-                                                        <p>
-                                                            <Show when={isManualInstall()} fallback={
-                                                                deferredPrompt() 
-                                                                    ? "Get the official DUCC app for your device." 
-                                                                    : "Look for the install icon in your address bar, or check your browser menu. If not visible, ensure you have used the site for a few minutes."
-                                                            }>
-                                                                Tap the Share button or menu and select "Add to Home Screen" (or "Add to Dock")
-                                                            </Show>
-                                                        </p>
-                                                    </div>
-                                                    <Show when={!isManualInstall()}>
-                                                        <button 
-                                                            class="small-btn primary" 
-                                                            onClick={installPWA}
-                                                            disabled={!deferredPrompt()}
-                                                            title={!deferredPrompt() ? "Browser is still checking if the app can be installed. This usually takes a few moments of browsing." : "Install DUCC"}
-                                                        >
-                                                            <span innerHTML={DOWNLOAD_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" /> 
-                                                            {deferredPrompt() ? 'Install' : 'Preparing...'}
-                                                        </button>
-                                                    </Show>
-                                                </div>
-                                            </Show>
                                         </div>
                                     </div>
                                 </Panel>
@@ -960,44 +1002,17 @@ export default function ProfilePage() {
                                     </Show>
                                 </Panel>
 
-                                <Panel title="App Installation & More" class="glass-panel mt-4">
+                                <Panel title="App Installation" class="glass-panel mt-4">
                                     <div class="settings-grid">
                                         <div class="two-fa-grid dual-grid mt-4">
-                                            <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
-                                                <div class="setting-info">
-                                                    <strong>Passkey</strong>
-                                                    <p>{passkeys()?.length || 0} keys registered</p>
-                                                </div>
-                                                <button class="small-btn secondary" onClick={() => setIsPasskeyModalOpen(true)}>Manage</button>
-                                            </div>
-
-                                            <div class="liquid-container embedded-panel danger-zone" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
-                                                <div class="setting-info">
-                                                    <strong style="color: var(--colour-bad)">Delete Account</strong>
-                                                    <p>Permanently remove your account</p>
-                                                </div>
-                                                <button class="small-btn outline delete" onClick={async () => {
-                                                    const password = await showPasswordModal("Delete Account", "This cannot be undone.");
-                                                    if (password) {
-                                                        try {
-                                                            await apiRequest('POST', '/api/user/deleteAccount', { password });
-                                                            LoginEvent.notify({ authenticated: false });
-                                                            navigate('/home');
-                                                        } catch (err) {
-                                                            notify('Error', 'Delete failed.', 'error');
-                                                        }
-                                                    }
-                                                }}>Delete</button>
-                                            </div>
-
                                             <Show when={!isPWAInstalled()}>
                                                 <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
                                                     <div class="setting-info">
                                                         <strong>Install App</strong>
                                                         <p>
                                                             <Show when={isManualInstall()} fallback={
-                                                                deferredPrompt() 
-                                                                    ? "Get the official DUCC app for your device." 
+                                                                deferredPrompt()
+                                                                    ? "Get the official DUCC app for your device."
                                                                     : "Look for the install icon in your address bar, or check your browser menu. If not visible, ensure you have used the site for a few minutes."
                                                             }>
                                                                 Tap the Share button or menu and select "Add to Home Screen" (or "Add to Dock")
@@ -1005,13 +1020,13 @@ export default function ProfilePage() {
                                                         </p>
                                                     </div>
                                                     <Show when={!isManualInstall()}>
-                                                        <button 
-                                                            class="small-btn primary" 
+                                                        <button
+                                                            class="small-btn primary"
                                                             onClick={installPWA}
                                                             disabled={!deferredPrompt()}
                                                             title={!deferredPrompt() ? "Browser is still checking if the app can be installed. This usually takes a few moments of browsing." : "Install DUCC"}
                                                         >
-                                                            <span innerHTML={DOWNLOAD_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" /> 
+                                                            <span innerHTML={DOWNLOAD_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
                                                             {deferredPrompt() ? 'Install' : 'Preparing...'}
                                                         </button>
                                                     </Show>
@@ -1102,14 +1117,46 @@ export default function ProfilePage() {
                 </div>
             </Modal>
 
+            <Modal isOpen={isTopUpModalOpen()} onClose={() => setIsTopUpModalOpen(false)} title="Report Bank Transfer">
+                <form onSubmit={handleTopUpSubmit} class="modern-form">
+                    <p>Have you already sent the transfer? Let us know the amount so we can verify it faster.</p>
+                    
+                    <div class="form-group mb-4">
+                        <label>Amount Transferred (£)
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                min="0.01" 
+                                value={topUpAmount()} 
+                                onInput={e => setTopUpAmount(e.currentTarget.value)}
+                                placeholder="0.00"
+                                required
+                                autofocus
+                            />
+                        </label>
+                    </div>
+
+                    <div class="liquid-container secondary-bg mb-4" style={{ "--liquid-padding": "1rem", "font-size": "0.85rem" }}>
+                        <p class="m-0"><strong>Note:</strong> Your balance will update once a treasurer confirms the receipt of funds in the club bank account. You'll receive an email receipt once verified.</p>
+                    </div>
+
+                    <div class="form-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem;">
+                        <button type="button" class="secondary" onClick={() => setIsTopUpModalOpen(false)}>Cancel</button>
+                        <button type="submit" class="primary" disabled={isSubmittingTopUp()}>
+                            {isSubmittingTopUp() ? 'Submitting...' : 'Confirm Report'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
             <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title={`Default ${activeKitItem()?.name}`}>
                 <div class="variant-selection">
                     <p>Select your default size/variant for {activeKitItem()?.name}:</p>
                     <div class="item-list mb-4">
                         <For each={activeKitItem()?.variants || []}>
                             {(variant) => (
-                                <button 
-                                    class="list-item clickable" 
+                                <button
+                                    class="list-item clickable"
                                     onClick={() => handleSelectVariant(variant.id)}
                                 >
                                     <div class="item-details">
@@ -1118,8 +1165,8 @@ export default function ProfilePage() {
                                 </button>
                             )}
                         </For>
-                        <button 
-                            class="list-item clickable" 
+                        <button
+                            class="list-item clickable"
                             onClick={() => handleSelectVariant(null)}
                         >
                             <div class="item-details">
@@ -1127,10 +1174,10 @@ export default function ProfilePage() {
                                 <span class="item-subtitle">Pick each time you join an event</span>
                             </div>
                         </button>
-                        
+
                         <Show when={userKitPrefs()?.some(p => p.kit_item_id === activeKitItem()?.id)}>
-                            <button 
-                                class="list-item clickable danger-hover" 
+                            <button
+                                class="list-item clickable danger-hover"
                                 onClick={() => handleSelectVariant(-1)}
                                 style="margin-top: 1rem; border-color: var(--error-color);"
                             >

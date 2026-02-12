@@ -21,7 +21,7 @@ export class GmailProvider implements EmailProvider {
             connectionTimeout: 10000,
             greetingTimeout: 10000,
             socketTimeout: 15000
-        });
+        } as any);
     }
 
     async sendEmail(options: EmailOptions): Promise<void> {
