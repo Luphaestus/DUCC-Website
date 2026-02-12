@@ -20,7 +20,8 @@ RUN npm ci
 COPY . .
 
 # Build assets (SASS)
-RUN npm run sass:build
+ARG BUILD_ID=unknown
+RUN npm run sass:build -- --build-id=$BUILD_ID
 
 # Create a directory for the database to ensure persistence
 RUN mkdir -p /app/data

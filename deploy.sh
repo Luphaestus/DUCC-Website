@@ -137,11 +137,15 @@ fi
 
 sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_PRE_CMD"
 
+export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
+DOMAIN_VAL="$DOMAIN_NAME"
+
 # Upload .env file if it exists
 if [ -f .env ]; then
     echo "       [INFO] Pushing .env file to remote server..."
     sshpass -e scp -o StrictHostKeyChecking=no .env root@"$SERVER_IP":DUCC-Website/.env
-    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "chmod 600 DUCC-Website/.env"
+    # Append dynamic deployment variables to the remote .env
+    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "printf '\nDOMAIN_NAME=%s\nNODE_ENV=%s\nSERVER_IP=%s\n' '$DOMAIN_VAL' '$MODE' '$SERVER_IP' >> DUCC-Website/.env && chmod 600 DUCC-Website/.env"
 fi
 
 if [ "$PUSH_DATA" = true ]; then
@@ -149,10 +153,9 @@ if [ "$PUSH_DATA" = true ]; then
     sshpass -e rsync -avz -e "ssh -o StrictHostKeyChecking=no" data/ root@"$SERVER_IP":DUCC-Website/data/
 fi
 
-export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
-DOMAIN_VAL="$DOMAIN_NAME"
+BUILD_ID=$(date +%s)
 
-REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && export NODE_ENV='$MODE' && cd DUCC-Website && docker compose build --progress=plain"
+REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && export NODE_ENV='$MODE' && export SERVER_IP='$SERVER_IP' && cd DUCC-Website && docker compose build --build-arg BUILD_ID=$BUILD_ID --progress=plain"
 
 if [ "$MODE" = "dev" ]; then
     echo "       [INFO] Running in DEVELOPMENT mode."
@@ -168,7 +171,8 @@ REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Local Health Check ---' && curl -s -I
 
 sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_SCRIPT"
 
-echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL} (or http://$SERVER_IP if SSL pending/invalid)"
+echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL}"
+echo "      (Note: If you get a DNS error, try http://$SERVER_IP directly)"
 echo ""
 echo "Troubleshooting:"
 echo " - If the site is not loading, check logs: ./deploy.sh --logs"
