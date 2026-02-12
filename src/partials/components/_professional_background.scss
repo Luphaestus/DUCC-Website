@@ -1,0 +1,102 @@
+@use "../mixins" as *;
+
+#professional-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    background: var(--pico-background-color);
+    transition: opacity 0.8s ease, visibility 0.8s;
+
+    &.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3column%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        opacity: 0.03;
+        pointer-events: none;
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: 
+            linear-gradient(rgba(var(--pico-color-rgb), 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(var(--pico-color-rgb), 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+    }
+
+    .blob-container {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        filter: blur(120px);
+        opacity: 0.5;
+        
+        @media (prefers-color-scheme: dark) {
+            opacity: 0.25;
+        }
+    }
+
+    .blob {
+        position: absolute;
+        border-radius: 50%;
+        background: var(--pico-primary);
+        animation: blob-float 25s infinite alternate ease-in-out;
+        mix-blend-mode: soft-light;
+    }
+
+    .blob-1 {
+        width: 60vw;
+        height: 60vw;
+        top: -20%;
+        left: -10%;
+        background: radial-gradient(circle, rgba(var(--pico-primary-rgb), 0.4) 0%, transparent 70%);
+        animation-duration: 35s;
+    }
+
+    .blob-2 {
+        width: 50vw;
+        height: 50vw;
+        bottom: -10%;
+        right: -5%;
+        background: radial-gradient(circle, rgba(var(--pico-secondary-rgb), 0.3) 0%, transparent 70%);
+        animation-duration: 40s;
+        animation-delay: -7s;
+    }
+
+    .blob-3 {
+        width: 40vw;
+        height: 40vw;
+        top: 30%;
+        left: 35%;
+        background: radial-gradient(circle, rgba(var(--pico-primary-rgb), 0.2) 0%, transparent 70%);
+        animation-duration: 30s;
+        animation-delay: -15s;
+    }
+}
+
+@keyframes blob-float {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    33% {
+        transform: translate(5vw, 10vh) scale(1.1) rotate(10deg);
+    }
+    66% {
+        transform: translate(-8vw, 15vh) scale(0.9) rotate(-10deg);
+    }
+    100% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+}

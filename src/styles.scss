@@ -24,6 +24,7 @@
 @use "partials/components/navbar";
 @use "partials/components/notification";
 @use "partials/components/background";
+@use "partials/components/professional_background";
 @use "partials/components/disciplines";
 @use "partials/components/hero";
 @use "partials/components/events" as comp_events;
@@ -42,6 +43,7 @@
 @use "partials/widgets/pagination";
 @use "partials/widgets/tag_badge";
 @use "partials/widgets/tab_nav";
+@use "partials/widgets/events_header";
 @use "partials/widgets/accent_panel";
 @use "partials/widgets/value_header";
 @use "partials/widgets/item_list";

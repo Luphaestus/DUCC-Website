@@ -13,6 +13,7 @@ import { showConfirmModal } from "@/utils/modal";
 import { useNotifications } from "@/stores/notifications";
 import { TabNav } from "@/widgets/TabNav";
 import PageTitle from "@/components/PageTitle";
+import { EventsHeaderControls } from "@/widgets/EventsHeaderControls";
 
 interface EventsPageData {
     events: any[];
@@ -198,73 +199,47 @@ export default function EventsPage() {
 
     return (
         <div class="glass-layout">
-            <div class="liquid-container glass-toolbar mb-6" style={{ "--liquid-padding": "0.5rem 1rem", "--liquid-border-radius": "100px" }}>
-                <div class="toolbar-content">
-                    <div class="flex align-center gap-2">
-                        <div class="liquid-container flex align-center gap-2" style={{ "--liquid-padding": "0.3rem 0.6rem", "--liquid-border-radius": "100px", "background": "rgba(var(--pico-background-color-rgb), 0.4)" }}>
-                            <Show when={isDesktop()}>
-                                <TabNav class="toggle-group-mini" style={{ "--liquid-padding": "2px", "--liquid-border-radius": "100px", "margin": "0" }}>
-                                    <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
-                                    <button class="tab-btn" classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
-                                    <button class="tab-btn" classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
-                                </TabNav>
-                                <div class="toolbar-divider" style="width: 1px; height: 24px; background: rgba(var(--pico-color-rgb), 0.1); margin: 0 0.5rem;" />
-                            </Show>
-
-                            <div class="week-navigator flex align-center gap-2">
-                                <button class="nav-btn-circle" title="Previous" onClick={() => handleNavigate(-1)}>
-                                    <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
-                                </button>
-                                <div class="current-range-display" style={{ "min-width": "140px", "text-align": "center", "font-weight": "500" }}>
-                                    {rangeText()}
-                                </div>
-                                <button class="nav-btn-circle" title="Next" onClick={() => handleNavigate(1)}>
-                                    <span innerHTML={ARROW_FORWARD_IOS_SVG} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <button 
-                            class="nav-btn-circle" 
-                            classList={{ 
-                                'spin-active': isRefreshing() 
-                            }} 
-                            title="Back to Today / Refresh" 
-                            onClick={() => {
-                                if (viewMode() === 'list') {
-                                    if (page() === 1) refresh();
-                                    else setSearchParams({ page: 1 });
-                                } else {
-                                    setCurrentDate(new Date());
-                                }
-                            }}
-                        >
-                            <span innerHTML={REFRESH_SVG} />
-                        </button>
-                    </div>
-
-                    <div class="toolbar-right flex align-center gap-2">
+            <EventsHeaderControls 
+                viewMode={viewMode as Accessor<'list' | 'week' | 'month'>}
+                setView={setView as any}
+                rangeText={rangeText}
+                onNavigate={handleNavigate}
+                onToday={() => {
+                    if (viewMode() === 'list') {
+                        if (page() === 1) refresh();
+                        else setSearchParams({ page: 1 });
+                    } else {
+                        setCurrentDate(new Date());
+                    }
+                }}
+                isToday={() => viewMode() === 'list' ? page() === 1 : currentDate().toDateString() === new Date().toDateString()}
+                isRefreshing={isRefreshing}
+                isDesktop={isDesktop}
+                secondary={
+                    <>
                         <Show when={viewMode() === 'list'}>
                             <form class="search-bar-compact" onSubmit={(e) => { e.preventDefault(); setSearchParams({ search: (e.target as HTMLFormElement).search.value, page: 1 }); }}>
-                                <div class="glass-input-group" style={{ "max-width": "250px", "--liquid-padding": "0", "--liquid-border-radius": "100px" }}>
+                                <div class="glass-input-group" style={{ "max-width": "100%", "--liquid-padding": "0", "--liquid-border-radius": "100px" }}>
                                     <span class="icon" innerHTML={SEARCH_SVG} />
                                     <input type="text" name="search" placeholder="Search..." value={search()} style={{ "padding-left": "2.75rem !important" }} />
                                 </div>
                             </form>
                         </Show>
                         
-                        <button class="small-btn secondary outline hide-mobile" onClick={handlePublishStaged} title="Publish All Staged">
-                            <span innerHTML={CHECK_SVG} /> <span class="btn-text">Publish</span>
-                        </button>
-                        <button class="small-btn secondary outline hide-mobile" onClick={() => navigate('/admin/events/share')} title="Share Week">
-                            <span innerHTML={IOS_SHARE_SVG} /> <span class="btn-text">Share</span>
-                        </button>
-                        <button class="small-btn primary" onClick={() => navigate('/admin/event/new')}>
-                            <span innerHTML={ADD_SVG} /> <span class="btn-text">Create</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
+                        <div class="actions-group">
+                            <button class="small-btn secondary outline hide-mobile" onClick={handlePublishStaged} title="Publish All Staged">
+                                <span innerHTML={CHECK_SVG} /> <span class="btn-text">Publish</span>
+                            </button>
+                            <button class="small-btn secondary outline hide-mobile" onClick={() => navigate('/admin/events/share')} title="Share Week">
+                                <span innerHTML={IOS_SHARE_SVG} /> <span class="btn-text">Share</span>
+                            </button>
+                            <button class="small-btn primary" onClick={() => navigate('/admin/event/new')}>
+                                <span innerHTML={ADD_SVG} /> <span class="btn-text">Create</span>
+                            </button>
+                        </div>
+                    </>
+                }
+            />
 
             <Show when={viewMode() === 'list'}>
                 <div class="glass-table-container">

@@ -12,6 +12,7 @@ import PaginationSlider from "@/components/PaginationSlider";
 import PageTitle from "@/components/PageTitle";
 import { TabNav } from "../widgets/TabNav";
 import CalendarWidget, { CalendarViewMode } from "../widgets/CalendarWidget";
+import { EventsHeaderControls } from "../widgets/EventsHeaderControls";
 
 interface PageData {
     events: EventData[];
@@ -199,54 +200,23 @@ export default function EventsPage(props: ParentProps) {
     return (
         <div id="events-view" class="view small-container">
             <PageTitle text="Upcoming Events" />
-            <div class="events-controls-modern">
-                <div class="liquid-container flex align-center gap-2" style={{ "--liquid-padding": "0.4rem 0.8rem", "--liquid-border-radius": "100px" }}>
-                    <Show when={isDesktop()}>
-                        <TabNav class="toggle-group-mini" style={{ "--liquid-padding": "2px", "--liquid-border-radius": "100px", "margin": "0" }}>
-                            <button class="tab-btn" classList={{ active: viewMode() === 'list' }} onClick={() => setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
-                            <button class="tab-btn" classList={{ active: viewMode() === 'week' }} onClick={() => setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
-                            <button class="tab-btn" classList={{ active: viewMode() === 'month' }} onClick={() => setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
-                        </TabNav>
-                        <div class="toolbar-divider hide-mobile" style={{ width: "1px", height: "24px", background: "rgba(var(--pico-color-rgb), 0.1)", margin: "0 0.5rem" }} />
-                    </Show>
-
-                    <div class="week-navigator-mini flex align-center gap-3">
-                        <button class="nav-btn" title="Previous" onClick={() => handleNavigate(-1)} style={{ background: "transparent", border: "none", padding: "0", height: "auto", width: "auto" }}>
-                            <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
-                        </button>
-                        <div class="current-week-display">
-                            <span id="page-range-text" style={{ "font-weight": "600", "font-size": "0.95rem" }}>{rangeText()}</span>
-                        </div>
-                        <button class="nav-btn" title="Next" onClick={() => handleNavigate(1)} style={{ background: "transparent", border: "none", padding: "0", height: "auto", width: "auto" }}>
-                            <span innerHTML={ARROW_FORWARD_IOS_SVG} />
-                        </button>
-                    </div>
-                </div>
-
-                <div class="today-control-wrapper">
-                    <div class="liquid-container" style={{ "--liquid-padding": "0.4rem 0.75rem" }} {...{ paused: isTransitioning() } as any}>
-                        <button 
-                            class="today-btn" 
-                            classList={{ 
-                                disabled: viewMode() === 'list' ? page() === 0 : currentDate().toDateString() === new Date().toDateString(), 
-                                'spin-active': isRefreshing() 
-                            }} 
-                            title="Back to Today" 
-                            onClick={() => {
-                                if (viewMode() === 'list') {
-                                    if (page() === 0) refresh();
-                                    else setSearchParams({ page: 0 });
-                                } else {
-                                    setCurrentDate(new Date());
-                                }
-                            }}
-                        >
-                            <span innerHTML={REFRESH_SVG} />
-                            <span class="btn-text">Today</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <EventsHeaderControls 
+                viewMode={viewMode}
+                setView={setView}
+                rangeText={rangeText}
+                onNavigate={handleNavigate}
+                onToday={() => {
+                    if (viewMode() === 'list') {
+                        if (page() === 0) refresh();
+                        else setSearchParams({ page: 0 });
+                    } else {
+                        setCurrentDate(new Date());
+                    }
+                }}
+                isToday={() => viewMode() === 'list' ? page() === 0 : currentDate().toDateString() === new Date().toDateString()}
+                isRefreshing={isRefreshing}
+                isDesktop={isDesktop}
+            />
 
             <div id="events-list-container">
                 <Show when={pageData.loading && !pageData() && !oldPageData()}>
