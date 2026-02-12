@@ -492,15 +492,6 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
       `
     },
     {
-      name: 'sessions',
-      schema: `
-        id VARCHAR(255) PRIMARY KEY,
-        data JSON NOT NULL,
-        expires_at DATETIME NOT NULL,
-        INDEX idx_expires (expires_at)
-      `
-    },
-    {
       name: 'push_subscriptions',
       schema: `
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -512,7 +503,22 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
-    }
+    },
+    {
+      name: 'user_notification_settings',
+      schema: `
+        user_id INT PRIMARY KEY,
+        email_payments TINYINT(1) NOT NULL DEFAULT 1,
+        push_payments TINYINT(1) NOT NULL DEFAULT 1,
+        email_events TINYINT(1) NOT NULL DEFAULT 1,
+        push_events TINYINT(1) NOT NULL DEFAULT 1,
+        email_news TINYINT(1) NOT NULL DEFAULT 1,
+        push_news TINYINT(1) NOT NULL DEFAULT 1,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'sessions',
   ];
 
   if (process.env.NODE_ENV !== 'test') {

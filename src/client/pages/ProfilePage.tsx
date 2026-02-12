@@ -348,6 +348,27 @@ export default function ProfilePage() {
         }
     };
 
+    // Notification Settings
+    const [notificationSettings, { refetch: refetchNotificationSettings }] = createResource(async () => {
+        try {
+            return await apiRequest('GET', '/api/notifications/settings');
+        } catch { return null; }
+    });
+
+    const handleToggleNotification = async (key: string) => {
+        const current = notificationSettings();
+        if (!current) return;
+
+        const newData = { ...current, [key]: !current[key] };
+        try {
+            await apiRequest('POST', '/api/notifications/settings', newData);
+            notify('Success', 'Preferences updated.', 'success', 2000);
+            refetchNotificationSettings();
+        } catch (err: any) {
+            notify('Error', 'Failed to update preferences.', 'error');
+        }
+    };
+
     // Passkeys
     const [isPasskeyModalOpen, setIsPasskeyModalOpen] = createSignal(false);
     const [passkeys, { refetch: refetchPasskeys }] = createResource(async () => {
@@ -883,87 +904,72 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                 </Panel>
-                            </section>
-                        </Show>
-                    </Show>
-                </main>
-            </div>
 
-            <Modal
-                isOpen={isCarModalOpen()}
-                title={editingCar() ? 'Edit Vehicle' : 'Add New Vehicle'}
-                onClose={() => setIsCarModalOpen(false)}
-            >
-                <form onSubmit={handleSaveCar} class="modern-form">
-                    <label>Car Name
-                        <input name="name" type="text" value={editingCar()?.name || ''} required />
-                    </label>
-                    <div class="grid">
-                        <label>Seats
-                            <input name="seats" type="number" value={editingCar()?.seats || 5} min="1" required />
-                        </label>
-                        <label>Boats
-                            <input name="boats" type="number" value={editingCar()?.boats || 0} min="0" required />
-                        </label>
-                    </div>
-                    <Show when={profile()?.permissions?.includes('car.manage_global')}>
-                        <label>
-                            <input name="isGlobal" type="checkbox" checked={editingCar()?.is_global} /> Global
-                        </label>
-                    </Show>
-                    <button type="submit" class="primary full-width">Save Vehicle</button>
-                </form>
-            </Modal>
+                                <Panel title="Notification Preferences" class="glass-panel mt-4">
+                                    <p>Decide what updates you want to receive and how you want to be notified.</p>
+                                    <Show when={notificationSettings()} fallback={<p aria-busy="true">Loading preferences...</p>}>
+                                        <div class="notification-settings-grid mt-4">
+                                            <table class="modern-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Category</th>
+                                                        <th style="text-align: center;">Email</th>
+                                                        <th style="text-align: center;">Push</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>
+                                                            <strong>Payments</strong>
+                                                            <p class="small-text">New transactions & balance alerts</p>
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.email_payments === 1} onChange={() => handleToggleNotification('email_payments')} />
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.push_payments === 1} onChange={() => handleToggleNotification('push_payments')} />
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <strong>Events</strong>
+                                                            <p class="small-text">Signups, cancellations & updates</p>
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.email_events === 1} onChange={() => handleToggleNotification('email_events')} />
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.push_events === 1} onChange={() => handleToggleNotification('push_events')} />
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <strong>Club News</strong>
+                                                            <p class="small-text">Announcements & general updates</p>
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.email_news === 1} onChange={() => handleToggleNotification('email_news')} />
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.push_news === 1} onChange={() => handleToggleNotification('push_news')} />
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </Show>
+                                </Panel>
 
-            <Modal
-                isOpen={isTOTPModalOpen()}
-                title="Setup TOTP"
-                onClose={() => setIsTOTPModalOpen(false)}
-            >
-                <div class="totp-setup-flow">
-                    <p>Scan this QR code with your authenticator app.</p>
-                    <div class="qr-container">
-                        <img src={totpSetup()?.qrCodeData} alt="TOTP QR Code" />
-                    </div>
-                    <div class="manual-secret">
-                        <span>Or enter manually:</span>
-                        <div class="secret-row">
-                            <code>{totpSetup()?.secret}</code>
-                            <button onClick={() => navigator.clipboard.writeText(totpSetup()?.secret || '')} innerHTML={CONTENT_COPY_SVG}></button>
-                        </div>
-                    </div>
-                    <form onSubmit={handleVerifyTOTP} class="modern-form">
-                        <label>Verification Code <input type="text" id="totp-code" name="totp-code" placeholder="123456" required /></label>
-                        <button type="submit" class="primary full-width">Verify & Enable</button>
-                    </form>
-                </div>
-            </Modal>
-
-            <Modal
-                isOpen={isPasskeyModalOpen()}
-                title="Manage Passkeys"
-                onClose={() => setIsPasskeyModalOpen(false)}
-            >
-                <div class="passkey-management">
-                    <div class="item-list">
-                        <For each={passkeys()} fallback={<p>No passkeys registered.</p>}>
-                            {(k) => (
-                                <div class="list-item">
-                                    <div class="item-icon"><span innerHTML={KEY_SVG} /></div>
-                                    <div class="item-details">
-                                        <span class="item-title">Passkey</span>
-                                        <span class="item-subtitle">Added {new Date(k.created_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <div class="item-value-group">
-                                        <button class="small-btn icon-only delete" onClick={() => handleDeletePasskey(k.id)} innerHTML={CLOSE_SVG}></button>
-                                    </div>
-                                </div>
-                            )}
-                        </For>
-                    </div>
-                    <button class="primary full-width mt-4" onClick={handleAddPasskey}><span innerHTML={ADD_SVG} /> Add Passkey</button>
-                </div>
-            </Modal>
+                                <Panel title="App Installation & More" class="glass-panel mt-4">
+                                    <div class="settings-grid">
+                                        <div class="two-fa-grid dual-grid mt-4">
+                                            <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
+                                                <div class="setting-info">
+                                                    <strong>Passkey</strong>
+                                                    <p>{passkeys()?.length || 0} keys registered</p>
+                                                </div>
+                                                <button class="small-btn secondary" onClick={() => setIsPasskeyModalOpen(true)}>Manage</button>
+                                            </div>
 
             <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title={`Default ${activeKitItem()?.name}`}>
                 <div class="variant-selection">

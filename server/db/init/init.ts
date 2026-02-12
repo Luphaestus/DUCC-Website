@@ -110,7 +110,8 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
       Logger.info('Dropping tables for schema refresh...');
       await db.run('SET FOREIGN_KEY_CHECKS = 0');
       const tables = [
-        'event_kit_requests', 'kit_items', 'kit_variants', 'user_kit_preferences', 'sessions',
+        'event_kit_requests', 'kit_items', 'kit_variants', 'user_kit_preferences',
+        'push_subscriptions', 'user_notification_settings', 'sessions',
         'event_attendees', 'event_waiting_list', 'transactions', 'swim_history',
         'quotes', 'cars', 'trips', 'event_drivers', 'event_expenses', 'trip_exclusions',
         'expense_exclusions', 'user_managed_tags', 'user_permissions', 'user_roles',

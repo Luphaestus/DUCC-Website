@@ -40,7 +40,8 @@ export class EmailManager {
             const year = new Date().getFullYear().toString();
             // Create a title from subject by removing " - DUCC" suffix if present
             const header_title = subject.replace(/\s*-\s*DUCC$/, '');
-            const allPlaceholders = { ...placeholders, year, header_title };
+            const domain = config.domain;
+            const allPlaceholders = { ...placeholders, year, header_title, domain };
             
             const bodyContent = await TemplateManager.getTemplate(templateName, allPlaceholders);
             Logger.info(`[EmailManager] Body content rendered for '${templateName}'.`);

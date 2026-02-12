@@ -19,6 +19,12 @@ if (vapidKeys.publicKey.includes(' ')) {
     Logger.info(`Generated VAPID Keys: Public: ${vapidKeys.publicKey}, Private: ${vapidKeys.privateKey}`);
 }
 
+export enum NotificationType {
+    PAYMENTS = 'payments',
+    EVENTS = 'events',
+    NEWS = 'news'
+}
+
 webpush.setVapidDetails(
     'mailto:canoe.club@durham.ac.uk',
     vapidKeys.publicKey,
@@ -78,51 +84,108 @@ export default class NotificationsAPI {
                 return reply.status(500).send({ error: 'Failed to subscribe' });
             }
         });
+
+        this.app.get('/api/notifications/settings', { preHandler: [checkAuthentication()] }, async (req: any, reply: FastifyReply) => {
+            const userId = req.user.id;
+            try {
+                await this.ensureSettingsExist(userId);
+                const settings = await this.db.get('SELECT * FROM user_notification_settings WHERE user_id = ?', [userId]);
+                return settings;
+            } catch (e) {
+                Logger.error('Error fetching notification settings', e);
+                return reply.status(500).send({ error: 'Failed to fetch settings' });
+            }
+        });
+
+        this.app.post('/api/notifications/settings', { preHandler: [checkAuthentication()] }, async (req: any, reply: FastifyReply) => {
+            const userId = req.user.id;
+            const { email_payments, push_payments, email_events, push_events, email_news, push_news } = req.body;
+
+            try {
+                await this.db.run(
+                    `UPDATE user_notification_settings 
+                     SET email_payments = ?, push_payments = ?, email_events = ?, push_events = ?, email_news = ?, push_news = ? 
+                     WHERE user_id = ?`,
+                    [
+                        email_payments ? 1 : 0, push_payments ? 1 : 0, 
+                        email_events ? 1 : 0, push_events ? 1 : 0, 
+                        email_news ? 1 : 0, push_news ? 1 : 0,
+                        userId
+                    ]
+                );
+                return { success: true };
+            } catch (e) {
+                Logger.error('Error updating notification settings', e);
+                return reply.status(500).send({ error: 'Failed to update settings' });
+            }
+        });
+    }
+
+    private async ensureSettingsExist(userId: number) {
+        const existing = await this.db.get('SELECT user_id FROM user_notification_settings WHERE user_id = ?', [userId]);
+        if (!existing) {
+            await this.db.run('INSERT INTO user_notification_settings (user_id) VALUES (?)', [userId]);
+        }
     }
 
     // Static Utility to send notifications to specific users from other parts of the app
-    static async sendNotificationToUser(db: DatabaseWrapper, userId: number, title: string, body: string, url: string = '/') {
+    static async sendNotificationToUser(db: DatabaseWrapper, userId: number, title: string, body: string, url: string = '/', type: NotificationType = NotificationType.NEWS, templateName: string = 'notification', placeholders: Record<string, string> = {}) {
         try {
-            // 1. Send Email Notification
+            // Fetch user settings
+            const settings = await db.get('SELECT * FROM user_notification_settings WHERE user_id = ?', [userId]) || {
+                email_payments: 1, push_payments: 1,
+                email_events: 1, push_events: 1,
+                email_news: 1, push_news: 1
+            };
+
             const user = await db.get('SELECT email, first_name FROM users WHERE id = ?', [userId]);
-            if (user && user.email) {
+            if (!user) return;
+
+            const shouldEmail = settings[`email_${type}`] === 1;
+            const shouldPush = settings[`push_${type}`] === 1;
+
+            // 1. Send Email Notification
+            if (user.email && shouldEmail) {
                 EmailManager.getInstance().sendTemplatedEmail(
                     user.email,
                     title,
-                    'notification',
+                    templateName,
                     {
                         name: user.first_name,
                         title: title,
                         body: body,
-                        url: url
+                        url: url,
+                        ...placeholders
                     }
                 ).catch(err => Logger.error(`[NotificationsAPI] Failed to send email to user ${userId}`, err));
             }
 
             // 2. Send Push Notification
-            const subs = await db.all('SELECT * FROM push_subscriptions WHERE user_id = ?', [userId]);
-            if (subs.length === 0) return;
+            if (shouldPush) {
+                const subs = await db.all('SELECT * FROM push_subscriptions WHERE user_id = ?', [userId]);
+                if (subs.length === 0) return;
 
-            const payload = JSON.stringify({ title, body, url });
+                const payload = JSON.stringify({ title, body, url });
 
-            const promises = subs.map(async (sub: any) => {
-                const pushConfig = {
-                    endpoint: sub.endpoint,
-                    keys: { p256dh: sub.p256dh, auth: sub.auth }
-                };
-                try {
-                    await (webpush as any).sendNotification(pushConfig, payload);
-                } catch (error: any) {
-                    if (error.statusCode === 410 || error.statusCode === 404) {
-                        // Subscription expired/gone, remove it
-                        await db.run('DELETE FROM push_subscriptions WHERE id = ?', [sub.id]);
-                    } else {
-                        Logger.error(`Push error for user ${userId}`, error);
+                const promises = subs.map(async (sub: any) => {
+                    const pushConfig = {
+                        endpoint: sub.endpoint,
+                        keys: { p256dh: sub.p256dh, auth: sub.auth }
+                    };
+                    try {
+                        await (webpush as any).sendNotification(pushConfig, payload);
+                    } catch (error: any) {
+                        if (error.statusCode === 410 || error.statusCode === 404) {
+                            // Subscription expired/gone, remove it
+                            await db.run('DELETE FROM push_subscriptions WHERE id = ?', [sub.id]);
+                        } else {
+                            Logger.error(`Push error for user ${userId}`, error);
+                        }
                     }
-                }
-            });
+                });
 
-            await Promise.all(promises);
+                await Promise.all(promises);
+            }
         } catch (e) {
             Logger.error('Error sending notification', e);
         }

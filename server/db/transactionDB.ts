@@ -7,6 +7,7 @@
 import { statusObject } from '../misc/status.js';
 import { DatabaseWrapper } from './db.js';
 import Logger from '../misc/Logger.js';
+import NotificationsAPI, { NotificationType } from '../api/NotificationsAPI.js';
 
 export default class TransactionsDB {
     /**
@@ -50,6 +51,25 @@ export default class TransactionsDB {
             'INSERT INTO transactions (user_id, amount, description, created_at, event_id) VALUES (?, ?, ?, ?, ?)',
             [userId, amount, description, new Date().toISOString(), eventId]
         );
+
+        // Send notification
+        const title = 'New Payment Added';
+        const body = `A payment of £${Math.abs(amount).toFixed(2)} has been added to your account for ${description}.`;
+        
+        NotificationsAPI.sendNotificationToUser(
+            db, 
+            userId, 
+            title, 
+            body, 
+            '/profile?tab=balance', 
+            NotificationType.PAYMENTS,
+            'payment_notification',
+            {
+                amount: Math.abs(amount).toFixed(2),
+                description: description
+            }
+        ).catch(err => Logger.error('Failed to send payment notification', err));
+
         return new statusObject(201, 'Transaction added successfully', result.lastID);
     }
 
