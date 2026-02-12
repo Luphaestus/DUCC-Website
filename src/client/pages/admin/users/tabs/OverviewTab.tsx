@@ -27,11 +27,19 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                     <span class="value-title">Current Balance</span>
                     <div class="value-display" classList={{
                         'positive': props.user.balance >= 0,
-                        'negative': props.user.balance < props.minMoney,
-                        'warning': props.user.balance < 0 && props.user.balance >= props.minMoney
+                        'negative': (props.user.balance + (props.user.debt_limit && (!props.user.debt_limit_expires_at || new Date(props.user.debt_limit_expires_at) > new Date()) ? Number(props.user.debt_limit) : 0)) < props.minMoney,
+                        'warning': (props.user.balance < 0 && (props.user.balance + (props.user.debt_limit && (!props.user.debt_limit_expires_at || new Date(props.user.debt_limit_expires_at) > new Date()) ? Number(props.user.debt_limit) : 0)) >= props.minMoney)
                     }}>
                         £{Number(props.user.balance || 0).toFixed(2)}
                     </div>
+                    <Show when={props.user.debt_limit > 0 && (!props.user.debt_limit_expires_at || new Date(props.user.debt_limit_expires_at) > new Date())}>
+                        <div style="font-size: 0.8rem; margin-top: 0.25rem; opacity: 0.8;">
+                            Debt Limit: £{Number(props.user.debt_limit).toFixed(2)}
+                            <Show when={props.user.debt_limit_expires_at}>
+                                <br />Expires: {new Date(props.user.debt_limit_expires_at).toLocaleDateString()}
+                            </Show>
+                        </div>
+                    </Show>
                 </div>
             </article>
 

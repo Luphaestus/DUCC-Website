@@ -83,7 +83,14 @@ export default class EventRules {
         const balanceRes = await TransactionsDB.get_balance(db, user.id);
         const balance = balanceRes.getData();
         const minMoney = new Globals().getFloat('MinMoney');
-        if (balance < minMoney) {
+        
+        // Account for payment plans (debt limits)
+        let effectiveBalance = balance;
+        if (user.debt_limit && (!user.debt_limit_expires_at || new Date(user.debt_limit_expires_at) > new Date())) {
+            effectiveBalance += Number(user.debt_limit);
+        }
+
+        if (effectiveBalance < minMoney) {
             return new statusObject(403, 'Outstanding debts');
         }
 

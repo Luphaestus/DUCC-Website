@@ -92,6 +92,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         email_2fa_enabled TINYINT(1) NOT NULL DEFAULT 0,
         is_verified TINYINT(1) NOT NULL DEFAULT 0,
         verification_token VARCHAR(255),
+        debt_limit DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        debt_limit_expires_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_instructor (is_instructor),

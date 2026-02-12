@@ -97,14 +97,15 @@ export default class UserDB {
         }
 
         const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
-        const havingClause = inDebt === 'true' ? 'HAVING balance < 0' : '';
+        const havingClause = inDebt === 'true' ? 'HAVING balance + (CASE WHEN u.debt_limit_expires_at IS NULL OR u.debt_limit_expires_at > NOW() THEN u.debt_limit ELSE 0 END) < 0' : '';
 
         try {
             const selectFields = isOnlyExec 
                 ? `u.id, u.first_name, u.last_name`
                 : `u.id, u.first_name, u.last_name, u.email, 
                    u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
-                   u.swims, u.booties, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance,
+                   u.swims, u.booties, u.debt_limit, u.debt_limit_expires_at,
+                   (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance,
                    u.profile_picture_id, u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
                    (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path`;
 
@@ -124,7 +125,7 @@ export default class UserDB {
             const users = await db.all(query, [...params, Number(limit), Number(offset)]);
 
             const countQuery = havingClause 
-                ? `SELECT COUNT(*) as count FROM (SELECT u.id, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance FROM users u ${whereClause} HAVING balance < 0) as sub`
+                ? `SELECT COUNT(*) as count FROM (SELECT u.id, (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance, u.debt_limit, u.debt_limit_expires_at FROM users u ${whereClause} HAVING balance + (CASE WHEN u.debt_limit_expires_at IS NULL OR u.debt_limit_expires_at > NOW() THEN u.debt_limit ELSE 0 END) < 0) as sub`
                 : `SELECT COUNT(*) as count FROM users u ${whereClause}`;
 
             const countResult = await db.get(countQuery, params);

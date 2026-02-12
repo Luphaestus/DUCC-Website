@@ -75,7 +75,7 @@ export default class AdminUsers {
                     "has_medical_conditions", "medical_conditions_details", "takes_medication", "medication_details",
                     "free_sessions", "is_member", "filled_legal_info", "is_instructor", "first_aid_expiry",
                     "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data",
-                    "difficulty_level", "swims"
+                    "difficulty_level", "swims", "debt_limit", "debt_limit_expires_at"
                 );
             } else if (canManageTransactions) {
                 elements.push("first_name", "last_name", "free_sessions", "is_member", "is_instructor", "difficulty_level", "swims");

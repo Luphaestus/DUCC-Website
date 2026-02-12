@@ -87,12 +87,50 @@ export default function TransactionsTab(props: { userId: number }) {
         } catch (e) { notify('Error', 'Update failed', 'error'); }
     };
 
+    const handleSetDebtLimit = async (e: Event) => {
+        e.preventDefault();
+        if (!props.userId) return;
+        const form = e.target as HTMLFormElement;
+        const debt_limit = (form.querySelector('[name="debt_limit"]') as HTMLInputElement).value;
+        const debt_limit_expires_at = (form.querySelector('[name="debt_limit_expires_at"]') as HTMLInputElement).value;
+        try {
+            await apiRequest('POST', `/api/admin/user/${props.userId}/elements`, { 
+                debt_limit, 
+                debt_limit_expires_at: debt_limit_expires_at || null 
+            });
+            notify('Success', 'Payment plan updated', 'success');
+            // We might need to refetch the user profile if it was showing debt limit info,
+            // but for now we just show a success message.
+        } catch (e) { notify('Error', 'Failed to update payment plan', 'error'); }
+    };
+
     return (
         <div class="transactions-tab-wrapper">
             <div class="value-header">
                 <span class="value-title">Account Balance</span>
                 <span class={`value-amount ${balanceClass()}`}>£{currentBalance().toFixed(2)}</span>
             </div>
+
+            <Panel title="Payment Plan (Temporary Debt Limit)" icon={EDIT_SVG} class="mb-4">
+                <div class="liquid-container transaction-item" style={{ "--liquid-padding": "1.25rem" }}>
+                    <form class="tx-edit-grid" onSubmit={handleSetDebtLimit}>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <label style="font-size: 0.8rem; opacity: 0.8;">Limit (£)</label>
+                            <input name="debt_limit" type="number" step="0.01" placeholder="e.g. 50.00" class="compact-input" required />
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            <label style="font-size: 0.8rem; opacity: 0.8;">Expiry Date (Optional)</label>
+                            <input name="debt_limit_expires_at" type="datetime-local" class="compact-input" />
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button type="submit" class="small-btn icon-text-btn min-w-100"><span innerHTML={SAVE_SVG} /> Update Plan</button>
+                        </div>
+                    </form>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.6;">
+                        Setting a debt limit allows this user to continue joining events even with a negative balance, up to the specified amount.
+                    </p>
+                </div>
+            </Panel>
 
             <Panel title="Transaction History" icon={WALLET_SVG}>
                 <div class="liquid-container transaction-item new-entry-row" style={{ "--liquid-padding": "1.25rem" }}>
