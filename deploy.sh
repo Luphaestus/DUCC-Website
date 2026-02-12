@@ -124,6 +124,8 @@ if [ "$PULL_DATA" = true ]; then
 fi
 
 echo "[1/3] Pushing changes to GitHub..."
+git add .
+git commit -m "Deployment update: $(date)"
 git push origin main
 
 echo "[2/3] Updating remote server..."

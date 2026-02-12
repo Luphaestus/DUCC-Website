@@ -7,11 +7,12 @@ import { useNotifications } from "@/stores/notifications";
 import {
     BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG,
     CLOSE_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, WALLET_SVG, SCHEDULE_SVG,
-    DESCRIPTION_SVG, TRIP_SVG, SETTINGS_SVG, KAYAKING_SVG
+    DESCRIPTION_SVG, TRIP_SVG, SETTINGS_SVG, KAYAKING_SVG, LIST_SVG
 } from '@/utils/icons';
 import { Tag } from '../widgets/Tag';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
+import Markdown from "@/components/Markdown";
 import { onUpdate } from "@/utils/updates";
 import { incrementModals, decrementModals } from "@/utils/modal-state";
 
@@ -41,6 +42,7 @@ export default function EventDetailPage() {
     
     const [isKitModalOpen, setIsKitModalOpen] = createSignal(false);
     const [activeKitItem, setActiveKitItem] = createSignal<KitItem | null>(null);
+    const [showAttendeeList, setShowAttendeeList] = createSignal(false);
 
     // ... existing onMount/cleanup ...
 
@@ -248,7 +250,9 @@ export default function EventDetailPage() {
 
                                                 <h3 class="section-title"><span innerHTML={DESCRIPTION_SVG} /> Description</h3>
 
-                                                <p class="description-text">{event().description || 'No description provided.'}</p>
+                                                <div class="description-text">
+                                                    <Markdown content={event().description || 'No description provided.'} />
+                                                </div>
 
                                             </div>
 
@@ -256,25 +260,39 @@ export default function EventDetailPage() {
 
                                             <div class="attendees-section">
 
-                                                <h3 class="section-title"><span innerHTML={GROUP_SVG} /> Attendees</h3>
-
-                                                <div class="attendee-bubbles">
-
-                                                    <For each={attendees()}>
-
-                                                        {(a) => (
-
-                                                            <div class="attendee-bubble" title={`${a.first_name} ${a.last_name}`}>
-
-                                                                <Avatar user={a} classes="mini" />
-
-                                                            </div>
-
-                                                        )}
-
-                                                    </For>
-
+                                                <div class="flex-row-gap-1 align-center mb-4">
+                                                    <h3 class="section-title no-margin"><span innerHTML={GROUP_SVG} /> Attendees</h3>
+                                                    <button class="small-btn icon-only secondary no-margin" 
+                                                            onClick={() => setShowAttendeeList(!showAttendeeList())} 
+                                                            title={showAttendeeList() ? "Show Bubbles" : "Show List"}>
+                                                        <span innerHTML={showAttendeeList() ? GROUP_SVG : LIST_SVG} />
+                                                    </button>
                                                 </div>
+
+                                                <Show when={!showAttendeeList()} fallback={
+                                                    <div class="attendee-list-text">
+                                                        <For each={attendees()}>
+                                                            {(a) => (
+                                                                <div class="attendee-list-item flex-row-gap-half align-center py-1">
+                                                                    <Avatar user={a} classes="mini" />
+                                                                    <span class="attendee-name" title={`${a.first_name} ${a.last_name}`}>
+                                                                        {a.first_name} {a.last_name}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </For>
+                                                    </div>
+                                                }>
+                                                    <div class="attendee-bubbles">
+                                                        <For each={attendees()}>
+                                                            {(a) => (
+                                                                <div class="attendee-bubble" title={`${a.first_name} ${a.last_name}`}>
+                                                                    <Avatar user={a} classes="mini" />
+                                                                </div>
+                                                            )}
+                                                        </For>
+                                                    </div>
+                                                </Show>
 
                                             </div>
 

@@ -6,6 +6,7 @@ import { useNavigate } from "@solidjs/router";
 import UploadWidget from "@/components/UploadWidget";
 import Panel from "@/components/Panel";
 import { INFO_SVG, IMAGE_SVG, LOCAL_ACTIVITY_SVG, CALENDAR_TODAY_SVG, SETTINGS_SVG } from '@/utils/icons';
+import MarkdownEditor from "@/components/MarkdownEditor";
 
 interface Tag {
     id: number;
@@ -92,9 +93,14 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                                 <input type="number" min="1" max="5" value={formState().difficulty_level} onInput={e => updateField('difficulty_level', parseInt(e.currentTarget.value))} required />
                             </label>
                         </div>
-                        <label>Description
-                            <textarea rows="6" value={formState().description} onInput={e => updateField('description', e.currentTarget.value)} placeholder="What's the plan?"></textarea>
-                        </label>
+                        <div class="form-group mt-4">
+                            <label class="mb-2 block">Description</label>
+                            <MarkdownEditor 
+                                value={formState().description} 
+                                onInput={v => updateField('description', v)} 
+                                placeholder="What's the plan?"
+                            />
+                        </div>
                     </Panel>
 
                     <Panel title="Schedule & Status" icon={CALENDAR_TODAY_SVG}>
