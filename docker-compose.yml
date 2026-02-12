@@ -50,6 +50,7 @@ services:
       - caddy_config:/config
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
+      - SERVER_IP=${SERVER_IP}
     depends_on:
       - app
 

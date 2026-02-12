@@ -19,10 +19,11 @@ RUN npm ci
 # Copy project files
 COPY . .
 
-# Build assets (SASS)
+# Build assets (SASS and Client)
 ARG BUILD_ID=unknown
 RUN echo "Building with ID: $BUILD_ID"
 RUN npm run sass:build
+RUN npm run build:client
 
 # Create a directory for the database to ensure persistence
 RUN mkdir -p /app/data
