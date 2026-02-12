@@ -971,6 +971,137 @@ export default function ProfilePage() {
                                                 <button class="small-btn secondary" onClick={() => setIsPasskeyModalOpen(true)}>Manage</button>
                                             </div>
 
+                                            <div class="liquid-container embedded-panel danger-zone" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
+                                                <div class="setting-info">
+                                                    <strong style="color: var(--colour-bad)">Delete Account</strong>
+                                                    <p>Permanently remove your account</p>
+                                                </div>
+                                                <button class="small-btn outline delete" onClick={async () => {
+                                                    const password = await showPasswordModal("Delete Account", "This cannot be undone.");
+                                                    if (password) {
+                                                        try {
+                                                            await apiRequest('POST', '/api/user/deleteAccount', { password });
+                                                            LoginEvent.notify({ authenticated: false });
+                                                            navigate('/home');
+                                                        } catch (err) {
+                                                            notify('Error', 'Delete failed.', 'error');
+                                                        }
+                                                    }
+                                                }}>Delete</button>
+                                            </div>
+
+                                            <Show when={!isPWAInstalled()}>
+                                                <div class="liquid-container embedded-panel glass-panel" style={{ "--liquid-padding": "1.25rem", "--liquid-border-radius": "16px" }}>
+                                                    <div class="setting-info">
+                                                        <strong>Install App</strong>
+                                                        <p>
+                                                            <Show when={isManualInstall()} fallback={
+                                                                deferredPrompt() 
+                                                                    ? "Get the official DUCC app for your device." 
+                                                                    : "Look for the install icon in your address bar, or check your browser menu. If not visible, ensure you have used the site for a few minutes."
+                                                            }>
+                                                                Tap the Share button or menu and select "Add to Home Screen" (or "Add to Dock")
+                                                            </Show>
+                                                        </p>
+                                                    </div>
+                                                    <Show when={!isManualInstall()}>
+                                                        <button 
+                                                            class="small-btn primary" 
+                                                            onClick={installPWA}
+                                                            disabled={!deferredPrompt()}
+                                                            title={!deferredPrompt() ? "Browser is still checking if the app can be installed. This usually takes a few moments of browsing." : "Install DUCC"}
+                                                        >
+                                                            <span innerHTML={DOWNLOAD_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" /> 
+                                                            {deferredPrompt() ? 'Install' : 'Preparing...'}
+                                                        </button>
+                                                    </Show>
+                                                </div>
+                                            </Show>
+                                        </div>
+                                    </div>
+                                </Panel>
+                            </section>
+                        </Show>
+                    </Show>
+                </main>
+            </div>
+
+            <Modal
+                isOpen={isCarModalOpen()}
+                title={editingCar() ? 'Edit Vehicle' : 'Add New Vehicle'}
+                onClose={() => setIsCarModalOpen(false)}
+            >
+                <form onSubmit={handleSaveCar} class="modern-form">
+                    <label>Car Name
+                        <input name="name" type="text" value={editingCar()?.name || ''} required />
+                    </label>
+                    <div class="grid">
+                        <label>Seats
+                            <input name="seats" type="number" value={editingCar()?.seats || 5} min="1" required />
+                        </label>
+                        <label>Boats
+                            <input name="boats" type="number" value={editingCar()?.boats || 0} min="0" required />
+                        </label>
+                    </div>
+                    <Show when={profile()?.permissions?.includes('car.manage_global')}>
+                        <label>
+                            <input name="isGlobal" type="checkbox" checked={editingCar()?.is_global} /> Global
+                        </label>
+                    </Show>
+                    <button type="submit" class="primary full-width">Save Vehicle</button>
+                </form>
+            </Modal>
+
+            <Modal
+                isOpen={isTOTPModalOpen()}
+                title="Setup TOTP"
+                onClose={() => setIsTOTPModalOpen(false)}
+            >
+                <div class="totp-setup-flow">
+                    <p>Scan this QR code with your authenticator app.</p>
+                    <div class="qr-container">
+                        <img src={totpSetup()?.qrCodeData} alt="TOTP QR Code" />
+                    </div>
+                    <div class="manual-secret">
+                        <span>Or enter manually:</span>
+                        <div class="secret-row">
+                            <code>{totpSetup()?.secret}</code>
+                            <button onClick={() => navigator.clipboard.writeText(totpSetup()?.secret || '')} innerHTML={CONTENT_COPY_SVG}></button>
+                        </div>
+                    </div>
+                    <form onSubmit={handleVerifyTOTP} class="modern-form">
+                        <label>Verification Code <input type="text" id="totp-code" name="totp-code" placeholder="123456" required /></label>
+                        <button type="submit" class="primary full-width">Verify & Enable</button>
+                    </form>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isPasskeyModalOpen()}
+                title="Manage Passkeys"
+                onClose={() => setIsPasskeyModalOpen(false)}
+            >
+                <div class="passkey-management">
+                    <div class="item-list">
+                        <For each={passkeys()} fallback={<p>No passkeys registered.</p>}>
+                            {(k) => (
+                                <div class="list-item">
+                                    <div class="item-icon"><span innerHTML={KEY_SVG} /></div>
+                                    <div class="item-details">
+                                        <span class="item-title">Passkey</span>
+                                        <span class="item-subtitle">Added {new Date(k.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="item-value-group">
+                                        <button class="small-btn icon-only delete" onClick={() => handleDeletePasskey(k.id)} innerHTML={CLOSE_SVG}></button>
+                                    </div>
+                                </div>
+                            )}
+                        </For>
+                    </div>
+                    <button class="primary full-width mt-4" onClick={handleAddPasskey}><span innerHTML={ADD_SVG} /> Add Passkey</button>
+                </div>
+            </Modal>
+
             <Modal isOpen={isKitModalOpen()} onClose={() => setIsKitModalOpen(false)} title={`Default ${activeKitItem()?.name}`}>
                 <div class="variant-selection">
                     <p>Select your default size/variant for {activeKitItem()?.name}:</p>
