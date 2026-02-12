@@ -1,4 +1,5 @@
 import { DatabaseWrapper } from '../db/db.js';
+import Logger from './Logger.js';
 
 /**
  * SessionStore.ts
@@ -39,6 +40,8 @@ export default class MySQLStore {
             
         const data = JSON.stringify(session);
         
+        Logger.info(`[SessionStore] Setting session ${sessionId}, expires ${expires.toISOString()}`);
+
         this.db.run(
             'INSERT INTO sessions (id, data, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), expires_at = VALUES(expires_at)',
             [sessionId, data, expires]

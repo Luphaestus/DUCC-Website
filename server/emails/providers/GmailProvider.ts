@@ -7,20 +7,28 @@ export class GmailProvider implements EmailProvider {
     private user: string;
 
     constructor(user: string, pass: string) {
+        Logger.info(`[GmailProvider] Initializing SMTP provider for ${user}`);
         this.user = user;
         this.transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // use SSL
+            port: 587,
+            secure: false, // Use STARTTLS
             auth: {
                 user,
                 pass
-            }
+            },
+            family: 4,
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000
         });
     }
 
     async sendEmail(options: EmailOptions): Promise<void> {
         try {
+            Logger.info(`[GmailProvider] Verifying connection to smtp.gmail.com...`);
+            await this.transporter.verify();
+            Logger.info(`[GmailProvider] Connection verified. Sending email to ${options.to}...`);
             await this.transporter.sendMail({
                 from: `"DUCC" <${this.user}>`,
                 to: options.to,
@@ -28,6 +36,7 @@ export class GmailProvider implements EmailProvider {
                 html: options.html,
                 text: options.text
             });
+            Logger.info(`[GmailProvider] Email sent successfully to ${options.to}`);
         } catch (error) {
             Logger.error('[GmailProvider] Error sending email:', error);
             throw error;

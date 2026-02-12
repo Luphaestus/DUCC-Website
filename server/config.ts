@@ -44,6 +44,9 @@ interface Config {
         user: string | null;
         pass: string | null;
         test_destination: string | null;
+        clientId: string | null;
+        clientSecret: string | null;
+        refreshToken: string | null;
     };
 }
 
@@ -77,7 +80,10 @@ const config: Config = {
     email: {
         user: process.env.EMAIL_USER || null,
         pass: process.env.EMAIL_PASS || null,
-        test_destination: process.env.EMAIL_TEST_DESTINATION || null
+        test_destination: process.env.EMAIL_TEST_DESTINATION || null,
+        clientId: process.env.GMAIL_CLIENT_ID || null,
+        clientSecret: process.env.GMAIL_CLIENT_SECRET || null,
+        refreshToken: process.env.GMAIL_REFRESH_TOKEN || null
     }
 };
 

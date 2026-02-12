@@ -28,6 +28,7 @@ import config from './config.js';
 
 import { EmailManager } from './emails/EmailManager.js';
 import { GmailProvider } from './emails/providers/GmailProvider.js';
+import { GmailAPIProvider } from './emails/providers/GmailAPIProvider.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +51,7 @@ if (isProd && !config.session.secret) {
 const fastify = Fastify({
   logger: false, // We use our own Logger
   pluginTimeout: 60000,
+  trustProxy: true,
 });
 
 /** Decorate request with DB */
@@ -84,7 +86,7 @@ const startServer = async () => {
       saveUninitialized: false,
       store: sessionStore,
       cookie: {
-        secure: isProd, // Use secure cookies in production (HTTPS)
+        secure: isProd ? 'auto' : false, // Use 'auto' to allow HTTP and HTTPS
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24
       }
@@ -200,23 +202,35 @@ const startServer = async () => {
     /** CSRF Protection (Modern Double Submit Cookie Implementation) */
     if (isProd) {
       fastify.addHook('preHandler', async (request, reply) => {
+        // Debug session persistence
+        if (request.url.startsWith('/api')) {
+          const cookieHeader = request.headers.cookie || 'none';
+          const hasSessionCookie = cookieHeader.includes(config.session.cookieName);
+          Logger.info(`[Session] URL: ${request.url}, SID: ${request.session.sessionId}, HasSessionCookie: ${hasSessionCookie}`);
+        }
+
         let token = (request.session as any).get('csrfToken');
         if (!token) {
           token = crypto.randomBytes(32).toString('hex');
           (request.session as any).set('csrfToken', token);
         }
 
-        reply.setCookie('XSRF-TOKEN', token, { 
-          httpOnly: false, 
-          sameSite: 'lax',
-          secure: isProd,
-          path: '/'
-        });
+        // Only set the cookie if it's missing or different to avoid constant rotation
+        const existingToken = request.cookies['XSRF-TOKEN'];
+        if (existingToken !== token) {
+          reply.setCookie('XSRF-TOKEN', token, { 
+            httpOnly: false, 
+            sameSite: 'lax',
+            secure: 'auto',
+            path: '/'
+          });
+        }
 
         const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
         if (!safeMethods.includes(request.method)) {
           const headerToken = request.headers['x-csrf-token'];
           if (!token || !headerToken || headerToken !== token) {
+            Logger.warn(`[CSRF] Failure on ${request.method} ${request.url}. SID: ${request.session.sessionId}, Header: ${headerToken ? 'present' : 'missing'}, Session Token: ${token ? 'present' : 'missing'}, Match: ${headerToken === token}`);
             return reply.status(403).send({ message: 'Invalid or missing CSRF token' });
           }
         }
@@ -227,11 +241,19 @@ const startServer = async () => {
 
     // Initialize Email Manager
     const emailManager = EmailManager.getInstance();
-    if (config.email.user && config.email.pass) {
+    if (config.email.clientId && config.email.clientSecret && config.email.refreshToken && config.email.user) {
+      emailManager.setProvider(new GmailAPIProvider(
+        config.email.user,
+        config.email.clientId,
+        config.email.clientSecret,
+        config.email.refreshToken
+      ));
+      Logger.info('Email system initialized with Gmail API provider (HTTPS/443).');
+    } else if (config.email.user && config.email.pass) {
       emailManager.setProvider(new GmailProvider(config.email.user, config.email.pass));
-      Logger.info('Email system initialized with Gmail provider.');
+      Logger.info('Email system initialized with Gmail SMTP provider.');
     } else {
-      Logger.warn('Email system initialized without a provider (EMAIL_USER/EMAIL_PASS missing).');
+      Logger.warn('Email system initialized without a provider (Email credentials missing).');
     }
 
     fastify.get('/api/health', async (request, reply) => {

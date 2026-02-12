@@ -36,13 +36,16 @@ export class EmailManager {
         }
 
         try {
+            Logger.info(`[EmailManager] Rendering template '${templateName}' for ${recipient}...`);
             const year = new Date().getFullYear().toString();
             // Create a title from subject by removing " - DUCC" suffix if present
             const header_title = subject.replace(/\s*-\s*DUCC$/, '');
             const allPlaceholders = { ...placeholders, year, header_title };
             
             const bodyContent = await TemplateManager.getTemplate(templateName, allPlaceholders);
+            Logger.info(`[EmailManager] Body content rendered for '${templateName}'.`);
             const finalHtml = await TemplateManager.getBaseTemplate(bodyContent, allPlaceholders);
+            Logger.info(`[EmailManager] Base template applied for '${templateName}'.`);
 
             await this.provider.sendEmail({
                 to: recipient,
