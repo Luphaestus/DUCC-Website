@@ -91,7 +91,7 @@ self.addEventListener('push', (event) => {
     
     const options = {
       body: data.body,
-      icon: '/images/icons/kayaking.svg',
+      icon: data.icon || '/images/icons/kayaking.svg',
       badge: '/images/icons/outline/kayaking.svg',
       vibrate: [100, 50, 100],
       tag: 'ducc-notification',

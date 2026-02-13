@@ -5,7 +5,7 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    CLOSE_SVG, KEY_SVG, ADD_SVG, CONTENT_COPY_SVG, DOWNLOAD_SVG, BOLT_SVG
+    CLOSE_SVG, KEY_SVG, ADD_SVG, CONTENT_COPY_SVG, DOWNLOAD_SVG, BOLT_SVG, CALENDAR_MONTH_SVG
 } from '@/utils/icons';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
 import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
@@ -169,6 +169,27 @@ export default function ProfileSettings() {
         }
     };
 
+    // Calendar Integration
+    const [calendarToken, setCalendarToken] = createSignal<string | null>(null);
+    const [isGeneratingToken, setIsGeneratingToken] = createSignal(false);
+
+    const fetchCalendarToken = async () => {
+        setIsGeneratingToken(true);
+        try {
+            const data = await apiRequest('POST', '/api/calendar/token');
+            setCalendarToken(data.token);
+        } catch (err) {
+            notify('Error', 'Failed to get calendar token.', 'error');
+        } finally {
+            setIsGeneratingToken(false);
+        }
+    };
+
+    const copyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        notify('Success', `${label} copied to clipboard!`, 'success', 2000);
+    };
+
     return (
         <Show when={profile()} fallback={<p aria-busy="true">Loading...</p>}>
             <section class="dashboard-section active">
@@ -320,6 +341,41 @@ export default function ProfileSettings() {
                                         </div>
                                     </Show>
                                 </Panel>
+
+                <Panel title="Calendar Integration" class="glass-panel">
+                    <p>Import club events directly into your favorite calendar app (Google, Apple, Outlook, etc.).</p>
+                    <div class="settings-grid">
+                        <div class="two-fa-grid dual-grid">
+                            <div class="liquid-container embedded-panel glass-panel">
+                                <div class="setting-info">
+                                    <strong>All Events Feed</strong>
+                                    <p>Public events everyone can see.</p>
+                                </div>
+                                <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/all.ics`, 'Public Feed URL')}>
+                                    <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                    Copy Link
+                                </button>
+                            </div>
+
+                            <div class="liquid-container embedded-panel glass-panel">
+                                <div class="setting-info">
+                                    <strong>My Events Feed</strong>
+                                    <p>Personalized feed of events you've joined.</p>
+                                </div>
+                                <Show when={calendarToken()} fallback={
+                                    <button class="small-btn primary" onClick={fetchCalendarToken} disabled={isGeneratingToken()}>
+                                        {isGeneratingToken() ? 'Generating...' : 'Generate Private Link'}
+                                    </button>
+                                }>
+                                    <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/personal/${calendarToken()}.ics`, 'Personal Feed URL')}>
+                                        <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                        Copy Link
+                                    </button>
+                                </Show>
+                            </div>
+                        </div>
+                    </div>
+                </Panel>
 
                 <Panel title="App Installation" class="glass-panel">
                     <div class="settings-grid">

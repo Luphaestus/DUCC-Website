@@ -193,7 +193,8 @@ export default class NotificationsAPI {
             const subs = await db.all('SELECT * FROM push_subscriptions WHERE user_id = ?', [userId]);
             if (subs.length === 0) return;
 
-            const payload = JSON.stringify({ title, body, url });
+            const logo = new EmailManager()._globals?.get('ClubLogo')?.data || '/images/icons/kayaking.svg';
+            const payload = JSON.stringify({ title, body, url, icon: logo });
 
             const promises = subs.map(async (sub: any) => {
                 const pushConfig = {

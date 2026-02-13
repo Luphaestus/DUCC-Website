@@ -157,6 +157,9 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
     const { migrate: addReminderSentToAttendees } = await import('./add_reminder_sent_to_attendees.js');
     await addReminderSentToAttendees(db);
 
+    const { migrate: addIcsTokenToUsers } = await import('./add_ics_token_to_users.js');
+    await addIcsTokenToUsers(db);
+
     // Ensure sessions table is correct (it might exist but with wrong columns from previous versions)
     try {
         const columns: any[] = await db.all("SHOW COLUMNS FROM sessions");

@@ -22,7 +22,7 @@ export default function PageTitle(props: PageTitleProps) {
             }}
         >
             <Show when={hasMultipleWords()} fallback={props.text}>
-                <span style={{ color: "var(--pico-primary)" }}>{words()[0]}</span> {words().slice(1).join(" ")}
+                {words()[0]} <span style={{ color: "var(--pico-primary)", "-webkit-text-fill-color": "var(--pico-primary)" }}>{words().slice(1).join(" ")}</span>
             </Show>
             {props.children}
         </h1>

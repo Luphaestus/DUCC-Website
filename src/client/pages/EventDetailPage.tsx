@@ -147,7 +147,7 @@ export default function EventDetailPage() {
         if (!user.filled_legal_info) {
             return {
                 text: 'Membership Form',
-                action: () => navigate('/profile'),
+                action: () => navigate('/legal'),
                 class: 'primary',
                 message: 'You must complete the membership form before joining an event.'
             };

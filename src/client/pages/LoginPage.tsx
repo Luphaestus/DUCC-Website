@@ -67,7 +67,7 @@ export default function LoginPage() {
             const options = await apiRequest('POST', '/api/auth/passkey/login-options', { email: emailVal });
             
             // startAuthentication handles the browser prompt
-            const asseResp = await SimpleWebAuthnBrowser.startAuthentication(options, useConditionalUI);
+            const asseResp = await SimpleWebAuthnBrowser.startAuthentication(options);
             const res = await apiRequest('POST', '/api/auth/passkey/login-verify', asseResp);
             handleLoginSuccess(res);
         } catch (err: any) {

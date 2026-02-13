@@ -260,6 +260,42 @@ const startServer = async () => {
       return { ok: true };
     });
 
+    fastify.get('/manifest.json', async (request, reply) => {
+      const globals = new Globals();
+      const clubLogo = globals.get('ClubLogo')?.data || '/images/misc/ducc.png';
+      
+      const manifest = {
+        "name": "Durham University Canoe Club",
+        "short_name": "DUCC",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#11001c",
+        "theme_color": "#6c5ce7",
+        "description": "Paddle, Compete, Explore. The official app for DUCC.",
+        "icons": [
+          {
+            "src": clubLogo,
+            "sizes": "any",
+            "type": clubLogo.endsWith('.svg') ? "image/svg+xml" : "image/png",
+            "purpose": "any"
+          },
+          {
+            "src": clubLogo,
+            "sizes": "any",
+            "type": clubLogo.endsWith('.svg') ? "image/svg+xml" : "image/png",
+            "purpose": "maskable"
+          },
+          {
+            "src": "/favicon.ico",
+            "sizes": "32x32 16x16",
+            "type": "image/x-icon"
+          }
+        ]
+      };
+      
+      return reply.type('application/json').send(manifest);
+    });
+
     fastify.get('/api/updates', async (request: any, reply: FastifyReply) => {
       reply.raw.setHeader('Content-Type', 'text/event-stream');
       reply.raw.setHeader('Cache-Control', 'no-cache');
@@ -305,6 +341,7 @@ const startServer = async () => {
       './api/admin/AdminUsersAPI.js',
       './api/admin/EmailsAPI.js',
       './api/events/AttendanceAPI.js',
+      './api/events/CalendarAPI.js',
       './api/events/EventsAPI.js',
       './api/events/WaitlistAPI.js',
       './api/users/SwimsAPI.js',

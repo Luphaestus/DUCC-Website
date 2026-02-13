@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "@solidjs/router";
 import { useAuth } from "@/stores/auth";
 import AdminNavBar from "@/components/admin/AdminNavBar";
 import { apiRequest } from "@/utils/api";
+import PageTitle from "@/components/PageTitle";
 
 export default function AdminLayout(props: ParentProps) {
     const { user, isAuthenticated, isExec } = useAuth();
@@ -51,9 +52,7 @@ export default function AdminLayout(props: ParentProps) {
     return (
         <div id="admin-view" class="view glass-layout">
             <header class="admin-header-modern" style={{ "justify-content": "center", "text-align": "center" }}>
-                <h1 id="admin-dashboard-title">
-                    Admin <span class="admin-title-section">{pageTitle()}</span>
-                </h1>
+                <PageTitle text={`Admin ${pageTitle()}`} centered />
             </header>
 
             <Show when={hasNav() && !isDashboard() && !isDetailsPage()}>
