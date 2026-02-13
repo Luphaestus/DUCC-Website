@@ -373,6 +373,23 @@ export default function ProfileSettings() {
                                     </button>
                                 </Show>
                             </div>
+
+                            <div class="liquid-container embedded-panel glass-panel">
+                                <div class="setting-info">
+                                    <strong>Accessible Events Feed</strong>
+                                    <p>Private feed of all events you can see.</p>
+                                </div>
+                                <Show when={calendarToken()} fallback={
+                                    <button class="small-btn primary" onClick={fetchCalendarToken} disabled={isGeneratingToken()}>
+                                        {isGeneratingToken() ? 'Generating...' : 'Generate Private Link'}
+                                    </button>
+                                }>
+                                    <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/accessible/${calendarToken()}.ics`, 'Accessible Feed URL')}>
+                                        <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                        Copy Link
+                                    </button>
+                                </Show>
+                            </div>
                         </div>
                     </div>
                 </Panel>

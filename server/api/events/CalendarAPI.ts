@@ -73,6 +73,37 @@ export default class CalendarAPI {
         });
 
         /**
+         * GET /api/calendar/accessible/:token.ics
+         * Personal feed of all events the user is allowed to see.
+         */
+        this.app.get('/api/calendar/accessible/:token.ics', async (request: any, reply: FastifyReply) => {
+            const { token } = request.params;
+            if (!token || token.length < 32) {
+                return reply.status(400).send({ message: 'Invalid calendar token' });
+            }
+
+            const user = await this.db.get('SELECT id FROM users WHERE ics_token = ?', [token]);
+            if (!user) {
+                return reply.status(401).send({ message: 'Unauthorized' });
+            }
+
+            const eventsRes = await EventsDB.get_events_in_range(
+                this.db, 
+                new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+                new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year ahead
+                user.id
+            );
+
+            if (eventsRes.isError()) return eventsRes.getResponse(reply);
+            
+            const icsContent = this.generateICS('DUCC Accessible Events', eventsRes.getData());
+            return reply
+                .type('text/calendar')
+                .header('Content-Disposition', 'attachment; filename="ducc_accessible_events.ics"')
+                .send(icsContent);
+        });
+
+        /**
          * POST /api/calendar/token
          * Generate or get the user's personal calendar token.
          */
