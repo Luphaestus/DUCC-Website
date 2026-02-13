@@ -1,6 +1,6 @@
 // Service Worker for DUCC PWA
 
-const CACHE_NAME = 'ducc-v4';
+const CACHE_NAME = 'ducc-v5';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -41,12 +41,21 @@ self.addEventListener('fetch', (event) => {
   // Skip API requests - let them handle their own errors/caching
   if (url.pathname.startsWith('/api/')) return;
 
-  // Network-first for HTML/Navigation
+  // Network-first for HTML/Navigation to ensure we get the latest hashed chunks
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/');
-      })
+      fetch(event.request)
+        .then((response) => {
+          // Cache the latest index.html for offline use
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request).then(cached => cached || caches.match('/'));
+        })
     );
     return;
   }
@@ -59,23 +68,32 @@ self.addEventListener('fetch', (event) => {
       }
 
       // If not in cache, fetch from network
-      return fetch(event.request).then((response) => {
-        // Only cache valid responses from our own origin
-        if (!response || response.status !== 200 || response.type !== 'basic') {
+      return fetch(event.request)
+        .then((response) => {
+          // Only cache valid responses from our own origin
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Cache assets (Vite chunks are hashed, so they are safe to cache forever)
+          const isAsset = url.pathname.includes('.') || url.pathname.includes('/assets/');
+          if (isAsset) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+
           return response;
-        }
-
-        // Cache assets
-        const isAsset = url.pathname.includes('.') || url.pathname.startsWith('/assets/');
-        if (isAsset) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
+        })
+        .catch((err) => {
+          // Fail gracefully if network is down and not in cache
+          console.warn('[SW] Fetch failed:', err);
+          return new Response('Network error occurred', {
+            status: 408,
+            headers: { 'Content-Type': 'text/plain' }
           });
-        }
-
-        return response;
-      });
+        });
     })
   );
 });
