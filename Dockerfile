@@ -22,8 +22,13 @@ COPY . .
 # Build assets (SASS and Client)
 ARG BUILD_ID=unknown
 RUN echo "Building version: $BUILD_ID"
-RUN npm run sass:build
-RUN npm run build:client
+# Only build if dist doesn't exist (optimization for local pre-builds)
+RUN if [ ! -d "dist" ] || [ ! -f "public/assets/main.css" ]; then \
+        npm run sass:build && \
+        npm run build:client; \
+    else \
+        echo "Using pre-compiled assets found in build context."; \
+    fi
 
 # Create a directory for the database to ensure persistence
 RUN mkdir -p /app/data

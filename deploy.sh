@@ -8,6 +8,7 @@ SHOW_LOGS=false
 PUSH_DATA=false
 PULL_DATA=false
 OPEN_SSH=false
+FAST_DEPLOY=false
 
 show_help() {
     echo "Usage: ./deploy.sh [OPTIONS]"
@@ -15,6 +16,7 @@ show_help() {
     echo "Options:"
     echo "  --dev, -d        Deploy in development mode (NODE_ENV=dev). Seeds the database with test data."
     echo "  --clear, -c      Remove the existing database (data/database.db) before deploying."
+    echo "  --fast, -f       Pre-compile assets locally and upload them to speed up remote build."
     echo "  --logs, -l       Skip deployment and show real-time logs from the remote server."
     echo "  --ssh, -s        Skip deployment and open an interactive SSH session to the remote server."
     echo "  --push-data      Copy local 'data/' folder to the remote server before deploying."
@@ -36,6 +38,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --clear)
             CLEAR_DB=true
+            shift
+            ;;
+        --fast)
+            FAST_DEPLOY=true
             shift
             ;;
         --logs)
@@ -63,6 +69,7 @@ while [[ $# -gt 0 ]]; do
                 case "$char" in
                     d) MODE="dev" ;;
                     c) CLEAR_DB=true ;;
+                    f) FAST_DEPLOY=true ;;
                     l) SHOW_LOGS=true ;;
                     s) OPEN_SSH=true ;;
                     h) show_help ;;
@@ -117,6 +124,12 @@ fi
 
 echo "--- Starting Deployment to $SERVER_IP ($MODE mode) ---"
 
+if [ "$FAST_DEPLOY" = true ]; then
+    echo "[0/3] Pre-compiling assets locally..."
+    npm run sass:build
+    npm run build:client
+fi
+
 if [ "$PULL_DATA" = true ]; then
     echo "[DATA] Pulling remote data to local 'data/' folder..."
     mkdir -p data
@@ -138,6 +151,12 @@ if [ "$CLEAR_DB" = true ]; then
 fi
 
 sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_PRE_CMD"
+
+if [ "$FAST_DEPLOY" = true ]; then
+    echo "       [INFO] Uploading pre-compiled assets..."
+    sshpass -e rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" dist/ root@"$SERVER_IP":DUCC-Website/dist/
+    sshpass -e rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" public/assets/ root@"$SERVER_IP":DUCC-Website/public/assets/
+fi
 
 export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
 DOMAIN_VAL="$DOMAIN_NAME"

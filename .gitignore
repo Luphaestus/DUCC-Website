@@ -153,4 +153,6 @@ database.db
 data/
 .data/
 
+deploy_bundle.tar.gz
+
 

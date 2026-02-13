@@ -52,6 +52,12 @@
     100% { border-color: rgba(var(--pico-primary-rgb), 0.2); box-shadow: 0 0 5px rgba(var(--pico-primary-rgb), 0.1); }
 }
 
+@keyframes gold-glow {
+    0% { border-color: rgba(255, 215, 0, 0.3); box-shadow: 0 0 5px rgba(255, 215, 0, 0.2); }
+    50% { border-color: rgba(255, 215, 0, 0.8); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+    100% { border-color: rgba(255, 215, 0, 0.3); box-shadow: 0 0 5px rgba(255, 215, 0, 0.2); }
+}
+
 @keyframes content-shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
@@ -90,21 +96,38 @@
         }
     }
 
-    &.rank-1 .sparkle {
-        position: absolute;
-        width: 4px;
-        height: 4px;
-        background: white;
-        border-radius: 50%;
-        box-shadow: 0 0 4px white;
-        pointer-events: none;
-        animation: sparkle-twinkle 3s infinite ease-in-out;
-        z-index: 1;
-        
-        &:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
-        &:nth-child(2) { top: 20%; right: 15%; animation-delay: 1s; }
-        &:nth-child(3) { bottom: 15%; left: 20%; animation-delay: 2s; }
-        &:nth-child(4) { bottom: 10%; right: 10%; animation-delay: 0.5s; }
+    &.rank-1 {
+        border: 1px solid #ffd700 !important;
+        animation: gold-glow 4s infinite ease-in-out !important;
+
+        .exec-card-header .avatar-container .wave {
+            border-color: rgba(255, 215, 0, 0.4) !important;
+        }
+
+        .exec-card-id .role {
+            color: #ffd700 !important;
+        }
+
+        .exec-card-footer .email-link:hover {
+            color: #ffd700 !important;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 4px white;
+            pointer-events: none;
+            animation: sparkle-twinkle 3s infinite ease-in-out;
+            z-index: 1;
+            
+            &:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+            &:nth-child(2) { top: 20%; right: 15%; animation-delay: 1s; }
+            &:nth-child(3) { bottom: 15%; left: 20%; animation-delay: 2s; }
+            &:nth-child(4) { bottom: 10%; right: 10%; animation-delay: 0.5s; }
+        }
     }
 
     .leader-badge {
