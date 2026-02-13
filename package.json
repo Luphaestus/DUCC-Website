@@ -29,6 +29,7 @@
     "test:watch": "cross-env NODE_ENV=test DATABASE_PATH=data/database.test.db vitest",
     "apidoc": "npx openapi-generate-html -i public/openapi.json --theme=dark --ui stoplight --theme dark -o public/openapi.html",
     "email": "tsx server/emails/test-email.ts",
+    "notify": "tsx server/misc/test-notifications.ts",
     "prepare": "husky install"
   },
   "lint-staged": {

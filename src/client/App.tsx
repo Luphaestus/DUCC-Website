@@ -4,7 +4,7 @@ import Navbar from "./components/Navbar";
 import Background from "./components/Background";
 import NotificationContainer from "./components/NotificationContainer";
 import Footer from "./components/Footer";
-import { initUpdates } from "./utils/updates";
+import { initUpdates, onUpdate } from "./utils/updates";
 import { ErrorView, NoInternetPage } from "./pages/ErrorPage";
 import { BRIGHTNESS_ALERT_SVG } from "./utils/icons";
 import PresidentGoodbyeOverlay from "./components/PresidentGoodbyeOverlay";
@@ -15,9 +15,12 @@ import { initPWA } from "./utils/pwa";
 
 import { apiRequest } from "./utils/api";
 
+import { useNotifications } from "./stores/notifications";
+
 export default function App(props: ParentProps) {
   const navigate = useNavigate();
   window.solidNavigate = navigate;
+  const { notify } = useNotifications();
   const [isOffline, setIsOffline] = createSignal(!isServerConnected);
 
   onMount(() => {
@@ -26,6 +29,29 @@ export default function App(props: ParentProps) {
     const cleanup = NoInternetEvent.subscribe(() => {
         setIsOffline(!isServerConnected);
     });
+
+    const updateCleanup = onUpdate((event) => {
+        if (event.type === 'upcoming_event') {
+            notify(
+                'Event Starting Soon',
+                `Reminder: "${event.data.title}" starts at ${event.data.startTime}!`,
+                'info',
+                10000
+            );
+        }
+    });
+
+    // Listen for PUSH notifications when the app is open
+    const handleSWMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'PUSH_NOTIFICATION_RECEIVED') {
+            const { title, body } = event.data.notification;
+            notify(title, body, 'info', 8000);
+        }
+    };
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', handleSWMessage);
+    }
 
     // Preload files list
     const filesQuery = new URLSearchParams({
@@ -41,6 +67,10 @@ export default function App(props: ParentProps) {
 
     onCleanup(() => {
         cleanup();
+        updateCleanup();
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+        }
     });
   });
 

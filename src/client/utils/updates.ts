@@ -12,7 +12,8 @@ type UpdateType =
     | 'event_update' 
     | 'admin_transaction_update'
     | 'stats_update'
-    | 'swims_update';
+    | 'swims_update'
+    | 'upcoming_event';
 
 interface UpdateEvent {
     type: UpdateType;

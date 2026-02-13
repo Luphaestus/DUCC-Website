@@ -56,7 +56,28 @@ export const initPWA = async () => {
         setIsPWAInstalled(true);
         setDeferredPrompt(null);
         console.log('[PWA] App installed');
+        
+        // Attempt auto-subscribe on install
+        setTimeout(() => {
+            console.log('[PWA] Attempting auto-subscription after install...');
+            subscribeToNotifications().catch(err => console.error('[PWA] Auto-sub failed:', err));
+        }, 1000);
     });
+
+    // If already in standalone mode, try to ensure they are subscribed (once per session)
+    if (isStandalone && !isSubscribed()) {
+        const lastAutoSub = localStorage.getItem('pwa_last_auto_sub');
+        const now = Date.now();
+        // Only try automatically once every 24 hours if not subscribed
+        if (!lastAutoSub || (now - parseInt(lastAutoSub) > 24 * 60 * 60 * 1000)) {
+            setTimeout(() => {
+                console.log('[PWA] Standalone mode detected, attempting background subscription check...');
+                subscribeToNotifications().then(success => {
+                    if (success) localStorage.setItem('pwa_last_auto_sub', now.toString());
+                }).catch(() => {});
+            }, 3000);
+        }
+    }
 };
 
 // Capture install prompt as early as possible (top level)
@@ -84,6 +105,20 @@ export const subscribeToNotifications = async () => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     try {
+        // Explicitly check and request permission
+        let permission = Notification.permission;
+        console.log('[PWA] Current notification permission:', permission);
+        
+        if (permission === 'default') {
+            permission = await Notification.requestPermission();
+            console.log('[PWA] Notification permission requested. Result:', permission);
+        }
+
+        if (permission !== 'granted') {
+            console.warn('[PWA] Notification permission denied or dismissed.');
+            return false;
+        }
+
         const reg = await navigator.serviceWorker.ready;
         
         // Fetch VAPID key from server if not set
@@ -100,6 +135,7 @@ export const subscribeToNotifications = async () => {
         // Send to server
         await apiRequest('POST', '/api/notifications/subscribe', subscription);
         setIsSubscribed(true);
+        localStorage.setItem('pwa_last_successful_sub', Date.now().toString());
         return true;
     } catch (e) {
         console.error('Failed to subscribe:', e);
@@ -107,9 +143,44 @@ export const subscribeToNotifications = async () => {
     }
 };
 
+export const unsubscribeFromNotifications = async () => {
+    if (!('serviceWorker' in navigator)) return false;
+
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        const subscription = await reg.pushManager.getSubscription();
+        
+        if (subscription) {
+            // Notify server
+            await apiRequest('POST', '/api/notifications/unsubscribe', { endpoint: subscription.endpoint });
+            // Unsubscribe locally
+            await subscription.unsubscribe();
+        }
+        
+        setIsSubscribed(false);
+        return true;
+    } catch (e) {
+        console.error('Failed to unsubscribe:', e);
+        return false;
+    }
+};
+
+const checkSubscriptionRefresh = async () => {
+    // If we have permission but no sub, or it's been more than 7 days, refresh
+    if (Notification.permission === 'granted') {
+        const lastSub = localStorage.getItem('pwa_last_successful_sub');
+        const now = Date.now();
+        if (!lastSub || (now - parseInt(lastSub) > 7 * 24 * 60 * 60 * 1000)) {
+            console.log('[PWA] Refreshing background subscription...');
+            subscribeToNotifications().catch(() => {});
+        }
+    }
+};
+
 const checkSubscription = async (reg: ServiceWorkerRegistration) => {
     const sub = await reg.pushManager.getSubscription();
     setIsSubscribed(!!sub);
+    checkSubscriptionRefresh();
 };
 
 export const installPWA = async () => {

@@ -18,6 +18,7 @@ import Logger from '../../misc/Logger.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
 import NotificationsAPI from '../NotificationsAPI.js';
+import { NotificationType } from '../../types/notifications.js';
 
 export default class AttendanceAPI {
     app: FastifyInstance;
@@ -262,7 +263,8 @@ export default class AttendanceAPI {
                                 nextUserId,
                                 'Waitlist Update',
                                 `Good news! You've been promoted to the attendee list for "${event.title}".`,
-                                `/event/${eventId}`
+                                `/event/${eventId}`,
+                                NotificationType.EVENTS
                             );
                         }
                     }

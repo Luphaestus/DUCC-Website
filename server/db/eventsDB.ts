@@ -13,6 +13,7 @@ import Globals from '../misc/globals.js';
 import Logger from '../misc/Logger.js';
 import { DatabaseWrapper } from './db.js';
 import NotificationsAPI from '../api/NotificationsAPI.js';
+import { NotificationType } from '../types/notifications.js';
 
 interface EventData {
     id?: number;

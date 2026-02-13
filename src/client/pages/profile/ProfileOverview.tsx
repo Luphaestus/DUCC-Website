@@ -110,6 +110,14 @@ export default function ProfileOverview() {
         { label: 'First', value: 'first' },
         { label: 'Last', value: 'last' }
     ];
+    const fonts = [
+        { label: 'Sans', value: 'sans' },
+        { label: 'Display', value: 'outfit' },
+        { label: 'Serif', value: 'serif' },
+        { label: 'Gothic', value: 'gothic' },
+        { label: 'Retro', value: 'accent' },
+        { label: 'Mono', value: 'mono' }
+    ];
 
     let uploadWidget: UploadWidget | null = null;
     createEffect(() => {
@@ -272,12 +280,27 @@ export default function ProfileOverview() {
                                                                 <Avatar user={{ ...profile()!, profile_picture_initials: opt.value, profile_picture_path: null }} classes="mini-avatar" />
                                                             </div>
                                                         )}
-                                                    </For>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                                                                                                        </For>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                                <div>
+                                                                                                                    <h4 class="small-title">Font</h4>
+                                                                                                                    <div class="presets-grid" style="grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                                                                                                                        <For each={fonts}>
+                                                                                                                            {(f) => (
+                                                                                                                                <div
+                                                                                                                                    class="preset-item font-preset profile-avatar-size"
+                                                                                                                                    classList={{ active: profile()!.profile_picture_font === f.value }}
+                                                                                                                                    onClick={() => updatePP({ font: f.value })}
+                                                                                                                                >
+                                                                                                                                    <Avatar user={{ ...profile()!, profile_picture_font: f.value, profile_picture_path: null }} classes="mini-avatar" />
+                                                                                                                                </div>
+                                                                                                                            )}
+                                                                                                                        </For>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </div>                                </div>
                             </div>
                         </Panel>
 

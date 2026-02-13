@@ -1,6 +1,6 @@
 // Service Worker for DUCC PWA
 
-const CACHE_NAME = 'ducc-v1';
+const CACHE_NAME = 'ducc-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -41,7 +41,9 @@ self.addEventListener('fetch', (event) => {
   // Network-first for HTML/Navigation
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/'))
+      fetch(event.request).catch(() => {
+        return caches.match('/');
+      })
     );
     return;
   }
@@ -53,6 +55,7 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
 
+      // If not in cache, fetch from network
       return fetch(event.request).then((response) => {
         // Only cache valid responses from our own origin
         if (!response || response.status !== 200 || response.type !== 'basic') {
@@ -69,9 +72,6 @@ self.addEventListener('fetch', (event) => {
         }
 
         return response;
-      }).catch(() => {
-        // If fetch fails and no cache, just return the error
-        return null;
       });
     })
   );
@@ -79,15 +79,22 @@ self.addEventListener('fetch', (event) => {
 
 // Push Notification Handler
 self.addEventListener('push', (event) => {
-  if (!event.data) return;
+  console.log('[SW] Push received:', event);
+  if (!event.data) {
+    console.warn('[SW] Push event had no data.');
+    return;
+  }
 
   try {
     const data = event.data.json();
+    console.log('[SW] Push data parsed:', data);
+    
     const options = {
       body: data.body,
-      icon: '/images/misc/ducc.png',
-      badge: '/images/icons/outline/kayaking.svg', // Monochrome icon for Android bar
+      icon: '/images/icons/kayaking.svg',
+      badge: '/images/icons/outline/kayaking.svg',
       vibrate: [100, 50, 100],
+      tag: 'ducc-notification',
       data: {
         url: data.url || '/'
       },
@@ -96,14 +103,32 @@ self.addEventListener('push', (event) => {
 
     event.waitUntil(
       self.registration.showNotification(data.title, options)
+        .then(() => {
+          console.log('[SW] Notification shown.');
+          // Broadcast to all clients if they are open
+          return self.clients.matchAll({ type: 'window' }).then(clients => {
+            clients.forEach(client => {
+              client.postMessage({
+                type: 'PUSH_NOTIFICATION_RECEIVED',
+                notification: {
+                  title: data.title,
+                  body: data.body,
+                  url: data.url
+                }
+              });
+            });
+          });
+        })
+        .catch(err => console.error('[SW] Failed to show notification:', err))
     );
   } catch (e) {
-    console.error('Error processing push notification:', e);
+    console.error('[SW] Error processing push notification:', e);
   }
 });
 
 // Notification Click Handler
 self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked:', event.notification.tag);
   event.notification.close();
 
   event.waitUntil(

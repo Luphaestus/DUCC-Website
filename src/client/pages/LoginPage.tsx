@@ -29,6 +29,7 @@ export default function LoginPage() {
             const status = await apiRequest('GET', '/api/auth/status', true);
             if (status.authenticated) {
                 navigate('/events');
+                return;
             }
         } catch (e) { }
     });
@@ -61,16 +62,22 @@ export default function LoginPage() {
         navigate(redirect || '/events');
     };
 
-    const startPasskeyLogin = async (emailVal: string | null = null) => {
+    const startPasskeyLogin = async (emailVal: string | null = null, useConditionalUI = false) => {
         try {
             const options = await apiRequest('POST', '/api/auth/passkey/login-options', { email: emailVal });
-            const asseResp = await SimpleWebAuthnBrowser.startAuthentication(options);
+            
+            // startAuthentication handles the browser prompt
+            const asseResp = await SimpleWebAuthnBrowser.startAuthentication(options, useConditionalUI);
             const res = await apiRequest('POST', '/api/auth/passkey/login-verify', asseResp);
             handleLoginSuccess(res);
         } catch (err: any) {
+            // Ignore cancels and aborts, especially for conditional UI
             if (err.name === 'NotAllowedError' || err.name === 'AbortError') return;
-            triggerError(['passkey']);
-            notify('Error', err.message || 'Passkey login failed.', 'error');
+            
+            if (!useConditionalUI) {
+                triggerError(['passkey']);
+                notify('Error', err.message || 'Passkey login failed.', 'error');
+            }
         }
     };
 

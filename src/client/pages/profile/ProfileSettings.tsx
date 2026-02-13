@@ -5,11 +5,11 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    CLOSE_SVG, KEY_SVG, ADD_SVG, CONTENT_COPY_SVG, DOWNLOAD_SVG
+    CLOSE_SVG, KEY_SVG, ADD_SVG, CONTENT_COPY_SVG, DOWNLOAD_SVG, BOLT_SVG
 } from '@/utils/icons';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
 import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
-import { isPWAInstalled, installPWA, isManualInstall, deferredPrompt } from "@/utils/pwa";
+import { isPWAInstalled, installPWA, isManualInstall, deferredPrompt, isSubscribed, subscribeToNotifications, unsubscribeFromNotifications } from "@/utils/pwa";
 import { LoginEvent } from "@/utils/events/events";
 import { useProfile } from "./ProfileLayout";
 
@@ -19,6 +19,31 @@ export default function ProfileSettings() {
     const context = useProfile();
     const profile = () => context?.profile();
     const refetch = () => context?.refetch();
+
+    const [isSubscribing, setIsSubscribing] = createSignal(false);
+    const [isUnsubscribing, setIsUnsubscribing] = createSignal(false);
+
+    const handleSubscribe = async () => {
+        setIsSubscribing(true);
+        const success = await subscribeToNotifications();
+        setIsSubscribing(false);
+        if (success) {
+            notify('Success', 'You are now subscribed to push notifications!', 'success');
+        } else {
+            notify('Error', 'Failed to subscribe. Please check browser permissions.', 'error');
+        }
+    };
+
+    const handleUnsubscribe = async () => {
+        setIsUnsubscribing(true);
+        const success = await unsubscribeFromNotifications();
+        setIsUnsubscribing(false);
+        if (success) {
+            notify('Success', 'You have unsubscribed from push notifications.', 'success');
+        } else {
+            notify('Error', 'Failed to unsubscribe.', 'error');
+        }
+    };
 
     // 2FA Management
     const [isTOTPModalOpen, setIsTOTPModalOpen] = createSignal(false);
@@ -266,23 +291,35 @@ export default function ProfileSettings() {
                                             <input type="checkbox" role="switch" checked={notificationSettings()?.push_events === 1} onChange={() => handleToggleNotification('push_events')} />
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td>
-                                            <strong>Club News</strong>
-                                            <p class="small-text">Announcements & general updates</p>
-                                        </td>
-                                        <td style="text-align: center;">
-                                            <input type="checkbox" role="switch" checked={notificationSettings()?.email_news === 1} onChange={() => handleToggleNotification('email_news')} />
-                                        </td>
-                                        <td style="text-align: center;">
-                                            <input type="checkbox" role="switch" checked={notificationSettings()?.push_news === 1} onChange={() => handleToggleNotification('push_news')} />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </Show>
-                </Panel>
+                                                                                        <tr>
+                                                                                            <td>
+                                                                                                <strong>Club News</strong>
+                                                                                                <p class="small-text">Announcements & general updates</p>
+                                                                                            </td>
+                                                                                            <td style="text-align: center;">
+                                                                                                <input type="checkbox" role="switch" checked={notificationSettings()?.email_news === 1} onChange={() => handleToggleNotification('email_news')} />
+                                                                                            </td>
+                                                                                            <td style="text-align: center;">
+                                                                                                <input type="checkbox" role="switch" checked={notificationSettings()?.push_news === 1} onChange={() => handleToggleNotification('push_news')} />
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                        <tr>
+                                                        <td>
+                                                            <strong>Event Reminders</strong>
+                                                            <p class="small-text">Alerts 30 mins before your joined events</p>
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.email_event_reminders === 1} onChange={() => handleToggleNotification('email_event_reminders')} />
+                                                        </td>
+                                                        <td style="text-align: center;">
+                                                            <input type="checkbox" role="switch" checked={notificationSettings()?.push_event_reminders === 1} onChange={() => handleToggleNotification('push_event_reminders')} />
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </Show>
+                                </Panel>
 
                 <Panel title="App Installation" class="glass-panel">
                     <div class="settings-grid">
@@ -314,6 +351,36 @@ export default function ProfileSettings() {
                                     </Show>
                                 </div>
                             </Show>
+
+                            <div class="liquid-container embedded-panel glass-panel">
+                                <div class="setting-info">
+                                    <strong>Push Notifications</strong>
+                                    <p>
+                                        {isSubscribed() 
+                                            ? "Notifications are enabled for this device." 
+                                            : "Receive alerts for events, payments and news."}
+                                    </p>
+                                </div>
+                                <Show when={!isSubscribed()}>
+                                    <button 
+                                        class="small-btn primary" 
+                                        onClick={handleSubscribe}
+                                        disabled={isSubscribing()}
+                                    >
+                                        <span innerHTML={BOLT_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                        {isSubscribing() ? 'Subscribing...' : 'Enable'}
+                                    </button>
+                                </Show>
+                                <Show when={isSubscribed()}>
+                                    <button 
+                                        class="small-btn outline delete" 
+                                        onClick={handleUnsubscribe}
+                                        disabled={isUnsubscribing()}
+                                    >
+                                        {isUnsubscribing() ? 'Disabling...' : 'Disable'}
+                                    </button>
+                                </Show>
+                            </div>
                         </div>
                     </div >
                 </Panel >

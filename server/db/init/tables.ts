@@ -186,6 +186,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         left_at DATETIME,
         payment_transaction_id INT,
         upfront_refunded TINYINT(1) NOT NULL DEFAULT 0,
+        reminder_sent TINYINT(1) NOT NULL DEFAULT 0,
         UNIQUE KEY idx_unique_active_attendance (event_id, user_id, (CASE WHEN is_attending = 1 THEN 1 ELSE NULL END)),
         INDEX idx_event_user (event_id, user_id),
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
@@ -522,6 +523,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         push_events TINYINT(1) NOT NULL DEFAULT 1,
         email_news TINYINT(1) NOT NULL DEFAULT 1,
         push_news TINYINT(1) NOT NULL DEFAULT 1,
+        email_event_reminders TINYINT(1) NOT NULL DEFAULT 1,
+        push_event_reminders TINYINT(1) NOT NULL DEFAULT 1,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
     },

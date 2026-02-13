@@ -7,7 +7,8 @@
 import { statusObject } from '../misc/status.js';
 import { DatabaseWrapper } from './db.js';
 import Logger from '../misc/Logger.js';
-import NotificationsAPI, { NotificationType } from '../api/NotificationsAPI.js';
+import NotificationsAPI from '../api/NotificationsAPI.js';
+import { NotificationType } from '../types/notifications.js';
 
 export default class TransactionsDB {
     /**

@@ -438,10 +438,6 @@ export default class Auth {
             const expectedChallenge = request.session.currentChallenge;
             let targetUserId = request.session.pendingUser?.id || request.session.passkeyUserId;
 
-            if (!targetUserId) {
-                return reply.status(400).send({ message: 'User context missing.' });
-            }
-
             if (!expectedChallenge) {
                 return reply.status(400).send({ message: 'Authentication session expired.' });
             }
@@ -452,13 +448,11 @@ export default class Auth {
                     return reply.status(400).send({ message: 'Authenticator not found.' });
                 }
 
-                if (targetUserId && authenticator.user_id !== targetUserId) {
-                    return reply.status(400).send({ message: 'Authenticator not found.' });
-                }
-
                 // If no targetUserId (discoverable credential), use the one from the authenticator
                 if (!targetUserId) {
                     targetUserId = authenticator.user_id;
+                } else if (authenticator.user_id !== targetUserId) {
+                    return reply.status(400).send({ message: 'Authenticator not found for this user context.' });
                 }
 
                 const verification = await verifyAuthenticationResponse({

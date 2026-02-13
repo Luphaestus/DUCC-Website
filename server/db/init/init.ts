@@ -151,6 +151,12 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
     const { migrate: updateSwimHistorySchema } = await import('./update_swim_history_schema.js');
     await updateSwimHistorySchema(db);
 
+    const { migrate: addEventReminderSettings } = await import('./add_event_reminder_settings.js');
+    await addEventReminderSettings(db);
+
+    const { migrate: addReminderSentToAttendees } = await import('./add_reminder_sent_to_attendees.js');
+    await addReminderSentToAttendees(db);
+
     // Ensure sessions table is correct (it might exist but with wrong columns from previous versions)
     try {
         const columns: any[] = await db.all("SHOW COLUMNS FROM sessions");

@@ -140,7 +140,7 @@ const startServer = async () => {
         return payload;
       }
 
-      let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' blob: https://proxy.scalar.com https://api.scalar.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
+      let csp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self' https://fonts.scalar.com https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' blob: https://proxy.scalar.com https://api.scalar.com https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://unpkg.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';";
 
       if (isDev) {
         csp = csp.replace("script-src 'self'", "script-src 'self' http://localhost:35729 http://localhost:3000");
@@ -379,6 +379,11 @@ const startServer = async () => {
 const serverReady = startServer();
 
 serverReady.then(async ({ db }) => {
+  // Start background jobs
+  const { EventReminderJob } = await import('./misc/EventReminderJob.js');
+  const reminderJob = new EventReminderJob(db);
+  reminderJob.start();
+
   if (process.env.ENABLE_SIMULATOR === 'true') {
     const { ActivitySimulator } = await import('./misc/ActivitySimulator.js');
     const simulator = new ActivitySimulator(db);
