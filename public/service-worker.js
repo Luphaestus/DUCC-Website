@@ -1,6 +1,6 @@
 // Service Worker for DUCC PWA
 
-const CACHE_NAME = 'ducc-v5';
+const CACHE_NAME = 'ducc-v6';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -41,60 +41,43 @@ self.addEventListener('fetch', (event) => {
   // Skip API requests - let them handle their own errors/caching
   if (url.pathname.startsWith('/api/')) return;
 
-  // Network-first for HTML/Navigation to ensure we get the latest hashed chunks
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // Cache the latest index.html for offline use
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        })
-        .catch(() => {
-          return caches.match(event.request).then(cached => cached || caches.match('/'));
-        })
-    );
-    return;
-  }
-
-  // Cache-first for assets (images, styles, scripts)
+  // Network-First strategy for everything to ensure we always have the latest version.
+  // We only use the cache if the network is completely unavailable.
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      // If not in cache, fetch from network
-      return fetch(event.request)
-        .then((response) => {
-          // Only cache valid responses from our own origin
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Cache assets (Vite chunks are hashed, so they are safe to cache forever)
-          const isAsset = url.pathname.includes('.') || url.pathname.includes('/assets/');
-          if (isAsset) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-
+    fetch(event.request)
+      .then((response) => {
+        // Only cache valid responses from our own origin
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
-        })
-        .catch((err) => {
-          // Fail gracefully if network is down and not in cache
-          console.warn('[SW] Fetch failed:', err);
-          return new Response('Network error occurred', {
-            status: 408,
+        }
+
+        // Cache the successful response for offline use
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+
+        return response;
+      })
+      .catch((err) => {
+        // Network failed (offline), try the cache
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          // If it's a navigation request, fall back to index.html
+          if (event.request.mode === 'navigate') {
+            return caches.match('/');
+          }
+
+          // Fail gracefully
+          return new Response('Offline and not in cache', {
+            status: 503,
             headers: { 'Content-Type': 'text/plain' }
           });
         });
-    })
+      })
   );
 });
 
