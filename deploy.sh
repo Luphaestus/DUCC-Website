@@ -155,7 +155,6 @@ sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_PRE_CMD"
 if [ "$FAST_DEPLOY" = true ]; then
     echo "       [INFO] Uploading pre-compiled assets..."
     sshpass -e rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" dist/ root@"$SERVER_IP":DUCC-Website/dist/
-    sshpass -e rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" public/assets/ root@"$SERVER_IP":DUCC-Website/public/assets/
 fi
 
 export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"

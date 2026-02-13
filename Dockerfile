@@ -23,7 +23,7 @@ COPY . .
 ARG BUILD_ID=unknown
 RUN echo "Building version: $BUILD_ID"
 # Only build if dist doesn't exist (optimization for local pre-builds)
-RUN if [ ! -d "dist" ] || [ ! -f "public/assets/main.css" ]; then \
+RUN if [ ! -d "dist" ] || [ ! -f "public/styles.css" ]; then \
         npm run sass:build && \
         npm run build:client; \
     else \

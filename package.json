@@ -19,7 +19,7 @@
     "start": "npm run --silent db:init && tsx server/server.ts",
     "build:client": "vite build",
     "build:client:watch": "vite build --mode development --watch",
-    "sass": "sass src/styles.scss public/assets/main.css --watch",
+    "sass": "sass src/styles.scss public/styles.css --watch",
     "sass:build": "sass src:public --load-path=node_modules --no-source-map",
     "dev:server": "cross-env NODE_ENV=dev nodemon --quiet --exec tsx server/server.ts",
     "dev": "cross-env NODE_ENV=dev npm run --silent db:init && cross-env NODE_ENV=dev run-p --silent build:client:watch dev:server",

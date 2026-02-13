@@ -85,7 +85,7 @@ export default function LoginPage() {
         e.preventDefault();
         let fullEmail = email();
         if (fullEmail && !fullEmail.includes('@')) {
-            fullEmail += '@durham.ac.uk';
+        fullEmail += '@durham.ac.uk';
         }
 
         try {
