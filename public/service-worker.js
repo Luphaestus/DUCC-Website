@@ -1,6 +1,6 @@
 // Service Worker for DUCC PWA
 
-const CACHE_NAME = 'ducc-v6';
+const CACHE_NAME = 'ducc-v7';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -41,43 +41,56 @@ self.addEventListener('fetch', (event) => {
   // Skip API requests - let them handle their own errors/caching
   if (url.pathname.startsWith('/api/')) return;
 
-  // Network-First strategy for everything to ensure we always have the latest version.
-  // We only use the cache if the network is completely unavailable.
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Only cache valid responses from our own origin
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
-
-        // Cache the successful response for offline use
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-
-        return response;
-      })
-      .catch((err) => {
-        // Network failed (offline), try the cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-
-          // If it's a navigation request, fall back to index.html
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-
-          // Fail gracefully
-          return new Response('Offline and not in cache', {
-            status: 503,
-            headers: { 'Content-Type': 'text/plain' }
+  // 1. Network-First for Navigation (index.html)
+  // This ensures we always get the latest version info (hashed filenames) from the server.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
           });
+          return response;
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // 2. Cache-First for Assets (JS, CSS, Images, etc.)
+  // These are hashed by Vite, so if the hash matches, the content is guaranteed to be correct.
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+
+          // Cache hashed assets and other static files
+          const isAsset = url.pathname.includes('.') || url.pathname.includes('/assets/');
+          if (isAsset) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+
+          return response;
+        })
+        .catch(() => {
+          // If a script/asset fails to load (offline), return a friendly error
+          if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+            return new Response('Asset unavailable offline', { status: 503 });
+          }
+          return null; 
         });
-      })
+    })
   );
 });
 
