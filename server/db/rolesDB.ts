@@ -136,6 +136,19 @@ export default class RolesDB {
     }
 
     /**
+     * Assign a permission directly to a role.
+     */
+    static async addRolePermission(db: DatabaseWrapper, { role_id, permission_id }: { role_id: number, permission_id: number }): Promise<statusObject> {
+        try {
+            await db.run('INSERT IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [role_id, permission_id]);
+            return new statusObject(200, 'Permission assigned to role.');
+        } catch (e) {
+            Logger.error('Database error assigning permission to role:', e);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Remove a direct permission override from a user.
      */
     static async removeUserPermission(db: DatabaseWrapper, userId: number | string, permissionId: number | string): Promise<statusObject> {

@@ -1,4 +1,20 @@
 #admin-view {
+    .event-identity-card {
+        margin-bottom: 1rem;
+    }
+
+    .sidebar-actions {
+        margin-top: 1rem;
+    }
+
+    .tab-nav-header {
+        margin-bottom: 1rem;
+    }
+
+    .tab-content-wrapper {
+        margin-top: 1.5rem;
+    }
+
     .conditional-input {
         overflow: hidden;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -22,6 +38,34 @@
     }
 
     #event-form {
+        .form-group {
+            margin-top: 1rem;
+            
+            label {
+                margin-bottom: 0.5rem;
+                display: block;
+            }
+        }
+
+        .grid-2-col {
+            margin-bottom: 1.5rem;
+            
+            &.mt-4 {
+                margin-top: 1rem;
+            }
+        }
+
+        .settings-group-compact {
+            .signup-policy {
+                .conditional-input {
+                    margin-top: 0.5rem;
+                }
+            }
+            .refund-policy {
+                margin-top: 1rem;
+            }
+        }
+
         .modern-form-group {
             margin-bottom: 2rem;
         }

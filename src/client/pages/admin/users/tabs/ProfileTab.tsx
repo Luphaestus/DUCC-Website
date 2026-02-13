@@ -2,8 +2,8 @@
 import { createSignal, Show, createResource, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { 
-    PERSON_SVG, EDIT_SVG, 
+import {
+    PERSON_SVG, EDIT_SVG,
     ID_CARD_SVG, CLOSE_SVG,
     CONTRACT_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG,
     KAYAKING_SVG
@@ -13,7 +13,7 @@ import LiquidButton from "@/components/LiquidButton";
 
 export default function ProfileTab(props: { user: any, permissions: string[], canManageUsers: boolean, isExec: boolean, refetchUser: () => void }) {
     const { notify } = useNotifications();
-    
+
     const [isEditing, setIsEditing] = createSignal(false);
 
     const isSigned = () => !!props.user.filled_legal_info;
@@ -53,7 +53,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
         // Simple conversion for checkboxes
         data.is_member = !!formData.get('is_member');
         data.is_instructor = !!formData.get('is_instructor');
-        
+
         try {
             await apiRequest('POST', `/api/admin/user/${props.user.id}/elements`, data);
             notify('Success', 'Profile updated', 'success');
@@ -64,7 +64,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
 
     return (
         <div class="dashboard-section active">
-            <article class="value-header no-margin mb-4">
+            <article class="value-header no-margin">
                 <div class="value-info">
                     <span class="value-title">Legal Status</span>
                     <div class="value-display" classList={{ 'positive': isSigned() }}>
@@ -79,7 +79,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                     <div class="detail-info-group" style="gap: 0">
                         <div class="medical-section">
                             <div class="info-item-modern compact">
-                                <span class="label">Medical Conditions:</span> 
+                                <span class="label">Medical Conditions:</span>
                                 <span class="badge" classList={{ warning: props.user.has_medical_conditions, success: !props.user.has_medical_conditions }}>
                                     {props.user.has_medical_conditions ? 'Yes' : 'None Reported'}
                                 </span>
@@ -100,17 +100,29 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                 <div class="detail-info-box">{props.user.medication_details}</div>
                             </Show>
                         </div>
+
+                        <div class="medical-section">
+                            <div class="info-item-modern compact">
+                                <span class="label">Dietary Requirements:</span>
+                                <span class="badge" classList={{ warning: props.user.has_dietary_info, success: !props.user.has_dietary_info }}>
+                                    {props.user.has_dietary_info ? 'Yes' : 'None Reported'}
+                                </span>
+                            </div>
+                            <Show when={props.user.has_dietary_info}>
+                                <div class="detail-info-box">{props.user.dietary_info_details}</div>
+                            </Show>
+                        </div>
                     </div>
                 </Panel>
 
-                <Panel 
-                    title="Identity & Contact" 
+                <Panel
+                    title="Identity & Contact"
                     icon={PERSON_SVG}
                     class="no-margin"
                     action={
                         <Show when={props.permissions.includes('user.manage.advanced')}>
-                            <LiquidButton 
-                                class="small-btn secondary" 
+                            <LiquidButton
+                                class="small-btn secondary"
                                 onClick={() => setIsEditing(!isEditing())}
                                 borderRadius={12}
                                 tintOpacity={0.2}
@@ -143,12 +155,12 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="detail-info-box">
                                 <span class="box-label"><span innerHTML={HOME_SVG} /> Home Address</span>
                                 <span class="box-value">{props.user.home_address || 'N/A'}</span>
                             </div>
-                            
+
                             <div class="detail-info-box warning">
                                 <span class="box-label"><span innerHTML={EMERGENCY_SVG} /> Emergency Contact</span>
                                 <div class="box-value">
@@ -168,7 +180,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                 </div>
                                 <label><input type="checkbox" name="is_member" checked={props.user.is_member} /> Is Member</label>
                             </Show>
-                            <div class="form-actions mt-2">
+                            <div class="form-actions">
                                 <LiquidButton type="submit" class="small-btn" borderRadius={12}>Save</LiquidButton>
                                 <LiquidButton type="button" class="small-btn secondary outline" onClick={() => setIsEditing(false)} borderRadius={12}>Cancel</LiquidButton>
                             </div>
@@ -177,13 +189,13 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                 </Panel>
             </div>
 
-            <Panel 
-                title="Default Kit Requirements" 
+            <Panel
+                title="Default Kit Requirements"
                 icon={KAYAKING_SVG}
                 class="mt-4"
             >
                 <p>Manage the equipment this user usually needs to borrow from the club for trips.</p>
-                
+
                 <form onSubmit={handleUpdateKitPrefs} class="modern-form">
                     <div class="kit-selection-grid">
                         <For each={kitItems()} fallback={<p class="text-muted">No kit items available.</p>}>
@@ -193,16 +205,16 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                         <span class="item-title">{item.name}</span>
                                         <span class="item-subtitle">{item.type} • {item.size}</span>
                                     </div>
-                                    <input 
-                                        type="checkbox" 
-                                        value={item.id} 
-                                        checked={userKitPrefs()?.some((p: any) => p.kit_item_id === item.id)} 
+                                    <input
+                                        type="checkbox"
+                                        value={item.id}
+                                        checked={userKitPrefs()?.some((p: any) => p.kit_item_id === item.id)}
                                     />
                                 </label>
                             )}
                         </For>
                     </div>
-                    <LiquidButton type="submit" class="primary full-width mt-4" borderRadius={12}>Save Preferences</LiquidButton>
+                    <LiquidButton type="submit" class="primary full-width" borderRadius={12}>Save Preferences</LiquidButton>
                 </form>
             </Panel>
         </div>

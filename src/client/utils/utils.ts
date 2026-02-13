@@ -124,6 +124,50 @@ export function setupNumberInput(input: HTMLInputElement) {
 }
 
 /**
+ * Adjusts a date to be "smart" about the year and month.
+ * If a date is entered that has already passed in the current year,
+ * it assumes the user meant next year.
+ * 
+ * @param {Date|string} dateInput - The date to adjust.
+ * @returns {{ date: Date, valid: boolean }} - The adjusted date and validity.
+ */
+export function smartDateAdjust(dateInput: Date | string): { date: Date, valid: boolean } {
+    if (!dateInput) return { date: new Date(), valid: false };
+    
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return { date: d, valid: false };
+
+    // Don't adjust if the year is already explicitly set to something else
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    if (d.getFullYear() !== currentYear) {
+        return { date: d, valid: true };
+    }
+
+    const currentMonth = now.getMonth();
+    const currentDay = now.getDate();
+    const inputMonth = d.getMonth();
+    const inputDay = d.getDate();
+
+    // Only auto-adjust if the date is in the past
+    if (inputMonth < currentMonth || (inputMonth === currentMonth && inputDay < currentDay)) {
+        d.setFullYear(currentYear + 1);
+    }
+
+    // Only autofill mins to 00 if the input likely came from a datetime-local picker
+    // and the minutes currently match 'now' (meaning they weren't explicitly changed yet)
+    const isDateTime = typeof dateInput === 'string' && dateInput.includes('T');
+    if (isDateTime && d.getMinutes() === now.getMinutes()) {
+        d.setMinutes(0);
+        d.setSeconds(0);
+        d.setMilliseconds(0);
+    }
+
+    return { date: d, valid: true };
+}
+
+/**
  * Generates and triggers a download for a CSV file.
  * 
  * @param {Array<Array<string>>} data - 2D array of strings.

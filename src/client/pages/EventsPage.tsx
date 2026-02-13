@@ -1,16 +1,10 @@
-// todo clean up
 import { createSignal, createResource, For, Show, onMount, onCleanup, createMemo, createEffect, ParentProps } from "solid-js";
 import { useSearchParams, useNavigate, useLocation } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
-import {
-    ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG,
-    REFRESH_SVG, DASHBOARD_SVG, LIST_SVG, CALENDAR_TODAY_SVG
-} from '@/utils/icons';
 import { StandardCard, EventData } from '../widgets/StandardCard';
 import { useAuth } from "@/stores/auth";
 import PaginationSlider from "@/components/PaginationSlider";
 import PageTitle from "@/components/PageTitle";
-import { TabNav } from "../widgets/TabNav";
 import CalendarWidget, { CalendarViewMode } from "../widgets/CalendarWidget";
 import { EventsHeaderControls } from "../widgets/EventsHeaderControls";
 
@@ -24,10 +18,9 @@ export default function EventsPage(props: ParentProps) {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useAuth();
     const [isRefreshing, setIsRefreshing] = createSignal(false);
     const [oldPageData, setOldData] = createSignal<PageData | null>(null);
-    const [isTransitioning, setIsTransitioning] = createSignal(false);
+    const [isTransitioning] = createSignal(false);
     const [viewMode, setViewMode] = createSignal<'list' | 'week' | 'month'>((localStorage.getItem('events_view_mode') as any) || 'list');
     const [currentDate, setCurrentDate] = createSignal(new Date());
 
@@ -42,7 +35,7 @@ export default function EventsPage(props: ParentProps) {
         return parseInt(pageStr || '0');
     };
 
-    const [pageData, { mutate, refetch }] = createResource<PageData, number>(page, async (p, { value }) => {
+    const [pageData, { refetch }] = createResource<PageData, number>(page, async (p, { value }) => {
         if (value) setOldData(value);
         return await apiRequest('GET', `/api/events/paged/${p}`, null, true) as PageData;
     });
@@ -73,10 +66,10 @@ export default function EventsPage(props: ParentProps) {
         if (mode === 'month') {
             return currentDate().toLocaleString('default', { month: 'long', year: 'numeric' });
         }
-        
+
         const data = pageData();
         if (!data && mode === 'list') return "Loading...";
-        
+
         const formatDate = (d: string | Date) => new Date(d).toLocaleDateString('en-UK', { month: 'short', day: 'numeric' });
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -85,14 +78,14 @@ export default function EventsPage(props: ParentProps) {
         if (mode === 'week') {
             start.setDate(start.getDate() - start.getDay());
         }
-        
+
         const end = mode === 'list' ? new Date(data!.endDate) : new Date(start);
         if (mode === 'week') {
             end.setDate(start.getDate() + 6);
         }
 
         if (start.getTime() === today.getTime()) return `Today - ${formatDate(end)}`;
-        
+
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
         if (end.toDateString() === yesterday.toDateString()) return `${formatDate(start)} - Yesterday`;
@@ -107,7 +100,7 @@ export default function EventsPage(props: ParentProps) {
 
         events.forEach(event => {
             const date = new Date(event.start);
-            date.setHours(0,0,0,0);
+            date.setHours(0, 0, 0, 0);
 
             if (!currentGroup || currentGroup.date.getTime() !== date.getTime()) {
                 currentGroup = { date, events: [] };
@@ -116,24 +109,6 @@ export default function EventsPage(props: ParentProps) {
             currentGroup.events.push(event);
         });
         return groups;
-    };
-
-    const isToday = (date: Date) => {
-        const today = new Date();
-        return date.getDate() === today.getDate() &&
-               date.getMonth() === today.getMonth() &&
-               date.getFullYear() === today.getFullYear();
-    };
-
-    const getEventStyle = (event: EventData) => {
-        const start = new Date(event.start);
-        const end = new Date(event.end);
-        const startMinutes = start.getHours() * 60 + start.getMinutes();
-        const top = (startMinutes / 1440) * 100;
-        let duration = (end.getTime() - start.getTime()) / (1000 * 60);
-        if (duration < 45) duration = 45; 
-        const height = (duration / 1440) * 100;
-        return { top: `${top}%`, height: `${height}%`, left: '4px', right: '4px' };
     };
 
     const EventList = (props: { data: PageData | null | undefined }) => (
@@ -162,24 +137,24 @@ export default function EventsPage(props: ParentProps) {
                 </For>
             </div>
         }>
-            <div class="liquid-container events-page-content weekly-mode" style={{ "--liquid-padding": "0", "--liquid-border-radius": "24px", "margin-top": "1rem", "width": "100%", "overflow": "hidden" }}>
-                <CalendarWidget 
-                    hideHeader={true}
-                    date={currentDate()}
-                    viewMode={viewMode() as CalendarViewMode}
-                    onDateChange={setCurrentDate}
-                    onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)} 
-                    onDayClick={(day) => {
-                        setCurrentDate(day);
-                        setView('list');
-                    }}
-                />
-            </div>
-        </Show>
+            <div class="liquid-container events-page-content weekly-mode" style={{"margin-top": "1rem", "width": "100%", "overflow": "hidden" }}>
+            <CalendarWidget
+                hideHeader={true}
+                date={currentDate()}
+                viewMode={viewMode() as CalendarViewMode}
+                onDateChange={setCurrentDate}
+                onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)}
+                onDayClick={(day) => {
+                    setCurrentDate(day);
+                    setView('list');
+                }}
+            />
+        </div>
+        </Show >
     );
 
     const [isDesktop, setIsDesktop] = createSignal(window.innerWidth > 992);
-    const [now, setNow] = createSignal(new Date());
+    const [_, setNow] = createSignal(new Date());
 
     onMount(() => {
         const timer = setInterval(() => setNow(new Date()), 60000);
@@ -200,7 +175,7 @@ export default function EventsPage(props: ParentProps) {
     return (
         <div id="events-view" class="view small-container">
             <PageTitle text="Upcoming Events" />
-            <EventsHeaderControls 
+            <EventsHeaderControls
                 viewMode={viewMode}
                 setView={setView}
                 rangeText={rangeText}
@@ -220,11 +195,11 @@ export default function EventsPage(props: ParentProps) {
 
             <div id="events-list-container">
                 <Show when={pageData.loading && !pageData() && !oldPageData()}>
-                     <p class="loading-text">Loading events...</p>
+                    <p class="loading-text">Loading events...</p>
                 </Show>
-                
-                <PaginationSlider 
-                    currentPage={page()} 
+
+                <PaginationSlider
+                    currentPage={page()}
                     oldContent={<EventList data={oldPageData()} />}
                 >
                     <EventList data={pageData()} />

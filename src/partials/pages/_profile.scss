@@ -1,14 +1,25 @@
 @use "../mixins" as *;
 
-/* Dashboard Layout */
+    /* Dashboard Layout */
 #profile-view {
     width: 100%;
     min-height: 100vh;
     padding: 2rem;
     box-sizing: border-box;
 
-    @media (max-width: 768px) {
-        padding: 1rem;
+    .form-actions {
+        margin-top: 1rem;
+    }
+
+    .glass-panel {
+        margin-top: 1rem;
+    }
+
+    .avatar-customization-grid {
+        margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {        padding: 1rem;
         padding-top: 5rem;
     }
 
@@ -238,6 +249,7 @@
                 background: rgba(231, 76, 60, 0.05) !important;
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
+                margin-top: 1rem;
             }
 
             .setting-info {
@@ -265,6 +277,7 @@
 
     .danger-zone {
         border-color: rgba(231, 76, 60, 0.3);
+        padding-top: 1rem;
 
         .box-header h3 {
             color: #e74c3c;

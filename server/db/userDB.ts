@@ -59,8 +59,11 @@ export default class UserDB {
         }
 
         if (isMember !== undefined && isMember !== '') {
-            conditions.push(`u.is_member = ?`);
-            params.push(isMember === 'true' ? 1 : 0);
+            if (isMember === 'true') {
+                conditions.push(`(u.is_member = 1 OR u.is_permanent_member = 1)`);
+            } else { // isMember === 'false'
+                conditions.push(`(u.is_member = 0 AND u.is_permanent_member = 0)`);
+            }
         }
 
         if (difficulty !== undefined && difficulty !== '') {
@@ -104,7 +107,7 @@ export default class UserDB {
                 ? `u.id, u.first_name, u.last_name`
                 : `u.id, u.first_name, u.last_name, u.email, 
                    u.first_aid_expiry, u.filled_legal_info, u.is_member, u.free_sessions, u.difficulty_level,
-                   u.swims, u.booties, u.debt_limit, u.debt_limit_expires_at,
+                   u.swims, u.booties, u.debt_limit, u.debt_limit_expires_at, u.is_permanent_member,
                    (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t WHERE t.user_id = u.id) as balance,
                    u.profile_picture_id, u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
                    (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path`;
@@ -153,10 +156,14 @@ export default class UserDB {
 
         try {
             const user = await db.get(
-                `SELECT ${mappedElements.join(', ')} FROM users WHERE id = ?`,
+                `SELECT ${mappedElements.join(', ')}, is_permanent_member FROM users WHERE id = ?`,
                 [userId]
             );
             if (!user) return new statusObject(404, 'User not found');
+
+            if (user.is_permanent_member === 1) {
+                user.is_member = 1; // Force is_member to true if they are a permanent member
+            }
             return new statusObject(200, null, user);
         } catch (error: any) {
             Logger.error(`Database error in getElements (${(elements as string[]).join(', ')}):`, error);
@@ -239,6 +246,8 @@ export default class UserDB {
                         medical_conditions_details = NULL,
                         takes_medication = 0,
                         medication_details = NULL,
+                        has_dietary_info = 0,
+                        dietary_info_details = NULL,
                         profile_picture_id = NULL,
                         profile_picture_color = NULL,
                         profile_picture_font = NULL,
@@ -308,6 +317,15 @@ export default class UserDB {
         const ExecDB = (await import('./execDB.js')).default;
 
         return db.transaction(async (tx) => {
+            // Find the current President and mark them as permanent member
+            const currentPresident = await tx.get(
+                'SELECT u.id FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = ?',
+                ['President']
+            );
+            if (currentPresident) {
+                await tx.run('UPDATE users SET is_permanent_member = 1 WHERE id = ?', [currentPresident.id]);
+            }
+
             // Archive current committee before wiping roles
             await ExecDB.archiveCurrentCommittee(tx);
 
@@ -320,7 +338,9 @@ export default class UserDB {
                     date_of_birth = NULL, college_id = NULL, emergency_contact_name = NULL, 
                     emergency_contact_phone = NULL, home_address = NULL, phone_number = NULL, 
                     has_medical_conditions = 0, medical_conditions_details = NULL, 
-                    takes_medication = 0, medication_details = NULL, agrees_to_fitness_statement = 0,
+                    takes_medication = 0, medication_details = NULL, 
+                    has_dietary_info = 0, dietary_info_details = NULL,
+                    agrees_to_fitness_statement = 0,
                     agrees_to_club_rules = 0, agrees_to_pay_debts = 0, agrees_to_data_storage = 0, 
                     agrees_to_keep_health_data = 0, filled_legal_info = 0, legal_filled_at = NULL
                 WHERE agrees_to_keep_health_data = 0 OR agrees_to_keep_health_data IS NULL

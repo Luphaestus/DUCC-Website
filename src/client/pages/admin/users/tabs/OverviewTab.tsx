@@ -22,7 +22,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
     return (
         <div class="dashboard-section active">
             {/* Finance Overview */}
-            <article class="value-header full-height-no-margin">
+            <article class="value-header no-margin">
                 <div class="value-info">
                     <span class="value-title">Current Balance</span>
                     <div class="value-display" classList={{
@@ -33,7 +33,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                         £{Number(props.user.balance || 0).toFixed(2)}
                     </div>
                     <Show when={props.user.debt_limit > 0 && (!props.user.debt_limit_expires_at || new Date(props.user.debt_limit_expires_at) > new Date())}>
-                        <div style="font-size: 0.8rem; margin-top: 0.25rem; opacity: 0.8;">
+                        <div>
                             Debt Limit: £{Number(props.user.debt_limit).toFixed(2)}
                             <Show when={props.user.debt_limit_expires_at}>
                                 <br />Expires: {new Date(props.user.debt_limit_expires_at).toLocaleDateString()}
@@ -43,7 +43,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 </div>
             </article>
 
-            <div class="liquid-container no-margin" style={{ "--liquid-padding": "1.25rem" }}>
+            <div class="liquid-container no-margin">
                 <Show when={props.stats}>
                     <div class="stats-grid compact">
                         <div class="stat-item">
@@ -67,7 +67,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
             </div>
 
             {/* Attendance Overview */}
-            <article class="value-header full-height-no-margin">
+            <article class="value-header no-margin">
                 <div class="value-info">
                     <span class="value-title">Membership Status</span>
                     <div class="value-display" classList={{ 'positive': props.user.is_member }}>
@@ -77,7 +77,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 <div class="value-actions" innerHTML={DASHBOARD_SVG}></div>
             </article>
 
-            <div class="liquid-container no-margin" style={{ "--liquid-padding": "1.25rem" }}>
+            <div class="liquid-container no-margin">
                 <Show when={props.stats}>
                     <div class="stats-grid compact">
                         <div class="stat-item">
@@ -114,7 +114,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                     <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.allTime?.booties || 0}</span><span class="stat-label">Total Booties</span></div>
                 </div>
                 <Show when={canManageSwims()}>
-                    <div class="panel-actions-centered mt-6" style="display: flex; justify-content: center; gap: 1rem;">
+                    <div class="panel-actions-centered" style="display: flex; justify-content: center; gap: 1rem;">
                         <button class="small-btn primary" onClick={() => handleLogAction('swims')}><span innerHTML={ADD_SVG} /> Log Swim</button>
                         <button class="small-btn secondary" onClick={() => handleLogAction('booties')}><span innerHTML={ADD_SVG} /> Log Bootie</button>
                     </div>

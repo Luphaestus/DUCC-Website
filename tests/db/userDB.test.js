@@ -27,6 +27,15 @@ describe('db/userDB', () => {
         expect(res.getData()).toEqual({ first_name: 'John', email: 'john@test.com' });
     });
 
+    test('getElementsById forces is_member to true for permanent members', async () => {
+        await world.createUser('perm_user', { first_name: 'President', email: 'president@test.com', is_member: 0 });
+        const permUserId = world.data.users['perm_user'];
+        await world.db.run('UPDATE users SET is_permanent_member = 1 WHERE id = ?', [permUserId]);
+
+        const res = await UserDB.getElementsById(world.db, permUserId, ['is_member']);
+        expect(res.getData().is_member).toBe(1);
+    });
+
     test('writeElements correctly updates user record data', async () => {
         await world.createUser('user', { first_name: 'Old Name' });
         const userId = world.data.users['user'];
@@ -49,6 +58,26 @@ describe('db/userDB', () => {
         
         expect(user.first_name).toBe('John');
         expect(user.balance).toBe(50.0);
+    });
+
+    test('getUsers filters correctly with isMember, considering permanent members', async () => {
+        await world.createUser('member', { first_name: 'Regular', is_member: 1 });
+        await world.createUser('non_member', { first_name: 'Guest', is_member: 0 });
+        await world.createUser('perm_member', { first_name: 'Ex-Pres', is_member: 0 }); // Initially non-member
+        const permUserId = world.data.users['perm_member'];
+        await world.db.run('UPDATE users SET is_permanent_member = 1 WHERE id = ?', [permUserId]); // Make permanent
+
+        const perms = { canManageUsers: true };
+
+        // Test filtering for members
+        let res = await UserDB.getUsers(world.db, perms, { isMember: 'true' });
+        let userNames = res.getData().users.map(u => u.first_name).sort();
+        expect(userNames).toEqual(['Ex-Pres', 'Regular']); // Should include both regular member and permanent member
+
+        // Test filtering for non-members
+        res = await UserDB.getUsers(world.db, perms, { isMember: 'false' });
+        userNames = res.getData().users.map(u => u.first_name).sort();
+        expect(userNames).toEqual(['Guest']); // Should only include actual non-members, exclude permanent members
     });
 
     /** Test soft-delete logic. */

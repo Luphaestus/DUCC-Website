@@ -137,6 +137,26 @@ nav.navbar-full-width {
         opacity: 1;
         color: var(--pico-primary);
       }
+
+      .nav-badge {
+        position: absolute;
+        top: -2px;
+        right: -4px;
+        background: var(--pico-primary);
+        color: var(--pico-primary-inverse);
+        font-size: 0.65rem;
+        font-weight: 800;
+        min-width: 1.1rem;
+        height: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 2px solid var(--theme-opposite-bg, #fff);
+        line-height: 1;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+      }
     }
 
     &:hover .nav-link:hover {
@@ -307,7 +327,9 @@ nav.navbar-full-width {
     }
 
     .mobile-link {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 1rem 1.5rem;
       color: var(--theme-opposite);
       text-decoration: none;
@@ -315,6 +337,20 @@ nav.navbar-full-width {
       font-size: 1.1rem;
       border-radius: 16px;
       transition: color 0.2s ease, transform 0.2s ease;
+
+      .nav-badge {
+        background: var(--pico-primary);
+        color: var(--pico-primary-inverse);
+        font-size: 0.75rem;
+        font-weight: 800;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        line-height: 1;
+      }
 
       &:hover,
       &.active {

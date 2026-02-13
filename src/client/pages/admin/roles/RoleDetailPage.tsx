@@ -3,8 +3,8 @@ import { createSignal, createResource, For, Show } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { 
-    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG 
+import {
+    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG
 } from '@/utils/icons';
 import { debounce } from "@/utils/utils";
 import PageTitle from "@/components/PageTitle";
@@ -92,11 +92,11 @@ export default function RoleDetailPage() {
 
     return (
         <div class="glass-layout">
-            <button class="small-btn secondary outline mb-4" onClick={() => navigate('/admin/roles')}>
+            <button class="small-btn secondary outline" onClick={() => navigate('/admin/roles')}>
                 <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
             </button>
             <PageTitle text={isNew() ? 'Create New Role' : 'Edit Role'} centered={true} />
-            <div class="panel mt-6">
+            <div class="panel">
                 <div class="panel-header">
                     <h3 style="margin: 0;">Details</h3>
                     <div class="panel-actions">
@@ -128,10 +128,10 @@ export default function RoleDetailPage() {
                                 <For each={allPermissions()}>
                                     {p => (
                                         <label class="checkbox-label">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={role()?.permissions.includes(p.slug)} 
-                                                onChange={() => togglePermission(p.slug)} 
+                                            <input
+                                                type="checkbox"
+                                                checked={role()?.permissions.includes(p.slug)}
+                                                onChange={() => togglePermission(p.slug)}
                                             /> {p.key || p.slug}
                                         </label>
                                     )}
@@ -139,7 +139,7 @@ export default function RoleDetailPage() {
                             </div>
 
                             <Show when={isNew()}>
-                                <div class="form-actions-footer mt-2">
+                                <div class="form-actions-footer">
                                     <button type="submit" class="primary-btn wide-btn">
                                         <span innerHTML={SAVE_SVG} /> Create
                                     </button>

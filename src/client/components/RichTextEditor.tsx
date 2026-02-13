@@ -14,7 +14,8 @@ import {
     FORMAT_BOLD_SVG, FORMAT_ITALIC_SVG, FORMAT_UNDERLINED_SVG, FORMAT_STRIKETHROUGH_SVG,
     FORMAT_LIST_BULLETED_SVG, FORMAT_LIST_NUMBERED_SVG, FORMAT_ALIGN_LEFT_SVG,
     FORMAT_ALIGN_CENTER_SVG, FORMAT_ALIGN_RIGHT_SVG, FORMAT_H1_SVG, FORMAT_H2_SVG,
-    HIGHLIGHT_SVG, PALETTE_SVG, IMAGE_SVG, DESCRIPTION_SVG, EDIT_SVG
+    HIGHLIGHT_SVG, PALETTE_SVG, IMAGE_SVG, DESCRIPTION_SVG, EDIT_SVG,
+    HISTORY_UNDO_SVG, HISTORY_REDO_SVG, LINK_SVG
 } from "@/utils/icons";
 
 interface RichTextEditorProps {
@@ -27,6 +28,9 @@ export default function RichTextEditor(props: RichTextEditorProps) {
     let editorElement: HTMLDivElement | undefined;
     let editor: Editor | null = null;
     const [isActive, setIsActive] = createSignal<Record<string, boolean>>({});
+    const [showLinkInput, setShowLinkInput] = createSignal(false);
+    const [linkUrl, setLinkUrl] = createSignal('');
+    let linkInputRef: HTMLInputElement | undefined;
 
     const colors = ['#000000', '#7E317B', '#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6'];
 
@@ -44,6 +48,10 @@ export default function RichTextEditor(props: RichTextEditorProps) {
                 Image,
                 Link.configure({
                     openOnClick: false,
+                    autolink: true,
+                    // The link extension does not have a native UI. We will manage it
+                    // The default behavior is to toggle the mark when a link is detected in pasted content
+                    // Or when pressing Space/Enter after a URL.
                 }),
                 TextAlign.configure({
                     types: ['heading', 'paragraph'],
@@ -83,7 +91,16 @@ export default function RichTextEditor(props: RichTextEditorProps) {
             center: editor.isActive({ textAlign: 'center' }),
             right: editor.isActive({ textAlign: 'right' }),
             highlight: editor.isActive('highlight'),
+            undo: editor.can().undo(),
+            redo: editor.can().redo(),
+            link: editor.isActive('link'),
         });
+        // If a link is active, set the linkUrl for display/editing
+        if (editor.isActive('link')) {
+            setLinkUrl(editor.getAttributes('link').href || '');
+        } else {
+            setLinkUrl('');
+        }
     };
 
     onCleanup(() => {
@@ -104,8 +121,45 @@ export default function RichTextEditor(props: RichTextEditorProps) {
     const setAlignCenter = () => editor?.chain().focus().setTextAlign('center').run();
     const setAlignRight = () => editor?.chain().focus().setTextAlign('right').run();
     const toggleHighlight = () => editor?.chain().focus().toggleHighlight().run();
-    
+
     const setColor = (color: string) => editor?.chain().focus().setColor(color).run();
+
+    const undo = () => editor?.chain().focus().undo().run();
+    const redo = () => editor?.chain().focus().redo().run();
+
+    const applyLink = () => {
+        if (editor) {
+            const url = linkUrl();
+            // empty link: unset
+            if (url === '') {
+                editor.chain().focus().unsetLink().run();
+                return;
+            }
+            // update link
+            editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+            setShowLinkInput(false);
+        }
+    };
+
+    const toggleLink = () => {
+        if (editor && editor.isActive('link')) {
+            editor.chain().focus().unsetLink().run();
+            setShowLinkInput(false);
+            setLinkUrl('');
+            return;
+        }
+        setShowLinkInput(!showLinkInput());
+        if (!showLinkInput()) { // if we're hiding it, clear the URL
+            setLinkUrl('');
+        } else { // if showing, try to pre-fill with existing link
+            if (editor && editor.getAttributes('link').href) {
+                setLinkUrl(editor.getAttributes('link').href);
+            } else {
+                setLinkUrl(''); // empty if no existing link
+            }
+            setTimeout(() => linkInputRef?.focus(), 0); // Focus input after it renders
+        }
+    };
 
     const handleImageUpload = () => {
         const widget = new UploadWidget(document.createElement('div'), {
@@ -119,43 +173,50 @@ export default function RichTextEditor(props: RichTextEditorProps) {
     };
 
     return (
-        <div class="rich-text-editor liquid-container glass-panel no-padding overflow-hidden" style={{ "--liquid-border-radius": "12px", border: "1px solid rgba(var(--pico-color-rgb), 0.1)" }}>
+        <div class="rich-text-editor liquid-container glass-panel no-padding overflow-hidden" style={{ border: "1px solid rgba(var(--pico-color-rgb), 0.1)" }}>
             <div class="editor-toolbar p-2 border-bottom flex flex-wrap gap-1 bg-[rgba(var(--pico-color-rgb),0.03)]">
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bold }} onClick={toggleBold} title="Bold"><span innerHTML={FORMAT_BOLD_SVG}/></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().italic }} onClick={toggleItalic} title="Italic"><span innerHTML={FORMAT_ITALIC_SVG}/></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().underline }} onClick={toggleUnderline} title="Underline"><span innerHTML={FORMAT_UNDERLINED_SVG}/></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().strike }} onClick={toggleStrike} title="Strikethrough"><span innerHTML={FORMAT_STRIKETHROUGH_SVG}/></button>
-                </div>
-                
-                <div class="toolbar-divider"></div>
-                
-                <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h1 }} onClick={toggleH1} title="Heading 1"><span innerHTML={FORMAT_H1_SVG}/></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h2 }} onClick={toggleH2} title="Heading 2"><span innerHTML={FORMAT_H2_SVG}/></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bold }} onClick={toggleBold} title="Bold"><span innerHTML={FORMAT_BOLD_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().italic }} onClick={toggleItalic} title="Italic"><span innerHTML={FORMAT_ITALIC_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().underline }} onClick={toggleUnderline} title="Underline"><span innerHTML={FORMAT_UNDERLINED_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().strike }} onClick={toggleStrike} title="Strikethrough"><span innerHTML={FORMAT_STRIKETHROUGH_SVG} /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bulletList }} onClick={toggleBulletList} title="Bullet List"><span innerHTML={FORMAT_LIST_BULLETED_SVG}/></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().orderedList }} onClick={toggleOrderedList} title="Ordered List"><span innerHTML={FORMAT_LIST_NUMBERED_SVG}/></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h1 }} onClick={toggleH1} title="Heading 1"><span innerHTML={FORMAT_H1_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h2 }} onClick={toggleH2} title="Heading 2"><span innerHTML={FORMAT_H2_SVG} /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().left }} onClick={setAlignLeft} title="Align Left"><span innerHTML={FORMAT_ALIGN_LEFT_SVG}/></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().center }} onClick={setAlignCenter} title="Align Center"><span innerHTML={FORMAT_ALIGN_CENTER_SVG}/></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().right }} onClick={setAlignRight} title="Align Right"><span innerHTML={FORMAT_ALIGN_RIGHT_SVG}/></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bulletList }} onClick={toggleBulletList} title="Bullet List"><span innerHTML={FORMAT_LIST_BULLETED_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().orderedList }} onClick={toggleOrderedList} title="Ordered List"><span innerHTML={FORMAT_LIST_NUMBERED_SVG} /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().highlight }} onClick={toggleHighlight} title="Highlight"><span innerHTML={HIGHLIGHT_SVG}/></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().left }} onClick={setAlignLeft} title="Align Left"><span innerHTML={FORMAT_ALIGN_LEFT_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().center }} onClick={setAlignCenter} title="Align Center"><span innerHTML={FORMAT_ALIGN_CENTER_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().right }} onClick={setAlignRight} title="Align Right"><span innerHTML={FORMAT_ALIGN_RIGHT_SVG} /></button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().undo }} onClick={undo} title="Undo"><span innerHTML={HISTORY_UNDO_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().redo }} onClick={redo} title="Redo"><span innerHTML={HISTORY_REDO_SVG} /></button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().highlight }} onClick={toggleHighlight} title="Highlight"><span innerHTML={HIGHLIGHT_SVG} /></button>
                     <div class="color-picker-dropdown">
-                        <button type="button" class="toolbar-btn" title="Text Color"><span innerHTML={PALETTE_SVG}/></button>
+                        <button type="button" class="toolbar-btn" title="Text Color"><span innerHTML={PALETTE_SVG} /></button>
                         <div class="color-palette">
                             {colors.map(c => (
                                 <div class="color-swatch" style={{ background: c }} onClick={() => setColor(c)} />
@@ -166,8 +227,27 @@ export default function RichTextEditor(props: RichTextEditorProps) {
 
                 <div class="toolbar-divider"></div>
 
-                <button type="button" class="toolbar-btn" onClick={handleImageUpload} title="Upload Image"><span innerHTML={IMAGE_SVG}/></button>
+                <div class="toolbar-group">
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().link }} onClick={toggleLink} title="Link"><span innerHTML={LINK_SVG} /></button>
+                    <button type="button" class="toolbar-btn" onClick={handleImageUpload} title="Upload Image"><span innerHTML={IMAGE_SVG} /></button>
+                </div>
             </div>
+
+            <Show when={showLinkInput()}>
+                <div class="link-input-container p-2 border-bottom bg-[rgba(var(--pico-color-rgb),0.03)] flex gap-2 items-center">
+                    <input
+                        type="url"
+                        ref={linkInputRef}
+                        class="form-control mini-input flex-grow"
+                        placeholder="Enter URL"
+                        value={linkUrl()}
+                        onInput={(e) => setLinkUrl(e.currentTarget.value)}
+                        onKeyPress={(e) => { if (e.key === 'Enter') applyLink(); }}
+                    />
+                    <button type="button" class="small-btn primary" onClick={applyLink}>Apply</button>
+                    <button type="button" class="small-btn secondary" onClick={() => setShowLinkInput(false)}>Cancel</button>
+                </div>
+            </Show>
 
             <div ref={editorElement} class="editor-content bg-transparent min-h-[200px]" />
 

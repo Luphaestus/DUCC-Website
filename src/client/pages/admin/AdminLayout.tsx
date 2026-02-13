@@ -55,24 +55,24 @@ export default function AdminLayout(props: ParentProps) {
                     Admin <span class="admin-title-section">{pageTitle()}</span>
                 </h1>
             </header>
-            
+
             <Show when={hasNav() && !isDashboard() && !isDetailsPage()}>
-                <div class="liquid-container glass-toolbar" style={{ "--liquid-padding": "0.5rem 1rem", "--liquid-border-radius": "100px", "margin-bottom": "0" }}>
+                <div class="liquid-container glass-toolbar" style={{ "margin-bottom": "0" }}>
                     <div class="toolbar-left">
-                        <AdminNavBar 
-                            permissions={user()!.permissions} 
-                            isPresident={!!globals()} 
+                        <AdminNavBar
+                            permissions={user()!.permissions}
+                            isPresident={!!globals()}
                         />
                     </div>
                     <div class="toolbar-right">
                         <div id="admin-header-actions" class="header-actions"></div>
                     </div>
                 </div>
-            </Show>
+            </Show >
 
             <div id="admin-content-wrapper" class="admin-content-wrapper">
-                 {props.children}
+                {props.children}
             </div>
-        </div>
+        </div >
     );
 }

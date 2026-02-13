@@ -1,22 +1,31 @@
-import * as THREE from 'three';
+import {
+    Scene, PerspectiveCamera, WebGLRenderer, Clock, Fog, Group, Mesh,
+    AmbientLight, DirectionalLight, PointLight, Vector2, Vector3,
+    MathUtils, SRGBColorSpace, PCFSoftShadowMap, PlaneGeometry,
+    MeshStandardMaterial, DoubleSide, MeshPhysicalMaterial,
+    DodecahedronGeometry, ConeGeometry, LatheGeometry, TorusGeometry,
+    CylinderGeometry, SphereGeometry, Shape, ShapeGeometry,
+    Points, BufferGeometry, BufferAttribute, PointsMaterial,
+    AdditiveBlending, Color
+} from 'three';
 
 type Theme = 'light' | 'dark';
 export type Biome = 'sunny' | 'rainy' | 'winter' | 'autumn';
 
 interface KayakerState {
-    group: THREE.Group;
-    body: THREE.Mesh;
-    paddle: THREE.Group;
+    group: Group;
+    body: Mesh;
+    paddle: Group;
     offset: number;
 }
 
 interface ChunkState {
-    mesh: THREE.Group;
+    mesh: Group;
     zInitial: number;
 }
 
 interface Entity {
-    mesh: THREE.Group;
+    mesh: Group;
     speed: number;
     userData?: any;
 }
@@ -32,37 +41,37 @@ const TOTAL_RIVER_LENGTH = CHUNK_SIZE * NUM_CHUNKS;
 
 export class RiverScene {
     // Core THREE elements
-    scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
-    renderer: THREE.WebGLRenderer;
+    scene: Scene;
+    camera: PerspectiveCamera;
+    renderer: WebGLRenderer;
     container: HTMLElement;
-    clock: THREE.Clock;
+    clock: Clock;
     requestID: number | null = null;
     private isDisposed: boolean = false;
 
     // Environment State
     theme: Theme = 'dark';
     biome: Biome = 'sunny';
-    fog: THREE.Fog;
+    fog: Fog;
 
     // Scene Objects
     chunks: ChunkState[] = [];
     kayakers: KayakerState[] = [];
     planes: Entity[] = [];
     birds: BirdEntity[] = [];
-    fish: THREE.Group[] = [];
+    fish: Group[] = [];
 
     // Environment Objects
-    sun!: THREE.Mesh;
-    moon!: THREE.Mesh;
-    moonLight!: THREE.DirectionalLight;
-    stars!: THREE.Points;
-    weatherSystem!: THREE.Points;
+    sun!: Mesh;
+    moon!: Mesh;
+    moonLight!: DirectionalLight;
+    stars!: Points;
+    weatherSystem!: Points;
 
     lights: {
-        ambient: THREE.AmbientLight;
-        directional: THREE.DirectionalLight;
-        point: THREE.PointLight;
+        ambient: AmbientLight;
+        directional: DirectionalLight;
+        point: PointLight;
     };
 
     // Animation State
@@ -73,7 +82,7 @@ export class RiverScene {
 
     uniforms: {
         uTime: { value: number };
-        uCurve: { value: THREE.Vector2 };
+        uCurve: { value: Vector2 };
         uSpeed: { value: number };
         uWeather: { value: number };
     };
@@ -90,26 +99,26 @@ export class RiverScene {
     constructor(container: HTMLElement, theme: Theme = 'dark') {
         this.container = container;
         this.theme = theme;
-        this.clock = new THREE.Clock();
+        this.clock = new Clock();
 
         this.uniforms = {
             uTime: { value: 0 },
-            uCurve: { value: new THREE.Vector2(0, 0) },
+            uCurve: { value: new Vector2(0, 0) },
             uSpeed: { value: 12.0 },
             uWeather: { value: 1.0 }
         };
 
         // 1. Init Scene & Camera
-        this.scene = new THREE.Scene();
-        this.fog = new THREE.Fog(0x020617, 10, 210); // Fog ends just before the chunks recycle
+        this.scene = new Scene();
+        this.fog = new Fog(0x020617, 10, 210); // Fog ends just before the chunks recycle
         this.scene.fog = this.fog;
 
-        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 2000);
+        this.camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 2000);
         this.camera.position.set(0, 6, 15);
         this.camera.lookAt(0, 2, -30);
 
         // 2. Init Renderer
-        this.renderer = new THREE.WebGLRenderer({
+        this.renderer = new WebGLRenderer({
             alpha: true,
             antialias: true,
             powerPreference: "high-performance",
@@ -120,16 +129,16 @@ export class RiverScene {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.type = PCFSoftShadowMap;
         this.renderer.setClearColor(0x000000, 0);
-        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.outputColorSpace = SRGBColorSpace;
         this.container.appendChild(this.renderer.domElement);
 
         // 3. Init Lights
         this.lights = {
-            ambient: new THREE.AmbientLight(0xffffff, 0.2),
-            directional: new THREE.DirectionalLight(0x818cf8, 0.5),
-            point: new THREE.PointLight(0x00A8CC, 0.8, 20)
+            ambient: new AmbientLight(0xffffff, 0.2),
+            directional: new DirectionalLight(0x818cf8, 0.5),
+            point: new PointLight(0x00A8CC, 0.8, 20)
         };
         this.setupLights();
 
@@ -243,7 +252,7 @@ export class RiverScene {
         const delta = 0.1 + noise * 0.4;
         
         // Higher delta = steeper drop = rapids
-        const rapidIntensity = THREE.MathUtils.smoothstep(delta, 0.35, 0.48);
+        const rapidIntensity = MathUtils.smoothstep(delta, 0.35, 0.48);
 
         // Add some noise rapids in other areas
         const n = Math.sin(z * 0.5) * Math.cos(z * 0.1);
@@ -278,7 +287,7 @@ export class RiverScene {
             const k = 2 * Math.PI / 300;
             const noise = Math.sin(x * 0.3) + Math.cos(z * k * 10);
             const biomeMix = Math.sin(z * k) * 0.5 + 0.5;
-            h += noise * THREE.MathUtils.lerp(1.5, 4.0, biomeMix);
+            h += noise * MathUtils.lerp(1.5, 4.0, biomeMix);
 
             return h + slopeHeight;
         }
@@ -327,7 +336,7 @@ export class RiverScene {
     // Material & Shaders
     // =========================================
 
-    private modifyMaterial(material: THREE.Material, isWater = false) {
+    private modifyMaterial(material: MeshStandardMaterial | MeshPhysicalMaterial, isWater = false) {
         material.dithering = true;
         material.onBeforeCompile = (shader) => {
             shader.uniforms.uTime = this.uniforms.uTime;
@@ -466,7 +475,7 @@ export class RiverScene {
     // =========================================
 
     private createRiverChunk(zOffset: number): ChunkState {
-        const group = new THREE.Group();
+        const group = new Group();
         group.position.set(0, -5, zOffset); // Base Y is -5 relative to camera
 
         const width = 120;
@@ -475,9 +484,9 @@ export class RiverScene {
         const lengthSegments = 64;
 
         // 1. Terrain Mesh
-        const geometry = new THREE.PlaneGeometry(width, length, widthSegments, lengthSegments);
+        const geometry = new PlaneGeometry(width, length, widthSegments, lengthSegments);
         const posAttribute = geometry.getAttribute('position');
-        const vertex = new THREE.Vector3();
+        const vertex = new Vector3();
 
         for (let i = 0; i < posAttribute.count; i++) {
             vertex.fromBufferAttribute(posAttribute, i);
@@ -488,13 +497,13 @@ export class RiverScene {
         }
         geometry.computeVertexNormals();
 
-        const terrainMat = new THREE.MeshStandardMaterial({
+        const terrainMat = new MeshStandardMaterial({
             flatShading: true,
             roughness: 0.9,
-            side: THREE.DoubleSide
+            side: DoubleSide
         });
         this.modifyMaterial(terrainMat);
-        const terrain = new THREE.Mesh(geometry, terrainMat);
+        const terrain = new Mesh(geometry, terrainMat);
         terrain.rotation.x = -Math.PI / 2;
         terrain.receiveShadow = true;
         terrain.castShadow = true;
@@ -502,7 +511,7 @@ export class RiverScene {
 
         // 2. Water Mesh
         // Water needs to be wider to cover bends
-        const waterGeo = new THREE.PlaneGeometry(40, length, 40, lengthSegments);
+        const waterGeo = new PlaneGeometry(40, length, 40, lengthSegments);
         const waterPos = waterGeo.getAttribute('position');
 
         for (let i = 0; i < waterPos.count; i++) {
@@ -523,7 +532,7 @@ export class RiverScene {
         }
         waterGeo.computeVertexNormals();
 
-        const waterMat = new THREE.MeshPhysicalMaterial({
+        const waterMat = new MeshPhysicalMaterial({
             transparent: true,
             opacity: 0.8,
             metalness: 0.5,
@@ -531,7 +540,7 @@ export class RiverScene {
             clearcoat: 1
         });
         this.modifyMaterial(waterMat, true);
-        const water = new THREE.Mesh(waterGeo, waterMat);
+        const water = new Mesh(waterGeo, waterMat);
         water.rotation.x = -Math.PI / 2;
         water.position.y = -0.5; // Slightly below terrain origin to avoid z-fighting at banks
         group.add(water);
@@ -543,7 +552,7 @@ export class RiverScene {
         return { mesh: group, zInitial: zOffset };
     }
 
-    private addDecorations(group: THREE.Group, zOffset: number) {
+    private addDecorations(group: Group, zOffset: number) {
         // Rocks
         for (let k = 0; k < 5; k++) {
             const pZLocal = (Math.random() - 0.5) * CHUNK_SIZE;
@@ -556,10 +565,10 @@ export class RiverScene {
 
             const pX = riverX + offset;
 
-            const rockGeo = new THREE.DodecahedronGeometry(Math.random() * 0.8 + 0.5, 0);
-            const rockMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.8 });
+            const rockGeo = new DodecahedronGeometry(Math.random() * 0.8 + 0.5, 0);
+            const rockMat = new MeshStandardMaterial({ color: 0x57534e, roughness: 0.8 });
             this.modifyMaterial(rockMat);
-            const rock = new THREE.Mesh(rockGeo, rockMat);
+            const rock = new Mesh(rockGeo, rockMat);
             const h = this.getTerrainHeight(pX, pZGlobal);
             rock.position.set(pX, h + 0.3, pZLocal);
             rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
@@ -578,9 +587,9 @@ export class RiverScene {
             const pX = riverX + (Math.random() > 0.5 ? 1 : -1) * (width + 4 + Math.random() * 20);
 
             const h = this.getTerrainHeight(pX, pZGlobal);
-            const treeMat = new THREE.MeshStandardMaterial({ color: 0x064e3b });
+            const treeMat = new MeshStandardMaterial({ color: 0x064e3b });
             this.modifyMaterial(treeMat);
-            const tree = new THREE.Mesh(new THREE.ConeGeometry(1.5, 6, 8), treeMat);
+            const tree = new Mesh(new ConeGeometry(1.5, 6, 8), treeMat);
             tree.position.set(pX, h + 3, pZLocal);
             tree.castShadow = true;
             group.add(tree);
@@ -598,30 +607,30 @@ export class RiverScene {
     // =========================================
 
     private createKayaker(pos: [number, number, number], color: string, paddlerColor: string, offset: number) {
-        const group = new THREE.Group();
+        const group = new Group();
 
         // --- 1. Hull & Cockpit (Base of the boat) ---
         const points = [
-            new THREE.Vector2(0, -2.2),
-            new THREE.Vector2(0.25, -1.5),
-            new THREE.Vector2(0.35, 0),
-            new THREE.Vector2(0.25, 1.5),
-            new THREE.Vector2(0, 2.2)
+            new Vector2(0, -2.2),
+            new Vector2(0.25, -1.5),
+            new Vector2(0.35, 0),
+            new Vector2(0.25, 1.5),
+            new Vector2(0, 2.2)
         ];
-        const hullGeo = new THREE.LatheGeometry(points, 12);
-        const hullMat = new THREE.MeshStandardMaterial({ color, roughness: 0.1 });
+        const hullGeo = new LatheGeometry(points, 12);
+        const hullMat = new MeshStandardMaterial({ color, roughness: 0.1 });
         this.modifyMaterial(hullMat);
-        const hull = new THREE.Mesh(hullGeo, hullMat);
+        const hull = new Mesh(hullGeo, hullMat);
         hull.rotation.x = -Math.PI / 2;
         hull.scale.set(1, 1, 0.5);
         hull.position.y = 0.2;
         hull.castShadow = true;
         group.add(hull);
 
-        const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const rimMat = new MeshStandardMaterial({ color: 0x111111 });
         this.modifyMaterial(rimMat);
-        const rim = new THREE.Mesh(
-            new THREE.TorusGeometry(0.25, 0.03, 8, 16),
+        const rim = new Mesh(
+            new TorusGeometry(0.25, 0.03, 8, 16),
             rimMat
         );
         rim.rotation.x = -Math.PI / 2;
@@ -630,52 +639,52 @@ export class RiverScene {
         group.add(rim);
 
         // --- 2. The Paddler (Body) ---
-        const bodyMat = new THREE.MeshStandardMaterial({ color: paddlerColor });
+        const bodyMat = new MeshStandardMaterial({ color: paddlerColor });
         this.modifyMaterial(bodyMat);
         // Body is the parent for Head and Paddle
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.55, 8), bodyMat);
+        const body = new Mesh(new CylinderGeometry(0.25, 0.22, 0.55, 8), bodyMat);
         body.position.set(0, 0.6, 0); // Position relative to Boat
         body.castShadow = true;
         group.add(body);
 
         // Head (Child of Body)
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0a9 });
+        const headMat = new MeshStandardMaterial({ color: 0xf5d0a9 });
         this.modifyMaterial(headMat);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), headMat);
+        const head = new Mesh(new SphereGeometry(0.15, 16, 16), headMat);
         head.position.set(0, 0.4, 0); // Relative to Body center (0.55 height / 2 approx)
         head.castShadow = true;
         body.add(head);
 
         // --- 3. The Paddle (Child of Body) ---
-        const paddleGroup = new THREE.Group();
+        const paddleGroup = new Group();
         // Position relative to BODY. 
         // Body center is 0. We want it slightly up (shoulders) and forward.
         paddleGroup.position.set(0, 0.2, -0.4);
 
-        const shaftMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const shaftMat = new MeshStandardMaterial({ color: 0x111111 });
         this.modifyMaterial(shaftMat);
-        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.8, 8), shaftMat);
+        const shaft = new Mesh(new CylinderGeometry(0.04, 0.04, 2.8, 8), shaftMat);
         shaft.rotation.z = Math.PI / 2;
         shaft.castShadow = true;
         paddleGroup.add(shaft);
 
-        const bladeMat = new THREE.MeshStandardMaterial({
+        const bladeMat = new MeshStandardMaterial({
             color: 0xeeeeee,
-            side: THREE.DoubleSide,
+            side: DoubleSide,
             roughness: 0.3,
             metalness: 0.2
         });
         this.modifyMaterial(bladeMat);
 
         // Create a realistic asymmetric teardrop shape for the blade
-        const bladeShape = new THREE.Shape();
+        const bladeShape = new Shape();
         bladeShape.moveTo(0, 0.03);
         bladeShape.bezierCurveTo(0.2, 0.03, 0.4, 0.18, 0.75, 0.15);
         bladeShape.bezierCurveTo(0.85, 0.12, 0.85, -0.12, 0.75, -0.15);
         bladeShape.bezierCurveTo(0.4, -0.18, 0.2, -0.03, 0, -0.03);
         bladeShape.lineTo(0, 0.03);
 
-        const bladeGeo = new THREE.ShapeGeometry(bladeShape, 12);
+        const bladeGeo = new ShapeGeometry(bladeShape, 12);
         // Add a "spoon" curve to the blade vertices
         const positions = bladeGeo.attributes.position;
         for (let i = 0; i < positions.count; i++) {
@@ -684,14 +693,14 @@ export class RiverScene {
         }
         bladeGeo.computeVertexNormals();
 
-        const leftBlade = new THREE.Mesh(bladeGeo, bladeMat);
+        const leftBlade = new Mesh(bladeGeo, bladeMat);
         leftBlade.position.set(-1.4, 0, 0);
         leftBlade.rotation.y = Math.PI; // Point outwards and face the right way
         leftBlade.rotation.x = Math.PI / 8; // Slight angle for realism
         leftBlade.castShadow = true;
         paddleGroup.add(leftBlade);
 
-        const rightBlade = new THREE.Mesh(bladeGeo, bladeMat);
+        const rightBlade = new Mesh(bladeGeo, bladeMat);
         rightBlade.position.set(1.4, 0, 0);
         rightBlade.rotation.x = Math.PI / 2 + Math.PI / 8; // Feathered + slight angle
         rightBlade.castShadow = true;
@@ -701,7 +710,7 @@ export class RiverScene {
         body.add(paddleGroup);
 
         // Wrapper for the whole kayak
-        const wrapper = new THREE.Group();
+        const wrapper = new Group();
         wrapper.position.set(...pos);
         wrapper.add(group);
 
@@ -710,7 +719,7 @@ export class RiverScene {
     }
 
     private initKayakers() {
-        const wrapper = new THREE.Group();
+        const wrapper = new Group();
         wrapper.position.y = -5.5;
 
         const colors = [
@@ -740,15 +749,15 @@ export class RiverScene {
     // --- Spawners ---
 
     private spawnBird() {
-        const group = new THREE.Group();
+        const group = new Group();
         const startX = Math.random() > 0.5 ? -100 : 100;
         group.position.set(startX, 15 + Math.random() * 15, this.camera.position.z - 30 - Math.random() * 50);
 
-        const birdMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-        const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.3), birdMat);
+        const birdMat = new MeshBasicMaterial({ color: 0x000000 });
+        const wingL = new Mesh(new BoxGeometry(0.8, 0.05, 0.3), birdMat);
         wingL.position.x = -0.4;
         group.add(wingL);
-        const wingR = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.3), birdMat);
+        const wingR = new Mesh(new BoxGeometry(0.8, 0.05, 0.3), birdMat);
         wingR.position.x = 0.4;
         group.add(wingR);
 
@@ -761,18 +770,18 @@ export class RiverScene {
     }
 
     private spawnPlane() {
-        const group = new THREE.Group();
+        const group = new Group();
         const fromLeft = Math.random() > 0.5;
         const startX = fromLeft ? -120 : 120;
         const endX = fromLeft ? 120 : -120;
         group.position.set(startX, 50 + Math.random() * 20, this.camera.position.z - 80 - Math.random() * 40);
 
-        const body = new THREE.Mesh(new THREE.CapsuleGeometry(1, 8, 4, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        const body = new Mesh(new CylinderGeometry(1, 1, 8, 8), new MeshStandardMaterial({ color: 0xffffff }));
         body.rotation.z = Math.PI / 2;
         group.add(body);
-        const wing = new THREE.Mesh(new THREE.BoxGeometry(2, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0xcccccc }));
+        const wing = new Mesh(new BoxGeometry(2, 0.2, 12), new MeshStandardMaterial({ color: 0xcccccc }));
         group.add(wing);
-        const tail = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.2), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+        const tail = new Mesh(new BoxGeometry(2, 2, 0.2), new MeshStandardMaterial({ color: 0xef4444 }));
         tail.position.set(-3.5, 1, 0);
         group.add(tail);
 
@@ -782,33 +791,33 @@ export class RiverScene {
     }
 
     private spawnFish() {
-        const group = new THREE.Group();
+        const group = new Group();
         
         // Bigger, more elongated body for a salmon
-        const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        const bodyGeo = new SphereGeometry(0.35, 12, 12);
         
         // Salmon colors: varying between deep spawning red and silvery-pink
         const isSpawning = Math.random() > 0.4;
         const fishColor = isSpawning ? 0x9b2226 : 0xfa8072; 
-        const fishMat = new THREE.MeshStandardMaterial({ 
+        const fishMat = new MeshStandardMaterial({ 
             color: fishColor, 
             roughness: 0.4,
             metalness: 0.3
         });
         
-        const body = new THREE.Mesh(bodyGeo, fishMat);
+        const body = new Mesh(bodyGeo, fishMat);
         body.scale.set(0.5, 1.2, 2.2); // Sleek and powerful profile
         group.add(body);
 
         // Larger tail for the bigger body
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.6, 3), fishMat);
+        const tail = new Mesh(new ConeGeometry(0.25, 0.6, 3), fishMat);
         tail.position.z = -0.8;
         tail.rotation.x = -Math.PI / 2;
         group.add(tail);
 
         // Add a dorsal fin
-        const finGeo = new THREE.BoxGeometry(0.04, 0.4, 0.6);
-        const fin = new THREE.Mesh(finGeo, fishMat);
+        const finGeo = new BoxGeometry(0.04, 0.4, 0.6);
+        const fin = new Mesh(finGeo, fishMat);
         fin.position.set(0, 0.45, -0.1);
         // Slightly taper the fin
         const finPos = finGeo.attributes.position;
@@ -827,7 +836,7 @@ export class RiverScene {
         const shouldJump = rapids > 0.3 || Math.random() > 0.7;
         
         const userData = { 
-            velocity: new THREE.Vector3(
+            velocity: new Vector3(
                 (Math.random() - 0.5) * 2, 
                 shouldJump ? 10 + Math.random() * 5 : 0, 
                 -this.uniforms.uSpeed.value - (5 + Math.random() * 5)
@@ -857,19 +866,19 @@ export class RiverScene {
 
     private initSky() {
         // Sun
-        const sunGeo = new THREE.SphereGeometry(30, 32, 32); // Larger for distance
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, fog: false });
-        this.sun = new THREE.Mesh(sunGeo, sunMat);
+        const sunGeo = new SphereGeometry(30, 32, 32); // Larger for distance
+        const sunMat = new MeshBasicMaterial({ color: 0xfacc15, fog: false });
+        this.sun = new Mesh(sunGeo, sunMat);
         this.scene.add(this.sun);
 
         // Moon
-        const moonGeo = new THREE.SphereGeometry(20, 32, 32); // Larger for distance
-        const moonMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.1, fog: false });
-        this.moon = new THREE.Mesh(moonGeo, moonMat);
+        const moonGeo = new SphereGeometry(20, 32, 32); // Larger for distance
+        const moonMat = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.1, fog: false });
+        this.moon = new Mesh(moonGeo, moonMat);
         this.scene.add(this.moon);
 
         // Light for Moon
-        this.moonLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        this.moonLight = new DirectionalLight(0xffffff, 2.0);
         this.scene.add(this.moonLight);
         this.scene.add(this.moonLight.target); // Ensure target is in scene
 
@@ -883,15 +892,15 @@ export class RiverScene {
             positions[i * 3 + 1] = Math.random() * 2000 - 200;
             positions[i * 3 + 2] = -Math.random() * 2000 - 500; // All between 500 and 2500 units away
         }
-        const starGeo = new THREE.BufferGeometry();
-        starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        this.stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 4.0, transparent: true, fog: false }));
+        const starGeo = new BufferGeometry();
+        starGeo.setAttribute('position', new BufferAttribute(positions, 3));
+        this.stars = new Points(starGeo, new PointsMaterial({ color: 0xffffff, size: 4.0, transparent: true, fog: false }));
         this.scene.add(this.stars);
     }
 
     private initWeather() {
         const count = 1500;
-        const geo = new THREE.BufferGeometry();
+        const geo = new BufferGeometry();
         const positions = new Float32Array(count * 3);
         const vels = new Float32Array(count);
 
@@ -902,16 +911,16 @@ export class RiverScene {
             vels[i] = Math.random() * 0.5 + 0.5;
         }
 
-        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geo.setAttribute('velocity', new THREE.BufferAttribute(vels, 1));
-        const mat = new THREE.PointsMaterial({
+        geo.setAttribute('position', new BufferAttribute(positions, 3));
+        geo.setAttribute('velocity', new BufferAttribute(vels, 1));
+        const mat = new PointsMaterial({
             color: 0xeeeeee,
             size: 0.4,
             transparent: true,
             opacity: 0.6,
-            blending: THREE.AdditiveBlending
+            blending: AdditiveBlending
         });
-        this.weatherSystem = new THREE.Points(geo, mat);
+        this.weatherSystem = new Points(geo, mat);
         this.scene.add(this.weatherSystem);
     }
 
@@ -940,8 +949,8 @@ export class RiverScene {
                 biome === 'autumn' ? (this.theme === 'dark' ? '#451a03' : '#fef3c7') :
                     '#e0f2fe';
 
-        this.scene.background = new THREE.Color(bgColor);
-        this.fog.color = new THREE.Color(bgColor);
+        this.scene.background = new Color(bgColor);
+        this.fog.color = new Color(bgColor);
 
         // Light intensity
         this.lights.ambient.intensity = isDark ? 0.3 : 0.8;
@@ -959,10 +968,10 @@ export class RiverScene {
 
         // Chunk colors (Simplified update loop)
         this.chunks.forEach(chunk => {
-            const terrain = chunk.mesh.children[0] as THREE.Mesh;
-            const water = chunk.mesh.children[1] as THREE.Mesh;
-            const tMat = terrain.material as THREE.MeshStandardMaterial;
-            const wMat = water.material as THREE.MeshPhysicalMaterial;
+            const terrain = chunk.mesh.children[0] as Mesh;
+            const water = chunk.mesh.children[1] as Mesh;
+            const tMat = terrain.material as MeshStandardMaterial;
+            const wMat = water.material as MeshPhysicalMaterial;
 
             if (biome === 'winter') {
                 tMat.color.set(0xf1f5f9);
@@ -1021,7 +1030,7 @@ export class RiverScene {
 
     private updateCameraAndControls(elapsed: number) {
         // Interaction
-        this.uniforms.uCurve.value.x = THREE.MathUtils.lerp(this.uniforms.uCurve.value.x, this.mouse.x * 2.0, 0.05);
+        this.uniforms.uCurve.value.x = MathUtils.lerp(this.uniforms.uCurve.value.x, this.mouse.x * 2.0, 0.05);
         this.uniforms.uCurve.value.y = 1.0;
 
         // Kayakers Logic
@@ -1043,9 +1052,9 @@ export class RiverScene {
             const desiredX = targetX + (Math.sin(t * 0.5) * 2.5) + mouseSteer;
 
             // Soft clamp to river width
-            const clampX = THREE.MathUtils.clamp(desiredX, targetX - riverWidth + 3, targetX + riverWidth - 3);
+            const clampX = MathUtils.clamp(desiredX, targetX - riverWidth + 3, targetX + riverWidth - 3);
 
-            k.group.position.x = THREE.MathUtils.lerp(k.group.position.x, clampX, 0.05);
+            k.group.position.x = MathUtils.lerp(k.group.position.x, clampX, 0.05);
 
             // Sample Height
             const hCenter = this.getWaterHeight(k.group.position.x, zGlobal, elapsed);
@@ -1073,8 +1082,8 @@ export class RiverScene {
             const pitch = Math.atan2(hFront - hBack, 2.0);
             const roll = (k.group.position.x - targetX) * -0.05 + Math.sin(t * 4) * 0.05;
 
-            boatGroup.rotation.z = THREE.MathUtils.lerp(boatGroup.rotation.z, roll, 0.1);
-            boatGroup.rotation.x = THREE.MathUtils.lerp(boatGroup.rotation.x, pitch, 0.1);
+            boatGroup.rotation.z = MathUtils.lerp(boatGroup.rotation.z, roll, 0.1);
+            boatGroup.rotation.x = MathUtils.lerp(boatGroup.rotation.x, pitch, 0.1);
         });
 
         // Mode Switching
@@ -1102,7 +1111,7 @@ export class RiverScene {
             const boatGroup = targetK.group.children[0];
             
             // Eye position relative to boat center: Exactly where the head is
-            const eyeOffset = new THREE.Vector3(0, -1.3, 1.3); 
+            const eyeOffset = new Vector3(0, -1.3, 1.3); 
             eyeOffset.applyEuler(boatGroup.rotation);
             
             camTargetX = targetK.group.position.x + eyeOffset.x;
@@ -1110,7 +1119,7 @@ export class RiverScene {
             camTargetZ = targetK.group.position.z + eyeOffset.z;
             
             // Look target follows boat rotation
-            const lookOffset = new THREE.Vector3(0, -0.2, -15);
+            const lookOffset = new Vector3(0, -0.2, -15);
             lookOffset.applyEuler(boatGroup.rotation);
             
             lookAtX = camTargetX + lookOffset.x;
@@ -1134,9 +1143,9 @@ export class RiverScene {
             lookAtZ = -30;
         }
 
-        this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, camTargetX, 0.05);
-        this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, camTargetY, 0.05);
-        this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, camTargetZ, 0.05);
+        this.camera.position.x = MathUtils.lerp(this.camera.position.x, camTargetX, 0.05);
+        this.camera.position.y = MathUtils.lerp(this.camera.position.y, camTargetY, 0.05);
+        this.camera.position.z = MathUtils.lerp(this.camera.position.z, camTargetZ, 0.05);
 
         // Safety check: Terrain Clipping
         // We sample terrain at current camera X/Z, adjusted for river speed
@@ -1157,7 +1166,7 @@ export class RiverScene {
         this.sun.position.set(this.camera.position.x - 400, this.camera.position.y + 500, this.camera.position.z - skyDist);
         this.moon.position.set(this.camera.position.x + 400, this.camera.position.y + 550, this.camera.position.z - skyDist);
         
-        this.moonLight.position.copy(this.moon.position).add(new THREE.Vector3(100, 100, 100));
+        this.moonLight.position.copy(this.moon.position).add(new Vector3(100, 100, 100));
         this.moonLight.target.position.set(this.camera.position.x, this.camera.position.y, this.camera.position.z - 200);
         this.moonLight.target.updateMatrixWorld();
 
@@ -1260,10 +1269,10 @@ export class RiverScene {
                 f.position.x += Math.sin(ud.swimPhase * 0.5) * 2 * delta;
                 
                 // Stay at water surface, slightly submerged
-                f.position.y = THREE.MathUtils.lerp(f.position.y, waterY - 0.2, 0.1);
+                f.position.y = MathUtils.lerp(f.position.y, waterY - 0.2, 0.1);
                 
                 // Orientation: look slightly side-to-side while swimming
-                const targetLookAt = new THREE.Vector3(
+                const targetLookAt = new Vector3(
                     f.position.x + Math.sin(ud.swimPhase * 0.5),
                     f.position.y,
                     f.position.z - 5

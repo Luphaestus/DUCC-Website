@@ -68,10 +68,10 @@ export default function SlidesPage() {
     return (
         <div class="glass-layout">
             <div class="glass-toolbar">
-                 {/* AdminNavBar is handled by Layout */}
+                {/* AdminNavBar is handled by Layout */}
             </div>
-            
-            <div class="panel mt-6">
+
+            <div class="panel">
                 <div class="panel-header">
                     <h3 style="margin: 0;"><span innerHTML={IMAGE_SVG} /> Manage Slides</h3>
                     <div class="panel-actions">
@@ -81,7 +81,7 @@ export default function SlidesPage() {
                     </div>
                 </div>
                 <div class="panel-content">
-                    <div id="slides-grid" class="image-grid mt-2">
+                    <div id="slides-grid" class="image-grid">
                         <Show when={slides.loading}>
                             <p class="loading-cell">Loading slides...</p>
                         </Show>
@@ -90,8 +90,8 @@ export default function SlidesPage() {
                         </Show>
                         <For each={slides()}>
                             {(slide) => (
-                                <div 
-                                    class="image-item slide-item slide-item-bg" 
+                                <div
+                                    class="image-item slide-item slide-item-bg"
                                     style={{ '--slide-url': `url('${slide.url}')` }}
                                     draggable={true}
                                     onDragStart={() => handleDragStart(slide.id)}
@@ -111,7 +111,7 @@ export default function SlidesPage() {
             </div>
 
             <Modal isOpen={showUpload()} onClose={() => setShowUpload(false)} title="Add Slide" maxWidth="800px">
-                <UploadWidget 
+                <UploadWidget
                     selectMode="single"
                     autoUpload={true}
                     enableLibrary={true}

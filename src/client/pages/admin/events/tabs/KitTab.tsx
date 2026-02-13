@@ -100,7 +100,7 @@ export default function KitTab(props: { eventId: number }) {
 
     return (
         <div class="kit-admin-tab">
-            <div class="kit-summary mb-6">
+            <div class="kit-summary">
                 <h3>Inventory Summary</h3>
                 <div class="glass-table-container">
                     <table class="glass-table">
@@ -123,10 +123,10 @@ export default function KitTab(props: { eventId: number }) {
                                         <td>{stat.available === -1 ? '?' : stat.available}</td>
                                         <td>
                                             <span class={`badge ${getStatusColor(stat.requested, stat.available)}`}>
-                                                {stat.available === -1 ? 'Check Manual' : 
-                                                 stat.requested > stat.available ? 'Over Limit' :
-                                                 stat.requested === stat.available ? 'Full' :
-                                                 stat.requested >= stat.available * 0.8 ? 'Near Limit' : 'OK'}
+                                                {stat.available === -1 ? 'Check Manual' :
+                                                    stat.requested > stat.available ? 'Over Limit' :
+                                                        stat.requested === stat.available ? 'Full' :
+                                                            stat.requested >= stat.available * 0.8 ? 'Near Limit' : 'OK'}
                                             </span>
                                         </td>
                                     </tr>
@@ -163,8 +163,8 @@ export default function KitTab(props: { eventId: number }) {
                                             </span>
                                         </td>
                                         <td>
-                                            <button 
-                                                class={`icon-btn ${req.is_fulfilled ? 'secondary' : 'success'}`} 
+                                            <button
+                                                class={`icon-btn ${req.is_fulfilled ? 'secondary' : 'success'}`}
                                                 onClick={() => toggleFulfillment(req.id)}
                                                 title={req.is_fulfilled ? 'Mark as Pending' : 'Mark as Fulfilled'}
                                                 innerHTML={CHECK_CIRCLE_SVG}

@@ -22,6 +22,8 @@ interface ExecMemberData {
     profilePictureColorOverride?: string | null;
     profilePictureFontOverride?: string | null;
     profilePictureInitialsOverride?: string | null;
+    instagramLink?: string | null;
+    linkedinLink?: string | null;
 }
 
 export default class ExecDB extends BaseDB {
@@ -40,6 +42,8 @@ export default class ExecDB extends BaseDB {
                        COALESCE(ec.profile_picture_color_override, u.profile_picture_color) as profile_picture_color, 
                        COALESCE(ec.profile_picture_font_override, u.profile_picture_font) as profile_picture_font, 
                        COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials) as profile_picture_initials,
+                       ec.instagram_link,
+                       ec.linkedin_link,
                        CASE 
                            WHEN f_override.id IS NOT NULL THEN CONCAT('/api/files/', f_override.id, '/download?view=true')
                            WHEN f_user.id IS NOT NULL THEN CONCAT('/api/files/', f_user.id, '/download?view=true')
@@ -75,17 +79,18 @@ export default class ExecDB extends BaseDB {
             if (execRoles.length === 0) {
                 // Decouple historical data before marking as past
                 await db.run(`
-                    UPDATE exec_committee ec
-                    JOIN users u ON ec.user_id = u.id
-                    SET ec.profile_picture_override_id = COALESCE(ec.profile_picture_override_id, u.profile_picture_id),
-                        ec.profile_picture_color_override = COALESCE(ec.profile_picture_color_override, u.profile_picture_color),
-                        ec.profile_picture_font_override = COALESCE(ec.profile_picture_font_override, u.profile_picture_font),
-                        ec.profile_picture_initials_override = COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials),
-                        ec.first_name_override = COALESCE(ec.first_name_override, u.first_name),
-                        ec.last_name_override = COALESCE(ec.last_name_override, u.last_name),
-                        ec.email_override = COALESCE(ec.email_override, u.email)
-                    WHERE ec.user_id = ? AND ec.is_current = 1
-                `, [userId]);
+                                    UPDATE exec_committee
+                                    JOIN users u ON exec_committee.user_id = u.id
+                                    SET exec_committee.profile_picture_override_id = COALESCE(exec_committee.profile_picture_override_id, u.profile_picture_id),
+                                        exec_committee.profile_picture_color_override = COALESCE(exec_committee.profile_picture_color_override, u.profile_picture_color),
+                                        exec_committee.profile_picture_font_override = COALESCE(exec_committee.profile_picture_font_override, u.profile_picture_font),
+                                        exec_committee.profile_picture_initials_override = COALESCE(exec_committee.profile_picture_initials_override, u.profile_picture_initials),
+                                        exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
+                                        exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
+                                        exec_committee.email_override = COALESCE(exec_committee.email_override, u.email),
+                                        exec_committee.instagram_link = COALESCE(exec_committee.instagram_link, null),
+                                        exec_committee.linkedin_link = COALESCE(exec_committee.linkedin_link, null)
+                                    WHERE exec_committee.user_id = ? AND exec_committee.is_current = 1                `, [userId]);
 
                 // If they no longer have any exec roles, mark current entries as not current
                 await db.run('UPDATE exec_committee SET is_current = 0, term_end = CURDATE() WHERE user_id = ? AND is_current = 1', [userId]);
@@ -97,16 +102,18 @@ export default class ExecDB extends BaseDB {
             // Decouple historical data for roles being removed
             const placeholders = currentRoleNames.map(() => '?').join(',');
             await db.run(
-                `UPDATE exec_committee ec
-                 JOIN users u ON ec.user_id = u.id
-                 SET ec.profile_picture_override_id = COALESCE(ec.profile_picture_override_id, u.profile_picture_id),
-                     ec.profile_picture_color_override = COALESCE(ec.profile_picture_color_override, u.profile_picture_color),
-                     ec.profile_picture_font_override = COALESCE(ec.profile_picture_font_override, u.profile_picture_font),
-                     ec.profile_picture_initials_override = COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials),
-                     ec.first_name_override = COALESCE(ec.first_name_override, u.first_name),
-                     ec.last_name_override = COALESCE(ec.last_name_override, u.last_name),
-                     ec.email_override = COALESCE(ec.email_override, u.email)
-                 WHERE ec.user_id = ? AND ec.is_current = 1 AND ec.role_name NOT IN (${placeholders})`,
+                `UPDATE exec_committee
+                 JOIN users u ON exec_committee.user_id = u.id
+                 SET exec_committee.profile_picture_override_id = COALESCE(exec_committee.profile_picture_override_id, u.profile_picture_id),
+                     exec_committee.profile_picture_color_override = COALESCE(exec_committee.profile_picture_color_override, u.profile_picture_color),
+                     exec_committee.profile_picture_font_override = COALESCE(exec_committee.profile_picture_font_override, u.profile_picture_font),
+                     exec_committee.profile_picture_initials_override = COALESCE(exec_committee.profile_picture_initials_override, u.profile_picture_initials),
+                     exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
+                     exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
+                     exec_committee.email_override = COALESCE(exec_committee.email_override, u.email),
+                     exec_committee.instagram_link = COALESCE(exec_committee.instagram_link, null),
+                     exec_committee.linkedin_link = COALESCE(exec_committee.linkedin_link, null)
+                 WHERE exec_committee.user_id = ? AND exec_committee.is_current = 1 AND exec_committee.role_name NOT IN (${placeholders})`,
                 [userId, ...currentRoleNames]
             );
 
@@ -155,6 +162,8 @@ export default class ExecDB extends BaseDB {
                        COALESCE(ec.profile_picture_color_override, u.profile_picture_color) as profile_picture_color, 
                        COALESCE(ec.profile_picture_font_override, u.profile_picture_font) as profile_picture_font, 
                        COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials) as profile_picture_initials,
+                       ec.instagram_link,
+                       ec.linkedin_link,
                        CASE 
                            WHEN f_override.id IS NOT NULL THEN CONCAT('/api/files/', f_override.id, '/download?view=true')
                            ELSE NULL
@@ -173,14 +182,15 @@ export default class ExecDB extends BaseDB {
     /**
      * Add a member to the executive committee.
      */
-    static async addExecMember(db: DatabaseWrapper, { userId, roleName, displayOrder, termStart, termEnd, isCurrent = 1, firstNameOverride, lastNameOverride, emailOverride, profilePictureOverrideId, profilePictureColorOverride, profilePictureFontOverride, profilePictureInitialsOverride }: ExecMemberData): Promise<statusObject> {
+    static async addExecMember(db: DatabaseWrapper, { userId, roleName, displayOrder, termStart, termEnd, isCurrent = 1, firstNameOverride, lastNameOverride, emailOverride, profilePictureOverrideId, profilePictureColorOverride, profilePictureFontOverride, profilePictureInitialsOverride, instagramLink, linkedinLink }: ExecMemberData): Promise<statusObject> {
         return this.wrap(async () => {
             const result = await db.run(
                 `INSERT INTO exec_committee (
                     user_id, role_name, display_order, term_start, term_end, is_current, 
                     first_name_override, last_name_override, email_override, profile_picture_override_id,
-                    profile_picture_color_override, profile_picture_font_override, profile_picture_initials_override
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    profile_picture_color_override, profile_picture_font_override, profile_picture_initials_override,
+                    instagram_link, linkedin_link
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     userId || null, 
                     roleName, 
@@ -194,7 +204,9 @@ export default class ExecDB extends BaseDB {
                     profilePictureOverrideId || null,
                     profilePictureColorOverride || null,
                     profilePictureFontOverride || null,
-                    profilePictureInitialsOverride || null
+                    profilePictureInitialsOverride || null,
+                    instagramLink || null,
+                    linkedinLink || null
                 ]
             );
             return new statusObject(201, 'Exec member added.', { id: result.lastID });
@@ -209,8 +221,15 @@ export default class ExecDB extends BaseDB {
             const keys = Object.keys(data);
             if (keys.length === 0) return new statusObject(200);
 
-            const sets = keys.map(k => `${k} = ?`).join(', ');
-            await db.run(`UPDATE exec_committee SET ${sets} WHERE id = ?`, [...Object.values(data), id]);
+            // Convert camelCase keys to snake_case for database columns
+            const snakeCaseData: { [key: string]: any } = {};
+            for (const key of keys) {
+                const snakeCaseKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                snakeCaseData[snakeCaseKey] = data[key];
+            }
+
+            const sets = Object.keys(snakeCaseData).map(k => `${k} = ?`).join(', ');
+            await db.run(`UPDATE exec_committee SET ${sets} WHERE id = ?`, [...Object.values(snakeCaseData), id]);
             return new statusObject(200, 'Exec member updated.');
         });
     }
@@ -234,16 +253,18 @@ export default class ExecDB extends BaseDB {
             
             // Freeze current data for all members being archived
             await conn.run(`
-                UPDATE exec_committee ec
-                JOIN users u ON ec.user_id = u.id
-                SET ec.profile_picture_override_id = COALESCE(ec.profile_picture_override_id, u.profile_picture_id),
-                    ec.profile_picture_color_override = COALESCE(ec.profile_picture_color_override, u.profile_picture_color),
-                    ec.profile_picture_font_override = COALESCE(ec.profile_picture_font_override, u.profile_picture_font),
-                    ec.profile_picture_initials_override = COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials),
-                    ec.first_name_override = COALESCE(ec.first_name_override, u.first_name),
-                    ec.last_name_override = COALESCE(ec.last_name_override, u.last_name),
-                    ec.email_override = COALESCE(ec.email_override, u.email)
-                WHERE ec.is_current = 1
+                UPDATE exec_committee
+                JOIN users u ON exec_committee.user_id = u.id
+                SET exec_committee.profile_picture_override_id = COALESCE(exec_committee.profile_picture_override_id, u.profile_picture_id),
+                    exec_committee.profile_picture_color_override = COALESCE(exec_committee.profile_picture_color_override, u.profile_picture_color),
+                    exec_committee.profile_picture_font_override = COALESCE(exec_committee.profile_picture_font_override, u.profile_picture_font),
+                    exec_committee.profile_picture_initials_override = COALESCE(exec_committee.profile_picture_initials_override, u.profile_picture_initials),
+                    exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
+                    exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
+                    exec_committee.email_override = COALESCE(exec_committee.email_override, u.email),
+                    exec_committee.instagram_link = COALESCE(exec_committee.instagram_link, null),
+                    exec_committee.linkedin_link = COALESCE(exec_committee.linkedin_link, null)
+                WHERE exec_committee.is_current = 1
             `);
 
             await conn.run(

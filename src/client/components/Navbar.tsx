@@ -3,11 +3,14 @@ import { A, useLocation, useNavigate } from "@solidjs/router";
 import { useAuth } from "../stores/auth";
 import LiquidButton, { GlassButtonSmall } from "./LiquidButton";
 import { apiRequest } from "@/utils/api";
+import { FormSubmittedEvent } from "@/utils/events/events";
 
 const navEntries = [
   { name: 'Events', path: '/events', id: 'nav-events' },
   { name: 'Files', path: '/files', id: 'nav-files' },
-  { name: 'Swims', path: '/swims', id: 'nav-swims' },
+  { name: 'Swims', path: '/swims', id: 'nav-swims', auth: true },
+  { name: 'Forms', path: '/forms', id: 'nav-forms', auth: true },
+  { name: 'Elections', path: '/elections', id: 'nav-elections', auth: true },
   { name: 'Quotes', path: '/quotes', id: 'nav-quotes' },
   { name: 'Exec', path: '/exec', id: 'nav-exec' },
   { name: 'Admin', path: '/admin', id: 'admin-button', admin: true },
@@ -28,6 +31,26 @@ export default function Navbar() {
       return "/api/files/1/download?view=true";
     }
   });
+
+  const [currentElection] = createResource(isAuthenticated, async (loggedIn) => {
+    if (!loggedIn) return null;
+    try {
+      const res = await apiRequest('GET', '/api/elections/current');
+      return res.election;
+    } catch {
+      return null;
+    }
+  });
+
+  const [forms, { refetch: refetchForms }] = createResource(isAuthenticated, async (loggedIn) => {
+    if (!loggedIn) return [];
+    try {
+      const res = await apiRequest('GET', '/api/forms');
+      return res.forms || [];
+    } catch {
+      return [];
+    }
+  });
   
   // Spotlight effect state
   const [spotlightStyle, setSpotlightStyle] = createSignal({ opacity: 0, left: 0, width: 0 });
@@ -36,18 +59,28 @@ export default function Navbar() {
   let mobileNavListRef: HTMLUListElement | undefined;
 
   const filteredEntries = createMemo(() => {
-    const currentUser = user();
-    const isLoggedIn = isAuthenticated();
-    const isMember = currentUser?.is_member;
-    const hasExec = isExec();
+    const isLoggedInVal = isAuthenticated();
+    const isMemberVal = user()?.is_member;
+    const hasExecVal = isExec();
+    const activeElection = currentElection();
+    const availableForms = forms() || [];
+    const openFormsCount = availableForms.filter((f: any) => !f.is_closed && (f.allow_multiple_responses || !f.user_has_submitted)).length;
 
-    return navEntries.filter(entry => {
-      if (entry.admin) return hasExec;
-      if (entry.auth) return isLoggedIn;
-      if (entry.id === 'nav-quotes') return isMember;
-      if (entry.id === 'nav-swims') return isLoggedIn;
-      return true;
-    });
+    return navEntries.map(entry => {
+        let isVisible = true;
+        if (entry.admin) isVisible = !!hasExecVal;
+        else if (entry.auth && !isLoggedInVal) isVisible = false;
+        else if (entry.id === 'nav-quotes') isVisible = !!isMemberVal;
+        else if (entry.id === 'nav-swims') isVisible = !!isLoggedInVal;
+        else if (entry.id === 'nav-elections') isVisible = !!activeElection && !!isLoggedInVal;
+        else if (entry.id === 'nav-forms') isVisible = openFormsCount > 0;
+
+        return { 
+            ...entry, 
+            isVisible,
+            badge: (entry.id === 'nav-forms' && openFormsCount > 0) ? openFormsCount : null
+        };
+    }).filter(e => e.isVisible);
   });
 
   const handleScroll = () => {
@@ -89,11 +122,18 @@ export default function Navbar() {
   onMount(() => {
     window.addEventListener('scroll', handleScroll);
     handleScroll();
+
+    const formCleanup = FormSubmittedEvent.subscribe(() => {
+        refetchForms();
+    });
+
+    onCleanup(() => {
+        window.removeEventListener('scroll', handleScroll);
+        formCleanup();
+    });
   });
 
-  onCleanup(() => {
-    window.removeEventListener('scroll', handleScroll);
-  });
+  const LOGO_FALLBACK = "/api/files/1/download?view=true";
 
   return (
     <>
@@ -114,7 +154,7 @@ export default function Navbar() {
         >
             <div class="nav-inner-content">
                 <A href="/home" class="nav-logo" id="nav-home">
-                  <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" />
+                  <img src={logo() || LOGO_FALLBACK} alt="DUCC Logo" />
                 </A>
 
                 {/* Desktop Nav */}
@@ -145,6 +185,9 @@ export default function Navbar() {
                                     {entry.id === 'profile-button' && user()?.swims !== undefined 
                                         ? `Profile (${user()?.swims})` 
                                         : entry.name}
+                                    <Show when={entry.badge}>
+                                        <span class="nav-badge">{entry.badge}</span>
+                                    </Show>
                                     </A>
                                 </li>
                                 )}
@@ -212,6 +255,9 @@ export default function Navbar() {
                                 {entry.id === 'profile-button' && user()?.swims !== undefined 
                                 ? `Profile (${user()?.swims})` 
                                 : entry.name}
+                                <Show when={entry.badge}>
+                                    <span class="nav-badge">{entry.badge}</span>
+                                </Show>
                             </A>
                         </li>
                         )}
@@ -240,4 +286,3 @@ export default function Navbar() {
     </>
   );
 }
-

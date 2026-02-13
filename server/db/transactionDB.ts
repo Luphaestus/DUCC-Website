@@ -62,7 +62,7 @@ export default class TransactionsDB {
                 userId, 
                 title, 
                 body, 
-                '/profile?tab=balance', 
+                '/profile/balance', 
                 NotificationType.PAYMENTS,
                 'payment_notification',
                 {
@@ -186,7 +186,7 @@ export default class TransactionsDB {
             tx.user_id, 
             title, 
             body, 
-            '/profile?tab=balance', 
+            '/profile/balance', 
             NotificationType.PAYMENTS,
             'payment_notification',
             {

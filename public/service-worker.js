@@ -8,10 +8,10 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
         '/',
-        '/index.html',
-        '/assets/main.css', // Approximate path, Vite generates hashes but this caches base
+        '/manifest.json',
+        '/favicon.ico',
         '/images/misc/ducc.png'
-      ]);
+      ]).catch(err => console.warn('Pre-caching failed, but service worker will still install', err));
     })
   );
   self.skipWaiting();
@@ -30,6 +30,51 @@ self.addEventListener('activate', (event) => {
     })
   );
   self.clients.claim();
+});
+
+// Fetch Handler - Required for PWA installability
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Network-first for HTML/Navigation
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/'))
+    );
+    return;
+  }
+
+  // Cache-first for assets (images, styles, scripts)
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then((response) => {
+        // Only cache valid responses from our own origin
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+
+        // Cache assets
+        const isAsset = url.pathname.includes('.') || url.pathname.startsWith('/assets/');
+        if (isAsset) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+
+        return response;
+      }).catch(() => {
+        // If fetch fails and no cache, just return the error
+        return null;
+      });
+    })
+  );
 });
 
 // Push Notification Handler

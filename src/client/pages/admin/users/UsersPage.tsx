@@ -5,7 +5,7 @@ import { apiRequest } from "@/utils/api";
 import Avatar from "@/components/Avatar";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
-import { 
+import {
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, GROUP_SVG
 } from '@/utils/icons';
 import { useNotifications } from "@/stores/notifications";
@@ -60,8 +60,8 @@ export default function UsersPage() {
                 }).toString()}`),
                 apiRequest('GET', '/api/globals/MinMoney').catch(() => ({ res: { MinMoney: { data: -25 } } }))
             ]);
-            return { 
-                users: userData.users || [], 
+            return {
+                users: userData.users || [],
                 totalPages: userData.totalPages || 1,
                 minMoney: Number(globalData.res?.MinMoney?.data || -25),
                 tab: params.tab
@@ -117,14 +117,14 @@ export default function UsersPage() {
             <thead>
                 <tr>
                     <th class="sortable" onClick={() => handleSort('last_name')}>
-                        Name <Show when={sort() === 'last_name'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                        Name <Show when={sort() === 'last_name'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                             <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                         </Show>
                     </th>
                     <Switch>
                         <Match when={tab() === 'swims'}>
                             <th class="sortable" onClick={() => handleSort('swims')}>
-                                Swims <Show when={sort() === 'swims'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                Swims <Show when={sort() === 'swims'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                                     <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                                 </Show>
                             </th>
@@ -132,7 +132,7 @@ export default function UsersPage() {
                         </Match>
                         <Match when={tab() === 'transactions'}>
                             <th class="sortable" onClick={() => handleSort('balance')}>
-                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                                     <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                                 </Show>
                             </th>
@@ -140,17 +140,17 @@ export default function UsersPage() {
                         </Match>
                         <Match when={true}>
                             <th class="sortable" onClick={() => handleSort('college_id')}>
-                                College <Show when={sort() === 'college_id'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                                        <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                College <Show when={sort() === 'college_id'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
+                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                                 </Show>
                             </th>
                             <th class="sortable" onClick={() => handleSort('difficulty_level')}>
-                                Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                                     <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                                 </Show>
                             </th>
                             <th class="sortable" onClick={() => handleSort('balance')}>
-                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                                     <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                                 </Show>
                             </th>
@@ -168,7 +168,7 @@ export default function UsersPage() {
                         let balClass = 'text-success';
                         if (props.data && bal < props.data.minMoney) balClass = 'text-danger';
                         else if (bal < 0) balClass = 'text-warning';
-                        
+
                         const lastInitial = user.last_name ? user.last_name.charAt(0) + '.' : '';
 
                         return (
@@ -182,7 +182,7 @@ export default function UsersPage() {
                                         </div>
                                     </div>
                                 </td>
-                                
+
                                 <Switch>
                                     <Match when={tab() === 'swims'}>
                                         <td data-label="Swims">{user.swims || 0}</td>
@@ -216,24 +216,24 @@ export default function UsersPage() {
 
     return (
         <div class="glass-layout">
-             <div class="liquid-container glass-toolbar" style={{ "--liquid-padding": "0.5rem 1rem", "--liquid-border-radius": "100px" }}>
+            <div class="liquid-container glass-toolbar">
                 <div class="toolbar-content">
                     <div class="toolbar-left">
                         <TabNav class="tab-nav-simple">
-                            <button 
-                                class={`tab-btn ${tab() === 'default' ? 'active' : ''}`} 
+                            <button
+                                class={`tab-btn ${tab() === 'default' ? 'active' : ''}`}
                                 onClick={() => setSearchParams({ tab: 'default' })}
                             >
                                 Details
                             </button>
-                            <button 
-                                class={`tab-btn ${tab() === 'swims' ? 'active' : ''}`} 
+                            <button
+                                class={`tab-btn ${tab() === 'swims' ? 'active' : ''}`}
                                 onClick={() => setSearchParams({ tab: 'swims' })}
                             >
                                 Swims
                             </button>
-                            <button 
-                                class={`tab-btn ${tab() === 'transactions' ? 'active' : ''}`} 
+                            <button
+                                class={`tab-btn ${tab() === 'transactions' ? 'active' : ''}`}
                                 onClick={() => setSearchParams({ tab: 'transactions' })}
                             >
                                 Transactions
@@ -254,26 +254,26 @@ export default function UsersPage() {
                     <Show when={data.loading && !data() && !oldData()}>
                         <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
                     </Show>
-                    <PaginationSlider 
-                        currentPage={page()} 
+                    <PaginationSlider
+                        currentPage={page()}
                         oldContent={<UserTable data={oldData()} />}
                     >
                         <UserTable data={data()} />
                     </PaginationSlider>
                 </div>
             </div>
-            
+
             <Show when={data()?.totalPages}>
-                <Pagination 
-                    currentPage={page()} 
-                    totalPages={data()!.totalPages} 
-                    onPageChange={(p) => setSearchParams({ page: p })} 
+                <Pagination
+                    currentPage={page()}
+                    totalPages={data()!.totalPages}
+                    onPageChange={(p) => setSearchParams({ page: p })}
                 />
             </Show>
 
-            <Modal 
-                isOpen={!!transactionUser()} 
-                onClose={() => setTransactionUser(null)} 
+            <Modal
+                isOpen={!!transactionUser()}
+                onClose={() => setTransactionUser(null)}
                 title={`Quick Transaction: ${transactionUser()?.first_name}`}
             >
                 <form onSubmit={handleQuickTransaction} class="modern-form">
@@ -283,7 +283,7 @@ export default function UsersPage() {
                     <label>Description
                         <input name="description" type="text" placeholder="Reason for transaction" required />
                     </label>
-                    <button type="submit" class="primary full-width mt-4">Record Transaction</button>
+                    <button type="submit" class="primary full-width">Record Transaction</button>
                 </form>
             </Modal>
         </div>

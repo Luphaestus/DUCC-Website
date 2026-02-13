@@ -20,10 +20,10 @@ export default function ShareWeekPage() {
         const res = await apiRequest('GET', `/api/admin/events?showPast=true&limit=100`);
         const startOfWeek = new Date(d);
         startOfWeek.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1));
-        startOfWeek.setHours(0,0,0,0);
+        startOfWeek.setHours(0, 0, 0, 0);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23,59,59,999);
+        endOfWeek.setHours(23, 59, 59, 999);
 
         return (res.events || []).filter((e: any) => {
             const s = new Date(e.start);
@@ -34,7 +34,7 @@ export default function ShareWeekPage() {
     return (
         <div id="share-week-view" class="view">
             <PageTitle text="Share Week" centered={true} />
-            <div class="share-container glass-effect mt-6" id="capture-area">
+            <div class="share-container glass-effect" id="capture-area">
                 <header class="share-header">
                     <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" class="share-logo" />
                     <div class="header-text">
@@ -67,7 +67,7 @@ export default function ShareWeekPage() {
 
             <div class="share-controls no-print">
                 <button class="primary" onClick={() => window.print()}>Download / Save as PDF</button>
-                <p class="muted-text mt-4">Tip: Use your browser's "Save as PDF" or take a screenshot of the area above.</p>
+                <p class="muted-text">Tip: Use your browser's "Save as PDF" or take a screenshot of the area above.</p>
             </div>
 
             <style>{`

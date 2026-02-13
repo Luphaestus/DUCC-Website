@@ -69,7 +69,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         medical_conditions_details TEXT,
         takes_medication TINYINT(1) DEFAULT 0,
         medication_details TEXT,
-        dietary_requirements TEXT,
+        has_dietary_info TINYINT(1) NOT NULL DEFAULT 0,
+        dietary_info_details TEXT,
         free_sessions INT NOT NULL DEFAULT 3,
         is_member TINYINT(1) NOT NULL DEFAULT 0,
         agrees_to_fitness_statement TINYINT(1) DEFAULT 0,
@@ -95,6 +96,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         verification_token VARCHAR(255),
         debt_limit DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
         debt_limit_expires_at DATETIME,
+        is_permanent_member TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_instructor (is_instructor),
@@ -135,6 +137,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         is_hidden TINYINT(1) NOT NULL DEFAULT 0,
         term_start DATE,
         term_end DATE,
+        instagram_link VARCHAR(255),
+        linkedin_link VARCHAR(255),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
         FOREIGN KEY (profile_picture_override_id) REFERENCES files(id) ON DELETE SET NULL
@@ -530,6 +534,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         is_global TINYINT(1) NOT NULL DEFAULT 0,
         event_id INT,
         created_by INT,
+        expires_at DATETIME,
+        allow_multiple_responses TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL,
@@ -537,19 +543,34 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
       `
     },
     {
+      name: 'form_pages',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        form_id INT NOT NULL,
+        title VARCHAR(255),
+        description TEXT,
+        display_order INT NOT NULL DEFAULT 0,
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE
+      `
+    },
+    {
       name: 'form_questions',
       schema: `
         id INT AUTO_INCREMENT PRIMARY KEY,
         form_id INT NOT NULL,
+        page_id INT,
         type ENUM('text', 'textarea', 'number', 'select', 'multiselect', 'rank', 'date') NOT NULL,
         prompt TEXT NOT NULL,
+        description TEXT,
         options JSON,
         is_required TINYINT(1) NOT NULL DEFAULT 0,
         max_selections INT DEFAULT 1,
         display_order INT NOT NULL DEFAULT 0,
         dependency_question_id INT,
+        dependency_operator VARCHAR(20) DEFAULT 'equals',
         dependency_value VARCHAR(255),
         FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (page_id) REFERENCES form_pages(id) ON DELETE SET NULL,
         FOREIGN KEY (dependency_question_id) REFERENCES form_questions(id) ON DELETE SET NULL
       `
     },
@@ -573,6 +594,124 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         value TEXT,
         FOREIGN KEY (submission_id) REFERENCES form_submissions(id) ON DELETE CASCADE,
         FOREIGN KEY (question_id) REFERENCES form_questions(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'form_visibility_tags',
+      schema: `
+        form_id INT NOT NULL,
+        tag_id INT NOT NULL,
+        PRIMARY KEY (form_id, tag_id),
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'form_visibility_roles',
+      schema: `
+        form_id INT NOT NULL,
+        role_id INT NOT NULL,
+        PRIMARY KEY (form_id, role_id),
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'form_visibility_permissions',
+      schema: `
+        form_id INT NOT NULL,
+        permission_id INT NOT NULL,
+        PRIMARY KEY (form_id, permission_id),
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'form_management_roles',
+      schema: `
+        form_id INT NOT NULL,
+        role_id INT NOT NULL,
+        PRIMARY KEY (form_id, role_id),
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'form_management_permissions',
+      schema: `
+        form_id INT NOT NULL,
+        permission_id INT NOT NULL,
+        PRIMARY KEY (form_id, permission_id),
+        FOREIGN KEY (form_id) REFERENCES forms(id) ON DELETE CASCADE,
+        FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'elections',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        start_date DATETIME NOT NULL,
+        voting_start_date DATETIME,
+        end_date DATETIME NOT NULL,
+        voting_type ENUM('online', 'in_person', 'hybrid') NOT NULL DEFAULT 'online',
+        phase ENUM('setup', 'nominations', 'voting', 'closed', 'results_revealed', 'roles_transferred') NOT NULL DEFAULT 'setup',
+        managed_by_user_id INT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (managed_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'election_roles',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        election_id INT NOT NULL,
+        role_id INT NOT NULL,
+        max_winners TINYINT(1) NOT NULL DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY idx_election_role (election_id, role_id),
+        FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE,
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'nominations',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        election_role_id INT NOT NULL,
+        user_id INT NOT NULL,
+        manifesto_file_id INT,
+        nomination_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        approved_by_user_id INT,
+        approved_at DATETIME,
+        is_approved TINYINT(1) NOT NULL DEFAULT 0,
+        is_winner TINYINT(1) NOT NULL DEFAULT 0,
+        votes_received INT DEFAULT 0,
+        local_votes_count INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY idx_election_role_user (election_role_id, user_id),
+        FOREIGN KEY (election_role_id) REFERENCES election_roles(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (manifesto_file_id) REFERENCES files(id) ON DELETE SET NULL,
+        FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'votes',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        election_role_id INT NOT NULL,
+        nomination_id INT NOT NULL,
+        voter_user_id INT NOT NULL,
+        voted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        vote_rank TINYINT(1) DEFAULT 1,
+        UNIQUE KEY idx_election_role_voter (election_role_id, voter_user_id),
+        FOREIGN KEY (election_role_id) REFERENCES election_roles(id) ON DELETE CASCADE,
+        FOREIGN KEY (nomination_id) REFERENCES nominations(id) ON DELETE CASCADE,
+        FOREIGN KEY (voter_user_id) REFERENCES users(id) ON DELETE CASCADE
       `
     },
     {

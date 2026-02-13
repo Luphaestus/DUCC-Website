@@ -6,7 +6,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 2vh;
 
     .error {
         color: #e74c3c;
@@ -55,6 +54,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                box-shadow: none;
 
                 &:hover {
                     opacity: 1;
@@ -128,6 +128,14 @@
             color: var(--glass-text-colour);
             transform: scale(1);
             cursor: default;
+        }
+
+
+        .today-btn.hover:not(.disabled) {
+            background: rgba(var(--pico-primary-rgb), 0.15);
+            color: var(--pico-primary);
+            transform: scale(1.05);
+            border-color: rgba(var(--pico-primary-rgb), 0.3);
         }
 
         .today-btn.spin-active svg {
@@ -290,7 +298,7 @@
 
     .day-events-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         gap: 1.5rem;
 
         @media (max-width: 480px) {

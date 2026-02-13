@@ -41,16 +41,16 @@ export default function DashboardPage() {
         <div class="glass-layout">
             <div class="dashboard-grid">
                 {canManageUsers() && <Card title="Users" desc="Manage members & permissions" icon={GROUP_SVG} href="/admin/users" />}
-                {isExec() && <Card title="Slides" desc="Homepage slideshow" icon={IMAGE_SVG} href="/admin/slides" />}
-                {canManageEvents() && <Card title="Events" desc="Schedule & attendance" icon={CALENDAR_TODAY_SVG} href="/admin/events" />}
+                                {canManageEvents() && <Card title="Events" desc="Schedule & attendance" icon={CALENDAR_TODAY_SVG} href="/admin/events" />}
                 {canSendEmails() && <Card title="Emails" desc="Send announcements" icon={MAIL_SVG} href="/admin/emails" />}
-                {canManageForms() && <Card title="Forms" desc="Custom forms & surveys" icon={DESCRIPTION_SVG} href="/admin/forms" />}
                 {canManageTags() && <Card title="Tags" desc="Event categories & styles" icon={LIST_SVG} href="/admin/tags" />}
                 {canManageFiles() && <Card title="Files" desc="Documents & resources" icon={FOLDER_SVG} href="/admin/files" />}
                 {canManageQuotes() && <Card title="Quotes" desc="Moderate club quotes" icon={FORMAT_QUOTE_SVG} href="/admin/quotes" />}
                 {canManageRoles() && <Card title="Roles" desc="User roles & access" icon={ID_CARD_SVG} href="/admin/roles" />}
-                {canManageKit() && <Card title="Kit" desc="Club equipment inventory" icon={KAYAKING_SVG} href="/admin/kit" />}
                 {canViewStats() && <Card title="Stats" desc="Club usage analytics" icon={TRENDING_UP_SVG} href="/admin/stats" />}
+                {canManageForms() && <Card title="Forms" desc="Custom forms & surveys" icon={DESCRIPTION_SVG} href="/admin/forms" />}
+                {isExec() && <Card title="Slides" desc="Homepage slideshow" icon={IMAGE_SVG} href="/admin/slides" />}
+                {canManageKit() && <Card title="Kit" desc="Club equipment inventory" icon={KAYAKING_SVG} href="/admin/kit" />}
                 {canAccessGlobals() && <Card title="Globals" desc="System configuration" icon={SETTINGS_SVG} href="/admin/globals" />}
             </div>
         </div>

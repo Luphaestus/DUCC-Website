@@ -63,7 +63,9 @@
 @use "partials/pages/errors";
 @use "partials/pages/quotes";
 @use "partials/pages/president_goodbye";
+@use "partials/pages/election";
 @use "partials/pages/files" as page_files;
+@use "partials/pages/forms";
 
 // --- Admin Pages ---
 @use "partials/pages/admin/admin" as admin_main;

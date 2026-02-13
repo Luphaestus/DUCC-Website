@@ -71,7 +71,7 @@ export default class NotificationsAPI {
                 const payload = JSON.stringify({
                     title: 'DUCC Notifications',
                     body: 'You are now subscribed to updates!',
-                    url: '/profile?tab=settings'
+                    url: '/profile/settings'
                 });
                 
                 await (webpush as any).sendNotification(subscription, payload).catch((err: any) => {

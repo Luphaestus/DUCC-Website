@@ -1,7 +1,7 @@
 import { createSignal, createResource, Show, For, onMount, onCleanup, createMemo, createEffect } from "solid-js";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
-import { 
+import {
     ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, ADD_SVG, CLOSE_SVG,
     CONTENT_COPY_SVG, DELETE_SVG, EDIT_SVG,
     BLOCK_SVG, CHECK_SVG, CURRENCY_POUND_SVG
@@ -41,11 +41,11 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
     const navigate = useNavigate();
     const location = useLocation();
     const { notify } = useNotifications();
-    
+
     // Internal state used if props aren't provided
     const [internalDate, setInternalDate] = createSignal(props.initialDate || new Date());
     const [internalViewMode, setInternalViewMode] = createSignal<CalendarViewMode>(props.initialMode || (localStorage.getItem('cal_view_mode') as any) || 'week');
-    
+
     const currentDate = () => props.date || internalDate();
     const setCurrentDate = (d: Date) => {
         if (props.onDateChange) props.onDateChange(d);
@@ -59,7 +59,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
     };
 
     const [now, setNow] = createSignal(new Date());
-    
+
     const [dragState, setDragState] = createSignal<{
         type: 'create' | 'move';
         start?: Date;
@@ -76,10 +76,10 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
     let edgeScrollTimer: ReturnType<typeof setTimeout> | null = null;
     const checkEdgeScroll = (e: MouseEvent) => {
         if (!dragState()) return;
-        
+
         const threshold = 100; // pixels from edge
         const width = window.innerWidth;
-        
+
         if (e.clientX < threshold) {
             if (!edgeScrollTimer) {
                 edgeScrollTimer = setTimeout(() => {
@@ -122,7 +122,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         async ({ date, mode }) => {
             const start = new Date(date);
             const end = new Date(date);
-            
+
             if (mode === 'month') {
                 start.setDate(1);
                 start.setDate(start.getDate() - start.getDay());
@@ -139,16 +139,16 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
 
             const endpoint = props.adminMode ? '/api/admin/events' : '/api/events/paged/0'; // Simplified for widget
             // Note: If normal view needs specific paging, we might need to adjust props
-            
+
             const query = new URLSearchParams({
                 search: '',
                 showPast: 'true',
-                limit: '500' 
+                limit: '500'
             });
-            
+
             const res = await apiRequest('GET', `${endpoint}?${query.toString()}`, null, true);
             let allEvents = (props.adminMode ? res.events : res.events) as CalendarEvent[];
-            
+
             return allEvents.filter(e => {
                 const eStart = new Date(e.start);
                 const eEnd = new Date(e.end);
@@ -175,13 +175,13 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
 
         if (mode === 'month') {
             start.setDate(1);
-            start.setDate(start.getDate() - start.getDay()); 
+            start.setDate(start.getDate() - start.getDay());
         } else {
             start.setDate(start.getDate() - start.getDay());
         }
-        start.setHours(0,0,0,0);
+        start.setHours(0, 0, 0, 0);
 
-        const count = mode === 'month' ? 35 : 7; 
+        const count = mode === 'month' ? 35 : 7;
         for (let i = 0; i < count; i++) {
             const d = new Date(start);
             d.setDate(start.getDate() + i);
@@ -212,8 +212,8 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
 
     const getProcessedEvents = (day: Date) => {
         const state = dragState();
-        const dayStart = new Date(day); dayStart.setHours(0,0,0,0);
-        const dayEnd = new Date(day); dayEnd.setHours(23,59,59,999);
+        const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
 
         let dayEvents = events()?.filter(e => {
             const isDragging = state?.type === 'move' && state?.originEvent?.id === e.id;
@@ -227,10 +227,10 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
 
         // If we are dragging an event and it's over THIS day, add it
         if (state?.type === 'move' && state.tempStart && state.originEvent) {
-            if (state.tempStart.getDate() === day.getDate() && 
-                state.tempStart.getMonth() === day.getMonth() && 
+            if (state.tempStart.getDate() === day.getDate() &&
+                state.tempStart.getMonth() === day.getMonth() &&
                 state.tempStart.getFullYear() === day.getFullYear()) {
-                
+
                 dayEvents.push({
                     ...state.originEvent,
                     start: state.tempStart.toISOString(),
@@ -252,7 +252,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         });
 
         const sorted = [...localEvents].sort((a, b) => a._localStart.getTime() - b._localStart.getTime());
-        
+
         const groups: any[][] = [];
         for (const event of sorted) {
             let placed = false;
@@ -283,9 +283,9 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
             }
             for (let i = 0; i < columns.length; i++) {
                 for (const event of columns[i]) {
-                    processed.push({ 
-                        event, 
-                        col: i, 
+                    processed.push({
+                        event,
+                        col: i,
                         total: columns.length,
                         localStart: event._localStart,
                         localEnd: event._localEnd
@@ -299,10 +299,10 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
     const getEventStyle = (event: CalendarEvent, col = 0, total = 1, localStart?: Date, localEnd?: Date) => {
         const start = localStart || new Date(event.start);
         const end = localEnd || new Date(event.end);
-        
+
         const startMinutes = start.getHours() * 60 + start.getMinutes();
         const top = (startMinutes / 1440) * 100;
-        
+
         let duration = (end.getTime() - start.getTime()) / (1000 * 60);
         if (duration < 30) duration = 30;
         const height = (duration / 1440) * 100;
@@ -329,7 +329,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const y = e.clientY - rect.top;
         const snappedStart = snapToGrid(new Date(day.getTime() + (y / rect.height) * 86400000));
-        
+
         const end = new Date(snappedStart.getTime() + 3600000); // +1h
 
         setDragState({ type: 'create', start: snappedStart, end: end });
@@ -483,8 +483,8 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
             <Show when={!props.hideHeader}>
                 <div class="calendar-header-toolbar">
                     <div class="cal-controls">
-                        <button class="icon-btn" onClick={() => changeDate(-1)}><span innerHTML={ARROW_BACK_IOS_NEW_SVG}/></button>
-                        <button class="icon-btn" onClick={() => changeDate(1)}><span innerHTML={ARROW_FORWARD_IOS_SVG}/></button>
+                        <button class="icon-btn" onClick={() => changeDate(-1)}><span innerHTML={ARROW_BACK_IOS_NEW_SVG} /></button>
+                        <button class="icon-btn" onClick={() => changeDate(1)}><span innerHTML={ARROW_FORWARD_IOS_SVG} /></button>
                         <h2 class="cal-title">
                             {currentDate().toLocaleString('default', { month: 'long', year: 'numeric' })}
                         </h2>
@@ -493,20 +493,20 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                         <Show when={clipboard()}>
                             <button class="small-btn primary mr-2" onClick={() => pasteEvent(new Date())}>Paste</button>
                         </Show>
-                        <div class="toggle-group liquid-container" style={{ "--liquid-padding": "4px", "--liquid-border-radius": "100px" }}>
+                        <div class="toggle-group liquid-container">
                             <button class={`tab-btn ${viewMode() === 'week' ? 'active' : ''}`} onClick={() => setViewMode('week')}>Week</button>
                             <button class={`tab-btn ${viewMode() === 'month' ? 'active' : ''}`} onClick={() => setViewMode('month')}>Month</button>
                         </div>
                     </div>
                 </div>
-            </Show>
+            </Show >
 
             <div class="calendar-body-wrapper">
                 <Show when={viewMode() === 'week'}>
                     <div class="week-view-grid">
                         <div class="time-gutter">
                             <div class="time-header-spacer" style="height: 65px; border-bottom: 1px solid rgba(255,255,255,0.08);"></div>
-                            <For each={Array.from({length: 24})}>{(_, i) => (
+                            <For each={Array.from({ length: 24 })}>{(_, i) => (
                                 <div class="time-label"><span>{i()}:00</span></div>
                             )}</For>
                         </div>
@@ -519,13 +519,13 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                             <span class="day-name">{day.toLocaleDateString('en-UK', { weekday: 'short' })}</span>
                                             <span class="day-num">{day.getDate()}</span>
                                         </div>
-                                        
+
                                         <div class="day-slots"
                                             onMouseDown={(e) => handleGridMouseDown(e, day)}
                                             onMouseMove={(e) => handleMouseMove(e, day)}
                                         >
-                                            <For each={Array.from({length: 24})}>{() => <div class="hour-slot"></div>}</For>
-                                            
+                                            <For each={Array.from({ length: 24 })}>{() => <div class="hour-slot"></div>}</For>
+
                                             <Show when={isToday(day)}>
                                                 <div class="current-time-line" style={{ top: `${currentTimePosition()}%` }}>
                                                     <div class="time-dot"></div>
@@ -538,9 +538,9 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                                     const displayStart = isDragging && dragState()?.tempStart ? dragState()!.tempStart! : localStart;
                                                     const displayEnd = isDragging && dragState()?.tempEnd ? dragState()!.tempEnd! : localEnd;
                                                     const style = getEventStyle(event, col, total, displayStart, displayEnd);
-                                                    
+
                                                     return (
-                                                        <div 
+                                                        <div
                                                             class={`calendar-event status-${event.status}`}
                                                             classList={{ 'is-dragging': isDragging, 'canceled': event.is_canceled, 'past': new Date(event.end) < now() }}
                                                             style={style}
@@ -552,7 +552,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                                                 setContextMenu({ x: e.clientX, y: e.clientY, event });
                                                             }}
                                                         >
-                                                            <div class="ev-time">{displayStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                                                            <div class="ev-time">{displayStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                                             <div class="ev-title">{event.title}</div>
                                                             <Show when={props.adminMode}>
                                                                 <div class="ev-actions-overlay">
@@ -589,7 +589,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                         <div class="days-grid">
                             <For each={getDaysInView()}>
                                 {(day) => (
-                                    <div class="month-day" 
+                                    <div class="month-day"
                                         classList={{ 'today': isToday(day), 'other-month': day.getMonth() !== currentDate().getMonth() }}
                                         onClick={() => {
                                             if (props.onDayClick) props.onDayClick(day);
@@ -603,8 +603,8 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                         <div class="day-events-dots">
                                             <For each={events()?.filter(e => new Date(e.start).toDateString() === day.toDateString())}>
                                                 {(e) => (
-                                                    <div 
-                                                        class={`event-bar status-${e.status}`} 
+                                                    <div
+                                                        class={`event-bar status-${e.status}`}
                                                         classList={{ 'canceled': e.is_canceled }}
                                                         title={e.title}
                                                         onClick={(ev) => {
@@ -631,28 +631,28 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                 </Show>
             </div>
 
-            <ContextMenu 
-                isOpen={!!contextMenu()} 
-                x={contextMenu()?.x || 0} 
-                y={contextMenu()?.y || 0} 
+            <ContextMenu
+                isOpen={!!contextMenu()}
+                x={contextMenu()?.x || 0}
+                y={contextMenu()?.y || 0}
                 header={contextMenu()?.event.title}
                 onClose={() => setContextMenu(null)}
             >
-                <button onClick={() => navigate(`/admin/event/${contextMenu()!.event.id}`)}><span innerHTML={EDIT_SVG}/> Edit Details</button>
-                <button onClick={() => copyEvent(contextMenu()!.event)}><span innerHTML={CONTENT_COPY_SVG}/> Copy Event</button>
+                <button onClick={() => navigate(`/admin/event/${contextMenu()!.event.id}`)}><span innerHTML={EDIT_SVG} /> Edit Details</button>
+                <button onClick={() => copyEvent(contextMenu()!.event)}><span innerHTML={CONTENT_COPY_SVG} /> Copy Event</button>
                 <div class="divider"></div>
                 <Show when={contextMenu()?.event.status !== 'confirmed'}>
-                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'confirmed')}><span innerHTML={CHECK_SVG}/> Confirm/Release</button>
+                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'confirmed')}><span innerHTML={CHECK_SVG} /> Confirm/Release</button>
                 </Show>
                 <Show when={contextMenu()?.event.status !== 'pending'}>
-                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'pending')}><span innerHTML={BLOCK_SVG}/> Move to Draft</button>
+                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'pending')}><span innerHTML={BLOCK_SVG} /> Move to Draft</button>
                 </Show>
                 <Show when={!contextMenu()?.event.costs_released}>
-                    <button onClick={() => handleReleaseCosts(contextMenu()!.event.id)}><span innerHTML={CURRENCY_POUND_SVG}/> Release Costs</button>
+                    <button onClick={() => handleReleaseCosts(contextMenu()!.event.id)}><span innerHTML={CURRENCY_POUND_SVG} /> Release Costs</button>
                 </Show>
                 <div class="divider"></div>
-                <button class="delete" onClick={() => setContextMenu(null)}><span innerHTML={CLOSE_SVG}/> Close Menu</button>
+                <button class="delete" onClick={() => setContextMenu(null)}><span innerHTML={CLOSE_SVG} /> Close Menu</button>
             </ContextMenu>
-        </div>
+        </div >
     );
 }

@@ -1,6 +1,7 @@
 import { createSignal, createResource, onMount, For, Show, createMemo, createEffect } from "solid-js";
 import { apiRequest } from "../utils/api";
 import { useNotifications } from "../stores/notifications";
+import { useAuth } from "../stores/auth";
 import {
     EDIT_SVG, ADD_SVG, CLOSE_SVG, SEARCH_SVG, MAIL_SVG, CROWN_SVG
 } from '../utils/icons';
@@ -25,6 +26,8 @@ interface ExecMember {
     email_override?: string;
     profile_picture_path?: string;
     profile_picture_override_id?: number;
+    instagram_link?: string;
+    linkedin_link?: string;
 }
 
 interface ExecData {
@@ -34,6 +37,7 @@ interface ExecData {
 
 export default function ExecPage() {
     const { notify } = useNotifications();
+    const { user: currentUser } = useAuth();
     const [permissions, setPermissions] = createSignal<string[]>([]);
     const [isModalOpen, setIsModalOpen] = createSignal(false);
     const [editingMember, setEditingMember] = createSignal<ExecMember | null>(null);
@@ -83,7 +87,7 @@ export default function ExecPage() {
 
     return (
         <div id="exec-view" class="view small-container">
-            <header class="files-header mb-6">
+            <header class="files-header">
                 <div class="files-title-row">
                     <PageTitle text="Executive Committee" />
                 </div>
@@ -107,6 +111,7 @@ export default function ExecPage() {
                             member={member}
                             rank={member.display_order || 4}
                             canManage={canManage()}
+                            isSelf={!!currentUser() && currentUser()?.id === member.user_id}
                             onEdit={() => { setEditingMember(member); setIsModalOpen(true); }}
                             onDelete={() => handleDeleteMember(member.id)}
                         />
@@ -115,14 +120,14 @@ export default function ExecPage() {
             </div>
 
             <Show when={groupedPast().length > 0}>
-                <div class="mt-8 mb-4 center-text">
+                <div class="past-committees-header">
                     <h2>Past Committees</h2>
                 </div>
                 <div class="past-exec-dense-container">
                     <For each={groupedPast()}>
                         {(group) => (
-                            <div class="liquid-container mb-4" style={{ "--liquid-padding": "1rem" }}>
-                                <h3 class="small-title mb-3">Academic Year {group.year > 0 ? `${group.year - 1}/${group.year}` : 'Unknown'}</h3>
+                            <div class="liquid-container past-exec-year-panel">
+                                <h3 class="small-title">Academic Year {group.year > 0 ? `${group.year - 1}/${group.year}` : 'Unknown'}</h3>
                                 <div class="past-members-list-dense">
                                     <For each={group.members}>
                                         {(m) => (
@@ -158,7 +163,7 @@ export default function ExecPage() {
     );
 }
 
-function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean, onEdit: () => void, onDelete: () => void }) {
+function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean, isSelf: boolean, onEdit: () => void, onDelete: () => void }) {
     const isLeadership = () => props.rank <= 2;
     return (
         <article class={`liquid-container exec-card-dense rank-${props.rank} ${isLeadership() ? 'leadership' : ''}`}>
@@ -190,14 +195,30 @@ function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean,
                 <a href={`mailto:${props.member.email}`} class="email-link muted-text">
                     <span innerHTML={MAIL_SVG} /> {props.member.email}
                 </a>
-                <Show when={props.canManage}>
+                <div class="social-links">
+                    <Show when={props.member.instagram_link}>
+                        <a href={props.member.instagram_link} target="_blank" rel="noopener noreferrer" class="social-link">
+                            <img src="/images/icons/social_instagram.svg" alt="Instagram" />
+                        </a>
+                    </Show>
+                    <Show when={props.member.linkedin_link}>
+                        <a href={props.member.linkedin_link} target="_blank" rel="noopener noreferrer" class="social-link">
+                            <img src="/images/icons/social_linkedin.svg" alt="LinkedIn" />
+                        </a>
+                    </Show>
+                </div>
+                <Show when={props.canManage || props.isSelf}>
                     <div class="actions">
-                        <button class="outline secondary mini-btn" onClick={props.onEdit} title="Edit">
-                            <span innerHTML={EDIT_SVG} />
-                        </button>
-                        <button class="outline error mini-btn" onClick={props.onDelete} title="Remove">
-                            <span innerHTML={CLOSE_SVG} />
-                        </button>
+                        <Show when={props.canManage || props.isSelf}>
+                            <button class="outline secondary mini-btn" onClick={props.onEdit} title="Edit">
+                                <span innerHTML={EDIT_SVG} />
+                            </button>
+                        </Show>
+                        <Show when={props.canManage}>
+                            <button class="outline error mini-btn" onClick={props.onDelete} title="Remove">
+                                <span innerHTML={CLOSE_SVG} />
+                            </button>
+                        </Show>
                     </div>
                 </Show>
             </div>
@@ -207,9 +228,13 @@ function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean,
 
 function ExecEditModal(props: { member: ExecMember | null, onClose: () => void, onSave: () => void }) {
     const { notify } = useNotifications();
+    const { user: currentUser } = useAuth();
     const [userSearch, setUserSearch] = createSignal("");
     const [userResults, setUserResults] = createSignal<any[]>([]);
     const [selectedUser, setSelectedUser] = createSignal<any | null>(null);
+
+    // Determine if the current user is editing their own profile
+    const isSelfEdit = createMemo(() => !!props.member && !!currentUser() && props.member.user_id === currentUser()?.id);
 
     createEffect(async () => {
         const query = userSearch().trim();
@@ -224,22 +249,30 @@ function ExecEditModal(props: { member: ExecMember | null, onClose: () => void, 
         e.preventDefault();
         const formData = new FormData(e.target as HTMLFormElement);
         const data = {
-            userId: selectedUser()?.id || props.member?.user_id || null,
-            roleName: formData.get('roleName'),
-            displayOrder: parseInt(formData.get('displayOrder') as string) || 0,
-            isCurrent: formData.get('isCurrent') === 'on' ? 1 : 0,
-            termStart: formData.get('termStart') || null,
-            termEnd: formData.get('termEnd') || null,
-            firstNameOverride: formData.get('firstNameOverride') || null,
-            lastNameOverride: formData.get('lastNameOverride') || null,
-            emailOverride: formData.get('emailOverride') || null,
-            profilePictureOverrideId: formData.get('ppOverrideId') || null
+            user_id: selectedUser()?.id || props.member?.user_id || null, // Renamed to user_id to match DB
+            role_name: formData.get('roleName'), // Renamed to role_name to match DB
+            display_order: parseInt(formData.get('displayOrder') as string) || 0, // Renamed
+            is_current: formData.get('isCurrent') === 'on' ? 1 : 0, // Renamed
+            term_start: formData.get('termStart') || null, // Renamed
+            term_end: formData.get('termEnd') || null, // Renamed
+            first_name_override: formData.get('firstNameOverride') || null,
+            last_name_override: formData.get('lastNameOverride') || null,
+            email_override: formData.get('emailOverride') || null,
+            profile_picture_override_id: formData.get('ppOverrideId') || null,
+            instagram_link: formData.get('instagramLink') || null,
+            linkedin_link: formData.get('linkedinLink') || null
         };
 
         try {
-            if (props.member) {
-                await apiRequest('PUT', `/api/exec/${props.member.id}`, data);
-            } else {
+            if (props.member) { // Editing existing member
+                if (isSelfEdit()) {
+                    // Self-edit: use /api/exec/me
+                    await apiRequest('PUT', '/api/exec/me', data);
+                } else {
+                    // Admin editing other member: use /api/exec/:id
+                    await apiRequest('PUT', `/api/exec/${props.member.id}`, data);
+                }
+            } else { // Adding new member
                 await apiRequest('POST', '/api/exec', data);
             }
             notify('Success', `Member ${props.member ? 'updated' : 'added'}.`, 'success');
@@ -252,24 +285,25 @@ function ExecEditModal(props: { member: ExecMember | null, onClose: () => void, 
     return (
         <Modal
             isOpen={true}
-            title={props.member ? 'Edit Exec Member' : 'Add Exec Member'}
+            title={props.member ? (isSelfEdit() ? 'Edit Your Profile' : 'Edit Exec Member') : 'Add Exec Member'}
             onClose={props.onClose}
         >
             <form onSubmit={handleSave} class="modern-form">
-                <div class="form-section liquid-container mb-4" style={{ "--liquid-padding": "1rem" }}>
+                <div class="form-section liquid-container">
                     <h3 class="small-title">Member Link</h3>
-                    <div class="search-field mb-3">
-                        <div class="glass-input-group liquid-container" style={{ "--liquid-padding": "0 0.75rem" }}>
+                    <div class="search-field">
+                        <div class="glass-input-group liquid-container">
                             <span class="icon" innerHTML={SEARCH_SVG} />
                             <input
                                 type="text"
                                 placeholder="Search user..."
                                 value={userSearch()}
                                 onInput={(e) => setUserSearch(e.currentTarget.value)}
+                                disabled={isSelfEdit() && !!props.member?.user_id} // Disable user search if self-editing an existing member
                             />
                         </div>
                         <Show when={userResults().length > 0}>
-                            <div class="liquid-container mt-2 item-list-scroll-small" style={{ "--liquid-padding": "0px" }}>
+                            <div class="liquid-container item-list-scroll-small">
                                 <For each={userResults()}>
                                     {(u) => (
                                         <div class="search-result-item clickable" onClick={() => {
@@ -290,33 +324,35 @@ function ExecEditModal(props: { member: ExecMember | null, onClose: () => void, 
                     </div>
                     <div class="grid">
                         <label>Role
-                            <input type="text" name="roleName" value={props.member?.role_name || ''} placeholder="e.g. Treasurer" required />
+                            <input type="text" name="roleName" value={props.member?.role_name || ''} placeholder="e.g. Treasurer" required disabled={isSelfEdit() && !!props.member?.user_id} />
                         </label>
                         <label>Order
-                            <input type="number" name="displayOrder" value={props.member?.display_order || 0} />
+                            <input type="number" name="displayOrder" value={props.member?.display_order || 0} disabled={isSelfEdit() && !!props.member?.user_id} />
                         </label>
                     </div>
                 </div>
 
-                <div class="form-section liquid-container mb-4" style={{ "--liquid-padding": "1rem" }}>
+                <div class="form-section liquid-container">
                     <h3 class="small-title">Status & Term</h3>
                     <label class="mb-3">
-                        <input type="checkbox" name="isCurrent" checked={props.member ? props.member?.is_current : true} />
+                        <input type="checkbox" name="isCurrent" checked={props.member ? props.member?.is_current : true} disabled={isSelfEdit() && !!props.member?.user_id} />
                         Current Committee Member
                     </label>
                     <div class="grid">
-                        <label>Start <input type="date" name="termStart" value={props.member?.term_start?.split('T')[0] || ''} /></label>
-                        <label>End <input type="date" name="termEnd" value={props.member?.term_end?.split('T')[0] || ''} /></label>
+                        <label>Start <input type="date" name="termStart" value={props.member?.term_start?.split('T')[0] || ''} disabled={isSelfEdit() && !!props.member?.user_id} /></label>
+                        <label>End <input type="date" name="termEnd" value={props.member?.term_end?.split('T')[0] || ''} disabled={isSelfEdit() && !!props.member?.user_id} /></label>
                     </div>
                 </div>
 
-                <div class="form-section liquid-container mb-4" style={{ "--liquid-padding": "1rem" }}>
+                <div class="form-section liquid-container">
                     <h3 class="small-title">Overrides (Optional)</h3>
                     <div class="grid">
                         <label>First Name <input type="text" name="firstNameOverride" value={props.member?.first_name_override || ''} /></label>
                         <label>Last Name <input type="text" name="lastNameOverride" value={props.member?.last_name_override || ''} /></label>
                     </div>
                     <label>Email <input type="email" name="emailOverride" value={props.member?.email_override || ''} /></label>
+                    <label>Instagram Link <input type="text" name="instagramLink" value={props.member?.instagram_link || ''} placeholder="e.g. https://instagram.com/user" /></label>
+                    <label>LinkedIn Link <input type="text" name="linkedinLink" value={props.member?.linkedin_link || ''} placeholder="e.g. https://linkedin.com/in/user" /></label>
                 </div>
 
                 <div class="form-actions">

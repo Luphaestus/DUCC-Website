@@ -22,15 +22,16 @@ export default function SwimsPage() {
     const navigate = useNavigate();
     const [isYearly, setIsYearly] = createSignal(true);
     const [canManage, setCanManage] = createSignal(false);
+    const [showMessages, setShowMessages] = createSignal(false);
     const [selectedUser, setSelectedUser] = createSignal<LeaderboardUser | null>(null);
     const [isAnimating, setIsAnimating] = createSignal(false);
     const [oldLeaderboard, setOldLeaderboard] = createSignal<LeaderboardUser[] | null>(null);
 
     const [leaderboard, { refetch }] = createResource<LeaderboardUser[], { yearly: boolean }>(
-        () => ({ yearly: isYearly() }), 
+        () => ({ yearly: isYearly() }),
         async ({ yearly }, { value }) => {
             const res = await apiRequest('GET', `/api/user/swims/leaderboard?yearly=${yearly}`);
-            
+
             if (value) {
                 batch(() => {
                     setOldLeaderboard(value as LeaderboardUser[]);
@@ -39,7 +40,7 @@ export default function SwimsPage() {
 
                 // Tiny delay to ensure the old-layer is painted before we switch the new-layer data
                 await new Promise(r => setTimeout(r, 20));
-                
+
                 setTimeout(() => {
                     batch(() => {
                         setIsAnimating(false);
@@ -47,10 +48,10 @@ export default function SwimsPage() {
                     });
                 }, 400);
             }
-            
+
             return res.data as LeaderboardUser[];
         }
-    );    const getPodiumData = (data: LeaderboardUser[]) => {
+    ); const getPodiumData = (data: LeaderboardUser[]) => {
         const top3 = data.slice(0, 3);
         return [
             { user: top3[1], rank: 2, style: 'silver', icon: SOCIAL_LEADERBOARD_SVG },
@@ -67,12 +68,14 @@ export default function SwimsPage() {
         });
         onCleanup(cleanup);
 
-        apiRequest('GET', '/api/user/elements/permissions')
-            .then(userRes => {
-                const perms = userRes.permissions || [];
-                setCanManage(perms.includes('swims.manage') || false);
-            })
-            .catch(() => { });
+        Promise.all([
+            apiRequest('GET', '/api/user/elements/permissions'),
+            apiRequest('GET', '/api/globals/ShowSwimMessages')
+        ]).then(([userRes, globalRes]) => {
+            const perms = userRes.permissions || [];
+            setCanManage(perms.includes('swims.manage') || false);
+            setShowMessages(globalRes.res?.ShowSwimMessages?.data === 1);
+        }).catch(() => { });
     });
 
     const getBootieClass = (swims: number, booties: number) => {
@@ -87,6 +90,8 @@ export default function SwimsPage() {
 
     const oldPodiumData = createMemo(() => getPodiumData(oldLeaderboard() || []));
     const oldListData = createMemo(() => (oldLeaderboard() || []).slice(3));
+
+    const canViewDetails = () => canManage() || showMessages();
 
     return (
         <div id="swims-view" class="view">
@@ -138,10 +143,10 @@ export default function SwimsPage() {
                                                 <div class="crown-icon" innerHTML={CROWN_SVG} />
                                             </Show>
                                             <div class="swimmer-avatar">
-                                                <Avatar 
-                                                    user={p.user!} 
-                                                    classes="clickable" 
-                                                    onClick={() => canManage() ? setSelectedUser(p.user!) : navigate(`/admin/user/${p.user!.id}`)} 
+                                                <Avatar
+                                                    user={p.user!}
+                                                    classes="clickable"
+                                                    onClick={() => canViewDetails() ? setSelectedUser(p.user!) : null}
                                                 />
                                             </div>
                                             <div class="swimmer-name">{p.user!.first_name} {p.user!.is_me ? '(You)' : ''}</div>
@@ -163,7 +168,7 @@ export default function SwimsPage() {
                             <div class="leaderboard-list-track">
                                 {/* Old List Layer */}
                                 <Show when={isAnimating() && oldLeaderboard()}>
-                                    <div class="liquid-container leaderboard-list old-layer" style={{ "--liquid-padding": "1.25rem" }}>
+                                    <div class="liquid-container leaderboard-list old-layer">
                                         <For each={oldListData()}>
                                             {(user) => (
                                                 <div class="leaderboard-row">
@@ -185,13 +190,13 @@ export default function SwimsPage() {
                                 </Show>
 
                                 {/* New List Layer */}
-                                <div class="liquid-container leaderboard-list new-layer" style={{ "--liquid-padding": "1.25rem" }}>
+                                <div class="liquid-container leaderboard-list new-layer">
                                     <For each={listData()}>
                                         {(user) => (
-                                            <div 
-                                                class="leaderboard-row" 
-                                                classList={{ highlight: user.is_me, clickable: canManage() }}
-                                                onClick={() => canManage() && setSelectedUser(user)}
+                                            <div
+                                                class="leaderboard-row"
+                                                classList={{ highlight: user.is_me, clickable: canViewDetails() }}
+                                                onClick={() => canViewDetails() && setSelectedUser(user)}
                                             >
                                                 <div class="rank-box">{user.rank}</div>
                                                 <div class="swimmer-info">
@@ -216,14 +221,16 @@ export default function SwimsPage() {
                     </Show>
                 </div>
 
-                <Modal 
-                    isOpen={!!selectedUser()} 
+                <Modal
+                    isOpen={!!selectedUser()}
                     onClose={() => setSelectedUser(null)}
-                    title={`Manage Swims: ${selectedUser()?.first_name} ${selectedUser()?.last_name}`}
+                    title={canManage() ? `Manage Swims: ${selectedUser()?.first_name} ${selectedUser()?.last_name}` : `${selectedUser()?.first_name}'s Swim History`}
                     maxWidth="800px"
                 >
                     <Show when={selectedUser()}>
-                        <SwimsTab user={selectedUser()!} />
+                        <div classList={{ 'read-only-history': !canManage() }}>
+                            <SwimsTab user={selectedUser()!} />
+                        </div>
                     </Show>
                 </Modal>
             </div>

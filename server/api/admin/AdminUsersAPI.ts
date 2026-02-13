@@ -73,6 +73,7 @@ export default class AdminUsers {
                     "email", "first_name", "last_name", "date_of_birth", "college_id", "college_name",
                     "emergency_contact_name", "emergency_contact_phone", "home_address", "phone_number",
                     "has_medical_conditions", "medical_conditions_details", "takes_medication", "medication_details",
+                    "has_dietary_info", "dietary_info_details",
                     "free_sessions", "is_member", "filled_legal_info", "is_instructor", "first_aid_expiry",
                     "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data",
                     "difficulty_level", "swims", "debt_limit", "debt_limit_expires_at"

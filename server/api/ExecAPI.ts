@@ -9,6 +9,7 @@ import check from '../misc/authentication.js';
 import { Permissions } from '../misc/permissions.js';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../db/db.js';
+import Logger from '../misc/Logger.js';
 
 export default class ExecAPI {
     app: FastifyInstance;
@@ -39,6 +40,42 @@ export default class ExecAPI {
                 current: currentRes.getData(),
                 past: pastRes.getData()
             });
+        });
+
+        /**
+         * Update the current authenticated exec member's own details.
+         */
+        this.app.put('/api/exec/me', { preHandler: [check('is_exec')] }, async (request: any, reply) => {
+            const userId = request.user.id;
+            const body = request.body as any;
+
+            try {
+                // Find the active exec committee entry for the current user
+                const execEntry = await this.db.get('SELECT id FROM exec_committee WHERE user_id = ? AND is_current = 1', [userId]);
+
+                if (!execEntry) {
+                    return reply.status(404).send({ message: 'No active exec entry found for this user.' });
+                }
+                
+                // Allowed fields for self-update
+                const allowedFields = ['first_name_override', 'last_name_override', 'email_override', 
+                                       'profile_picture_override_id', 'profile_picture_color_override', 
+                                       'profile_picture_font_override', 'profile_picture_initials_override',
+                                       'instagram_link', 'linkedin_link'];
+                
+                const updateData: { [key: string]: any } = {};
+                for (const field of allowedFields) {
+                    if (body[field] !== undefined) {
+                        updateData[field] = body[field];
+                    }
+                }
+
+                const status = await ExecDB.updateExecMember(this.db, execEntry.id, updateData);
+                return status.getResponse(reply);
+            } catch (e: any) {
+                Logger.error('Failed to update exec self-details', e);
+                return reply.status(500).send({ error: e.message });
+            }
         });
 
         /**

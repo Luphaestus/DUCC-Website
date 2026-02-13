@@ -132,6 +132,25 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
 
     const newlyCreatedTables = await createTables(db);
 
+    // Run additional migrations
+    const { migrate: addDietaryInfoMigration } = await import('./add_dietary_info_to_users.js');
+    await addDietaryInfoMigration(db);
+
+    const { migrate: addFormVisibilityMigration } = await import('./add_form_visibility_tables.js');
+    await addFormVisibilityMigration(db);
+
+    const { migrate: updateFormQuestionsSchema } = await import('./update_form_questions_schema.js');
+    await updateFormQuestionsSchema(db);
+
+    const { migrate: addFormManagementPermissions } = await import('./add_form_management_permissions.js');
+    await addFormManagementPermissions(db);
+
+    const { migrate: addFormPagesTable } = await import('./add_form_pages_table.js');
+    await addFormPagesTable(db);
+
+    const { migrate: updateSwimHistorySchema } = await import('./update_swim_history_schema.js');
+    await updateSwimHistorySchema(db);
+
     // Ensure sessions table is correct (it might exist but with wrong columns from previous versions)
     try {
         const columns: any[] = await db.all("SHOW COLUMNS FROM sessions");

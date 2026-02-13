@@ -1,0 +1,55 @@
+@use "../mixins" as *;
+
+.form-viewer-container {
+    max-width: 800px;
+    margin: 0 auto;
+
+    .form-header {
+        .form-progress {
+            .progress-bar-wrapper {
+                height: 8px;
+                background: rgba(var(--pico-color-rgb), 0.1);
+                border-radius: 4px;
+                overflow: hidden;
+                margin-bottom: 0.5rem;
+
+                .progress-bar-fill {
+                    height: 100%;
+                    background: var(--pico-primary);
+                    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+            }
+
+            .progress-text {
+                font-size: 0.8rem;
+                font-weight: 700;
+                color: var(--pico-muted-color);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+        }
+    }
+
+    .form-navigation {
+        button {
+            min-width: 140px;
+        }
+    }
+
+    .required-star {
+        color: var(--colour-bad);
+        margin-left: 0.25rem;
+    }
+
+    .ranking-list {
+        .rank-item {
+            border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+            transition: all 0.2s;
+
+            &:hover {
+                border-color: var(--pico-primary);
+                background: rgba(var(--pico-primary-rgb), 0.05);
+            }
+        }
+    }
+}

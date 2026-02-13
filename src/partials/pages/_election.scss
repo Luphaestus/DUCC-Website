@@ -1,0 +1,19 @@
+@use "../mixins" as *;
+
+.election-page {
+  .election-header-hero {
+    margin-bottom: 2rem; //
+
+    .badge {
+      margin-bottom: 0.5rem; //
+    }
+  }
+
+  .section-intro {
+    margin-bottom: 1.5rem; //
+  }
+
+  .role-description {
+    margin-bottom: 1rem; //
+  }
+}

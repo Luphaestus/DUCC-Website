@@ -70,11 +70,11 @@ export default function EventExpensePage() {
                         <Show when={expense()} fallback={<p>Loading...</p>}>
                             {(e) => (
                                 <form onSubmit={handleSave} class="modern-form">
-                                    <div class="form-group mb-3">
+                                    <div class="form-group">
                                         <label class="small-title">Description</label>
                                         <input name="description" type="text" value={e().description} placeholder="e.g. Fuel, Parking" required />
                                     </div>
-                                    <div class="form-group mb-4">
+                                    <div class="form-group">
                                         <label class="small-title">Amount (£)</label>
                                         <input name="amount" type="number" step="0.01" value={e().amount} placeholder="0.00" required />
                                     </div>

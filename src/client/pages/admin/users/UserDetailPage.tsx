@@ -12,8 +12,6 @@ import ProfileTab from "./tabs/ProfileTab";
 import OverviewTab from "./tabs/OverviewTab";
 import AccessTab from "./tabs/AccessTab";
 import TransactionsTab from "./tabs/TransactionsTab";
-import SwimsTab from "./tabs/SwimsTab";
-import Panel from "@/components/Panel";
 import { TabNav } from "@/widgets/TabNav";
 import { onUpdate } from "@/utils/updates";
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
@@ -42,7 +40,6 @@ export default function UserDetailPage() {
 
     const canManageUsers = () => viewerPerms()?.includes('user.manage') || viewerPerms()?.includes('user.read');
     const canManageTransactions = () => viewerPerms()?.includes('transaction.manage') || viewerPerms()?.includes('transaction.read');
-    const canManageSwims = () => viewerPerms()?.includes('swims.manage') || viewerPerms()?.includes('swims.read');
     const isExec = () => (viewerPerms()?.length || 0) > 0;
 
     const [stats, { refetch: refetchStats }] = createResource(
@@ -126,7 +123,7 @@ export default function UserDetailPage() {
                     return (
                         <div class="dashboard-container">
                             <aside class="dashboard-sidebar">
-                                <div class="liquid-container user-identity-card mb-4" style={{ "--liquid-padding": "1.5rem", "display": "flex", "align-items": "center", "gap": "1rem" }}>
+                                <div class="liquid-container user-identity-card" style={{ "display": "flex", "align-items": "center", "gap": "1rem" }}>
                                     <div class="profile-picture-container clickable" style={{ "width": "64px", "height": "64px", "flex-shrink": "0" }} onClick={() => uploadWidget?.inputEl.click()}>
                                         <Avatar user={userData()} classes="medium" />
                                         <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
@@ -157,35 +154,31 @@ export default function UserDetailPage() {
                             </aside>
 
                             <main class="dashboard-content">
-                                <div class="flex justify-between align-center mb-4">
-                                    <button class="small-btn secondary outline" onClick={() => navigate('/admin/users')}>
-                                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
-                                    </button>
-                                </div>
-                                <PageTitle text={`${userData().first_name} ${userData().last_name}`} centered={true} />
-                                <div class="mt-6">
+                                <div>
                                     <Show when={currentTab() === 'overview'}>
-                                    <OverviewTab
-                                        user={userData()}
-                                        stats={stats()}
-                                        minMoney={globals()?.minMoney ?? -25}
-                                        permissions={viewerPerms() || []}
-                                        refetchUser={refetch}
-                                    />
-                                </Show>                                                <Show when={currentTab() === 'profile'}>
-                                    <ProfileTab user={userData()} permissions={viewerPerms() || []} canManageUsers={canManageUsers() || false} isExec={isExec()} refetchUser={refetch} />
-                                </Show>                            <Show when={currentTab() === 'access'}>
-                                    <AccessTab user={userData()} refetchUser={refetch} />
-                                </Show>
-                                <Show when={currentTab() === 'transactions'}>
-                                    <TransactionsTab userId={userData().id} />
-                                </Show>
+                                        <OverviewTab
+                                            user={userData()}
+                                            stats={stats()}
+                                            minMoney={globals()?.minMoney ?? -25}
+                                            permissions={viewerPerms() || []}
+                                            refetchUser={refetch}
+                                        />
+                                    </Show>
+                                    <Show when={currentTab() === 'profile'}>
+                                        <ProfileTab user={userData()} permissions={viewerPerms() || []} canManageUsers={canManageUsers() || false} isExec={isExec()} refetchUser={refetch} />
+                                    </Show>
+                                    <Show when={currentTab() === 'access'}>
+                                        <AccessTab user={userData()} refetchUser={refetch} />
+                                    </Show>
+                                    <Show when={currentTab() === 'transactions'}>
+                                        <TransactionsTab userId={userData().id} />
+                                    </Show>
                                 </div>
                             </main>
-                        </div>
+                        </div >
                     );
                 }}
-            </Show>
+            </Show >
         </>
     );
 }

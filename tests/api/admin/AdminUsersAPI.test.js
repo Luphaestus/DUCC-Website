@@ -128,7 +128,7 @@ describe('api/admin/AdminUsersAPI', () => {
         });
 
         /** Test President transfer side-effects. */
-        test('Side-effects of President transfer: wipes permissions and scrubs PII', async () => {
+        test('Side-effects of President transfer: wipes permissions and scrubs PII, and marks old president as permanent member', async () => {
             const password = 'password';
             const hashed = await bcrypt.hash(password, 10);
             await world.db.run('UPDATE users SET hashed_password = ? WHERE id = ?', [hashed, world.data.users['admin']]);
@@ -141,10 +141,12 @@ describe('api/admin/AdminUsersAPI', () => {
             await world.db.run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presRole.id, userManagePerm.id]);
             await world.db.run('INSERT INTO role_permissions (role_id, permission_id) VALUES (?, ?)', [presRole.id, roleManagePerm.id]);
 
+            // Ensure admin is the current president
             await world.db.run('DELETE FROM user_roles WHERE user_id = ?', [world.data.users['admin']]);
             await world.db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [world.data.users['admin'], presRole.id]);
 
-            const targetId = world.data.users['user'];
+            const oldPresidentId = world.data.users['admin']; // Admin is the current president
+            const targetId = world.data.users['user']; // Target for new president
 
             // Setup User A: hasn't agreed to long-term storage
             await world.createUser('to_be_scrubbed', { 
@@ -169,7 +171,7 @@ describe('api/admin/AdminUsersAPI', () => {
             await world.db.run('INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?)', [keptId, world.data.perms['DirectPerm']]);
 
             world.app.addHook('preHandler', async (request) => {
-                if (request.user && request.user.id === world.data.users['admin']) {
+                if (request.user && request.user.id === oldPresidentId) {
                     request.user.hashed_password = hashed;
                 }
             });
@@ -179,9 +181,13 @@ describe('api/admin/AdminUsersAPI', () => {
             // Perform the transfer
             await world.as('admin').post(`/api/admin/user/${targetId}/role`, { roleId: presRole.id, password });
 
+            // Assert old president is now a permanent member
+            const oldPresidentUser = await world.db.get('SELECT is_permanent_member FROM users WHERE id = ?', [oldPresidentId]);
+            expect(oldPresidentUser.is_permanent_member).toBe(1);
+
             // Roles and direct permissions are wiped
-            const rolesCount = await world.db.get('SELECT COUNT(*) as c FROM user_roles WHERE user_id != ?', [targetId]);
-            expect(rolesCount.c).toBe(0);
+            const rolesCount = await world.db.get('SELECT COUNT(*) as c FROM user_roles WHERE user_id != ? AND user_id != ?', [targetId, oldPresidentId]);
+            expect(rolesCount.c).toBe(0); // Should only be new president's role now
             const directPermsCount = await world.db.get('SELECT COUNT(*) as c FROM user_permissions');
             expect(directPermsCount.c).toBe(0);
 

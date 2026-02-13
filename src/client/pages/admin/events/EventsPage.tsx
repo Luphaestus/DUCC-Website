@@ -1,11 +1,11 @@
 // todo clean up
-import { createSignal, createResource, Show, For, onMount, onCleanup } from "solid-js";
+import { createSignal, createResource, Show, For, onMount, onCleanup, Accessor } from "solid-js";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import CalendarWidget, { CalendarViewMode } from "@/widgets/CalendarWidget";
-import { 
+import {
     UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG, CHECK_SVG,
     IOS_SHARE_SVG, DASHBOARD_SVG, ADD_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, REFRESH_SVG
 } from '@/utils/icons';
@@ -28,7 +28,7 @@ export default function EventsPage() {
     const [oldData, setOldData] = createSignal<any>(null);
     const [currentDate, setCurrentDate] = createSignal(new Date());
     const [isRefreshing, setIsRefreshing] = createSignal(false);
-    
+
     // View mode: list or calendar
     const viewMode = () => (searchParams.view as any) || 'list';
 
@@ -56,7 +56,7 @@ export default function EventsPage() {
         if (mode === 'month') {
             return currentDate().toLocaleString('default', { month: 'long', year: 'numeric' });
         }
-        
+
         if (mode === 'week') {
             const start = new Date(currentDate());
             start.setDate(start.getDate() - start.getDay());
@@ -81,13 +81,13 @@ export default function EventsPage() {
     const showPast = () => searchParams.showPast === 'true';
 
     const [data, { refetch }] = createResource<EventsPageData, any>(
-        () => ({ 
-            page: page(), search: search(), sort: sort(), order: order(), 
+        () => ({
+            page: page(), search: search(), sort: sort(), order: order(),
             showPast: showPast(),
             view: viewMode()
         }),
         async (params, { value }) => {
-            if (params.view === 'week' || params.view === 'month') return { events: [], totalPages: 0, viewMode: params.view }; 
+            if (params.view === 'week' || params.view === 'month') return { events: [], totalPages: 0, viewMode: params.view };
 
             if (value && params.view === (data as any).latest?.viewMode) {
                 setOldData(value);
@@ -136,28 +136,28 @@ export default function EventsPage() {
             <thead>
                 <tr>
                     <th class="sortable" onClick={() => handleSort('title')}>
-                        Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                        Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                             <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('status')}>Status</th>
                     <th class="sortable" onClick={() => handleSort('start')}>
-                        Date <Show when={sort() === 'start'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                        Date <Show when={sort() === 'start'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                             <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('location')}>
-                        Location <Show when={sort() === 'location'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                        Location <Show when={sort() === 'location'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                             <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('difficulty_level')}>
-                        Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                        Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                             <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('upfront_cost')}>
-                        Cost <Show when={sort() === 'upfront_cost'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
+                        Cost <Show when={sort() === 'upfront_cost'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
                             <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
                         </Show>
                     </th>
@@ -199,7 +199,7 @@ export default function EventsPage() {
 
     return (
         <div class="glass-layout">
-            <EventsHeaderControls 
+            <EventsHeaderControls
                 viewMode={viewMode as Accessor<'list' | 'week' | 'month'>}
                 setView={setView as any}
                 rangeText={rangeText}
@@ -219,13 +219,13 @@ export default function EventsPage() {
                     <>
                         <Show when={viewMode() === 'list'}>
                             <form class="search-bar-compact" onSubmit={(e) => { e.preventDefault(); setSearchParams({ search: (e.target as HTMLFormElement).search.value, page: 1 }); }}>
-                                <div class="glass-input-group" style={{ "max-width": "100%", "--liquid-padding": "0", "--liquid-border-radius": "100px" }}>
+                                <div class="glass-input-group" style={{ "max-width": "100%" }}>
                                     <span class="icon" innerHTML={SEARCH_SVG} />
                                     <input type="text" name="search" placeholder="Search..." value={search()} style={{ "padding-left": "2.75rem !important" }} />
                                 </div>
                             </form>
                         </Show>
-                        
+
                         <div class="actions-group">
                             <button class="small-btn secondary outline hide-mobile" onClick={handlePublishStaged} title="Publish All Staged">
                                 <span innerHTML={CHECK_SVG} /> <span class="btn-text">Publish</span>
@@ -247,27 +247,27 @@ export default function EventsPage() {
                         <Show when={data.loading && !data() && !oldData()}>
                             <div class="loading-cell text-centre" style="padding: 2rem;">Loading...</div>
                         </Show>
-                        <PaginationSlider 
-                            currentPage={page()} 
+                        <PaginationSlider
+                            currentPage={page()}
                             oldContent={<EventTable data={oldData()} />}
                         >
                             <EventTable data={data()} />
                         </PaginationSlider>
                     </div>
                 </div>
-                
+
                 <Show when={data()?.totalPages && data()!.totalPages > 1}>
-                    <Pagination 
-                        currentPage={page()} 
-                        totalPages={data()!.totalPages} 
-                        onPageChange={(p) => setSearchParams({ page: p })} 
+                    <Pagination
+                        currentPage={page()}
+                        totalPages={data()!.totalPages}
+                        onPageChange={(p) => setSearchParams({ page: p })}
                     />
                 </Show>
             </Show>
 
             <Show when={viewMode() === 'week' || viewMode() === 'month'}>
-                <CalendarWidget 
-                    adminMode={true} 
+                <CalendarWidget
+                    adminMode={true}
                     hideHeader={true}
                     viewMode={viewMode() as CalendarViewMode}
                     date={currentDate()}

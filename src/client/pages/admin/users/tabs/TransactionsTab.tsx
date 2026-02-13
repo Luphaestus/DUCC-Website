@@ -19,7 +19,7 @@ interface Transaction {
 export default function TransactionsTab(props: { userId: number }) {
     const { notify } = useNotifications();
     const [editingId, setEditingId] = createSignal<number | null>(null);
-    
+
     // Manage Pending Modal State
     const [managePendingId, setManagePendingId] = createSignal<number | null>(null);
     const [pendingAmount, setPendingAmount] = createSignal("");
@@ -144,9 +144,9 @@ export default function TransactionsTab(props: { userId: number }) {
         const debt_limit = (form.querySelector('[name="debt_limit"]') as HTMLInputElement).value;
         const debt_limit_expires_at = (form.querySelector('[name="debt_limit_expires_at"]') as HTMLInputElement).value;
         try {
-            await apiRequest('POST', `/api/admin/user/${props.userId}/elements`, { 
-                debt_limit, 
-                debt_limit_expires_at: debt_limit_expires_at || null 
+            await apiRequest('POST', `/api/admin/user/${props.userId}/elements`, {
+                debt_limit,
+                debt_limit_expires_at: debt_limit_expires_at || null
             });
             notify('Success', 'Payment plan updated', 'success');
             // We might need to refetch the user profile if it was showing debt limit info,
@@ -162,7 +162,7 @@ export default function TransactionsTab(props: { userId: number }) {
             </div>
 
             <Panel title="Payment Plan (Temporary Debt Limit)" icon={EDIT_SVG} class="mb-4">
-                <div class="liquid-container transaction-item" style={{ "--liquid-padding": "1.25rem" }}>
+                <div class="liquid-container">
                     <p style="font-size: 0.8rem; margin-bottom: 1.25rem; opacity: 0.6; line-height: 1.4;">
                         Setting a debt limit allows this user to continue joining events even with a negative balance, up to the specified amount.
                     </p>
@@ -181,7 +181,7 @@ export default function TransactionsTab(props: { userId: number }) {
             </Panel>
 
             <Panel title="Transaction History" icon={WALLET_SVG}>
-                <div class="liquid-container transaction-item new-entry-row" style={{ "--liquid-padding": "1.25rem" }}>
+                <div class="liquid-container transaction-item new-entry-row">
                     <form class="tx-edit-grid" onSubmit={handleAdd}>
                         <input name="description" type="text" placeholder="Description (e.g. Top Up)" class="compact-input" required />
                         <input name="amount" type="number" step="0.01" placeholder="Amount" class="compact-input" required />
@@ -197,11 +197,11 @@ export default function TransactionsTab(props: { userId: number }) {
                             const isEditing = () => editingId() === tx.id;
 
                             return (
-                                <div class="liquid-container transaction-item item-list-row" classList={{ editing: isEditing(), 'pending-row': tx.status === 'pending' }} style={{ "--liquid-padding": "1.25rem" }}>
+                                <div class="liquid-container transaction-item item-list-row" classList={{ editing: isEditing(), 'pending-row': tx.status === 'pending' }}>
                                     <div class="item-icon" classList={{ negative: isNegative, positive: !isNegative, pending: tx.status === 'pending' }} innerHTML={tx.status === 'pending' ? '<span style="font-size: 1.2rem; font-weight: bold;">?</span>' : (isNegative ? REMOVE_SVG : ADD_SVG)} />
-                                    
+
                                     <Show when={!isEditing()} fallback={
-                                        <div class="tx-edit-grid no-btn" ref={el => {}}>
+                                        <div class="tx-edit-grid no-btn" ref={el => { }}>
                                             <input class="tx-desc-input compact-input" value={tx.description} />
                                             <input type="number" step="0.01" class="tx-amount-input compact-input" value={tx.amount} />
                                         </div>
@@ -255,31 +255,31 @@ export default function TransactionsTab(props: { userId: number }) {
             <Modal isOpen={isManaging()} onClose={() => setIsManaging(false)} title="Manage Top-Up Request">
                 <form class="modern-form" onSubmit={handleManageConfirm}>
                     <p>Review and verify the reported bank transfer.</p>
-                    
-                    <div class="form-group mb-4">
+
+                    <div class="form-group">
                         <label>Amount Received (£)
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                value={pendingAmount()} 
+                            <input
+                                type="number"
+                                step="0.01"
+                                value={pendingAmount()}
                                 onInput={e => setPendingAmount(e.currentTarget.value)}
                                 required
                             />
                         </label>
                     </div>
 
-                    <div class="form-group mb-4">
+                    <div class="form-group">
                         <label>Description
-                            <input 
-                                type="text" 
-                                value={pendingDesc()} 
+                            <input
+                                type="text"
+                                value={pendingDesc()}
                                 onInput={e => setPendingDesc(e.currentTarget.value)}
                                 required
                             />
                         </label>
                     </div>
 
-                    <div class="liquid-container warning-bg mb-4" style={{ "--liquid-padding": "1rem", "font-size": "0.85rem" }}>
+                    <div class="liquid-container warning-bg" style={{ "font-size": "0.85rem" }}>
                         <p class="m-0"><strong>Email Notification:</strong> Confirming or discarding this request will automatically email the user with the details.</p>
                     </div>
 
@@ -294,6 +294,6 @@ export default function TransactionsTab(props: { userId: number }) {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </div >
     );
 }

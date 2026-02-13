@@ -2,6 +2,7 @@
 @use "finance_summary";
 @use "calendar";
 @use "stats";
+@use "forms";
 
 /* Admin Layout */
 #admin-view {
@@ -30,9 +31,7 @@
     .dashboard-card {
         @include glass-panel;
         display: flex;
-        flex-direction: column;
         align-items: center;
-        text-align: center;
         padding: 2rem 1.5rem;
         transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease;
         cursor: pointer;
@@ -57,6 +56,7 @@
 
         .card-icon {
             margin-bottom: 1.25rem;
+            margin-right: 0.5rem;
             color: var(--pico-muted-color);
             opacity: 0.2;
             transition: all 0.3s ease;

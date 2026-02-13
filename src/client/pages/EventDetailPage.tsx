@@ -39,7 +39,7 @@ export default function EventDetailPage() {
     const navigate = useNavigate();
     const { notify } = useNotifications();
     const eventId = () => params.id;
-    
+
     const [isKitModalOpen, setIsKitModalOpen] = createSignal(false);
     const [activeKitItem, setActiveKitItem] = createSignal<KitItem | null>(null);
     const [isAttendeesExpanded, setIsAttendeesExpanded] = createSignal(false);
@@ -132,9 +132,9 @@ export default function EventDetailPage() {
         const refundPassed = refundCutoff && new Date() > refundCutoff;
 
         if (isAttending()) {
-            return { 
-                text: 'Leave Event', 
-                action: handleLeave, 
+            return {
+                text: 'Leave Event',
+                action: handleLeave,
                 class: 'secondary outline',
                 message: refundPassed ? 'The refund deadline has passed. If you leave now, you may not receive a refund.' : null
             };
@@ -145,20 +145,20 @@ export default function EventDetailPage() {
         }
 
         if (!user.filled_legal_info) {
-            return { 
-                text: 'Legal Form', 
-                action: () => navigate('/profile'), 
+            return {
+                text: 'Membership Form',
+                action: () => navigate('/profile'),
                 class: 'primary',
-                message: 'You must complete the legal form before joining an event.'
+                message: 'You must complete the membership form before joining an event.'
             };
         }
 
         if (coaches === 0 && !user.is_instructor) {
-            return { 
-                text: 'No Coach Attending', 
-                disabled: true, 
-                class: 'secondary outline', 
-                message: 'This event requires a coach to attend. Once a coach joins, you will be able to sign up.' 
+            return {
+                text: 'No Coach Attending',
+                disabled: true,
+                class: 'secondary outline',
+                message: 'This event requires a coach to attend. Once a coach joins, you will be able to sign up.'
             };
         }
 
@@ -167,35 +167,35 @@ export default function EventDetailPage() {
         if (user.balance - upfrontCost < limit) {
             const allowFree = allowFreeSignupsInDebt();
             if (!(allowFree && upfrontCost === 0)) {
-                return { 
-                    text: 'Top Up Balance', 
-                    action: () => navigate('/profile?tab=balance'), 
+                return {
+                    text: 'Top Up Balance',
+                    action: () => navigate('/profile/balance'),
                     class: 'warning',
-                    message: `You need to top up your balance to join this event. Joining would put you below your debt limit of £${limit.toFixed(2)}.` 
+                    message: `You need to top up your balance to join this event. Joining would put you below your debt limit of £${limit.toFixed(2)}.`
                 };
             }
         }
 
         if (status === 'full') {
             if (waiting) {
-                return { 
-                    text: 'On Waitlist', 
-                    action: handleLeaveWaitlist, 
+                return {
+                    text: 'On Waitlist',
+                    action: handleLeaveWaitlist,
                     class: 'secondary outline',
                     message: 'You are currently on the waitlist for this event.'
                 };
             }
-            return { 
-                text: 'Join Waitlist', 
-                action: handleJoinWaitlist, 
+            return {
+                text: 'Join Waitlist',
+                action: handleJoinWaitlist,
                 class: 'warning',
                 message: 'This event is currently full. You can join the waitlist.'
             };
         }
-        
-        return { 
-            text: 'Join Event', 
-            action: handleAttend, 
+
+        return {
+            text: 'Join Event',
+            action: handleAttend,
             class: 'primary',
             message: refundPassed ? 'The refund deadline for this event has passed. If you join and then leave, you may not be refunded.' : null
         };
@@ -294,264 +294,263 @@ export default function EventDetailPage() {
         }
     };
 
-        return (
+    return (
 
-            <Portal>
+        <Portal>
 
-                <div id="event-view" class="view c-modal-overlay visible" onClick={handleBackdropClick}>
+            <div id="event-view" class="view c-modal-overlay visible" onClick={handleBackdropClick}>
 
-                    <div class="c-modal-content modal-lg">
+                <div class="c-modal-content modal-lg">
 
-                        <button class="c-modal-close-btn" onClick={() => navigate(-1)} innerHTML={CLOSE_SVG} />
+                    <button class="c-modal-close-btn" onClick={() => navigate(-1)} innerHTML={CLOSE_SVG} />
 
-                        <Show when={eventData()} fallback={<div id="event-detail" class="c-modal-body"><p aria-busy="true">Loading event...</p></div>}>
+                    <Show when={eventData()} fallback={<div id="event-detail" class="c-modal-body"><p aria-busy="true">Loading event...</p></div>}>
 
-                            {(event) => (
+                        {(event) => (
 
-                                <div id="event-detail">
+                            <div id="event-detail">
 
-                                    <div class="event-modal-header event-image-header" style={{ "--event-image-url": `url('${event().image_url || '/api/files/1/download?view=true'}')` }}>
+                                <div class="event-modal-header event-image-header" style={{ "--event-image-url": `url('${event().image_url || '/api/files/1/download?view=true'}')` }}>
 
-                                        <div class="header-content">
+                                    <div class="header-content">
 
-                                            <div class="event-tags">
+                                        <div class="event-tags">
 
-                                                <For each={event().tags}>
+                                            <For each={event().tags}>
 
-                                                    {(tag) => <Tag name={tag.name} color={tag.color} dimmed={true} />}
+                                                {(tag) => <Tag name={tag.name} color={tag.color} dimmed={true} />}
 
-                                                </For>
+                                            </For>
 
-                                            </div>
+                                        </div>
 
-                                            <h2 class="event-title">{event().title}</h2>
+                                        <h2 class="event-title">{event().title}</h2>
 
-                                            <p class="event-location"><span innerHTML={LOCATION_ON_SVG} /> {event().location || 'Location TBD'}</p>
+                                        <p class="event-location"><span innerHTML={LOCATION_ON_SVG} /> {event().location || 'Location TBD'}</p>
+
+                                    </div>
+
+                                </div>
+
+
+
+                                <div class="event-modal-body">
+
+                                    <div class="event-info-boxes">
+
+                                        <div class="info-box">
+
+                                            <span class="box-title"><span innerHTML={CALENDAR_MONTH_SVG} /> DATE</span>
+
+                                            <span class="box-value">{new Date(event().start).toLocaleDateString()}</span>
+
+                                        </div>
+
+                                        <div class="info-box">
+
+                                            <span class="box-title"><span innerHTML={SCHEDULE_SVG} /> DURATION</span>
+
+                                            <span class="box-value">
+
+                                                {(() => {
+
+                                                    const diff = new Date(event().end).getTime() - new Date(event().start).getTime();
+
+                                                    const hours = diff / (1000 * 60 * 60);
+
+                                                    return hours % 1 === 0 ? hours.toFixed(0) : hours.toFixed(1);
+
+                                                })()} hrs
+
+                                            </span>
+
+                                        </div>
+
+                                        <div class="info-box">
+
+                                            <span class="box-title"><span innerHTML={CURRENCY_POUND_SVG} /> PRICE</span>
+
+                                            <span class="box-value">{event().upfront_cost > 0 ? `£${event().upfront_cost.toFixed(2)}` : 'Free'}</span>
+
+                                        </div>
+
+                                        <div class="info-box">
+
+                                            <span class="box-title"><span innerHTML={GROUP_SVG} /> CAPACITY</span>
+
+                                            <span class="box-value">{event().attendee_count || 0}/{event().max_attendees || '∞'}</span>
 
                                         </div>
 
                                     </div>
 
-    
 
-                                    <div class="event-modal-body">
 
-                                        <div class="event-info-boxes">
+                                    <div class="liquid-container event-details-content">
 
-                                            <div class="info-box">
+                                        <div class="description-section">
 
-                                                <span class="box-title"><span innerHTML={CALENDAR_MONTH_SVG} /> DATE</span>
+                                            <h3 class="section-title"><span innerHTML={DESCRIPTION_SVG} /> Description</h3>
 
-                                                <span class="box-value">{new Date(event().start).toLocaleDateString()}</span>
-
-                                            </div>
-
-                                            <div class="info-box">
-
-                                                <span class="box-title"><span innerHTML={SCHEDULE_SVG} /> DURATION</span>
-
-                                                <span class="box-value">
-
-                                                    {(() => {
-
-                                                        const diff = new Date(event().end).getTime() - new Date(event().start).getTime();
-
-                                                        const hours = diff / (1000 * 60 * 60);
-
-                                                        return hours % 1 === 0 ? hours.toFixed(0) : hours.toFixed(1);
-
-                                                    })()} hrs
-
-                                                </span>
-
-                                            </div>
-
-                                            <div class="info-box">
-
-                                                <span class="box-title"><span innerHTML={CURRENCY_POUND_SVG} /> PRICE</span>
-
-                                                <span class="box-value">{event().upfront_cost > 0 ? `£${event().upfront_cost.toFixed(2)}` : 'Free'}</span>
-
-                                            </div>
-
-                                            <div class="info-box">
-
-                                                <span class="box-title"><span innerHTML={GROUP_SVG} /> CAPACITY</span>
-
-                                                <span class="box-value">{event().attendee_count || 0}/{event().max_attendees || '∞'}</span>
-
+                                            <div class="description-text">
+                                                <Markdown content={event().description || 'No description provided.'} />
                                             </div>
 
                                         </div>
 
-    
 
-                                        <div class="liquid-container event-details-content" style={{ "--liquid-padding": "1.25rem" }}>
 
-                                            <div class="description-section">
+                                        <div class="attendees-section">
+                                            <h3 class="section-title"><span innerHTML={GROUP_SVG} /> Attendees ({attendees()?.length || 0})</h3>
 
-                                                <h3 class="section-title"><span innerHTML={DESCRIPTION_SVG} /> Description</h3>
-
-                                                <div class="description-text">
-                                                    <Markdown content={event().description || 'No description provided.'} />
-                                                </div>
-
+                                            <div class="attendee-list-modern" classList={{ expanded: isAttendeesExpanded() }}>
+                                                <For each={attendees()}>
+                                                    {(a) => (
+                                                        <div class="attendee-row">
+                                                            <Avatar user={a} classes="mini" />
+                                                            <span class="attendee-name">{a.first_name} {a.last_name}</span>
+                                                        </div>
+                                                    )}
+                                                </For>
                                             </div>
 
-    
-
-                                            <div class="attendees-section">
-                                                <h3 class="section-title"><span innerHTML={GROUP_SVG} /> Attendees ({attendees()?.length || 0})</h3>
-                                                
-                                                <div class="attendee-list-modern" classList={{ expanded: isAttendeesExpanded() }}>
-                                                    <For each={attendees()}>
-                                                        {(a) => (
-                                                            <div class="attendee-row">
-                                                                <Avatar user={a} classes="mini" />
-                                                                <span class="attendee-name">{a.first_name} {a.last_name}</span>
-                                                            </div>
-                                                        )}
-                                                    </For>
-                                                </div>
-
-                                                <Show when={(attendees()?.length || 0) > 6}>
-                                                    <button class="expand-attendees-btn" onClick={() => setIsAttendeesExpanded(!isAttendeesExpanded())}>
-                                                        {isAttendeesExpanded() ? 'Show Less' : `Show All (${attendees()?.length})`}
-                                                    </button>
-                                                </Show>
-                                            </div>
-
+                                            <Show when={(attendees()?.length || 0) > 6}>
+                                                <button class="expand-attendees-btn" onClick={() => setIsAttendeesExpanded(!isAttendeesExpanded())}>
+                                                    {isAttendeesExpanded() ? 'Show Less' : `Show All (${attendees()?.length})`}
+                                                </button>
+                                            </Show>
                                         </div>
 
-    
+                                    </div>
 
-                                        <div class="event-actions-container">
-                                            <Show when={joinButtonInfo().message}>
-                                                <div class="action-notice">
-                                                    <span innerHTML={INFO_SVG} />
-                                                    <p>{joinButtonInfo().message}</p>
+
+
+                                    <div class="event-actions-container">
+                                        <Show when={joinButtonInfo().message}>
+                                            <div class="action-notice">
+                                                <span innerHTML={INFO_SVG} />
+                                                <p>{joinButtonInfo().message}</p>
+                                            </div>
+                                        </Show>
+
+                                        <div class="event-actions">
+                                            <Show when={userStatus()} fallback={
+                                                <div class="auth-actions" style="display: flex; gap: 1rem; width: 100%;">
+                                                    <button class="primary" style="flex: 1;" onClick={() => navigate('/login')}>Sign In</button>
+                                                    <button class="secondary" style="flex: 1;" onClick={() => navigate('/signup')}>Sign Up</button>
                                                 </div>
+                                            }>
+                                                <button
+                                                    class={joinButtonInfo().class}
+                                                    onClick={joinButtonInfo().action}
+                                                    disabled={joinButtonInfo().disabled}
+                                                >
+                                                    {joinButtonInfo().text}
+                                                </button>
                                             </Show>
 
-                                            <div class="event-actions">
-                                                <Show when={userStatus()} fallback={
-                                                    <div class="auth-actions" style="display: flex; gap: 1rem; width: 100%;">
-                                                        <button class="primary" style="flex: 1;" onClick={() => navigate('/login')}>Sign In</button>
-                                                        <button class="secondary" style="flex: 1;" onClick={() => navigate('/signup')}>Sign Up</button>
-                                                    </div>
-                                                }>
-                                                    <button 
-                                                        class={joinButtonInfo().class} 
-                                                        onClick={joinButtonInfo().action} 
-                                                        disabled={joinButtonInfo().disabled}
-                                                    >
-                                                        {joinButtonInfo().text}
-                                                    </button>
-                                                </Show>
+                                            <Show when={isAttending() && event().is_offsite && eventStatus() === 'open'}>
+                                                <button class="secondary outline" onClick={() => setIsKitModalOpen(true)}>
+                                                    <span innerHTML={KAYAKING_SVG} /> Request Kit
+                                                </button>
+                                            </Show>
 
-                                                <Show when={isAttending() && event().is_offsite}>
-                                                    <button class="secondary outline" onClick={() => setIsKitModalOpen(true)}>
-                                                        <span innerHTML={KAYAKING_SVG} /> Request Kit
-                                                    </button>
-                                                </Show>
-
-                                                <Show when={canManage()}>
-                                                    <button class="secondary" onClick={() => navigate(`/admin/event/${event().id}`)}>
-                                                        <span innerHTML={SETTINGS_SVG} /> Edit
-                                                    </button>
-                                                </Show>
-                                            </div>
+                                            <Show when={canManage()}>
+                                                <button class="secondary" onClick={() => navigate(`/admin/event/${event().id}`)}>
+                                                    <span innerHTML={SETTINGS_SVG} /> Edit
+                                                </button>
+                                            </Show>
                                         </div>
-
                                     </div>
 
                                 </div>
 
-                            )}
+                            </div>
 
-                        </Show>
+                        )}
 
-    
+                    </Show>
 
-                        <Modal isOpen={isKitModalOpen()} onClose={() => { setIsKitModalOpen(false); setActiveKitItem(null); }} title="Request Kit">
-                            <Show when={!activeKitItem()} fallback={
-                                <div class="variant-selection">
-                                    <button class="small-btn secondary mb-4" onClick={() => setActiveKitItem(null)}>
-                                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Items
-                                    </button>
-                                    <p>Select a size or variant for {activeKitItem()?.name}:</p>
-                                    <div class="item-list mb-4">
-                                        <For each={activeKitItem()?.variants || []}>
-                                            {(variant) => (
-                                                <button 
-                                                    class="list-item clickable" 
-                                                    onClick={() => handleSelectVariant(variant.id)}
-                                                >
-                                                    <div class="item-details">
-                                                        <span class="item-title">{variant.name}</span>
-                                                    </div>
-                                                </button>
-                                            )}
-                                        </For>
-                                        <button 
-                                            class="list-item clickable" 
-                                            onClick={() => handleSelectVariant(null)}
-                                        >
-                                            <div class="item-details">
-                                                <span class="item-title">Don't Know / Not Sure</span>
-                                                <span class="item-subtitle">We'll help you pick at the event</span>
-                                            </div>
-                                        </button>
-                                        
-                                        <Show when={userKitRequests()?.some(r => r.kit_item_id === activeKitItem()?.id)}>
-                                            <button 
-                                                class="list-item clickable danger-hover" 
-                                                onClick={() => handleSelectVariant(-1)}
-                                                style="margin-top: 1rem; border-color: var(--error-color);"
+
+
+                    <Modal isOpen={isKitModalOpen()} onClose={() => { setIsKitModalOpen(false); setActiveKitItem(null); }} title="Request Kit">
+                        <Show when={!activeKitItem()} fallback={
+                            <div class="variant-selection">
+                                <button class="small-btn secondary" onClick={() => setActiveKitItem(null)}>
+                                    <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Items
+                                </button>
+                                <p>Select a size or variant for {activeKitItem()?.name}:</p>
+                                <div class="item-list">
+                                    <For each={activeKitItem()?.variants || []}>
+                                        {(variant) => (
+                                            <button
+                                                class="list-item clickable"
+                                                onClick={() => handleSelectVariant(variant.id)}
                                             >
                                                 <div class="item-details">
-                                                    <span class="item-title" style="color: var(--error-color);">Remove Request</span>
+                                                    <span class="item-title">{variant.name}</span>
                                                 </div>
                                             </button>
-                                        </Show>
-                                    </div>
-                                </div>
-                            }>
-                                <div class="kit-items-list item-list">
-                                    <For each={kitItems() || []}>
-                                        {(item) => {
-                                            const request = createMemo(() => userKitRequests()?.find(r => r.kit_item_id === item.id));
-                                            const isSelected = () => !!request();
-                                            const variantName = () => {
-                                                const r = request();
-                                                if (!r) return '';
-                                                if (r.kit_variant_id === null) return ' (Not Sure)';
-                                                const v = item.variants.find((v: KitVariant) => v.id === r.kit_variant_id);
-                                                return v ? ` (${v.name})` : ' (Not Sure)';
-                                            };
-
-                                            return (
-                                                <button class="list-item clickable" onClick={() => setActiveKitItem(item)}>
-                                                    <div class="item-details">
-                                                        <span class="item-title">{item.name}{variantName()}</span>
-                                                        <span class="item-subtitle">{isSelected() ? 'Selected' : 'Not Selected'}</span>
-                                                    </div>
-                                                </button>
-                                            );
-                                        }}
+                                        )}
                                     </For>
-                                </div>
-                            </Show>
-                        </Modal>
+                                    <button
+                                        class="list-item clickable"
+                                        onClick={() => handleSelectVariant(null)}
+                                    >
+                                        <div class="item-details">
+                                            <span class="item-title">Don't Know / Not Sure</span>
+                                            <span class="item-subtitle">We'll help you pick at the event</span>
+                                        </div>
+                                    </button>
 
-                    </div>
+                                    <Show when={userKitRequests()?.some(r => r.kit_item_id === activeKitItem()?.id)}>
+                                        <button
+                                            class="list-item clickable danger-hover"
+                                            onClick={() => handleSelectVariant(-1)}
+                                            style="margin-top: 1rem; border-color: var(--error-color);"
+                                        >
+                                            <div class="item-details">
+                                                <span class="item-title" style="color: var(--error-color);">Remove Request</span>
+                                            </div>
+                                        </button>
+                                    </Show>
+                                </div>
+                            </div>
+                        }>
+                            <div class="kit-items-list item-list">
+                                <For each={kitItems() || []}>
+                                    {(item) => {
+                                        const request = createMemo(() => userKitRequests()?.find(r => r.kit_item_id === item.id));
+                                        const isSelected = () => !!request();
+                                        const variantName = () => {
+                                            const r = request();
+                                            if (!r) return '';
+                                            if (r.kit_variant_id === null) return ' (Not Sure)';
+                                            const v = item.variants.find((v: KitVariant) => v.id === r.kit_variant_id);
+                                            return v ? ` (${v.name})` : ' (Not Sure)';
+                                        };
+
+                                        return (
+                                            <button class="list-item clickable" onClick={() => setActiveKitItem(item)}>
+                                                <div class="item-details">
+                                                    <span class="item-title">{item.name}{variantName()}</span>
+                                                    <span class="item-subtitle">{isSelected() ? 'Selected' : 'Not Selected'}</span>
+                                                </div>
+                                            </button>
+                                        );
+                                    }}
+                                </For>
+                            </div>
+                        </Show>
+                    </Modal>
 
                 </div>
 
-            </Portal>
+            </div>
 
-        );
+        </Portal>
 
-    }
+    );
 
-    
+}
+

@@ -36,14 +36,28 @@ export default class SwimsAPI {
         });
 
         /**
+         * Fetch swim history for a user.
+         */
+        this.app.get<{ Params: { id: string } }>('/api/user/:id/swims/history', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id, 10);
+            if (isNaN(userId)) return reply.status(400).send({ message: 'Invalid user ID' });
+            const status = await SwimsDB.getSwimHistory(this.db, userId);
+            return status.getResponse(reply);
+        });
+
+        /**
          * Add swims to a user account.
          */
         this.app.post('/api/user/:id/swims', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
             const userId = parseInt(request.params.id, 10);
             const count = parseInt(request.body.count, 10);
-            if (isNaN(userId) || isNaN(count)) return reply.status(400).send({ message: 'Invalid data' });
+            const message = request.body.message;
+
+            if (isNaN(userId) || isNaN(count) || !message) {
+                return reply.status(400).send({ message: 'Invalid data. Message is required.' });
+            }
             
-            const status = await SwimsDB.addSwims(this.db, userId, count, request.user.id);
+            const status = await SwimsDB.addSwims(this.db, userId, count, request.user.id, message);
             if (!status.isError()) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
                 EventHub.broadcast('swims_update', { userId });
@@ -52,17 +66,16 @@ export default class SwimsAPI {
         });
 
         /**
-         * Add booties to a user account.
+         * Toggle bootie status for a specific swim.
          */
-        this.app.post('/api/user/:id/booties', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
-            const userId = parseInt(request.params.id, 10);
-            const count = parseInt(request.body.count, 10);
-            if (isNaN(userId) || isNaN(count)) return reply.status(400).send({ message: 'Invalid data' });
+        this.app.post<{ Params: { swimId: string } }>('/api/user/swims/:swimId/bootie/toggle', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
+            const swimId = parseInt(request.params.swimId, 10);
+            if (isNaN(swimId)) return reply.status(400).send({ message: 'Invalid swim ID' });
 
-            const status = await SwimsDB.addBooties(this.db, userId, count);
+            const status = await SwimsDB.toggleBootie(this.db, swimId);
             if (!status.isError()) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
-                EventHub.broadcast('swims_update', { userId });
+                EventHub.broadcast('swims_update', {}); // Broadcast to all since totals change
             }
             return status.getResponse(reply);
         });

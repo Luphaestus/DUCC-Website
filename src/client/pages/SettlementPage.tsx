@@ -42,13 +42,13 @@ export default function SettlementPage() {
                             {(res) => (
                                 <>
                                     <h1>{CURRENCY_POUND_SVG} Financial Settlement: {res().event.title}</h1>
-                                    
-                                    <div class="liquid-container p-4 mb-4">
+
+                                    <div class="liquid-container p-4">
                                         <h3>Summary</h3>
                                         <p>Total Expenses: £{res().summary?.total_expenses?.toFixed(2) || '0.00'}</p>
                                     </div>
 
-                                    <div class="liquid-container table-responsive" style={{ "--liquid-padding": "0" }}>
+                                    <div class="liquid-container table-responsive">
                                         <table class="glass-table">
                                             <thead>
                                                 <tr>

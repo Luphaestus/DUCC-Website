@@ -84,6 +84,67 @@
         animation-duration: 30s;
         animation-delay: -15s;
     }
+
+    .subtle-river {
+        position: absolute;
+        top: 0;
+        left: 10%;
+        width: 15vw;
+        height: 200%;
+        background: linear-gradient(to bottom, 
+            transparent, 
+            rgba(var(--pico-primary-rgb), 0.05) 20%, 
+            rgba(var(--pico-secondary-rgb), 0.03) 50%, 
+            rgba(var(--pico-primary-rgb), 0.05) 80%, 
+            transparent
+        );
+        filter: blur(40px);
+        transform: rotate(-15deg);
+        animation: river-flow 60s infinite linear;
+        pointer-events: none;
+    }
+
+    .drifting-kayak {
+        position: absolute;
+        font-size: 1.5rem;
+        opacity: 0.15;
+        filter: grayscale(1) brightness(1.5);
+        animation: kayak-drift 40s infinite linear;
+        pointer-events: none;
+        z-index: 1;
+
+        @media (prefers-color-scheme: dark) {
+            opacity: 0.1;
+            filter: grayscale(1) invert(1);
+        }
+    }
+}
+
+@keyframes river-flow {
+    from { transform: translateY(-50%) rotate(-15deg); }
+    to { transform: translateY(0%) rotate(-15deg); }
+}
+
+@keyframes kayak-drift {
+    0% {
+        top: -10%;
+        left: 15%;
+        transform: rotate(160deg) translateX(0);
+    }
+    25% {
+        transform: rotate(165deg) translateX(20px);
+    }
+    50% {
+        transform: rotate(160deg) translateX(-10px);
+    }
+    75% {
+        transform: rotate(155deg) translateX(15px);
+    }
+    100% {
+        top: 110%;
+        left: 25%;
+        transform: rotate(160deg) translateX(0);
+    }
 }
 
 @keyframes blob-float {

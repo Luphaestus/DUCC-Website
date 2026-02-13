@@ -65,3 +65,65 @@
         }
     }
 }
+
+/* Compact Tab Navigation (Used in Access Control) */
+.tab-nav-compact {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    background: rgba(var(--pico-color-rgb), 0.05);
+    border-radius: 12px;
+    width: fit-content;
+
+    button {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        border-radius: 8px;
+        color: var(--pico-muted-color);
+        min-height: 0 !important;
+
+        &.active {
+            background: var(--pico-primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        &:hover:not(.active) {
+            background: rgba(var(--pico-color-rgb), 0.05);
+            color: var(--pico-contrast);
+        }
+    }
+}
+
+.sub-tab-nav {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(var(--pico-color-rgb), 0.1);
+    
+    button {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0.75rem 0.25rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--pico-muted-color);
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        min-height: 0 !important;
+
+        &.active {
+            color: var(--pico-primary);
+            border-bottom-color: var(--pico-primary);
+        }
+
+        &:hover:not(.active) {
+            color: var(--pico-contrast);
+        }
+    }
+}

@@ -23,6 +23,20 @@
         align-items: center;
         gap: 1rem;
     }
+
+    .past-committees-header {
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+
+    .past-exec-year-panel {
+        margin-bottom: 1rem;
+        
+        .small-title {
+            margin-bottom: 0.75rem;
+        }
+    }
 }
 
 .exec-dense-grid {

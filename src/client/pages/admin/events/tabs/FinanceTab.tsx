@@ -2,9 +2,9 @@
 import { createSignal, createResource, For, Show, createMemo, createEffect } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { 
-    CURRENCY_POUND_SVG, ADD_SVG, TRIP_SVG, CHECK_SVG, 
-    CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG, CLOUD_DOWNLOAD_SVG 
+import {
+    CURRENCY_POUND_SVG, ADD_SVG, TRIP_SVG, CHECK_SVG,
+    CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG, CLOUD_DOWNLOAD_SVG
 } from '@/utils/icons';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
@@ -121,7 +121,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
     const filteredAttendees = createMemo(() => {
         const list = attendees() || [];
         const filter = attendeeFilter().toLowerCase();
-        return list.filter(a => 
+        return list.filter(a =>
             `${a.first_name} ${a.last_name}`.toLowerCase().includes(filter) ||
             (a.email && a.email.toLowerCase().includes(filter))
         );
@@ -185,11 +185,11 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                 <For each={innerProps.list}>
                     {a => (
                         <tr><td class="primary-text">
-                                <div class="user-info-cell">
-                                    <Avatar user={a} classes="mini" />
-                                    <span>{a.first_name} {a.last_name}</span>
-                                </div>
-                            </td>
+                            <div class="user-info-cell">
+                                <Avatar user={a} classes="mini" />
+                                <span>{a.first_name} {a.last_name}</span>
+                            </div>
+                        </td>
                             <td>
                                 <Show when={a.is_attending} fallback={<span class="badge neutral">Left{a.upfront_refunded ? ' - Refunded' : ''}</span>}>
                                     <span class="badge success">Attending{a.upfront_refunded ? ' - Refunded' : ''}</span>
@@ -218,15 +218,15 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
     return (
         <div class="finance-management-layout">
             {/* Participant Management */}
-            <div class="panel mb-6">
+            <div class="panel">
                 <div class="panel-header">
                     <h3><span innerHTML={GROUP_SVG} /> Participant Management</h3>
                     <div class="panel-actions">
-                        <input 
-                            type="text" 
-                            placeholder="Filter list..." 
-                            class="modern-input small" 
-                            style="margin-bottom: 0; width: 180px;" 
+                        <input
+                            type="text"
+                            placeholder="Filter list..."
+                            class="modern-input small"
+                            style="margin-bottom: 0; width: 180px;"
                             value={attendeeFilter()}
                             onInput={(e) => { setAttendeeFilter(e.currentTarget.value); setAttendeePage(1); }}
                         />
@@ -242,8 +242,8 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                 </div>
                 <div class="panel-content">
                     <div class="glass-table-container">
-                        <PaginationSlider 
-                            currentPage={attendeePage()} 
+                        <PaginationSlider
+                            currentPage={attendeePage()}
                             oldContent={<AttendeeTable list={oldAttendees() || []} />}
                         >
                             <AttendeeTable list={displayAttendees()} />
@@ -255,7 +255,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 
             {/* Transport Panel */}
             <Show when={props.isOffsite}>
-                <div class="panel mb-6">
+                <div class="panel">
                     <div class="panel-header">
                         <h3><span innerHTML={TRIP_SVG} /> Trips & Transport</h3>
                         <div class="panel-actions">
@@ -275,10 +275,10 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                     const totalBoats = createMemo(() => tripDrivers().filter(d => d.status === 'accepted').reduce((sum, d) => sum + d.boats, 0));
 
                                     return (
-                                        <div class="liquid-container trip-admin-card secondary-bg" style={{ "--liquid-padding": "1.25rem" }}>
+                                        <div class="liquid-container trip-admin-card secondary-bg">
                                             <div class="trip-info"><strong>{trip.name}</strong><br /><small>{totalSeats()} Seats / {totalBoats()} Boats</small></div>
-                                            <div class="trip-actions mt-4">
-                                                <button class="small-btn secondary full-width mb-2" onClick={() => setManageDriversTripId(trip.id)}>{!props.costsReleased ? 'Drivers' : 'View Drivers'} ({tripDrivers().length})</button>
+                                            <div class="trip-actions">
+                                                <button class="small-btn secondary full-width" onClick={() => setManageDriversTripId(trip.id)}>{!props.costsReleased ? 'Drivers' : 'View Drivers'} ({tripDrivers().length})</button>
                                                 <Show when={!props.costsReleased}>
                                                     <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'trip', id: trip.id })}>Exclusions</button>
                                                 </Show>
@@ -296,7 +296,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
             </Show>
 
             {/* Expenses Panel */}
-            <div class="panel mb-6">
+            <div class="panel">
                 <div class="panel-header">
                     <h3><span innerHTML={WALLET_SVG} /> Event Expenses</h3>
                     <div class="panel-actions">
@@ -311,10 +311,10 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                     <div class="finance-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
                         <For each={expenses()}>
                             {e => (
-                                <div class="liquid-container expense-admin-card secondary-bg" style={{ "--liquid-padding": "1.25rem" }}>
-                                    <div class="expense-info"><strong>£{e.amount.toFixed(2)}</strong> - {e.first_name}<p class="desc small-text mt-1">{e.description}</p></div>
+                                <div class="liquid-container expense-admin-card secondary-bg">
+                                    <div class="expense-info"><strong>£{e.amount.toFixed(2)}</strong> - {e.first_name}<p class="desc small-text">{e.description}</p></div>
                                     <Show when={!props.costsReleased}>
-                                        <div class="expense-actions mt-4">
+                                        <div class="expense-actions">
                                             <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'expense', id: e.id })}>Exclusions</button>
                                         </div>
                                     </Show>
@@ -362,7 +362,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                                 </table>
                             </div>
                         </div>
-                        <div class="summary-footer-actions mt-6 flex justify-end">
+                        <div class="summary-footer-actions flex justify-end">
                             <div class="button-group" style="gap: 1rem;">
                                 <button class="secondary outline" onClick={() => {
                                     // Simplified CSV logic for now or port full logic
@@ -379,7 +379,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 
             {/* Modals Implementation */}
             <Modal isOpen={showAddAttendee()} onClose={() => setShowAddAttendee(false)} title="Add Participant">
-                 <AttendeeSearch eventId={props.eventId} onAdded={() => { setShowAddAttendee(false); refreshAll(); }} />
+                <AttendeeSearch eventId={props.eventId} onAdded={() => { setShowAddAttendee(false); refreshAll(); }} />
             </Modal>
 
             <Modal isOpen={showAddTrip()} onClose={() => setShowAddTrip(false)} title="New Trip">
@@ -422,7 +422,7 @@ function AttendeeSearch(props: { eventId: number, onAdded: () => void }) {
                 <label>Search Member</label>
                 <input type="text" placeholder="Type name or email..." class="modern-input" onInput={e => setQuery(e.currentTarget.value)} />
                 <Show when={results().length > 0}>
-                    <div class="liquid-container mt-2 item-list-scroll-small" style={{ "--liquid-padding": "0px" }}>
+                    <div class="liquid-container item-list-scroll-small">
                         <For each={results()}>
                             {u => (
                                 <div class="search-result-item" onClick={() => handleAdd(u)} style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.1); display: flex; align-items: center; gap: 0.75rem;">

@@ -1,5 +1,5 @@
 // todo clean up
-import { createSignal, createResource, For, Show, onMount } from "solid-js";
+import { createSignal, createResource, For, Show, onMount, createEffect } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { useNavigate } from "@solidjs/router";
@@ -7,6 +7,7 @@ import UploadWidget from "@/components/UploadWidget";
 import Panel from "@/components/Panel";
 import { INFO_SVG, IMAGE_SVG, LOCAL_ACTIVITY_SVG, CALENDAR_TODAY_SVG, SETTINGS_SVG } from '@/utils/icons';
 import RichTextEditor from "@/components/RichTextEditor";
+import { smartDateAdjust } from "@/utils/utils";
 
 interface Tag {
     id: number;
@@ -40,37 +41,37 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
     const navigate = useNavigate();
     const isNew = () => !props.event.id;
 
-    const [formState, setFormState] = createSignal<EventData>({ 
-        allow_kit_requests: true,
-        ...props.event 
+    const [formState, setFormState] = createSignal<EventData>({
+        ...props.event,
+        allow_kit_requests: props.event.allow_kit_requests ?? true
     });
     const [selectedTags, setSelectedTagIds] = createSignal<number[]>(props.event.tags?.map(t => t.id) || []);
 
     createEffect(() => {
         setFormState({
-            allow_kit_requests: true,
-            ...props.event
+            ...props.event,
+            allow_kit_requests: props.event.allow_kit_requests ?? true
         });
         setSelectedTagIds(props.event.tags?.map(t => t.id) || []);
     });
 
     const updateField = (key: keyof EventData, value: any) => {
         const oldState = formState();
-        
+
         if (key === 'start' && oldState.start && oldState.end) {
             const oldStart = new Date(oldState.start).getTime();
             const oldEnd = new Date(oldState.end).getTime();
             const duration = oldEnd - oldStart;
-            
+
             const newStart = new Date(value).getTime();
             const newEnd = new Date(newStart + duration);
-            
+
             // Format to YYYY-MM-DDTHH:mm
             const pad = (n: number) => n.toString().padStart(2, '0');
-            const format = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-            
-            setFormState({ 
-                ...oldState, 
+            const format = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+            setFormState({
+                ...oldState,
                 start: value,
                 end: format(newEnd)
             });
@@ -127,11 +128,11 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                                 <input type="number" min="1" max="5" value={formState().difficulty_level} onInput={e => updateField('difficulty_level', parseInt(e.currentTarget.value))} required />
                             </label>
                         </div>
-                        <div class="form-group mt-4">
-                            <label class="mb-2 block">Description</label>
-                            <RichTextEditor 
-                                value={formState().description} 
-                                onInput={v => updateField('description', v)} 
+                        <div class="form-group">
+                            <label class="block">Description</label>
+                            <RichTextEditor
+                                value={formState().description}
+                                onInput={v => updateField('description', v)}
                                 placeholder="What's the plan?"
                             />
                         </div>
@@ -139,11 +140,29 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
 
                     <Panel title="Schedule & Status" icon={CALENDAR_TODAY_SVG}>
                         <div class="grid-2-col">
-                            <label>Start Time <input type="datetime-local" value={formState().start?.slice(0, 16)} onInput={e => updateField('start', e.currentTarget.value)} required /></label>
-                            <label>End Time <input type="datetime-local" value={formState().end?.slice(0, 16)} onInput={e => updateField('end', e.currentTarget.value)} required /></label>
+                            <label>Start Time <input type="datetime-local" value={formState().start?.slice(0, 16)} onChange={e => {
+                                const { date, valid } = smartDateAdjust(e.currentTarget.value);
+                                if (valid) updateField('start', date.toISOString());
+                            }} onFocus={e => {
+                                if (!e.currentTarget.value) {
+                                    const d = new Date();
+                                    d.setMinutes(0, 0, 0);
+                                    updateField('start', d.toISOString());
+                                }
+                            }} required /></label>
+                            <label>End Time <input type="datetime-local" value={formState().end?.slice(0, 16)} onChange={e => {
+                                const { date, valid } = smartDateAdjust(e.currentTarget.value);
+                                if (valid) updateField('end', date.toISOString());
+                            }} onFocus={e => {
+                                if (!e.currentTarget.value) {
+                                    const d = new Date(formState().start || new Date());
+                                    d.setHours(d.getHours() + 1);
+                                    updateField('end', d.toISOString());
+                                }
+                            }} required /></label>
                         </div>
 
-                        <div class="grid-2-col mt-4">
+                        <div class="grid-2-col">
                             <label>Visibility Status
                                 <select value={formState().status || 'confirmed'} onChange={e => updateField('status', e.currentTarget.value)}>
                                     <option value="confirmed">Confirmed (Visible)</option>
@@ -153,7 +172,16 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                             </label>
                             <Show when={formState().status === 'scheduled'}>
                                 <label>Release Date & Time
-                                    <input type="datetime-local" value={formState().visible_at?.slice(0, 16) || ''} onInput={e => updateField('visible_at', e.currentTarget.value)} required />
+                                    <input type="datetime-local" value={formState().visible_at?.slice(0, 16) || ''} onChange={e => {
+                                        const { date, valid } = smartDateAdjust(e.currentTarget.value);
+                                        if (valid) updateField('visible_at', date.toISOString());
+                                    }} onFocus={e => {
+                                        if (!e.currentTarget.value) {
+                                            const d = new Date();
+                                            d.setMinutes(0, 0, 0);
+                                            updateField('visible_at', d.toISOString());
+                                        }
+                                    }} required />
                                 </label>
                             </Show>
                         </div>
@@ -187,7 +215,7 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                                     Limit Attendees
                                 </label>
                                 <Show when={formState().signup_required}>
-                                    <div class="conditional-input mt-2">
+                                    <div class="conditional-input">
                                         <label>Maximum Spaces
                                             <input type="number" value={formState().max_attendees} onInput={e => updateField('max_attendees', parseInt(e.currentTarget.value) || 0)} placeholder="0 = Unlimited" />
                                         </label>
@@ -195,13 +223,13 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                                 </Show>
                             </div>
 
-                            <div class="refund-policy mt-4">
+                            <div class="refund-policy">
                                 <label class="checkbox-label">
                                     <input type="checkbox" checked={!!formState().upfront_refund_cutoff} onChange={e => updateField('upfront_refund_cutoff', e.currentTarget.checked ? new Date().toISOString() : null)} />
                                     Enable Refund Deadline
                                 </label>
                                 <Show when={!!formState().upfront_refund_cutoff}>
-                                    <div class="conditional-input mt-2">
+                                    <div class="conditional-input">
                                         <label>Refund Cutoff Time
                                             <input type="datetime-local" value={formState().upfront_refund_cutoff?.slice(0, 16) || ''} onInput={e => updateField('upfront_refund_cutoff', e.currentTarget.value)} />
                                         </label>
@@ -251,7 +279,7 @@ export default function DetailsTab(props: { event: EventData, allTags: Tag[], gl
                         </div>
                     </Panel>
 
-                    <div class="form-actions-sticky mt-4">
+                    <div class="form-actions-sticky">
                         <button type="submit" class="wide-btn primary">{isNew() ? 'Create Event' : 'Save Changes'}</button>
                     </div>
                 </div>

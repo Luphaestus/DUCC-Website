@@ -13,13 +13,18 @@ const HomePage = lazy(() => import("./pages/HomePage"));
 const EventsPage = lazy(() => import("./pages/EventsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
-const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const ProfileLayout = lazy(() => import("./pages/profile/ProfileLayout"));
+const ProfileOverview = lazy(() => import("./pages/profile/ProfileOverview"));
+const ProfileCars = lazy(() => import("./pages/profile/ProfileCars"));
+const ProfileKit = lazy(() => import("./pages/profile/ProfileKit"));
+const ProfileBalance = lazy(() => import("./pages/profile/ProfileBalance"));
+const ProfileSettings = lazy(() => import("./pages/profile/ProfileSettings"));
 const ExecPage = lazy(() => import("./pages/ExecPage"));
 const FilesPage = lazy(() => import("./pages/FilesPage"));
 const SwimsPage = lazy(() => import("./pages/SwimsPage"));
 const QuotesPage = lazy(() => import("./pages/QuotesPage"));
 import ErrorPage, { UnauthorisedPage, NoInternetPage } from "./pages/ErrorPage";
-const LegalPage = lazy(() => import("./pages/LegalPage"));
+const MembershipInformationFormPage = lazy(() => import("./pages/MembershipInformationFormPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ResendVerificationPage = lazy(() => import("./pages/ResendVerificationPage"));
 const SetPasswordPage = lazy(() => import("./pages/SetPasswordPage"));
@@ -29,6 +34,7 @@ const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
 const EventExpensePage = lazy(() => import("./pages/EventExpensePage"));
 const SettlementPage = lazy(() => import("./pages/SettlementPage"));
 const FormViewer = lazy(() => import("./pages/forms/FormViewer"));
+const FormsListPage = lazy(() => import("./pages/forms/FormsListPage"));
 
 // Admin Components
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -51,6 +57,8 @@ const AdminDashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
 const AdminFormsPage = lazy(() => import("./pages/admin/forms/FormsPage"));
 const AdminFormEditor = lazy(() => import("./pages/admin/forms/FormEditor"));
 const AdminEmailsPage = lazy(() => import("./pages/admin/emails/EmailsPage"));
+const AdminElectionsPage = lazy(() => import("./pages/admin/ElectionsPage"));
+const ElectionPage = lazy(() => import("./pages/ElectionPage"));
 
 const root = document.getElementById("root");
 
@@ -63,28 +71,39 @@ if (root) {
         <Route path="" component={App}>
           <Route path="/" component={HomePage} />
           <Route path="/home" component={HomePage} />
+          <Route path="/login" component={LoginPage} />
+          <Route path="/signup" component={SignupPage} />
+          <Route path="/profile" component={ProfileLayout}>
+            <Route path="/" component={ProfileOverview} />
+            <Route path="/cars" component={ProfileCars} />
+            <Route path="/kit" component={ProfileKit} />
+            <Route path="/balance" component={ProfileBalance} />
+            <Route path="/settings" component={ProfileSettings} />
+          </Route>
+          <Route path="/exec" component={ExecPage} />
+          <Route path="/files" component={FilesPage} />
+          <Route path="/swims" component={SwimsPage} />
+          <Route path="/quotes" component={QuotesPage} />
+          <Route path="/legal" component={MembershipInformationFormPage} />
+          <Route path="/reset-password" component={ResetPasswordPage} />
+          <Route path="/resend-verification" component={ResendVerificationPage} />
+          <Route path="/set-password" component={SetPasswordPage} />
+          <Route path="/email-sent" component={EmailSentPage} />
+          <Route path="/email-verified" component={EmailVerifiedPage} />
+          <Route path="/settlement" component={SettlementPage} />
+          
           <Route path="/events" component={EventsPage}>
             <Route path="/" component={() => null} />
             <Route path="/:id" component={EventDetailPage} />
           </Route>
           <Route path="/event/:id" component={EventDetailPage} />
           <Route path="/events/:id/expense/:expenseId" component={EventExpensePage} />
+          
+          <Route path="/forms" component={FormsListPage} />
           <Route path="/forms/:id" component={FormViewer} />
-          <Route path="/legal" component={LegalPage} />
-          <Route path="/login" component={LoginPage} />
-          <Route path="/signup" component={SignupPage} />
-          <Route path="/profile" component={ProfilePage} />
-          <Route path="/exec" component={ExecPage} />
-          <Route path="/files" component={FilesPage} />
-          <Route path="/swims" component={SwimsPage} />
-          <Route path="/quotes" component={QuotesPage} />
-          <Route path="/reset-password" component={ResetPasswordPage} />
-          <Route path="/resend-verification" component={ResendVerificationPage} />
-          <Route path="/set-password" component={SetPasswordPage} />
-          <Route path="/email-sent" component={EmailSentPage} />
-          <Route path="/email-verified" component={EmailVerifiedPage} />
-          <Route path="/settlement/:id" component={SettlementPage} />
-          <Route path="/event/:id/settlement" component={SettlementPage} />
+          
+          <Route path="/elections" component={ElectionPage} />
+          <Route path="/elections/:id" component={ElectionPage} />
           
           <Route path="/admin" component={AdminLayout}>
              <Route path="/" component={AdminDashboardPage} />
@@ -106,6 +125,8 @@ if (root) {
              <Route path="/stats" component={AdminStatsPage} />
              <Route path="/forms" component={AdminFormsPage} />
              <Route path="/forms/:id" component={AdminFormEditor} />
+             <Route path="/elections" component={AdminElectionsPage} />
+             <Route path="/elections/:id" component={AdminElectionsPage} />
           </Route>
 
           <Route path="/unauthorised" component={UnauthorisedPage} />

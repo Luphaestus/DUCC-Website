@@ -291,6 +291,24 @@ a[role="button"] {
   }
 }
 
+.icon-only {
+  padding: 0 !important;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg, span:has(svg) {
+    margin: 0 !important;
+  }
+
+  &.small-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
 /* Global Table Styling */
 table {
   width: 100%;

@@ -19,16 +19,16 @@ export default function EmailsPage() {
 
     const handleSend = async (e: Event) => {
         e.preventDefault();
-        
+
         if (!subject() || !content() || content() === '<p></p>') {
             notify('Error', 'Subject and content are required.', 'error');
             return;
         }
 
         const recipientCount = target() === 'all' ? stats()?.total : (target() === 'members' ? stats()?.members : stats()?.guests);
-        
+
         if (await showConfirmModal(
-            "Send Announcement?", 
+            "Send Announcement?",
             `You are about to send this email to ${recipientCount} recipients (${target()}). This action cannot be undone.`
         )) {
             setIsSending(true);
@@ -52,29 +52,28 @@ export default function EmailsPage() {
     return (
         <div class="glass-layout">
             <PageTitle text="Email Announcements" centered={true} />
-            
-            <div class="grid-2-col mt-6" style={{ "grid-template-columns": "1fr 350px", "gap": "2rem" }}>
+
+            <div class="grid-2-col" style={{ "grid-template-columns": "1fr 350px", "gap": "2rem" }}>
                 <div class="email-editor-section">
                     <form onSubmit={handleSend} class="modern-form">
                         <label>Subject
-                            <input 
-                                type="text" 
-                                value={subject()} 
-                                onInput={(e) => setSubject(e.currentTarget.value)} 
+                            <input
+                                type="text"
+                                value={subject()}
+                                onInput={(e) => setSubject(e.currentTarget.value)}
                                 placeholder="e.g. Important Club Update"
-                                required 
+                                required
                             />
                         </label>
 
                         <label class="mt-4">Message Content</label>
-                        <RichTextEditor 
-                            content={content()} 
-                            onInput={setContent} 
+                        <RichTextEditor
+                            value={content()}
+                            onInput={setContent}
                         />
-
-                        <button 
-                            type="submit" 
-                            class="primary full-width mt-6" 
+                        <button
+                            type="submit"
+                            class="primary full-width"
                             disabled={isSending() || stats.loading}
                         >
                             <span innerHTML={MAIL_SVG} /> {isSending() ? 'Sending...' : 'Send Announcement'}
@@ -85,10 +84,10 @@ export default function EmailsPage() {
                 <aside class="email-sidebar">
                     <div class="glass-panel p-4" style={{ "border-radius": "24px" }}>
                         <h3>Target Audience</h3>
-                        <p class="helper-text mb-4">Select who will receive this email.</p>
-                        
+                        <p class="helper-text">Select who will receive this email.</p>
+
                         <div class="target-options flex-column-gap-half">
-                            <button 
+                            <button
                                 class={`target-card ${target() === 'members' ? 'active' : ''}`}
                                 onClick={() => setTarget('members')}
                             >
@@ -99,7 +98,7 @@ export default function EmailsPage() {
                                 </div>
                             </button>
 
-                            <button 
+                            <button
                                 class={`target-card ${target() === 'guests' ? 'active' : ''}`}
                                 onClick={() => setTarget('guests')}
                             >
@@ -110,7 +109,7 @@ export default function EmailsPage() {
                                 </div>
                             </button>
 
-                            <button 
+                            <button
                                 class={`target-card ${target() === 'all' ? 'active' : ''}`}
                                 onClick={() => setTarget('all')}
                             >
@@ -122,7 +121,7 @@ export default function EmailsPage() {
                             </button>
                         </div>
 
-                        <div class="stats-footer mt-6 p-4 bg-[rgba(var(--pico-color-rgb),0.03)]" style={{ "border-radius": "16px" }}>
+                        <div class="stats-footer p-4 bg-[rgba(var(--pico-color-rgb),0.03)]" style={{ "border-radius": "16px" }}>
                             <p class="m-0 text-sm opacity-70">
                                 emails are sent only to <strong>verified</strong> users.
                             </p>

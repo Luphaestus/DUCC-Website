@@ -26,34 +26,46 @@ export const isManualInstall = () => {
 };
 
 export const initPWA = async () => {
+    console.log('[PWA] Initializing...');
+    
     // Check if running in standalone mode
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    console.log('[PWA] Standalone mode:', isStandalone);
     setIsPWAInstalled(isStandalone);
 
     // Register Service Worker
     if ('serviceWorker' in navigator) {
         try {
+            console.log('[PWA] Registering Service Worker...');
             const reg = await navigator.serviceWorker.register('/service-worker.js');
-            console.log('SW Registered:', reg);
+            console.log('[PWA] Service Worker Registered:', reg.scope);
+            
+            reg.onupdatefound = () => {
+                console.log('[PWA] New content found, updating...');
+            };
+
             checkSubscription(reg);
         } catch (e) {
-            console.error('SW Registration failed:', e);
+            console.error('[PWA] Service Worker Registration failed:', e);
         }
+    } else {
+        console.warn('[PWA] Service Workers not supported');
     }
 
     window.addEventListener('appinstalled', () => {
         setIsPWAInstalled(true);
         setDeferredPrompt(null);
-        console.log('PWA installed');
+        console.log('[PWA] App installed');
     });
 };
 
 // Capture install prompt as early as possible (top level)
 if (typeof window !== 'undefined') {
+    console.log('[PWA] Adding beforeinstallprompt listener');
     window.addEventListener('beforeinstallprompt', (e) => {
+        console.log("[PWA] beforeinstallprompt event fired! Capturing...");
         e.preventDefault();
         setDeferredPrompt(e);
-        console.log("Install prompt captured");
     });
 }
 

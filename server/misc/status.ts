@@ -55,6 +55,13 @@ export class statusObject<T = any> {
     }
 
     /**
+     * Determine if the current state represents a success.
+     */
+    isSuccess(): boolean {
+        return !this.isError();
+    }
+
+    /**
      * Retrieve the attached payload data.
      */
     getData(): T | null {

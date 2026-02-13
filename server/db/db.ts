@@ -107,7 +107,8 @@ export class DatabaseWrapper {
 }
 
 export async function connect(config: any): Promise<DatabaseWrapper> {
-    const poolConfig = { ...config, multipleStatements: true, decimalNumbers: true };
+    const { rootPassword, ...validConfig } = config;
+    const poolConfig = { ...validConfig, multipleStatements: true, decimalNumbers: true };
     const pool = mysql.createPool(poolConfig);
     return new DatabaseWrapper(pool);
 }

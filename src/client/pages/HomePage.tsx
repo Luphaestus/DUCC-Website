@@ -66,21 +66,21 @@ export default function HomePage() {
         <div class="hero-offer">
           <div class="hero-offer-boxes">
             <div class="hero-offer-box-wrapper">
-              <div class="liquid-container hero-offer-box" style={{ "--liquid-padding": "2rem" }}>
+              <div class="liquid-container hero-offer-box">
                 <span innerHTML={KAYAKING_SVG} />
                 <h3>Weekly Sessions</h3>
                 <p>Beginner-friendly trips of the Wear & Tees plus pool sessions.</p>
               </div>
             </div>
             <div class="hero-offer-box-wrapper">
-              <div class="liquid-container hero-offer-box" style={{ "--liquid-padding": "2rem" }}>
+              <div class="liquid-container hero-offer-box">
                 <span innerHTML={CAMPING_SVG} />
                 <h3>UK & Europe Trips</h3>
                 <p>Exciting whitewater adventures year-round.</p>
               </div>
             </div>
             <div class="hero-offer-box-wrapper">
-              <div class="liquid-container hero-offer-box" style={{ "--liquid-padding": "2rem" }}>
+              <div class="liquid-container hero-offer-box">
                 <span innerHTML={SOCIAL_LEADERBOARD_SVG} />
                 <h3>Competitive Teams</h3>
                 <p>White Water Racing, Canoe Polo, Slalom & Freestyle.</p>
@@ -90,7 +90,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div class="liquid-container about-us-section" style={{ "--liquid-padding": "3rem", "--liquid-border-radius": "24px" }}>
+      <div class="liquid-container about-us-section">
         <h1>About Us</h1>
         <div class="about-us-para">
           <p>Durham University Canoe Club is one of the most successful university canoe clubs in the country.</p>
@@ -102,7 +102,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div class="liquid-container find-us-section" style={{ "--liquid-padding": "3rem", "--liquid-border-radius": "24px" }}>
+      <div class="liquid-container find-us-section">
         <h1>Where to Find Us</h1>
         <p>Our boathouse is located at the Maiden Castle sports centre.</p>
         <div class="find-us-para">
@@ -116,6 +116,6 @@ export default function HomePage() {
           <img src={globals()?.boathouse} alt="Path to boathouse" />
         </div>
       </div>
-    </div>
+    </div >
   );
 }

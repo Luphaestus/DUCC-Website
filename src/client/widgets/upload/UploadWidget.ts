@@ -122,11 +122,11 @@ export class UploadWidget {
                 ${this.options.showPreview ? `
                 <div class="preview-container ${!this.options.defaultPreview ? 'hidden' : ''}">
                     ${this.options.selectMode === 'single'
-                        ? `<div class="image-preview">
+                    ? `<div class="image-preview">
                                 ${this.options.enableRemove ? `<button type="button" class="remove-icon-btn hidden" title="Remove">${CLOSE_SVG}</button>` : ''}
                         </div>`
-                        : `<div class="file-list"></div>`
-                    }
+                    : `<div class="file-list"></div>`
+                }
                 </div>
                 ` : ''}
 
@@ -300,7 +300,7 @@ export class UploadWidget {
         this.modalContentArea = document.getElementById('upload-widget-library-modal-content');
 
         if (this.modalContentArea) {
-             renderLibrary(this.modalContentArea, async (url: string, id: number | null) => {
+            renderLibrary(this.modalContentArea, async (url: string, id: number | null) => {
                 if (this.options.showPreview) this.setPreview(url);
 
                 if (this.options.onImageSelect) {
@@ -368,7 +368,7 @@ export class UploadWidget {
                 <div class="crop-container">
                     <img id="crop-image" src="${e.target?.result}" style="max-width: 100%; display: block;">
                 </div>
-                <div class="crop-actions mt-4">
+                <div class="crop-actions">
                     <button type="button" class="primary full-width" id="confirm-crop-btn">Crop & Upload</button>
                 </div>
             `;
@@ -401,8 +401,8 @@ export class UploadWidget {
             this.cropper = new Cropper(image, this.options.cropOptions);
 
             const confirmBtn = document.getElementById('confirm-crop-btn');
-            if(confirmBtn) {
-                 confirmBtn.onclick = () => {
+            if (confirmBtn) {
+                confirmBtn.onclick = () => {
                     if (!this.cropper) return;
 
                     const canvas = this.cropper.getCroppedCanvas({
@@ -422,9 +422,9 @@ export class UploadWidget {
                         }
                         const croppedFile = new File([blob], file.name, { type: 'image/jpeg' });
                         this.files = [croppedFile];
-                        
+
                         if (this.options.showPreview) this.setPreview(canvas.toDataURL('image/jpeg'));
-                        
+
                         if (this.options.onFileSelect) {
                             this.options.onFileSelect(this.files);
                         }
@@ -484,7 +484,7 @@ export class UploadWidget {
             }
 
             this.updateProgress(100);
-            if(this.progressText) this.progressText.textContent = 'Upload Complete!';
+            if (this.progressText) this.progressText.textContent = 'Upload Complete!';
             setTimeout(() => this.progressContainer.classList.add('hidden'), 2000);
 
             if (this.libContainer) refreshLibrary(this.libContainer);

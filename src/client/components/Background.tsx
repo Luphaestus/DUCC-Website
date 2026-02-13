@@ -88,6 +88,8 @@ export default function Background() {
     <>
       {/* Professional Background */}
       <div id="professional-background" classList={{ hidden: showEasterEgg() }}>
+        <div class="subtle-river"></div>
+        <div class="drifting-kayak">🛶</div>
         <div class="blob-container">
           <div class="blob blob-1"></div>
           <div class="blob blob-2"></div>

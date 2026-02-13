@@ -59,7 +59,7 @@ export default class User {
     static legalElements = [
         "date_of_birth", "college_id", "emergency_contact_name", "emergency_contact_phone",
         "home_address", "phone_number", "has_medical_conditions", "medical_conditions_details",
-        "takes_medication", "medication_details", "agrees_to_fitness_statement",
+        "takes_medication", "medication_details", "has_dietary_info", "dietary_info_details", "agrees_to_fitness_statement",
         "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data"
     ];
 
@@ -72,7 +72,7 @@ export default class User {
                 "id", "email", "first_name", "last_name", "date_of_birth", "college_id",
                 "emergency_contact_name", "emergency_contact_phone", "home_address",
                 "phone_number", "has_medical_conditions", "medical_conditions_details",
-                "takes_medication", "medication_details", "free_sessions", "is_member",
+                "takes_medication", "medication_details", "dietary_info_details", "has_dietary_info", "free_sessions", "is_member",
                 "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts",
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
                 "is_instructor", "first_aid_expiry", "profile_picture_path", "profile_picture_id",
@@ -157,7 +157,7 @@ export default class User {
             "email", "first_name", "last_name", "date_of_birth", "college_id",
             "emergency_contact_name", "emergency_contact_phone", "home_address",
             "phone_number", "has_medical_conditions", "medical_conditions_details",
-            "takes_medication", "medication_details", "agrees_to_fitness_statement",
+            "takes_medication", "medication_details", "has_dietary_info", "dietary_info_details", "agrees_to_fitness_statement",
             "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage",
             "agrees_to_keep_health_data", "first_aid_expiry", "is_instructor"
         ];
@@ -211,6 +211,7 @@ export default class User {
                 case "takes_medication":
                 case "agrees_to_keep_health_data":
                 case "is_instructor":
+                case "has_dietary_info":
                     error = ValidationRules.validate('boolean', value);
                     break;
                 case "medical_conditions_details":
@@ -223,6 +224,12 @@ export default class User {
                     if ((await getElement("takes_medication", data, db)).getData()) {
                         error = ValidationRules.validate('presence', value);
                         if (error) error = "Description required if taking medication.";
+                    }
+                    break;
+                case "dietary_info_details":
+                    if ((await getElement("has_dietary_info", data, db)).getData()) {
+                        error = ValidationRules.validate('presence', value);
+                        if (error) error = "Description required if dietary information exists.";
                     }
                     break;
                 case "agrees_to_fitness_statement":

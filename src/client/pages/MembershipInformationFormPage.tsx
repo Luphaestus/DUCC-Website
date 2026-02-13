@@ -15,6 +15,7 @@ export default function LegalPage() {
     const [loading, setLoading] = createSignal(true);
     const [hasMedicalConditions, setHasMedicalConditions] = createSignal(false);
     const [takesMedication, setTakesMedication] = createSignal(false);
+    const [hasDietaryInfo, setHasDietaryInfo] = createSignal(false);
 
     onMount(async () => {
         if (!await requireAuth()) return;
@@ -22,7 +23,7 @@ export default function LegalPage() {
         try {
             const [collegesRes, userRes, userNameRes] = await Promise.all([
                 apiRequest('GET', '/api/colleges'),
-                apiRequest('GET', `/api/user/elements/filled_legal_info,date_of_birth,college_id,emergency_contact_name,emergency_contact_phone,home_address,phone_number,medical_conditions_details,medication_details,agrees_to_fitness_statement,agrees_to_club_rules,agrees_to_pay_debts,agrees_to_data_storage,agrees_to_keep_health_data,has_medical_conditions,takes_medication`),
+                apiRequest('GET', `/api/user/elements/filled_legal_info,date_of_birth,college_id,emergency_contact_name,emergency_contact_phone,home_address,phone_number,medical_conditions_details,medication_details,dietary_info_details,agrees_to_fitness_statement,agrees_to_club_rules,agrees_to_pay_debts,agrees_to_data_storage,agrees_to_keep_health_data,has_medical_conditions,takes_medication,has_dietary_info`),
                 apiRequest('GET', '/api/user/elements/first_name,last_name')
             ]);
 
@@ -33,6 +34,7 @@ export default function LegalPage() {
             });
             setHasMedicalConditions(userRes.has_medical_conditions === 1 || userRes.has_medical_conditions === true);
             setTakesMedication(userRes.takes_medication === 1 || userRes.takes_medication === true);
+            setHasDietaryInfo(userRes.has_dietary_info === 1 || userRes.has_dietary_info === true);
         } catch (e) {
             console.error("Legal page load error", e);
             notify('Error', 'Failed to load form data.', 'error');
@@ -52,9 +54,10 @@ export default function LegalPage() {
             else if (value === 'on') payload[key] = true;
             else payload[key] = value;
         });
-        
+
         payload['has_medical_conditions'] = hasMedicalConditions();
         payload['takes_medication'] = takesMedication();
+        payload['has_dietary_info'] = hasDietaryInfo();
 
         const checkboxes = ['agrees_to_fitness_statement', 'agrees_to_club_rules', 'agrees_to_pay_debts', 'agrees_to_data_storage', 'agrees_to_keep_health_data'];
         checkboxes.forEach(cb => {
@@ -73,11 +76,11 @@ export default function LegalPage() {
     return (
         <div id="legal-view" class="view">
             <div class="legal-container">
-                <PageTitle text="Legal & Medical Information Form" />
+                <PageTitle text="Membership Information Form" />
                 <Show when={!loading()} fallback={<p>Loading...</p>}>
                     <form onSubmit={handleSubmit}>
                         <div class="legal-grid">
-                            <div class="liquid-container" style={{ "--liquid-padding": "1.25rem" }}>
+                            <div class="liquid-container">
                                 <header>
                                     <h3><span innerHTML={ACCOUNT_BOX_SVG} /> Personal Information</h3>
                                 </header>
@@ -99,7 +102,7 @@ export default function LegalPage() {
                                 <label>Home Address* <textarea name="home_address" rows="3" value={userData().home_address || ''}></textarea></label>
                             </div>
 
-                            <div class="liquid-container" style={{ "--liquid-padding": "1.25rem" }}>
+                            <div class="liquid-container">
                                 <header>
                                     <h3><span innerHTML={CALL_SVG} /> Emergency Contact</h3>
                                 </header>
@@ -107,7 +110,7 @@ export default function LegalPage() {
                                 <label>Phone Number* <input type="tel" name="emergency_contact_phone" value={userData().emergency_contact_phone || ''} /></label>
                             </div>
 
-                            <div class="liquid-container" style={{ "--liquid-padding": "1.25rem" }}>
+                            <div class="liquid-container">
                                 <header>
                                     <h3><span innerHTML={MEDICAL_INFORMATION_SVG} /> Medical Information</h3>
                                 </header>
@@ -123,7 +126,7 @@ export default function LegalPage() {
                                         </div>
                                     </div>
                                 </fieldset>
-                                
+
                                 <fieldset>
                                     <legend>Medication*</legend>
                                     <div class="grid">
@@ -138,22 +141,35 @@ export default function LegalPage() {
                                 </fieldset>
 
                                 <fieldset>
+                                    <legend>Dietary Information & Allergies*</legend>
+                                    <div class="grid">
+                                        <label><input type="radio" name="has_dietary_info_radio" checked={hasDietaryInfo() === true} onChange={() => setHasDietaryInfo(true)} /> Yes</label>
+                                        <label><input type="radio" name="has_dietary_info_radio" checked={hasDietaryInfo() === false} onChange={() => setHasDietaryInfo(false)} /> No</label>
+                                    </div>
+                                    <div class={`expandable-section ${hasDietaryInfo() ? 'open' : ''}`}>
+                                        <div class="expandable-content">
+                                            <textarea name="dietary_info_details" placeholder="Please specify..." value={userData().dietary_info_details || ''} required={hasDietaryInfo()}></textarea>
+                                        </div>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset>
                                     <label><input type="checkbox" name="agrees_to_fitness_statement" checked={userData().agrees_to_fitness_statement} /> I am not suffering from any medical condition or injury that prevents full participation.*</label>
                                 </fieldset>
                             </div>
 
-                            <div class="liquid-container form-box full-width" style={{ "--liquid-padding": "1.25rem" }}>
+                            <div class="liquid-container form-box full-width">
                                 <header>
                                     <h3><span innerHTML={CONTRACT_SVG} /> Terms and Conditions</h3>
                                 </header>
-                                
+
                                 <div>
                                     <fieldset><label><input type="checkbox" name="agrees_to_club_rules" checked={userData().agrees_to_club_rules} /> I agree to the club rules and safety policy.*</label></fieldset>
                                 </div>
                                 <div>
                                     <fieldset><label><input type="checkbox" name="agrees_to_pay_debts" checked={userData().agrees_to_pay_debts} /> I agree to pay all outstanding debts.*</label></fieldset>
                                 </div>
-                                
+
                                 <button type="submit">Submit Information</button>
                             </div>
                         </div>

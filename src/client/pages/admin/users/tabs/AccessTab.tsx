@@ -3,7 +3,7 @@ import { createResource, For, Show, createMemo, createSignal } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { getContrastColour } from "@/widgets/Tag";
 import { useNotifications } from "@/stores/notifications";
-import { 
+import {
     ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG, LOCAL_ACTIVITY_SVG, LOCK_SVG,
     WARNING_SVG, PERSON_OFF_SVG, GAVEL_SVG
 } from '@/utils/icons';
@@ -20,7 +20,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
     const [password, setPassword] = createSignal("");
     const [isSubmitting, setIsSubmitting] = createSignal(false);
     const [error, setError] = createSignal<string | null>(null);
-    
+
     // Permissions & Roles Data
     const [allRoles] = createResource(async () => await apiRequest('GET', '/api/admin/roles'));
     const [allPerms] = createResource(async () => await apiRequest('GET', '/api/admin/roles/permissions'));
@@ -59,11 +59,11 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
     // Roles Handlers
     const handleAddRole = async (roleId: string | number) => {
         if (!roleId) return;
-        
+
         // Check if role is President
         const roles = allRoles();
         const role = roles?.find((r: any) => r.id === roleId);
-        
+
         if (role?.name === 'President') {
             setPresidentRoleId(Number(roleId));
             setIsPresidentModalOpen(true);
@@ -81,13 +81,13 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
         setIsSubmitting(true);
         setError(null);
         try {
-            await apiRequest('POST', `/api/admin/user/${props.user.id}/role`, { 
+            await apiRequest('POST', `/api/admin/user/${props.user.id}/role`, {
                 roleId: String(presidentRoleId()),
                 password: password()
             });
             const status = await apiRequest('GET', '/api/auth/status');
             triggerPresidentGoodbye(status.user);
-        } catch (e: any) { 
+        } catch (e: any) {
             setError(e.message || "An unexpected error occurred");
             setPassword("");
         } finally {
@@ -144,17 +144,17 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
 
     return (
         <div class="dashboard-section active">
-            <Modal 
-                isOpen={isPresidentModalOpen()} 
+            <Modal
+                isOpen={isPresidentModalOpen()}
                 onClose={closePresidentModal}
                 title="Transfer Presidency"
                 maxWidth="600px"
                 footer={
                     <>
                         <LiquidButton class="secondary outline" onClick={closePresidentModal} borderRadius={12}>Cancel</LiquidButton>
-                        <LiquidButton 
-                            class="error" 
-                            onClick={confirmPresidentTransfer} 
+                        <LiquidButton
+                            class="error"
+                            onClick={confirmPresidentTransfer}
                             borderRadius={12}
                             disabled={!password() || isSubmitting()}
                         >
@@ -170,7 +170,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                     </div>
 
                     <p>You are about to transfer the <strong>President</strong> role to <strong>{props.user.first_name} {props.user.last_name}</strong>. This is a destructive action that triggers a club-wide handover:</p>
-                    
+
                     <ul class="warning-list">
                         <li>
                             <span class="list-icon" innerHTML={PERSON_OFF_SVG}></span>
@@ -192,12 +192,12 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                         </li>
                     </ul>
 
-                    <div class="password-confirmation mt-4">
+                    <div class="password-confirmation">
                         <label>
                             Enter your password to authorize this transfer:
-                            <input 
-                                type="password" 
-                                value={password()} 
+                            <input
+                                type="password"
+                                value={password()}
                                 onInput={(e) => setPassword(e.currentTarget.value)}
                                 placeholder="Current President's Password"
                                 aria-invalid={!!error() || undefined}
@@ -221,8 +221,8 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                     {role => {
                                         const isActive = createMemo(() => (props.user.roles || []).some((r: any) => r.id === role.id));
                                         return (
-                                            <div 
-                                                class="tag-badge" 
+                                            <div
+                                                class="tag-badge"
                                                 classList={{ selected: isActive(), 'tag-badge-style': true }}
                                                 style={{ "--tag-colour": "var(--pico-primary)", "--tag-text-colour": "var(--pico-primary-inverse)" }}
                                                 onClick={() => (isActive() && role.name !== 'President') ? handleRemoveRole(role.id) : handleAddRole(role.id)}
@@ -254,17 +254,17 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                 });
 
                                 return (
-                                    <div 
-                                        class="tag-badge" 
-                                        classList={{ 
-                                            selected: isActive(), 
+                                    <div
+                                        class="tag-badge"
+                                        classList={{
+                                            selected: isActive(),
                                             inherited: isInherited(),
                                             'tag-badge-style': isHoveredInherited() || isActive()
-                                        }} 
-                                        style={{ 
-                                            "--tag-colour": isHoveredInherited() ? "var(--pico-primary)" : (isActive() ? (isInherited() ? "rgba(var(--pico-color-rgb), 0.1)" : "var(--pico-color)") : undefined), 
+                                        }}
+                                        style={{
+                                            "--tag-colour": isHoveredInherited() ? "var(--pico-primary)" : (isActive() ? (isInherited() ? "rgba(var(--pico-color-rgb), 0.1)" : "var(--pico-color)") : undefined),
                                             "--tag-text-colour": isHoveredInherited() ? "var(--pico-primary-inverse)" : undefined,
-                                            "border-color": isHoveredInherited() ? "var(--pico-primary)" : "var(--pico-color)", 
+                                            "border-color": isHoveredInherited() ? "var(--pico-primary)" : "var(--pico-color)",
                                             "cursor": isInherited() ? "not-allowed" : "pointer",
                                             "opacity": (hoveredRole() && !isHoveredInherited() && isActive()) ? 0.5 : 1,
                                             "transition": "all 0.2s ease"
@@ -289,7 +289,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
 
             <Show when={tagsData()}>
                 {res => (
-                    <div class="dual-grid mt-4">
+                    <div class="dual-grid">
                         <Panel title="Whitelisted Tags" icon={LOCAL_ACTIVITY_SVG}>
                             <p class="helper-text">Tags this user is explicitly whitelisted for.</p>
                             <div class="tags-selection-grid">
@@ -297,8 +297,8 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                     {tag => {
                                         const isActive = createMemo(() => res().whitelisted.some((t: any) => t.id === tag.id));
                                         return (
-                                            <div 
-                                                class="tag-badge" 
+                                            <div
+                                                class="tag-badge"
                                                 classList={{ selected: isActive(), 'tag-badge-style': true }}
                                                 style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || '') }}
                                                 onClick={() => toggleWhitelist(tag.id, !isActive())}
@@ -317,8 +317,8 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                     {tag => {
                                         const isActive = createMemo(() => (props.user.direct_managed_tags || []).some((t: any) => t.id === tag.id));
                                         return (
-                                            <div 
-                                                class="tag-badge" 
+                                            <div
+                                                class="tag-badge"
                                                 classList={{ selected: isActive(), 'tag-badge-style': true }}
                                                 style={{ "--tag-colour": tag.color || "var(--pico-primary)", "--tag-text-colour": getContrastColour(tag.color || '') }}
                                                 onClick={() => toggleManaged(tag.id, !isActive())}

@@ -1,7 +1,7 @@
 import { createSignal, Show } from "solid-js";
 import Markdown from "./Markdown";
-import { 
-    EDIT_SVG, IMAGE_SVG, ADD_SVG, 
+import {
+    EDIT_SVG, IMAGE_SVG, ADD_SVG,
     DESCRIPTION_SVG, CLOSE_SVG
 } from '@/utils/icons';
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
@@ -25,7 +25,7 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
         const selectedText = text.substring(start, end);
         const newText = text.substring(0, start) + before + selectedText + after + text.substring(end);
         props.onInput(newText);
-        
+
         // Reset focus and selection
         setTimeout(() => {
             textareaRef!.focus();
@@ -45,7 +45,7 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
     };
 
     return (
-        <div class="markdown-editor-container liquid-container glass-panel no-padding overflow-hidden" style={{ "--liquid-border-radius": "12px" }}>
+        <div class="markdown-editor-container liquid-container glass-panel no-padding overflow-hidden">
             <div class="editor-toolbar flex-row-gap-half p-2 border-bottom">
                 <button type="button" class="toolbar-btn" onClick={() => setPreview(!preview())} title={preview() ? "Edit" : "Preview"}>
                     <span innerHTML={preview() ? EDIT_SVG : DESCRIPTION_SVG} />
@@ -79,7 +79,7 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
                     />
                 </Show>
             </div>
-            
+
             <style>{`
                 .markdown-editor-container {
                     border: 1px solid rgba(var(--pico-color-rgb), 0.1);

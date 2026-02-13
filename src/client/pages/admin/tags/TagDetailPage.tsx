@@ -4,9 +4,9 @@ import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import UploadWidget from "@/components/UploadWidget";
-import { 
-    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, ADD_SVG, 
-    SHIELD_SVG, LOCAL_ACTIVITY_SVG, IMAGE_SVG 
+import {
+    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, ADD_SVG,
+    SHIELD_SVG, LOCAL_ACTIVITY_SVG, IMAGE_SVG
 } from '@/utils/icons';
 import { debounce } from "@/utils/utils";
 import PageTitle from "@/components/PageTitle";
@@ -38,12 +38,12 @@ export default function TagDetailPage() {
     const isNew = () => id() === 'new';
 
     const [tag, { mutate: setTag, refetch: refetchTag }] = createResource(id, async (tagId) => {
-        if (tagId === 'new') return { 
-            name: '', color: '#808080', description: '', 
-            min_difficulty: null, priority: 0, 
-            join_policy: 'open', view_policy: 'open', image_id: null 
+        if (tagId === 'new') return {
+            name: '', color: '#808080', description: '',
+            min_difficulty: null, priority: 0,
+            join_policy: 'open', view_policy: 'open', image_id: null
         } as Tag;
-        
+
         const res = await apiRequest('GET', '/api/tags');
         const found = res.data.find((t: any) => t.id == tagId);
         if (!found) throw new Error('Tag not found');
@@ -140,12 +140,12 @@ export default function TagDetailPage() {
 
     return (
         <div class="glass-layout">
-            <button class="small-btn secondary outline mb-4" onClick={() => navigate('/admin/tags')}>
+            <button class="small-btn secondary outline" onClick={() => navigate('/admin/tags')}>
                 <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
             </button>
             <PageTitle text={isNew() ? 'Create New Tag' : 'Edit Tag'} centered={true} />
 
-            <div class="panel mt-6">
+            <div class="panel">
                 <div class="panel-header">
                     <h3 style="margin: 0;">Details</h3>
                     <div class="panel-actions">
@@ -162,23 +162,23 @@ export default function TagDetailPage() {
                             <div class="event-content-split">
                                 <div class="event-details-section">
                                     <div class="grid-2-col">
-                                        <label>Name 
+                                        <label>Name
                                             <input type="text" value={tag()!.name} onInput={e => updateField('name', e.currentTarget.value)} required placeholder="Tag Name" />
                                         </label>
-                                        <label>Colour 
+                                        <label>Colour
                                             <input type="color" value={tag()!.color} onInput={e => updateField('color', e.currentTarget.value)} required class="colour-input" />
                                         </label>
                                     </div>
-                                    
-                                    <label>Description 
+
+                                    <label>Description
                                         <textarea rows="3" value={tag()!.description} onInput={e => updateField('description', e.currentTarget.value)} placeholder="Tag description..."></textarea>
                                     </label>
-                                    
+
                                     <div class="grid-2-col">
-                                        <label>Min Difficulty Requirement 
+                                        <label>Min Difficulty Requirement
                                             <input type="number" value={tag()!.min_difficulty ?? ''} onInput={e => updateField('min_difficulty', e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value))} min="1" max="5" placeholder="Optional (1-5)" />
                                         </label>
-                                        <label>Priority 
+                                        <label>Priority
                                             <input type="number" value={tag()!.priority} onInput={e => updateField('priority', parseInt(e.currentTarget.value) || 0)} placeholder="Default 0" />
                                         </label>
                                     </div>
@@ -205,7 +205,7 @@ export default function TagDetailPage() {
                                     <h3 class="section-header-modern">
                                         <span innerHTML={IMAGE_SVG} /> Default Event Image
                                     </h3>
-                                    <UploadWidget 
+                                    <UploadWidget
                                         selectMode="single"
                                         autoUpload={true}
                                         enableLibrary={true}
@@ -229,7 +229,7 @@ export default function TagDetailPage() {
                                     />
                                 </div>
                             </div>
-                            
+
                             <Show when={isNew()}>
                                 <div class="form-actions-footer">
                                     <button type="submit" class="wide-btn">Create</button>

@@ -63,9 +63,15 @@ const ProfilePictureChangedEvent = new Event();
 const ClubLogoChangedEvent = new Event();
 
 /**
+ * Event fired when a form is submitted.
+ * @type {Event}
+ */
+const FormSubmittedEvent = new Event();
+
+/**
  * Event fired when the connection to the server is lost.
  * @type {Event}
  */
 const NoInternetEvent = new Event();
 
-export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent, ClubLogoChangedEvent, NoInternetEvent };
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent, ClubLogoChangedEvent, FormSubmittedEvent, NoInternetEvent };

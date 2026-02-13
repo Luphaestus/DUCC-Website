@@ -69,6 +69,7 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
         { slug: 'quote.manage', desc: 'Moderate quotes' },
         { slug: 'quote.see_author', desc: 'See who submitted a quote' },
         { slug: 'car.manage_global', desc: 'Manage website-wide global cars' },
+        { slug: 'kit.manage', desc: 'Manage club kit inventory' },
         { slug: 'exec.publish', desc: 'Automatically publish users with this role to the executive committee page' },
         { slug: 'exec.manage', desc: 'Manage the executive committee page members' },
         { slug: 'email.send', desc: 'Send club-wide announcement emails' }
@@ -81,7 +82,7 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
         if (row) permIds[p.slug] = row.id;
     }
 
-    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global', 'exec.publish', 'exec.manage', 'email.send'];
+    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global', 'kit.manage', 'exec.publish', 'exec.manage', 'email.send'];
     await db.run('INSERT IGNORE INTO roles (name, description, exec_ranking) VALUES (?, ?, ?)', ['President', 'The Club President with full administrative access.', 1]);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
     for (const permSlug of presidentPerms) {
