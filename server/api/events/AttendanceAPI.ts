@@ -71,7 +71,7 @@ export default class AttendanceAPI {
         /**
          * Get count of instructors attending an event.
          */
-        this.app.get('/api/event/:id/coachCount', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+        this.app.get('/api/event/:id/coachCount', async (request: any, reply: FastifyReply) => {
             const eventId = parseInt(request.params.id, 10);
             if (Number.isNaN(eventId)) {
                 return reply.status(400).send({ message: 'Event ID must be an integer' });

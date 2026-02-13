@@ -33,9 +33,11 @@ export default class WaitlistAPI {
         /**
          * Check if current user is on the waiting list.
          */
-        this.app.get('/api/event/:id/isOnWaitlist', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+        this.app.get('/api/event/:id/isOnWaitlist', async (request: any, reply: FastifyReply) => {
             const eventId = parseInt(request.params.id, 10);
             if (Number.isNaN(eventId)) return reply.status(400).send({ message: 'Event ID must be an integer' });
+
+            if (!request.user) return reply.send({ isOnWaitlist: false });
 
             const onList = await WaitlistDB.is_user_on_waiting_list(this.db, request.user.id, eventId);
             if (onList.isError()) return onList.getResponse(reply);

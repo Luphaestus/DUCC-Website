@@ -45,30 +45,59 @@ export default function EventDetailPage() {
     const [isAttendeesExpanded, setIsAttendeesExpanded] = createSignal(false);
 
     const [eventData, { refetch: refetchEvent }] = createResource(eventId, async (id) => {
-        const res = await apiRequest('GET', `/api/event/${id}`, null, true);
-        return res.event;
+        try {
+            const res = await apiRequest('GET', `/api/event/${id}`, null, true);
+            return res.event;
+        } catch (e) {
+            console.error("Failed to fetch event data:", e);
+            throw e;
+        }
     });
 
     const [attendees, { refetch: refetchAttendees }] = createResource(eventId, async (id) => {
-        const res = await apiRequest('GET', `/api/event/${id}/attendees`, null, true);
-        return res.attendees || [];
+        try {
+            const res = await apiRequest('GET', `/api/event/${id}/attendees`, null, true);
+            return res.attendees || [];
+        } catch (e) {
+            console.error("Failed to fetch attendees:", e);
+            return [];
+        }
     });
 
     const [coachCount, { refetch: refetchCoachCount }] = createResource(eventId, async (id) => {
-        const res = await apiRequest('GET', `/api/event/${id}/coachCount`, null, true);
-        return res.count;
-    });
-
-    const [isOnWaitlist, { refetch: refetchWaitlist }] = createResource(eventId, async (id) => {
-        const res = await apiRequest('GET', `/api/event/${id}/isOnWaitlist`, null, true);
-        return res.isOnWaitlist;
+        try {
+            const res = await apiRequest('GET', `/api/event/${id}/coachCount`, null, true);
+            return res.count || 0;
+        } catch (e) {
+            console.error("Failed to fetch coach count:", e);
+            return 0;
+        }
     });
 
     const [userStatus] = createResource(async () => {
-        const auth = await apiRequest('GET', '/api/auth/status', null, true).catch(() => ({ authenticated: false }));
-        if (!auth.authenticated) return null;
-        return await apiRequest('GET', '/api/user/elements/filled_legal_info,balance,is_member,free_sessions,is_instructor,permissions,id');
+        try {
+            const auth = await apiRequest('GET', '/api/auth/status', null, true).catch(() => ({ authenticated: false }));
+            if (!auth.authenticated) return null;
+            return await apiRequest('GET', '/api/user/elements/filled_legal_info,balance,is_member,free_sessions,is_instructor,permissions,id');
+        } catch (e) {
+            console.error("Failed to fetch user status:", e);
+            return null;
+        }
     });
+
+    const [isOnWaitlist, { refetch: refetchWaitlist }] = createResource(
+        () => ({ id: eventId(), user: userStatus() }),
+        async ({ id, user }) => {
+            if (!id || !user) return false;
+            try {
+                const res = await apiRequest('GET', `/api/event/${id}/isOnWaitlist`, null, true);
+                return !!res.isOnWaitlist;
+            } catch (e) {
+                console.error("Failed to fetch waitlist status:", e);
+                return false;
+            }
+        }
+    );
 
     const [debtLimit] = createResource(async () => {
         try {
