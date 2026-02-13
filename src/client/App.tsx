@@ -83,16 +83,19 @@ export default function App(props: ParentProps) {
             <NoInternetPage />
         </Show>
         <div id="solid-root">
-          <ErrorBoundary fallback={(err) => (
-            <ErrorView
-              id="global-error"
-              viewId="error"
-              icon={BRIGHTNESS_ALERT_SVG}
-              iconClass="critical-error-icon"
-              title="Something went wrong"
-              message={`We've encountered an unexpected error.<br><small>${err?.message || err}</small>`}
-            />
-          )}>
+          <ErrorBoundary fallback={(err) => {
+            console.error("Global App Error:", err);
+            return (
+              <ErrorView
+                id="global-error"
+                viewId="error"
+                icon={BRIGHTNESS_ALERT_SVG}
+                iconClass="critical-error-icon"
+                title="Something went wrong"
+                message={`We've encountered an unexpected error.<br><small>${err?.message || err}</small>`}
+              />
+            );
+          }}>
             {props.children}
           </ErrorBoundary>
         </div>
