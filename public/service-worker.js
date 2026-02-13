@@ -1,6 +1,6 @@
 // Service Worker for DUCC PWA
 
-const CACHE_NAME = 'ducc-v7';
+const CACHE_NAME = 'ducc-v8';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -41,9 +41,9 @@ self.addEventListener('fetch', (event) => {
   // Skip API requests - let them handle their own errors/caching
   if (url.pathname.startsWith('/api/')) return;
 
-  // 1. Network-First for Navigation (index.html)
-  // This ensures we always get the latest version info (hashed filenames) from the server.
-  if (event.request.mode === 'navigate') {
+  // 1. Network-First for Navigation (index.html) and Manifest
+  // This ensures we always get the latest version info and branding from the server.
+  if (event.request.mode === 'navigate' || url.pathname === '/manifest.json') {
     event.respondWith(
       fetch(event.request)
         .then((response) => {

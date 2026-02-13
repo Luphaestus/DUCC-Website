@@ -264,6 +264,11 @@ const startServer = async () => {
       const globals = new Globals();
       const clubLogo = globals.get('ClubLogo')?.data || '/images/misc/ducc.png';
       
+      // Better type detection: ignore query parameters
+      const logoPath = clubLogo.split('?')[0].toLowerCase();
+      const isSvg = logoPath.endsWith('.svg');
+      const logoType = isSvg ? "image/svg+xml" : "image/png";
+
       const manifest = {
         "name": "Durham University Canoe Club",
         "short_name": "DUCC",
@@ -276,13 +281,13 @@ const startServer = async () => {
           {
             "src": clubLogo,
             "sizes": "any",
-            "type": clubLogo.endsWith('.svg') ? "image/svg+xml" : "image/png",
+            "type": logoType,
             "purpose": "any"
           },
           {
             "src": clubLogo,
             "sizes": "any",
-            "type": clubLogo.endsWith('.svg') ? "image/svg+xml" : "image/png",
+            "type": logoType,
             "purpose": "maskable"
           },
           {
@@ -388,7 +393,17 @@ const startServer = async () => {
       }
 
       if (fs.existsSync(distIndex)) {
-        return reply.status(200).sendFile('index.html', path.join(__dirname, '..', 'dist'));
+        const globals = new Globals();
+        const clubLogo = globals.get('ClubLogo')?.data || '/images/misc/ducc.png';
+        
+        // Read index.html and inject the club logo
+        let html = fs.readFileSync(distIndex, 'utf8');
+        html = html.replace(
+          '<link rel="apple-touch-icon" href="/images/misc/ducc.png">',
+          `<link rel="apple-touch-icon" href="${clubLogo}">`
+        );
+        
+        return reply.status(200).type('text/html').send(html);
       } else {
         if (isDev) {
           Logger.warn(`SPA fallback: index.html not found in dist after waiting. URL: ${request.url}`);
