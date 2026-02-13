@@ -1,6 +1,6 @@
 // Service Worker for DUCC PWA
 
-const CACHE_NAME = 'ducc-v3';
+const CACHE_NAME = 'ducc-v4';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -111,14 +111,18 @@ self.addEventListener('push', (event) => {
           // Broadcast to all clients if they are open
           return self.clients.matchAll({ type: 'window' }).then(clients => {
             clients.forEach(client => {
-              client.postMessage({
-                type: 'PUSH_NOTIFICATION_RECEIVED',
-                notification: {
-                  title: data.title,
-                  body: data.body,
-                  url: data.url
-                }
-              });
+              try {
+                client.postMessage({
+                  type: 'PUSH_NOTIFICATION_RECEIVED',
+                  notification: {
+                    title: data.title,
+                    body: data.body,
+                    url: data.url
+                  }
+                });
+              } catch (e) {
+                console.warn('[SW] Failed to postMessage to client:', e);
+              }
             });
           });
         })
