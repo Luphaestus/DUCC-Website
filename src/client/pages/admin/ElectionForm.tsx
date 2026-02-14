@@ -103,7 +103,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
                 navigate('/admin/elections');
                 return null;
             }
-            
+
             const election = res.election || res.data || res;
             if (!election) throw new Error('Election data missing');
 
@@ -114,7 +114,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             // Fetch election roles and nominations if election exists
             const rolesRes = await apiRequest('GET', `/api/admin/elections/${id}/roles`);
             const roles = rolesRes?.roles || rolesRes?.data || (Array.isArray(rolesRes) ? rolesRes : []);
-            
+
             if (Array.isArray(roles)) {
                 setElectionRoles(roles);
                 // Fetch nominations for each role
@@ -180,12 +180,12 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             if (isNew()) {
                 const res = await apiRequest('POST', '/api/admin/elections', dataToSave);
                 electionId = (res.data?.id || res.id).toString();
-                
+
                 // Add initial roles
                 for (const role of newElectionRoles()) {
                     await apiRequest('POST', `/api/admin/elections/${electionId}/roles`, { role_id: role.role_id, max_winners: role.max_winners });
                 }
-                
+
                 notify('Success', 'Election created successfully', 'success');
             } else {
                 await apiRequest('PUT', `/api/admin/elections/${props.electionId}`, dataToSave);
@@ -376,8 +376,8 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
 
                             <Show when={(isDirty() || isNew()) && !isReadOnly()}>
                                 <div class="floating-action-container">
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         class="floating-save-btn prominent-btn"
                                         title={isNew() ? 'Create Election' : 'Save Changes'}
                                     >
@@ -424,20 +424,20 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
                                         const electionRole = () => electionRoles().find(er => er.role_id === role.id);
                                         const newRole = () => newElectionRoles().find(r => r.role_id === role.id);
                                         const isSelected = () => isNew() ? !!newRole() : !!electionRole();
-                                        
+
                                         return (
                                             <label class="tag-checkbox">
-                                                <input 
-                                                    type="checkbox" 
-                                                    class="hidden-checkbox" 
-                                                    checked={isSelected()} 
+                                                <input
+                                                    type="checkbox"
+                                                    class="hidden-checkbox"
+                                                    checked={isSelected()}
                                                     onChange={() => {
                                                         if (isNew()) {
                                                             isSelected() ? handleRemoveRole(0, role.id) : handleAddRole(role.id);
                                                         } else {
                                                             isSelected() ? handleRemoveRole(electionRole()!.id) : handleAddRole(role.id);
                                                         }
-                                                    }} 
+                                                    }}
                                                 />
                                                 <span class="tag-badge tag-badge-simple" classList={{ selected: isSelected() }} style={{ "--tag-colour": "#808080" }}>{role.name}</span>
                                             </label>
@@ -448,7 +448,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
                         </Show>
                     </div>
                 </div>
-
+            </Show>
             <Show when={(isNew() && newElectionRoles().length > 0) || fetchedElection()}>
                 <div class="panel">
                     <div class="panel-header">
