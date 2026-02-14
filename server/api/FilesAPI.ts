@@ -91,7 +91,10 @@ export default class FilesAPI {
         /**
          * Upload multiple files.
          */
-        this.app.post('/api/files', { preHandler: [check('file.write')] }, async (request: any, reply: FastifyReply) => {
+        this.app.post('/api/files', { 
+            preHandler: [check('file.write')],
+            config: { rateLimit: config.rateLimit.sensitive }
+        }, async (request: any, reply: FastifyReply) => {
             const parts = request.files();
             const results: number[] = [];
             const allowedMimes = [

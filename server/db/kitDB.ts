@@ -1,6 +1,7 @@
 import { statusObject } from '../misc/status.js';
 import { DatabaseWrapper } from './db.js';
 import Logger from '../misc/Logger.js';
+import Utils from '../misc/utils.js';
 
 export default class KitDB {
     static async getAllItems(db: DatabaseWrapper): Promise<statusObject> {
@@ -18,11 +19,18 @@ export default class KitDB {
 
     static async createItem(db: DatabaseWrapper, data: any): Promise<statusObject> {
         try {
-            const { name, type, description, variants } = data;
+            const { variants } = data;
             return await db.transaction(async (tx) => {
+                const allowedFields = ['name', 'type', 'description'];
+                const itemData = Utils.pick(data, allowedFields);
+                
+                if (!itemData.name || !itemData.type) {
+                    return new statusObject(400, 'Name and type are required');
+                }
+
                 const result = await tx.run(
                     'INSERT INTO kit_items (name, type, description) VALUES (?, ?, ?)',
-                    [name, type, description || '']
+                    [itemData.name, itemData.type, itemData.description || '']
                 );
                 const itemId = result.lastID;
 
@@ -46,10 +54,17 @@ export default class KitDB {
         try {
             const { name, type, description, variants } = data;
             return await db.transaction(async (tx) => {
-                await tx.run(
-                    'UPDATE kit_items SET name=?, type=?, description=? WHERE id=?',
-                    [name, type, description || '', id]
-                );
+                const allowedFields = ['name', 'type', 'description'];
+                const updates = Utils.pick(data, allowedFields);
+                const keys = Object.keys(updates);
+
+                if (keys.length > 0) {
+                    const sets = keys.map(k => `${k} = ?`).join(', ');
+                    await tx.run(
+                        `UPDATE kit_items SET ${sets} WHERE id = ?`,
+                        [...Object.values(updates), id]
+                    );
+                }
 
                 if (variants && Array.isArray(variants)) {
                     // Simple approach: delete and recreate variants? 

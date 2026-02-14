@@ -12,6 +12,7 @@ import { Permissions } from '../../misc/permissions.js';
 import bcrypt from 'bcrypt';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { DatabaseWrapper } from '../../db/db.js';
+import config from '../../config.js';
 
 export default class AdminUsers {
     app: FastifyInstance;
@@ -144,7 +145,10 @@ export default class AdminUsers {
         /**
          * Assign a role to a user.
          */
-        this.app.post<{ Params: { id: string }, Body: any }>('/api/admin/user/:id/role', { preHandler: [check('perm:user.manage | perm:role.manage')] }, async (request, reply) => {
+        this.app.post<{ Params: { id: string }, Body: any }>('/api/admin/user/:id/role', { 
+            preHandler: [check('perm:user.manage | perm:role.manage')],
+            config: { rateLimit: config.rateLimit.sensitive }
+        }, async (request, reply) => {
             const body = request.body as any;
             const roleId = body.roleId;
             const roleRes = await RolesDB.getRoleById(this.db, roleId);

@@ -4,6 +4,7 @@ import BaseDB from './BaseDB.js';
 import { statusObject } from '../misc/status.js';
 import { DatabaseWrapper } from './db.js';
 import Logger from '../misc/Logger.js';
+import Utils from '../misc/utils.js';
 
 interface ElectionData {
     id?: number;
@@ -79,19 +80,10 @@ export default class ElectionDB extends BaseDB {
      * @param electionData - Data to update.
      */
     static async updateElection(db: DatabaseWrapper, electionId: number, electionData: Partial<ElectionData>): Promise<statusObject> {
-        return this.wrap(async () => {
-            const { id, created_at, updated_at, ...updateFields } = electionData; // Prevent updating ID/timestamps directly
-            const keys = Object.keys(updateFields);
-            if (keys.length === 0) return new statusObject(200, 'No fields to update.');
-
-            const sets = keys.map(k => `${k} = ?`).join(', ');
-            const result = await db.run(
-                `UPDATE elections SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-                [...Object.values(updateFields), electionId]
-            );
-            if (result.changes === 0) return new statusObject(404, 'Election not found or no changes made.');
-            return new statusObject(200, 'Election updated.');
-        });
+        const allowedFields: (keyof ElectionData)[] = [
+            'title', 'description', 'start_date', 'voting_start_date', 'end_date', 'phase', 'voting_type', 'managed_by_user_id'
+        ];
+        return this.updateRecord(db, 'elections', electionId, electionData, allowedFields as string[]);
     }
 
     /**

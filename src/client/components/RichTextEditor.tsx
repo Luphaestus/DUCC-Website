@@ -22,6 +22,7 @@ interface RichTextEditorProps {
     value: string;
     onInput: (value: string) => void;
     placeholder?: string;
+    readOnly?: boolean;
 }
 
 export default function RichTextEditor(props: RichTextEditorProps) {
@@ -39,6 +40,7 @@ export default function RichTextEditor(props: RichTextEditorProps) {
 
         editor = new Editor({
             element: editorElement,
+            editable: !props.readOnly,
             extensions: [
                 StarterKit,
                 Underline,

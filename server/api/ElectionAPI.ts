@@ -7,6 +7,7 @@ import Logger from '../misc/Logger.js';
 import { Permissions } from '../misc/permissions.js';
 import ElectionDB from '../db/electionDB.js';
 import ExecDB from '../db/execDB.js'; // Needed for role transfer logic
+import config from '../config.js';
 
 export default class ElectionAPI {
     app: FastifyInstance;
@@ -394,7 +395,10 @@ export default class ElectionAPI {
          * @param {string} req.params.electionId - Election ID.
          * @param {object} req.body - { election_role_id: number, manifesto_file_id: number }.
          */
-        this.app.post('/api/elections/:electionId/nominate', { preHandler: [checkAuthentication('is_member')] }, async (req: any, reply) => {
+        this.app.post('/api/elections/:electionId/nominate', { 
+            preHandler: [checkAuthentication('is_member')],
+            config: { rateLimit: config.rateLimit.sensitive }
+        }, async (req: any, reply) => {
             try {
                 const electionId = parseInt(req.params.electionId);
                 const userId = req.user.id;
@@ -433,7 +437,10 @@ export default class ElectionAPI {
         /**
          * User withdraws their nomination.
          */
-        this.app.delete('/api/elections/:electionId/nominate/:roleId', { preHandler: [checkAuthentication('is_member')] }, async (req: any, reply) => {
+        this.app.delete('/api/elections/:electionId/nominate/:roleId', { 
+            preHandler: [checkAuthentication('is_member')],
+            config: { rateLimit: config.rateLimit.sensitive }
+        }, async (req: any, reply) => {
             try {
                 const { electionId, roleId } = req.params;
                 const userId = req.user.id;
@@ -458,7 +465,10 @@ export default class ElectionAPI {
          * @param {string} req.params.electionId - Election ID.
          * @param {object} req.body - { votes: [{ election_role_id: number, nomination_id: number, rank?: number }] }.
          */
-        this.app.post('/api/elections/:electionId/vote', { preHandler: [checkAuthentication('is_member')] }, async (req: any, reply) => {
+        this.app.post('/api/elections/:electionId/vote', { 
+            preHandler: [checkAuthentication('is_member')],
+            config: { rateLimit: config.rateLimit.sensitive }
+        }, async (req: any, reply) => {
             try {
                 const electionId = parseInt(req.params.electionId); // For validation, not used in DB call
                 const userId = req.user.id;

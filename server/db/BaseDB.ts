@@ -1,6 +1,7 @@
 import { statusObject } from '../misc/status.js';
 import Logger from '../misc/Logger.js';
 import { DatabaseWrapper } from './db.js';
+import Utils from '../misc/utils.js';
 
 export default class BaseDB {
     /**
@@ -13,6 +14,22 @@ export default class BaseDB {
             Logger.error('Database Error:', error);
             return new statusObject(500, 'Database error: ' + error.message);
         }
+    }
+
+    /**
+     * Helper to update a record with field whitelisting.
+     */
+    static async updateRecord(db: DatabaseWrapper, table: string, id: number | string, data: any, allowedFields: string[]): Promise<statusObject> {
+        const updates = Utils.pick(data, allowedFields as any);
+        const keys = Object.keys(updates);
+        if (keys.length === 0) return new statusObject(200, 'No fields to update');
+
+        const sets = keys.map(k => `${k} = ?`).join(', ');
+        return this.wrap(async () => {
+            const result = await db.run(`UPDATE ${table} SET ${sets} WHERE id = ?`, [...Object.values(updates), id]);
+            if (result.changes === 0) return new statusObject(404, 'Record not found');
+            return new statusObject(200, 'Record updated');
+        });
     }
 
     /**

@@ -7,6 +7,7 @@
 import { statusObject } from '../misc/status.js';
 import BaseDB from './BaseDB.js';
 import { DatabaseWrapper } from './db.js';
+import Utils from '../misc/utils.js';
 
 interface GetQuotesOptions {
     search?: string;
@@ -27,11 +28,8 @@ export default class QuotesDB extends BaseDB {
             const { search, personId, visibility, page = 1, limit = 15, sort, order } = options;
 
             const allowedSorts = ['created_at', 'text', 'quoted_user', 'visibility'];
-            let sortCol = (sort && allowedSorts.includes(sort)) ? sort : 'created_at';
-            if (sortCol === 'quoted_user') sortCol = 'u.first_name';
-            else sortCol = `q.${sortCol}`;
-            
-            const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
+            const sortSql = Utils.getSortSql(sort, allowedSorts, 'created_at', order);
+            const sortCol = sortSql.startsWith('quoted_user') ? sortSql.replace('quoted_user', 'u.first_name') : `q.${sortSql}`;
             
             let conditions: string[] = [];
             const params: any[] = [];
@@ -83,7 +81,7 @@ export default class QuotesDB extends BaseDB {
                 LEFT JOIN users u ON q.quoted_user_id = u.id
                 LEFT JOIN users s ON q.submitted_by_id = s.id
                 ${whereClause}
-                ORDER BY ${sortCol} ${sortOrder}
+                ORDER BY ${sortCol}
             `;
 
             const countQuery = `
