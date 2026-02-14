@@ -29,6 +29,16 @@ interface Config {
     auth: {
         bcryptSaltRounds: number;
     };
+    rateLimit: {
+        sensitive: {
+            max: number;
+            timeWindow: string;
+        };
+        standard: {
+            max: number;
+            timeWindow: string;
+        };
+    };
     mysql: {
         host: string;
         user: string;
@@ -65,6 +75,16 @@ const config: Config = {
     },
     auth: {
         bcryptSaltRounds: process.env.NODE_ENV === 'test' ? 1 : 10,
+    },
+    rateLimit: {
+        sensitive: {
+            max: 10,
+            timeWindow: '1m'
+        },
+        standard: {
+            max: 100,
+            timeWindow: '1m'
+        }
     },
     mysql: {
         host: process.env.DB_HOST || 'localhost',

@@ -194,6 +194,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         reminder_sent TINYINT(1) NOT NULL DEFAULT 0,
         UNIQUE KEY idx_unique_active_attendance (event_id, user_id, (CASE WHEN is_attending = 1 THEN 1 ELSE NULL END)),
         INDEX idx_event_user (event_id, user_id),
+        INDEX idx_user (user_id),
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `
@@ -229,6 +230,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         kit_variant_id INT,
         is_fulfilled TINYINT(1) DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_event_user (event_id, user_id),
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (kit_item_id) REFERENCES kit_items(id) ON DELETE CASCADE,
@@ -247,6 +249,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_user_created (user_id, created_at),
         INDEX idx_status (status),
+        INDEX idx_event (event_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL
       `
@@ -361,7 +364,10 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         user_id INT NOT NULL,
         added_by INT,
         count INT NOT NULL DEFAULT 1,
+        message TEXT,
+        is_bootie TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user (user_id),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
       `
@@ -692,6 +698,9 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         user_id INT NOT NULL,
         manifesto_file_id INT,
         nomination_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_approved TINYINT(1) NOT NULL DEFAULT 0,
+        approved_by_user_id INT,
+        approved_at DATETIME,
         is_winner TINYINT(1) NOT NULL DEFAULT 0,
         votes_received INT DEFAULT 0,
         local_votes_count INT DEFAULT 0,
@@ -700,7 +709,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         UNIQUE KEY idx_election_role_user (election_role_id, user_id),
         FOREIGN KEY (election_role_id) REFERENCES election_roles(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (manifesto_file_id) REFERENCES files(id) ON DELETE SET NULL
+        FOREIGN KEY (manifesto_file_id) REFERENCES files(id) ON DELETE SET NULL,
+        FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
       `
     },
     {

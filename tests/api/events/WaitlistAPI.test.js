@@ -112,7 +112,8 @@ describe('api/events/WaitlistAPI', () => {
         });
 
         test('Success: Execs see detailed waitlist information', async () => {
-            await world.createRole('Admin', []);
+            await world.createPermission('exec.publish');
+            await world.createRole('Admin', ['exec.publish']);
             await world.createUser('admin', {}, ['Admin']);
             
             await world.createEvent('E1', { difficulty_level: 1 });

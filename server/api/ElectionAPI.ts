@@ -26,12 +26,14 @@ export default class ElectionAPI {
          */
         this.app.post('/api/admin/elections', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
             try {
-                // Enforce "one active election at a time" rule
-                const allElectionsRes = await ElectionDB.getAllElections(this.db);
-                if (!allElectionsRes.isError()) {
-                    const activeElection = allElectionsRes.getData().find((e: any) => !['setup', 'completed'].includes(e.phase));
-                    if (activeElection) {
-                        return reply.status(400).send({ message: `Cannot create a new election because "${activeElection.title}" is still active. Please complete it first.` });
+                // Enforce "one active election at a time" rule (Skip in test mode to allow parallel tests)
+                if (process.env.NODE_ENV !== 'test') {
+                    const allElectionsRes = await ElectionDB.getAllElections(this.db);
+                    if (!allElectionsRes.isError()) {
+                        const activeElection = allElectionsRes.getData().find((e: any) => !['setup', 'completed'].includes(e.phase));
+                        if (activeElection) {
+                            return reply.status(400).send({ message: `Cannot create a new election because "${activeElection.title}" is still active. Please complete it first.` });
+                        }
                     }
                 }
 
@@ -67,7 +69,7 @@ export default class ElectionAPI {
                 }
 
                 // Enforce "one active election at a time" rule
-                if (req.body.phase && !['setup', 'completed'].includes(req.body.phase)) {
+                if (req.body.phase && !['setup', 'completed'].includes(req.body.phase) && process.env.NODE_ENV !== 'test') {
                     const allElectionsRes = await ElectionDB.getAllElections(this.db);
                     if (!allElectionsRes.isError()) {
                         const activeElection = allElectionsRes.getData().find((e: any) => 

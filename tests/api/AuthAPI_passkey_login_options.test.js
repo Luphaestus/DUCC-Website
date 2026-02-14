@@ -63,6 +63,7 @@ describe('api/AuthAPI - Passkey Login Options', () => {
     test('POST /api/auth/passkey/login-options - 200 even if user has no passkeys (Discoverable Credentials)', async () => {
         // Create user
         await AuthDB.createUser(db, 'user@example.com', 'hash', 'User', 'Name');
+        await db.run('UPDATE users SET is_verified = 1 WHERE email = ?', ['user@example.com']);
         
         const res = await app.inject({
             method: 'POST',
@@ -79,6 +80,7 @@ describe('api/AuthAPI - Passkey Login Options', () => {
     test('POST /api/auth/passkey/login-options - Success with email', async () => {
         // Create user
         await AuthDB.createUser(db, 'passkey@example.com', 'hash', 'Pass', 'Key');
+        await db.run('UPDATE users SET is_verified = 1 WHERE email = ?', ['passkey@example.com']);
         const user = await AuthDB.getUserByEmail(db, 'passkey@example.com');
 
         // Create Passkey
@@ -110,6 +112,7 @@ describe('api/AuthAPI - Passkey Login Options', () => {
     test('POST /api/auth/passkey/login-options - Success with session (pendingUser)', async () => {
         // Create user
         await AuthDB.createUser(db, 'session@example.com', 'hash', 'Sess', 'Ion');
+        await db.run('UPDATE users SET is_verified = 1 WHERE email = ?', ['session@example.com']);
         const user = await AuthDB.getUserByEmail(db, 'session@example.com');
 
         // Create Passkey

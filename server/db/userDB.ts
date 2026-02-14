@@ -7,6 +7,7 @@
 import { statusObject } from '../misc/status.js';
 import Logger from '../misc/Logger.js';
 import { DatabaseWrapper } from './db.js';
+import Utils from '../misc/utils.js';
 
 interface UserPermissions {
     canManageUsers: boolean;
@@ -39,8 +40,7 @@ export default class UserDB {
         const isOnlyExec = isScopedExec && !canManageUsers && !canManageTrans && !canManageEvents;
 
         const allowedSorts = ['first_name', 'last_name', 'email', 'balance', 'first_aid_expiry', 'filled_legal_info', 'is_member', 'difficulty_level'];
-        let sortCol = (sort && allowedSorts.includes(sort)) ? sort : 'last_name';
-        let sortOrder = order === 'desc' ? 'DESC' : 'ASC';
+        const sortSql = Utils.getSortSql(sort, allowedSorts, 'last_name', order);
 
         let conditions: string[] = [];
         const params: any[] = [];
@@ -112,9 +112,9 @@ export default class UserDB {
                    u.profile_picture_id, u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
                    (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path`;
 
-            const orderBy = (sortCol === 'first_name' || sortCol === 'last_name' || isOnlyExec)
-                ? `${sortCol === 'first_name' ? 'u.first_name, u.last_name' : 'u.last_name, u.first_name'} ${sortOrder}`
-                : `${sortCol} ${sortOrder}, u.last_name ASC`;
+            const orderBy = (sortSql.startsWith('first_name') || sortSql.startsWith('last_name') || isOnlyExec)
+                ? (sortSql.startsWith('first_name') ? `u.first_name ${sortSql.split(' ')[1]}, u.last_name` : `u.last_name ${sortSql.split(' ')[1]}, u.first_name`)
+                : `u.${sortSql}, u.last_name ASC`;
 
             const query = `
                 SELECT ${selectFields}
@@ -148,7 +148,9 @@ export default class UserDB {
     static async getElements(db: DatabaseWrapper, userId: number, elements: string | string[]): Promise<statusObject> {
         if (typeof elements === 'string') elements = [elements];
 
-        const mappedElements = elements.map(e => {
+        const needsPermanentMember = (elements as string[]).includes('is_member') || (elements as string[]).includes('is_permanent_member');
+        const selectFields = [...new Set([...(elements as string[]), ...(needsPermanentMember ? ['is_permanent_member'] : [])])];
+        const selectMapped = selectFields.map(e => {
             if (e === 'balance') return '(SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE user_id = users.id) as balance';
             if (e === 'profile_picture_path') return '(SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = users.profile_picture_id) as profile_picture_path';
             return e;
@@ -156,15 +158,22 @@ export default class UserDB {
 
         try {
             const user = await db.get(
-                `SELECT ${mappedElements.join(', ')}, is_permanent_member FROM users WHERE id = ?`,
+                `SELECT ${selectMapped.join(', ')} FROM users WHERE id = ?`,
                 [userId]
             );
             if (!user) return new statusObject(404, 'User not found');
 
-            if (user.is_permanent_member === 1) {
+            if (user.is_permanent_member === 1 && user.is_member !== undefined) {
                 user.is_member = 1; // Force is_member to true if they are a permanent member
             }
-            return new statusObject(200, null, user);
+
+            // Filter output to only requested elements
+            const filteredResult: any = {};
+            (elements as string[]).forEach(e => {
+                filteredResult[e] = user[e];
+            });
+
+            return new statusObject(200, null, filteredResult);
         } catch (error: any) {
             Logger.error(`Database error in getElements (${(elements as string[]).join(', ')}):`, error);
             return new statusObject(500, 'Database error');

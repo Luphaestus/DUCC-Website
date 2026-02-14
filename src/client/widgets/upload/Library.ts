@@ -1,5 +1,6 @@
 import { apiRequest } from '@/utils/api';
 import { SEARCH_SVG, FILTER_LIST_SVG } from '@/utils/icons';
+import { escapeHTML } from '@/utils/utils';
 
 interface LibraryOptions {
     exclude?: string[];
@@ -92,9 +93,9 @@ export async function renderLibrary(
                 item.className = 'library-item';
                 item.innerHTML = /*html*/`
                     <div class="lib-img-wrapper">
-                        <img src="${url}" alt="${f.title}" loading="lazy">
+                        <img src="${url}" alt="${escapeHTML(f.title)}" loading="lazy">
                     </div>
-                    <span>${f.title}</span>
+                    <span>${escapeHTML(f.title)}</span>
                 `;
                 item.onclick = () => onSelect(url, f.id);
                 grid.appendChild(item);

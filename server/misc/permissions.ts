@@ -70,19 +70,21 @@ export class Permissions {
         return false;
     }
 
-    /** Check if user has any administrative power. */
+    /** Check if user has ANY administrative permission. */
     static async hasAnyPermission(db: DatabaseWrapper, userId: number): Promise<boolean> {
-        const result = await db.get(
-            `SELECT 1 FROM user_roles WHERE user_id = ? LIMIT 1`,
-            [userId]
-        );
-        if (result) return true;
-
-        const direct = await db.get(
-            `SELECT 1 FROM user_permissions WHERE user_id = ? LIMIT 1`,
-            [userId]
-        );
-        return !!direct;
+        const result = await db.get(`
+            SELECT 1 FROM (
+                SELECT rp.permission_id FROM user_roles ur
+                JOIN role_permissions rp ON ur.role_id = rp.role_id
+                WHERE ur.user_id = ?
+                UNION
+                SELECT up.permission_id FROM user_permissions up
+                WHERE up.user_id = ?
+            ) as user_perms
+            LIMIT 1
+        `, [userId, userId]);
+        
+        return !!result;
     }
 
     /** Check if user has specific role. */

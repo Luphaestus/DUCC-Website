@@ -14,6 +14,7 @@ import Logger from '../misc/Logger.js';
 import { DatabaseWrapper } from './db.js';
 import NotificationsAPI from '../api/NotificationsAPI.js';
 import { NotificationType } from '../types/notifications.js';
+import Utils from '../misc/utils.js';
 
 interface EventData {
     id?: number;
@@ -200,8 +201,7 @@ export default class EventsDB {
         const offset = (page - 1) * limit;
 
         const allowedSorts = ['title', 'start', 'location', 'difficulty_level', 'upfront_cost'];
-        const sortCol = (sort && allowedSorts.includes(sort)) ? sort : 'start';
-        const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
+        const sortSql = Utils.getSortSql(sort, allowedSorts, 'start', order);
 
         let conditions: string[] = [];
         const params: any[] = [];
@@ -251,7 +251,7 @@ export default class EventsDB {
                 SELECT ${this._getEventSelect()}
                 FROM events e 
                 ${whereClause} 
-                ORDER BY e.${sortCol} ${sortOrder} 
+                ORDER BY e.${sortSql} 
                 LIMIT ? OFFSET ?
             `;
             const rawEvents = await db.all(query, [...params, limit, offset]);
@@ -381,8 +381,18 @@ export default class EventsDB {
             const existing = await tx.get('SELECT * FROM events WHERE id = ?', [id]);
             if (!existing) return new statusObject(404, 'Event not found');
 
-            const merged = { ...existing, ...data };
-            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, tags, signup_required, is_offsite, allow_kit_requests, image_id, upfront_refund_cutoff, status, visible_at } = merged;
+            // Explicitly whitelist fields to allow update
+            const allowedFields: (keyof EventData)[] = [
+                'title', 'description', 'location', 'start', 'end', 'difficulty_level',
+                'max_attendees', 'upfront_cost', 'signup_required', 'is_offsite',
+                'allow_kit_requests', 'image_id', 'upfront_refund_cutoff', 'status', 'visible_at'
+            ];
+            
+            const updates = Utils.pick(data, allowedFields);
+            const merged = { ...existing, ...updates };
+
+            let { title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, is_offsite, allow_kit_requests, image_id, upfront_refund_cutoff, status, visible_at } = merged;
+            const tags = data.tags;
 
             if (!signup_required && max_attendees && max_attendees > 0) {
                 return new statusObject(400, 'Max attendees cannot be set if signup is not required');
@@ -390,7 +400,7 @@ export default class EventsDB {
 
             await tx.run(
                 `UPDATE events SET title=?, description=?, location=?, start=?, end=?, difficulty_level=?, max_attendees=?, upfront_cost=?, signup_required=?, is_offsite=?, allow_kit_requests=?, image_id=?, upfront_refund_cutoff=?, status=?, visible_at=? WHERE id=?`,
-                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required ? 1 : 0, is_offsite ? 1 : 0, allow_kit_requests ? 1 : 0, image_id, upfront_refund_cutoff, status, visible_at, id]
+                [title, description, location, start, end, difficulty_level, max_attendees, upfront_cost, signup_required, is_offsite, allow_kit_requests, image_id, upfront_refund_cutoff, status, visible_at, id]
             );
 
             if (tags && Array.isArray(tags)) {

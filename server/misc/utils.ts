@@ -33,4 +33,26 @@ export default class Utils {
         }
         return otp;
     }
+
+    /**
+     * Pick allowed keys from an object (Mass Assignment protection).
+     */
+    static pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
+        const result = {} as Pick<T, K>;
+        keys.forEach(key => {
+            if (obj && Object.prototype.hasOwnProperty.call(obj, key) && obj[key] !== undefined) {
+                result[key] = obj[key];
+            }
+        });
+        return result;
+    }
+
+    /**
+     * Validate and construct a safe SQL ORDER BY clause.
+     */
+    static getSortSql(sort: string | undefined, allowed: string[], defaultCol: string, order: string | undefined): string {
+        const column = (sort && allowed.includes(sort)) ? sort : defaultCol;
+        const dir = order?.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+        return `${column} ${dir}`;
+    }
 }

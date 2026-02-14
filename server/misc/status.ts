@@ -39,12 +39,12 @@ export class statusObject<T = any> {
     /**
      * Sends the object state as a JSON response using a Fastify reply object.
      */
-    getResponse(reply: FastifyReply): FastifyReply {
-        if (this.isError()) {
-            return reply.status(this.getStatus()).send({ message: this.getMessage() });
-        }
+    getResponse(reply: FastifyReply) {
+        const response: any = {};
+        if (this.message !== null && this.message !== undefined) response.message = this.message;
+        if (this.data !== null && this.data !== undefined) response.data = this.data;
 
-        return reply.status(this.getStatus()).send({ message: this.getMessage(), data: this.getData() });
+        return reply.status(this.status).send(response);
     }
 
     /**

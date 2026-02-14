@@ -118,9 +118,26 @@ export default class AdminUsers {
          * Update profile elements for any user.
          */
         this.app.post<{ Params: { id: string }, Body: any }>('/api/admin/user/:id/elements', { preHandler: [check('perm:user.write | perm:user.manage')] }, async (request, reply) => {
+            const ALLOWED_FIELDS = [
+                "email", "first_name", "last_name", "date_of_birth", "college_id",
+                "emergency_contact_name", "emergency_contact_phone", "home_address",
+                "phone_number", "has_medical_conditions", "medical_conditions_details",
+                "takes_medication", "medication_details", "has_dietary_info", "dietary_info_details", 
+                "free_sessions", "is_member", "filled_legal_info", "is_instructor", "first_aid_expiry",
+                "agrees_to_fitness_statement", "agrees_to_club_rules", "agrees_to_pay_debts", "agrees_to_data_storage", "agrees_to_keep_health_data",
+                "difficulty_level", "swims", "booties", "debt_limit", "debt_limit_expires_at", "is_permanent_member"
+            ];
+
             const body = request.body as any;
-            if (body.email) body.email = body.email.toLowerCase();
-            const result = await UserDB.writeElements(this.db, parseInt(request.params.id), body);
+            const data: any = {};
+            for (const key of ALLOWED_FIELDS) {
+                if (body[key] !== undefined) {
+                    data[key] = body[key];
+                }
+            }
+
+            if (data.email) data.email = data.email.toLowerCase();
+            const result = await UserDB.writeElements(this.db, parseInt(request.params.id), data);
             return result.getResponse(reply);
         });
 

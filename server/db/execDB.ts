@@ -34,6 +34,7 @@ export default class ExecDB extends BaseDB {
      * @param {boolean} includeHidden - If true, returns hidden members too (for admin).
      */
     static async getCurrentExec(db: DatabaseWrapper, includeHidden: boolean = false): Promise<statusObject> {
+        const hiddenFilter = includeHidden ? '' : 'AND ec.is_hidden = 0';
         return this.wrap(async () => {
             const rows = await db.all(`
                 SELECT ec.*, 
@@ -87,19 +88,17 @@ export default class ExecDB extends BaseDB {
             if (execRoles.length === 0) {
                 // Decouple historical data before marking as past
                 await db.run(`
-                                    UPDATE exec_committee
-                                    JOIN users u ON exec_committee.user_id = u.id
-                                    SET exec_committee.profile_picture_override_id = COALESCE(exec_committee.profile_picture_override_id, u.profile_picture_id),
-                                        exec_committee.profile_picture_color_override = COALESCE(exec_committee.profile_picture_color_override, u.profile_picture_color),
-                                        exec_committee.profile_picture_font_override = COALESCE(exec_committee.profile_picture_font_override, u.profile_picture_font),
-                                        exec_committee.profile_picture_initials_override = COALESCE(exec_committee.profile_picture_initials_override, u.profile_picture_initials),
-                                        exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
-                                        exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
-                                        exec_committee.email_override = COALESCE(exec_committee.email_override, u.email),
-                                        exec_committee.manifesto_file_id = COALESCE(exec_committee.manifesto_file_id, NULL),
-                                        exec_committee.instagram_link = COALESCE(exec_committee.instagram_link, null),
-                                        exec_committee.linkedin_link = COALESCE(exec_committee.linkedin_link, null)
-                                    WHERE exec_committee.user_id = ? AND exec_committee.is_current = 1                `, [userId]);
+                    UPDATE exec_committee
+                    JOIN users u ON exec_committee.user_id = u.id
+                    SET exec_committee.profile_picture_override_id = COALESCE(exec_committee.profile_picture_override_id, u.profile_picture_id),
+                        exec_committee.profile_picture_color_override = COALESCE(exec_committee.profile_picture_color_override, u.profile_picture_color),
+                        exec_committee.profile_picture_font_override = COALESCE(exec_committee.profile_picture_font_override, u.profile_picture_font),
+                        exec_committee.profile_picture_initials_override = COALESCE(exec_committee.profile_picture_initials_override, u.profile_picture_initials),
+                        exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
+                        exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
+                        exec_committee.email_override = COALESCE(exec_committee.email_override, u.email)
+                    WHERE exec_committee.user_id = ? AND exec_committee.is_current = 1
+                `, [userId]);
 
                 // If they no longer have any exec roles, mark current entries as not current
                 await db.run('UPDATE exec_committee SET is_current = 0, term_end = CURDATE() WHERE user_id = ? AND is_current = 1', [userId]);

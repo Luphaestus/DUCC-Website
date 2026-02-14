@@ -37,7 +37,7 @@ describe('api/users/SwimsAPI', () => {
     /** Test admin swim addition. */
     test('POST /api/user/:id/swims - Success for authorized Exec', async () => {
         const userId = world.data.users['user'];
-        const res = await world.as('admin').post(`/api/user/${userId}/swims`, { count: 5 });
+        const res = await world.as('admin').post(`/api/user/${userId}/swims`, { count: 5, message: 'Test swim' });
         expect(res.statusCode).toBe(200);
         
         // Verify update in DB

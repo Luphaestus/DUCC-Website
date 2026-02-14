@@ -28,6 +28,26 @@ export default class SwimsDB {
     }
 
     /**
+     * Directly add booties to a user's total.
+     */
+    static async addBooties(db: DatabaseWrapper, userId: number | string, count: number): Promise<statusObject> {
+        try {
+            const user = await db.get('SELECT swims, booties FROM users WHERE id = ?', [userId]);
+            if (!user) return new statusObject(404, 'User not found');
+
+            if (user.booties + count > user.swims) {
+                return new statusObject(400, 'Bootie count cannot exceed swims.');
+            }
+
+            await db.run('UPDATE users SET booties = booties + ? WHERE id = ?', [count, userId]);
+            return new statusObject(200, 'Booties added successfully');
+        } catch (error) {
+            Logger.error('Database error in addBooties:', error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Toggle the bootie status of a specific swim record.
      */
     static async toggleBootie(db: DatabaseWrapper, swimId: number | string): Promise<statusObject> {

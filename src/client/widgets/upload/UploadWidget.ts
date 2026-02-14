@@ -9,6 +9,7 @@ import { renderLibrary, refreshLibrary } from './Library.js';
 import { UPLOAD_SVG, CLOSE_SVG, IMAGE_SVG, INFO_SVG } from '@/utils/icons';
 import { Modal } from '@/widgets/Modal';
 import { notify } from '@/components/notification';
+import { escapeHTML } from '@/utils/utils';
 
 declare const Cropper: any;
 
@@ -447,7 +448,7 @@ export class UploadWidget {
         this.actionsRowEl?.classList.add('hidden');
         this.fileListEl.innerHTML = this.files.map((f, i) => `
             <div class="file-item">
-                <span class="file-name" title="${f.name}">${f.name}</span>
+                <span class="file-name" title="${escapeHTML(f.name)}">${escapeHTML(f.name)}</span>
                 <span class="file-remove" data-index="${i}">${CLOSE_SVG}</span>
             </div>
         `).join('');

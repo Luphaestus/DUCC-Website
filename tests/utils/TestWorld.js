@@ -73,10 +73,10 @@ export default class TestWorld {
                 const userId = this.data.users[userAlias];
                 const user = await this.db.get('SELECT * FROM users WHERE id = ?', [userId]);
                 request.user = user || { id: userId, email: `${userAlias}@test.com` };
-            } else {
+            } else if (typeof request.isAuthenticated !== 'function') {
                 request.isAuthenticated = () => false;
             }
-            request.logOut = async () => {};
+            if (!request.logOut) request.logOut = async () => {};
         });
 
         // Global Configuration Mocks
@@ -168,6 +168,7 @@ export default class TestWorld {
             college_id: 1,
             difficulty_level: 1,
             is_member: 0,
+            is_verified: 1,
             filled_legal_info: 1,
             free_sessions: 3,
             is_instructor: 0
@@ -301,10 +302,10 @@ export default class TestWorld {
     as(userAlias) {
         if (!this.app) throw new Error('App not set in TestWorld');
         return {
-            get: (url) => this.app.inject({ method: 'GET', url, headers: { 'x-test-user': userAlias } }),
-            post: (url, payload) => this.app.inject({ method: 'POST', url, payload, headers: { 'x-test-user': userAlias } }),
-            delete: (url, payload) => this.app.inject({ method: 'DELETE', url, payload, headers: { 'x-test-user': userAlias } }),
-            put: (url, payload) => this.app.inject({ method: 'PUT', url, payload, headers: { 'x-test-user': userAlias } }),
+            get: (url, options = {}) => this.app.inject({ method: 'GET', url, ...options, headers: { 'x-test-user': userAlias, ...options.headers } }),
+            post: (url, payload, options = {}) => this.app.inject({ method: 'POST', url, payload, ...options, headers: { 'x-test-user': userAlias, ...options.headers } }),
+            delete: (url, payload, options = {}) => this.app.inject({ method: 'DELETE', url, payload, ...options, headers: { 'x-test-user': userAlias, ...options.headers } }),
+            put: (url, payload, options = {}) => this.app.inject({ method: 'PUT', url, payload, ...options, headers: { 'x-test-user': userAlias, ...options.headers } }),
         };
     }
     

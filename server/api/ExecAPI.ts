@@ -45,7 +45,7 @@ export default class ExecAPI {
         /**
          * Update the current authenticated exec member's own details.
          */
-        this.app.put('/api/exec/me', { preHandler: [check('is_exec')] }, async (request: any, reply) => {
+        this.app.put('/api/exec/me', { preHandler: [check('perm:is_exec')] }, async (request: any, reply) => {
             const userId = request.user.id;
             const body = request.body as any;
 
@@ -57,7 +57,7 @@ export default class ExecAPI {
                     return reply.status(404).send({ message: 'No active exec entry found for this user.' });
                 }
                 
-                // Allowed fields for self-update
+                // Allowed fields for self-update (internal names)
                 const allowedFields = ['first_name_override', 'last_name_override', 'email_override', 
                                        'profile_picture_override_id', 'profile_picture_color_override', 
                                        'profile_picture_font_override', 'profile_picture_initials_override',
@@ -65,8 +65,12 @@ export default class ExecAPI {
                 
                 const updateData: { [key: string]: any } = {};
                 for (const field of allowedFields) {
+                    // Check both snake_case and camelCase
+                    const camelField = field.replace(/_([a-z])/g, g => g[1].toUpperCase());
                     if (body[field] !== undefined) {
                         updateData[field] = body[field];
+                    } else if (body[camelField] !== undefined) {
+                        updateData[field] = body[camelField];
                     }
                 }
 

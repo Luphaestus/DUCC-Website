@@ -190,3 +190,13 @@ export function downloadCSV(data: string[][], filename: string) {
         document.body.removeChild(link);
     }
 }
+
+/**
+ * Escapes HTML special characters to prevent XSS.
+ */
+export function escapeHTML(str: string): string {
+    if (!str) return '';
+    const p = document.createElement('p');
+    p.textContent = str;
+    return p.innerHTML;
+}

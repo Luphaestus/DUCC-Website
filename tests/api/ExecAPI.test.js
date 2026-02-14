@@ -13,10 +13,10 @@ describe('api/ExecAPI', () => {
         await world.setUp();
         
         await world.createPermission('exec.manage');
-        await world.createPermission('is_exec'); // For the PUT /api/exec/me endpoint check
+        await world.createPermission('exec.publish'); // For the PUT /api/exec/me endpoint check
 
-        await world.createRole('President', ['exec.manage', 'is_exec']);
-        await world.createRole('Secretary', ['is_exec']);
+        await world.createRole('President', ['exec.manage', 'exec.publish']);
+        await world.createRole('Secretary', ['exec.publish']);
         await world.createRole('NormalUserRole', []); // A role without exec permissions
 
         await world.createUser('admin', {}, ['President']); // Admin is also an Exec
@@ -193,9 +193,9 @@ describe('api/ExecAPI', () => {
             });
             expect(res.statusCode).toBe(201);
             const body = JSON.parse(res.body);
-            expect(body.id).toBeDefined();
+            expect(body.data.id).toBeDefined();
 
-            const newExec = await world.db.get('SELECT instagram_link FROM exec_committee WHERE id = ?', [body.id]);
+            const newExec = await world.db.get('SELECT instagram_link FROM exec_committee WHERE id = ?', [body.data.id]);
             expect(newExec.instagram_link).toBe('https://instagram.com/new_exec');
         });
     });

@@ -103,12 +103,12 @@ describe('db/execDB', () => {
 
     test('syncExecMember preserves social links when user loses exec role', async () => {
         const userId = await world.createUser('user5', { first_name: 'Charlie', last_name: 'Brown' });
-        await RolesDB.assignRole(world.db, userId, world.data.roles['President']); // Assign role to sync
+        await RolesDB.assignRole(world.db, userId, world.data.roles['Secretary']); // Assign role to sync
 
         // Manually add exec entry with social links
         const addRes = await ExecDB.addExecMember(world.db, {
             userId: userId,
-            roleName: 'President',
+            roleName: 'Secretary',
             isCurrent: 1,
             termStart: '2023-01-01',
             instagramLink: 'https://instagram.com/charlie_b',
@@ -117,7 +117,7 @@ describe('db/execDB', () => {
         const execId = addRes.getData().id;
 
         // Remove the role, triggering syncExecMember to archive
-        await RolesDB.removeRole(world.db, userId, world.data.roles['President']);
+        await RolesDB.removeRole(world.db, userId, world.data.roles['Secretary']);
         await ExecDB.syncExecMember(world.db, userId);
 
         const archivedExec = await world.db.get('SELECT * FROM exec_committee WHERE id = ?', [execId]);

@@ -65,7 +65,9 @@ export async function initSchemaAndClean() {
                 'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags', 
                 'user_permissions', 'user_roles', 'tag_whitelists', 'role_managed_tags', 
                 'role_permissions', 'roles', 'tags', 'event_tags', 'password_resets', 
-                'slides', 'events', 'users', 'files', 'file_categories', 'colleges', 'permissions'
+                'slides', 'events', 'users', 'files', 'file_categories', 'colleges', 'permissions',
+                'votes', 'nominations', 'election_roles', 'elections',
+                'form_answers', 'form_submissions', 'form_questions', 'form_pages', 'forms'
             ];
             for (const table of tablesToDrop) {
                 await conn.query(`DROP TABLE IF EXISTS ${table}`);
@@ -93,7 +95,9 @@ export async function initSchemaAndClean() {
             'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags', 
             'user_permissions', 'user_roles', 'tag_whitelists', 'role_managed_tags', 
             'role_permissions', 'roles', 'tags', 'event_tags', 'password_resets', 
-            'slides', 'events', 'users', 'files', 'file_categories', 'colleges', 'permissions'
+            'slides', 'events', 'users', 'files', 'file_categories', 'colleges', 'permissions',
+            'votes', 'nominations', 'election_roles', 'elections',
+            'form_answers', 'form_submissions', 'form_questions', 'form_pages', 'forms'
         ];
 
         // Execute truncations sequentially on the same connection

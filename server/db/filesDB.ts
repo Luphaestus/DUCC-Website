@@ -1,6 +1,7 @@
 import { statusObject } from '../misc/status.js';
 import Logger from '../misc/Logger.js';
 import { DatabaseWrapper } from './db.js';
+import Utils from '../misc/utils.js';
 
 export default class FilesDB {
     /**
@@ -11,11 +12,8 @@ export default class FilesDB {
         const offset = (Number(page) - 1) * Number(limit);
 
         const allowedSorts = ['title', 'author', 'date', 'size', 'category_name'];
-        let sortCol = allowedSorts.includes(sort) ? sort : 'date';
-        if (sortCol === 'category_name') sortCol = 'c.name';
-        else sortCol = `d.${sortCol}`;
-        
-        const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
+        const sortSql = Utils.getSortSql(sort, allowedSorts, 'date', order);
+        const sortCol = sortSql.startsWith('category_name') ? sortSql.replace('category_name', 'c.name') : `d.${sortSql}`;
 
         let conditions: string[] = [];
         const params: any[] = [];
@@ -71,7 +69,7 @@ export default class FilesDB {
                 LEFT JOIN file_categories c ON d.category_id = c.id
                 WHERE 1=1 ${usageFilter}
                 ${conditions.length > 0 ? 'AND ' + conditions.join(' AND ') : ''}
-                ORDER BY ${sortCol} ${sortOrder}
+                ORDER BY ${sortCol}
                 LIMIT ? OFFSET ?
             `;
             const files = await db.all(query, [...params, Number(limit), Number(offset)]);

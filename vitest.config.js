@@ -7,6 +7,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     include: ['tests/**/*.{test,spec}.{js,ts,jsx,tsx}'],
     setupFiles: ['./tests/setup.ts'],
     reporters: ['default'],

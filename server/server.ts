@@ -132,7 +132,13 @@ const startServer = async () => {
       await fastify.register(fastifyRateLimit, {
         global: true,
         max: 50000,
-        timeWindow: '15m'
+        timeWindow: '15m',
+        addHeaders: {
+          'x-ratelimit-limit': true,
+          'x-ratelimit-remaining': true,
+          'x-ratelimit-reset': true,
+          'retry-after': true
+        }
       });
     }
 

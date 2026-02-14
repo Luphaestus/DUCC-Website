@@ -61,7 +61,7 @@ describe('api/QuotesAPI', () => {
         const email = 'nonmember@test.com';
         const password = 'password';
         const hashed = await bcrypt.hash(password, 10);
-        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member) VALUES (?,?,?,?,?)', [email, hashed, 'Non', 'Member', 0]);
+        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member, is_verified) VALUES (?,?,?,?,?,1)', [email, hashed, 'Non', 'Member', 0]);
 
         const loginRes = await app.inject({
             method: 'POST',
@@ -82,7 +82,7 @@ describe('api/QuotesAPI', () => {
         const email = 'member@test.com';
         const password = 'password';
         const hashed = await bcrypt.hash(password, 10);
-        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member) VALUES (?,?,?,?,?)', [email, hashed, 'Is', 'Member', 1]);
+        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member, is_verified) VALUES (?,?,?,?,?,1)', [email, hashed, 'Is', 'Member', 1]);
 
         const loginRes = await app.inject({
             method: 'POST',
@@ -105,7 +105,7 @@ describe('api/QuotesAPI', () => {
         const email = 'member@test.com';
         const password = 'password';
         const hashed = await bcrypt.hash(password, 10);
-        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member) VALUES (?,?,?,?,?)', [email, hashed, 'Is', 'Member', 1]);
+        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member, is_verified) VALUES (?,?,?,?,?,1)', [email, hashed, 'Is', 'Member', 1]);
 
         const loginRes = await app.inject({
             method: 'POST',
@@ -126,7 +126,7 @@ describe('api/QuotesAPI', () => {
         const email = 'nonmember@test.com';
         const password = 'password';
         const hashed = await bcrypt.hash(password, 10);
-        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member) VALUES (?,?,?,?,?)', [email, hashed, 'Non', 'Member', 0]);
+        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member, is_verified) VALUES (?,?,?,?,?,1)', [email, hashed, 'Non', 'Member', 0]);
 
         const loginRes = await app.inject({
             method: 'POST',
@@ -146,7 +146,7 @@ describe('api/QuotesAPI', () => {
         const email = 'member@test.com';
         const password = 'password';
         const hashed = await bcrypt.hash(password, 10);
-        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member) VALUES (?,?,?,?,?)', [email, hashed, 'Is', 'Member', 1]);
+        await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_member, is_verified) VALUES (?,?,?,?,?,1)', [email, hashed, 'Is', 'Member', 1]);
         
         const user2Res = await db.run('INSERT INTO users (email, first_name, last_name) VALUES (?,?,?)', ['other@test.com', 'Target', 'Person']);
         const user2Id = user2Res.lastID;

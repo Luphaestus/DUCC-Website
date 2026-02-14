@@ -75,6 +75,7 @@ describe('api/AuthAPI', () => {
                 url: '/api/auth/signup',
                 payload: { email, password, first_name: 'Old', last_name: 'Name' }
             });
+            await db.run('UPDATE users SET is_verified = 1 WHERE email = ?', [email]);
 
             // Login
             const loginRes = await app.inject({
@@ -120,7 +121,7 @@ describe('api/AuthAPI', () => {
 
         beforeEach(async () => {
             const hashed = await bcrypt.hash(password, config.auth.bcryptSaltRounds);
-            await db.run('INSERT INTO users (email, hashed_password, first_name, last_name) VALUES (?,?,?,?)', [email, hashed, 'L', 'T']);
+            await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, is_verified) VALUES (?,?,?,?,1)', [email, hashed, 'L', 'T']);
         });
 
         test('POST /api/auth/login success', async () => {
@@ -212,6 +213,7 @@ describe('api/AuthAPI', () => {
                 url: '/api/auth/signup',
                 payload: { email, password, first_name: 'Two', last_name: 'Factor' }
             });
+            await db.run('UPDATE users SET is_verified = 1 WHERE email = ?', [email]);
         });
 
         test('Setup generates QR code', async () => {

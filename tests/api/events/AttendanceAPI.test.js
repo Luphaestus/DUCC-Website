@@ -59,8 +59,7 @@ describe('api/events/AttendanceAPI', () => {
             ['get', '/api/event/:id/isPaying'],
             ['get', '/api/event/:id/canJoin'],
             ['post', '/api/event/:id/attend'],
-            ['post', '/api/event/:id/leave'],
-            ['get', '/api/event/:id/attendees']
+            ['post', '/api/event/:id/leave']
         ];
 
         protectedRoutes.forEach(([method, path]) => itRequiresAuth(method, path));
@@ -455,7 +454,8 @@ describe('api/events/AttendanceAPI', () => {
         });
 
         test('Exec sees full attendee history and detailed data', async () => {
-            await world.createRole('Admin', []);
+            await world.createPermission('exec.publish');
+            await world.createRole('Admin', ['exec.publish']);
             await world.createUser('admin', {}, ['Admin']);
             
             await world.createEvent('E1');

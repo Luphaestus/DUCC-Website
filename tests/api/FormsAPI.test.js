@@ -1,8 +1,5 @@
-// tests/api/FormsAPI.test.js
-
 import TestWorld from '../utils/TestWorld.js';
 import FormsAPI from '../../server/api/FormsAPI.js';
-import { Permissions } from '../../server/misc/permissions.js';
 
 describe('api/FormsAPI', () => {
     let world;
@@ -11,9 +8,13 @@ describe('api/FormsAPI', () => {
         world = new TestWorld();
         await world.setUp();
         
-        await world.createRole('Admin', ['form.manage']);
-        await world.createRole('Member', []);
-        await world.createUser('admin', {}, ['Admin']);
+        await world.createPermission('form.manage');
+        await world.createPermission('exec.publish');
+
+        await world.createRole('President', ['form.manage', 'exec.publish']);
+        await world.createRole('Member', ['is_member']);
+
+        await world.createUser('admin', {}, ['President']);
         await world.createUser('member', {}, ['Member']);
 
         new FormsAPI(world.app, world.db).registerRoutes();

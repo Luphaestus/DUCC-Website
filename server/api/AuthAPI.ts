@@ -214,7 +214,7 @@ export default class Auth {
         /**
          * Resend verification email.
          */
-        this.app.post('/api/auth/resend-verification', async (request: FastifyRequest, reply: FastifyReply) => {
+        this.app.post('/api/auth/resend-verification', { config: { rateLimit: config.rateLimit.sensitive } }, async (request: FastifyRequest, reply: FastifyReply) => {
             const { email } = request.body as any;
             if (!email) return reply.status(400).send({ message: 'Email required.' });
 
@@ -237,7 +237,7 @@ export default class Auth {
         /**
          * Authenticate user and start session.
          */
-        this.app.post('/api/auth/login', async (request: any, reply: FastifyReply) => {
+        this.app.post('/api/auth/login', { config: { rateLimit: config.rateLimit.sensitive } }, async (request: any, reply: FastifyReply) => {
             try {
                 // @ts-ignore - passport.authenticate returns a function in some versions, but in fastify-passport it can be used as a hook or directly
                 const result = await this.passport.authenticate('local', async (request: any, reply: any, err: any, user: any, info: any) => {
@@ -303,7 +303,7 @@ export default class Auth {
         /**
          * Verify TOTP token during login.
          */
-        this.app.post('/api/auth/verify-totp', async (request: any, reply: FastifyReply) => {
+        this.app.post('/api/auth/verify-totp', { config: { rateLimit: config.rateLimit.sensitive } }, async (request: any, reply: FastifyReply) => {
             const { token } = request.body as any;
             const pendingUser = request.session.pendingUser;
 
@@ -337,7 +337,7 @@ export default class Auth {
         /**
          * Verify Email OTP during login.
          */
-        this.app.post('/api/auth/verify-email-otp', async (request: any, reply: FastifyReply) => {
+        this.app.post('/api/auth/verify-email-otp', { config: { rateLimit: config.rateLimit.sensitive } }, async (request: any, reply: FastifyReply) => {
             const { token } = request.body as any;
             const pendingUser = request.session.pendingUser;
             const storedOTP = request.session.emailOTP;
@@ -371,7 +371,7 @@ export default class Auth {
         /**
          * Resend Email OTP during login.
          */
-        this.app.post('/api/auth/resend-email-otp', async (request: any, reply: FastifyReply) => {
+        this.app.post('/api/auth/resend-email-otp', { config: { rateLimit: config.rateLimit.sensitive } }, async (request: any, reply: FastifyReply) => {
             const pendingUser = request.session.pendingUser;
 
             if (!pendingUser || !pendingUser.hasEmailOTP) {
@@ -681,7 +681,7 @@ export default class Auth {
         /**
          * Request password reset.
          */
-        this.app.post('/api/auth/reset-password-request', async (request: FastifyRequest, reply: FastifyReply) => {
+        this.app.post('/api/auth/reset-password-request', { config: { rateLimit: config.rateLimit.sensitive } }, async (request: FastifyRequest, reply: FastifyReply) => {
             const { email } = request.body as any;
             if (!email) return reply.status(400).send({ message: 'Email is required.' });
 
@@ -756,8 +756,8 @@ export default class Auth {
             }
         };
 
-        this.app.post('/api/auth/set-password', setPasswordHandler);
-        this.app.post('/api/auth/reset-password', setPasswordHandler);
+        this.app.post('/api/auth/set-password', { config: { rateLimit: config.rateLimit.sensitive } }, setPasswordHandler);
+        this.app.post('/api/auth/reset-password', { config: { rateLimit: config.rateLimit.sensitive } }, setPasswordHandler);
 
         /**
          * Change password for logged in user.

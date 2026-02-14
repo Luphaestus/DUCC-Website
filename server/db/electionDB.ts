@@ -56,8 +56,8 @@ export default class ElectionDB extends BaseDB {
     static async createElection(db: DatabaseWrapper, electionData: ElectionData): Promise<statusObject> {
         return this.wrap(async () => {
             const result = await db.run(
-                `INSERT INTO elections (title, description, start_date, voting_start_date, end_date, phase, managed_by_user_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO elections (title, description, start_date, voting_start_date, end_date, phase, voting_type, managed_by_user_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     electionData.title,
                     electionData.description || null,
@@ -65,6 +65,7 @@ export default class ElectionDB extends BaseDB {
                     electionData.voting_start_date || null,
                     electionData.end_date,
                     electionData.phase || 'setup',
+                    electionData.voting_type || 'online',
                     electionData.managed_by_user_id || null
                 ]
             );
@@ -231,6 +232,34 @@ export default class ElectionDB extends BaseDB {
                 [nominationData.election_role_id, nominationData.user_id, nominationData.manifesto_file_id || null]
             );
             return new statusObject(201, 'Nomination created.', { id: result.lastID });
+        });
+    }
+
+    /**
+     * Update a nomination (e.g., replace manifesto).
+     */
+    static async updateNomination(db: DatabaseWrapper, electionRoleId: number, userId: number, manifestoFileId: number): Promise<statusObject> {
+        return this.wrap(async () => {
+            const result = await db.run(
+                `UPDATE nominations SET manifesto_file_id = ? WHERE election_role_id = ? AND user_id = ?`,
+                [manifestoFileId, electionRoleId, userId]
+            );
+            if (result.changes === 0) return new statusObject(404, 'Nomination not found.');
+            return new statusObject(200, 'Nomination updated.');
+        });
+    }
+
+    /**
+     * Delete a nomination.
+     */
+    static async deleteNomination(db: DatabaseWrapper, electionRoleId: number, userId: number): Promise<statusObject> {
+        return this.wrap(async () => {
+            const result = await db.run(
+                `DELETE FROM nominations WHERE election_role_id = ? AND user_id = ?`,
+                [electionRoleId, userId]
+            );
+            if (result.changes === 0) return new statusObject(404, 'Nomination not found.');
+            return new statusObject(200, 'Nomination withdrawn.');
         });
     }
 

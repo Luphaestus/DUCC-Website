@@ -132,19 +132,11 @@ describe('api/ElectionAPI', () => {
             electionRoleId = JSON.parse(addRoleRes.body).id;
 
             // User nominates
-            const uploadFile = fs.readFileSync(path.join(__dirname, '../utils/test_manifesto.pdf'));
-            const uploadRes = await world.as('member').post('/api/files', {
-                file: {
-                    value: uploadFile,
-                    options: { filename: 'manifesto.pdf', contentType: 'application/pdf' }
-                },
-                title: 'Manifesto for Treasurer',
-                category: 'Manifestos'
-            }, {
-                headers: { 'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' }
+            const manifestoFileId = await world.createFile('Manifesto for Treasurer', {
+                author: 'member',
+                filename: 'manifesto.pdf',
+                visibility: 'public'
             });
-            expect(uploadRes.statusCode).toBe(201);
-            const manifestoFileId = JSON.parse(uploadRes.body).id;
 
             const nominateRes = await world.as('member').post(`/api/elections/${electionId}/nominate`, { election_role_id: electionRoleId, manifesto_file_id: manifestoFileId });
             expect(nominateRes.statusCode).toBe(201);
@@ -217,25 +209,17 @@ describe('api/ElectionAPI', () => {
             const res = await world.as('member').get('/api/elections/current');
             expect(res.statusCode).toBe(200);
             const body = JSON.parse(res.body);
-            expect(body.election.id).toBe(electionId);
-            expect(body.election.phase).toBe('nominations');
-            expect(body.roles.length).toBe(2);
+            expect(body.data.election.id).toBe(electionId);
+            expect(body.data.election.phase).toBe('nominations');
+            expect(body.data.roles.length).toBe(2);
         });
 
         test('POST /api/elections/:electionId/nominate allows member to nominate for a role', async () => {
-            const uploadFile = fs.readFileSync(path.join(__dirname, '../utils/test_manifesto.pdf'));
-            const uploadRes = await world.as('member').post('/api/files', {
-                file: {
-                    value: uploadFile,
-                    options: { filename: 'manifesto_member.pdf', contentType: 'application/pdf' }
-                },
-                title: 'Member Manifesto',
-                category: 'Manifestos'
-            }, {
-                headers: { 'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' }
+            const manifestoFileId = await world.createFile('Member Manifesto', {
+                author: 'member',
+                filename: 'manifesto_member.pdf',
+                visibility: 'public'
             });
-            expect(uploadRes.statusCode).toBe(201);
-            const manifestoFileId = JSON.parse(uploadRes.body).id;
 
             const res = await world.as('member').post(`/api/elections/${electionId}/nominate`, {
                 election_role_id: treasurerElectionRoleId,
@@ -245,8 +229,10 @@ describe('api/ElectionAPI', () => {
             const body = JSON.parse(res.body);
             expect(body.id).toBeDefined();
 
-            const nomination = await ElectionDB.createNomination(world.db, { election_role_id: treasurerElectionRoleId, user_id: memberId, manifesto_file_id: manifestoFileId });
-            expect(nomination.isSuccess()).toBe(true);
+            // Verify nomination in DB
+            const nomination = await world.db.get('SELECT * FROM nominations WHERE id = ?', [body.id]);
+            expect(nomination).toBeDefined();
+            expect(nomination.election_role_id).toBe(treasurerElectionRoleId);
         });
 
         test('POST /api/elections/:electionId/vote allows member to vote for a nominee', async () => {

@@ -174,32 +174,35 @@ export default class FormsAPI {
 
                 const questionIdMap = new Map<string, number>(); // Map clientId to database ID
 
-                for (let pIdx = 0; pIdx < pages.length; pIdx++) {
-                    const page = pages[pIdx];
-                    const pRes = await this.db.run('INSERT INTO form_pages (form_id, title, description, display_order) VALUES (?, ?, ?, ?)', [formId, page.title || null, page.description || null, pIdx]);
-                    const pageId = pRes.lastID;
+                if (pages && Array.isArray(pages)) {
+                    for (let i = 0; i < pages.length; i++) {
+                        const page = pages[i];
+                        const pageRes = await this.db.run('INSERT INTO form_pages (form_id, title, description, display_order) VALUES (?, ?, ?, ?)', [formId, page.title, page.description || null, i]);
+                        const pageId = pageRes.lastID;
 
-                    for (let qIdx = 0; qIdx < page.questions.length; qIdx++) {
-                        const q = page.questions[qIdx];
-                        const options = q.options ? JSON.stringify(q.options) : null;
-                        const qRes = await this.db.run(
-                            'INSERT INTO form_questions (form_id, page_id, type, prompt, description, options, is_required, max_selections, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                            [formId, pageId, q.type, q.prompt, q.description || null, options, q.is_required ? 1 : 0, q.max_selections || 1, qIdx]
-                        );
-                        questionIdMap.set(q.clientId, qRes.lastID);
+                        if (page.questions && Array.isArray(page.questions)) {
+                            for (let j = 0; j < page.questions.length; j++) {
+                                const q = page.questions[j];
+                                const qRes = await this.db.run('INSERT INTO form_questions (page_id, question, type, required, options, display_order) VALUES (?, ?, ?, ?, ?, ?)', [pageId, q.question, q.type, q.required ? 1 : 0, q.options ? JSON.stringify(q.options) : null, j]);
+                                if (q.clientId) {
+                                    questionIdMap.set(q.clientId, qRes.lastID);
+                                }
+                            }
+                        }
                     }
-                }
 
-                // Update dependencies using clientIds
-                for (const page of pages) {
-                    for (const q of page.questions) {
-                        if (q.dependency_question_id) {
-                            const targetId = questionIdMap.get(q.dependency_question_id);
-                            if (targetId) {
-                                await this.db.run(
-                                    'UPDATE form_questions SET dependency_question_id = ?, dependency_operator = ?, dependency_value = ? WHERE id = ?',
-                                    [targetId, q.dependency_operator || 'equals', q.dependency_value || null, questionIdMap.get(q.clientId)]
-                                );
+                    // Update dependencies using clientIds
+                    for (const page of pages) {
+                        if (!page.questions) continue;
+                        for (const q of page.questions) {
+                            if (q.dependency_question_id) {
+                                const targetId = questionIdMap.get(q.dependency_question_id);
+                                if (targetId) {
+                                    await this.db.run(
+                                        'UPDATE form_questions SET dependency_question_id = ?, dependency_operator = ?, dependency_value = ? WHERE id = ?',
+                                        [targetId, q.dependency_operator || 'equals', q.dependency_value || null, questionIdMap.get(q.clientId)]
+                                    );
+                                }
                             }
                         }
                     }

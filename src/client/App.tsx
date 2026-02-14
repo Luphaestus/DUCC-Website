@@ -70,18 +70,6 @@ export default function App(props: ParentProps) {
         navigator.serviceWorker.addEventListener('message', handleSWMessage);
     }
 
-    // Preload files list
-    const filesQuery = new URLSearchParams({
-      page: '1',
-      limit: '15',
-      search: '',
-      sort: 'date',
-      order: 'desc',
-      categoryId: ''
-    });
-    apiRequest('GET', `/api/files?${filesQuery.toString()}`, true, true).catch(() => {});
-    apiRequest('GET', '/api/file-categories', true, true).catch(() => {});
-
     onCleanup(() => {
         cleanup();
         updateCleanup();

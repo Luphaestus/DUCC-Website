@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { Permissions } from './permissions.js';
-import { DatabaseWrapper } from '../db/db.js';
+import { DatabaseWrapper } from '../db.js';
+import Logger from './Logger.js';
 
 interface AuthenticatedRequest extends FastifyRequest {
     user: any;
@@ -54,7 +55,7 @@ const checkAuthentication = (...requirements: string[]) => {
                 const perm = getPermissionName(permDetails);
 
                 if (permDetails === 'perm:is_exec') {
-                    if (await Permissions.hasPermission(authReq.db, authReq.user.id, 'exec.publish')) {
+                    if (await Permissions.hasAnyPermission(authReq.db, authReq.user.id)) {
                         hasPermission = true;
                         break;
                     }

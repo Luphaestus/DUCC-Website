@@ -66,6 +66,25 @@ export default class SwimsAPI {
         });
 
         /**
+         * Add booties to a user account.
+         */
+        this.app.post('/api/user/:id/booties', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id, 10);
+            const count = parseInt(request.body.count, 10);
+
+            if (isNaN(userId) || isNaN(count)) {
+                return reply.status(400).send({ message: 'Invalid data.' });
+            }
+
+            const status = await SwimsDB.addBooties(this.db, userId, count);
+            if (!status.isError()) {
+                const EventHub = (await import('../../misc/EventHub.js')).default;
+                EventHub.broadcast('swims_update', { userId });
+            }
+            return status.getResponse(reply);
+        });
+
+        /**
          * Toggle bootie status for a specific swim.
          */
         this.app.post<{ Params: { swimId: string } }>('/api/user/swims/:swimId/bootie/toggle', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
