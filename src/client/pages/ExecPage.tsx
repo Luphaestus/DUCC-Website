@@ -19,6 +19,7 @@ interface ExecMember {
     email: string;
     username?: string;
     display_order: number;
+    votes_received: number;
     term_start?: string;
     term_end: string;
     is_current: boolean;
@@ -277,7 +278,10 @@ function ExecDetailsModal(props: { member: ExecMember, onClose: () => void }) {
             <div class="exec-details-view center-text">
                 <Avatar user={props.member} classes="giant" />
                 <h2 class="mt-3 mb-0">{props.member.first_name} {props.member.last_name}</h2>
-                <p class="muted-text mb-4">{props.member.role_name}</p>
+                <p class="muted-text mb-2">{props.member.role_name}</p>
+                <Show when={props.member.votes_received > 0}>
+                    <p class="badge success mini-badge mb-4">{props.member.votes_received} Votes Received</p>
+                </Show>
 
                 <div class="liquid-container p-4 mb-4">
                     <div class="flex justify-center gap-6">

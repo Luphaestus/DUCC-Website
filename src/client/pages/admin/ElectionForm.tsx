@@ -172,7 +172,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             description: descriptionContent(),
             start_date: new Date().toISOString(), // Default to now
             end_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString(), // Default to 1 year from now
-            voting_type: 'online' as const
+            voting_type: electionData().voting_type || 'online'
         };
 
         try {
@@ -364,6 +364,16 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
                                 <RichTextEditor value={descriptionContent()} onInput={handleDescriptionInput} readOnly={isReadOnly()} />
                             </label>
 
+                            <div class="grid-2-col">
+                                <label class="form-label-top">Voting Type
+                                    <select value={electionData().voting_type || 'online'} onInput={(e) => updateField('voting_type', e.currentTarget.value as Election['voting_type'])} disabled={isReadOnly()}>
+                                        <option value="online">Online Only</option>
+                                        <option value="hybrid">Hybrid (Online & Local)</option>
+                                        <option value="in_person">Local Only (In-Person)</option>
+                                    </select>
+                                </label>
+                            </div>
+
                             <Show when={(isDirty() || isNew()) && !isReadOnly()}>
                                 <div class="floating-action-container">
                                     <button 
@@ -507,6 +517,19 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
                                                                 </Show>
                                                                 <div class="flex items-center gap-4 ml-auto">
                                                                     <span class="small-text">Online: <strong>{nomination.votes_received || 0}</strong></span>
+                                                                    <Show when={electionData().voting_type !== 'online'}>
+                                                                        <label class="form-label-inline m-0">Local:
+                                                                            <Show when={electionData().phase === 'voting' && !isReadOnly()} fallback={<span> {nomination.local_votes_count || 0}</span>}>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    class="mini-input w-20 ml-2"
+                                                                                    value={nomination.local_votes_count || 0}
+                                                                                    onInput={(e) => handleUpdateLocalVotes(nomination.id, parseInt(e.currentTarget.value) || 0)}
+                                                                                    min="0"
+                                                                                />
+                                                                            </Show>
+                                                                        </label>
+                                                                    </Show>
                                                                 </div>
                                                             </div>
                                                         )}

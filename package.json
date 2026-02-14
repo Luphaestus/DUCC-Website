@@ -14,7 +14,7 @@
   "author": "Luphaestus",
   "type": "module",
   "scripts": {
-    "db:init": "cross-env-shell \"tsx server/db/init/init.ts $NODE_ENV $1\"",
+    "db:init": "cross-env-shell \"tsx server/db/init/init.ts $NODE_ENV\"",
     "reseed": "cross-env NODE_ENV=dev tsx server/db/init/init.ts dev --seed",
     "start": "npm run --silent db:init && tsx server/server.ts",
     "build:client": "vite build",

@@ -33,6 +33,8 @@ export default function AdminElectionsPage() {
         return (res.elections || []) as ElectionSummary[];
     });
 
+    const hasActiveElection = () => elections()?.some(e => !['setup', 'completed'].includes(e.phase));
+
     const phaseColors = {
         'setup': 'neutral',
         'nominations': 'primary',
@@ -51,9 +53,11 @@ export default function AdminElectionsPage() {
                         <header class="admin-header-modern">
                             <PageTitle text="Elections" />
                             <div class="header-actions">
-                                <button class="primary" onClick={() => navigate('/admin/elections/new')}>
-                                    <span innerHTML={ADD_SVG} /> New Election
-                                </button>
+                                <Show when={!hasActiveElection()}>
+                                    <button class="primary" onClick={() => navigate('/admin/elections/new')}>
+                                        <span innerHTML={ADD_SVG} /> New Election
+                                    </button>
+                                </Show>
                             </div>
                         </header>
 

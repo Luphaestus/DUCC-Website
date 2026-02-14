@@ -10,6 +10,8 @@ import { ADD_SVG, MAIL_SVG, CROWN_SVG, CHECK_SVG, CLOSE_SVG } from "@/utils/icon
 import Markdown from "@/components/Markdown";
 import Avatar from "@/components/Avatar";
 import { useAuth } from "@/stores/auth";
+import UploadWidget from "@/components/UploadWidget";
+import Modal from "@/components/Modal";
 
 interface Election {
     id: number;
@@ -73,6 +75,8 @@ export default function ElectionPage() {
     const nominationsByRole = createMemo(() => electionData()?.nominations || {});
     const userNominations = createMemo(() => electionData()?.user_nominations || []);
     const userHasVoted = createMemo(() => electionData()?.user_has_voted || []);
+
+    const [nominatingRole, setNominatingRole] = createSignal<ElectionRole | null>(null);
 
     const isNominationsPhase = createMemo(() => currentElection()?.phase === 'nominations');
     const isVotingPhase = createMemo(() => currentElection()?.phase === 'voting');
@@ -142,7 +146,7 @@ export default function ElectionPage() {
                                             <h3 class="role-name">{role.role_name}</h3>
                                             <p class="role-description">{role.role_description}</p>
                                             <Show when={!isNominated()}>
-                                                <button class="primary full-width" onClick={() => handleNominate(role.id, 1)}>Nominate Self</button>
+                                                <button class="primary full-width" onClick={() => setNominatingRole(role)}>Nominate Self</button>
                                             </Show>
                                             <Show when={isNominated()}>
                                                 <div class="status-msg success flex align-center gap-2">
@@ -159,40 +163,74 @@ export default function ElectionPage() {
                     <Show when={isVotingPhase()}>
                         <div class="section-intro">
                             <h2 class="text-2xl font-bold">Voting is Now Open!</h2>
-                            <p class="text-muted">Cast your vote for the candidates of each role.</p>
+                            <p class="text-muted">
+                                {currentElection()!.voting_type === 'in_person' 
+                                    ? 'Online voting is disabled for this election. Please attend the AGM to cast your vote.' 
+                                    : 'Cast your vote for the candidates of each role.'}
+                            </p>
                         </div>
-                        <div class="election-roles-grid">
-                            <For each={electionRoles()}>
-                                {role => (
-                                    <Panel class="election-role-card" title={role.role_name}>
-                                        <p class="role-description">{role.role_description}</p>
-                                        <Show when={nominationsByRole()[role.id]?.length > 0} fallback={<p class="text-muted italic">No approved nominations for this role yet.</p>}>
-                                            <div class="nominations-list flex-column gap-3">
-                                                <For each={nominationsByRole()[role.id]}>
-                                                    {nominee => (
-                                                        <div class="nominee-card liquid-container secondary-bg flex align-center gap-4 p-3" style={{ "border-radius": "12px" }}>
-                                                            <Avatar user={nominee} classes="mini" />
-                                                            <div class="nominee-info flex-grow">
-                                                                <span class="nominee-name block font-bold">{nominee.first_name} {nominee.last_name}</span>
-                                                                <Show when={nominee.manifesto_path}>
-                                                                    <a href={nominee.manifesto_path} target="_blank" rel="noopener noreferrer" class="small-text underline">Read Manifesto</a>
+                        <Show when={currentElection()!.voting_type !== 'in_person'}>
+                            <div class="election-roles-grid">
+                                <For each={electionRoles()}>
+                                    {role => (
+                                        <Panel class="election-role-card" title={role.role_name}>
+                                            <p class="role-description">{role.role_description}</p>
+                                            <Show when={nominationsByRole()[role.id]?.length > 0} fallback={<p class="text-muted italic">No approved nominations for this role yet.</p>}>
+                                                <div class="nominations-list flex-column gap-3">
+                                                    <For each={nominationsByRole()[role.id]}>
+                                                        {nominee => (
+                                                            <div class="nominee-card liquid-container secondary-bg flex align-center gap-4 p-3" style={{ "border-radius": "12px" }}>
+                                                                <Avatar user={nominee} classes="mini" />
+                                                                <div class="nominee-info flex-grow">
+                                                                    <span class="nominee-name block font-bold">{nominee.first_name} {nominee.last_name}</span>
+                                                                    <Show when={nominee.manifesto_path}>
+                                                                        <a href={nominee.manifesto_path} target="_blank" rel="noopener noreferrer" class="small-text underline">Read Manifesto</a>
+                                                                    </Show>
+                                                                </div>
+                                                                <Show when={!userHasVoted().includes(role.id)}>
+                                                                    <button class="primary small-btn" onClick={() => handleVote(role.id, nominee.id)}>Vote</button>
+                                                                </Show>
+                                                                <Show when={userHasVoted().includes(role.id)}>
+                                                                    <span class="badge success">Voted</span>
                                                                 </Show>
                                                             </div>
-                                                            <Show when={!userHasVoted().includes(role.id)}>
-                                                                <button class="primary small-btn" onClick={() => handleVote(role.id, nominee.id)}>Vote</button>
-                                                            </Show>
-                                                            <Show when={userHasVoted().includes(role.id)}>
-                                                                <span class="badge success">Voted</span>
-                                                            </Show>
-                                                        </div>
-                                                    )}
-                                                </For>
-                                            </div>
-                                        </Show>
-                                    </Panel>
-                                )}
-                            </For>
-                        </div>
+                                                        )}
+                                                    </For>
+                                                </div>
+                                            </Show>
+                                        </Panel>
+                                    )}
+                                </For>
+                            </div>
+                        </Show>
+                        <Show when={currentElection()!.voting_type === 'in_person'}>
+                            <div class="election-roles-grid">
+                                <For each={electionRoles()}>
+                                    {role => (
+                                        <Panel class="election-role-card" title={role.role_name}>
+                                            <p class="role-description">{role.role_description}</p>
+                                            <Show when={nominationsByRole()[role.id]?.length > 0} fallback={<p class="text-muted italic">No approved nominations for this role yet.</p>}>
+                                                <div class="nominations-list flex-column gap-3">
+                                                    <For each={nominationsByRole()[role.id]}>
+                                                        {nominee => (
+                                                            <div class="nominee-card liquid-container secondary-bg flex align-center gap-4 p-3" style={{ "border-radius": "12px" }}>
+                                                                <Avatar user={nominee} classes="mini" />
+                                                                <div class="nominee-info flex-grow">
+                                                                    <span class="nominee-name block font-bold">{nominee.first_name} {nominee.last_name}</span>
+                                                                    <Show when={nominee.manifesto_path}>
+                                                                        <a href={nominee.manifesto_path} target="_blank" rel="noopener noreferrer" class="small-text underline">Read Manifesto</a>
+                                                                    </Show>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </For>
+                                                </div>
+                                            </Show>
+                                        </Panel>
+                                    )}
+                                </For>
+                            </div>
+                        </Show>
                     </Show>
 
                     <Show when={isResultsPhase()}>
@@ -245,6 +283,31 @@ export default function ElectionPage() {
                     </Show>
                 </Show>
             </main>
+
+            <Show when={nominatingRole()}>
+                <Modal 
+                    isOpen={true} 
+                    title={`Nominate for ${nominatingRole()?.role_name}`} 
+                    onClose={() => setNominatingRole(null)}
+                >
+                    <div class="nomination-modal-content">
+                        <p class="mb-4">To nominate yourself for this role, you must upload a manifesto (PDF recommended).</p>
+                        
+                        <UploadWidget 
+                            selectMode="single"
+                            autoUpload={true}
+                            onImageSelect={(file) => {
+                                handleNominate(nominatingRole()!.id, file.id);
+                                setNominatingRole(null);
+                            }}
+                        />
+                        
+                        <div class="mt-4 flex justify-end">
+                            <button class="secondary outline" onClick={() => setNominatingRole(null)}>Cancel</button>
+                        </div>
+                    </div>
+                </Modal>
+            </Show>
         </div>
     );
 }

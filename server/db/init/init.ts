@@ -14,14 +14,33 @@ import config from '../../config.js';
 import Logger from '../../misc/Logger.js';
 
 const env = process.env.NODE_ENV || 'development';
-const shouldWipe = process.argv.includes('--seed');
-Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
+const shouldWipe = process.argv.includes('--seed') || process.argv.includes('--reseed') || process.argv.includes('-f') || process.argv.includes('f');
+const fullReseed = process.argv.includes('--reseed') || process.argv.includes('-f') || process.argv.includes('f');
+Logger.info(`Running in ${env} mode` + (fullReseed ? ' (Full Reseed)' : (shouldWipe ? ' (Force Wiping)' : '')));
 
 /**
  * Self-invoking initialization function.
  */
 (async () => {
   try {
+    if (fullReseed) {
+        Logger.info('Full reseed requested. Dropping database...');
+        try {
+            const rootConnection = await mysql.createConnection({
+                host: config.mysql.host,
+                user: 'root',
+                password: config.mysql.user === 'root' ? config.mysql.password : config.mysql.rootPassword,
+                port: config.mysql.port
+            });
+            await rootConnection.query(`DROP DATABASE IF EXISTS ${config.mysql.database}`);
+            await rootConnection.query(`CREATE DATABASE ${config.mysql.database}`);
+            await rootConnection.end();
+            Logger.info('Database dropped and recreated.');
+        } catch (e: any) {
+            Logger.warn(`Failed to recreate database as root: ${e.message}. Falling back to table wiping.`);
+        }
+    }
+
     Logger.info('Checking database existence...');
     Logger.info(`DB Config: Host=${config.mysql.host} User=${config.mysql.user} DB=${config.mysql.database} Password=${config.mysql.password ? '******' : '(none)'}`);
     
@@ -114,6 +133,7 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
         'push_subscriptions', 'user_notification_settings', 
         'form_answers', 'form_submissions', 'form_questions', 'forms',
         'sessions',
+        'votes', 'nominations', 'election_roles', 'elections',
         'event_attendees', 'event_waiting_list', 'transactions', 'swim_history',
         'quotes', 'cars', 'trips', 'event_drivers', 'event_expenses', 'trip_exclusions',
         'expense_exclusions', 'user_managed_tags', 'user_permissions', 'user_roles',
@@ -174,7 +194,7 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
     } catch (e) {}
 
     const tablesToForceSeed = shouldWipe ? [
-      'users', 'events', 'tags', 'roles', 'slides', 'quotes', 'cars', 'swim_history', 'exec_committee'
+      'users', 'events', 'tags', 'roles', 'slides', 'quotes', 'cars', 'swim_history', 'exec_committee', 'elections'
     ] : [];
     
     await seedData(db, env, [...new Set(newlyCreatedTables.concat(tablesToForceSeed))]);

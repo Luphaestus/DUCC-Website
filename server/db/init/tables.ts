@@ -98,6 +98,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         is_verified TINYINT(1) NOT NULL DEFAULT 0,
         verification_token VARCHAR(255),
         ics_token VARCHAR(255),
+        goodbye_role VARCHAR(255),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_instructor (is_instructor),
@@ -133,7 +134,9 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         profile_picture_color_override VARCHAR(7),
         profile_picture_font_override VARCHAR(50),
         profile_picture_initials_override VARCHAR(10),
+        manifesto_file_id INT,
         display_order INT DEFAULT 0,
+        votes_received INT DEFAULT 0,
         is_current TINYINT(1) NOT NULL DEFAULT 1,
         is_hidden TINYINT(1) NOT NULL DEFAULT 0,
         term_start DATE,
@@ -142,7 +145,8 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         linkedin_link VARCHAR(255),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-        FOREIGN KEY (profile_picture_override_id) REFERENCES files(id) ON DELETE SET NULL
+        FOREIGN KEY (profile_picture_override_id) REFERENCES files(id) ON DELETE SET NULL,
+        FOREIGN KEY (manifesto_file_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {

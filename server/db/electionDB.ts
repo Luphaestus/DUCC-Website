@@ -428,7 +428,7 @@ export default class ElectionDB extends BaseDB {
 
             for (const electionRole of electionRoles) {
                 const winners = await tx.all(
-                    `SELECT n.user_id, n.manifesto_file_id
+                    `SELECT n.user_id, n.manifesto_file_id, n.votes_received
                      FROM nominations n
                      WHERE n.election_role_id = ? AND n.is_winner = 1`,
                     [electionRole.id]
@@ -441,6 +441,7 @@ export default class ElectionDB extends BaseDB {
                         userId: winner.user_id,
                         roleName: electionRole.role_name,
                         displayOrder: electionRole.exec_ranking, // Assuming roles table has exec_ranking
+                        votesReceived: winner.votes_received,
                         termStart: new Date().toISOString().slice(0, 10),
                         isCurrent: 1,
                         manifestoFileId: winner.manifesto_file_id

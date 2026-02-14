@@ -26,6 +26,15 @@ export default class ElectionAPI {
          */
         this.app.post('/api/admin/elections', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
             try {
+                // Enforce "one active election at a time" rule
+                const allElectionsRes = await ElectionDB.getAllElections(this.db);
+                if (!allElectionsRes.isError()) {
+                    const activeElection = allElectionsRes.getData().find((e: any) => !['setup', 'completed'].includes(e.phase));
+                    if (activeElection) {
+                        return reply.status(400).send({ message: `Cannot create a new election because "${activeElection.title}" is still active. Please complete it first.` });
+                    }
+                }
+
                 const userId = req.user.id;
                 const status = await ElectionDB.createElection(this.db, { ...req.body, managed_by_user_id: userId, voting_type: req.body.voting_type });
                 if (status.isError()) return status.getResponse(reply);
@@ -53,6 +62,19 @@ export default class ElectionAPI {
                         const currentPhase = electionRes.getData().phase;
                         if (['results_revealed', 'roles_transferred', 'closed', 'completed'].includes(currentPhase)) {
                             return reply.status(400).send({ message: 'Cannot reopen an election after it has been closed or results revealed.' });
+                        }
+                    }
+                }
+
+                // Enforce "one active election at a time" rule
+                if (req.body.phase && !['setup', 'completed'].includes(req.body.phase)) {
+                    const allElectionsRes = await ElectionDB.getAllElections(this.db);
+                    if (!allElectionsRes.isError()) {
+                        const activeElection = allElectionsRes.getData().find((e: any) => 
+                            e.id !== electionId && !['setup', 'completed'].includes(e.phase)
+                        );
+                        if (activeElection) {
+                            return reply.status(400).send({ message: `Cannot activate this election because "${activeElection.title}" is already active.` });
                         }
                     }
                 }
@@ -377,6 +399,10 @@ export default class ElectionAPI {
                 const { election_role_id, manifesto_file_id } = req.body;
                 if (isNaN(electionId) || isNaN(election_role_id)) return reply.status(400).send({ message: 'Invalid IDs.' });
                 
+                if (!manifesto_file_id) {
+                    return reply.status(400).send({ message: 'A manifesto is required to nominate yourself.' });
+                }
+
                 const electionRes = await ElectionDB.getElectionById(this.db, electionId);
                 if (electionRes.isError()) return electionRes.getResponse(reply);
                 const election = electionRes.getData();
@@ -446,6 +472,10 @@ export default class ElectionAPI {
                 const election = electionRes.getData();
                 if (election.phase !== 'voting') {
                     return reply.status(403).send({ message: 'Voting is not open for this election.' });
+                }
+
+                if (election.voting_type === 'in_person') {
+                    return reply.status(403).send({ message: 'Online voting is disabled for this election. Please vote in person.' });
                 }
 
                 // Use a transaction for multiple votes

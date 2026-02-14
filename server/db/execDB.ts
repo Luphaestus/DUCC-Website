@@ -12,6 +12,7 @@ interface ExecMemberData {
     userId?: number | null;
     roleName: string;
     displayOrder?: number;
+    votesReceived?: number;
     termStart?: string;
     termEnd?: string | null;
     isCurrent?: number;
@@ -34,13 +35,13 @@ export default class ExecDB extends BaseDB {
      */
     static async getCurrentExec(db: DatabaseWrapper, includeHidden: boolean = false): Promise<statusObject> {
         return this.wrap(async () => {
-            const hiddenFilter = includeHidden ? '' : 'AND ec.is_hidden = 0';
             const rows = await db.all(`
                 SELECT ec.*, 
                        COALESCE(ec.first_name_override, u.first_name) as first_name, 
                        COALESCE(ec.last_name_override, u.last_name) as last_name, 
                        COALESCE(ec.email_override, u.email) as email,
                        u.email as username,
+                       ec.votes_received,
                        COALESCE(ec.profile_picture_color_override, u.profile_picture_color) as profile_picture_color, 
                        COALESCE(ec.profile_picture_font_override, u.profile_picture_font) as profile_picture_font, 
                        COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials) as profile_picture_initials,
@@ -169,6 +170,7 @@ export default class ExecDB extends BaseDB {
                        COALESCE(ec.last_name_override, u.last_name) as last_name, 
                        COALESCE(ec.email_override, u.email) as email,
                        u.email as username,
+                       ec.votes_received,
                        COALESCE(ec.profile_picture_color_override, u.profile_picture_color) as profile_picture_color, 
                        COALESCE(ec.profile_picture_font_override, u.profile_picture_font) as profile_picture_font, 
                        COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials) as profile_picture_initials,
@@ -197,19 +199,20 @@ export default class ExecDB extends BaseDB {
     /**
      * Add a member to the executive committee.
      */
-    static async addExecMember(db: DatabaseWrapper, { userId, roleName, displayOrder, termStart, termEnd, isCurrent = 1, firstNameOverride, lastNameOverride, emailOverride, profilePictureOverrideId, profilePictureColorOverride, profilePictureFontOverride, profilePictureInitialsOverride, instagramLink, linkedinLink, manifestoFileId }: ExecMemberData): Promise<statusObject> {
+    static async addExecMember(db: DatabaseWrapper, { userId, roleName, displayOrder, votesReceived, termStart, termEnd, isCurrent = 1, firstNameOverride, lastNameOverride, emailOverride, profilePictureOverrideId, profilePictureColorOverride, profilePictureFontOverride, profilePictureInitialsOverride, instagramLink, linkedinLink, manifestoFileId }: ExecMemberData): Promise<statusObject> {
         return this.wrap(async () => {
             const result = await db.run(
                 `INSERT INTO exec_committee (
-                    user_id, role_name, display_order, term_start, term_end, is_current, 
+                    user_id, role_name, display_order, votes_received, term_start, term_end, is_current, 
                     first_name_override, last_name_override, email_override, profile_picture_override_id,
                     profile_picture_color_override, profile_picture_font_override, profile_picture_initials_override,
                     manifesto_file_id, instagram_link, linkedin_link
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     userId || null, 
                     roleName, 
                     displayOrder || 0, 
+                    votesReceived || 0,
                     termStart || new Date().toISOString().slice(0, 10), 
                     termEnd || null,
                     isCurrent,
