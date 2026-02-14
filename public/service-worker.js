@@ -1,6 +1,6 @@
 // Service Worker for DUCC PWA
 
-const CACHE_NAME = 'ducc-v8';
+const CACHE_NAME = 'ducc-v9';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -38,22 +38,34 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Skip API requests - let them handle their own errors/caching
+  // 0. Bypasses
+  // Stop interfering with local development immediately
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
+  // Only handle requests to our own origin
+  if (url.origin !== self.location.origin) return;
+  // Skip API requests
   if (url.pathname.startsWith('/api/')) return;
 
   // 1. Network-First for Navigation (index.html) and Manifest
-  // This ensures we always get the latest version info and branding from the server.
   if (event.request.mode === 'navigate' || url.pathname === '/manifest.json') {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          // Only cache successful same-origin responses
+          if (response && response.status === 200 && response.type === 'basic') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
           return response;
         })
-        .catch(() => caches.match(event.request).then(cached => cached || caches.match('/')))
+        .catch(() => {
+          // Network failed, try specific request first, then root /
+          return caches.match(event.request).then(cached => {
+            return cached || caches.match('/');
+          });
+        })
     );
     return;
   }

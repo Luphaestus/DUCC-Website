@@ -77,7 +77,7 @@ export default class User {
                 "agrees_to_data_storage", "agrees_to_keep_health_data", "filled_legal_info", "legal_filled_at",
                 "is_instructor", "first_aid_expiry", "profile_picture_path", "profile_picture_id",
                 "profile_picture_color", "profile_picture_font", "profile_picture_initials",
-                "created_at", "swims", "booties", "swimmer_rank", "swimmer_stats", "permissions", "roles", 'totp_enabled', 'email_2fa_enabled'
+                "created_at", "swims", "booties", "swimmer_rank", "swimmer_stats", "permissions", "roles", 'totp_enabled', 'email_2fa_enabled', 'goodbye_role'
             ];
             const accessibleTransactionsDB = ['balance', 'transactions'];
             return [accessibleUserDB.includes(element), accessibleTransactionsDB.includes(element)];
@@ -332,6 +332,19 @@ export default class User {
                 return status.getResponse(reply);
             }
             return reply.send({ success: true });
+        });
+
+        /**
+         * Clear the goodbye_role flag for the current user.
+         */
+        this.app.post('/api/user/clear-goodbye', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            try {
+                await this.db.run('UPDATE users SET goodbye_role = NULL WHERE id = ?', [request.user.id]);
+                return reply.send({ success: true });
+            } catch (err) {
+                Logger.error('Failed to clear goodbye role:', err);
+                return reply.status(500).send({ message: 'Internal error' });
+            }
         });
 
         /**

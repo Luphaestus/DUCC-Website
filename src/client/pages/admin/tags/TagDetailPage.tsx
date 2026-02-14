@@ -3,10 +3,11 @@ import { createSignal, createResource, For, Show, onMount, createEffect } from "
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
+import { showConfirmModal } from "@/utils/modal";
 import UploadWidget from "@/components/UploadWidget";
 import {
     ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, ADD_SVG,
-    SHIELD_SVG, LOCAL_ACTIVITY_SVG, IMAGE_SVG
+    SHIELD_SVG, LOCAL_ACTIVITY_SVG, IMAGE_SVG, SAVE_SVG
 } from '@/utils/icons';
 import { debounce } from "@/utils/utils";
 import PageTitle from "@/components/PageTitle";
@@ -29,6 +30,8 @@ interface User {
     last_name: string;
     email: string;
 }
+
+import { TabNav } from "@/widgets/TabNav";
 
 export default function TagDetailPage() {
     const params = useParams();
@@ -72,6 +75,8 @@ export default function TagDetailPage() {
         return res.res?.DefaultEventImage?.data || '/api/files/1/download?view=true';
     });
 
+    const [isDirty, setIsDirty] = createSignal(false);
+
     // --- Actions ---
 
     const handleSave = async (e?: Event) => {
@@ -88,6 +93,7 @@ export default function TagDetailPage() {
                 await apiRequest('PUT', `/api/tags/${id()}`, currentTag);
                 notify('Success', 'Tag updated', 'success');
             }
+            setIsDirty(false);
         } catch (err: any) {
             notify('Error', err.message || 'Save failed', 'error');
         }
@@ -99,18 +105,18 @@ export default function TagDetailPage() {
 
     const updateField = (key: keyof Tag, value: any) => {
         setTag({ ...tag()!, [key]: value });
+        setIsDirty(true);
         debouncedAutoSave();
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this tag?')) return;
+        const ok = await showConfirmModal('Delete Tag', 'Are you sure you want to delete this tag?');
+        if (!ok) return;
         try {
-            await apiRequest('DELETE', `/api/tags/${id()}`);
+            await apiRequest('DELETE', `/api/tags/${params.id}`);
             notify('Success', 'Tag deleted', 'success');
             navigate('/admin/tags');
-        } catch (err: any) {
-            notify('Error', err.message, 'error');
-        }
+        } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
     const handleAddUser = async (type: 'whitelist' | 'managers', userIdStr: string) => {
@@ -139,168 +145,188 @@ export default function TagDetailPage() {
     };
 
     return (
-        <div class="glass-layout">
-            <button class="small-btn secondary outline" onClick={() => navigate('/admin/tags')}>
-                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
-            </button>
-            <PageTitle text={isNew() ? 'Create New Tag' : 'Edit Tag'} centered={true} />
+        <div class="dashboard-container">
+            <aside class="dashboard-sidebar">
+                <TabNav class="vertical-sidebar">
+                    <button class="nav-item" onClick={() => navigate('/admin/tags')}>
+                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Tags
+                    </button>
+                    <div class="sidebar-spacer" style={{ "border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0" }} />
 
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 style="margin: 0;">Details</h3>
-                    <div class="panel-actions">
-                        <Show when={!isNew()}>
-                            <button class="small-btn delete outline" onClick={handleDelete} title="Delete">
-                                <span innerHTML={DELETE_SVG} /> Delete
-                            </button>
-                        </Show>
-                    </div>
-                </div>
-                <div class="panel-content">
-                    <form class="modern-form" onSubmit={handleSave}>
-                        <Show when={tag()} fallback={<p>Loading...</p>}>
-                            <div class="event-content-split">
-                                <div class="event-details-section">
-                                    <div class="grid-2-col">
-                                        <label>Name
-                                            <input type="text" value={tag()!.name} onInput={e => updateField('name', e.currentTarget.value)} required placeholder="Tag Name" />
-                                        </label>
-                                        <label>Colour
-                                            <input type="color" value={tag()!.color} onInput={e => updateField('color', e.currentTarget.value)} required class="colour-input" />
-                                        </label>
-                                    </div>
+                    <button class="nav-item active">
+                        <span innerHTML={LOCAL_ACTIVITY_SVG} /> Tag Details
+                    </button>
 
-                                    <label>Description
-                                        <textarea rows="3" value={tag()!.description} onInput={e => updateField('description', e.currentTarget.value)} placeholder="Tag description..."></textarea>
-                                    </label>
+                    <Show when={!isNew()}>
+                        <div class="sidebar-spacer" style={{ "border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0" }} />
+                        <button class="nav-item delete" onClick={handleDelete}>
+                            <span innerHTML={DELETE_SVG} /> Delete Tag
+                        </button>
+                    </Show>
+                </TabNav>
+            </aside>
 
-                                    <div class="grid-2-col">
-                                        <label>Min Difficulty Requirement
-                                            <input type="number" value={tag()!.min_difficulty ?? ''} onInput={e => updateField('min_difficulty', e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value))} min="1" max="5" placeholder="Optional (1-5)" />
-                                        </label>
-                                        <label>Priority
-                                            <input type="number" value={tag()!.priority} onInput={e => updateField('priority', parseInt(e.currentTarget.value) || 0)} placeholder="Default 0" />
-                                        </label>
-                                    </div>
-
-                                    <div class="grid-2-col">
-                                        <label>Join Policy
-                                            <select class="modern-select" value={tag()!.join_policy} onChange={e => updateField('join_policy', e.currentTarget.value)}>
-                                                <option value="open">Open</option>
-                                                <option value="whitelist">Whitelist Only</option>
-                                                <option value="role">Role Only</option>
-                                            </select>
-                                        </label>
-                                        <label>View Policy
-                                            <select class="modern-select" value={tag()!.view_policy} onChange={e => updateField('view_policy', e.currentTarget.value)}>
-                                                <option value="open">Open</option>
-                                                <option value="whitelist">Whitelist Only</option>
-                                                <option value="role">Role Only</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="event-image-section">
-                                    <h3 class="section-header-modern">
-                                        <span innerHTML={IMAGE_SVG} /> Default Event Image
-                                    </h3>
-                                    <UploadWidget
-                                        selectMode="single"
-                                        autoUpload={true}
-                                        enableLibrary={true}
-                                        defaultPreview={tag()!.image_id ? `/api/files/${tag()!.image_id}/download?view=true` : globalDefaultUrl()}
-                                        onImageSelect={({ id }) => updateField('image_id', id)}
-                                        onRemove={async () => {
-                                            if (isNew()) {
-                                                updateField('image_id', null);
-                                                return true;
-                                            }
-                                            if (!confirm('Remove tag image?')) return false;
-                                            try {
-                                                await apiRequest('POST', `/api/tags/${id()}/reset-image`);
-                                                updateField('image_id', null);
-                                                return true;
-                                            } catch (err: any) {
-                                                notify('Error', err.message, 'error');
-                                                return false;
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
-                            <Show when={isNew()}>
-                                <div class="form-actions-footer">
-                                    <button type="submit" class="wide-btn">Create</button>
-                                </div>
-                            </Show>
-                        </Show>
-                    </form>
-                </div>
-            </div>
-
-            <Show when={!isNew()}>
-                <div class="dual-grid">
-                    {/* Managers */}
+            <main class="dashboard-content">
+                <div class="glass-layout">
                     <div class="panel">
                         <div class="panel-header">
-                            <h3><span innerHTML={SHIELD_SVG} /> Designated Managers</h3>
+                            <h3 style="margin: 0;">Configuration</h3>
                         </div>
                         <div class="panel-content">
-                            <p class="helper-text">Users allowed to manage events with this tag.</p>
-                            <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('managers', input.value); input.value = ''; }}>
-                                <input list="users-datalist" placeholder="Search users..." class="no-margin" />
-                                <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
+                            <form class="modern-form" onSubmit={handleSave}>
+                                <Show when={tag()} fallback={<p>Loading...</p>}>
+                                    <div class="event-content-split">
+                                        <div class="event-details-section">
+                                            <div class="grid-2-col">
+                                                <label>Name
+                                                    <input type="text" value={tag()!.name} onInput={e => updateField('name', e.currentTarget.value)} required placeholder="Tag Name" />
+                                                </label>
+                                                <label>Colour
+                                                    <input type="color" value={tag()!.color} onInput={e => updateField('color', e.currentTarget.value)} required class="colour-input" />
+                                                </label>
+                                            </div>
+
+                                            <label>Description
+                                                <textarea rows="3" value={tag()!.description} onInput={e => updateField('description', e.currentTarget.value)} placeholder="Tag description..."></textarea>
+                                            </label>
+
+                                            <div class="grid-2-col">
+                                                <label>Min Difficulty Requirement
+                                                    <input type="number" value={tag()!.min_difficulty ?? ''} onInput={e => updateField('min_difficulty', e.currentTarget.value === '' ? null : parseInt(e.currentTarget.value))} min="1" max="5" placeholder="Optional (1-5)" />
+                                                </label>
+                                                <label>Priority
+                                                    <input type="number" value={tag()!.priority} onInput={e => updateField('priority', parseInt(e.currentTarget.value) || 0)} placeholder="Default 0" />
+                                                </label>
+                                            </div>
+
+                                            <div class="grid-2-col">
+                                                <label>Join Policy
+                                                    <select class="modern-select" value={tag()!.join_policy} onChange={e => updateField('join_policy', e.currentTarget.value)}>
+                                                        <option value="open">Open</option>
+                                                        <option value="whitelist">Whitelist Only</option>
+                                                        <option value="role">Role Only</option>
+                                                    </select>
+                                                </label>
+                                                <label>View Policy
+                                                    <select class="modern-select" value={tag()!.view_policy} onChange={e => updateField('view_policy', e.currentTarget.value)}>
+                                                        <option value="open">Open</option>
+                                                        <option value="whitelist">Whitelist Only</option>
+                                                        <option value="role">Role Only</option>
+                                                    </select>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="event-image-section">
+                                            <h3 class="section-header-modern">
+                                                <span innerHTML={IMAGE_SVG} /> Default Event Image
+                                            </h3>
+                                            <UploadWidget
+                                                selectMode="single"
+                                                autoUpload={true}
+                                                enableLibrary={true}
+                                                defaultPreview={tag()!.image_id ? `/api/files/${tag()!.image_id}/download?view=true` : globalDefaultUrl()}
+                                                onImageSelect={({ id }) => updateField('image_id', id)}
+                                                onRemove={async () => {
+                                                    if (isNew()) {
+                                                        updateField('image_id', null);
+                                                        return true;
+                                                    }
+                                                    const ok = await showConfirmModal('Remove Image', 'Are you sure you want to remove the tag image?');
+                                                    if (!ok) return false;
+                                                    try {
+                                                        await apiRequest('POST', `/api/tags/${id()}/reset-image`);
+                                                        updateField('image_id', null);
+                                                        return true;
+                                                    } catch (err: any) {
+                                                        notify('Error', err.message, 'error');
+                                                        return false;
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <Show when={isDirty() || isNew()}>
+                                        <div class="floating-action-container">
+                                            <button
+                                                type="submit"
+                                                class="floating-save-btn prominent-btn"
+                                                title={isNew() ? 'Create Tag' : 'Save Changes'}
+                                            >
+                                                <span innerHTML={SAVE_SVG} />
+                                                <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
+                                            </button>
+                                        </div>
+                                    </Show>
+                                </Show>
                             </form>
-                            <div class="glass-table-container">
-                                <table class="glass-table">
-                                    <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
-                                    <tbody>
-                                        <For each={managers()}>
-                                            {u => (
-                                                <tr><td>{u.first_name} {u.last_name}</td>
-                                                    <td>{u.email}</td>
-                                                    <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('managers', u.id)} innerHTML={DELETE_SVG} /></td>
-                                                </tr>
-                                            )}
-                                        </For>
-                                    </tbody>
-                                </table>
-                            </div>
                         </div>
                     </div>
 
-                    {/* Whitelist */}
-                    <div class="panel">
-                        <div class="panel-header">
-                            <h3><span innerHTML={LOCAL_ACTIVITY_SVG} /> Whitelist Access</h3>
-                        </div>
-                        <div class="panel-content">
-                            <p class="helper-text">Restricts event visibility/joining to specific users.</p>
-                            <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('whitelist', input.value); input.value = ''; }}>
-                                <input list="users-datalist" placeholder="Search users..." class="no-margin" />
-                                <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
-                            </form>
-                            <div class="glass-table-container">
-                                <table class="glass-table">
-                                    <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
-                                    <tbody>
-                                        <For each={whitelist()}>
-                                            {u => (
-                                                <tr><td>{u.first_name} {u.last_name}</td>
-                                                    <td>{u.email}</td>
-                                                    <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('whitelist', u.id)} innerHTML={DELETE_SVG} /></td>
-                                                </tr>
-                                            )}
-                                        </For>
-                                    </tbody>
-                                </table>
+                    <Show when={!isNew()}>
+                        <div class="dual-grid">
+                            {/* Managers */}
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h3><span innerHTML={SHIELD_SVG} /> Designated Managers</h3>
+                                </div>
+                                <div class="panel-content">
+                                    <p class="helper-text">Users allowed to manage events with this tag.</p>
+                                    <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('managers', input.value); input.value = ''; }}>
+                                        <input list="users-datalist" placeholder="Search users..." class="no-margin" />
+                                        <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
+                                    </form>
+                                    <div class="glass-table-container">
+                                        <table class="glass-table">
+                                            <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
+                                            <tbody>
+                                                <For each={managers()} fallback={<tr><td colspan="3" class="text-centre muted-colour py-4">No designated managers</td></tr>}>
+                                                    {u => (
+                                                        <tr><td>{u.first_name} {u.last_name}</td>
+                                                            <td>{u.email}</td>
+                                                            <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('managers', u.id)} innerHTML={DELETE_SVG} /></td>
+                                                        </tr>
+                                                    )}
+                                                </For>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Whitelist */}
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h3><span innerHTML={LOCAL_ACTIVITY_SVG} /> Whitelist Access</h3>
+                                </div>
+                                <div class="panel-content">
+                                    <p class="helper-text">Restricts event visibility/joining to specific users.</p>
+                                    <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('whitelist', input.value); input.value = ''; }}>
+                                        <input list="users-datalist" placeholder="Search users..." class="no-margin" />
+                                        <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
+                                    </form>
+                                    <div class="glass-table-container">
+                                        <table class="glass-table">
+                                            <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
+                                            <tbody>
+                                                <For each={whitelist()} fallback={<tr><td colspan="3" class="text-centre muted-colour py-4">No whitelist active</td></tr>}>
+                                                    {u => (
+                                                        <tr><td>{u.first_name} {u.last_name}</td>
+                                                            <td>{u.email}</td>
+                                                            <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('whitelist', u.id)} innerHTML={DELETE_SVG} /></td>
+                                                        </tr>
+                                                    )}
+                                                </For>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </Show>
                 </div>
-            </Show>
+            </main>
 
             <datalist id="users-datalist">
                 <For each={allUsers()}>

@@ -106,10 +106,9 @@ export default class Auth {
     }
 
     private sendVerificationEmail(email: string, name: string, token: string, request: FastifyRequest) {
-        const protocol = request.protocol;
-        const host = request.hostname;
-        const baseUrl = `${protocol}://${host}`;
-        const verifyUrl = `${baseUrl}/api/auth/verify/${token}`;
+                const protocol = request.protocol;
+                const host = request.headers.host;
+                const baseUrl = `${protocol}://${host}`;        const verifyUrl = `${baseUrl}/api/auth/verify/${token}`;
 
         EmailManager.getInstance().sendTemplatedEmail(
             email,
@@ -706,10 +705,9 @@ export default class Auth {
                 await AuthDB.createPasswordReset(this.db, user.id, token, expiresAt);
 
                 // Need a way to get base URL in fastify
-                const protocol = request.protocol;
-                const host = request.hostname;
-                const baseUrl = `${protocol}://${host}`;
-                const resetUrl = `${baseUrl}/set-password?token=${token}`;
+                        const protocol = request.protocol;
+                        const host = request.headers.host;
+                        const baseUrl = `${protocol}://${host}`;                const resetUrl = `${baseUrl}/set-password?token=${token}`;
 
                 Logger.info(`[RESET] Password reset url for ${user.email}: ${resetUrl}`);
 

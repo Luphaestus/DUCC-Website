@@ -1,23 +1,24 @@
 // src/client/pages/admin/ElectionForm.tsx
 
-import { createSignal, createResource, Show, For } from "solid-js";
+import { createSignal, createResource, Show, For, createMemo, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { useNavigate } from "@solidjs/router";
 import PageTitle from "@/components/PageTitle";
-import { ARROW_BACK_IOS_NEW_SVG, SAVE_SVG, ADD_SVG, DELETE_SVG } from "@/utils/icons";
+import { ARROW_BACK_IOS_NEW_SVG, SAVE_SVG, ADD_SVG, DELETE_SVG, LOCAL_ACTIVITY_SVG, SETTINGS_SVG, INFO_SVG } from "@/utils/icons";
 import RichTextEditor from "@/components/RichTextEditor";
-import { smartDateAdjust } from "@/utils/utils";
+import { showConfirmModal } from "@/utils/modal";
+import { ElectionUpdatedEvent } from "@/utils/events/events";
 
 interface Election {
     id: number;
     title: string;
     description: string;
-    start_date: string;
-    voting_start_date: string;
-    end_date: string;
-    voting_type: 'online' | 'in_person' | 'hybrid';
-    phase: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred';
+    start_date?: string;
+    voting_start_date?: string;
+    end_date?: string;
+    voting_type?: 'online' | 'in_person' | 'hybrid';
+    phase: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred' | 'completed';
     managed_by_user_id: number;
     created_at: string;
     updated_at: string;
@@ -58,19 +59,18 @@ const phaseColors: Record<string, string> = {
     'voting': 'warning',
     'closed': 'danger',
     'results_revealed': 'success',
-    'roles_transferred': 'success'
+    'roles_transferred': 'success',
+    'completed': 'neutral'
 };
 
-const formatDateForInput = (dateStr: string | undefined | null) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+const phaseLabels: Record<string, string> = {
+    'setup': 'Setup',
+    'nominations': 'Nominations',
+    'voting': 'Voting',
+    'closed': 'Closed',
+    'results_revealed': 'Results Revealed',
+    'roles_transferred': 'Roles Transferred',
+    'completed': 'Completed (Archived)'
 };
 
 export default function ElectionForm(props: { electionId: string, onSave: () => void }) {
@@ -80,42 +80,82 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
 
     const [electionData, setElectionData] = createSignal<Partial<Election>>({});
     const [descriptionContent, setDescriptionContent] = createSignal("");
+    const [isDirty, setIsDirty] = createSignal(false);
+
     const [availableRoles] = createResource(async () => {
-        const res = await apiRequest('GET', '/api/admin/roles');
-        return (res.roles || []) as Role[];
+        try {
+            const res = await apiRequest('GET', '/api/admin/roles');
+            return (Array.isArray(res) ? res : (res.roles || res.data || [])) as Role[];
+        } catch (e) {
+            console.error('Failed to load available roles', e);
+            return [];
+        }
     });
     const [electionRoles, setElectionRoles] = createSignal<ElectionRole[]>([]);
+    const [newElectionRoles, setNewElectionRoles] = createSignal<{ role_id: number, max_winners: number, role_name: string }[]>([]);
     const [nominations, setNominations] = createSignal<Nomination[]>([]);
 
-    const [fetchedElection] = createResource(isNew() ? null : props.electionId, async (id) => {
-        const res = await apiRequest('GET', `/api/admin/elections/${id}`);
-        if (res.error) {
-            notify('Error', res.error, 'error');
-            navigate('/admin/elections');
-            return null;
-        }
-        setElectionData(res.election);
-        setDescriptionContent(res.election.description || "");
-
-        // Fetch election roles and nominations if election exists
-        const rolesRes = await apiRequest('GET', `/api/admin/elections/${id}/roles`);
-        if (!rolesRes.error) {
-            setElectionRoles(rolesRes.roles || []);
-            // Fetch nominations for each role
-            const allNominations: Nomination[] = [];
-            for (const role of rolesRes.roles) {
-                const nomRes = await apiRequest('GET', `/api/elections/${id}/roles/${role.id}/nominations`);
-                if (!nomRes.error) {
-                    allNominations.push(...(nomRes.nominations || []));
-                }
+    const fetchElectionData = async (id: string) => {
+        try {
+            const res = await apiRequest('GET', `/api/admin/elections/${id}`);
+            if (!res || res.error) {
+                notify('Error', res?.error || 'Election not found', 'error');
+                navigate('/admin/elections');
+                return null;
             }
-            setNominations(allNominations);
+            
+            const election = res.election || res.data || res;
+            if (!election) throw new Error('Election data missing');
+
+            setElectionData(election);
+            setDescriptionContent(election.description || "");
+            setIsDirty(false);
+
+            // Fetch election roles and nominations if election exists
+            const rolesRes = await apiRequest('GET', `/api/admin/elections/${id}/roles`);
+            const roles = rolesRes?.roles || rolesRes?.data || (Array.isArray(rolesRes) ? rolesRes : []);
+            
+            if (Array.isArray(roles)) {
+                setElectionRoles(roles);
+                // Fetch nominations for each role
+                const allNominations: Nomination[] = [];
+                for (const role of roles) {
+                    try {
+                        const nomRes = await apiRequest('GET', `/api/elections/${id}/roles/${role.id}/nominations`);
+                        const noms = nomRes?.nominations || nomRes?.data || (Array.isArray(nomRes) ? nomRes : []);
+                        if (Array.isArray(noms)) {
+                            allNominations.push(...noms);
+                        }
+                    } catch (e) {
+                        console.error(`Failed to load nominations for role ${role.id}`, e);
+                    }
+                }
+                setNominations(allNominations);
+            }
+            return election;
+        } catch (e: any) {
+            console.error('fetchElectionData failed', e);
+            notify('Error', e.message || 'Failed to load election details', 'error');
+            throw e;
         }
-        return res.election;
+    };
+
+    const [fetchedElection, { refetch: refetchElection }] = createResource(isNew() ? null : props.electionId, fetchElectionData);
+
+    onMount(() => {
+        const unsubscribe = ElectionUpdatedEvent.subscribe(() => {
+            if (!isNew()) refetchElection();
+        });
+        onCleanup(unsubscribe);
     });
 
+    const isReadOnly = createMemo(() => ['roles_transferred', 'completed'].includes(electionData().phase || ''));
+    const isClosed = createMemo(() => ['closed', 'results_revealed', 'roles_transferred', 'completed'].includes(electionData().phase || ''));
+
     const updateField = (field: keyof Election, value: any) => {
+        if (isReadOnly()) return;
         setElectionData(prev => ({ ...prev, [field]: value }));
+        setIsDirty(true);
     };
 
     const handleDescriptionInput = (value: string) => {
@@ -125,22 +165,34 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
 
     const handleSave = async (e: Event) => {
         e.preventDefault();
+        if (isReadOnly()) return;
+
         const dataToSave = {
             ...electionData(),
             description: descriptionContent(),
-            start_date: electionData().start_date ? new Date(electionData().start_date!).toISOString() : null,
-            voting_start_date: electionData().voting_start_date ? new Date(electionData().voting_start_date!).toISOString() : null,
-            end_date: electionData().end_date ? new Date(electionData().end_date!).toISOString() : null,
+            start_date: new Date().toISOString(), // Default to now
+            end_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString(), // Default to 1 year from now
+            voting_type: 'online' as const
         };
 
         try {
+            let electionId = props.electionId;
             if (isNew()) {
-                await apiRequest('POST', '/api/admin/elections', dataToSave);
+                const res = await apiRequest('POST', '/api/admin/elections', dataToSave);
+                electionId = (res.data?.id || res.id).toString();
+                
+                // Add initial roles
+                for (const role of newElectionRoles()) {
+                    await apiRequest('POST', `/api/admin/elections/${electionId}/roles`, { role_id: role.role_id, max_winners: role.max_winners });
+                }
+                
                 notify('Success', 'Election created successfully', 'success');
             } else {
                 await apiRequest('PUT', `/api/admin/elections/${props.electionId}`, dataToSave);
                 notify('Success', 'Election updated successfully', 'success');
             }
+            ElectionUpdatedEvent.notify();
+            setIsDirty(false);
             props.onSave(); // Call onSave to refetch list and navigate
         } catch (error: any) {
             notify('Error', error.message || 'Failed to save election', 'error');
@@ -148,14 +200,23 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
     };
 
     const handleAddRole = async (roleId: number) => {
+        if (isClosed()) return;
         const role = availableRoles()?.find(r => r.id === roleId);
-        if (!role || !electionData().id) return;
+        if (!role) return;
+
+        if (isNew()) {
+            setNewElectionRoles(prev => [...prev, { role_id: roleId, max_winners: 1, role_name: role.name }]);
+            return;
+        }
+
+        if (!electionData().id) return;
 
         try {
             const res = await apiRequest('POST', `/api/admin/elections/${electionData().id}/roles`, { role_id: roleId });
-            if (res.id) {
+            const newId = res.data?.id || res.id;
+            if (newId) {
                 setElectionRoles(prev => [...prev, {
-                    id: res.id,
+                    id: newId,
                     election_id: electionData().id!,
                     role_id: roleId,
                     max_winners: 1, // Default max_winners
@@ -169,9 +230,22 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
         }
     };
 
-    const handleRemoveRole = async (electionRoleId: number) => {
+    const handleRemoveRole = async (electionRoleId: number, roleId?: number) => {
+        if (isClosed()) return;
+
+        if (isNew() && roleId) {
+            setNewElectionRoles(prev => prev.filter(r => r.role_id !== roleId));
+            return;
+        }
+
         if (!electionData().id) return;
-        if (!confirm('Are you sure you want to remove this role from the election? This will also remove all nominations for it.')) return;
+
+        const hasNominations = nominations().some(n => n.election_role_id === electionRoleId);
+        if (hasNominations) {
+            const ok = await showConfirmModal('Remove Role', `Are you sure you want to remove this role from the election? This will also remove <strong>all existing nominations</strong> for it.`);
+            if (!ok) return;
+        }
+
         try {
             await apiRequest('DELETE', `/api/admin/elections/${electionData().id}/roles/${electionRoleId}`);
             setElectionRoles(prev => prev.filter(er => er.id !== electionRoleId));
@@ -182,7 +256,19 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
         }
     };
 
+    const handleUpdateMaxWinners = async (electionRoleId: number, count: number) => {
+        if (isClosed()) return;
+        try {
+            await apiRequest('PUT', `/api/admin/elections/${electionData().id}/roles/${electionRoleId}`, { max_winners: count });
+            setElectionRoles(prev => prev.map(er => er.id === electionRoleId ? { ...er, max_winners: count } : er));
+            notify('Success', 'Max winners updated.', 'success');
+        } catch (error: any) {
+            notify('Error', error.message || 'Failed to update max winners.', 'error');
+        }
+    };
+
     const handleUpdateLocalVotes = async (nominationId: number, count: number) => {
+        if (isReadOnly()) return;
         try {
             await apiRequest('PUT', `/api/admin/nominations/${nominationId}/local-votes`, { local_votes_count: count });
             setNominations(prev => prev.map(n => n.id === nominationId ? { ...n, local_votes_count: count } : n));
@@ -193,6 +279,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
     };
 
     const handleApproveNomination = async (nominationId: number) => {
+        if (isClosed()) return;
         try {
             await apiRequest('PUT', `/api/admin/nominations/${nominationId}/approve`);
             setNominations(prev => prev.map(n => n.id === nominationId ? { ...n, is_approved: 1 } : n));
@@ -208,6 +295,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             await apiRequest('PUT', `/api/admin/elections/${electionData().id}`, { phase: newPhase });
             setElectionData(prev => ({ ...prev, phase: newPhase }));
             notify('Success', `Election phase set to ${newPhase}.`, 'success');
+            ElectionUpdatedEvent.notify();
         } catch (error: any) {
             notify('Error', error.message || 'Failed to update election phase.', 'error');
         }
@@ -219,14 +307,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             await apiRequest('GET', `/api/admin/elections/${electionData().id}/results`);
             notify('Success', 'Results calculated. You can now view them.', 'success');
             // Refetch nominations to show updated votes_received/is_winner status
-            const allNominations: Nomination[] = [];
-            for (const role of electionRoles()) {
-                const nomRes = await apiRequest('GET', `/api/elections/${electionData().id}/roles/${role.id}/nominations`);
-                if (!nomRes.error) {
-                    allNominations.push(...(nomRes.nominations || []));
-                }
-            }
-            setNominations(allNominations);
+            await fetchElectionData(electionData().id!.toString());
         } catch (error: any) {
             notify('Error', error.message || 'Failed to calculate results.', 'error');
         }
@@ -234,7 +315,8 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
 
     const handleTransferRoles = async () => {
         if (!electionData().id) return;
-        if (!confirm('Are you sure you want to transfer roles? This will archive the current committee and assign roles to winners.')) return;
+        const ok = await showConfirmModal('Transfer Roles', 'Are you sure you want to transfer roles? This will archive the current committee and assign roles to winners.');
+        if (!ok) return;
         try {
             await apiRequest('POST', `/api/admin/elections/${electionData().id}/transfer-roles`);
             notify('Success', 'Roles transferred successfully.', 'success');
@@ -244,20 +326,29 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
         }
     };
 
+    const handleDelete = async () => {
+        if (!electionData().id) return;
+        const ok = await showConfirmModal('Delete Election', 'Are you sure you want to delete this election? This <strong>cannot be undone</strong> and will remove all nominations and votes.');
+        if (!ok) return;
+        try {
+            await apiRequest('DELETE', `/api/admin/elections/${electionData().id}`);
+            notify('Success', 'Election deleted.', 'success');
+            ElectionUpdatedEvent.notify();
+            props.onSave(); // Refetch list and navigate back
+        } catch (error: any) {
+            notify('Error', error.message || 'Failed to delete election.', 'error');
+        }
+    };
+
 
     return (
-        <div class="glass-layout">
-            <button class="small-btn secondary outline" onClick={() => navigate('/admin/elections')}>
-                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
-            </button>
-            <PageTitle text={isNew() ? 'New Election' : `Edit Election: ${electionData().title || ''}`} />
-
+        <div class="glass-layout" classList={{ 'read-only': isReadOnly() }}>
             <div class="panel">
                 <div class="panel-header">
-                    <h3 style="margin: 0;">Election Details</h3>
+                    <h3 style="margin: 0;"><span innerHTML={INFO_SVG} /> Election Overview {isReadOnly() && '(Finalized)'}</h3>
                     <div class="panel-actions">
                         <Show when={!isNew()}>
-                            <button class="small-btn delete outline" onClick={() => { /* Implement delete logic */ }} title="Delete">
+                            <button class="small-btn delete outline" onClick={handleDelete} title="Delete">
                                 <span innerHTML={DELETE_SVG} /> Delete
                             </button>
                         </Show>
@@ -267,61 +358,24 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
                     <form class="modern-form" onSubmit={handleSave}>
                         <Show when={electionData()} fallback={<p>Loading...</p>}>
                             <label class="form-label-top">Title
-                                <input type="text" value={electionData().title || ''} onInput={(e) => updateField('title', e.currentTarget.value)} required />
+                                <input type="text" value={electionData().title || ''} onInput={(e) => updateField('title', e.currentTarget.value)} required disabled={isReadOnly()} />
                             </label>
                             <label class="form-label-top">Description
-                                <RichTextEditor value={descriptionContent()} onInput={handleDescriptionInput} />
+                                <RichTextEditor value={descriptionContent()} onInput={handleDescriptionInput} readOnly={isReadOnly()} />
                             </label>
 
-                            <div class="grid-2-col">
-                                <label class="form-label-top">Start Date
-                                    <input type="datetime-local" value={formatDateForInput(electionData().start_date) || ''} onChange={(e) => {
-                                        const { date, valid } = smartDateAdjust(e.currentTarget.value);
-                                        if (valid) updateField('start_date', date.toISOString());
-                                    }} onFocus={(e) => {
-                                        if (!e.currentTarget.value) {
-                                            const d = new Date();
-                                            d.setMinutes(0, 0, 0);
-                                            updateField('start_date', d.toISOString());
-                                        }
-                                    }} required />
-                                </label>
-                                <label class="form-label-top">Voting Start Date (optional)
-                                    <input type="datetime-local" value={electionData().voting_start_date ? formatDateForInput(electionData().voting_start_date) : ''} onChange={(e) => {
-                                        const { date, valid } = smartDateAdjust(e.currentTarget.value);
-                                        if (valid) updateField('voting_start_date', date.toISOString());
-                                    }} onFocus={(e) => {
-                                        if (!e.currentTarget.value && electionData().start_date) {
-                                            updateField('voting_start_date', electionData().start_date);
-                                        }
-                                    }} />
-                                </label>
-                                <label class="form-label-top">End Date
-                                    <input type="datetime-local" value={formatDateForInput(electionData().end_date) || ''} onChange={(e) => {
-                                        const { date, valid } = smartDateAdjust(e.currentTarget.value);
-                                        if (valid) updateField('end_date', date.toISOString());
-                                    }} onFocus={(e) => {
-                                        if (!e.currentTarget.value) {
-                                            const d = new Date(electionData().start_date || new Date());
-                                            d.setHours(d.getHours() + 1);
-                                            updateField('end_date', d.toISOString());
-                                        }
-                                    }} required />
-                                </label>
-                                <label class="form-label-top">Voting Type
-                                    <select value={electionData().voting_type || 'online'} onInput={(e) => updateField('voting_type', e.currentTarget.value as Election['voting_type'])}>
-                                        <option value="online">Online</option>
-                                        <option value="in_person">In-Person</option>
-                                        <option value="hybrid">Hybrid</option>
-                                    </select>
-                                </label>
-                            </div>
-
-                            <div class="form-actions-footer">
-                                <button type="submit" class="primary-btn wide-btn">
-                                    <span innerHTML={SAVE_SVG} /> Save Election
-                                </button>
-                            </div>
+                            <Show when={(isDirty() || isNew()) && !isReadOnly()}>
+                                <div class="floating-action-container">
+                                    <button 
+                                        type="submit" 
+                                        class="floating-save-btn prominent-btn"
+                                        title={isNew() ? 'Create Election' : 'Save Changes'}
+                                    >
+                                        <span innerHTML={SAVE_SVG} />
+                                        <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
+                                    </button>
+                                </div>
+                            </Show>
                         </Show>
                     </form>
                 </div>
@@ -330,89 +384,140 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             <Show when={!isNew() && fetchedElection()}>
                 <div class="panel">
                     <div class="panel-header">
-                        <h3 style="margin: 0;">Election Management</h3>
+                        <h3 style="margin: 0;"><span innerHTML={SETTINGS_SVG} /> Phase Control</h3>
                     </div>
                     <div class="panel-content">
-                        <div class="grid-2-col gap-4">
-                            <div>
-                                <h4 class="mb-2">Phase Control</h4>
-                                <p>Current: <span class={`badge ${phaseColors[electionData().phase || 'setup']}`}>{electionData().phase?.replace(/_/g, ' ') || 'Setup'}</span></p>
-                                <div class="flex flex-wrap gap-2">
-                                    <button class="small-btn primary" onClick={() => handleUpdatePhase('nominations')} disabled={electionData().phase === 'nominations'}>Open Nominations</button>
-                                    <button class="small-btn primary" onClick={() => handleUpdatePhase('voting')} disabled={electionData().phase === 'voting'}>Open Voting</button>
-                                    <button class="small-btn danger" onClick={() => handleUpdatePhase('closed')} disabled={electionData().phase === 'closed'}>Close Election</button>
-                                    <button class="small-btn warning" onClick={() => handleCalculateResults()} disabled={electionData().phase !== 'closed'}>Calculate Results</button>
-                                    <button class="small-btn success" onClick={() => handleUpdatePhase('results_revealed')} disabled={electionData().phase !== 'closed'}>Reveal Results</button>
-                                    <button class="small-btn success" onClick={() => handleTransferRoles()} disabled={electionData().phase !== 'results_revealed'}>Transfer Roles</button>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="mb-2">Add Role to Election</h4>
-                                <div class="flex gap-2">
-                                    <select id="available-roles-select" class="flex-grow">
-                                        <option value="">Select a role</option>
-                                        <For each={availableRoles()}>
-                                            {(role) => <option value={role.id}>{role.name}</option>}
-                                        </For>
-                                    </select>
-                                    <button class="small-btn primary" onClick={() => {
-                                        const selectEl = document.getElementById('available-roles-select') as HTMLSelectElement;
-                                        if (selectEl.value) handleAddRole(parseInt(selectEl.value));
-                                    }}>
-                                        <span innerHTML={ADD_SVG} /> Add
-                                    </button>
-                                </div>
-                            </div>
+                        <p>Current: <span class={`badge ${phaseColors[electionData().phase || 'setup']}`}>{electionData().phase?.replace(/_/g, ' ') || 'Setup'}</span></p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="small-btn primary" onClick={() => handleUpdatePhase('nominations')} disabled={isClosed() || electionData().phase === 'nominations'}>Open Nominations</button>
+                            <button class="small-btn primary" onClick={() => handleUpdatePhase('voting')} disabled={isClosed() || electionData().phase === 'voting'}>Open Voting</button>
+                            <button class="small-btn danger" onClick={() => handleUpdatePhase('closed')} disabled={isClosed() || electionData().phase === 'closed'}>Close Election</button>
+                            <button class="small-btn warning" onClick={() => handleCalculateResults()} disabled={isReadOnly() || electionData().phase !== 'closed'}>Calculate Results</button>
+                            <button class="small-btn success" onClick={() => handleUpdatePhase('results_revealed')} disabled={isReadOnly() || electionData().phase !== 'closed'}>Reveal Results</button>
+                            <button class="small-btn success" onClick={() => handleTransferRoles()} disabled={isReadOnly() || electionData().phase !== 'results_revealed'}>Transfer Roles</button>
+                            <button class="small-btn neutral" onClick={() => handleUpdatePhase('completed')} disabled={electionData().phase !== 'roles_transferred'}>Complete Election</button>
                         </div>
                     </div>
                 </div>
+            </Show>
 
+            <Show when={isNew() || fetchedElection()}>
                 <div class="panel">
                     <div class="panel-header">
-                        <h3 style="margin: 0;">Election Roles & Nominations</h3>
+                        <h3 style="margin: 0;"><span innerHTML={LOCAL_ACTIVITY_SVG} /> Election Roles</h3>
                     </div>
                     <div class="panel-content">
-                        <For each={electionRoles()}>
-                            {(electionRole) => (
-                                <div class="election-role-section pb-4 border-bottom">
-                                    <div class="flex justify-between items-center">
-                                        <h4 class="mb-0">{electionRole.role_name} (Max Winners: {electionRole.max_winners})</h4>
-                                        <button class="small-btn delete outline" onClick={() => handleRemoveRole(electionRole.id)}>
-                                            <span innerHTML={DELETE_SVG} /> Remove Role
-                                        </button>
+                        <Show when={!isClosed()} fallback={<p class="text-muted">Roles cannot be modified after election is closed.</p>}>
+                            <div class="tags-selection-grid">
+                                <For each={availableRoles()}>
+                                    {(role) => {
+                                        const electionRole = () => electionRoles().find(er => er.role_id === role.id);
+                                        const newRole = () => newElectionRoles().find(r => r.role_id === role.id);
+                                        const isSelected = () => isNew() ? !!newRole() : !!electionRole();
+                                        
+                                        return (
+                                            <label class="tag-checkbox">
+                                                <input 
+                                                    type="checkbox" 
+                                                    class="hidden-checkbox" 
+                                                    checked={isSelected()} 
+                                                    onChange={() => {
+                                                        if (isNew()) {
+                                                            isSelected() ? handleRemoveRole(0, role.id) : handleAddRole(role.id);
+                                                        } else {
+                                                            isSelected() ? handleRemoveRole(electionRole()!.id) : handleAddRole(role.id);
+                                                        }
+                                                    }} 
+                                                />
+                                                <span class="tag-badge tag-badge-simple" classList={{ selected: isSelected() }} style={{ "--tag-colour": "#808080" }}>{role.name}</span>
+                                            </label>
+                                        );
+                                    }}
+                                </For>
+                            </div>
+                        </Show>
+                    </div>
+                </div>
+
+            <Show when={(isNew() && newElectionRoles().length > 0) || fetchedElection()}>
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 style="margin: 0;"><span innerHTML={INFO_SVG} /> {isNew() ? 'Selected Roles' : 'Election Roles & Nominations'}</h3>
+                    </div>
+                    <div class="panel-content">
+                        <div class="flex-column gap-6">
+                            <Show when={isNew()}>
+                                <For each={newElectionRoles()}>
+                                    {(role) => (
+                                        <div class="election-role-section pb-4 border-bottom">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <div class="flex items-center gap-4">
+                                                    <h4 class="mb-0">{role.role_name}</h4>
+                                                    <label class="form-label-inline m-0">Max Winners:
+                                                        <input
+                                                            type="number"
+                                                            class="mini-input w-16 ml-2"
+                                                            value={role.max_winners}
+                                                            onInput={(e) => {
+                                                                const count = parseInt(e.currentTarget.value) || 1;
+                                                                setNewElectionRoles(prev => prev.map(r => r.role_id === role.role_id ? { ...r, max_winners: count } : r));
+                                                            }}
+                                                            min="1"
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </For>
+                            </Show>
+                            <For each={electionRoles()}>
+                                {(electionRole) => (
+                                    <div class="election-role-section pb-4 border-bottom">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <div class="flex items-center gap-4">
+                                                <h4 class="mb-0">{electionRole.role_name}</h4>
+                                                <label class="form-label-inline m-0">Max Winners:
+                                                    <input
+                                                        type="number"
+                                                        class="mini-input w-16 ml-2"
+                                                        value={electionRole.max_winners}
+                                                        onInput={(e) => handleUpdateMaxWinners(electionRole.id, parseInt(e.currentTarget.value) || 1)}
+                                                        min="1"
+                                                        disabled={isClosed()}
+                                                    />
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="nominations-list">
+                                            <Show when={nominations().filter(n => n.election_role_id === electionRole.id).length > 0} fallback={<p class="text-muted italic">No nominations yet for this role.</p>}>
+                                                <div class="flex-column gap-2">
+                                                    <For each={nominations().filter(n => n.election_role_id === electionRole.id)}>
+                                                        {(nomination) => (
+                                                            <div class="nomination-item flex items-center gap-4 p-3 rounded-lg border border-gray-200 secondary-bg">
+                                                                <span class="font-bold">{nomination.first_name} {nomination.last_name}</span>
+                                                                <Show when={nomination.manifesto_path}>
+                                                                    <a href={nomination.manifesto_path} target="_blank" class="small-text underline">View Manifesto</a>
+                                                                </Show>
+                                                                <Show when={nomination.is_approved === 0 && !isClosed()}>
+                                                                    <button class="small-btn primary mini-btn" onClick={() => handleApproveNomination(nomination.id)}>Approve</button>
+                                                                </Show>
+                                                                <Show when={nomination.is_approved === 1}>
+                                                                    <span class="badge success mini-badge">Approved</span>
+                                                                </Show>
+                                                                <div class="flex items-center gap-4 ml-auto">
+                                                                    <span class="small-text">Online: <strong>{nomination.votes_received || 0}</strong></span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </For>
+                                                </div>
+                                            </Show>
+                                        </div>
                                     </div>
-                                    <div class="nominations-list">
-                                        <Show when={nominations().filter(n => n.election_role_id === electionRole.id).length > 0} fallback={<p class="text-muted">No nominations yet for this role.</p>}>
-                                            <For each={nominations().filter(n => n.election_role_id === electionRole.id)}>
-                                                {(nomination) => (
-                                                    <div class="nomination-item flex items-center gap-4 p-2 rounded-lg border border-gray-200">
-                                                        <span class="font-bold">{nomination.first_name} {nomination.last_name}</span>
-                                                        <Show when={nomination.manifesto_path}>
-                                                            <a href={nomination.manifesto_path} target="_blank" class="small-btn outline">View Manifesto</a>
-                                                        </Show>
-                                                        <Show when={nomination.is_approved === 0}>
-                                                            <button class="small-btn primary" onClick={() => handleApproveNomination(nomination.id)}>Approve</button>
-                                                        </Show>
-                                                        <div class="flex items-center gap-2 ml-auto">
-                                                            <label class="form-label-inline">Online Votes: {nomination.votes_received || 0}</label>
-                                                            <label class="form-label-inline">Local Votes:
-                                                                <input
-                                                                    type="number"
-                                                                    class="mini-input w-24 ml-2"
-                                                                    value={nomination.local_votes_count || 0}
-                                                                    onInput={(e) => handleUpdateLocalVotes(nomination.id, parseInt(e.currentTarget.value) || 0)}
-                                                                    min="0"
-                                                                />
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </For>
-                                        </Show>
-                                    </div>
-                                </div>
-                            )}
-                        </For>
+                                )}
+                            </For>
+                        </div>
                     </div>
                 </div>
             </Show>

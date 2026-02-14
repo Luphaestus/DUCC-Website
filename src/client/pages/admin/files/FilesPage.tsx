@@ -1,8 +1,9 @@
 // todo clean up
 import { createSignal, createResource, Show, For, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
-import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
+import { useNotifications } from "@/stores/notifications";
+import { showConfirmModal } from "@/utils/modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import UploadWidget from "@/components/UploadWidget";
@@ -10,7 +11,6 @@ import {
     SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, 
     DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, ADD_SVG
 } from '@/utils/icons';
-import PageTitle from "@/components/PageTitle";
 
 // --- Types ---
 interface FileRecord {
@@ -69,8 +69,9 @@ const CategoriesModal = (props: {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Delete category? Files in this category will be uncategorised.')) return;
+    const handleDeleteCategory = async (id: number) => {
+        const ok = await showConfirmModal('Delete Category', 'Delete category? Files in this category will be uncategorised.');
+        if (!ok) return;
         try {
             await apiRequest('DELETE', `/api/file-categories/${id}`);
             props.refetch();
@@ -102,7 +103,7 @@ const CategoriesModal = (props: {
                                 <option value="public">Public</option>
                                 <option value="execs">Execs</option>
                             </select>
-                            <button class="icon-btn delete" onClick={() => handleDelete(cat.id)} title="Delete Category" innerHTML={DELETE_SVG} />
+                            <button class="icon-btn delete" onClick={() => handleDeleteCategory(cat.id)} title="Delete Category" innerHTML={DELETE_SVG} />
                         </div>
                     )}
                 </For>
@@ -286,8 +287,9 @@ export default function FilesPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this file?')) return;
+    const handleDeleteFile = async (id: number) => {
+        const ok = await showConfirmModal('Delete File', 'Are you sure you want to delete this file?');
+        if (!ok) return;
         try {
             await apiRequest('DELETE', `/api/files/${id}`);
             refetchFiles();
@@ -354,7 +356,7 @@ export default function FilesPage() {
                                     <button class="icon-btn edit-file" onClick={() => setEditingFile(file)} title="Edit" innerHTML={EDIT_SVG} />
                                     <button 
                                         class="icon-btn delete-file delete" 
-                                        onClick={() => handleDelete(file.id)} 
+                                        onClick={() => handleDeleteFile(file.id)} 
                                         title={file.author === 'System' ? 'Cannot delete system files' : 'Delete'} 
                                         disabled={file.author === 'System'}
                                         innerHTML={DELETE_SVG} 

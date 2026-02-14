@@ -12,6 +12,7 @@ import {
 import { TabNav } from "@/widgets/TabNav";
 import SubmissionsTab from "./tabs/SubmissionsTab";
 import RichTextEditor from "@/components/RichTextEditor";
+import { showConfirmModal } from "@/utils/modal";
 
 interface Question {
     id?: number;
@@ -63,6 +64,21 @@ export default function FormEditor() {
     const [accessTab, setAccessTab] = createSignal<'visibility' | 'management'>('visibility');
     const [visibilityType, setVisibilityType] = createSignal<'tags' | 'roles' | 'permissions'>('tags');
     const [managementType, setManagementType] = createSignal<'roles' | 'permissions'>('roles');
+    const [isDirty, setIsDirty] = createSignal(false);
+
+    useBeforeLeave(async (e) => {
+        if (isDirty()) {
+            e.preventDefault();
+            const confirmed = await showConfirmModal(
+                "Unsaved Changes",
+                "You have unsaved changes. Are you sure you want to leave? Your progress will be lost."
+            );
+            if (confirmed) {
+                setIsDirty(false);
+                if (typeof e.retry === 'function') e.retry();
+            }
+        }
+    });
 
     const generateClientId = () => Math.random().toString(36).substring(2, 15);
 
@@ -80,7 +96,7 @@ export default function FormEditor() {
         dependency_value: null
     });
 
-    const [form, setForm] = createSignal<FormData>({
+    const [form, setFormState] = createSignal<FormData>({
         title: '',
         description: '',
         is_global: !location.query.event_id,
@@ -98,6 +114,11 @@ export default function FormEditor() {
         management_roles: [],
         management_permissions: []
     });
+
+    const setForm = (data: FormData) => {
+        setFormState(data);
+        setIsDirty(true);
+    };
 
     const [events] = createResource(async () => {
         try {
@@ -149,7 +170,7 @@ export default function FormEditor() {
                     }))
             }));
 
-            setForm({
+            setFormState({
                 ...res.form,
                 is_global: res.form.is_global === 1,
                 expires_at: res.form.expires_at ? new Date(res.form.expires_at).toISOString().split('.')[0].slice(0, 16) : null,
@@ -161,6 +182,7 @@ export default function FormEditor() {
                 management_roles: res.form.management_roles || [],
                 management_permissions: res.form.management_permissions || []
             });
+            setIsDirty(false);
         } else {
             console.error('API response for form not valid:', res);
             notify('Error', 'Failed to load form data.', 'error');
@@ -288,6 +310,7 @@ export default function FormEditor() {
         try {
             const payload = { ...form() };
             const res = await apiRequest(isNew() ? 'POST' : 'PUT', isNew() ? '/api/admin/forms' : `/api/admin/forms/${params.id}`, payload);
+            setIsDirty(false);
             notify('Success', 'Form saved', 'success');
             if (isNew()) navigate(`/admin/forms/${res.id}`);
         } catch (e: any) {
@@ -302,7 +325,8 @@ export default function FormEditor() {
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this form? All submissions will be lost.')) return;
+        const ok = await showConfirmModal('Delete Form', 'Are you sure you want to delete this form? <strong>All submissions will be lost.</strong>');
+        if (!ok) return;
         try {
             await apiRequest('DELETE', `/api/admin/forms/${params.id}`);
             notify('Success', 'Form deleted', 'success');
@@ -329,8 +353,13 @@ export default function FormEditor() {
 
                     <Show when={activeTab() === 'editor'}>
                         <form id="form-editor-actual" onSubmit={handleSubmit} class="modern-form">
-                            <div class="form-editor-header">
+                            <div class="form-editor-header flex justify-between align-center mb-6">
                                 <h2>{isNew() ? 'New Form' : 'Edit Form'}</h2>
+                                <Show when={!isNew()}>
+                                    <button type="button" class="small-btn delete outline" onClick={handleDelete} title="Delete Form">
+                                        <span innerHTML={DELETE_SVG} /> Delete Form
+                                    </button>
+                                </Show>
                             </div>
 
                             <Panel title="Form Settings" icon={SETTINGS_SVG}>
@@ -745,14 +774,18 @@ export default function FormEditor() {
                     </Show>
                 </Show>
             </main>
-            <Show when={activeTab() === 'editor' && !loading.loading}>
-                <div class="fixed-form-actions">
-                    <div class="container">
-                        <Show when={!isNew()}>
-                            <button type="button" class="wide-btn delete" onClick={handleDelete}><span innerHTML={DELETE_SVG} /> Delete Form</button>
-                        </Show>
-                        <button type="submit" form="form-editor-actual" class="wide-btn primary"><span innerHTML={SAVE_SVG} /> Save Form</button>
-                    </div>
+
+            <Show when={activeTab() === 'editor' && !loading.loading && (isDirty() || isNew())}>
+                <div class="floating-action-container">
+                    <button 
+                        type="submit" 
+                        form="form-editor-actual"
+                        class="floating-save-btn prominent-btn"
+                        title={isNew() ? 'Create Form' : 'Save Changes'}
+                    >
+                        <span innerHTML={SAVE_SVG} />
+                        <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
+                    </button>
                 </div>
             </Show>
         </div>

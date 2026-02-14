@@ -15,10 +15,11 @@ interface Election {
     id: number;
     title: string;
     description?: string;
-    start_date: string;
+    start_date?: string;
     voting_start_date?: string;
-    end_date: string;
-    phase: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred';
+    end_date?: string;
+    voting_type?: 'online' | 'in_person' | 'hybrid';
+    phase: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred' | 'completed';
     managed_by_user_id: number;
 }
 
@@ -54,7 +55,7 @@ interface ElectionData {
     election: Election;
     roles: ElectionRole[];
     nominations: { [election_role_id: number]: Nomination[] };
-    user_has_nominated: number[]; // Array of election_role_ids user has nominated for
+    user_nominations: { election_role_id: number, manifesto_file_id: number }[];
     user_has_voted: number[]; // Array of election_role_ids user has voted for
 }
 
@@ -63,16 +64,19 @@ export default function ElectionPage() {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
 
-    const [electionData, { refetch }] = createResource<ElectionData>(() => apiRequest('GET', '/api/elections/current'));
+    const [electionData, { refetch }] = createResource<ElectionData>(async () => {
+        const res = await apiRequest('GET', '/api/elections/current');
+        return (res.data || res) as ElectionData;
+    });
     const currentElection = createMemo(() => electionData()?.election);
     const electionRoles = createMemo(() => electionData()?.roles || []);
     const nominationsByRole = createMemo(() => electionData()?.nominations || {});
-    const userHasNominated = createMemo(() => electionData()?.user_has_nominated || []);
+    const userNominations = createMemo(() => electionData()?.user_nominations || []);
     const userHasVoted = createMemo(() => electionData()?.user_has_voted || []);
 
     const isNominationsPhase = createMemo(() => currentElection()?.phase === 'nominations');
     const isVotingPhase = createMemo(() => currentElection()?.phase === 'voting');
-    const isResultsPhase = createMemo(() => ['results_revealed', 'roles_transferred', 'closed'].includes(currentElection()?.phase || ''));
+    const isResultsPhase = createMemo(() => ['results_revealed', 'roles_transferred', 'closed', 'completed'].includes(currentElection()?.phase || ''));
 
     const handleNominate = async (electionRoleId: number, manifestoFileId: number) => {
         try {
@@ -100,7 +104,8 @@ export default function ElectionPage() {
         'voting': 'Voting Open',
         'closed': 'Election Closed',
         'results_revealed': 'Results Revealed',
-        'roles_transferred': 'Roles Transferred'
+        'roles_transferred': 'Roles Transferred',
+        'completed': 'Election Completed'
     };
 
     const phaseColors: Record<string, string> = {
@@ -109,7 +114,8 @@ export default function ElectionPage() {
         'voting': 'warning',
         'closed': 'danger',
         'results_revealed': 'success',
-        'roles_transferred': 'success'
+        'roles_transferred': 'success',
+        'completed': 'neutral'
     };
 
     return (
@@ -129,20 +135,23 @@ export default function ElectionPage() {
                         </div>
                         <div class="election-roles-grid">
                             <For each={electionRoles()}>
-                                {role => (
-                                    <Panel class="election-role-card">
-                                        <h3 class="role-name">{role.role_name}</h3>
-                                        <p class="role-description">{role.role_description}</p>
-                                        <Show when={!userHasNominated().includes(role.id)}>
-                                            <button class="primary full-width" onClick={() => handleNominate(role.id, 1)}>Nominate Self</button>
-                                        </Show>
-                                        <Show when={userHasNominated().includes(role.id)}>
-                                            <div class="status-msg success flex align-center gap-2">
-                                                <span innerHTML={CHECK_SVG} /> Nominated
-                                            </div>
-                                        </Show>
-                                    </Panel>
-                                )}
+                                {role => {
+                                    const isNominated = () => userNominations().some(n => n.election_role_id === role.id);
+                                    return (
+                                        <Panel class="election-role-card">
+                                            <h3 class="role-name">{role.role_name}</h3>
+                                            <p class="role-description">{role.role_description}</p>
+                                            <Show when={!isNominated()}>
+                                                <button class="primary full-width" onClick={() => handleNominate(role.id, 1)}>Nominate Self</button>
+                                            </Show>
+                                            <Show when={isNominated()}>
+                                                <div class="status-msg success flex align-center gap-2">
+                                                    <span innerHTML={CHECK_SVG} /> Nominated
+                                                </div>
+                                            </Show>
+                                        </Panel>
+                                    );
+                                }}
                             </For>
                         </div>
                     </Show>
@@ -205,24 +214,26 @@ export default function ElectionPage() {
                                                 <For each={nominationsByRole()[role.id].sort((a, b) => b.votes_received - a.votes_received)}>
                                                     {nominee => (
                                                         <div class="nominee-card liquid-container flex align-center gap-4 p-3" 
-                                                             classList={{ 'primary-glass': !!nominee.is_winner, 'secondary-bg': !nominee.is_winner }}
+                                                             classList={{ 
+                                                                'primary-glass': !!nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase), 
+                                                                'secondary-bg': !nominee.is_winner || !['results_revealed', 'roles_transferred'].includes(currentElection()!.phase) 
+                                                             }}
                                                              style={{ "border-radius": "12px" }}>
                                                             <Avatar user={nominee} classes="mini" />
                                                             <div class="nominee-info flex-grow">
                                                                 <div class="flex align-center gap-2">
                                                                     <span class="nominee-name font-bold">{nominee.first_name} {nominee.last_name}</span>
-                                                                    <Show when={nominee.is_winner}>
-                                                                        <span class="badge primary mini-badge" style={{ "background": "var(--pico-primary)", "color": "white" }}>Winner</span>
-                                                                    </Show>
-                                                                </div>
-                                                                <Show when={currentElection()!.phase !== 'closed'}>
-                                                                    <span class="small-text block opacity-70">{nominee.votes_received} votes</span>
-                                                                </Show>
-                                                            </div>
-                                                            <Show when={nominee.is_winner}>
-                                                                <span class="crown-icon" innerHTML={CROWN_SVG} style={{ "color": "gold", "width": "24px" }} />
-                                                            </Show>
-                                                        </div>
+                                                                                                                    <Show when={nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
+                                                                                                                        <span class="badge primary mini-badge" style={{ "background": "var(--pico-primary)", "color": "white" }}>Winner</span>
+                                                                                                                    </Show>
+                                                                                                                </div>
+                                                                                                                <Show when={['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
+                                                                                                                    <span class="small-text block opacity-70">{nominee.votes_received} votes</span>
+                                                                                                                </Show>
+                                                                                                            </div>
+                                                                                                            <Show when={nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
+                                                                                                                <span class="crown-icon" innerHTML={CROWN_SVG} style={{ "color": "gold", "width": "24px" }} />
+                                                                                                            </Show>                                                        </div>
                                                     )}
                                                 </For>
                                             </div>

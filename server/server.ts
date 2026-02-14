@@ -128,11 +128,13 @@ const startServer = async () => {
     });
 
     /** Rate Limiting */
-    await fastify.register(fastifyRateLimit, {
-      global: true,
-      max: 10000,
-      timeWindow: '15m'
-    });
+    if (!isDev) {
+      await fastify.register(fastifyRateLimit, {
+        global: true,
+        max: 50000,
+        timeWindow: '15m'
+      });
+    }
 
     /** Security Headers & CSP */
     fastify.addHook('onSend', async (request, reply, payload) => {

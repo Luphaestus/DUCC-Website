@@ -135,6 +135,11 @@ export default function UserDetailPage() {
                                 </div>
 
                                 <TabNav class="vertical-sidebar">
+                                    <button class="nav-item" onClick={() => navigate('/admin/users')}>
+                                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Users
+                                    </button>
+                                    <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
+                                    
                                     <button class="nav-item" classList={{ active: currentTab() === 'overview' }} onClick={() => setSearchParams({ tab: 'overview' })}>
                                         <span innerHTML={DASHBOARD_SVG} /> Overview
                                     </button>

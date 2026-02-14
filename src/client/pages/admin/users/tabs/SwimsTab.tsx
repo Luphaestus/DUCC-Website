@@ -23,7 +23,8 @@ export default function SwimsTab(props: { user: any }) {
         () => props.user?.id,
         async (id) => {
             if (!id) return { swims: 0, booties: 0 };
-            return await apiRequest('GET', `/api/user/${id}/elements/swims,booties`);
+            const res = await apiRequest('GET', `/api/user/${id}/elements/swims,booties`);
+            return res.res || res;
         }
     );
 
@@ -31,7 +32,8 @@ export default function SwimsTab(props: { user: any }) {
         () => props.user?.id,
         async (id) => {
             if (!id) return [];
-            return await apiRequest('GET', `/api/user/${id}/swims/history`);
+            const res = await apiRequest('GET', `/api/user/${id}/swims/history`);
+            return res.data || [];
         }
     );
 

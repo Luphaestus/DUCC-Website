@@ -8,8 +8,11 @@ import {
 } from '@/utils/icons';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
+import Panel from "@/components/Panel";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
+import { showConfirmModal } from "@/utils/modal";
+import { notify } from '@/components/notification'
 
 // --- Types ---
 interface Attendee {
@@ -149,7 +152,8 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 
     // --- Actions ---
     const handleRemoveAttendee = async (id: number) => {
-        if (!confirm('Remove participant?')) return;
+        const ok = await showConfirmModal('Remove Participant', 'Are you sure you want to remove this participant from the event?');
+        if (!ok) return;
         try {
             await apiRequest('DELETE', `/api/admin/events/${props.eventId}/attendees/${id}`);
             notify('Success', 'Removed.', 'success');
@@ -158,7 +162,8 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
     };
 
     const handleRefundUpfront = async (id: number) => {
-        if (!confirm('Refund upfront fee?')) return;
+        const ok = await showConfirmModal('Refund Upfront Fee', 'Refund the upfront fee for this participant?');
+        if (!ok) return;
         try {
             await apiRequest('POST', `/api/admin/events/${props.eventId}/attendees/${id}/refund-upfront`);
             notify('Success', 'Refunded.', 'success');
@@ -167,14 +172,26 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
     };
 
     const handleReleaseCosts = async () => {
-        if (!confirm('Finalize the budget and update all member balances? This cannot be undone.')) return;
+        const ok = await showConfirmModal(
+            'Release Funds',
+            'Finalize the budget and update all member balances? <strong>This cannot be undone.</strong>'
+        );
+        if (!ok) return;
         try {
             await apiRequest('POST', `/api/admin/events/${props.eventId}/release-costs`);
             notify('Success', 'Funds released successfully.', 'success');
-            // We might need to notify parent to refresh event object if costs_released changed
-            window.location.reload(); // Quick way to refresh everything including parent Layout
+            window.location.reload();
         } catch (e: any) { notify('Error', e.message, 'error'); }
     };
+
+    const totals = createMemo(() => {
+        const b = summary()?.breakdown || [];
+        return {
+            contributed: b.reduce((sum, row) => sum + row.spent + row.mileage, 0),
+            shared: b.reduce((sum, row) => sum + row.shared_cost_share, 0),
+            participants: b.length
+        };
+    });
 
     const AttendeeTable = (innerProps: { list: Attendee[] }) => (
         <table class="glass-table">
@@ -216,31 +233,82 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
     );
 
     return (
-        <div class="finance-management-layout">
-            {/* Participant Management */}
-            <div class="panel">
-                <div class="panel-header">
-                    <h3><span innerHTML={GROUP_SVG} /> Participant Management</h3>
-                    <div class="panel-actions">
+        <div class="finance-management-layout flex-column gap-6">
+            <div class="finance-status-header">
+                <Panel>
+                    <div class="flex-between align-center p-4">
+                        <div class="flex align-center gap-6">
+                            <div class="flex-column">
+                                <span class="text-muted small-text uppercase font-bold tracking-wider mb-1">Financial State</span>
+                                <div class="flex align-center gap-2">
+                                    <div class={`status-indicator ${props.costsReleased ? 'success' : 'warning'}`}></div>
+                                    <span class="font-bold">{props.costsReleased ? 'Settlement Finalized' : 'Draft / Open for Edits'}</span>
+                                </div>
+                            </div>
+                            <Show when={props.costsReleased}>
+                                <div class="divider-vertical"></div>
+                                <div class="flex-column">
+                                    <span class="text-muted small-text uppercase font-bold tracking-wider mb-1">Finalized On</span>
+                                    <span class="font-bold">{new Date(summary()?.released_at || '').toLocaleDateString()}</span>
+                                </div>
+                            </Show>
+                        </div>
+                        <div class="flex align-center gap-2">
+                            <a href={`/api/admin/event/${props.eventId}/attendees/csv`} target="_blank" class="small-btn secondary outline">
+                                <span innerHTML={CLOUD_DOWNLOAD_SVG} /> Export CSV
+                            </a>
+                            <Show when={!props.costsReleased}>
+                                <button class="small-btn primary" onClick={handleReleaseCosts}>
+                                    Release Funds
+                                </button>
+                            </Show>
+                        </div>
+                    </div>
+                </Panel>
+            </div>
+
+            <div class="finance-summary-grid">
+                <div class="liquid-container summary-card">
+                    <span class="card-icon" innerHTML={WALLET_SVG} />
+                    <div class="card-info">
+                        <span class="label">Total Contributed</span>
+                        <span class="value">£{totals().contributed.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div class="liquid-container summary-card">
+                    <span class="card-icon" innerHTML={CURRENCY_POUND_SVG} />
+                    <div class="card-info">
+                        <span class="label">Shared Costs</span>
+                        <span class="value">£{totals().shared.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div class="liquid-container summary-card">
+                    <span class="card-icon" innerHTML={GROUP_SVG} />
+                    <div class="card-info">
+                        <span class="label">Participants</span>
+                        <span class="value">{totals().participants}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2-col-resp gap-6">
+                {/* Participant Management */}
+                <Panel title="Participants" icon={GROUP_SVG} action={
+                    <div class="flex align-center gap-2">
                         <input
                             type="text"
-                            placeholder="Filter list..."
-                            class="modern-input small"
-                            style="margin-bottom: 0; width: 180px;"
+                            placeholder="Filter..."
+                            class="modern-input small mb-0 attendee-filter-input"
                             value={attendeeFilter()}
                             onInput={(e) => { setAttendeeFilter(e.currentTarget.value); setAttendeePage(1); }}
                         />
-                        <a href={`/api/admin/event/${props.eventId}/attendees/csv`} target="_blank" class="small-btn secondary outline">
-                            <span innerHTML={CLOUD_DOWNLOAD_SVG} /> CSV
-                        </a>
                         <Show when={!props.costsReleased}>
                             <button class="small-btn primary mini-btn" onClick={() => setShowAddAttendee(true)}>
                                 <span innerHTML={ADD_SVG} /> Add
                             </button>
                         </Show>
                     </div>
-                </div>
-                <div class="panel-content">
+                }>
                     <div class="glass-table-container">
                         <PaginationSlider
                             currentPage={attendeePage()}
@@ -250,131 +318,109 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                         </PaginationSlider>
                     </div>
                     <Pagination currentPage={attendeePage()} totalPages={totalAttendeePages()} onPageChange={setAttendeePage} />
-                </div>
-            </div>
+                </Panel>
 
-            {/* Transport Panel */}
-            <Show when={props.isOffsite}>
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3><span innerHTML={TRIP_SVG} /> Trips & Transport</h3>
-                        <div class="panel-actions">
+                <div class="flex-column gap-6">
+                    {/* Transport Panel */}
+                    <Show when={props.isOffsite}>
+                        <Panel title="Trips & Transport" icon={TRIP_SVG} action={
                             <Show when={!props.costsReleased}>
                                 <button class="small-btn primary mini-btn" onClick={() => setShowAddTrip(true)}>
                                     <span innerHTML={ADD_SVG} /> New Trip
                                 </button>
                             </Show>
-                        </div>
-                    </div>
-                    <div class="panel-content">
-                        <div class="finance-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
-                            <For each={trips()}>
-                                {trip => {
-                                    const tripDrivers = createMemo(() => drivers()?.filter(d => d.trip_id === trip.id) || []);
-                                    const totalSeats = createMemo(() => tripDrivers().filter(d => d.status === 'accepted').reduce((sum, d) => sum + d.seats, 0));
-                                    const totalBoats = createMemo(() => tripDrivers().filter(d => d.status === 'accepted').reduce((sum, d) => sum + d.boats, 0));
+                        }>
+                            <div class="flex-column gap-3">
+                                <For each={trips()}>
+                                    {trip => {
+                                        const tripDrivers = createMemo(() => drivers()?.filter(d => d.trip_id === trip.id) || []);
+                                        const totalSeats = createMemo(() => tripDrivers().filter(d => d.status === 'accepted').reduce((sum, d) => sum + d.seats, 0));
+                                        const totalBoats = createMemo(() => tripDrivers().filter(d => d.status === 'accepted').reduce((sum, d) => sum + d.boats, 0));
 
-                                    return (
-                                        <div class="liquid-container trip-admin-card secondary-bg">
-                                            <div class="trip-info"><strong>{trip.name}</strong><br /><small>{totalSeats()} Seats / {totalBoats()} Boats</small></div>
-                                            <div class="trip-actions">
-                                                <button class="small-btn secondary full-width" onClick={() => setManageDriversTripId(trip.id)}>{!props.costsReleased ? 'Drivers' : 'View Drivers'} ({tripDrivers().length})</button>
-                                                <Show when={!props.costsReleased}>
-                                                    <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'trip', id: trip.id })}>Exclusions</button>
-                                                </Show>
+                                        return (
+                                            <div class="liquid-container p-3 flex-between align-center secondary-bg">
+                                                <div class="trip-info">
+                                                    <div class="font-bold">{trip.name}</div>
+                                                    <div class="small-text text-muted">{totalSeats()} Seats / {totalBoats()} Boats</div>
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <button class="small-btn secondary outline mini-btn" onClick={() => setManageDriversTripId(trip.id)}>{!props.costsReleased ? 'Drivers' : 'View'} ({tripDrivers().length})</button>
+                                                    <Show when={!props.costsReleased}>
+                                                        <button class="small-btn secondary outline mini-btn" onClick={() => setExclusionsData({ type: 'trip', id: trip.id })}>Exclusions</button>
+                                                    </Show>
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                }}
-                            </For>
-                            <Show when={trips()?.length === 0}>
-                                <p class="muted-text">No trips defined.</p>
-                            </Show>
-                        </div>
-                    </div>
-                </div>
-            </Show>
+                                        );
+                                    }}
+                                </For>
+                                <Show when={trips()?.length === 0}>
+                                    <p class="muted-text text-center py-4">No trips defined.</p>
+                                </Show>
+                            </div>
+                        </Panel>
+                    </Show>
 
-            {/* Expenses Panel */}
-            <div class="panel">
-                <div class="panel-header">
-                    <h3><span innerHTML={WALLET_SVG} /> Event Expenses</h3>
-                    <div class="panel-actions">
+                    {/* Expenses Panel */}
+                    <Panel title="Event Expenses" icon={WALLET_SVG} action={
                         <Show when={!props.costsReleased}>
                             <button class="small-btn primary mini-btn" onClick={() => setShowAddExpense(true)}>
                                 <span innerHTML={ADD_SVG} /> New Expense
                             </button>
                         </Show>
-                    </div>
-                </div>
-                <div class="panel-content">
-                    <div class="finance-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
-                        <For each={expenses()}>
-                            {e => (
-                                <div class="liquid-container expense-admin-card secondary-bg">
-                                    <div class="expense-info"><strong>£{e.amount.toFixed(2)}</strong> - {e.first_name}<p class="desc small-text">{e.description}</p></div>
-                                    <Show when={!props.costsReleased}>
-                                        <div class="expense-actions">
-                                            <button class="small-btn outline full-width" onClick={() => setExclusionsData({ type: 'expense', id: e.id })}>Exclusions</button>
+                    }>
+                        <div class="flex-column gap-3">
+                            <For each={expenses()}>
+                                {e => (
+                                    <div class="liquid-container p-3 flex-between align-center secondary-bg">
+                                        <div class="expense-info">
+                                            <div class="font-bold">£{e.amount.toFixed(2)}</div>
+                                            <div class="small-text text-muted">{e.first_name}: {e.description}</div>
                                         </div>
-                                    </Show>
-                                </div>
-                            )}
-                        </For>
-                        <Show when={expenses()?.length === 0}>
-                            <p class="muted-text">No expenses reported.</p>
-                        </Show>
-                    </div>
+                                        <Show when={!props.costsReleased}>
+                                            <button class="small-btn secondary outline mini-btn" onClick={() => setExclusionsData({ type: 'expense', id: e.id })}>Exclusions</button>
+                                        </Show>
+                                    </div>
+                                )}
+                            </For>
+                            <Show when={expenses()?.length === 0}>
+                                <p class="muted-text text-center py-4">No expenses reported.</p>
+                            </Show>
+                        </div>
+                    </Panel>
                 </div>
             </div>
 
             {/* Summary Matrix */}
             <Show when={(summary()?.breakdown.length || 0) > 0}>
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3><span innerHTML={CURRENCY_POUND_SVG} /> Financial Settlement</h3>
-                    </div>
-                    <div class="panel-content">
-                        <div class="glass-table-container">
-                            <div class="table-responsive">
-                                <table class="glass-table matrix-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Member</th>
-                                            <th class="text-right">Contributed</th>
-                                            <th class="text-right">Share</th>
-                                            <th class="text-right">Net Change</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <For each={summary()?.breakdown}>
-                                            {row => (
-                                                <tr><td class="primary-text">{row.name}</td>
-                                                    <td class="amount text-right">£{(row.spent + row.mileage).toFixed(2)}</td>
-                                                    <td class="amount text-right">-£{row.shared_cost_share.toFixed(2)}</td>
-                                                    <td class="amount text-right" classList={{ 'text-success': row.net >= 0, 'text-error': row.net < 0 }}>
-                                                        {row.net >= 0 ? '+' : ''}£{row.net.toFixed(2)}
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </For>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="summary-footer-actions flex justify-end">
-                            <div class="button-group" style="gap: 1rem;">
-                                <button class="secondary outline" onClick={() => {
-                                    // Simplified CSV logic for now or port full logic
-                                    notify('Info', 'CSV export not implemented in this demo port yet.', 'info');
-                                }}>Download CSV</button>
-                                <button class="primary" disabled={props.costsReleased} onClick={handleReleaseCosts}>
-                                    {props.costsReleased ? 'Funds Released' : 'Release Funds'}
-                                </button>
-                            </div>
+                <Panel title="Financial Settlement" icon={CURRENCY_POUND_SVG}>
+                    <div class="glass-table-container">
+                        <div class="table-responsive">
+                            <table class="glass-table matrix-table">
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th class="text-right">Contributed</th>
+                                        <th class="text-right">Share</th>
+                                        <th class="text-right">Net Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <For each={summary()?.breakdown}>
+                                        {row => (
+                                            <tr><td class="primary-text">{row.name}</td>
+                                                <td class="amount text-right">£{(row.spent + row.mileage).toFixed(2)}</td>
+                                                <td class="amount text-right">-£{row.shared_cost_share.toFixed(2)}</td>
+                                                <td class="amount text-right" classList={{ 'text-success': row.net >= 0, 'text-error': row.net < 0 }}>
+                                                    {row.net >= 0 ? '+' : ''}£{row.net.toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </For>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
+                </Panel>
             </Show>
 
             {/* Modals Implementation */}
@@ -409,11 +455,12 @@ function AttendeeSearch(props: { eventId: number, onAdded: () => void }) {
     });
 
     const handleAdd = async (u: any) => {
-        if (!confirm(`Add ${u.first_name} ${u.last_name} to the event?`)) return;
+        const ok = await showConfirmModal('Add Participant', `Add <strong>${u.first_name} ${u.last_name}</strong> to the event?`);
+        if (!ok) return;
         try {
             await apiRequest('POST', `/api/admin/events/${props.eventId}/attendees`, { userId: u.id });
             props.onAdded();
-        } catch (e: any) { alert(e.message); }
+        } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
     return (
@@ -425,7 +472,7 @@ function AttendeeSearch(props: { eventId: number, onAdded: () => void }) {
                     <div class="liquid-container item-list-scroll-small">
                         <For each={results()}>
                             {u => (
-                                <div class="search-result-item" onClick={() => handleAdd(u)} style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.1); display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="search-result-item" onClick={() => handleAdd(u)}>
                                     <Avatar user={u} classes="mini" />
                                     <div>
                                         <strong>{u.first_name} {u.last_name}</strong><br />

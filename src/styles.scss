@@ -31,6 +31,7 @@
 @use "partials/components/footer" as comp_footer;
 @use "partials/components/pwa";
 @use "partials/components/otp_input";
+@use "partials/components/rich_text_editor";
 
 // --- Widgets ---
 @use "partials/widgets/upload";

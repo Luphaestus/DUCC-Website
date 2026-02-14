@@ -51,7 +51,7 @@ interface Config {
 }
 
 const config: Config = {
-    domain: process.env.DOMAIN_NAME || process.env.DOMAIN || 'localhost',
+    domain: process.env.DOMAIN_NAME || process.env.DOMAIN || (process.env.NODE_ENV === 'dev' ? `localhost:${process.env.PORT || '3000'}` : 'localhost'),
     paths: {
         root: PROJECT_ROOT,
         data: process.env.DATABASE_PATH ? path.dirname(process.env.DATABASE_PATH) : path.join(PROJECT_ROOT, './data'),

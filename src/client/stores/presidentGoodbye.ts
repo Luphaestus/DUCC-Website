@@ -1,11 +1,13 @@
 import { createSignal } from "solid-js";
 
 const [showGoodbye, setShowGoodbye] = createSignal(false);
-const [outgoingPresident, setOutgoingPresident] = createSignal<any>(null);
+const [outgoingExec, setOutgoingExec] = createSignal<any>(null);
+const [goodbyeRole, setGoodbyeRole] = createSignal<string>("");
 
-export function triggerPresidentGoodbye(user: any) {
-    setOutgoingPresident(user);
+export function triggerExecGoodbye(user: any, role: string) {
+    setOutgoingExec(user);
+    setGoodbyeRole(role);
     setShowGoodbye(true);
 }
 
-export { showGoodbye, outgoingPresident };
+export { showGoodbye, outgoingExec, goodbyeRole, setShowGoodbye };

@@ -1,10 +1,10 @@
 @use "../mixins" as *;
 
 /* Panel Component */
-.panel-widget {
+.panel-container {
+    --liquid-border-radius: 24px;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
     position: relative;
     color: var(--pico-color);
     width: 100%;
@@ -12,11 +12,13 @@
 
     .box-header {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         min-height: 2.5rem;
         margin-bottom: 1rem !important;
         width: 100%;
+        position: relative;
+        padding: 0 1.5rem;
 
         h3 {
             margin: 0;
@@ -26,7 +28,13 @@
             gap: 0.5rem;
             line-height: 1;
             color: var(--pico-color);
-            flex: 1;
+            text-align: center;
+            justify-content: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60%;
+            z-index: 5;
 
             svg {
                 width: 1.25rem;
@@ -36,28 +44,187 @@
             }
         }
 
-        button {
-            margin: 0;
-            height: auto;
-            padding: 0.4rem 0.75rem;
-            font-size: 0.85rem;
-
-            svg {
-                margin-right: 0.5rem;
-            }
-        }
-
-        .panel-actions {
+        .panel-left-actions, .panel-actions {
             display: flex;
             gap: 0.75rem;
             align-items: center;
             flex-wrap: wrap;
+            z-index: 10;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
 
             button {
                 margin: 0;
             }
         }
+
+        .panel-left-actions {
+            left: 1.5rem;
+        }
+
+        .panel-actions {
+            right: 1.5rem;
+        }
+
+        @media (max-width: 800px) {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            height: auto;
+            padding: 0.5rem 1rem;
+            
+            h3 {
+                max-width: 100%;
+                white-space: normal;
+                position: static;
+                transform: none;
+            }
+
+            .panel-left-actions, .panel-actions {
+                width: 100%;
+                justify-content: center;
+                position: static;
+                transform: none;
+            }
+        }
     }
+}
+
+/* Button Reveal Animation */
+.btn-reveal-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    width: auto !important;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px !important;
+    border-radius: 22px !important;
+    padding: 0 !important;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    white-space: nowrap;
+    justify-content: center;
+
+    .btn-label {
+        opacity: 0;
+        width: 0;
+        transform: translateX(-10px);
+        transition: none !important;
+        pointer-events: none;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    &:hover {
+        max-width: 250px;
+        padding: 0 1.25rem !important;
+        border-radius: 22px !important;
+        justify-content: flex-start;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+        .btn-label {
+            opacity: 1;
+            width: auto;
+            transform: translateX(0);
+            margin-left: 0.75rem;
+            transition: opacity 0.2s ease 0.1s, transform 0.2s ease 0.1s;
+        }
+    }
+
+    svg, span:has(svg) {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+    }
+}
+
+.floating-action-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1rem;
+    pointer-events: none;
+
+    & > * {
+        pointer-events: auto;
+    }
+}
+
+.floating-save-btn {
+    width: auto !important;
+    min-width: 56px;
+    max-width: 56px;
+    height: 56px !important;
+    min-height: 0 !important;
+    border-radius: 28px !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 25px rgba(var(--pico-primary-rgb), 0.4);
+    background: var(--pico-primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+
+    .btn-label {
+        opacity: 0;
+        width: 0;
+        white-space: nowrap;
+        transition: none !important;
+        font-weight: 800;
+        font-size: 0.95rem;
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        max-width: 200px;
+        border-radius: 28px !important;
+        padding: 0 1.5rem !important;
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(var(--pico-primary-rgb), 0.5);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+        .btn-label {
+            opacity: 1;
+            width: auto;
+            margin-left: 0.75rem;
+            transition: opacity 0.2s ease 0.1s;
+        }
+    }
+
+    animation: float-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+               pulse-attention 2s infinite 1s;
+}
+
+@keyframes float-in {
+    from {
+        transform: translateY(100px) scale(0);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-attention {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); box-shadow: 0 12px 35px rgba(var(--pico-primary-rgb), 0.6); }
+    100% { transform: scale(1); }
 }
 
 // Support for older/manual panel classes
@@ -67,15 +234,29 @@
 
     .panel-header {
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
         margin-bottom: 1.5rem;
+        position: relative;
+        width: 100%;
 
         h3 {
             margin: 0;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            text-align: center;
+            justify-content: center;
+            max-width: 60%;
+            z-index: 5;
+        }
+
+        .panel-actions {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
         }
     }
 

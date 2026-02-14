@@ -323,7 +323,7 @@ export default class UserDB {
                 ['President']
             );
             if (currentPresident) {
-                await tx.run('UPDATE users SET is_permanent_member = 1 WHERE id = ?', [currentPresident.id]);
+                await tx.run('UPDATE users SET is_permanent_member = 1, goodbye_role = ? WHERE id = ?', ['President', currentPresident.id]);
             }
 
             // Archive current committee before wiping roles

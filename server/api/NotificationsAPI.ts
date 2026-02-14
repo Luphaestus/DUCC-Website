@@ -9,7 +9,7 @@ import { NotificationType } from '../types/notifications.js';
 // VAPID Keys setup
 const vapidKeys = {
     publicKey: process.env.VAPID_PUBLIC_KEY || 'BC71D4MNbXqiQxXzSOxAn7w4mWDrhGCFGBGpsG6pmdSuZgXmJ2WZfU38WK7I8bYQi_O1D_mSIY_WX5Lf1_9EVQ4',
-    privateKey: process.env.VAPID_PRIVATE_KEY || 'pyzA_8SOxDDJx0dQYdaOES9H4OqeHhfSRnvrK0ix5_I' 
+    privateKey: process.env.VAPID_PRIVATE_KEY || 'pyzA_8SOxDDJx0dQYdaOES9H4OqeHhfSRnvrK0ix5_I'
 };
 
 // If placeholders are detected, generate fresh ones and log them for the user to save
@@ -53,7 +53,7 @@ export default class NotificationsAPI {
             try {
                 // Check if exists
                 const existing = await this.db.all(
-                    'SELECT id FROM push_subscriptions WHERE user_id = ? AND endpoint = ?', 
+                    'SELECT id FROM push_subscriptions WHERE user_id = ? AND endpoint = ?',
                     [userId, subscription.endpoint]
                 );
 
@@ -63,14 +63,14 @@ export default class NotificationsAPI {
                         [userId, subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth]
                     );
                 }
-                
+
                 // Send welcome notification
                 const payload = JSON.stringify({
                     title: 'DUCC Notifications',
                     body: 'You are now subscribed to updates!',
                     url: '/profile/settings'
                 });
-                
+
                 await (webpush as any).sendNotification(subscription, payload).catch((err: any) => {
                     Logger.error('Failed to send welcome push', err);
                 });
@@ -92,7 +92,7 @@ export default class NotificationsAPI {
 
             try {
                 await this.db.run(
-                    'DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?', 
+                    'DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?',
                     [userId, endpoint]
                 );
                 return { success: true };
@@ -124,8 +124,8 @@ export default class NotificationsAPI {
                      SET email_payments = ?, push_payments = ?, email_events = ?, push_events = ?, email_news = ?, push_news = ?, email_event_reminders = ?, push_event_reminders = ? 
                      WHERE user_id = ?`,
                     [
-                        email_payments ? 1 : 0, push_payments ? 1 : 0, 
-                        email_events ? 1 : 0, push_events ? 1 : 0, 
+                        email_payments ? 1 : 0, push_payments ? 1 : 0,
+                        email_events ? 1 : 0, push_events ? 1 : 0,
                         email_news ? 1 : 0, push_news ? 1 : 0,
                         email_event_reminders ? 1 : 0, push_event_reminders ? 1 : 0,
                         userId
@@ -193,7 +193,7 @@ export default class NotificationsAPI {
             const subs = await db.all('SELECT * FROM push_subscriptions WHERE user_id = ?', [userId]);
             if (subs.length === 0) return;
 
-            const logo = new EmailManager()._globals?.get('ClubLogo')?.data || '/images/icons/kayaking.svg';
+            const logo = (EmailManager.getInstance() as any)._globals?.get('ClubLogo')?.data || '/images/icons/kayaking.svg';
             const payload = JSON.stringify({ title, body, url, icon: logo });
 
             const promises = subs.map(async (sub: any) => {
@@ -201,16 +201,17 @@ export default class NotificationsAPI {
                     endpoint: sub.endpoint,
                     keys: { p256dh: sub.p256dh, auth: sub.auth }
                 };
-                                    try {
-                                        await (webpush as any).sendNotification(pushConfig, payload);
-                                    } catch (error: any) {
-                                        if (error.statusCode === 410 || error.statusCode === 404 || error.statusCode === 403) {
-                                            // Subscription expired/gone/invalid, remove it
-                                            await db.run('DELETE FROM push_subscriptions WHERE id = ?', [sub.id]);
-                                        } else {
-                                            Logger.error(`Push error for user ${userId}`, error);
-                                        }
-                                    }            });
+                try {
+                    await (webpush as any).sendNotification(pushConfig, payload);
+                } catch (error: any) {
+                    if (error.statusCode === 410 || error.statusCode === 404 || error.statusCode === 403) {
+                        // Subscription expired/gone/invalid, remove it
+                        await db.run('DELETE FROM push_subscriptions WHERE id = ?', [sub.id]);
+                    } else {
+                        Logger.error(`Push error for user ${userId}`, error);
+                    }
+                }
+            });
 
             await Promise.all(promises);
         } catch (e) {

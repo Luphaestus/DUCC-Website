@@ -24,6 +24,7 @@ interface ExecMemberData {
     profilePictureInitialsOverride?: string | null;
     instagramLink?: string | null;
     linkedinLink?: string | null;
+    manifestoFileId?: number | null;
 }
 
 export default class ExecDB extends BaseDB {
@@ -39,20 +40,26 @@ export default class ExecDB extends BaseDB {
                        COALESCE(ec.first_name_override, u.first_name) as first_name, 
                        COALESCE(ec.last_name_override, u.last_name) as last_name, 
                        COALESCE(ec.email_override, u.email) as email,
+                       u.email as username,
                        COALESCE(ec.profile_picture_color_override, u.profile_picture_color) as profile_picture_color, 
                        COALESCE(ec.profile_picture_font_override, u.profile_picture_font) as profile_picture_font, 
                        COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials) as profile_picture_initials,
                        ec.instagram_link,
                        ec.linkedin_link,
                        CASE 
-                           WHEN f_override.id IS NOT NULL THEN CONCAT('/api/files/', f_override.id, '/download?view=true')
-                           WHEN f_user.id IS NOT NULL THEN CONCAT('/api/files/', f_user.id, '/download?view=true')
+                           WHEN f_override.id IS NOT NULL THEN CONCAT('/api/files/', f_override.id, '/download', CHAR(63), 'view=true')
+                           WHEN f_user.id IS NOT NULL THEN CONCAT('/api/files/', f_user.id, '/download', CHAR(63), 'view=true')
                            ELSE NULL
-                       END as profile_picture_path
+                       END as profile_picture_path,
+                       CASE 
+                           WHEN f_manifesto.id IS NOT NULL THEN CONCAT('/api/files/', f_manifesto.id, '/download')
+                           ELSE NULL
+                       END as manifesto_path
                 FROM exec_committee ec
                 LEFT JOIN users u ON ec.user_id = u.id
                 LEFT JOIN files f_override ON ec.profile_picture_override_id = f_override.id
                 LEFT JOIN files f_user ON u.profile_picture_id = f_user.id
+                LEFT JOIN files f_manifesto ON ec.manifesto_file_id = f_manifesto.id
                 WHERE ec.is_current = 1 ${hiddenFilter}
                 ORDER BY ec.display_order ASC
             `);
@@ -88,6 +95,7 @@ export default class ExecDB extends BaseDB {
                                         exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
                                         exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
                                         exec_committee.email_override = COALESCE(exec_committee.email_override, u.email),
+                                        exec_committee.manifesto_file_id = COALESCE(exec_committee.manifesto_file_id, NULL),
                                         exec_committee.instagram_link = COALESCE(exec_committee.instagram_link, null),
                                         exec_committee.linkedin_link = COALESCE(exec_committee.linkedin_link, null)
                                     WHERE exec_committee.user_id = ? AND exec_committee.is_current = 1                `, [userId]);
@@ -111,6 +119,7 @@ export default class ExecDB extends BaseDB {
                      exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
                      exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
                      exec_committee.email_override = COALESCE(exec_committee.email_override, u.email),
+                     exec_committee.manifesto_file_id = COALESCE(exec_committee.manifesto_file_id, NULL),
                      exec_committee.instagram_link = COALESCE(exec_committee.instagram_link, null),
                      exec_committee.linkedin_link = COALESCE(exec_committee.linkedin_link, null)
                  WHERE exec_committee.user_id = ? AND exec_committee.is_current = 1 AND exec_committee.role_name NOT IN (${placeholders})`,
@@ -159,19 +168,25 @@ export default class ExecDB extends BaseDB {
                        COALESCE(ec.first_name_override, u.first_name) as first_name, 
                        COALESCE(ec.last_name_override, u.last_name) as last_name, 
                        COALESCE(ec.email_override, u.email) as email,
+                       u.email as username,
                        COALESCE(ec.profile_picture_color_override, u.profile_picture_color) as profile_picture_color, 
                        COALESCE(ec.profile_picture_font_override, u.profile_picture_font) as profile_picture_font, 
                        COALESCE(ec.profile_picture_initials_override, u.profile_picture_initials) as profile_picture_initials,
                        ec.instagram_link,
                        ec.linkedin_link,
                        CASE 
-                           WHEN f_override.id IS NOT NULL THEN CONCAT('/api/files/', f_override.id, '/download?view=true')
+                           WHEN f_override.id IS NOT NULL THEN CONCAT('/api/files/', f_override.id, '/download', CHAR(63), 'view=true')
                            ELSE NULL
-                       END as profile_picture_path
+                       END as profile_picture_path,
+                       CASE 
+                           WHEN f_manifesto.id IS NOT NULL THEN CONCAT('/api/files/', f_manifesto.id, '/download')
+                           ELSE NULL
+                       END as manifesto_path
                 FROM exec_committee ec
                 LEFT JOIN users u ON ec.user_id = u.id
                 LEFT JOIN files f_override ON ec.profile_picture_override_id = f_override.id
                 LEFT JOIN files f_user ON u.profile_picture_id = f_user.id
+                LEFT JOIN files f_manifesto ON ec.manifesto_file_id = f_manifesto.id
                 WHERE ec.is_current = 0
                 ORDER BY ec.term_end DESC, ec.display_order ASC
             `);
@@ -182,15 +197,15 @@ export default class ExecDB extends BaseDB {
     /**
      * Add a member to the executive committee.
      */
-    static async addExecMember(db: DatabaseWrapper, { userId, roleName, displayOrder, termStart, termEnd, isCurrent = 1, firstNameOverride, lastNameOverride, emailOverride, profilePictureOverrideId, profilePictureColorOverride, profilePictureFontOverride, profilePictureInitialsOverride, instagramLink, linkedinLink }: ExecMemberData): Promise<statusObject> {
+    static async addExecMember(db: DatabaseWrapper, { userId, roleName, displayOrder, termStart, termEnd, isCurrent = 1, firstNameOverride, lastNameOverride, emailOverride, profilePictureOverrideId, profilePictureColorOverride, profilePictureFontOverride, profilePictureInitialsOverride, instagramLink, linkedinLink, manifestoFileId }: ExecMemberData): Promise<statusObject> {
         return this.wrap(async () => {
             const result = await db.run(
                 `INSERT INTO exec_committee (
                     user_id, role_name, display_order, term_start, term_end, is_current, 
                     first_name_override, last_name_override, email_override, profile_picture_override_id,
                     profile_picture_color_override, profile_picture_font_override, profile_picture_initials_override,
-                    instagram_link, linkedin_link
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    manifesto_file_id, instagram_link, linkedin_link
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     userId || null, 
                     roleName, 
@@ -205,6 +220,7 @@ export default class ExecDB extends BaseDB {
                     profilePictureColorOverride || null,
                     profilePictureFontOverride || null,
                     profilePictureInitialsOverride || null,
+                    manifestoFileId || null,
                     instagramLink || null,
                     linkedinLink || null
                 ]
@@ -262,6 +278,7 @@ export default class ExecDB extends BaseDB {
                     exec_committee.first_name_override = COALESCE(exec_committee.first_name_override, u.first_name),
                     exec_committee.last_name_override = COALESCE(exec_committee.last_name_override, u.last_name),
                     exec_committee.email_override = COALESCE(exec_committee.email_override, u.email),
+                    exec_committee.manifesto_file_id = COALESCE(exec_committee.manifesto_file_id, NULL),
                     exec_committee.instagram_link = COALESCE(exec_committee.instagram_link, null),
                     exec_committee.linkedin_link = COALESCE(exec_committee.linkedin_link, null)
                 WHERE exec_committee.is_current = 1

@@ -2,6 +2,7 @@
 import { createSignal, createResource, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
+import { showConfirmModal } from "@/utils/modal";
 import Panel from "@/components/Panel";
 import { ADD_SVG, EDIT_SVG, DELETE_SVG, CLOSE_SVG, SAVE_SVG } from '@/utils/icons';
 import PageTitle from "@/components/PageTitle";
@@ -85,7 +86,8 @@ export default function KitPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Delete this item?')) return;
+        const ok = await showConfirmModal('Delete Kit Item', 'Are you sure you want to delete this kit item? All variants and history will be lost.');
+        if (!ok) return;
         try {
             await apiRequest('DELETE', `/api/kit/${id}`);
             notify('Success', 'Item deleted', 'success');

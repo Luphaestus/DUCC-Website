@@ -17,15 +17,32 @@ import { apiRequest } from "./utils/api";
 
 import { useNotifications } from "./stores/notifications";
 
+import { triggerExecGoodbye } from "./stores/presidentGoodbye";
+import { useAuth } from "./stores/auth";
+
 export default function App(props: ParentProps) {
   const navigate = useNavigate();
   window.solidNavigate = navigate;
   const { notify } = useNotifications();
+  const { user } = useAuth();
   const [isOffline, setIsOffline] = createSignal(!isServerConnected);
+
+  // Handle dynamic import errors (common after redeploy)
+  window.addEventListener('error', (e) => {
+    if (e.message?.includes('error loading dynamically imported module')) {
+        console.warn('Hashed module not found, refreshing page...');
+        window.location.reload();
+    }
+  }, true);
 
   onMount(() => {
     initPWA();
     initUpdates();
+
+    // Check for goodbye role
+    if (user() && user()?.goodbye_role) {
+        triggerExecGoodbye(user(), user()!.goodbye_role);
+    }
     const cleanup = NoInternetEvent.subscribe(() => {
         setIsOffline(!isServerConnected);
     });

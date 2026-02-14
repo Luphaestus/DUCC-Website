@@ -26,15 +26,14 @@ describe('api/ElectionAPI', () => {
         await world.createPermission('election.manage');
         await world.createPermission('is_member'); // For user voting/nomination
         await world.createPermission('exec.publish'); // For role transfer side effects
+        await world.createPermission('file.write'); // For manifesto upload
 
-        presidentRoleId = await world.createRole('President', ['election.manage', 'exec.publish']);
+        presidentRoleId = await world.createRole('President', ['election.manage', 'exec.publish', 'file.write']);
         normalRoleId = await world.createRole('Treasurer', ['exec.publish']);
+        const memberRoleId = await world.createRole('Member', ['is_member', 'file.write']);
 
         adminId = await world.createUser('admin', {}, ['President']);
         memberId = await world.createUser('member', {}, ['Member']);
-        const memberRoleId = world.data.roles['Member'];
-        const isMemberPermId = world.data.perms['is_member'];
-        await RolesDB.addRolePermission(world.db, { role_id: memberRoleId, permission_id: isMemberPermId });
         await world.createUser('non_member', {});
 
         new ElectionAPI(world.app, world.db).registerRoutes();
@@ -175,6 +174,9 @@ describe('api/ElectionAPI', () => {
             await ElectionDB.approveNomination(world.db, nominationId, adminId);
             await ElectionDB.recordVote(world.db, { election_role_id: electionRoleId, nomination_id: nominationId, voter_user_id: memberId });
             
+            // Calculate results first!
+            await ElectionDB.calculateResults(world.db, electionId);
+
             // Set phase to results_revealed, as transfer can only happen then
             await ElectionDB.updateElection(world.db, electionId, { phase: 'results_revealed' });
 

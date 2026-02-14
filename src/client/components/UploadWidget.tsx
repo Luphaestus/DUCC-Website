@@ -1,4 +1,4 @@
-import { createSignal, createResource, For, Show, onMount } from "solid-js";
+import { createSignal, createResource, For, Show, createEffect } from "solid-js";
 import { uploadFile, apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { UPLOAD_SVG, CLOSE_SVG, IMAGE_SVG, INFO_SVG, SEARCH_SVG, FILTER_LIST_SVG } from "@/utils/icons";
@@ -8,7 +8,9 @@ interface UploadWidgetProps {
     selectMode?: 'single' | 'multiple';
     autoUpload?: boolean;
     accept?: string;
+    value?: string | null;
     defaultPreview?: string | null;
+    isDefault?: boolean;
     enableLibrary?: boolean;
     enableUrl?: boolean;
     enableRemove?: boolean;
@@ -21,7 +23,7 @@ interface UploadWidgetProps {
 export default function UploadWidget(props: UploadWidgetProps) {
     const { notify } = useNotifications();
     const [files, setFiles] = createSignal<File[]>([]);
-    const [previewUrl, setPreviewUrl] = createSignal<string | null>(props.defaultPreview || null);
+    const [internalPreviewUrl, setInternalPreviewUrl] = createSignal<string | null>(null);
     const [isUploading, setIsUploading] = createSignal(false);
     const [isDragOver, setIsDragOver] = createSignal(false);
     const [progress, setProgress] = createSignal(0);
@@ -30,6 +32,15 @@ export default function UploadWidget(props: UploadWidgetProps) {
     const [urlValue, setUrlValue] = createSignal('');
     const [librarySearch, setLibrarySearch] = createSignal('');
     const [libraryCategory, setLibraryCategory] = createSignal('');
+
+    const previewUrl = () => props.value || internalPreviewUrl() || props.defaultPreview;
+
+    createEffect(() => {
+        // Clear internal preview if props.value is set or if we are in default mode
+        if (props.value || props.isDefault) {
+            setInternalPreviewUrl(null);
+        }
+    });
 
     const [categories] = createResource(async () => {
         const res = await apiRequest('GET', '/api/file-categories');
@@ -55,12 +66,12 @@ export default function UploadWidget(props: UploadWidgetProps) {
     const handleFiles = (fileList: FileList | null) => {
         if (!fileList || isUploading()) return;
         const newFiles = Array.from(fileList);
-        
+
         if (props.selectMode === 'single') {
             const file = newFiles[0];
             setFiles([file]);
             const reader = new FileReader();
-            reader.onload = (e) => setPreviewUrl(e.target?.result as string);
+            reader.onload = (e) => setInternalPreviewUrl(e.target?.result as string);
             reader.readAsDataURL(file);
         } else {
             setFiles([...files(), ...newFiles]);
@@ -90,7 +101,7 @@ export default function UploadWidget(props: UploadWidgetProps) {
             }
             const result = props.selectMode === 'single' ? uploadedIds[0] : uploadedIds;
             props.onUploadComplete?.(result);
-            
+
             if (props.selectMode === 'single' && uploadedIds.length > 0) {
                 const id = uploadedIds[0];
                 const url = `/api/files/${id}/download?view=true`;
@@ -112,12 +123,12 @@ export default function UploadWidget(props: UploadWidgetProps) {
             if (!ok) return;
         }
         setFiles([]);
-        setPreviewUrl(null);
+        setInternalPreviewUrl(null);
     };
 
     const selectFromLibrary = (file: any) => {
         const url = `/api/files/${file.id}/download?view=true`;
-        setPreviewUrl(url);
+        setInternalPreviewUrl(url);
         props.onImageSelect?.({ url, id: file.id });
         setShowLibrary(false);
     };
@@ -140,16 +151,20 @@ export default function UploadWidget(props: UploadWidgetProps) {
     };
 
     return (
-        <div 
-            class="upload-widget" 
+        <div
+            class="upload-widget"
             classList={{ 'drag-over': isDragOver() }}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
         >
             <Show when={previewUrl() && props.selectMode === 'single'}>
-                <div class="image-preview" style={{ "background-image": `url(${previewUrl()})` }}>
-                    <Show when={props.enableRemove !== false}>
+                <div
+                    class="image-preview"
+                    classList={{ 'default-image-mode': props.isDefault }}
+                    style={{ "background-image": `url(${previewUrl()})` }}
+                >
+                    <Show when={props.enableRemove !== false && !props.isDefault}>
                         <button class="remove-icon-btn" onClick={handleRemove} innerHTML={CLOSE_SVG} title="Remove Image" />
                     </Show>
                 </div>
@@ -177,14 +192,14 @@ export default function UploadWidget(props: UploadWidgetProps) {
 
             <div class="actions-row">
                 <label class="upload-btn-label">
-                    <span innerHTML={UPLOAD_SVG} /> 
+                    <span innerHTML={UPLOAD_SVG} />
                     <span>{props.selectMode === 'single' ? 'Select File' : 'Select Files'}</span>
-                    <input 
-                        type="file" 
-                        multiple={props.selectMode === 'multiple'} 
-                        accept={props.accept || 'image/*'} 
-                        onChange={e => handleFiles(e.currentTarget.files)} 
-                        style="display:none" 
+                    <input
+                        type="file"
+                        multiple={props.selectMode === 'multiple'}
+                        accept={props.accept || 'image/*'}
+                        onChange={e => handleFiles(e.currentTarget.files)}
+                        style="display:none"
                     />
                 </label>
 
@@ -204,14 +219,14 @@ export default function UploadWidget(props: UploadWidgetProps) {
             <Show when={showUrlInput()}>
                 <div class="url-input-container">
                     <div class="url-input-group">
-                        <input 
-                            type="text" 
-                            value={urlValue()} 
-                            onInput={e => setUrlValue(e.currentTarget.value)} 
-                            placeholder="https://..." 
+                        <input
+                            type="text"
+                            value={urlValue()}
+                            onInput={e => setUrlValue(e.currentTarget.value)}
+                            placeholder="https://..."
                             autofocus
                         />
-                        <button class="small-btn" onClick={() => { setPreviewUrl(urlValue()); props.onImageSelect?.({ url: urlValue(), id: null }); setShowUrlInput(false); }}>Apply</button>
+                        <button class="small-btn" onClick={() => { setInternalPreviewUrl(urlValue()); props.onImageSelect?.({ url: urlValue(), id: null }); setShowUrlInput(false); }}>Apply</button>
                     </div>
                 </div>
             </Show>
@@ -221,9 +236,9 @@ export default function UploadWidget(props: UploadWidgetProps) {
                     <div class="library-controls">
                         <div class="glass-input-group liquid-container search-box">
                             <span class="icon" innerHTML={SEARCH_SVG} />
-                            <input 
-                                type="text" 
-                                placeholder="Search images..." 
+                            <input
+                                type="text"
+                                placeholder="Search images..."
                                 value={librarySearch()}
                                 onInput={e => setLibrarySearch(e.currentTarget.value)}
                             />

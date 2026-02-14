@@ -3,11 +3,11 @@ import { createSignal, createResource, For, Show } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
+import { showConfirmModal } from "@/utils/modal";
 import {
-    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG
+    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG, SHIELD_SVG
 } from '@/utils/icons';
 import { debounce } from "@/utils/utils";
-import PageTitle from "@/components/PageTitle";
 
 interface Role {
     name: string;
@@ -20,6 +20,8 @@ interface PermissionDef {
     slug: string;
     key?: string;
 }
+
+import { TabNav } from "@/widgets/TabNav";
 
 export default function RoleDetailPage() {
     const params = useParams();
@@ -36,6 +38,8 @@ export default function RoleDetailPage() {
     const [allPermissions] = createResource(async () => {
         return await apiRequest('GET', '/api/admin/roles/permissions') as PermissionDef[];
     });
+
+    const [isDirty, setIsDirty] = createSignal(false);
 
     const handleSave = async (e?: Event) => {
         e?.preventDefault();
@@ -57,6 +61,7 @@ export default function RoleDetailPage() {
                 await apiRequest('PUT', `/api/admin/roles/${id()}`, payload);
                 notify('Success', 'Role updated', 'success');
             }
+            setIsDirty(false);
         } catch (err: any) {
             notify('Error', err.message || 'Save failed', 'error');
         }
@@ -68,6 +73,7 @@ export default function RoleDetailPage() {
 
     const updateField = (key: keyof Role, value: any) => {
         setRole({ ...role()!, [key]: value });
+        setIsDirty(true);
         debouncedAutoSave();
     };
 
@@ -80,75 +86,92 @@ export default function RoleDetailPage() {
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this role? This might affect many users.')) return;
+        const ok = await showConfirmModal('Delete Role', 'Are you sure you want to delete this role? This might affect many users.');
+        if (!ok) return;
         try {
-            await apiRequest('DELETE', `/api/admin/roles/${id()}`);
+            await apiRequest('DELETE', `/api/admin/roles/${params.id}`);
             notify('Success', 'Role deleted', 'success');
             navigate('/admin/roles');
-        } catch (err: any) {
-            notify('Error', err.message, 'error');
-        }
+        } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
     return (
-        <div class="glass-layout">
-            <button class="small-btn secondary outline" onClick={() => navigate('/admin/roles')}>
-                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back
-            </button>
-            <PageTitle text={isNew() ? 'Create New Role' : 'Edit Role'} centered={true} />
-            <div class="panel">
-                <div class="panel-header">
-                    <h3 style="margin: 0;">Details</h3>
-                    <div class="panel-actions">
-                        <Show when={!isNew()}>
-                            <button class="small-btn delete outline" onClick={handleDelete} title="Delete">
-                                <span innerHTML={DELETE_SVG} /> Delete
-                            </button>
-                        </Show>
+        <div class="dashboard-container">
+            <aside class="dashboard-sidebar">
+                <TabNav class="vertical-sidebar">
+                    <button class="nav-item" onClick={() => navigate('/admin/roles')}>
+                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Roles
+                    </button>
+                    <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
+                    
+                    <button class="nav-item active">
+                        <span innerHTML={SHIELD_SVG} /> Role Details
+                    </button>
+
+                    <Show when={!isNew()}>
+                        <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
+                        <button class="nav-item delete" onClick={handleDelete}>
+                            <span innerHTML={DELETE_SVG} /> Delete Role
+                        </button>
+                    </Show>
+                </TabNav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="glass-layout">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 style="margin: 0;">Configuration</h3>
+                        </div>
+                        <div class="panel-content">
+                            <form class="modern-form" onSubmit={handleSave}>
+                                <Show when={role()} fallback={<p>Loading...</p>}>
+                                    <div class="grid-2-col">
+                                        <label class="form-label-top">Role Name
+                                            <input type="text" value={role()!.name} onInput={e => updateField('name', e.currentTarget.value)} required class="full-width-input" placeholder="e.g. Moderator" />
+                                        </label>
+                                        <label class="form-label-top">Description
+                                            <input type="text" value={role()!.description || ''} onInput={e => updateField('description', e.currentTarget.value)} class="full-width-input" placeholder="Role purpose" />
+                                        </label>
+                                        <label class="form-label-top">Exec Ranking
+                                            <input type="number" value={role()!.exec_ranking || 4} onInput={e => updateField('exec_ranking', parseInt(e.currentTarget.value) || 4)} class="full-width-input" min="1" max="10" />
+                                            <small>1 = Top (President), 2 = Important (VP), 4 = Standard</small>
+                                        </label>
+                                    </div>
+
+                                    <h3>Permissions</h3>
+                                    <div class="tag-cloud">
+                                        <For each={allPermissions()}>
+                                            {p => (
+                                                <label class="checkbox-label">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={role()?.permissions.includes(p.slug)}
+                                                        onChange={() => togglePermission(p.slug)}
+                                                    /> {p.key || p.slug}
+                                                </label>
+                                            )}
+                                        </For>
+                                    </div>
+
+                                    <Show when={isDirty() || isNew()}>
+                                        <div class="floating-action-container">
+                                            <button 
+                                                type="submit" 
+                                                class="floating-save-btn prominent-btn"
+                                                title={isNew() ? 'Create Role' : 'Save Changes'}
+                                            >
+                                                <span innerHTML={SAVE_SVG} />
+                                                <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
+                                            </button>
+                                        </div>
+                                    </Show>
+                                </Show>
+                            </form>
+                        </div>
                     </div>
                 </div>
-                <div class="panel-content">
-                    <form class="modern-form" onSubmit={handleSave}>
-                        <Show when={role()} fallback={<p>Loading...</p>}>
-                            <div class="grid-2-col">
-                                <label class="form-label-top">Role Name
-                                    <input type="text" value={role()!.name} onInput={e => updateField('name', e.currentTarget.value)} required class="full-width-input" placeholder="e.g. Moderator" />
-                                </label>
-                                <label class="form-label-top">Description
-                                    <input type="text" value={role()!.description || ''} onInput={e => updateField('description', e.currentTarget.value)} class="full-width-input" placeholder="Role purpose" />
-                                </label>
-                                <label class="form-label-top">Exec Ranking
-                                    <input type="number" value={role()!.exec_ranking || 4} onInput={e => updateField('exec_ranking', parseInt(e.currentTarget.value) || 4)} class="full-width-input" min="1" max="10" />
-                                    <small>1 = Top (President), 2 = Important (VP), 4 = Standard</small>
-                                </label>
-                            </div>
-
-                            <h3>Permissions</h3>
-                            <div class="tag-cloud">
-                                <For each={allPermissions()}>
-                                    {p => (
-                                        <label class="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={role()?.permissions.includes(p.slug)}
-                                                onChange={() => togglePermission(p.slug)}
-                                            /> {p.key || p.slug}
-                                        </label>
-                                    )}
-                                </For>
-                            </div>
-
-                            <Show when={isNew()}>
-                                <div class="form-actions-footer">
-                                    <button type="submit" class="primary-btn wide-btn">
-                                        <span innerHTML={SAVE_SVG} /> Create
-                                    </button>
-                                </div>
-                            </Show>
-                        </Show>
-                    </form>
-                </div>
-            </div>
+            </main>
         </div>
     );
 }

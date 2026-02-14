@@ -324,114 +324,60 @@ export default function EventDetailPage() {
     };
 
     return (
-
         <Portal>
-
             <div id="event-view" class="view c-modal-overlay visible" onClick={handleBackdropClick}>
-
                 <div class="c-modal-content modal-lg">
-
                     <button class="c-modal-close-btn" onClick={() => navigate(-1)} innerHTML={CLOSE_SVG} />
-
                     <Show when={eventData()} fallback={<div id="event-detail" class="c-modal-body"><p aria-busy="true">Loading event...</p></div>}>
-
                         {(event) => (
-
                             <div id="event-detail">
-
                                 <div class="event-modal-header event-image-header" style={{ "--event-image-url": `url('${event().image_url || '/api/files/1/download?view=true'}')` }}>
-
                                     <div class="header-content">
-
                                         <div class="event-tags">
-
                                             <For each={event().tags}>
-
                                                 {(tag) => <Tag name={tag.name} color={tag.color} dimmed={true} />}
-
                                             </For>
-
                                         </div>
-
                                         <h2 class="event-title">{event().title}</h2>
-
                                         <p class="event-location"><span innerHTML={LOCATION_ON_SVG} /> {event().location || 'Location TBD'}</p>
-
                                     </div>
-
                                 </div>
-
-
-
                                 <div class="event-modal-body">
-
                                     <div class="event-info-boxes">
-
                                         <div class="info-box">
-
                                             <span class="box-title"><span innerHTML={CALENDAR_MONTH_SVG} /> DATE</span>
-
                                             <span class="box-value">{new Date(event().start).toLocaleDateString()}</span>
-
                                         </div>
-
                                         <div class="info-box">
-
                                             <span class="box-title"><span innerHTML={SCHEDULE_SVG} /> DURATION</span>
-
                                             <span class="box-value">
-
                                                 {(() => {
-
                                                     const diff = new Date(event().end).getTime() - new Date(event().start).getTime();
-
                                                     const hours = diff / (1000 * 60 * 60);
-
                                                     return hours % 1 === 0 ? hours.toFixed(0) : hours.toFixed(1);
-
                                                 })()} hrs
-
                                             </span>
-
                                         </div>
-
                                         <div class="info-box">
-
                                             <span class="box-title"><span innerHTML={CURRENCY_POUND_SVG} /> PRICE</span>
-
                                             <span class="box-value">{event().upfront_cost > 0 ? `£${event().upfront_cost.toFixed(2)}` : 'Free'}</span>
-
                                         </div>
-
                                         <div class="info-box">
-
                                             <span class="box-title"><span innerHTML={GROUP_SVG} /> CAPACITY</span>
-
                                             <span class="box-value">{event().attendee_count || 0}/{event().max_attendees || '∞'}</span>
-
                                         </div>
-
                                     </div>
-
-
 
                                     <div class="liquid-container event-details-content">
-
                                         <div class="description-section">
-
                                             <h3 class="section-title"><span innerHTML={DESCRIPTION_SVG} /> Description</h3>
-
                                             <div class="description-text">
                                                 <Markdown content={event().description || 'No description provided.'} />
                                             </div>
-
                                         </div>
-
-
 
                                         <div class="attendees-section">
                                             <h3 class="section-title"><span innerHTML={GROUP_SVG} /> Attendees ({attendees()?.length || 0})</h3>
-
                                             <div class="attendee-list-modern" classList={{ expanded: isAttendeesExpanded() }}>
                                                 <For each={attendees()}>
                                                     {(a) => (
@@ -491,16 +437,10 @@ export default function EventDetailPage() {
                                             </Show>
                                         </div>
                                     </div>
-
                                 </div>
-
                             </div>
-
                         )}
-
                     </Show>
-
-
 
                     <Modal isOpen={isKitModalOpen()} onClose={() => { setIsKitModalOpen(false); setActiveKitItem(null); }} title="Request Kit">
                         <Show when={!activeKitItem()} fallback={
@@ -572,14 +512,8 @@ export default function EventDetailPage() {
                             </div>
                         </Show>
                     </Modal>
-
                 </div>
-
             </div>
-
         </Portal>
-
     );
-
 }
-

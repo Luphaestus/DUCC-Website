@@ -6,7 +6,7 @@ import {
     GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG,
     ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG,
     KAYAKING_SVG, TRENDING_UP_SVG, LIST_SVG, FORMAT_QUOTE_SVG,
-    MAIL_SVG, DESCRIPTION_SVG
+    MAIL_SVG, DESCRIPTION_SVG, GAVEL_SVG
 } from '@/utils/icons';
 import PageTitle from "@/components/PageTitle";
 
@@ -24,6 +24,7 @@ export default function DashboardPage() {
     const canViewStats = createMemo(() => perms().includes('transaction.manage') || perms().includes('event.manage.all'));
     const canManageForms = createMemo(() => perms().includes('form.manage') || perms().includes('site.admin'));
     const canSendEmails = createMemo(() => perms().includes('email.send') || perms().includes('site.admin'));
+    const canManageElections = createMemo(() => perms().includes('election.manage') || perms().includes('site.admin'));
     const isExec = createMemo(() => perms().length > 0);
     const canAccessGlobals = createMemo(() => perms().includes('globals.manage') || perms().includes('site.admin'));
 
@@ -49,6 +50,7 @@ export default function DashboardPage() {
                 {canManageRoles() && <Card title="Roles" desc="User roles & access" icon={ID_CARD_SVG} href="/admin/roles" />}
                 {canViewStats() && <Card title="Stats" desc="Club usage analytics" icon={TRENDING_UP_SVG} href="/admin/stats" />}
                 {canManageForms() && <Card title="Forms" desc="Custom forms & surveys" icon={DESCRIPTION_SVG} href="/admin/forms" />}
+                {canManageElections() && <Card title="Elections" desc="Club committee voting" icon={GAVEL_SVG} href="/admin/elections" />}
                 {isExec() && <Card title="Slides" desc="Homepage slideshow" icon={IMAGE_SVG} href="/admin/slides" />}
                 {canManageKit() && <Card title="Kit" desc="Club equipment inventory" icon={KAYAKING_SVG} href="/admin/kit" />}
                 {canAccessGlobals() && <Card title="Globals" desc="System configuration" icon={SETTINGS_SVG} href="/admin/globals" />}

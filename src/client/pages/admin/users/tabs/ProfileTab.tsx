@@ -6,7 +6,7 @@ import {
     PERSON_SVG, EDIT_SVG,
     ID_CARD_SVG, CLOSE_SVG,
     CONTRACT_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG,
-    KAYAKING_SVG
+    KAYAKING_SVG, SAVE_SVG
 } from '@/utils/icons';
 import Panel from "@/components/Panel";
 import LiquidButton from "@/components/LiquidButton";
@@ -15,6 +15,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
     const { notify } = useNotifications();
 
     const [isEditing, setIsEditing] = createSignal(false);
+    const [isDirty, setIsDirty] = createSignal(false);
 
     const isSigned = () => !!props.user.filled_legal_info;
 
@@ -39,6 +40,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
         try {
             await apiRequest('POST', `/api/kit/preferences/${props.user.id}`, { itemIds: selected });
             notify('Success', 'Kit preferences updated.', 'success');
+            setIsDirty(false);
             refetchKitPrefs();
         } catch (err: any) {
             notify('Error', err.message, 'error');
@@ -58,12 +60,13 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
             await apiRequest('POST', `/api/admin/user/${props.user.id}/elements`, data);
             notify('Success', 'Profile updated', 'success');
             setIsEditing(false);
+            setIsDirty(false);
             props.refetchUser();
         } catch (e: any) { notify('Error', e.message, 'error'); }
     };
 
     return (
-        <div class="dashboard-section active">
+        <div class="dashboard-section active" onInput={() => setIsDirty(true)}>
             <article class="value-header no-margin">
                 <div class="value-info">
                     <span class="value-title">Legal Status</span>
@@ -181,8 +184,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                 <label><input type="checkbox" name="is_member" checked={props.user.is_member} /> Is Member</label>
                             </Show>
                             <div class="form-actions">
-                                <LiquidButton type="submit" class="small-btn" borderRadius={12}>Save</LiquidButton>
-                                <LiquidButton type="button" class="small-btn secondary outline" onClick={() => setIsEditing(false)} borderRadius={12}>Cancel</LiquidButton>
+                                <LiquidButton type="button" class="small-btn secondary outline full-width" onClick={() => { setIsEditing(false); setIsDirty(false); }} borderRadius={12}>Cancel</LiquidButton>
                             </div>
                         </form>
                     </Show>
@@ -214,9 +216,25 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                             )}
                         </For>
                     </div>
-                    <LiquidButton type="submit" class="primary full-width" borderRadius={12}>Save Preferences</LiquidButton>
                 </form>
             </Panel>
+
+            <Show when={isDirty()}>
+                <div class="floating-action-container">
+                    <button
+                        type="button"
+                        class="floating-save-btn prominent-btn"
+                        title="Save Changes"
+                        onClick={() => {
+                            const profileForm = document.querySelector('form.modern-form') as HTMLFormElement;
+                            if (profileForm) profileForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                        }}
+                    >
+                        <span innerHTML={SAVE_SVG} />
+                        <span class="btn-label">Save</span>
+                    </button>
+                </div>
+            </Show>
         </div>
     );
 }

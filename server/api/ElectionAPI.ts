@@ -28,7 +28,8 @@ export default class ElectionAPI {
             try {
                 const userId = req.user.id;
                 const status = await ElectionDB.createElection(this.db, { ...req.body, managed_by_user_id: userId, voting_type: req.body.voting_type });
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(201).send(status.getData());
             } catch (e: any) {
                 Logger.error('Failed to create election', e);
                 return reply.status(500).send({ error: e.message });
@@ -45,8 +46,20 @@ export default class ElectionAPI {
                 const electionId = parseInt(req.params.id);
                 if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
 
+                // Prevent reopening after results calculated or closed
+                if (req.body.phase && ['setup', 'nominations', 'voting'].includes(req.body.phase)) {
+                    const electionRes = await ElectionDB.getElectionById(this.db, electionId);
+                    if (!electionRes.isError()) {
+                        const currentPhase = electionRes.getData().phase;
+                        if (['results_revealed', 'roles_transferred', 'closed', 'completed'].includes(currentPhase)) {
+                            return reply.status(400).send({ message: 'Cannot reopen an election after it has been closed or results revealed.' });
+                        }
+                    }
+                }
+
                 const status = await ElectionDB.updateElection(this.db, electionId, req.body);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send(status.getData() || { message: status.message });
             } catch (e: any) {
                 Logger.error('Failed to update election', e);
                 return reply.status(500).send({ error: e.message });
@@ -63,7 +76,8 @@ export default class ElectionAPI {
                 if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
 
                 const status = await ElectionDB.deleteElection(this.db, electionId);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ message: status.message });
             } catch (e: any) {
                 Logger.error('Failed to delete election', e);
                 return reply.status(500).send({ error: e.message });
@@ -76,9 +90,30 @@ export default class ElectionAPI {
         this.app.get('/api/admin/elections', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
             try {
                 const status = await ElectionDB.getAllElections(this.db);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ elections: status.getData() });
             } catch (e: any) {
                 Logger.error('Failed to get all elections (admin)', e);
+                return reply.status(500).send({ error: e.message });
+            }
+        });
+
+        /**
+         * Get specific election (Admin view).
+         * @param {string} req.params.id - Election ID.
+         */
+        this.app.get('/api/admin/elections/:id', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
+            try {
+                const electionId = parseInt(req.params.id);
+                if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
+
+                const status = await ElectionDB.getElectionById(this.db, electionId);
+                if (status.isError()) return status.getResponse(reply);
+                
+                const election = status.getData();
+                return reply.status(200).send({ election });
+            } catch (e: any) {
+                Logger.error('Failed to get election (admin)', e);
                 return reply.status(500).send({ error: e.message });
             }
         });
@@ -95,9 +130,48 @@ export default class ElectionAPI {
                 if (isNaN(electionId) || isNaN(role_id)) return reply.status(400).send({ message: 'Invalid IDs.' });
 
                 const status = await ElectionDB.addElectionRole(this.db, { election_id: electionId, role_id, max_winners });
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(201).send(status.getData());
             } catch (e: any) {
                 Logger.error('Failed to add election role', e);
+                return reply.status(500).send({ error: e.message });
+            }
+        });
+
+        /**
+         * Get all roles for an election (Admin view).
+         * @param {string} req.params.electionId - Election ID.
+         */
+        this.app.get('/api/admin/elections/:electionId/roles', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
+            try {
+                const electionId = parseInt(req.params.electionId);
+                if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
+
+                const status = await ElectionDB.getElectionRoles(this.db, electionId);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ roles: status.getData() });
+            } catch (e: any) {
+                Logger.error('Failed to get election roles (admin)', e);
+                return reply.status(500).send({ error: e.message });
+            }
+        });
+
+        /**
+         * Update an election role (e.g., max_winners).
+         * @param {string} req.params.electionRoleId - Election Role ID.
+         * @param {object} req.body - { max_winners: number }.
+         */
+        this.app.put('/api/admin/elections/:electionId/roles/:electionRoleId', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
+            try {
+                const electionRoleId = parseInt(req.params.electionRoleId);
+                const { max_winners } = req.body;
+                if (isNaN(electionRoleId)) return reply.status(400).send({ message: 'Invalid ID.' });
+
+                const status = await ElectionDB.updateElectionRole(this.db, electionRoleId, { max_winners });
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ message: status.message });
+            } catch (e: any) {
+                Logger.error('Failed to update election role', e);
                 return reply.status(500).send({ error: e.message });
             }
         });
@@ -114,30 +188,32 @@ export default class ElectionAPI {
                 if (isNaN(electionId) || isNaN(electionRoleId)) return reply.status(400).send({ message: 'Invalid IDs.' });
 
                 const status = await ElectionDB.removeElectionRole(this.db, electionRoleId);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ message: status.message });
             } catch (e: any) {
                 Logger.error('Failed to remove election role', e);
                 return reply.status(500).send({ error: e.message });
             }
         });
 
-                /**
-                 * Approve a nomination.
-                 * @param {string} req.params.nominationId - Nomination ID.
-                 */
-                this.app.put('/api/admin/nominations/:nominationId/approve', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
-                    try {
-                        const nominationId = parseInt(req.params.nominationId);
-                        const approverUserId = req.user.id;
-                        if (isNaN(nominationId)) return reply.status(400).send({ message: 'Invalid nomination ID.' });
-        
-                        const status = await ElectionDB.approveNomination(this.db, nominationId, approverUserId);
-                        return status.getResponse(reply);
-                    } catch (e: any) {
-                        Logger.error('Failed to approve nomination', e);
-                        return reply.status(500).send({ error: e.message });
-                    }
-                });
+        /**
+         * Approve a nomination.
+         * @param {string} req.params.nominationId - Nomination ID.
+         */
+        this.app.put('/api/admin/nominations/:nominationId/approve', { preHandler: [checkAuthentication('election.manage')] }, async (req: any, reply) => {
+            try {
+                const nominationId = parseInt(req.params.nominationId);
+                const approverUserId = req.user.id;
+                if (isNaN(nominationId)) return reply.status(400).send({ message: 'Invalid nomination ID.' });
+
+                const status = await ElectionDB.approveNomination(this.db, nominationId, approverUserId);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ message: status.message });
+            } catch (e: any) {
+                Logger.error('Failed to approve nomination', e);
+                return reply.status(500).send({ error: e.message });
+            }
+        });
         
                 /**
                  * Update local votes count for a nomination (for in-person voting).
@@ -153,7 +229,8 @@ export default class ElectionAPI {
                         }
         
                         const status = await ElectionDB.updateNominationLocalVotes(this.db, nominationId, local_votes_count);
-                        return status.getResponse(reply);
+                        if (status.isError()) return status.getResponse(reply);
+                        return reply.status(200).send({ message: status.message });
                     } catch (e: any) {
                         Logger.error('Failed to update nomination local votes', e);
                         return reply.status(500).send({ error: e.message });
@@ -172,7 +249,7 @@ export default class ElectionAPI {
                 if (electionRes.isError()) return electionRes.getResponse(reply);
                 const election = electionRes.getData();
 
-                if (election.phase !== 'closed' && election.phase !== 'results_revealed' && election.phase !== 'roles_transferred') {
+                if (election.phase !== 'closed' && election.phase !== 'results_revealed' && election.phase !== 'roles_transferred' && election.phase !== 'completed') {
                     return reply.status(403).send({ message: 'Results can only be viewed after voting has closed.' });
                 }
 
@@ -211,7 +288,8 @@ export default class ElectionAPI {
                 if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
 
                 const status = await ElectionDB.transferRoles(this.db, electionId, req.user.id);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ message: status.message });
             } catch (e: any) {
                 Logger.error('Failed to transfer roles', e);
                 return reply.status(500).send({ error: e.message });
@@ -230,13 +308,8 @@ export default class ElectionAPI {
                 if (electionsRes.isError()) return electionsRes.getResponse(reply);
                 const allElections = electionsRes.getData();
 
-                // Find the most relevant election:
-                // 1. Voting phase (highest priority)
-                // 2. Nominations phase
-                // 3. Results revealed / Roles transferred (most recent)
-                const currentElection = allElections.find((e: any) => e.phase === 'voting') || 
-                                  allElections.find((e: any) => e.phase === 'nominations') ||
-                                  allElections.find((e: any) => ['results_revealed', 'roles_transferred', 'closed'].includes(e.phase));
+                // Find the most recent election that is not in setup
+                const currentElection = allElections.find((e: any) => !['setup'].includes(e.phase));
 
                 if (!currentElection) {
                     return reply.status(404).send({ message: 'No active or recent elections found.' });
@@ -252,7 +325,19 @@ export default class ElectionAPI {
                 for (const role of roles) {
                     const nomsRes = await ElectionDB.getNominationsForRole(this.db, role.id);
                     if (!nomsRes.isError()) {
-                        nominationsByRole[role.id] = nomsRes.getData().filter((n: any) => n.is_approved || ['results_revealed', 'roles_transferred', 'closed'].includes(currentElection.phase));
+                        let noms = nomsRes.getData();
+                        // Hide winners/votes if results are not revealed yet
+                        if (!['results_revealed', 'roles_transferred', 'completed'].includes(currentElection.phase)) {
+                            noms = noms.map((n: any) => {
+                                const { is_winner, votes_received, ...rest } = n;
+                                return { ...rest, is_winner: 0, votes_received: 0 };
+                            });
+                        }
+                        // Filter approved nominations unless results are shown
+                        if (!['results_revealed', 'roles_transferred', 'closed', 'completed'].includes(currentElection.phase)) {
+                            noms = noms.filter((n: any) => n.is_approved);
+                        }
+                        nominationsByRole[role.id] = noms;
                     }
                 }
 
@@ -260,16 +345,18 @@ export default class ElectionAPI {
                 let userNominations: any[] = [];
                 let userVotes: any[] = [];
                 if (req.user && req.user.id) {
-                    userNominations = await this.db.all('SELECT n.election_role_id FROM nominations n WHERE n.user_id = ? AND n.election_role_id IN (SELECT id FROM election_roles WHERE election_id = ?)', [req.user.id, currentElection.id]);
+                    userNominations = await this.db.all('SELECT n.election_role_id, n.manifesto_file_id FROM nominations n WHERE n.user_id = ? AND n.election_role_id IN (SELECT id FROM election_roles WHERE election_id = ?)', [req.user.id, currentElection.id]);
                     userVotes = await this.db.all('SELECT v.election_role_id FROM votes v WHERE v.voter_user_id = ? AND v.election_role_id IN (SELECT id FROM election_roles WHERE election_id = ?)', [req.user.id, currentElection.id]);
                 }
 
                 return reply.send({ 
-                    election: currentElection, 
-                    roles, 
-                    nominations: nominationsByRole,
-                    user_has_nominated: userNominations.map(n => n.election_role_id),
-                    user_has_voted: userVotes.map(v => v.election_role_id)
+                    data: {
+                        election: currentElection, 
+                        roles, 
+                        nominations: nominationsByRole,
+                        user_nominations: userNominations,
+                        user_has_voted: userVotes.map(v => v.election_role_id)
+                    }
                 });
 
             } catch (e: any) {
@@ -279,29 +366,61 @@ export default class ElectionAPI {
         });
 
         /**
-         * User nominates for a role.
+         * User nominates for a role or updates their existing nomination.
          * @param {string} req.params.electionId - Election ID.
          * @param {object} req.body - { election_role_id: number, manifesto_file_id: number }.
          */
         this.app.post('/api/elections/:electionId/nominate', { preHandler: [checkAuthentication('is_member')] }, async (req: any, reply) => {
             try {
-                const electionId = parseInt(req.params.electionId); // For validation, not used in DB call
+                const electionId = parseInt(req.params.electionId);
                 const userId = req.user.id;
                 const { election_role_id, manifesto_file_id } = req.body;
                 if (isNaN(electionId) || isNaN(election_role_id)) return reply.status(400).send({ message: 'Invalid IDs.' });
                 
-                // Check election phase (must be nominations)
                 const electionRes = await ElectionDB.getElectionById(this.db, electionId);
                 if (electionRes.isError()) return electionRes.getResponse(reply);
                 const election = electionRes.getData();
-                if (election.phase !== 'nominations' || new Date() < new Date(election.start_date) || new Date() >= new Date(election.voting_start_date || election.end_date)) {
+                if (election.phase !== 'nominations') {
                     return reply.status(403).send({ message: 'Nominations are not open for this election.' });
                 }
 
-                const status = await ElectionDB.createNomination(this.db, { election_role_id, user_id: userId, manifesto_file_id });
-                return status.getResponse(reply);
+                // Check if already nominated
+                const existing = await this.db.get('SELECT id FROM nominations WHERE election_role_id = ? AND user_id = ?', [election_role_id, userId]);
+                
+                if (existing) {
+                    const status = await ElectionDB.updateNomination(this.db, election_role_id, userId, manifesto_file_id);
+                    if (status.isError()) return status.getResponse(reply);
+                    return reply.status(200).send({ message: status.message });
+                } else {
+                    const status = await ElectionDB.createNomination(this.db, { election_role_id, user_id: userId, manifesto_file_id });
+                    if (status.isError()) return status.getResponse(reply);
+                    return reply.status(201).send(status.getData());
+                }
             } catch (e: any) {
-                Logger.error('Failed to create nomination', e);
+                Logger.error('Failed to nominate', e);
+                return reply.status(500).send({ error: e.message });
+            }
+        });
+
+        /**
+         * User withdraws their nomination.
+         */
+        this.app.delete('/api/elections/:electionId/nominate/:roleId', { preHandler: [checkAuthentication('is_member')] }, async (req: any, reply) => {
+            try {
+                const { electionId, roleId } = req.params;
+                const userId = req.user.id;
+
+                const electionRes = await ElectionDB.getElectionById(this.db, parseInt(electionId));
+                if (electionRes.isError()) return electionRes.getResponse(reply);
+                if (electionRes.getData().phase !== 'nominations') {
+                    return reply.status(403).send({ message: 'Nominations cannot be withdrawn after they have closed.' });
+                }
+
+                const status = await ElectionDB.deleteNomination(this.db, parseInt(roleId), userId);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ message: status.message });
+            } catch (e: any) {
+                Logger.error('Failed to withdraw nomination', e);
                 return reply.status(500).send({ error: e.message });
             }
         });
@@ -325,7 +444,7 @@ export default class ElectionAPI {
                 const electionRes = await ElectionDB.getElectionById(this.db, electionId);
                 if (electionRes.isError()) return electionRes.getResponse(reply);
                 const election = electionRes.getData();
-                if (election.phase !== 'voting' || new Date() < new Date(election.voting_start_date || election.start_date) || new Date() >= new Date(election.end_date)) {
+                if (election.phase !== 'voting') {
                     return reply.status(403).send({ message: 'Voting is not open for this election.' });
                 }
 
@@ -362,7 +481,8 @@ export default class ElectionAPI {
                 if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
 
                 const status = await ElectionDB.getElectionById(this.db, electionId);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ election: status.getData() });
             } catch (e: any) {
                 Logger.error('Failed to get election by ID (public)', e);
                 return reply.status(500).send({ error: e.message });
@@ -375,7 +495,8 @@ export default class ElectionAPI {
         this.app.get('/api/elections', async (req: any, reply) => {
             try {
                 const status = await ElectionDB.getAllElections(this.db); // No phase filter for general listing
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ elections: status.getData() });
             } catch (e: any) {
                 Logger.error('Failed to get all elections (public)', e);
                 return reply.status(500).send({ error: e.message });
@@ -392,7 +513,8 @@ export default class ElectionAPI {
                 if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
 
                 const status = await ElectionDB.getElectionRoles(this.db, electionId);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                return reply.status(200).send({ roles: status.getData() });
             } catch (e: any) {
                 Logger.error('Failed to get election roles (public)', e);
                 return reply.status(500).send({ error: e.message });
@@ -406,11 +528,25 @@ export default class ElectionAPI {
          */
         this.app.get('/api/elections/:electionId/roles/:electionRoleId/nominations', async (req: any, reply) => {
             try {
+                const electionId = parseInt(req.params.electionId);
                 const electionRoleId = parseInt(req.params.electionRoleId);
+                if (isNaN(electionId)) return reply.status(400).send({ message: 'Invalid election ID.' });
                 if (isNaN(electionRoleId)) return reply.status(400).send({ message: 'Invalid election role ID.' });
 
+                const electionRes = await ElectionDB.getElectionById(this.db, electionId);
+                if (electionRes.isError()) return electionRes.getResponse(reply);
+                const election = electionRes.getData();
+
                 const status = await ElectionDB.getNominationsForRole(this.db, electionRoleId);
-                return status.getResponse(reply);
+                if (status.isError()) return status.getResponse(reply);
+                
+                let noms = status.getData();
+                // Filter approved nominations unless it's a phase where results are revealed/finalized
+                if (!['results_revealed', 'roles_transferred', 'closed', 'completed'].includes(election.phase)) {
+                    noms = noms.filter((n: any) => n.is_approved);
+                }
+
+                return reply.status(200).send({ nominations: noms });
             } catch (e: any) {
                 Logger.error('Failed to get nominations for role (public)', e);
                 return reply.status(500).send({ error: e.message });

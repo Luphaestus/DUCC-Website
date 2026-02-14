@@ -10,7 +10,7 @@ import {
 import Panel from "@/components/Panel";
 import Modal from "@/components/Modal";
 import LiquidButton from "@/components/LiquidButton";
-import { triggerPresidentGoodbye } from "@/stores/presidentGoodbye";
+import { triggerExecGoodbye } from "@/stores/presidentGoodbye";
 
 export default function AccessTab(props: { user: any, refetchUser: () => void }) {
     const { notify } = useNotifications();
@@ -85,8 +85,9 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                 roleId: String(presidentRoleId()),
                 password: password()
             });
-            const status = await apiRequest('GET', '/api/auth/status');
-            triggerPresidentGoodbye(status.user);
+            notify('Success', 'Presidential role transferred.', 'success');
+            triggerExecGoodbye(status.user, 'President');
+            closePresidentModal();
         } catch (e: any) {
             setError(e.message || "An unexpected error occurred");
             setPassword("");

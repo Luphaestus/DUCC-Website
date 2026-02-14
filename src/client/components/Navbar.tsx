@@ -3,7 +3,7 @@ import { A, useLocation, useNavigate } from "@solidjs/router";
 import { useAuth } from "../stores/auth";
 import LiquidButton, { GlassButtonSmall } from "./LiquidButton";
 import { apiRequest } from "@/utils/api";
-import { FormSubmittedEvent } from "@/utils/events/events";
+import { FormSubmittedEvent, ElectionUpdatedEvent } from "@/utils/events/events";
 
 const navEntries = [
   { name: 'Events', path: '/events', id: 'nav-events' },
@@ -32,11 +32,11 @@ export default function Navbar() {
     }
   });
 
-  const [currentElection] = createResource(isAuthenticated, async (loggedIn) => {
+  const [currentElection, { refetch: refetchElection }] = createResource(isAuthenticated, async (loggedIn) => {
     if (!loggedIn) return null;
     try {
       const res = await apiRequest('GET', '/api/elections/current');
-      return res.election;
+      return res.data?.election || res.election;
     } catch {
       return null;
     }
@@ -127,9 +127,14 @@ export default function Navbar() {
         refetchForms();
     });
 
+    const electionCleanup = ElectionUpdatedEvent.subscribe(() => {
+        refetchElection();
+    });
+
     onCleanup(() => {
         window.removeEventListener('scroll', handleScroll);
         formCleanup();
+        electionCleanup();
     });
   });
 

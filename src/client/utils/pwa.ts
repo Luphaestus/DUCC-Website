@@ -33,8 +33,9 @@ export const initPWA = async () => {
     console.log('[PWA] Standalone mode:', isStandalone);
     setIsPWAInstalled(isStandalone);
 
-    // Register Service Worker (skip on localhost to avoid caching issues during development)
-    if ('serviceWorker' in navigator && window.location.hostname !== 'localhost') {
+    // Register Service Worker (skip on local dev to avoid caching issues)
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if ('serviceWorker' in navigator && !isLocal) {
         try {
             console.log('[PWA] Registering Service Worker...');
             const reg = await navigator.serviceWorker.register('/service-worker.js');

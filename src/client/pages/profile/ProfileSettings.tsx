@@ -173,16 +173,37 @@ export default function ProfileSettings() {
     const [calendarToken, setCalendarToken] = createSignal<string | null>(null);
     const [isGeneratingToken, setIsGeneratingToken] = createSignal(false);
 
-    const fetchCalendarToken = async () => {
+    const ensureCalendarToken = async () => {
+        if (calendarToken()) return calendarToken();
         setIsGeneratingToken(true);
         try {
             const data = await apiRequest('POST', '/api/calendar/token');
             setCalendarToken(data.token);
+            return data.token;
         } catch (err) {
-            notify('Error', 'Failed to get calendar token.', 'error');
+            notify('Error', 'Failed to generate calendar token.', 'error');
+            return null;
         } finally {
             setIsGeneratingToken(false);
         }
+    };
+
+    const handleCopyCalendarLink = async (path: string, label: string) => {
+        const token = await ensureCalendarToken();
+        if (!token) return;
+        
+        const url = `${window.location.origin}/api/calendar/${path}/${token}.ics`;
+        navigator.clipboard.writeText(url);
+        notify('Success', `${label} copied to clipboard!`, 'success', 2000);
+    };
+
+    const handleSubscribeCalendar = async (path: string) => {
+        const token = await ensureCalendarToken();
+        if (!token) return;
+
+        // webcal:// protocol opens the default calendar app
+        const url = `${window.location.origin.replace(/^https?:\/\//, 'webcal://')}/api/calendar/${path}/${token}.ics`;
+        window.open(url, '_self');
     };
 
     const copyToClipboard = (text: string, label: string) => {
@@ -201,10 +222,9 @@ export default function ProfileSettings() {
                                     <strong>Password</strong>
                                     <p>Manage your account password</p>
                                 </div>
-                                <button class="small-btn secondary" onClick={async () => {
-                                    const passwords = await showChangePasswordModal();
-                                    if (passwords) {
-                                        try {
+                                                                <button class="small-btn secondary" onClick={async () => {
+                                                                    const passwords = await showChangePasswordModal(profile()?.email);
+                                                                    if (passwords) {                                        try {
                                             await apiRequest('POST', '/api/auth/change-password', passwords);
                                             notify('Success', 'Password changed.', 'success');
                                         } catch (err: any) {
@@ -351,10 +371,18 @@ export default function ProfileSettings() {
                                     <strong>All Events Feed</strong>
                                     <p>Public events everyone can see.</p>
                                 </div>
-                                <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/all.ics`, 'Public Feed URL')}>
-                                    <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
-                                    Copy Link
-                                </button>
+                                <div class="btn-group">
+                                    <button class="small-btn primary" onClick={() => {
+                                        const url = `${window.location.origin.replace(/^https?:\/\//, 'webcal://')}/api/calendar/all.ics`;
+                                        window.open(url, '_self');
+                                    }}>
+                                        Subscribe
+                                    </button>
+                                    <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/all.ics`, 'Public Feed URL')}>
+                                        <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                        Copy Link
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="liquid-container embedded-panel glass-panel">
@@ -362,16 +390,15 @@ export default function ProfileSettings() {
                                     <strong>My Events Feed</strong>
                                     <p>Personalized feed of events you've joined.</p>
                                 </div>
-                                <Show when={calendarToken()} fallback={
-                                    <button class="small-btn primary" onClick={fetchCalendarToken} disabled={isGeneratingToken()}>
-                                        {isGeneratingToken() ? 'Generating...' : 'Generate Private Link'}
+                                <div class="btn-group">
+                                    <button class="small-btn primary" onClick={() => handleSubscribeCalendar('personal')} disabled={isGeneratingToken()}>
+                                        {isGeneratingToken() ? '...' : 'Subscribe'}
                                     </button>
-                                }>
-                                    <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/personal/${calendarToken()}.ics`, 'Personal Feed URL')}>
+                                    <button class="small-btn secondary" onClick={() => handleCopyCalendarLink('personal', 'Personal Feed URL')} disabled={isGeneratingToken()}>
                                         <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
                                         Copy Link
                                     </button>
-                                </Show>
+                                </div>
                             </div>
 
                             <div class="liquid-container embedded-panel glass-panel">
@@ -379,16 +406,15 @@ export default function ProfileSettings() {
                                     <strong>Accessible Events Feed</strong>
                                     <p>Private feed of all events you can see.</p>
                                 </div>
-                                <Show when={calendarToken()} fallback={
-                                    <button class="small-btn primary" onClick={fetchCalendarToken} disabled={isGeneratingToken()}>
-                                        {isGeneratingToken() ? 'Generating...' : 'Generate Private Link'}
+                                <div class="btn-group">
+                                    <button class="small-btn primary" onClick={() => handleSubscribeCalendar('accessible')} disabled={isGeneratingToken()}>
+                                        {isGeneratingToken() ? '...' : 'Subscribe'}
                                     </button>
-                                }>
-                                    <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/accessible/${calendarToken()}.ics`, 'Accessible Feed URL')}>
+                                    <button class="small-btn secondary" onClick={() => handleCopyCalendarLink('accessible', 'Accessible Feed URL')} disabled={isGeneratingToken()}>
                                         <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
                                         Copy Link
                                     </button>
-                                </Show>
+                                </div>
                             </div>
                         </div>
                     </div>

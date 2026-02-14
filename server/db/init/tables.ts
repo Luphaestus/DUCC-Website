@@ -660,7 +660,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         voting_start_date DATETIME,
         end_date DATETIME NOT NULL,
         voting_type ENUM('online', 'in_person', 'hybrid') NOT NULL DEFAULT 'online',
-        phase ENUM('setup', 'nominations', 'voting', 'closed', 'results_revealed', 'roles_transferred') NOT NULL DEFAULT 'setup',
+        phase ENUM('setup', 'nominations', 'voting', 'closed', 'results_revealed', 'roles_transferred', 'completed') NOT NULL DEFAULT 'setup',
         managed_by_user_id INT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -688,9 +688,6 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         user_id INT NOT NULL,
         manifesto_file_id INT,
         nomination_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-        approved_by_user_id INT,
-        approved_at DATETIME,
-        is_approved TINYINT(1) NOT NULL DEFAULT 0,
         is_winner TINYINT(1) NOT NULL DEFAULT 0,
         votes_received INT DEFAULT 0,
         local_votes_count INT DEFAULT 0,
@@ -699,8 +696,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         UNIQUE KEY idx_election_role_user (election_role_id, user_id),
         FOREIGN KEY (election_role_id) REFERENCES election_roles(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (manifesto_file_id) REFERENCES files(id) ON DELETE SET NULL,
-        FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+        FOREIGN KEY (manifesto_file_id) REFERENCES files(id) ON DELETE SET NULL
       `
     },
     {

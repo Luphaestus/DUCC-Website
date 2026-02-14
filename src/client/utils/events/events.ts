@@ -69,9 +69,15 @@ const ClubLogoChangedEvent = new Event();
 const FormSubmittedEvent = new Event();
 
 /**
+ * Event fired when an election is created or updated.
+ * @type {Event}
+ */
+const ElectionUpdatedEvent = new Event();
+
+/**
  * Event fired when the connection to the server is lost.
  * @type {Event}
  */
 const NoInternetEvent = new Event();
 
-export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent, ClubLogoChangedEvent, FormSubmittedEvent, NoInternetEvent };
+export { BalanceChangedEvent, FirstNameChangedEvent, LegalEvent, LoginEvent, ViewChangedEvent, EventAttendanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent, ClubLogoChangedEvent, FormSubmittedEvent, ElectionUpdatedEvent, NoInternetEvent };

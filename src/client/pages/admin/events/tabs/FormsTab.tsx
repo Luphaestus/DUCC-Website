@@ -28,31 +28,36 @@ export default function FormsTab(props: { eventId: number }) {
 
     return (
         <div class="forms-tab">
-            <div class="flex justify-between align-center">
-                <h3>Event Forms</h3>
-                <button class="small-btn primary" onClick={handleCreateForm}>
-                    <span innerHTML={ADD_SVG} /> New Form
-                </button>
-            </div>
-
-            <Show when={forms()} fallback={<p aria-busy="true">Loading forms...</p>}>
-                <div class="grid-layout">
-                    <For each={forms()} fallback={<p class="text-muted">No forms created for this event yet.</p>}>
-                        {form => (
-                            <div class="clickable" onClick={() => navigate(`/admin/forms/${form.id}`)}>
-                                <Panel title={form.title} icon={DESCRIPTION_SVG}>
-                                    <div class="info-rows">
-                                        <div class="info-row">
-                                            <span>Created</span>
-                                            <span>{new Date(form.created_at).toLocaleDateString()}</span>
-                                        </div>
+            <Panel 
+                title="Event Forms" 
+                icon={DESCRIPTION_SVG}
+                action={
+                    <button class="small-btn primary mini-btn" onClick={handleCreateForm}>
+                        <span innerHTML={ADD_SVG} /> New Form
+                    </button>
+                }
+            >
+                <Show when={forms()} fallback={<p class="loading-placeholder py-4" aria-busy="true">Loading forms...</p>}>
+                    <div class="forms-grid-container py-4 px-4">
+                        <div class="grid-layout">
+                            <For each={forms()} fallback={<p class="text-muted text-center py-4">No forms created for this event yet.</p>}>
+                                {form => (
+                                    <div class="clickable" onClick={() => navigate(`/admin/forms/${form.id}`)}>
+                                        <Panel title={form.title} icon={DESCRIPTION_SVG} class="secondary-bg">
+                                            <div class="info-rows">
+                                                <div class="info-row">
+                                                    <span>Created</span>
+                                                    <span>{new Date(form.created_at).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+                                        </Panel>
                                     </div>
-                                </Panel>
-                            </div>
-                        )}
-                    </For>
-                </div>
-            </Show>
+                                )}
+                            </For>
+                        </div>
+                    </div>
+                </Show>
+            </Panel>
         </div>
     );
 }

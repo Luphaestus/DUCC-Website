@@ -13,7 +13,7 @@ interface ElectionData {
     voting_start_date?: string;
     end_date: string;
     voting_type?: 'online' | 'in_person' | 'hybrid';
-    phase?: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred';
+    phase?: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred' | 'completed';
     managed_by_user_id?: number;
     created_at?: string;
     updated_at?: string;
@@ -187,6 +187,27 @@ export default class ElectionDB extends BaseDB {
     }
 
     /**
+     * Update an election role.
+     * @param electionRoleId - ID of the election role to update.
+     * @param data - Data to update (e.g., max_winners).
+     */
+    static async updateElectionRole(db: DatabaseWrapper, electionRoleId: number, data: Partial<ElectionRoleData>): Promise<statusObject> {
+        return this.wrap(async () => {
+            const { id, election_id, role_id, ...updateFields } = data;
+            const keys = Object.keys(updateFields);
+            if (keys.length === 0) return new statusObject(200, 'No fields to update.');
+
+            const sets = keys.map(k => `${k} = ?`).join(', ');
+            const result = await db.run(
+                `UPDATE election_roles SET ${sets} WHERE id = ?`,
+                [...Object.values(updateFields), electionRoleId]
+            );
+            if (result.changes === 0) return new statusObject(404, 'Election role not found.');
+            return new statusObject(200, 'Election role updated.');
+        });
+    }
+
+    /**
      * Remove a role from an election.
      * @param electionRoleId - ID of the election role to remove.
      */
@@ -238,11 +259,11 @@ export default class ElectionDB extends BaseDB {
             const nominations = await db.all(
                 `SELECT n.id, n.user_id, u.first_name, u.last_name, n.manifesto_file_id, 
                         f.title as manifesto_title, CONCAT('/api/files/', f.id, '/download') as manifesto_path,
-                        n.nomination_date, n.is_approved, n.votes_received, n.is_winner,
+                        n.nomination_date, n.is_approved, n.votes_received, n.is_winner, n.election_role_id, n.local_votes_count,
                         COALESCE(u.profile_picture_color, '#000000') as profile_picture_color,
                         COALESCE(u.profile_picture_font, 'Arial') as profile_picture_font,
                         COALESCE(u.profile_picture_initials, CONCAT(SUBSTR(u.first_name, 1, 1), SUBSTR(u.last_name, 1, 1))) as profile_picture_initials,
-                        CASE WHEN u.profile_picture_id IS NOT NULL THEN CONCAT('/api/files/', u.profile_picture_id, '/download?view=true') ELSE NULL END as profile_picture_path
+                        CASE WHEN u.profile_picture_id IS NOT NULL THEN CONCAT('/api/files/', u.profile_picture_id, '/download', CHAR(63), 'view=true') ELSE NULL END as profile_picture_path
                  FROM nominations n
                  JOIN users u ON n.user_id = u.id
                  LEFT JOIN files f ON n.manifesto_file_id = f.id
@@ -380,6 +401,17 @@ export default class ElectionDB extends BaseDB {
             const archiveRes = await ExecDB.archiveCurrentCommittee(tx);
             if (archiveRes.isError()) return archiveRes;
 
+            // Flag all outgoing exec members for goodbye overlay
+            await tx.run(`
+                UPDATE users u
+                JOIN user_roles ur ON u.id = ur.user_id
+                JOIN roles r ON ur.role_id = r.id
+                JOIN role_permissions rp ON r.id = rp.role_id
+                JOIN permissions p ON rp.permission_id = p.id
+                SET u.goodbye_role = r.name
+                WHERE p.slug = 'exec.publish'
+            `);
+
             // Remove all current roles from users that have exec.publish permission
             await tx.run(`
                 DELETE ur FROM user_roles ur
@@ -410,8 +442,8 @@ export default class ElectionDB extends BaseDB {
                         roleName: electionRole.role_name,
                         displayOrder: electionRole.exec_ranking, // Assuming roles table has exec_ranking
                         termStart: new Date().toISOString().slice(0, 10),
-                        isCurrent: 1
-                        // manifesto_file_id could be stored in exec_committee if needed
+                        isCurrent: 1,
+                        manifestoFileId: winner.manifesto_file_id
                     });
                 }
             }

@@ -3,8 +3,10 @@ import { createSignal, onMount, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { requireAuth } from "@/utils/auth";
+import { useBeforeLeave } from "@solidjs/router";
 import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from "@/utils/icons";
 import { LegalEvent } from "@/utils/events/events";
+import { showConfirmModal } from "@/utils/modal";
 
 import PageTitle from "@/components/PageTitle";
 
@@ -16,6 +18,21 @@ export default function LegalPage() {
     const [hasMedicalConditions, setHasMedicalConditions] = createSignal(false);
     const [takesMedication, setTakesMedication] = createSignal(false);
     const [hasDietaryInfo, setHasDietaryInfo] = createSignal(false);
+    const [isDirty, setIsDirty] = createSignal(false);
+
+    useBeforeLeave(async (e) => {
+        if (isDirty()) {
+            e.preventDefault();
+            const confirmed = await showConfirmModal(
+                "Unsaved Changes",
+                "You have unsaved changes in your membership form. Are you sure you want to leave?"
+            );
+            if (confirmed) {
+                setIsDirty(false);
+                if (typeof e.retry === 'function') e.retry();
+            }
+        }
+    });
 
     onMount(async () => {
         if (!await requireAuth()) return;
@@ -66,6 +83,7 @@ export default function LegalPage() {
 
         try {
             await apiRequest('POST', '/api/user/elements', payload);
+            setIsDirty(false);
             notify('Saved', 'Information updated successfully.', 'success');
             LegalEvent.notify();
         } catch (error: any) {
@@ -75,7 +93,7 @@ export default function LegalPage() {
 
     return (
         <div id="legal-view" class="view">
-            <div class="legal-container">
+            <div class="legal-container" onInput={() => setIsDirty(true)}>
                 <PageTitle text="Membership Information Form" />
                 <Show when={!loading()} fallback={<p>Loading...</p>}>
                     <form onSubmit={handleSubmit}>
@@ -117,8 +135,8 @@ export default function LegalPage() {
                                 <fieldset>
                                     <legend>Medical Conditions & Allergies*</legend>
                                     <div class="grid">
-                                        <label><input type="radio" name="has_medical_conditions_radio" checked={hasMedicalConditions() === true} onChange={() => setHasMedicalConditions(true)} /> Yes</label>
-                                        <label><input type="radio" name="has_medical_conditions_radio" checked={hasMedicalConditions() === false} onChange={() => setHasMedicalConditions(false)} /> No</label>
+                                        <label><input type="radio" name="has_medical_conditions_radio" checked={hasMedicalConditions() === true} onChange={() => { setHasMedicalConditions(true); setIsDirty(true); }} /> Yes</label>
+                                        <label><input type="radio" name="has_medical_conditions_radio" checked={hasMedicalConditions() === false} onChange={() => { setHasMedicalConditions(false); setIsDirty(true); }} /> No</label>
                                     </div>
                                     <div class={`expandable-section ${hasMedicalConditions() ? 'open' : ''}`}>
                                         <div class="expandable-content">
@@ -130,8 +148,8 @@ export default function LegalPage() {
                                 <fieldset>
                                     <legend>Medication*</legend>
                                     <div class="grid">
-                                        <label><input type="radio" name="takes_medication_radio" checked={takesMedication() === true} onChange={() => setTakesMedication(true)} /> Yes</label>
-                                        <label><input type="radio" name="takes_medication_radio" checked={takesMedication() === false} onChange={() => setTakesMedication(false)} /> No</label>
+                                        <label><input type="radio" name="takes_medication_radio" checked={takesMedication() === true} onChange={() => { setTakesMedication(true); setIsDirty(true); }} /> Yes</label>
+                                        <label><input type="radio" name="takes_medication_radio" checked={takesMedication() === false} onChange={() => { setTakesMedication(false); setIsDirty(true); }} /> No</label>
                                     </div>
                                     <div class={`expandable-section ${takesMedication() ? 'open' : ''}`}>
                                         <div class="expandable-content">
@@ -143,8 +161,8 @@ export default function LegalPage() {
                                 <fieldset>
                                     <legend>Dietary Information & Allergies*</legend>
                                     <div class="grid">
-                                        <label><input type="radio" name="has_dietary_info_radio" checked={hasDietaryInfo() === true} onChange={() => setHasDietaryInfo(true)} /> Yes</label>
-                                        <label><input type="radio" name="has_dietary_info_radio" checked={hasDietaryInfo() === false} onChange={() => setHasDietaryInfo(false)} /> No</label>
+                                        <label><input type="radio" name="has_dietary_info_radio" checked={hasDietaryInfo() === true} onChange={() => { setHasDietaryInfo(true); setIsDirty(true); }} /> Yes</label>
+                                        <label><input type="radio" name="has_dietary_info_radio" checked={hasDietaryInfo() === false} onChange={() => { setHasDietaryInfo(false); setIsDirty(true); }} /> No</label>
                                     </div>
                                     <div class={`expandable-section ${hasDietaryInfo() ? 'open' : ''}`}>
                                         <div class="expandable-content">
@@ -154,7 +172,7 @@ export default function LegalPage() {
                                 </fieldset>
 
                                 <fieldset>
-                                    <label><input type="checkbox" name="agrees_to_fitness_statement" checked={userData().agrees_to_fitness_statement} /> I am not suffering from any medical condition or injury that prevents full participation.*</label>
+                                    <label><input type="checkbox" name="agrees_to_fitness_statement" checked={userData().agrees_to_fitness_statement} onChange={() => setIsDirty(true)} /> I am not suffering from any medical condition or injury that prevents full participation.*</label>
                                 </fieldset>
                             </div>
 
@@ -164,10 +182,10 @@ export default function LegalPage() {
                                 </header>
 
                                 <div>
-                                    <fieldset><label><input type="checkbox" name="agrees_to_club_rules" checked={userData().agrees_to_club_rules} /> I agree to the club rules and safety policy.*</label></fieldset>
+                                    <fieldset><label><input type="checkbox" name="agrees_to_club_rules" checked={userData().agrees_to_club_rules} onChange={() => setIsDirty(true)} /> I agree to the club rules and safety policy.*</label></fieldset>
                                 </div>
                                 <div>
-                                    <fieldset><label><input type="checkbox" name="agrees_to_pay_debts" checked={userData().agrees_to_pay_debts} /> I agree to pay all outstanding debts.*</label></fieldset>
+                                    <fieldset><label><input type="checkbox" name="agrees_to_pay_debts" checked={userData().agrees_to_pay_debts} onChange={() => setIsDirty(true)} /> I agree to pay all outstanding debts.*</label></fieldset>
                                 </div>
 
                                 <button type="submit">Submit Information</button>

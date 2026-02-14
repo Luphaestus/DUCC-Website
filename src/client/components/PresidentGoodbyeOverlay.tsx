@@ -1,8 +1,17 @@
 import { Show } from "solid-js";
 import Avatar from "@/components/Avatar";
-import { showGoodbye, outgoingPresident } from "@/stores/presidentGoodbye";
+import { showGoodbye, outgoingExec, goodbyeRole, setShowGoodbye } from "@/stores/presidentGoodbye";
+import { apiRequest } from "@/utils/api";
 
 export default function PresidentGoodbyeOverlay() {
+    const handleReturn = async () => {
+        try {
+            await apiRequest('POST', '/api/user/clear-goodbye');
+        } catch (e) {}
+        setShowGoodbye(false);
+        window.location.href = '/home';
+    };
+
     return (
         <Show when={showGoodbye()}>
             <div class="rip-bozo-overlay">
@@ -11,9 +20,9 @@ export default function PresidentGoodbyeOverlay() {
                         <div class="meme-wrapper">
                             <img src="/images/misc/queen_rip_bozo.png" alt="RIP Bozo Template" class="base-image" />
                             
-                            <Show when={outgoingPresident()}>
+                            <Show when={outgoingExec()}>
                                 <div class="avatar-positioner">
-                                    <Avatar user={outgoingPresident()} classes="giant-avatar" />
+                                    <Avatar user={outgoingExec()} classes="giant-avatar" />
                                 </div>
                             </Show>
 
@@ -25,9 +34,9 @@ export default function PresidentGoodbyeOverlay() {
                     
                     <div class="goodbye-content">
                         <h1>End of an Era</h1>
-                        <p>You have successfully transferred the Presidency.</p>
+                        <p>Your term as <strong>{goodbyeRole()}</strong> has come to an end.</p>
                         <p>It's been a good run.</p>
-                        <button class="button" onClick={() => window.location.href = '/home'}>Return to Normalcy</button>
+                        <button class="button" onClick={handleReturn}>Return to Normalcy</button>
                     </div>
                 </div>
             </div>

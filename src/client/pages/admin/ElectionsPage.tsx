@@ -17,10 +17,9 @@ interface ElectionSummary {
     start_date: string;
     voting_start_date: string;
     end_date: string;
-    phase: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred';
+    phase: 'setup' | 'nominations' | 'voting' | 'closed' | 'results_revealed' | 'roles_transferred' | 'completed';
     managed_by_user_id: number;
     created_at: string;
-    // Add voting_type here for display if needed later, but not for list view now.
 }
 
 export default function AdminElectionsPage() {
@@ -40,7 +39,8 @@ export default function AdminElectionsPage() {
         'voting': 'warning',
         'closed': 'danger',
         'results_revealed': 'success',
-        'roles_transferred': 'success'
+        'roles_transferred': 'success',
+        'completed': 'neutral'
     };
 
     return (
@@ -69,13 +69,6 @@ export default function AdminElectionsPage() {
                                                         <span class={`badge ${phaseColors[election.phase] || 'neutral'}`}>{election.phase.replace(/_/g, ' ')}</span>
                                                     </div>
                                                     <p class="election-description">{election.description || 'No description provided.'}</p>
-                                                    <div class="election-dates">
-                                                        <span>Starts: {new Date(election.start_date).toLocaleDateString()}</span>
-                                                        <Show when={election.voting_start_date}>
-                                                            <span>Voting: {new Date(election.voting_start_date!).toLocaleDateString()}</span>
-                                                        </Show>
-                                                        <span>Ends: {new Date(election.end_date).toLocaleDateString()}</span>
-                                                    </div>
                                                 </Panel>
                                             </div>
                                         )}

@@ -68,6 +68,7 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
                 'waitlist-active': isWaitlistActive(),
                 'unavailable-event': props.event.can_attend === false && !props.event.is_attending
             }} 
+            style={{ "--progress": `${progress()}%` }}
             onClick={() => navigate(`/events/${props.event.id}${location.search}`)} 
             role="button" 
             tabindex="0"

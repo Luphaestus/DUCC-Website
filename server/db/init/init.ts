@@ -160,6 +160,9 @@ Logger.info(`Running in ${env} mode` + (shouldWipe ? ' (Force Wiping)' : ''));
     const { migrate: addIcsTokenToUsers } = await import('./add_ics_token_to_users.js');
     await addIcsTokenToUsers(db);
 
+    const { migrate: addCompletedToElectionPhase } = await import('./add_completed_to_election_phase.js');
+    await addCompletedToElectionPhase(db);
+
     // Ensure sessions table is correct (it might exist but with wrong columns from previous versions)
     try {
         const columns: any[] = await db.all("SHOW COLUMNS FROM sessions");

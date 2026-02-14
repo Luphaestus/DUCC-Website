@@ -5,7 +5,7 @@ import { useAuth } from "@/stores/auth";
 import { LoginEvent, ProfilePictureChangedEvent } from "@/utils/events/events";
 import { onUpdate } from "@/utils/updates";
 import { TabNav } from "@/widgets/TabNav";
-import { DASHBOARD_SVG, GROUP_SVG, KAYAKING_SVG, WALLET_SVG, SETTINGS_SVG, LOGOUT_SVG } from '@/utils/icons';
+import { DASHBOARD_SVG, GROUP_SVG, KAYAKING_SVG, WALLET_SVG, SETTINGS_SVG, LOGOUT_SVG, ARROW_BACK_IOS_NEW_SVG } from '@/utils/icons';
 import { UserProfile } from "./types";
 
 interface ProfileContextType {
@@ -68,6 +68,11 @@ export default function ProfileLayout(props: ParentProps) {
                 <div class="dashboard-container">
                     <aside class="dashboard-sidebar">
                         <TabNav class="vertical-sidebar liquid-container">
+                            <button class="nav-item" onClick={() => navigate('/home')}>
+                                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Home
+                            </button>
+                            <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
+                            
                             <button class="nav-item" classList={{ active: isActive('/profile') }} onClick={() => navigate('/profile')}>
                                 <span innerHTML={DASHBOARD_SVG} /> Overview
                             </button>

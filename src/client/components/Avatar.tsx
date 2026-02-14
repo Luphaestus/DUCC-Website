@@ -47,7 +47,7 @@ export default function Avatar(props: AvatarProps) {
             style={{ "--avatar-color": color() }}
             onClick={() => props.onClick?.()}
         >
-            {props.user?.profile_picture_path && (
+            {props.user?.profile_picture_path && typeof props.user.profile_picture_path === 'string' && (
                 <img
                     src={`${props.user.profile_picture_path}${props.user.profile_picture_path.includes('?') ? '&' : '?'}t=${Date.now()}`}
                     alt={`${props.user.first_name} ${props.user.last_name}`}

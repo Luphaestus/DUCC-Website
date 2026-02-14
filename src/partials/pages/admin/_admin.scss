@@ -953,7 +953,7 @@ textarea[name="description"] {
     grid-template-columns: 1.5fr 1fr;
     gap: 2rem;
 
-    @media (max-width: 1024px) {
+    @media (max-width: 1500px) {
         grid-template-columns: 1fr;
     }
 }
@@ -1024,8 +1024,10 @@ textarea[name="description"] {
     grid-template-columns: 1.5fr 1fr;
     gap: 2rem;
     align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
 
-    @media (max-width: 1200px) {
+    @media (max-width: 1500px) {
         grid-template-columns: 1fr;
     }
 
@@ -1050,8 +1052,18 @@ textarea[name="description"] {
 .tags-selection-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 1rem;
     padding: 0.5rem 0;
+
+    .hidden-checkbox {
+        display: none !important;
+    }
+
+    .tag-checkbox {
+        display: inline-flex;
+        cursor: pointer;
+        margin: 0;
+    }
 }
 
 .form-actions-sticky {

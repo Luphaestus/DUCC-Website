@@ -13,7 +13,6 @@ import { notify, NotificationTypes } from '../components/notification';
  * Cache for GET requests to reduce redundant network traffic.
  */
 const cache = new Map<string, Promise<any>>();
-// ... (rest of imports and cache logic)
 
 /**
  * Manually clear the API GET cache.
@@ -93,10 +92,8 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
 
 
                 if (response.status === 401 && !silent) {
-                    // Unauthorized: Redirect to login if not already there    console.log('Unauthorized - redirecting to login');
+                    // Unauthorized: Redirect to login if not already there
                     console.log('Redirecting to login due to 401 response');
-                    console.log("Caller file:", new Error().stack);
-                    console.log("Request: ", { method, url, options });
                     if (!window.location.pathname.startsWith('/login')) {
                         if (window.solidNavigate) window.solidNavigate('/login');
                         else window.location.href = '/login';

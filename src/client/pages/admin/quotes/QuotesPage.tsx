@@ -2,6 +2,7 @@
 import { createSignal, createResource, Show, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
+import { showConfirmModal } from "@/utils/modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { 
@@ -65,7 +66,8 @@ export default function QuotesPage() {
     const handleAction = async (id: number, action: 'release' | 'hide' | 'delete') => {
         try {
             if (action === 'delete') {
-                if (!confirm('Are you sure you want to delete this quote?')) return;
+                const ok = await showConfirmModal('Delete Quote', 'Are you sure you want to delete this quote?');
+                if (!ok) return;
                 await apiRequest('DELETE', `/api/admin/quotes/${id}`);
                 notify('Success', 'Quote deleted.', 'success');
             } else {

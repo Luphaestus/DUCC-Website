@@ -100,6 +100,10 @@
   color: var(--colour-bad) !important;
 }
 
+.nomargin {
+  margin: 0 !important;
+}
+
 .small-title {
   font-size: 0.9rem;
   font-weight: 700;
@@ -200,3 +204,30 @@
     transform: scale(0.99);
   }
 }
+
+/* Flex & Spacing Utilities */
+.flex { display: flex !important; }
+.flex-column { display: flex !important; flex-direction: column !important; }
+.align-center { align-items: center !important; }
+.justify-center { justify-content: center !important; }
+.flex-between { display: flex !important; justify-content: space-between !important; }
+.flex-wrap { flex-wrap: wrap !important; }
+
+.gap-1 { gap: 0.25rem !important; }
+.gap-2 { gap: 0.5rem !important; }
+.gap-3 { gap: 0.75rem !important; }
+.gap-4 { gap: 1rem !important; }
+.gap-6 { gap: 2rem !important; }
+
+.mt-2 { margin-top: 0.5rem !important; }
+.mt-4 { margin-top: 1.5rem !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.mb-6 { margin-bottom: 2.5rem !important; }
+
+.px-2 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+.px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+.px-6 { padding-left: 2rem !important; padding-right: 2rem !important; }
+.py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+.py-4 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+
+.full-width { width: 100% !important; }
