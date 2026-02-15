@@ -224,6 +224,47 @@ export default class Auth {
 
                 if (!status.isError() && invitation_token) {
                     await InvitationsDB.markInvitationAsUsed(this.db, invitation_token);
+                    
+                    if (invitation && invitation.predefined_settings) {
+                        try {
+                            const settings = typeof invitation.predefined_settings === 'string' 
+                                ? JSON.parse(invitation.predefined_settings) 
+                                : invitation.predefined_settings;
+                            
+                            const userId = existingUser ? existingUser.id : status.data.id;
+
+                            // Apply member status
+                            if (settings.is_member) {
+                                await this.db.run('UPDATE users SET is_member = 1 WHERE id = ?', [userId]);
+                            }
+
+                            // Apply roles
+                            if (settings.roles && Array.isArray(settings.roles)) {
+                                const RolesDB = (await import('../db/rolesDB.js')).default;
+                                for (const roleId of settings.roles) {
+                                    await RolesDB.assignRole(this.db, userId, roleId);
+                                }
+                            }
+
+                            // Apply permissions
+                            if (settings.permissions && Array.isArray(settings.permissions)) {
+                                const RolesDB = (await import('../db/rolesDB.js')).default;
+                                for (const permId of settings.permissions) {
+                                    await RolesDB.addUserPermission(this.db, userId, permId);
+                                }
+                            }
+
+                            // Apply tags (whitelist)
+                            if (settings.tags && Array.isArray(settings.tags)) {
+                                const TagsDB = (await import('../db/tagsDB.js')).default;
+                                for (const tagId of settings.tags) {
+                                    await TagsDB.addToWhitelist(this.db, tagId, userId);
+                                }
+                            }
+                        } catch (err) {
+                            Logger.error('[AuthAPI] Failed to apply predefined invitation settings:', err);
+                        }
+                    }
                 }
 
                 if (!status.isError() && shouldBeVerified) {

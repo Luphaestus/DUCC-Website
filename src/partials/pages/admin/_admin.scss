@@ -1055,6 +1055,15 @@ textarea[name="description"] {
     gap: 1rem;
     padding: 0.5rem 0;
 
+    &.mini {
+        gap: 0.5rem;
+        
+        .tag-badge {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+        }
+    }
+
     .hidden-checkbox {
         display: none !important;
     }

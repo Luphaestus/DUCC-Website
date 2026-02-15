@@ -4,11 +4,14 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { PERSON_SVG, LOCK_SVG } from '@/utils/icons';
 import { calculateEntropy, getStrengthLabel } from "@/utils/password";
+import { useAuth } from "@/stores/auth";
+import { LoginEvent } from "@/utils/events/events";
 
 export default function SignupPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { notify } = useNotifications();
+    const { refetchUser } = useAuth();
     const [firstName, setFirstName] = createSignal("");
     const [lastName, setLastName] = createSignal("");
     const [email, setEmail] = createSignal("");
@@ -143,6 +146,8 @@ export default function SignupPage() {
             notify('Success', res.message || 'Sign up successful!', 'success', 1500, 'signup-status');
             
             if (res.verified) {
+                await refetchUser();
+                LoginEvent.notify({ authenticated: true });
                 navigate('/events');
             } else {
                 navigate(`/email-sent?type=signup&email=${encodeURIComponent(fullEmail)}`);

@@ -12,11 +12,11 @@ export default class InvitationsDB {
     /**
      * Create a new invitation.
      */
-    static async createInvitation(db: DatabaseWrapper, email: string, inviterId: number, token: string): Promise<statusObject> {
+    static async createInvitation(db: DatabaseWrapper, email: string, inviterId: number, token: string, settings: any = null): Promise<statusObject> {
         try {
             await db.run(
-                'INSERT INTO user_invitations (email, inviter_id, token) VALUES (?, ?, ?)',
-                [email.toLowerCase(), inviterId, token]
+                'INSERT INTO user_invitations (email, inviter_id, token, predefined_settings) VALUES (?, ?, ?, ?)',
+                [email.toLowerCase(), inviterId, token, settings ? JSON.stringify(settings) : null]
             );
             return new statusObject(201, 'Invitation created.');
         } catch (error: any) {

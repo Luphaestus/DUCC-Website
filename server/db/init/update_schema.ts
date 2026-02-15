@@ -139,6 +139,21 @@ import Logger from '../../misc/Logger.js';
             }
         }
 
+        // 8. Add predefined_settings to user_invitations
+        try {
+            await db.run(`
+                ALTER TABLE user_invitations 
+                ADD COLUMN predefined_settings JSON
+            `);
+            Logger.info('Added predefined_settings column to user_invitations table.');
+        } catch (e: any) {
+            if (e.code === 'ER_DUP_FIELDNAME') {
+                Logger.info('predefined_settings column already exists in user_invitations table.');
+            } else {
+                Logger.error('Error adding predefined_settings column:', e);
+            }
+        }
+
         await db.close();
         Logger.info('Schema update complete.');
         process.exit(0);

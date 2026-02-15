@@ -36,7 +36,7 @@ export default class InvitationsAPI {
          * Create and send an invitation.
          */
         this.app.post('/api/admin/invitations', { preHandler: [check('user.manage')] }, async (request: any, reply) => {
-            const { email, force } = request.body as any;
+            const { email, force, settings } = request.body as any;
             if (!email) return reply.status(400).send({ message: 'Email is required.' });
 
             const normalizedEmail = email.toLowerCase().trim();
@@ -69,7 +69,7 @@ export default class InvitationsAPI {
             const inviterId = request.user.id;
             const token = crypto.randomBytes(32).toString('hex');
 
-            const status = await InvitationsDB.createInvitation(this.db, normalizedEmail, inviterId, token);
+            const status = await InvitationsDB.createInvitation(this.db, normalizedEmail, inviterId, token, settings);
             if (status.isError()) return status.getResponse(reply);
 
             // Send invitation email

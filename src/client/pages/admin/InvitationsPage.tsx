@@ -8,11 +8,29 @@ import { showConfirmModal } from "@/utils/modal";
 export default function InvitationsPage() {
     const { notify } = useNotifications();
     const [isInviting, setIsInviting] = createSignal(false);
+    const [isMember, setIsMember] = createSignal(false);
+    const [selectedRoles, setSelectedRoles] = createSignal<Set<number>>(new Set());
+    const [selectedPerms, setSelectedPerms] = createSignal<Set<number>>(new Set());
+    const [selectedTags, setSelectedTags] = createSignal<Set<number>>(new Set());
 
     const [invitations, { refetch }] = createResource(async () => {
         const res = await apiRequest('GET', '/api/admin/invitations');
         return res;
     });
+
+    const [roles] = createResource(async () => await apiRequest('GET', '/api/admin/roles'));
+    const [perms] = createResource(async () => await apiRequest('GET', '/api/admin/roles/permissions'));
+    const [tags] = createResource(async () => {
+        const res = await apiRequest('GET', '/api/tags');
+        return res.data || [];
+    });
+
+    const toggleSelection = (id: number, signal: any, setter: any) => {
+        const next = new Set(signal());
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setter(next);
+    };
 
     const handleInvite = async (e: Event) => {
         e.preventDefault();
@@ -20,12 +38,23 @@ export default function InvitationsPage() {
         const formData = new FormData(form);
         const email = formData.get('email') as string;
 
+        const settings = {
+            is_member: isMember(),
+            roles: Array.from(selectedRoles()),
+            permissions: Array.from(selectedPerms()),
+            tags: Array.from(selectedTags())
+        };
+
         const sendInvite = async (force = false) => {
             setIsInviting(true);
             try {
-                await apiRequest('POST', '/api/admin/invitations', { email, force });
+                await apiRequest('POST', '/api/admin/invitations', { email, force, settings });
                 notify('Success', 'Invitation sent successfully.', 'success');
                 form.reset();
+                setIsMember(false);
+                setSelectedRoles(new Set());
+                setSelectedPerms(new Set());
+                setSelectedTags(new Set());
                 refetch();
             } catch (err: any) {
                 if (err.status === 409 && err.message.includes('pending')) {
@@ -62,21 +91,88 @@ export default function InvitationsPage() {
     return (
         <div class="glass-layout invitations-page">
             <Panel title="Send New Invitation" class="glass-panel" style={{ "margin-bottom": "2rem" }}>
-                <form onSubmit={handleInvite} class="modern-form inline-form">
-                    <div class="form-row">
-                        <input 
-                            name="email" 
-                            type="email" 
-                            placeholder="Email address to invite" 
-                            required 
-                            disabled={isInviting()}
-                        />
-                        <button type="submit" class="primary" disabled={isInviting()}>
+                <form onSubmit={handleInvite} class="modern-form">
+                    <div class="form-row" style={{ "display": "flex", "gap": "1rem", "align-items": "flex-end", "margin-bottom": "1.5rem" }}>
+                        <div style={{ "flex": "1" }}>
+                            <label>Email Address</label>
+                            <input 
+                                name="email" 
+                                type="email" 
+                                placeholder="Email address to invite" 
+                                required 
+                                disabled={isInviting()}
+                            />
+                        </div>
+                        <button type="submit" class="primary" disabled={isInviting()} style={{ "height": "calc(var(--pico-spacing) * 2 + 1.5rem)", "margin-bottom": "var(--pico-outline-width)" }}>
                             {isInviting() ? 'Sending...' : 'Send Invitation'}
                         </button>
                     </div>
-                    <p class="small-text" style={{ "margin-top": "0.5rem" }}>
-                        Invitations allow people without a @durham.ac.uk email to sign up.
+
+                    <div class="invitation-settings">
+                        <div class="setting-group" style={{ "margin-bottom": "1.5rem" }}>
+                            <label class="checkbox-label">
+                                <input type="checkbox" checked={isMember()} onChange={e => setIsMember(e.currentTarget.checked)} />
+                                <span>Pre-approve as Member</span>
+                            </label>
+                        </div>
+
+                        <div class="grid">
+                            <div class="setting-col">
+                                <label>Predefined Roles</label>
+                                <div class="tags-selection-grid mini">
+                                    <For each={roles() || []}>
+                                        {role => (
+                                            <div 
+                                                class="tag-badge tag-badge-style" 
+                                                classList={{ selected: selectedRoles().has(role.id) }}
+                                                onClick={() => toggleSelection(role.id, selectedRoles, setSelectedRoles)}
+                                            >
+                                                {role.name}
+                                            </div>
+                                        )}
+                                    </For>
+                                </div>
+                            </div>
+                            <div class="setting-col">
+                                <label>Predefined Permissions</label>
+                                <div class="tags-selection-grid mini">
+                                    <For each={perms() || []}>
+                                        {perm => (
+                                            <div 
+                                                class="tag-badge tag-badge-style" 
+                                                classList={{ selected: selectedPerms().has(perm.id) }}
+                                                onClick={() => toggleSelection(perm.id, selectedPerms, setSelectedPerms)}
+                                            >
+                                                {perm.slug}
+                                            </div>
+                                        )}
+                                    </For>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-group" style={{ "margin-top": "1.5rem" }}>
+                            <label>Predefined Tags (Whitelist)</label>
+                            <div class="tags-selection-grid mini">
+                                <For each={tags() || []}>
+                                    {tag => (
+                                        <div 
+                                            class="tag-badge tag-badge-style" 
+                                            classList={{ selected: selectedTags().has(tag.id) }}
+                                            style={{ "--tag-colour": tag.color }}
+                                            onClick={() => toggleSelection(tag.id, selectedTags, setSelectedTags)}
+                                        >
+                                            {tag.name}
+                                        </div>
+                                    )}
+                                </For>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="small-text" style={{ "margin-top": "1rem", "opacity": "0.7" }}>
+                        Invitations allow people without a @durham.ac.uk email to sign up. 
+                        Predefined settings will be applied automatically when they create their account.
                     </p>
                 </form>
             </Panel>

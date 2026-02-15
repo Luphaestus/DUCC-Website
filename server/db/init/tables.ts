@@ -130,6 +130,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         token VARCHAR(255) UNIQUE NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         used_at DATETIME,
+        predefined_settings JSON,
         FOREIGN KEY (inviter_id) REFERENCES users(id) ON DELETE CASCADE
       `
     },
