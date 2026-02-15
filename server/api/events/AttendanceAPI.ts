@@ -261,7 +261,7 @@ export default class AttendanceAPI {
                             await NotificationsAPI.sendNotificationToUser(
                                 this.db,
                                 nextUserId,
-                                'Waitlist Update',
+                                `Promoted from Waitlist: ${event.title} - DUCC`,
                                 `Good news! You've been promoted to the attendee list for "${event.title}".`,
                                 `/event/${eventId}`,
                                 NotificationType.EVENTS

@@ -211,9 +211,96 @@ export default function ProfileSettings() {
         notify('Success', `${label} copied to clipboard!`, 'success', 2000);
     };
 
+    // Email Management
+    const [userEmails, { refetch: refetchEmails }] = createResource(async () => {
+        return await apiRequest('GET', '/api/users/me/emails');
+    });
+
+    const [isAddingEmail, setIsAddingEmail] = createSignal(false);
+    const handleAddEmail = async (e: Event) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const email = (new FormData(form)).get('new-email') as string;
+        
+        setIsAddingEmail(true);
+        try {
+            await apiRequest('POST', '/api/users/me/emails', { email });
+            notify('Success', 'Verification email sent.', 'success');
+            form.reset();
+            refetchEmails();
+        } catch (err: any) {
+            notify('Error', err.message, 'error');
+        } finally {
+            setIsAddingEmail(false);
+        }
+    };
+
+    const handleDeleteEmail = async (id: number) => {
+        if (await showConfirmModal('Delete Email?', 'Are you sure?')) {
+            try {
+                await apiRequest('DELETE', `/api/users/me/emails/${id}`);
+                notify('Success', 'Email deleted.', 'success');
+                refetchEmails();
+            } catch (err: any) {
+                notify('Error', err.message, 'error');
+            }
+        }
+    };
+
+    const handleSetPrimary = async (id: number) => {
+        try {
+            await apiRequest('POST', `/api/users/me/emails/${id}/set-primary`);
+            notify('Success', 'Primary email updated.', 'success');
+            refetchEmails();
+            refetch(); // Update main profile email
+        } catch (err: any) {
+            notify('Error', err.message, 'error');
+        }
+    };
+
     return (
         <Show when={profile()} fallback={<p aria-busy="true">Loading...</p>}>
             <section class="dashboard-section active">
+                <Panel title="Email Addresses" class="glass-panel">
+                    <p>Manage the email addresses associated with your account. You can log in with any verified email.</p>
+                    <div class="item-list" style={{ "margin-bottom": "1.5rem" }}>
+                        <For each={userEmails() || []} fallback={<p aria-busy="true">Loading emails...</p>}>
+                            {(email) => (
+                                <div class="list-item">
+                                    <div class="item-details">
+                                        <span class="item-title">{email.email}</span>
+                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <Show when={email.is_primary}>
+                                                <span class="status-tag success">Primary</span>
+                                            </Show>
+                                            <Show when={!email.is_verified}>
+                                                <span class="status-tag warning">Unverified</span>
+                                            </Show>
+                                        </div>
+                                    </div>
+                                    <div class="item-value-group">
+                                        <Show when={!email.is_primary && email.is_verified}>
+                                            <button class="small-btn secondary mini-btn" onClick={() => handleSetPrimary(email.id)}>Make Primary</button>
+                                        </Show>
+                                        <Show when={!email.is_primary}>
+                                            <button class="small-btn icon-only delete" onClick={() => handleDeleteEmail(email.id)} innerHTML={CLOSE_SVG}></button>
+                                        </Show>
+                                    </div>
+                                </div>
+                            )}
+                        </For>
+                    </div>
+
+                    <form onSubmit={handleAddEmail} class="modern-form inline-form">
+                        <div class="form-row">
+                            <input name="new-email" type="email" placeholder="Add new email address" required disabled={isAddingEmail()} />
+                            <button type="submit" class="secondary" disabled={isAddingEmail()}>
+                                {isAddingEmail() ? 'Adding...' : 'Add Email'}
+                            </button>
+                        </div>
+                    </form>
+                </Panel>
+
                 <Panel title="Account Security" class="glass-panel">
                     <div class="settings-grid">
                         <div class="two-fa-grid dual-grid">
@@ -516,7 +603,7 @@ export default function ProfileSettings() {
             >
                 <div class="passkey-management">
                     <div class="item-list">
-                        <For each={passkeys()} fallback={<p>No passkeys registered.</p>}>
+                        <For each={passkeys() || []} fallback={<p>No passkeys registered.</p>}>
                             {(k) => (
                                 <div class="list-item">
                                     <div class="item-icon"><span innerHTML={KEY_SVG} /></div>

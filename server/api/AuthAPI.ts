@@ -145,7 +145,7 @@ export default class Auth {
          * Register a new user or restore a deleted account.
          */
         this.app.post('/api/auth/signup', async (request: FastifyRequest, reply: FastifyReply) => {
-            let { email, password, first_name, last_name } = request.body as any;
+            let { email, password, first_name, last_name, invitation_token } = request.body as any;
 
             if (!email || !password || !first_name || !last_name) {
                 return reply.status(400).send({ message: 'All fields are required.' });
@@ -170,27 +170,63 @@ export default class Auth {
                 return reply.status(400).send({ message: 'Validation failed', errors });
             }
 
+            // Enforce Durham email unless a valid invitation token is provided
+            const isDurhamEmail = email.endsWith('@durham.ac.uk');
+            let invitation = null;
+            const InvitationsDB = (await import('../db/invitationsDB.js')).default;
+
+            if (invitation_token) {
+                invitation = await InvitationsDB.getInvitationByToken(this.db, invitation_token);
+                if (!invitation) {
+                    return reply.status(400).send({ message: 'Invalid or expired invitation token.' });
+                }
+                if (invitation.email.toLowerCase() !== email) {
+                    return reply.status(400).send({ message: 'Email does not match the invitation.' });
+                }
+            } else if (!isDurhamEmail) {
+                return reply.status(400).send({ 
+                    message: 'Only @durham.ac.uk email addresses can sign up without an invitation.' 
+                });
+            }
+
             try {
                 const deletedEmail = 'deleted:' + email;
                 const existingUser = await AuthDB.getUserByEmail(this.db, deletedEmail);
 
                 const hashedPassword = await bcrypt.hash(password, config.auth.bcryptSaltRounds);
-                const verificationToken = crypto.randomBytes(32).toString('hex');
+                const verificationToken = invitation_token ? null : crypto.randomBytes(32).toString('hex');
+                const shouldBeVerified = !!invitation_token;
 
+                let status;
                 if (existingUser) {
-                    const status = await AuthDB.restoreUser(this.db, existingUser.id, email, hashedPassword, first_name, last_name);
+                    status = await AuthDB.restoreUser(this.db, existingUser.id, email, hashedPassword, first_name, last_name);
                     if (!status.isError()) {
-                        await AuthDB.updateVerificationToken(this.db, existingUser.id, verificationToken);
-                        this.sendVerificationEmail(email, first_name, verificationToken, request);
+                        if (shouldBeVerified) {
+                            await this.db.run('UPDATE users SET is_verified = 1, verification_token = NULL WHERE id = ?', [existingUser.id]);
+                            await this.db.run('UPDATE user_emails SET is_verified = 1, verification_token = NULL WHERE user_id = ? AND email = ?', [existingUser.id, email]);
+                        } else {
+                            await AuthDB.updateVerificationToken(this.db, existingUser.id, verificationToken!);
+                            this.sendVerificationEmail(email, first_name, verificationToken!, request);
+                        }
                     }
-                    return status.getResponse(reply);
                 } else {
-                    const status = await AuthDB.createUser(this.db, email, hashedPassword, first_name, last_name, verificationToken);
+                    status = await AuthDB.createUser(this.db, email, hashedPassword, first_name, last_name, verificationToken);
                     if (!status.isError()) {
-                        this.sendVerificationEmail(email, first_name, verificationToken, request);
+                        const newUserId = status.data.id;
+                        if (shouldBeVerified) {
+                            await this.db.run('UPDATE users SET is_verified = 1, verification_token = NULL WHERE id = ?', [newUserId]);
+                            await this.db.run('UPDATE user_emails SET is_verified = 1, verification_token = NULL WHERE user_id = ? AND email = ?', [newUserId, email]);
+                        } else {
+                            this.sendVerificationEmail(email, first_name, verificationToken!, request);
+                        }
                     }
-                    return status.getResponse(reply);
                 }
+
+                if (!status.isError() && invitation_token) {
+                    await InvitationsDB.markInvitationAsUsed(this.db, invitation_token);
+                }
+
+                return status.getResponse(reply);
             } catch (err) {
                 Logger.error(err);
                 return reply.status(500).send({ message: 'Registration failed.' });

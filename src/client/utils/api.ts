@@ -88,7 +88,11 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
                 return result;
             } else {
                 // If the server responded with an error, it's NOT a connection loss
-                const error = result || { message: 'Request failed with status: ' + response.status };
+                const errorBody = result || {};
+                const errorMessage = errorBody.message || 'Request failed with status: ' + response.status;
+                const error = new Error(errorMessage);
+                (error as any).status = response.status;
+                (error as any).data = errorBody;
 
 
                 if (response.status === 401 && !silent) {
@@ -105,9 +109,9 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
                         if (window.solidNavigate) window.solidNavigate('/unauthorised');
                         else window.location.href = '/unauthorised';
                     }
-                    notify('Access Denied', error.message || 'You do not have permission to perform this action.', NotificationTypes.WARNING);
+                    notify('Access Denied', errorMessage, NotificationTypes.WARNING);
                 } else if (response.status >= 500 && !silent) {
-                    notify('Server Error', error.message || 'An internal server error occurred.', NotificationTypes.ERROR);
+                    notify('Server Error', errorMessage, NotificationTypes.ERROR);
                 }
 
                 throw error;
@@ -121,7 +125,7 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
                 updateConnectionStatus(false);
             }
 
-            const finalError = error.message ? error : { message: 'Network error' };
+            const finalError = error instanceof Error ? error : new Error(error.message || 'Network error');
 
             // If it's a generic network error (not a status-based one), notify
             if (!silent && !gotResponse) {

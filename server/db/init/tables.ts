@@ -122,6 +122,31 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
       `
     },
     {
+      name: 'user_invitations',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        inviter_id INT NOT NULL,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        used_at DATETIME,
+        FOREIGN KEY (inviter_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'user_emails',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        is_verified TINYINT(1) NOT NULL DEFAULT 0,
+        is_primary TINYINT(1) NOT NULL DEFAULT 0,
+        verification_token VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
       name: 'exec_committee',
       schema: `
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -735,6 +760,47 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         data JSON NOT NULL,
         expires_at DATETIME NOT NULL,
         INDEX idx_expires (expires_at)
+      `
+    },
+    {
+      name: '`keys`',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        holder_id INT,
+        is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+        deleted_by_id INT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (holder_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL
+      `
+    },
+    {
+      name: 'key_logs',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        key_id INT NOT NULL,
+        from_user_id INT,
+        to_user_id INT,
+        transferred_by_id INT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (key_id) REFERENCES \`keys\`(id) ON DELETE CASCADE,
+        FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (transferred_by_id) REFERENCES users(id) ON DELETE CASCADE
+      `
+    },
+    {
+      name: 'system_metrics',
+      schema: `
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        cpu_usage FLOAT NOT NULL,
+        memory_usage FLOAT NOT NULL,
+        db_connections INT NOT NULL,
+        active_sessions INT NOT NULL,
+        user_activity_count INT NOT NULL DEFAULT 0,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_timestamp (timestamp)
       `
     }
   ];

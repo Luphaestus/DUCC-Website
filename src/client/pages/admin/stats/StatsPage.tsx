@@ -7,7 +7,7 @@ import {
     TRENDING_UP_SVG 
 } from '@/utils/icons';
 import { onUpdate } from "@/utils/updates";
-import PageTitle from "@/components/PageTitle";
+import MonitoringDashboard from "./MonitoringDashboard";
 
 // Simple Bar Chart Component (SVG)
 const BarChart = (props: { data: { label: string, value: number, color?: string }[], height?: number }) => {
@@ -214,6 +214,8 @@ export default function StatsPage() {
                         </div>
                     </Panel>
                 </div>
+                
+                <MonitoringDashboard />
             </div>
         </div>
     );

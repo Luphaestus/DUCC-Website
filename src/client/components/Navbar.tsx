@@ -11,6 +11,7 @@ const navEntries = [
   { name: 'Swims', path: '/swims', id: 'nav-swims', auth: true },
   { name: 'Forms', path: '/forms', id: 'nav-forms', auth: true },
   { name: 'Elections', path: '/elections', id: 'nav-elections', auth: true },
+  { name: 'Keys', path: '/admin/keys', id: 'nav-keys', auth: true },
   { name: 'Quotes', path: '/quotes', id: 'nav-quotes' },
   { name: 'Exec', path: '/exec', id: 'nav-exec' },
   { name: 'Admin', path: '/admin', id: 'admin-button', admin: true },
@@ -51,6 +52,16 @@ export default function Navbar() {
       return [];
     }
   });
+
+  const [myKeys] = createResource(isAuthenticated, async (loggedIn) => {
+    if (!loggedIn) return [];
+    try {
+      const res = await apiRequest('GET', '/api/keys/me');
+      return res.keys || [];
+    } catch {
+      return [];
+    }
+  });
   
   // Spotlight effect state
   const [spotlightStyle, setSpotlightStyle] = createSignal({ opacity: 0, left: 0, width: 0 });
@@ -65,6 +76,7 @@ export default function Navbar() {
     const activeElection = currentElection();
     const availableForms = forms() || [];
     const openFormsCount = availableForms.filter((f: any) => !f.is_closed && (f.allow_multiple_responses || !f.user_has_submitted)).length;
+    const hasKeys = (myKeys() || []).length > 0;
 
     return navEntries.map(entry => {
         let isVisible = true;
@@ -74,6 +86,7 @@ export default function Navbar() {
         else if (entry.id === 'nav-swims') isVisible = !!isLoggedInVal;
         else if (entry.id === 'nav-elections') isVisible = !!activeElection && !!isLoggedInVal;
         else if (entry.id === 'nav-forms') isVisible = openFormsCount > 0;
+        else if (entry.id === 'nav-keys') isVisible = hasKeys && !hasExecVal; // Admins see it via Admin dropdown or already visible if we want, but user said "if the person is a non admin, and has a key"
 
         return { 
             ...entry, 

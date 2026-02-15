@@ -1,5 +1,5 @@
 import { createSignal, onMount, createMemo, Show } from "solid-js";
-import { useNavigate } from "@solidjs/router";
+import { useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { PERSON_SVG, LOCK_SVG } from '@/utils/icons';
@@ -7,6 +7,7 @@ import { calculateEntropy, getStrengthLabel } from "@/utils/password";
 
 export default function SignupPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { notify } = useNotifications();
     const [firstName, setFirstName] = createSignal("");
     const [lastName, setLastName] = createSignal("");
@@ -14,6 +15,8 @@ export default function SignupPage() {
     const [password, setPassword] = createSignal("");
     const [confirmPassword, setConfirmPassword] = createSignal("");
     const [isEmailModified, setIsEmailModified] = createSignal(false);
+    const [invitationToken, setInvitationToken] = createSignal<string | null>(null);
+    const [inviterName, setInviterName] = createSignal<string | null>(null);
     const [errors, setErrors] = createSignal<Record<string, string>>({});
     const [shaking, setShaking] = createSignal<Record<string, boolean>>({});
 
@@ -27,8 +30,26 @@ export default function SignupPage() {
             const status = await apiRequest('GET', '/api/auth/status', null, true);
             if (status.authenticated) {
                 navigate('/events');
+                return;
             }
         } catch (e) {}
+
+        const tokenParam = searchParams.token;
+        const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
+        
+        if (token) {
+            try {
+                const res = await apiRequest('GET', `/api/auth/invitation/verify?token=${token}`);
+                setInvitationToken(token);
+                setEmail(res.email);
+                setIsEmailModified(true);
+                setInviterName(res.inviter_name);
+                notify('Info', `Invited by ${res.inviter_name}`, 'info');
+            } catch (err: any) {
+                notify('Error', 'Invalid or expired invitation.', 'error');
+                navigate('/signup');
+            }
+        }
     });
 
     const triggerError = (fieldErrors: Record<string, string>) => {
@@ -76,7 +97,8 @@ export default function SignupPage() {
     const handleEmailInput = (val: string) => {
         clearError('email');
         setIsEmailModified(true);
-        setEmail(val.split('@')[0]);
+        if (invitationToken()) return;
+        setEmail(val);
     };
 
     const handleSignup = async (e: Event) => {
@@ -96,7 +118,7 @@ export default function SignupPage() {
 
         if (email().includes('+')) {
             currentErrors.email = 'Plus-indexed emails are not allowed';
-        } else if (!email().includes('.')) {
+        } else if (!email().includes('@') && !email().includes('.') && !invitationToken()) {
             currentErrors.email = 'Email must follow the first.last format';
         }
 
@@ -115,7 +137,8 @@ export default function SignupPage() {
                 first_name: firstName(),
                 last_name: lastName(),
                 email: fullEmail,
-                password: password()
+                password: password(),
+                invitation_token: invitationToken()
             });
             notify('Success', 'Sign up successful!', 'success', 1000, 'signup-status');
             navigate(`/email-sent?type=signup&email=${encodeURIComponent(fullEmail)}`);
@@ -145,7 +168,11 @@ export default function SignupPage() {
                     <h2>
                         Join the Club
                     </h2>
-                    <p class="auth-subtitle">Create your account to start paddling!</p>
+                    <p class="auth-subtitle">
+                        <Show when={inviterName()} fallback="Create your account to start paddling!">
+                            You've been invited by {inviterName()} to join DUCC!
+                        </Show>
+                    </p>
                 </div>
 
                 <form onSubmit={handleSignup}>
@@ -194,26 +221,24 @@ export default function SignupPage() {
                     </div>
 
                     <div class="modern-form-group">
-                        <label for="signup-email">Durham Email Address</label>
-                        <div class="glass-input-group durham-email-wrapper" classList={{ 'is-invalid': !!errors().email, 'shaking': shaking().email }}>
+                        <label for="signup-email">Email Address</label>
+                        <div class="glass-input-group" classList={{ 'durham-email-wrapper': !invitationToken(), 'is-invalid': !!errors().email, 'shaking': shaking().email }}>
                             <div class="icon">
                                 <span innerHTML={PERSON_SVG} />
                             </div>
                             <input 
                                 type="text" 
                                 id="signup-email" 
-                                placeholder="firstname.lastname" 
+                                placeholder={invitationToken() ? "email@example.com" : "firstname.lastname"} 
                                 autocomplete="username"
                                 value={email()}
-                                onKeyDown={(e) => {
-                                    if (e.key === '@') {
-                                        e.preventDefault();
-                                    }
-                                }}
                                 onInput={(e) => handleEmailInput(e.currentTarget.value)}
                                 required
+                                disabled={!!invitationToken()}
                             />
-                            <span class="email-suffix">@durham.ac.uk</span>
+                            <Show when={!invitationToken() && !email().includes('@')}>
+                                <span class="email-suffix">@durham.ac.uk</span>
+                            </Show>
                         </div>
                         <Show when={errors().email}>
                             <small class="error-text">{errors().email}</small>

@@ -55,7 +55,7 @@ export default class TransactionsDB {
 
         if (status === 'completed') {
             // Send notification
-            const title = 'New Payment Added';
+            const title = `New Payment Added: ${description} - DUCC`;
             const body = `A payment of £${Math.abs(amount).toFixed(2)} has been added to your account for ${description}.`;
             
             NotificationsAPI.sendNotificationToUser(
@@ -179,7 +179,7 @@ export default class TransactionsDB {
         await db.run("UPDATE transactions SET status = 'completed', amount = ?, description = ? WHERE id = ?", [amount, description, transactionId]);
 
         // Send notification
-        const title = 'Payment Verified';
+        const title = `Payment Verified: ${description} - DUCC`;
         const body = `Your top-up of £${Math.abs(amount).toFixed(2)} has been verified and added to your account.`;
         
         NotificationsAPI.sendNotificationToUser(

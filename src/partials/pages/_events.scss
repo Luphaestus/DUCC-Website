@@ -525,28 +525,40 @@
             box-shadow: 0 0 15px rgba(var(--pico-primary-rgb), 0.2);
             position: relative;
 
-            &::before {
-                content: '';
+            .event-progress-bar {
                 position: absolute;
                 top: 0;
                 left: 0;
+                width: 100%;
                 height: 100%;
-                width: var(--progress, 0%);
-                background: rgba(var(--pico-primary-rgb), 0.12);
+                background: transparent;
+                z-index: 3;
+                border-radius: 0;
                 pointer-events: none;
-                z-index: 1;
-                border-radius: inherit;
-                transition: width 0.5s ease;
+
+                .progress-fill {
+                    height: 100%;
+                    background: rgba(var(--pico-primary-rgb), 0.15);
+                    border-right: 1.5px solid rgba(var(--pico-primary-rgb), 0.4);
+                    box-shadow: 0 0 8px rgba(var(--pico-primary-rgb), 0.15);
+                    transition: width 0.5s ease;
+                    border-radius: 0;
+                }
             }
 
-            .event-progress-bar {
-                display: none;
-            }
-
-            // Ensure content stays above the tint
-            .event-image-container, .event-card-content {
+            // Ensure content stays above the progress overlay
+            .event-card-content, .event-image-container {
                 position: relative;
                 z-index: 2;
+            }
+
+            // Specific adjustment to keep image container below the progress bar but content above it
+            .event-image-container {
+                z-index: 1;
+            }
+
+            .event-card-content {
+                z-index: 4;
             }
         }
 

@@ -360,6 +360,15 @@ export default class UserDB {
                 await tx.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', [newPresidentId, presidentRole.id]);
                 // Sync new president to the (now archived) exec committee
                 await ExecDB.syncExecMember(tx, newPresidentId);
+
+                // Trigger recap emails asynchronously after transaction succeeds
+                const presidentInfo = await tx.get('SELECT first_name, last_name FROM users WHERE id = ?', [newPresidentId]);
+                setImmediate(async () => {
+                    const RecapManager = (await import('../misc/RecapManager.js')).default;
+                    await RecapManager.sendRecapEmails(db, [
+                        { role_name: 'President', winners: [presidentInfo] }
+                    ]);
+                });
             }
             return new statusObject(200);
         }).catch(error => {

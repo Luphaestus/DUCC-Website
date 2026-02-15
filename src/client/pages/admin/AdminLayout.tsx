@@ -1,10 +1,10 @@
-// todo clean up
-import { createResource, Show, onMount, createEffect, ParentProps, createMemo } from "solid-js";
+import { createResource, Show, createEffect, ParentProps, createMemo } from "solid-js";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { useAuth } from "@/stores/auth";
 import AdminNavBar from "@/components/admin/AdminNavBar";
 import { apiRequest } from "@/utils/api";
 import PageTitle from "@/components/PageTitle";
+import { ADMIN_MODULES } from "@/utils/adminConfig";
 
 export default function AdminLayout(props: ParentProps) {
     const { user, isAuthenticated, isExec } = useAuth();
@@ -35,18 +35,8 @@ export default function AdminLayout(props: ParentProps) {
 
     const pageTitle = createMemo(() => {
         const path = location.pathname;
-        if (path.includes('/users')) return 'Members';
-        if (path.includes('/events')) return 'Events';
-        if (path.includes('/emails')) return 'Announcements';
-        if (path.includes('/files')) return 'Documents';
-        if (path.includes('/quotes')) return 'Quotes';
-        if (path.includes('/tags')) return 'Categories';
-        if (path.includes('/roles')) return 'Access Roles';
-        if (path.includes('/slides')) return 'Slideshow';
-        if (path.includes('/globals')) return 'Settings';
-        if (path.includes('/kit')) return 'Inventory';
-        if (path.includes('/stats')) return 'Analytics';
-        return 'Dashboard';
+        const module = ADMIN_MODULES.find(m => path.startsWith(m.href));
+        return module ? module.title : 'Dashboard';
     });
 
     return (

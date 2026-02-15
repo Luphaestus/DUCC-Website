@@ -190,17 +190,14 @@ export default function LoginPage() {
                                     autocomplete="username"
                                     value={email()}
                                     autofocus
-                                    onKeyDown={(e) => {
-                                        if (e.key === '@') {
-                                            e.preventDefault();
-                                        }
-                                    }}
                                     onInput={(e) => {
                                         clearError('email');
-                                        setEmail(e.currentTarget.value.split('@')[0]);
+                                        setEmail(e.currentTarget.value);
                                     }}
                                 />
-                                <span class="email-suffix">@durham.ac.uk</span>
+                                <Show when={!email().includes('@')}>
+                                    <span class="email-suffix">@durham.ac.uk</span>
+                                </Show>
                             </div>
                         </div>
 

@@ -337,7 +337,7 @@ export default class ElectionAPI {
                 const currentElection = allElections.find((e: any) => !['setup'].includes(e.phase));
 
                 if (!currentElection) {
-                    return reply.status(404).send({ message: 'No active or recent elections found.' });
+                    return reply.status(200).send({ data: null, message: 'No active or recent elections found.' });
                 }
                 
                 // Get roles for the election

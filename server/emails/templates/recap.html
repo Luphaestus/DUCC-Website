@@ -1,0 +1,22 @@
+<tr>
+    <td class="content">
+        <h2>Your DUCC Year in Review!</h2>
+        <p>Hi {{name}},</p>
+        <p>As the academic year comes to a close and a new Executive Committee takes the helm, we wanted to take a moment to celebrate everything you've achieved with the Durham University Canoe Club!</p>
+        
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #7E317B;">Your Stats</h3>
+            <p>🌊 <strong>Total Hours on the Water:</strong> {{total_hours}} hours</p>
+            <p>🚣 <strong>Your Favorite Event:</strong> {{most_frequented_title}} (Attended {{most_frequented_count}} times!)</p>
+            <p>🤝 <strong>Best Paddle Buddy:</strong> {{top_companion}} ({{companion_count}} events together)</p>
+        </div>
+
+        <h3 style="color: #7E317B;">Meet Your New Exec</h3>
+        <p>Congratulations to our newly elected leaders for the upcoming year:</p>
+        {{new_exec_html}}
+
+        {{warn_emails_html}}
+
+        <p>Thank you for being part of DUCC. We hope to see you back on the water next year!</p>
+    </td>
+</tr>

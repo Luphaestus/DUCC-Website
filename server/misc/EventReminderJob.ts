@@ -70,7 +70,7 @@ export class EventReminderJob {
                     await NotificationsAPI.sendNotificationToUser(
                         this.db,
                         row.user_id,
-                        'Upcoming Event',
+                        `${row.title} starts in 30 minutes - DUCC`,
                         `Reminder: "${row.title}" starts at ${startTime}!`,
                         `/event/${row.id}`,
                         NotificationType.EVENT_REMINDERS,

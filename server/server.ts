@@ -60,9 +60,15 @@ let db: DatabaseWrapper;
 /** Bootstraps server: connects DB, registers routes, starts listening. */
 const startServer = async () => {
   try {
-    db = await connect(config.mysql);
+    const db = await connect(config.mysql);
 
-    if (isProd) {
+    const env = process.env.NODE_ENV || 'development';
+    const shouldWipe = process.argv.includes('--seed') || process.argv.includes('--reseed') || process.argv.includes('-f') || process.argv.includes('f');
+
+    const MetricsManager = (await import('./misc/MetricsManager.js')).default;
+    MetricsManager.init(db);
+
+    if (shouldWipe) {
       Logger.info(`Connected to the MySQL database at ${config.mysql.host}.`);
     }
 
@@ -353,10 +359,13 @@ const startServer = async () => {
       './api/admin/AdminTransactionsAPI.js',
       './api/admin/AdminUsersAPI.js',
       './api/admin/EmailsAPI.js',
+      './api/admin/InvitationsAPI.js',
+      './api/admin/KeysAPI.js',
       './api/events/AttendanceAPI.js',
       './api/events/CalendarAPI.js',
       './api/events/EventsAPI.js',
       './api/events/WaitlistAPI.js',
+      './api/users/EmailsAPI.js',
       './api/users/SwimsAPI.js',
       './api/users/UserAPI.js'
     ];

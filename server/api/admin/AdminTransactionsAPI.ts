@@ -112,7 +112,7 @@ export default class AdminTransactions {
 
                         await emailManager.sendTemplatedEmail(
                             user.email,
-                            'Top-Up Receipt - DUCC',
+                            `Top-Up Receipt: ${finalDesc} - DUCC`,
                             'payment_notification',
                             {
                                 name: user.first_name,
@@ -159,7 +159,7 @@ export default class AdminTransactions {
                             const emailManager = EmailManager.getInstance();
                             await emailManager.sendTemplatedEmail(
                                 user.email,
-                                'Top-Up Request Removed - DUCC',
+                                `Top-Up Request Removed: ${tx.description} - DUCC`,
                                 'topup_discarded',
                                 {
                                     name: user.first_name,

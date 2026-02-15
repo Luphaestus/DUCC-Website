@@ -1,32 +1,26 @@
-// todo clean up
-import { createMemo } from "solid-js";
+import { createMemo, For, createResource } from "solid-js";
 import { A } from "@solidjs/router";
 import { useAuth } from "@/stores/auth";
-import {
-    GROUP_SVG, CALENDAR_TODAY_SVG, LOCAL_ACTIVITY_SVG,
-    ID_CARD_SVG, SETTINGS_SVG, FOLDER_SVG, IMAGE_SVG,
-    KAYAKING_SVG, TRENDING_UP_SVG, LIST_SVG, FORMAT_QUOTE_SVG,
-    MAIL_SVG, DESCRIPTION_SVG, GAVEL_SVG
-} from '@/utils/icons';
-import PageTitle from "@/components/PageTitle";
+import { ADMIN_MODULES } from "@/utils/adminConfig";
+import { apiRequest } from "@/utils/api";
 
 export default function DashboardPage() {
     const { user } = useAuth();
     
+    const [globals] = createResource(async () => {
+        try {
+            return await apiRequest('GET', '/api/globals/status');
+        } catch {
+            return null;
+        }
+    });
+
     const perms = createMemo(() => user()?.permissions || []);
-    const canManageUsers = createMemo(() => perms().includes('user.manage') || perms().includes('transaction.manage') || perms().length > 0);
-    const canManageEvents = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
-    const canManageTags = createMemo(() => perms().includes('event.manage.all') || perms().includes('event.manage.scoped'));
-    const canManageFiles = createMemo(() => perms().includes('file.write') || perms().includes('file.edit'));
-    const canManageQuotes = createMemo(() => perms().includes('quote.manage'));
-    const canManageRoles = createMemo(() => perms().includes('role.manage'));
-    const canManageKit = createMemo(() => perms().includes('kit.manage'));
-    const canViewStats = createMemo(() => perms().includes('transaction.manage') || perms().includes('event.manage.all'));
-    const canManageForms = createMemo(() => perms().includes('form.manage') || perms().includes('site.admin'));
-    const canSendEmails = createMemo(() => perms().includes('email.send') || perms().includes('site.admin'));
-    const canManageElections = createMemo(() => perms().includes('election.manage') || perms().includes('site.admin'));
-    const isExec = createMemo(() => perms().length > 0);
-    const canAccessGlobals = createMemo(() => perms().includes('globals.manage') || perms().includes('site.admin'));
+    const isPresident = () => !!globals();
+
+    const visibleModules = createMemo(() => 
+        ADMIN_MODULES.filter(m => m.isVisible(perms(), isPresident()))
+    );
 
     const Card = (props: { title: string, desc: string, icon: string, href: string }) => (
         <A href={props.href} class="dashboard-card panel-transparent" style={{ "border-radius": "32px" }}>
@@ -41,19 +35,9 @@ export default function DashboardPage() {
     return (
         <div class="glass-layout">
             <div class="dashboard-grid">
-                {canManageUsers() && <Card title="Users" desc="Manage members & permissions" icon={GROUP_SVG} href="/admin/users" />}
-                                {canManageEvents() && <Card title="Events" desc="Schedule & attendance" icon={CALENDAR_TODAY_SVG} href="/admin/events" />}
-                {canSendEmails() && <Card title="Emails" desc="Send announcements" icon={MAIL_SVG} href="/admin/emails" />}
-                {canManageTags() && <Card title="Tags" desc="Event categories & styles" icon={LIST_SVG} href="/admin/tags" />}
-                {canManageFiles() && <Card title="Files" desc="Documents & resources" icon={FOLDER_SVG} href="/admin/files" />}
-                {canManageQuotes() && <Card title="Quotes" desc="Moderate club quotes" icon={FORMAT_QUOTE_SVG} href="/admin/quotes" />}
-                {canManageRoles() && <Card title="Roles" desc="User roles & access" icon={ID_CARD_SVG} href="/admin/roles" />}
-                {canViewStats() && <Card title="Stats" desc="Club usage analytics" icon={TRENDING_UP_SVG} href="/admin/stats" />}
-                {canManageForms() && <Card title="Forms" desc="Custom forms & surveys" icon={DESCRIPTION_SVG} href="/admin/forms" />}
-                {canManageElections() && <Card title="Elections" desc="Club committee voting" icon={GAVEL_SVG} href="/admin/elections" />}
-                {isExec() && <Card title="Slides" desc="Homepage slideshow" icon={IMAGE_SVG} href="/admin/slides" />}
-                {canManageKit() && <Card title="Kit" desc="Club equipment inventory" icon={KAYAKING_SVG} href="/admin/kit" />}
-                {canAccessGlobals() && <Card title="Globals" desc="System configuration" icon={SETTINGS_SVG} href="/admin/globals" />}
+                <For each={visibleModules()}>
+                    {m => <Card title={m.title} desc={m.desc} icon={m.icon} href={m.href} />}
+                </For>
             </div>
         </div>
     );

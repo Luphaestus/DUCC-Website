@@ -13,7 +13,16 @@ export default class AuthDB {
      * Find a user by email.
      */
     static async getUserByEmail(db: DatabaseWrapper, email: string): Promise<any> {
-        return await db.get('SELECT * FROM users WHERE email = ?', [email]);
+        // First check the primary email in users table
+        const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
+        if (user) return user;
+
+        // Then check user_emails table for any verified email
+        return await db.get(`
+            SELECT u.* FROM users u
+            JOIN user_emails ue ON u.id = ue.user_id
+            WHERE ue.email = ? AND ue.is_verified = 1
+        `, [email]);
     }
 
     /**
@@ -27,16 +36,29 @@ export default class AuthDB {
      * Register a new user.
      */
     static async createUser(db: DatabaseWrapper, email: string, hashedPassword: string, first_name: string, last_name: string, verificationToken: string | null = null): Promise<statusObject> {
-        try {
-            await db.run('INSERT INTO users (email, hashed_password, first_name, last_name, verification_token) VALUES (?, ?, ?, ?, ?)', [email, hashedPassword, first_name, last_name, verificationToken]);
-            return new statusObject(201, 'User registered successfully.');
-        } catch (err: any) {
-            Logger.error(err);
-            if (err.message && (err.message.includes('UNIQUE constraint failed') || err.code === 'ER_DUP_ENTRY')) {
-                return new statusObject(400, 'Email is already taken.');
+        return db.transaction(async (tx) => {
+            try {
+                const result = await tx.run('INSERT INTO users (email, hashed_password, first_name, last_name, verification_token) VALUES (?, ?, ?, ?, ?)', [email, hashedPassword, first_name, last_name, verificationToken]);
+                const userId = result.lastID;
+
+                // Also insert into user_emails table
+                await tx.run(
+                    'INSERT INTO user_emails (user_id, email, is_verified, is_primary, verification_token) VALUES (?, ?, ?, ?, ?)',
+                    [userId, email, 0, 1, verificationToken]
+                );
+
+                return new statusObject(201, 'User registered successfully.', { id: userId });
+            } catch (err: any) {
+                Logger.error(err);
+                if (err.message && (err.message.includes('UNIQUE constraint failed') || err.code === 'ER_DUP_ENTRY')) {
+                    return new statusObject(400, 'Email is already taken.');
+                }
+                throw err;
             }
+        }).catch(err => {
+            if (err instanceof statusObject) return err;
             return new statusObject(500, 'Registration failed.');
-        }
+        });
     }
 
     /**
@@ -66,22 +88,37 @@ export default class AuthDB {
      * Restore a deleted account.
      */
     static async restoreUser(db: DatabaseWrapper, id: number, email: string, hashedPassword: string, first_name: string, last_name: string): Promise<statusObject> {
-        try {
-            await db.run(`
-                UPDATE users SET 
-                    email = ?, 
-                    hashed_password = ?, 
-                    first_name = ?, 
-                    last_name = ?,
-                    created_at = CURRENT_TIMESTAMP 
-                WHERE id = ?`, 
-                [email, hashedPassword, first_name, last_name, id]
-            );
-            return new statusObject(200, 'Account restored successfully.');
-        } catch (err) {
-            Logger.error(err);
-            return new statusObject(500, 'Account restoration failed.');
-        }
+        return db.transaction(async (tx) => {
+            try {
+                await tx.run(`
+                    UPDATE users SET 
+                        email = ?, 
+                        hashed_password = ?, 
+                        first_name = ?, 
+                        last_name = ?,
+                        created_at = CURRENT_TIMESTAMP 
+                    WHERE id = ?`, 
+                    [email, hashedPassword, first_name, last_name, id]
+                );
+
+                // Update or insert into user_emails
+                const existing = await tx.get('SELECT id FROM user_emails WHERE user_id = ? AND email = ?', [id, email]);
+                if (existing) {
+                    await tx.run('UPDATE user_emails SET is_primary = 1 WHERE id = ?', [existing.id]);
+                } else {
+                    await tx.run('UPDATE user_emails SET is_primary = 0 WHERE user_id = ?', [id]);
+                    await tx.run(
+                        'INSERT INTO user_emails (user_id, email, is_verified, is_primary) VALUES (?, ?, ?, ?)',
+                        [id, email, 0, 1]
+                    );
+                }
+
+                return new statusObject(200, 'Account restored successfully.');
+            } catch (err) {
+                Logger.error(err);
+                throw err;
+            }
+        }).catch(() => new statusObject(500, 'Account restoration failed.'));
     }
 
     /**

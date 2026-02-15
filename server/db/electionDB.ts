@@ -447,13 +447,23 @@ export default class ElectionDB extends BaseDB {
             if (electionRolesRes.isError()) return electionRolesRes;
             const electionRoles = electionRolesRes.getData();
 
+            const winnersForRecap: any[] = [];
+
             for (const electionRole of electionRoles) {
                 const winners = await tx.all(
-                    `SELECT n.user_id, n.manifesto_file_id, n.votes_received
+                    `SELECT n.user_id, n.manifesto_file_id, n.votes_received, u.first_name, u.last_name
                      FROM nominations n
+                     JOIN users u ON n.user_id = u.id
                      WHERE n.election_role_id = ? AND n.is_winner = 1`,
                     [electionRole.id]
                 );
+
+                if (winners.length > 0) {
+                    winnersForRecap.push({
+                        role_name: electionRole.role_name,
+                        winners: winners.map((w: any) => ({ first_name: w.first_name, last_name: w.last_name }))
+                    });
+                }
 
                 for (const winner of winners) {
                     await RolesDB.assignRole(tx, winner.user_id, electionRole.role_id);
@@ -471,6 +481,13 @@ export default class ElectionDB extends BaseDB {
             }
 
             await this.updateElection(tx, electionId, { phase: 'roles_transferred' });
+
+            // Trigger recap emails asynchronously after transaction succeeds
+            setImmediate(async () => {
+                const RecapManager = (await import('../misc/RecapManager.js')).default;
+                await RecapManager.sendRecapEmails(db, winnersForRecap);
+            });
+
             return new statusObject(200, 'Roles transferred successfully.');
         }).catch(error => {
             Logger.error('Database error in transferRoles:', error);

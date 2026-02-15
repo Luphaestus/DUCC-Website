@@ -31,3 +31,124 @@
         }
     }
 }
+
+/* Monitoring Dashboard */
+.monitoring-dashboard {
+    margin-top: 2rem;
+    width: 100%;
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        
+        h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            
+            span {
+                width: 1.5rem;
+                height: 1.5rem;
+                color: var(--pico-primary);
+            }
+        }
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .metric-widget {
+        position: relative;
+        padding-top: 2rem;
+
+        .widget-controls {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            display: flex;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        &:hover .widget-controls {
+            opacity: 1;
+        }
+    }
+
+    .gauge-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .gauge-widget {
+        width: 120px;
+        height: 120px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .gauge-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .gauge-text {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .gauge-label {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--pico-muted-color);
+        }
+    }
+
+    .stat-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 0;
+
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            color: var(--pico-primary);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+        }
+    }
+
+    .mini-chart {
+        width: 100%;
+        height: 60px;
+        margin-top: 1rem;
+        border-top: 1px solid rgba(var(--pico-color-rgb), 0.05);
+        padding-top: 0.5rem;
+    }
+
+    .line-chart {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        
+        svg {
+            display: block;
+        }
+    }
+}
+

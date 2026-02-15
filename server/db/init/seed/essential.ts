@@ -72,7 +72,8 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
         { slug: 'kit.manage', desc: 'Manage club kit inventory' },
         { slug: 'exec.publish', desc: 'Automatically publish users with this role to the executive committee page' },
         { slug: 'exec.manage', desc: 'Manage the executive committee page members' },
-        { slug: 'email.send', desc: 'Send club-wide announcement emails' }
+        { slug: 'email.send', desc: 'Send club-wide announcement emails' },
+        { slug: 'keys.manage', desc: 'Manage boatshed keys and transfers' }
     ];
 
     const permIds: Record<string, number> = {};
@@ -82,7 +83,7 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
         if (row) permIds[p.slug] = row.id;
     }
 
-    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global', 'kit.manage', 'exec.publish', 'exec.manage', 'email.send'];
+    const presidentPerms = ['user.manage', 'user.manage.advanced', 'event.manage.all', 'transaction.manage', 'site.admin', 'role.manage', 'swims.manage', 'tag.write', 'file.read', 'file.write', 'file.edit', 'file.category.manage', 'globals.manage', 'quote.manage', 'quote.see_author', 'car.manage_global', 'kit.manage', 'exec.publish', 'exec.manage', 'email.send', 'keys.manage'];
     await db.run('INSERT IGNORE INTO roles (name, description, exec_ranking) VALUES (?, ?, ?)', ['President', 'The Club President with full administrative access.', 1]);
     const presidentRole = await db.get("SELECT id FROM roles WHERE name = 'President'");
     for (const permSlug of presidentPerms) {
@@ -105,11 +106,14 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
     const systemsCategory = await db.get("SELECT id FROM file_categories WHERE name = 'Systems'");
 
     const presidentExists = await db.get("SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = ? LIMIT 1", ['President']);
-    if (!presidentExists) {
+    
+    // Check if admin user exists first
+    const existingAdmin = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
+
+    if (!presidentExists || !existingAdmin) {
         let adminId = null;
 
-        const adminUser = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
-        if (!adminUser) {
+        if (!existingAdmin) {
             try {
                 const sessionsExists = await db.get("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?", ['sessions']);
                 if (sessionsExists) {
@@ -128,12 +132,14 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
             adminId = adminResult.lastID;
             if (process.env.NODE_ENV !== 'test') console.info(`========== Admin created. ==========\nEmail: ${email}\nPassword: ${password}\n====================================`);
         } else {
-            adminId = adminUser.id;
+            adminId = existingAdmin.id;
             // Ensure existing admin is also a member and has legal info and is verified
             await db.run('UPDATE users SET is_member = 1, filled_legal_info = 1, is_verified = 1, legal_filled_at = ? WHERE id = ?', [new Date().toISOString().slice(0, 19).replace('T', ' '), adminId]);
         }
+        
         if (presidentRole) {
-            await db.run("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);
+            // Re-assign role if needed
+            await db.run("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);
             
             // Sync exec status so they appear on the page
             const ExecDB = (await import('../../execDB.js')).default;

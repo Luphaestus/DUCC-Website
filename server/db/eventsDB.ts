@@ -463,7 +463,7 @@ export default class EventsDB {
                 await NotificationsAPI.sendNotificationToUser(
                     tx, 
                     attendee.user_id, 
-                    'Event Canceled', 
+                    `Event Canceled: ${event.title} - DUCC`, 
                     `The event "${event.title}" has been canceled.`, 
                     `/events`
                 );

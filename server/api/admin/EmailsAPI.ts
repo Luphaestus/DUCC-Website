@@ -48,6 +48,8 @@ export default class EmailsAPI {
                     return reply.status(400).send({ message: 'Missing subject, content, or target' });
                 }
 
+                const finalSubject = subject.endsWith(' - DUCC') ? subject : `${subject} - DUCC`;
+
                 let query = 'SELECT email FROM users WHERE email IS NOT NULL AND is_verified = 1';
                 if (target === 'members') {
                     query += ' AND is_member = 1';
@@ -64,7 +66,7 @@ export default class EmailsAPI {
                         try {
                             await emailManager.sendTemplatedEmail(
                                 user.email,
-                                subject,
+                                finalSubject,
                                 'announcement',
                                 { content }
                             );

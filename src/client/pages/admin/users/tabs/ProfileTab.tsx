@@ -198,7 +198,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
             >
                 <p>Manage the equipment this user usually needs to borrow from the club for trips.</p>
 
-                <form onSubmit={handleUpdateKitPrefs} class="modern-form">
+                <form id="kit-prefs-form" onSubmit={handleUpdateKitPrefs} class="modern-form">
                     <div class="kit-selection-grid">
                         <For each={kitItems()} fallback={<p class="text-muted">No kit items available.</p>}>
                             {(item) => (
@@ -226,12 +226,15 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                         class="floating-save-btn prominent-btn"
                         title="Save Changes"
                         onClick={() => {
-                            const profileForm = document.querySelector('form.modern-form') as HTMLFormElement;
+                            const profileForm = document.querySelector('form.modern-form:not(#kit-prefs-form)') as HTMLFormElement;
                             if (profileForm) profileForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+
+                            const kitForm = document.getElementById('kit-prefs-form') as HTMLFormElement;
+                            if (kitForm) kitForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
                         }}
                     >
                         <span innerHTML={SAVE_SVG} />
-                        <span class="btn-label">Save</span>
+                        <span class="btn-label">Save All</span>
                     </button>
                 </div>
             </Show>

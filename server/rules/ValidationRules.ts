@@ -15,8 +15,8 @@ export default class ValidationRules {
      */
     static validation: Record<string, ValidationRule> = {
         email: {
-            pattern: /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+@durham\.ac\.uk$/i,
-            message: 'Email must be in the format first.last@durham.ac.uk and cannot contain plus signs (+).'
+            pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+            message: 'Please enter a valid email address.'
         },
         name: {
             pattern: /^[a-zA-Z\s,.'-]{1,100}$/,

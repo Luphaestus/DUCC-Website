@@ -132,15 +132,17 @@ Logger.info(`Running in ${env} mode` + (fullReseed ? ' (Full Reseed)' : (shouldW
         'event_kit_requests', 'kit_items', 'kit_variants', 'user_kit_preferences',
         'push_subscriptions', 'user_notification_settings', 
         'form_answers', 'form_submissions', 'form_questions', 'forms',
-        'sessions',
         'votes', 'nominations', 'election_roles', 'elections',
         'event_attendees', 'event_waiting_list', 'transactions', 'swim_history',
         'quotes', 'cars', 'trips', 'event_drivers', 'event_expenses', 'trip_exclusions',
         'expense_exclusions', 'user_managed_tags', 'user_permissions', 'user_roles',
         'tag_whitelists', 'role_managed_tags', 'roles', 'tags', 'password_resets',
         'slides', 'exec_committee', 'authenticators', 'events', 'users', 'files',
-        'file_categories', 'colleges'
+        'file_categories', 'colleges', 'user_invitations', 'user_emails', 'key_logs', '`keys`', 'system_metrics'
       ];
+      // Note: 'sessions' table is intentionally omitted here to preserve logins during reseed.
+      // It is only dropped at the very top of the script if fullReseed is true (via root connection).
+      
       for (const table of tables) {
         await db.run(`DROP TABLE IF EXISTS ${table}`);
       }
@@ -151,37 +153,6 @@ Logger.info(`Running in ${env} mode` + (fullReseed ? ' (Full Reseed)' : (shouldW
     Logger.info('Initializing database schema...');
 
     const newlyCreatedTables = await createTables(db);
-
-    // Run additional migrations
-    const { migrate: addDietaryInfoMigration } = await import('./add_dietary_info_to_users.js');
-    await addDietaryInfoMigration(db);
-
-    const { migrate: addFormVisibilityMigration } = await import('./add_form_visibility_tables.js');
-    await addFormVisibilityMigration(db);
-
-    const { migrate: updateFormQuestionsSchema } = await import('./update_form_questions_schema.js');
-    await updateFormQuestionsSchema(db);
-
-    const { migrate: addFormManagementPermissions } = await import('./add_form_management_permissions.js');
-    await addFormManagementPermissions(db);
-
-    const { migrate: addFormPagesTable } = await import('./add_form_pages_table.js');
-    await addFormPagesTable(db);
-
-    const { migrate: updateSwimHistorySchema } = await import('./update_swim_history_schema.js');
-    await updateSwimHistorySchema(db);
-
-    const { migrate: addEventReminderSettings } = await import('./add_event_reminder_settings.js');
-    await addEventReminderSettings(db);
-
-    const { migrate: addReminderSentToAttendees } = await import('./add_reminder_sent_to_attendees.js');
-    await addReminderSentToAttendees(db);
-
-    const { migrate: addIcsTokenToUsers } = await import('./add_ics_token_to_users.js');
-    await addIcsTokenToUsers(db);
-
-    const { migrate: addCompletedToElectionPhase } = await import('./add_completed_to_election_phase.js');
-    await addCompletedToElectionPhase(db);
 
     // Ensure sessions table is correct (it might exist but with wrong columns from previous versions)
     try {

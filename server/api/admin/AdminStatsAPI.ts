@@ -175,6 +175,22 @@ export default class AdminStats {
             }
         });
 
+        /**
+         * GET /api/admin/stats/system
+         * Returns historical system metrics.
+         */
+        this.app.get('/api/admin/stats/system', { preHandler: [check('perm:site.admin')] }, async (request: any, reply: FastifyReply) => {
+            try {
+                const hours = parseInt((request.query as any).hours || '24');
+                const MetricsManager = (await import('../../misc/MetricsManager.js')).default;
+                const metrics = await MetricsManager.getHistorical(this.db, hours);
+                return reply.send(metrics);
+            } catch (e: any) {
+                Logger.error('System Stats Error', e);
+                return reply.status(500).send({ message: 'Database error' });
+            }
+        });
+
         this.app.get('/api/admin/stats/user/:id', { preHandler: [check('perm:user.manage | perm:transaction.manage')] }, async (request: any, reply: FastifyReply) => {
             try {
                 const userId = parseInt(request.params.id);
