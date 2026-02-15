@@ -133,15 +133,20 @@ export default function SignupPage() {
         }
 
         try {
-            await apiRequest('POST', '/api/auth/signup', {
+            const res = await apiRequest('POST', '/api/auth/signup', {
                 first_name: firstName(),
                 last_name: lastName(),
                 email: fullEmail,
                 password: password(),
                 invitation_token: invitationToken()
             });
-            notify('Success', 'Sign up successful!', 'success', 1000, 'signup-status');
-            navigate(`/email-sent?type=signup&email=${encodeURIComponent(fullEmail)}`);
+            notify('Success', res.message || 'Sign up successful!', 'success', 1500, 'signup-status');
+            
+            if (res.verified) {
+                navigate('/events');
+            } else {
+                navigate(`/email-sent?type=signup&email=${encodeURIComponent(fullEmail)}`);
+            }
         } catch (error: any) {
             const backendErrors: Record<string, string> = {};
             

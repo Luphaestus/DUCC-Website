@@ -226,6 +226,17 @@ export default class Auth {
                     await InvitationsDB.markInvitationAsUsed(this.db, invitation_token);
                 }
 
+                if (!status.isError() && shouldBeVerified) {
+                    const userId = existingUser ? existingUser.id : status.data.id;
+                    const user = await AuthDB.getUserById(this.db, userId);
+                    await request.logIn(user);
+                    request.session.set('user_id', user.id);
+                    return reply.status(200).send({ 
+                        message: 'Sign up successful! You have been logged in.',
+                        verified: true 
+                    });
+                }
+
                 return status.getResponse(reply);
             } catch (err) {
                 Logger.error(err);
