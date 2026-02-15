@@ -20,17 +20,31 @@ export default function InvitationsPage() {
         const formData = new FormData(form);
         const email = formData.get('email') as string;
 
-        setIsInviting(true);
-        try {
-            await apiRequest('POST', '/api/admin/invitations', { email });
-            notify('Success', 'Invitation sent successfully.', 'success');
-            form.reset();
-            refetch();
-        } catch (err: any) {
-            notify('Error', err.message, 'error');
-        } finally {
-            setIsInviting(false);
-        }
+        const sendInvite = async (force = false) => {
+            setIsInviting(true);
+            try {
+                await apiRequest('POST', '/api/admin/invitations', { email, force });
+                notify('Success', 'Invitation sent successfully.', 'success');
+                form.reset();
+                refetch();
+            } catch (err: any) {
+                if (err.status === 409 && err.message.includes('pending')) {
+                    if (await showConfirmModal(
+                        'Invitation Already Pending', 
+                        'There is already a pending invitation for this email. Sending a new one will invalidate the previous link. Are you sure?'
+                    )) {
+                        await sendInvite(true);
+                        return;
+                    }
+                } else {
+                    notify('Error', err.message, 'error');
+                }
+            } finally {
+                setIsInviting(false);
+            }
+        };
+
+        await sendInvite();
     };
 
     const handleDelete = async (id: number) => {

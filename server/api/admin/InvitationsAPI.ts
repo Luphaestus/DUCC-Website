@@ -36,29 +36,56 @@ export default class InvitationsAPI {
          * Create and send an invitation.
          */
         this.app.post('/api/admin/invitations', { preHandler: [check('user.manage')] }, async (request: any, reply) => {
-            const { email } = request.body as any;
+            const { email, force } = request.body as any;
             if (!email) return reply.status(400).send({ message: 'Email is required.' });
+
+            const normalizedEmail = email.toLowerCase().trim();
+
+            // Check if user already exists
+            const existingUser = await this.db.get('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
+            if (existingUser) {
+                return reply.status(400).send({ message: 'A user with this email already exists.' });
+            }
+
+            // Check if invitation already exists
+            const existingInvitation = await this.db.get('SELECT id, used_at FROM user_invitations WHERE email = ?', [normalizedEmail]);
+            if (existingInvitation) {
+                if (existingInvitation.used_at) {
+                    // If used, we can just delete the old record and allow a new invitation 
+                    // (since we already checked that the user doesn't exist in the users table, 
+                    // this means the user was likely deleted but the invitation record remained)
+                    await InvitationsDB.deleteInvitation(this.db, existingInvitation.id);
+                } else if (!force) {
+                    return reply.status(409).send({ 
+                        message: 'An invitation for this email is already pending.',
+                        pending: true
+                    });
+                } else {
+                    // Force overwrite: delete the old one
+                    await InvitationsDB.deleteInvitation(this.db, existingInvitation.id);
+                }
+            }
 
             const inviterId = request.user.id;
             const token = crypto.randomBytes(32).toString('hex');
 
-            const status = await InvitationsDB.createInvitation(this.db, email, inviterId, token);
+            const status = await InvitationsDB.createInvitation(this.db, normalizedEmail, inviterId, token);
             if (status.isError()) return status.getResponse(reply);
 
             // Send invitation email
             const protocol = request.protocol;
             const host = request.headers.host;
             const baseUrl = `${protocol}://${host}`;
-            const signupUrl = `${baseUrl}/signup?token=${token}&email=${encodeURIComponent(email)}`;
+            const signupUrl = `${baseUrl}/signup?token=${token}&email=${encodeURIComponent(normalizedEmail)}`;
 
             EmailManager.getInstance().sendTemplatedEmail(
-                email,
+                normalizedEmail,
                 'Invitation to join DUCC - DUCC',
                 'invitation',
                 {
                     inviter_name: `${request.user.first_name} ${request.user.last_name}`,
                     signup_url: signupUrl,
-                    email: email
+                    email: normalizedEmail
                 }
             ).catch(err => Logger.error('[InvitationsAPI] Failed to send invitation email:', err));
 
