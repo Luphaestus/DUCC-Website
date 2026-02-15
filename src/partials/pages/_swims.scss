@@ -79,7 +79,7 @@
     .admin-leaderboard-actions {
         display: flex;
         justify-content: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
 
         .small-btn {
             display: flex;
@@ -146,7 +146,7 @@
         justify-content: center;
         align-items: flex-end;
         height: 480px;
-        margin: 5rem auto 0;
+        margin: 5rem auto -2rem; /* Reduce bottom margin to overlap with list */
         width: 100%;
         max-width: 600px;
         z-index: 1;
@@ -176,6 +176,11 @@
             position: relative;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             min-width: 0;
+            transform: translateX(var(--overlap-x, 0)); /* For overlapping */
+            
+            &:nth-child(1) { order: 1; --overlap-x: 20px; z-index: 2; } /* Silver */
+            &:nth-child(2) { order: 2; --overlap-x: -20px; z-index: 3; } /* Gold */
+            &:nth-child(3) { order: 3; --overlap-x: 20px; z-index: 1; } /* Bronze */
 
             &:hover {
                 .podium-step {
@@ -193,6 +198,7 @@
                     transform: translateY(-5px);
                 }
             }
+
 
             .crown-icon {
                 position: absolute;
@@ -430,6 +436,25 @@
                 @include liquid-glass(0.75rem 1.25rem, var(--border-radius-md));
                 gap: 1rem;
                 transition: transform 0.2s ease, background 0.2s ease;
+
+                @media (max-width: 440px) {
+                    grid-template-columns: 2.5rem 1fr auto; // Shrink rank-box, remove avatar gap
+                    .swimmer-info {
+                        grid-column: span 1; // Ensure name takes its space
+                        .avatar-bubble {
+                            display: none; // Hide profile picture
+                        }
+                    }
+                }
+                @media (max-width: 380px) {
+                    grid-template-columns: 1fr auto; // Remove rank-box column
+                    .rank-box {
+                        display: none; // Hide ranking number
+                    }
+                    .swimmer-info {
+                        grid-column: span 1; // Ensure name takes its space
+                    }
+                }
 
                 &:hover {
                     transform: scale(1.005);

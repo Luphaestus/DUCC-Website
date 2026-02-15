@@ -1,6 +1,6 @@
 import { createSignal, createResource, onMount, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
-import { CLOUD_DOWNLOAD_SVG, SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG } from '@/utils/icons';
+import { FaCloudArrowDown, FaMagnifyingGlass, FaFilter, FaArrowUp, FaArrowDown, FaArrowsUpDown } from 'solid-icons/fa';
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate, useSearchParams } from "@solidjs/router";
@@ -101,20 +101,19 @@ export default function FilesPage() {
         <table class="files-table">
             <thead>
                 <tr>
-                    <For each={[
-                        { key: 'title', label: 'Title', sort: 'title' },
-                        { key: 'author', label: 'Author', sort: 'author' },
-                        { key: 'date', label: 'Date', sort: 'date' },
-                        { key: 'size', label: 'Size', sort: 'size' }
-                    ]}>
-                        {(c) => (
-                            <th class="sortable" onClick={() => toggleSort(c.sort)}>
-                                {c.label}
-                                <span innerHTML={sort() === c.sort ? (order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG) : UNFOLD_MORE_SVG} />
-                            </th>
-                        )}
-                    </For>
-                    <th>Action</th>
+                    <th data-label="Title" class="sortable" onClick={() => toggleSort('title')}>
+                        Title <Show when={sort() === 'title'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                    </th>
+                    <th data-label="Author" class="sortable" onClick={() => toggleSort('author')}>
+                        Author <Show when={sort() === 'author'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                    </th>
+                    <th data-label="Date" class="sortable" onClick={() => toggleSort('date')}>
+                        Date <Show when={sort() === 'date'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                    </th>
+                    <th data-label="Size" class="sortable" onClick={() => toggleSort('size')}>
+                        Size <Show when={sort() === 'size'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                    </th>
+                    <th data-label="Action">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -139,7 +138,7 @@ export default function FilesPage() {
                                 <td data-label="Size">{formatSize(file.size)}</td>
                                 <td data-label="Action">
                                     <a href={`/api/files/${file.id}/download${viewable ? '?view=true' : ''}`} class="download-btn" title={viewable ? 'View' : 'Download'} target={viewable ? '_blank' : undefined}>
-                                        <span innerHTML={CLOUD_DOWNLOAD_SVG} />
+                                        <FaCloudArrowDown />
                                     </a>
                                 </td>
                             </tr>
@@ -161,7 +160,7 @@ export default function FilesPage() {
                         <button class="secondary" onClick={() => navigate('/admin/files')}>Manage Files</button>
                     </Show>
                     <div class="search-box liquid-container">
-                        <span class="icon" innerHTML={SEARCH_SVG} />
+                        <FaMagnifyingGlass />
                         <input
                             type="text"
                             placeholder="Search title, content or filename:"
@@ -172,7 +171,7 @@ export default function FilesPage() {
                         />
                     </div>
                     <div class="glass-input-group liquid-container" style="width: auto; min-width: 200px;">
-                        <span class="icon" innerHTML={FILTER_LIST_SVG} />
+                        <FaFilter />
                         <select value={categoryId()} onChange={(e) => {
                             setSearchParams({ categoryId: e.currentTarget.value, page: 1 });
                         }}>

@@ -229,6 +229,10 @@
         gap: 2rem;
     }
 
+    .panel-mb {
+        margin-bottom: 1.5rem;
+    }
+
     .two-fa-grid {
         gap: 1rem !important;
 
@@ -302,6 +306,51 @@
         &.warning {
             background: rgba(243, 156, 18, 0.1);
             color: #f39c12;
+        }
+    }
+
+    .accent-panel.warning-panel {
+        border: 1px solid rgba(243, 156, 18, 0.4);
+        background: rgba(243, 156, 18, 0.1);
+        color: var(--pico-contrast);
+        padding: 1.5rem;
+        border-radius: var(--border-radius-lg);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+
+        .panel-content {
+            flex: 1;
+
+            h3 {
+                margin-top: 0;
+                font-size: 1.2rem;
+                color: var(--pico-contrast);
+            }
+            p {
+                margin-bottom: 0;
+                font-size: 0.95rem;
+                opacity: 0.8;
+            }
+        }
+
+        .panel-action {
+            flex-shrink: 0;
+            button {
+                margin: 0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            flex-direction: column;
+            text-align: center;
+            .panel-action {
+                width: 100%;
+                button {
+                    width: 100%;
+                }
+            }
         }
     }
 }

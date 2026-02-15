@@ -12,6 +12,8 @@ import InstallOverlay from "./components/InstallOverlay";
 import { NoInternetEvent } from "./utils/events/events";
 import { isServerConnected } from "./connection";
 import { initPWA } from "./utils/pwa";
+import { isVisible } from "./components/InstallOverlay"; // Import isVisible from InstallOverlay
+import { showGoodbye } from "./stores/presidentGoodbye"; // Import showGoodbye from presidentGoodbye
 
 import { apiRequest } from "./utils/api";
 
@@ -107,8 +109,12 @@ export default function App(props: ParentProps) {
       </main>
             <NotificationContainer />
             <Footer />
-            <PresidentGoodbyeOverlay />
-            <InstallOverlay />
+            <Show when={showGoodbye()}>
+              <PresidentGoodbyeOverlay />
+            </Show>
+            <Show when={isVisible()}>
+              <InstallOverlay />
+            </Show>
           </>
         );
       }

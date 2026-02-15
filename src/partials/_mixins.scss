@@ -215,3 +215,17 @@
     }
   }
 }
+
+/** Responsive Hide Table Columns */
+@mixin responsive-hide-table-columns($rules) {
+  @each $breakpoint, $columns in $rules {
+    @media (max-width: $breakpoint) {
+      @each $col in $columns {
+        th[data-label="#{$col}"],
+        td[data-label="#{$col}"] {
+          display: none !important;
+        }
+      }
+    }
+  }
+}

@@ -66,10 +66,10 @@ export default function ExecPage() {
     const groupedPast = createMemo(() => {
         const data = execData();
         if (!data || !Array.isArray(data.past)) return [];
-        
+
         // Group by committee (defined by the President)
         const groups: { president: ExecMember, members: ExecMember[], term: string }[] = [];
-        
+
         // Find all presidents in past data
         const presidents = data.past.filter(m => m.role_name === 'President').sort((a, b) => {
             return new Date(b.term_end).getTime() - new Date(a.term_end).getTime();
@@ -78,7 +78,7 @@ export default function ExecPage() {
         presidents.forEach(pres => {
             const presEndDate = new Date(pres.term_end).getTime();
             const presStartDate = pres.term_start ? new Date(pres.term_start).getTime() : 0;
-            
+
             // Members who served under this president (approximate by overlapping term_end)
             const members = data.past.filter(m => {
                 if (m.id === pres.id) return false;
@@ -193,9 +193,9 @@ export default function ExecPage() {
             </Show>
 
             <Show when={selectedMember()}>
-                <ExecDetailsModal 
-                    member={selectedMember()!} 
-                    onClose={() => setSelectedMember(null)} 
+                <ExecDetailsModal
+                    member={selectedMember()!}
+                    onClose={() => setSelectedMember(null)}
                 />
             </Show>
         </div>
@@ -205,7 +205,7 @@ export default function ExecPage() {
 function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean, isSelf: boolean, onEdit: () => void, onDelete: () => void, onSelect: () => void }) {
     const isLeadership = () => props.rank <= 2;
     return (
-        <article 
+        <article
             class={`liquid-container exec-card-dense rank-${props.rank} ${isLeadership() ? 'leadership' : ''} clickable`}
             onClick={props.onSelect}
         >
@@ -236,81 +236,111 @@ function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean,
                     </Show>
                 </div>
             </div>
-            <div class="exec-card-footer">
-                <div class="social-links" onClick={(e) => e.stopPropagation()}>
-                    <Show when={props.member.instagram_link}>
-                        <a href={props.member.instagram_link} target="_blank" rel="noopener noreferrer" class="social-link">
-                            <img src="/images/icons/social_instagram.svg" alt="Instagram" />
-                        </a>
-                    </Show>
-                    <Show when={props.member.linkedin_link}>
-                        <a href={props.member.linkedin_link} target="_blank" rel="noopener noreferrer" class="social-link">
-                            <img src="/images/icons/social_linkedin.svg" alt="LinkedIn" />
-                        </a>
-                    </Show>
-                </div>
-                <Show when={props.canManage || props.isSelf}>
-                    <div class="actions" onClick={(e) => e.stopPropagation()}>
-                        <Show when={props.canManage || props.isSelf}>
-                            <button class="outline secondary mini-btn" onClick={props.onEdit} title="Edit">
-                                <span innerHTML={EDIT_SVG} />
-                            </button>
+            <Show when={props.member.instagram_link || props.member.linkedin_link || props.canManage}>
+                <div class="exec-card-footer">
+                    <div class="social-links" onClick={(e) => e.stopPropagation()}>
+                        <Show when={props.member.instagram_link}>
+                            <a href={props.member.instagram_link} target="_blank" rel="noopener noreferrer" class="social-link">
+                                <img src="/images/icons/social_instagram.svg" alt="Instagram" />
+                            </a>
                         </Show>
-                        <Show when={props.canManage}>
-                            <button class="outline error mini-btn" onClick={props.onDelete} title="Remove">
-                                <span innerHTML={CLOSE_SVG} />
-                            </button>
+                        <Show when={props.member.linkedin_link}>
+                            <a href={props.member.linkedin_link} target="_blank" rel="noopener noreferrer" class="social-link">
+                                <img src="/images/icons/social_linkedin.svg" alt="LinkedIn" />
+                            </a>
                         </Show>
                     </div>
-                </Show>
-            </div>
+                    <Show when={props.canManage || props.isSelf}>
+                        <div class="actions" onClick={(e) => e.stopPropagation()}>
+                            <Show when={props.canManage || props.isSelf}>
+                                <button class="outline secondary mini-btn" onClick={props.onEdit} title="Edit">
+                                    <span innerHTML={EDIT_SVG} />
+                                </button>
+                            </Show>
+                            <Show when={props.canManage}>
+                                <button class="outline error mini-btn" onClick={props.onDelete} title="Remove">
+                                    <span innerHTML={CLOSE_SVG} />
+                                </button>
+                            </Show>
+                        </div>
+                    </Show>
+                </div>
+            </Show>
         </article>
     );
 }
 
 function ExecDetailsModal(props: { member: ExecMember, onClose: () => void }) {
     return (
-        <Modal 
-            isOpen={true} 
-            title={`${props.member.first_name}'s Profile`}
+        <Modal
+            isOpen={true}
             onClose={props.onClose}
         >
-            <div class="exec-details-view center-text">
-                <Avatar user={props.member} classes="giant" />
-                <h2 class="mt-3 mb-0">{props.member.first_name} {props.member.last_name}</h2>
-                <p class="muted-text mb-2">{props.member.role_name}</p>
-                <Show when={props.member.votes_received > 0}>
-                    <p class="badge success mini-badge mb-4">{props.member.votes_received} Votes Received</p>
-                </Show>
-
-                <div class="liquid-container p-4 mb-4">
-                    <div class="flex justify-center gap-6">
-                        <Show when={props.member.instagram_link}>
-                            <a href={props.member.instagram_link} target="_blank" rel="noopener noreferrer" class="social-link-large">
-                                <img src="/images/icons/social_instagram.svg" alt="Instagram" style="width: 32px;" />
-                                <span class="block small-text">Instagram</span>
-                            </a>
-                        </Show>
-                        <Show when={props.member.linkedin_link}>
-                            <a href={props.member.linkedin_link} target="_blank" rel="noopener noreferrer" class="social-link-large">
-                                <img src="/images/icons/social_linkedin.svg" alt="LinkedIn" style="width: 32px;" />
-                                <span class="block small-text">LinkedIn</span>
-                            </a>
-                        </Show>
-                        <a href={`mailto:${props.member.email}`} class="social-link-large">
-                            <span class="block" style="font-size: 32px;" innerHTML={MAIL_SVG} />
-                            <span class="block small-text">Email</span>
-                        </a>
+            <div class="exec-details-modern">
+                <div class="profile-cover-area" style={{ "--cover-image": `url('${props.member.profile_picture_path || '/api/files/1/download?view=true'}')` }}>
+                    <div class="cover-overlay"></div>
+                    <div class="avatar-wrapper">
+                        <Avatar user={props.member} classes="giant-modal" />
                     </div>
                 </div>
 
-                <Show when={props.member.manifesto_path}>
-                    <div class="manifesto-section liquid-container p-4">
-                        <h3 class="small-title mb-2">Manifesto</h3>
-                        <p class="small-text mb-3">Read the manifesto that got {props.member.first_name} elected to this role.</p>
-                        <a href={props.member.manifesto_path} target="_blank" class="button primary full-width">View Manifesto (PDF)</a>
+                <div class="profile-content">
+                    <div class="profile-header-info">
+                        <h2 class="member-name">{props.member.first_name} {props.member.last_name}</h2>
+                        <div class="role-badge-container">
+                            <span class="role-name">{props.member.role_name}</span>
+                            <Show when={props.member.votes_received > 0}>
+                                <span class="votes-badge" title="Votes Received">
+                                    <span class="icon" innerHTML={CROWN_SVG} />
+                                    {props.member.votes_received}
+                                </span>
+                            </Show>
+                        </div>
                     </div>
-                </Show>
+
+                    <div class="profile-contact-grid">
+                        <a href={`mailto:${props.member.email}`} class="contact-card liquid-container">
+                            <span class="icon" innerHTML={MAIL_SVG} />
+                            <div class="details">
+                                <span class="label">Email</span>
+                                <span class="value">{props.member.email}</span>
+                            </div>
+                        </a>
+
+                        <Show when={props.member.instagram_link}>
+                            <a href={props.member.instagram_link} target="_blank" rel="noopener noreferrer" class="contact-card liquid-container">
+                                <img src="/images/icons/social_instagram.svg" alt="Instagram" />
+                                <div class="details">
+                                    <span class="label">Instagram</span>
+                                    <span class="value">@{props.member.instagram_link.split('/').filter(Boolean).pop()}</span>
+                                </div>
+                            </a>
+                        </Show>
+
+                        <Show when={props.member.linkedin_link}>
+                            <a href={props.member.linkedin_link} target="_blank" rel="noopener noreferrer" class="contact-card liquid-container">
+                                <img src="/images/icons/social_linkedin.svg" alt="LinkedIn" />
+                                <div class="details">
+                                    <span class="label">LinkedIn</span>
+                                    <span class="value">Professional Profile</span>
+                                </div>
+                            </a>
+                        </Show>
+                    </div>
+
+                    <Show when={props.member.manifesto_path}>
+                        <div class="manifesto-section-modern liquid-container">
+                            <div class="section-header">
+                                <span class="icon" innerHTML={CROWN_SVG} />
+                                <h3>Election Manifesto</h3>
+                            </div>
+                            <p>Read the vision and promises that {props.member.first_name} shared during the election for the <strong>{props.member.role_name}</strong> role.</p>
+                            <a href={props.member.manifesto_path} target="_blank" class="button primary full-width">
+                                View Full Manifesto (PDF)
+                            </a>
+                        </div>
+                    </Show>
+                </div>
             </div>
         </Modal>
     );

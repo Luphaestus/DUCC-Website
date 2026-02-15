@@ -6,8 +6,8 @@ import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    SOCIAL_LEADERBOARD_SVG, ID_CARD_SVG, POOL_SVG, GROUP_SVG, EDIT_SVG, SHIELD_SVG, UPLOAD_SVG
-} from '@/utils/icons';
+    FaUsers, FaIdCard, FaSwimmingPool, FaGroupArrowsRotate, FaPenToSquare, FaShieldHalved, FaCloudArrowUp
+} from 'solid-icons/fa'; // Importing all necessary icons
 import { showConfirmModal } from "@/utils/modal";
 import { Tag } from "@/widgets/Tag";
 import { UploadWidget } from "@/widgets/upload/UploadWidget";
@@ -152,6 +152,18 @@ export default function ProfileOverview() {
         <Show when={profile()} fallback={<p aria-busy="true">Loading profile...</p>}>
             <div id="avatar-upload-container" style="display: none;"></div>
             <section class="dashboard-section active">
+                <Show when={!profile()!.filled_legal_info}>
+                    <div class="accent-panel warning-panel liquid-container mb-4">
+                        <div class="panel-content">
+                            <h3>Action Required: Membership Form</h3>
+                            <p>To fully activate your membership and access all club features, please complete your membership information form.</p>
+                        </div>
+                        <div class="panel-action">
+                            <button class="primary" onClick={() => navigate('/legal')}>Complete Form</button>
+                        </div>
+                    </div>
+                </Show>
+
                 <Show when={!profile()!.is_member}>
                     <article class="accent-panel liquid-container glass-panel no-margin" style={{ "border": "none" }}>
                         <div class="panel-content">
@@ -168,10 +180,10 @@ export default function ProfileOverview() {
                     <div class="overview-main">
                         <Panel
                             title="Swimming Statistics"
-                            icon={POOL_SVG}
+                            icon={<FaSwimmingPool />}
                             action={
                                 <button class="small-btn secondary" onClick={() => navigate('/swims')}>
-                                    <span innerHTML={SOCIAL_LEADERBOARD_SVG} /> Leaderboard
+                                    <FaUsers /> Leaderboard
                                 </button>
                             }
                         >
@@ -199,7 +211,7 @@ export default function ProfileOverview() {
                             </div>
                         </Panel>
 
-                        <Panel title="Club Status & Roles" icon={GROUP_SVG} class="glass-panel no-margin">
+                        <Panel title="Club Status & Roles" icon={<FaGroupArrowsRotate />} class="glass-panel no-margin">
                             <div class="info-rows">
                                 <div class="info-row">
                                     <span>Membership</span>
@@ -244,11 +256,11 @@ export default function ProfileOverview() {
                     </div>
 
                     <div class="overview-side">
-                        <Panel title="Profile Appearance" class="glass-panel" icon={ID_CARD_SVG}>
+                        <Panel title="Profile Appearance" class="glass-panel" icon={<FaIdCard />}>
                             <div class="profile-avatar-row compact-customization">
                                 <div class="profile-picture-container" onClick={() => uploadWidget?.inputEl.click()}>
                                     <Avatar user={profile()!} classes="large" />
-                                    <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
+                                    <div class="avatar-overlay"><FaCloudArrowUp /></div>
                                 </div>
                                 <div class="profile-avatar-controls">
                                     <div class="avatar-presets">
@@ -304,7 +316,7 @@ export default function ProfileOverview() {
                             </div>
                         </Panel>
 
-                        <Panel title="Safety & Contact" icon={SHIELD_SVG} class="glass-panel no-margin">
+                        <Panel title="Safety & Contact" icon={<FaShieldHalved />} class="glass-panel no-margin">
                             <div class="info-rows">
                                 <div class="info-row">
                                     <span>Emergency Contact</span>
@@ -317,7 +329,7 @@ export default function ProfileOverview() {
                             </div>
                             <div class="form-actions">
                                 <button class="small-btn secondary full-width" onClick={() => setIsEditingSafety(true)}>
-                                    <span innerHTML={EDIT_SVG} /> Edit Safety Info
+                                    <FaPenToSquare /> Edit Safety Info
                                 </button>
                             </div>
                         </Panel>

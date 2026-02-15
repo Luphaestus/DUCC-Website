@@ -111,12 +111,14 @@ export default function EventsPage(props: ParentProps) {
         return groups;
     };
 
+    const dateId = (date: Date) => `day-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
     const EventList = (props: { data: PageData | null | undefined }) => (
         <Show when={viewMode() !== 'list' && isDesktop()} fallback={
             <div class="events-page-content">
                 <For each={getGroupedEvents(props.data)}>
                     {(group) => (
-                        <div class="day-group">
+                        <div class="day-group" id={dateId(group.date)}>
                             <div class="date-strip-container" style={{ margin: '2.5rem 0 1.5rem 0' }}>
                                 <div class="date-strip">
                                     <span class="date-num">{group.date.getDate()}</span>
@@ -145,8 +147,55 @@ export default function EventsPage(props: ParentProps) {
                 onDateChange={setCurrentDate}
                 onEventClick={(e) => navigate(`/events/${e.id}${location.search}`)}
                 onDayClick={(day) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const dayOfWeek = today.getDay();
+                    const currentMonday = new Date(today);
+                    currentMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+                    const clickedDay = new Date(day);
+                    clickedDay.setHours(0, 0, 0, 0);
+
+                    const diffTime = clickedDay.getTime() - currentMonday.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    const weekOffset = Math.floor(diffDays / 7);
+
+                    let targetPage = 0;
+                    if (weekOffset >= 0) {
+                        if (weekOffset === 0 && clickedDay < today) targetPage = -1;
+                        else targetPage = weekOffset;
+                    } else {
+                        if (dayOfWeek === 1) targetPage = weekOffset;
+                        else targetPage = weekOffset - 1;
+                    }
+
                     setCurrentDate(day);
+                    setSearchParams({ page: targetPage });
                     setView('list');
+
+                    const id = dateId(day);
+                    const scroll = () => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            const offset = 100;
+                            const elementPosition = element.getBoundingClientRect().top;
+                            const offsetPosition = elementPosition + window.pageYOffset - offset;
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: 'smooth'
+                            });
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    let attempts = 0;
+                    const interval = setInterval(() => {
+                        if (scroll() || attempts > 20) {
+                            clearInterval(interval);
+                        }
+                        attempts++;
+                    }, 100);
                 }}
             />
         </div>
@@ -205,7 +254,6 @@ export default function EventsPage(props: ParentProps) {
                     <EventList data={pageData()} />
                 </PaginationSlider>
             </div>
-            {props.children}
         </div>
     );
 }

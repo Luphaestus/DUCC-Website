@@ -1,0 +1,87 @@
+@use "../../mixins" as *;
+
+.email-editor-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.email-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .target-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem; // Half gap
+
+        .target-card {
+            @include liquid-glass(1rem, var(--border-radius-md));
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-align: left;
+            border: 1px solid rgba(var(--pico-color-rgb), 0.1);
+            background: rgba(var(--pico-background-color-rgb), 0.2);
+            transition: all 0.2s ease;
+            box-shadow: none;
+
+            &:hover {
+                border-color: rgba(var(--pico-primary-rgb), 0.4);
+                background: rgba(var(--pico-primary-rgb), 0.05);
+                transform: translateY(-2px);
+            }
+
+            &.active {
+                border-color: var(--pico-primary);
+                background: rgba(var(--pico-primary-rgb), 0.15);
+                box-shadow: 0 4px 12px rgba(var(--pico-primary-rgb), 0.2);
+            }
+
+            .icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(var(--pico-color-rgb), 0.1);
+                border-radius: 50%;
+                color: var(--pico-primary);
+
+                svg {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                }
+            }
+
+            .info {
+                display: flex;
+                flex-direction: column;
+
+                .label {
+                    font-size: 1rem;
+                    font-weight: 700;
+                    color: var(--pico-contrast);
+                }
+
+                .count {
+                    font-size: 0.8rem;
+                    color: var(--pico-muted-color);
+                }
+            }
+        }
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .grid-2-col {
+        grid-template-columns: 1fr !important; // Stack columns
+    }
+
+    .email-sidebar {
+        order: -1; // Move sidebar to top on mobile
+    }
+}
+

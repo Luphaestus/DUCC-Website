@@ -5,8 +5,8 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    CLOSE_SVG, KEY_SVG, ADD_SVG, CONTENT_COPY_SVG, DOWNLOAD_SVG, BOLT_SVG, CALENDAR_MONTH_SVG
-} from '@/utils/icons';
+    FaXmark, FaKey, FaPlus, FaCopy, FaDownload, FaBolt, FaCalendarDays
+} from 'solid-icons/fa';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
 import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
 import { isPWAInstalled, installPWA, isManualInstall, deferredPrompt, isSubscribed, subscribeToNotifications, unsubscribeFromNotifications } from "@/utils/pwa";
@@ -261,7 +261,7 @@ export default function ProfileSettings() {
     return (
         <Show when={profile()} fallback={<p aria-busy="true">Loading...</p>}>
             <section class="dashboard-section active">
-                <Panel title="Email Addresses" class="glass-panel">
+                <Panel title="Email Addresses" class="glass-panel mb-4">
                     <p>Manage the email addresses associated with your account. You can log in with any verified email.</p>
                     <div class="item-list" style={{ "margin-bottom": "1.5rem" }}>
                         <For each={userEmails() || []} fallback={<p aria-busy="true">Loading emails...</p>}>
@@ -283,7 +283,7 @@ export default function ProfileSettings() {
                                             <button class="small-btn secondary mini-btn" onClick={() => handleSetPrimary(email.id)}>Make Primary</button>
                                         </Show>
                                         <Show when={!email.is_primary}>
-                                            <button class="small-btn icon-only delete" onClick={() => handleDeleteEmail(email.id)} innerHTML={CLOSE_SVG}></button>
+                                            <button class="small-btn icon-only delete" onClick={() => handleDeleteEmail(email.id)}><FaXmark /></button>
                                         </Show>
                                     </div>
                                 </div>
@@ -301,7 +301,7 @@ export default function ProfileSettings() {
                     </form>
                 </Panel>
 
-                <Panel title="Account Security" class="glass-panel">
+                <Panel title="Account Security" class="glass-panel mb-4">
                     <div class="settings-grid">
                         <div class="two-fa-grid dual-grid">
                             <div class="liquid-container embedded-panel glass-panel">
@@ -382,7 +382,7 @@ export default function ProfileSettings() {
                     </div >
                 </Panel >
 
-                <Panel title="Notification Preferences" class="glass-panel">
+                <Panel title="Notification Preferences" class="glass-panel mb-4">
                     <p>Decide what updates you want to receive and how you want to be notified.</p>
                     <Show when={notificationSettings()} fallback={<p aria-busy="true">Loading preferences...</p>}>
                         <div class="notification-settings-grid">
@@ -449,7 +449,7 @@ export default function ProfileSettings() {
                                     </Show>
                                 </Panel>
 
-                <Panel title="Calendar Integration" class="glass-panel">
+                <Panel title="Calendar Integration" class="glass-panel mb-4">
                     <p>Import club events directly into your favorite calendar app (Google, Apple, Outlook, etc.).</p>
                     <div class="settings-grid">
                         <div class="two-fa-grid dual-grid">
@@ -465,9 +465,8 @@ export default function ProfileSettings() {
                                     }}>
                                         Subscribe
                                     </button>
-                                    <button class="small-btn secondary" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/all.ics`, 'Public Feed URL')}>
-                                        <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
-                                        Copy Link
+                                    <button class="small-btn icon-only secondary ml-1" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/all.ics`, 'Public Feed URL')}>
+                                        <FaCopy />
                                     </button>
                                 </div>
                             </div>
@@ -481,9 +480,8 @@ export default function ProfileSettings() {
                                     <button class="small-btn primary" onClick={() => handleSubscribeCalendar('personal')} disabled={isGeneratingToken()}>
                                         {isGeneratingToken() ? '...' : 'Subscribe'}
                                     </button>
-                                    <button class="small-btn secondary" onClick={() => handleCopyCalendarLink('personal', 'Personal Feed URL')} disabled={isGeneratingToken()}>
-                                        <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
-                                        Copy Link
+                                    <button class="small-btn icon-only secondary ml-1" onClick={() => handleCopyCalendarLink('personal', 'Personal Feed URL')} disabled={isGeneratingToken()}>
+                                        <FaCopy />
                                     </button>
                                 </div>
                             </div>
@@ -497,9 +495,8 @@ export default function ProfileSettings() {
                                     <button class="small-btn primary" onClick={() => handleSubscribeCalendar('accessible')} disabled={isGeneratingToken()}>
                                         {isGeneratingToken() ? '...' : 'Subscribe'}
                                     </button>
-                                    <button class="small-btn secondary" onClick={() => handleCopyCalendarLink('accessible', 'Accessible Feed URL')} disabled={isGeneratingToken()}>
-                                        <span innerHTML={CONTENT_COPY_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
-                                        Copy Link
+                                    <button class="small-btn icon-only secondary ml-1" onClick={() => handleCopyCalendarLink('accessible', 'Accessible Feed URL')} disabled={isGeneratingToken()}>
+                                        <FaCopy />
                                     </button>
                                 </div>
                             </div>
@@ -507,7 +504,7 @@ export default function ProfileSettings() {
                     </div>
                 </Panel>
 
-                <Panel title="App Installation" class="glass-panel">
+                <Panel title="App Installation" class="glass-panel mb-4">
                     <div class="settings-grid">
                         <div class="two-fa-grid dual-grid">
                             <Show when={!isPWAInstalled()}>
@@ -531,7 +528,7 @@ export default function ProfileSettings() {
                                             disabled={!deferredPrompt()}
                                             title={!deferredPrompt() ? "Browser is still checking if the app can be installed. This usually takes a few moments of browsing." : "Install DUCC"}
                                         >
-                                            <span innerHTML={DOWNLOAD_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                            <FaDownload style="margin-right: 0.25rem; width: 1em; height: 1em;" />
                                             {deferredPrompt() ? 'Install' : 'Preparing...'}
                                         </button>
                                     </Show>
@@ -553,9 +550,8 @@ export default function ProfileSettings() {
                                         onClick={handleSubscribe}
                                         disabled={isSubscribing()}
                                     >
-                                        <span innerHTML={BOLT_SVG} style="margin-right: 0.25rem; width: 1em; height: 1em;" />
-                                        {isSubscribing() ? 'Subscribing...' : 'Enable'}
-                                    </button>
+                                                                                    <FaBolt style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                                                                    {isSubscribing() ? 'Subscribing...' : 'Enable'}                                    </button>
                                 </Show>
                                 <Show when={isSubscribed()}>
                                     <button 
@@ -586,7 +582,7 @@ export default function ProfileSettings() {
                         <span>Or enter manually:</span>
                         <div class="secret-row">
                             <code>{totpSetup()?.secret}</code>
-                            <button onClick={() => navigator.clipboard.writeText(totpSetup()?.secret || '')} innerHTML={CONTENT_COPY_SVG}></button>
+                            <button onClick={() => navigator.clipboard.writeText(totpSetup()?.secret || '')}><FaCopy /></button>
                         </div>
                     </div>
                     <form onSubmit={handleVerifyTOTP} class="modern-form">
@@ -606,19 +602,19 @@ export default function ProfileSettings() {
                         <For each={passkeys() || []} fallback={<p>No passkeys registered.</p>}>
                             {(k) => (
                                 <div class="list-item">
-                                    <div class="item-icon"><span innerHTML={KEY_SVG} /></div>
+                                    <div class="item-icon"><FaKey /></div>
                                     <div class="item-details">
                                         <span class="item-title">Passkey</span>
                                         <span class="item-subtitle">Added {new Date(k.created_at).toLocaleDateString()}</span>
                                     </div>
                                     <div class="item-value-group">
-                                        <button class="small-btn icon-only delete" onClick={() => handleDeletePasskey(k.id)} innerHTML={CLOSE_SVG}></button>
+                                        <button class="small-btn icon-only delete" onClick={() => handleDeletePasskey(k.id)}><FaXmark /></button>
                                     </div>
                                 </div>
                             )}
                         </For>
                     </div>
-                    <button class="primary full-width" onClick={handleAddPasskey}><span innerHTML={ADD_SVG} /> Add Passkey</button>
+                    <button class="primary full-width" onClick={handleAddPasskey}><FaPlus /> Add Passkey</button>
                 </div>
             </Modal>
         </Show>

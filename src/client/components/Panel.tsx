@@ -32,7 +32,7 @@ export default function Panel(props: PanelProps) {
                         <h3 classList={{ centered: props.titleCentered }}>
                             <Show when={props.icon}>
                                 <Show when={typeof props.icon === 'string'} fallback={props.icon}>
-                                    <span innerHTML={props.icon as string} />
+                                    <span class="icon" innerHTML={props.icon as string} />
                                 </Show>
                             </Show>
                             {props.title}

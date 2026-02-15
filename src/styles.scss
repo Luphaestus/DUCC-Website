@@ -84,4 +84,6 @@
 @use "partials/pages/admin/user/detail" as admin_user_detail;
 @use "partials/pages/admin/user/manage" as admin_user_manage;
 @use "partials/pages/admin/user/tabs" as admin_user_tabs;
+@use "partials/pages/admin/emails" as admin_emails;
+@use "partials/pages/admin/invitations" as admin_invitations;
 @use "partials/pages/admin/keys";

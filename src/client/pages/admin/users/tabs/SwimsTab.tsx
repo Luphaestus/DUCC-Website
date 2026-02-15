@@ -6,7 +6,7 @@ import { ADD_SVG, POOL_SVG, CHECK_SVG, CLOSE_SVG } from '@/utils/icons';
 import Panel from "@/components/Panel";
 import { onUpdate } from "@/utils/updates";
 
-export default function SwimsTab(props: { user: any }) {
+export default function SwimsTab(props: { user: any, typeFilter?: 'swim' | 'bootie' }) {
     const { notify } = useNotifications();
 
     onMount(() => {
@@ -29,10 +29,13 @@ export default function SwimsTab(props: { user: any }) {
     );
 
     const [history, { refetch: refetchHistory }] = createResource(
-        () => props.user?.id,
-        async (id) => {
-            if (!id) return [];
-            const res = await apiRequest('GET', `/api/user/${id}/swims/history`);
+        () => ({ userId: props.user?.id, typeFilter: props.typeFilter }),
+        async ({ userId, typeFilter }) => {
+            if (!userId) return [];
+            const res = await apiRequest('GET', `/api/user/${userId}/swims/history`);
+            if (typeFilter) {
+                return (res.data || []).filter((item: any) => item.type === typeFilter);
+            }
             return res.data || [];
         }
     );
@@ -71,39 +74,43 @@ export default function SwimsTab(props: { user: any }) {
     return (
         <div class="swims-management-layout">
             <div class="grid-2-col gap-6">
-                <Panel title="Add Swims" icon={POOL_SVG}>
-                    <div class="current-count">
-                        <span class="count-label">Total Swims: </span>
-                        <strong class="count-value">
-                            <Show when={!counts.loading} fallback="...">
-                                {counts()?.swims || 0}
-                            </Show>
-                        </strong>
-                        <span class="count-label ml-4">Total Booties: </span>
-                        <strong class="count-value">
-                            <Show when={!counts.loading} fallback="...">
-                                {counts()?.booties || 0}
-                            </Show>
-                        </strong>
-                    </div>
-
-                    <div class="modern-form">
-                        <div class="grid-2-col" style={{ "grid-template-columns": "80px 1fr" }}>
-                            <label>Count
-                                <input type="number" value={swimAmount()} onInput={e => setSwimAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
-                            </label>
-                            <label>Explanation
-                                <input type="text" value={swimMessage()} onInput={e => setSwimMessage(e.currentTarget.value)} placeholder="e.g. Swam at Maiden Castle" />
-                            </label>
+                <Show when={!props.typeFilter}>
+                    <Panel title="Add Swims" icon={POOL_SVG}>
+                        <div class="current-count">
+                            <span class="count-label">Total Swims: </span>
+                            <strong class="count-value">
+                                <Show when={!counts.loading} fallback="...">
+                                    {counts()?.swims || 0}
+                                </Show>
+                            </strong>
+                            <span class="count-label ml-4">Total Booties: </span>
+                            <strong class="count-value">
+                                <Show when={!counts.loading} fallback="...">
+                                    {counts()?.booties || 0}
+                                </Show>
+                            </strong>
                         </div>
-                        <button class="primary full-width" onClick={handleAddSwims}><span innerHTML={ADD_SVG} /> Record Swims</button>
-                    </div>
-                </Panel>
 
-                <Panel title="Swim History & Booties" icon={<div class="bootie-icon">🥾</div>}>
-                    <p class="small-text">Tick off swims once the bootie has been completed.</p>
+                        <div class="modern-form">
+                            <div class="grid-2-col" style={{ "grid-template-columns": "80px 1fr" }}>
+                                <label>Count
+                                    <input type="number" value={swimAmount()} onInput={e => setSwimAmount(parseInt(e.currentTarget.value) || 0)} min="1" />
+                                </label>
+                                <label>Explanation
+                                    <input type="text" value={swimMessage()} onInput={e => setSwimMessage(e.currentTarget.value)} placeholder="e.g. Swam at Maiden Castle" />
+                                </label>
+                            </div>
+                            <button class="primary full-width" onClick={handleAddSwims}><span innerHTML={ADD_SVG} /> Record Swims</button>
+                        </div>
+                    </Panel>
+                </Show>
+
+                <Panel title={props.typeFilter === 'swim' ? 'Swim History' : props.typeFilter === 'bootie' ? 'Bootie History' : 'Swim History & Booties'} icon={<div class="bootie-icon">🥾</div>}>
+                    <Show when={!props.typeFilter}>
+                        <p class="small-text">Tick off swims once the bootie has been completed.</p>
+                    </Show>
                     <div class="item-list scrollable-list" style={{ "max-height": "400px", "overflow-y": "auto" }}>
-                        <For each={history()} fallback={<p class="text-muted">No swim history found.</p>}>
+                        <For each={history()} fallback={<p class="text-muted">No {props.typeFilter || 'swim'} history found.</p>}>
                             {(item) => (
                                 <div class="list-item" classList={{ 'primary-glass': !!item.is_bootie }}>
                                     <div class="item-details">
@@ -113,14 +120,16 @@ export default function SwimsTab(props: { user: any }) {
                                         </span>
                                     </div>
                                     <div class="item-action">
-                                        <button
-                                            class="small-btn"
-                                            classList={{ 'primary': !!item.is_bootie, 'secondary outline': !item.is_bootie }}
-                                            onClick={() => toggleBootie(item.id)}
-                                            title={item.is_bootie ? 'Unmark as bootie' : 'Mark as bootie done'}
-                                        >
-                                            <span innerHTML={item.is_bootie ? CHECK_SVG : 'Mark Done'} />
-                                        </button>
+                                        <Show when={!props.typeFilter}>
+                                            <button
+                                                class="small-btn"
+                                                classList={{ 'primary': !!item.is_bootie, 'secondary outline': !item.is_bootie }}
+                                                onClick={() => toggleBootie(item.id)}
+                                                title={item.is_bootie ? 'Unmark as bootie' : 'Mark as bootie done'}
+                                            >
+                                                <span innerHTML={item.is_bootie ? CHECK_SVG : 'Mark Done'} />
+                                            </button>
+                                        </Show>
                                     </div>
                                 </div>
                             )}

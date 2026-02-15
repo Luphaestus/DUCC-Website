@@ -57,48 +57,22 @@
     /* Files Table */
     .files-table {
         @include scaling-table;
+        @include responsive-hide-table-columns((
+            768px: (Size), // Hide Size first
+            440px: (Date), // Hide Date at 440px
+            380px: (Author) // Hide Author at 380px
+        ));
 
         th,
         td {
-
             &[data-label="Date"],
             &[data-label="Size"],
-            &[data-label="Action"],
-            &[data-label="Visibility"] {
+            &[data-label="Action"] {
                 white-space: nowrap;
                 width: 1%;
             }
         }
-
-        .short-date {
-            display: none;
-        }
-
-        @media (max-width: 600px) {
-            .full-date {
-                display: none;
-            }
-
-            .short-date {
-                display: inline-flex;
-                gap: 0.25rem;
-            }
-
-            th[data-label="Author"],
-            td[data-label="Author"],
-            th[data-label="Size"],
-            td[data-label="Size"] {
-                display: none;
-            }
-        }
-
-        @media (max-width: 340px) {
-            .short-date {
-                flex-direction: column;
-                gap: 0;
-                line-height: 1.1;
-            }
-        }
+    }
 
         th {
             font-weight: bold;

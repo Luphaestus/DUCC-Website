@@ -2,7 +2,7 @@ import { createSignal, createResource, Show, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
-import { CLOSE_SVG, ADD_SVG } from '@/utils/icons';
+import { FaXmark, FaPlus } from 'solid-icons/fa'; // Updated import
 import { showConfirmModal } from "@/utils/modal";
 
 export default function InvitationsPage() {
@@ -103,8 +103,8 @@ export default function InvitationsPage() {
                                 disabled={isInviting()}
                             />
                         </div>
-                        <button type="submit" class="primary" disabled={isInviting()} style={{ "height": "calc(var(--pico-spacing) * 2 + 1.5rem)", "margin-bottom": "var(--pico-outline-width)" }}>
-                            {isInviting() ? 'Sending...' : 'Send Invitation'}
+                        <button type="submit" class="primary" disabled={isInviting()}>
+                            {isInviting() ? 'Sending...' : <><FaPlus /> Send Invitation</>}
                         </button>
                     </div>
 
@@ -209,8 +209,7 @@ export default function InvitationsPage() {
                                                 <button 
                                                     class="small-btn icon-only delete" 
                                                     onClick={() => handleDelete(invite.id)}
-                                                    innerHTML={CLOSE_SVG}
-                                                />
+                                                ><FaXmark /></button>
                                             </Show>
                                         </td>
                                     </tr>

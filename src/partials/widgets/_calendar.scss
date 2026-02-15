@@ -147,6 +147,15 @@
                 backdrop-filter: blur(15px);
                 -webkit-backdrop-filter: blur(15px);
                 z-index: 20;
+                transition: all 0.2s ease;
+
+                &.clickable {
+                    cursor: pointer;
+                    &:hover {
+                        background: rgba(var(--pico-primary-rgb), 0.1);
+                        color: var(--pico-primary);
+                    }
+                }
                 
                 .day-name { font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; opacity: 0.7; }
                 .day-num { font-size: 1.2rem; font-weight: 800; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: 2px; }

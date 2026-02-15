@@ -85,6 +85,7 @@
     "pdf-parse": "^2.4.5",
     "qrcode": "^1.5.4",
     "sass": "^1.94.0",
+    "solid-icons": "^1.2.0",
     "solid-js": "^1.9.11",
     "three": "^0.182.0",
     "web-push": "^3.6.7"

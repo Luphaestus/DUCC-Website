@@ -515,7 +515,10 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                             <For each={getDaysInView()}>
                                 {(day) => (
                                     <div class="day-column" classList={{ 'today': isToday(day) }}>
-                                        <div class="day-header">
+                                        <div class="day-header" 
+                                            classList={{ 'clickable': !!props.onDayClick }}
+                                            onClick={() => props.onDayClick?.(day)}
+                                        >
                                             <span class="day-name">{day.toLocaleDateString('en-UK', { weekday: 'short' })}</span>
                                             <span class="day-num">{day.getDate()}</span>
                                         </div>

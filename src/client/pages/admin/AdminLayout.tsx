@@ -46,7 +46,7 @@ export default function AdminLayout(props: ParentProps) {
             </header>
 
             <Show when={hasNav() && !isDashboard() && !isDetailsPage()}>
-                <div class="liquid-container glass-toolbar" style={{ "margin-bottom": "0" }}>
+                <div class="liquid-container glass-toolbar mb-4">
                     <div class="toolbar-left">
                         <AdminNavBar
                             permissions={user()!.permissions}

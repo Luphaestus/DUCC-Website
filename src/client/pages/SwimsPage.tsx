@@ -1,11 +1,10 @@
-import { createSignal, createResource, onMount, For, Show, createMemo, onCleanup, batch } from "solid-js";
-import { apiRequest } from "@/utils/api";
-import { SOCIAL_LEADERBOARD_SVG, TROPHY_SVG, CROWN_SVG, POOL_SVG } from '@/utils/icons';
-import Avatar from "@/components/Avatar";
-import { useNavigate } from "@solidjs/router";
-import { onUpdate } from "@/utils/updates";
 import Modal from "@/components/Modal";
 import SwimsTab from "@/pages/admin/users/tabs/SwimsTab";
+import { useNotifications } from "@/stores/notifications";
+import { createSignal, createResource, onMount, For, Show, createMemo, onCleanup, batch, createEffect } from "solid-js";
+import { apiRequest } from "@/utils/api";
+import { SOCIAL_LEADERBOARD_SVG, SEARCH_SVG, CLOSE_SVG } from '@/utils/icons';
+import { FaTrophy, FaSwimmingPool, FaUsers, FaCrown } from 'solid-icons/fa';
 
 interface LeaderboardUser {
     id: number;
@@ -26,6 +25,9 @@ export default function SwimsPage() {
     const [selectedUser, setSelectedUser] = createSignal<LeaderboardUser | null>(null);
     const [isAnimating, setIsAnimating] = createSignal(false);
     const [oldLeaderboard, setOldLeaderboard] = createSignal<LeaderboardUser[] | null>(null);
+
+    const [isLogSwimModalOpen, setIsLogSwimModalOpen] = createSignal(false);
+    const [isLogBootieModalOpen, setIsLogBootieModalOpen] = createSignal(false);
 
     const [leaderboard, { refetch }] = createResource<LeaderboardUser[], { yearly: boolean }>(
         () => ({ yearly: isYearly() }),
@@ -51,12 +53,13 @@ export default function SwimsPage() {
 
             return res.data as LeaderboardUser[];
         }
-    ); const getPodiumData = (data: LeaderboardUser[]) => {
+    const getPodiumData = (data: LeaderboardUser[]) => {
         const top3 = data.slice(0, 3);
+        // Order: Silver, Bronze, Gold to ensure Gold is rendered last and thus on top
         return [
-            { user: top3[1], rank: 2, style: 'silver', icon: SOCIAL_LEADERBOARD_SVG },
-            { user: top3[0], rank: 1, style: 'gold', icon: TROPHY_SVG },
-            { user: top3[2], rank: 3, style: 'bronze', icon: SOCIAL_LEADERBOARD_SVG }
+            { user: top3[1], rank: 2, style: 'silver', icon: FaUsers }, // Silver
+            { user: top3[2], rank: 3, style: 'bronze', icon: FaUsers }, // Bronze
+            { user: top3[0], rank: 1, style: 'gold', icon: FaTrophy } // Gold
         ].filter(p => !!p.user);
     };
 
@@ -106,6 +109,17 @@ export default function SwimsPage() {
                     </div>
                 </div>
 
+                <Show when={canManage()}>
+                    <div class="admin-leaderboard-actions" style="margin-top: 1.5rem;">
+                        <button class="small-btn primary" onClick={() => setIsLogSwimModalOpen(true)}>
+                            <FaSwimmingPool /> Log Swim
+                        </button>
+                        <button class="small-btn secondary" onClick={() => setIsLogBootieModalOpen(true)}>
+                            <FaTrophy /> Log Bootie
+                        </button>
+                    </div>
+                </Show>
+
                 <div id="leaderboard-content" classList={{ 'is-crossfading': isAnimating() }}>
                     <Show when={leaderboard.loading && !leaderboard() && !oldLeaderboard()}>
                         <p class="leaderboard-status" aria-busy="true">Loading leaderboard...</p>
@@ -140,7 +154,7 @@ export default function SwimsPage() {
                                     {(p) => (
                                         <div class={`podium-place ${p.style}`}>
                                             <Show when={p.rank === 1}>
-                                                <div class="crown-icon" innerHTML={CROWN_SVG} />
+                                                <div class="crown-icon"><FaCrown /></div>
                                             </Show>
                                             <div class="swimmer-avatar">
                                                 <Avatar

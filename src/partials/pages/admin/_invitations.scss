@@ -1,0 +1,62 @@
+@use "../../mixins" as *;
+
+.invitations-page {
+    .form-row {
+        // Default desktop layout
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+        margin-bottom: 1.5rem;
+
+        & > div {
+            flex: 1;
+        }
+
+        input[type="email"] {
+            font-size: 1.1rem; // Make email address text big
+            padding: 0.75rem 1rem;
+            min-height: 48px;
+        }
+
+        button.primary {
+            height: calc(var(--pico-spacing) * 2 + 1.5rem); // Maintain height
+            margin-bottom: 0; // Remove bottom margin
+            flex-shrink: 0; // Prevent shrinking
+        }
+
+        @media (max-width: 600px) {
+            flex-direction: column; // Stack vertically on small screens
+            align-items: stretch;
+            margin-bottom: 1rem; // Adjust margin when stacked
+
+            & > div {
+                width: 100%;
+            }
+
+            button.primary {
+                width: 100%; // Full width button
+                height: auto; // Auto height when stacked
+                margin-bottom: 0; // Ensure no bottom margin
+                padding: 0.75rem 1rem; // Adjust padding
+            }
+        }
+    }
+
+    .tags-selection-grid {
+        margin-top: 0.5rem; // Add a little space from label
+    }
+
+    // Specific styling for the delete button in the invitations table
+    .glass-table {
+        td:last-child {
+            // Actions column
+            width: 1%; // Keep it small
+            white-space: nowrap; // Prevent wrapping
+        }
+
+        .status-tag {
+            font-size: 0.7rem; // Smaller tag
+            padding: 0.2rem 0.5rem;
+        }
+    }
+}
