@@ -197,11 +197,25 @@ REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Waiting for Startup ---' && sleep 10"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Recent Logs ---' && docker compose logs app --tail=20"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Local Health Check ---' && curl -s -I http://localhost:3000/api/health || echo 'Health check failed'"
 
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_SCRIPT"
+sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_SCRIPT" | tee .deploy.log
 
 echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL}"
 echo "      (Note: If you get a DNS error, try http://$SERVER_IP directly)"
 echo ""
+
+if [ "$CLEAR_DB" = true ]; then
+    RESET_LINK=$(grep "Reset Link:" .deploy.log | awk '{print $NF}' | tr -d '\r')
+    if [ -n "$RESET_LINK" ]; then
+        echo "======================================================================"
+        echo "ADMIN RESET LINK RETRIEVED:"
+        echo "$RESET_LINK"
+        echo "======================================================================"
+        echo ""
+    fi
+fi
+
+rm -f .deploy.log
+
 echo "Troubleshooting:"
 echo " - If the site is not loading, check logs: ./deploy.sh --logs"
 echo " - To check Caddy logs specifically: ssh root@$SERVER_IP 'cd DUCC-Website && docker compose logs caddy'"
