@@ -178,10 +178,17 @@ BUILD_ID=$(date +%s)
 
 REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && export NODE_ENV='$MODE' && export SERVER_IP='$SERVER_IP' && cd DUCC-Website && docker compose build --build-arg BUILD_ID=$BUILD_ID --progress=plain"
 
+if [ "$CLEAR_DB" = true ]; then
+    echo "       [INFO] Running database reset."
+    REMOTE_SCRIPT="$REMOTE_SCRIPT && docker compose run --rm app npm run db:init -- $MODE --reseed"
+fi
+
 if [ "$MODE" = "dev" ]; then
     echo "       [INFO] Running in DEVELOPMENT mode."
     # In dev mode we still want to seed if requested, but we'll let the app handle normal start
-    REMOTE_SCRIPT="$REMOTE_SCRIPT && docker compose run --rm app npm run db:init -- dev --seed"
+    if [ "$CLEAR_DB" != true ]; then
+        REMOTE_SCRIPT="$REMOTE_SCRIPT && docker compose run --rm app npm run db:init -- dev --seed"
+    fi
 fi
 
 REMOTE_SCRIPT="$REMOTE_SCRIPT && docker compose up -d --force-recreate --remove-orphans"
