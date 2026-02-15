@@ -123,14 +123,30 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
 
             if (process.env.NODE_ENV !== 'test') Logger.info('Inserting default admin user...');
             const email = 'admin@durham.ac.uk'.toLowerCase();
-            const password = generateRandomPassword(12);
-            const hashedPassword = await bcrypt.hash(password, config.auth.bcryptSaltRounds);
+            
+            // Insert user with no password initially
             const adminResult = await db.run(
-                `INSERT INTO users (email, hashed_password, first_name, last_name, difficulty_level, is_member, filled_legal_info, legal_filled_at, is_verified) VALUES (?, ?, ?, ?, ?, 1, 1, ?, 1)`,
-                [email, hashedPassword, 'Admin', 'User', 5, new Date().toISOString().slice(0, 19).replace('T', ' ')]
+                `INSERT INTO users (email, first_name, last_name, difficulty_level, is_member, filled_legal_info, legal_filled_at, is_verified) VALUES (?, ?, ?, ?, 1, 1, ?, 1)`,
+                [email, 'Admin', 'User', 5, new Date().toISOString().slice(0, 19).replace('T', ' ')]
             );
             adminId = adminResult.lastID;
-            if (process.env.NODE_ENV !== 'test') console.info(`========== Admin created. ==========\nEmail: ${email}\nPassword: ${password}\n====================================`);
+
+            // Create an indefinite password reset link
+            const token = crypto.randomBytes(32).toString('hex');
+            const expiresAt = '9999-12-31 23:59:59';
+            await db.run(
+                'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)',
+                [adminId, token, expiresAt]
+            );
+
+            if (process.env.NODE_ENV !== 'test') {
+                const protocol = config.domain.includes('localhost') ? 'http' : 'https';
+                const baseUrl = `${protocol}://${config.domain}`;
+                console.info(`========== Admin created. ==========`);
+                console.info(`Email: ${email}`);
+                console.info(`Reset Link: ${baseUrl}/set-password?token=${token}`);
+                console.info(`====================================`);
+            }
         } else {
             adminId = existingAdmin.id;
             // Ensure existing admin is also a member and has legal info and is verified
