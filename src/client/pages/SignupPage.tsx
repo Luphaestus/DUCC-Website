@@ -116,7 +116,7 @@ export default function SignupPage() {
             currentErrors.password = 'Password cannot exceed 72 characters';
         }
 
-        if (email().includes('+')) {
+        if (email().includes('+') && !invitationToken()) {
             currentErrors.email = 'Plus-indexed emails are not allowed';
         } else if (!email().includes('@') && !email().includes('.') && !invitationToken()) {
             currentErrors.email = 'Email must follow the first.last format';
