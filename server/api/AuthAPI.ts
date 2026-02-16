@@ -69,6 +69,10 @@ export default class Auth {
                     const user = await AuthDB.getUserByEmail(this.db, formatedEmail);
                     if (!user) return done(null, false, { message: 'Incorrect email.' });
 
+                    if (!user.hashed_password) {
+                        return done(null, false, { message: 'Migration required' });
+                    }
+
                     const isMatch = await bcrypt.compare(password, user.hashed_password);
                     if (!isMatch) return done(null, false, { message: 'Incorrect password.' });
 
@@ -330,7 +334,40 @@ export default class Auth {
                 // @ts-ignore - passport.authenticate returns a function in some versions, but in fastify-passport it can be used as a hook or directly
                 const result = await this.passport.authenticate('local', async (request: any, reply: any, err: any, user: any, info: any) => {
                     if (err) return reply.status(500).send({ message: 'Authentication error.' });
-                    if (!user) return reply.status(401).send({ message: info?.message || 'Authentication failed.' });
+                    
+                    if (!user) {
+                        if (info?.message === 'Migration required') {
+                            const email = request.body.email.toLowerCase();
+                            const dbUser = await AuthDB.getUserByEmail(this.db, email);
+                            
+                            if (dbUser) {
+                                const token = crypto.randomBytes(32).toString('hex');
+                                const expiresAt = new Date(Date.now() + 3600000).toISOString();
+                                await AuthDB.createPasswordReset(this.db, dbUser.id, token, expiresAt);
+
+                                const protocol = request.protocol;
+                                const host = request.headers.host;
+                                const baseUrl = `${protocol}://${host}`;
+                                const resetUrl = `${baseUrl}/set-password?token=${token}`;
+
+                                EmailManager.getInstance().sendTemplatedEmail(
+                                    dbUser.email,
+                                    'Action Required: Secure your new DUCC account',
+                                    'password_reset',
+                                    {
+                                        name: dbUser.first_name,
+                                        reset_url: resetUrl
+                                    }
+                                ).catch(e => Logger.error('[AuthAPI] Failed to send migration reset email:', e));
+
+                                return reply.status(200).send({ 
+                                    migrationRequired: true,
+                                    message: 'Migration required. A password reset link has been sent to your email.' 
+                                });
+                            }
+                        }
+                        return reply.status(401).send({ message: info?.message || 'Authentication failed.' });
+                    }
 
                     if (!user.is_verified) {
                         return reply.status(403).send({ 

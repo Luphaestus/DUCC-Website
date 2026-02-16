@@ -23,6 +23,7 @@ export default function LoginPage() {
     const [errors, setErrors] = createSignal<Record<string, boolean>>({});
     const [shaking, setShaking] = createSignal<Record<string, boolean>>({});
     const [emailOtpSent, setEmailOtpSent] = createSignal(false);
+    const [migrationRequired, setMigrationRequired] = createSignal(false);
 
     onMount(async () => {
         try {
@@ -90,6 +91,10 @@ export default function LoginPage() {
 
         try {
             const res = await apiRequest('POST', '/api/auth/login', { email: fullEmail, password: password() });
+            if (res.migrationRequired) {
+                setMigrationRequired(true);
+                return;
+            }
             if (res.requires2FA) {
                 setMethods(res.methods);
                 setRequires2FA(true);
@@ -156,78 +161,110 @@ export default function LoginPage() {
         <div id="login-view" class="auth-page-wrapper">
             <div class="auth-card">
                 <Show when={!requires2FA()}>
-                    <div class="center-text">
-                        <h2>Sign In</h2>
-                        <p class="auth-subtitle">Welcome back! Please sign in to continue.</p>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="secondary outline full-width"
-                        classList={{ 'shaking': shaking().passkey, 'is-invalid': errors().passkey }}
-                        onClick={() => {
-                            clearError('passkey');
-                            startPasskeyLogin(email() ? (email().includes('@') ? email() : email() + '@durham.ac.uk') : null);
-                        }}
-                        style={{ "border-radius": "16px" }}
-                    >
-                        <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Sign in with Passkey
-                    </button>
-
-                    <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
-
-                    <form onSubmit={handlePasswordLogin}>
-                        <div class="modern-form-group">
-                            <label for="email">Email address</label>
-                            <div class="glass-input-group durham-email-wrapper" classList={{ 'is-invalid': errors().email, 'shaking': shaking().email }}>
-                                <div class="icon">
-                                    <span innerHTML={PERSON_SVG} />
-                                </div>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    placeholder="email"
-                                    autocomplete="username"
-                                    value={email()}
-                                    autofocus
-                                    onInput={(e) => {
-                                        clearError('email');
-                                        setEmail(e.currentTarget.value);
-                                    }}
-                                />
-                                <Show when={!email().includes('@')}>
-                                    <span class="email-suffix">@durham.ac.uk</span>
-                                </Show>
+                    <Show when={migrationRequired()} fallback={
+                        <>
+                            <div class="center-text">
+                                <h2>Sign In</h2>
+                                <p class="auth-subtitle">Welcome back! Please sign in to continue.</p>
                             </div>
-                        </div>
 
-                        <div class="modern-form-group">
-                            <label for="password">Password</label>
-                            <div class="glass-input-group" classList={{ 'is-invalid': errors().password, 'shaking': shaking().password }}>
-                                <div class="icon">
-                                    <span innerHTML={LOCK_SVG} />
-                                </div>
-                                <input
-                                    type="password"
-                                    id="password"
-                                    name="password"
-                                    autocomplete="current-password"
-                                    placeholder="••••••••"
-                                    value={password()}
-                                    onInput={(e) => {
-                                        clearError('password');
-                                        setPassword(e.currentTarget.value);
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 0.5rem;">
-                            <button type="submit" class="primary full-width" style={{ "border-radius": "16px" }}>
-                                Continue with Password
+                            <button
+                                type="button"
+                                class="secondary outline full-width"
+                                classList={{ 'shaking': shaking().passkey, 'is-invalid': errors().passkey }}
+                                onClick={() => {
+                                    clearError('passkey');
+                                    startPasskeyLogin(email() ? (email().includes('@') ? email() : email() + '@durham.ac.uk') : null);
+                                }}
+                                style={{ "border-radius": "16px" }}
+                            >
+                                <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Sign in with Passkey
                             </button>
+
+                            <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
+
+                            <form onSubmit={handlePasswordLogin}>
+                                <div class="modern-form-group">
+                                    <label for="email">Email address</label>
+                                    <div class="glass-input-group durham-email-wrapper" classList={{ 'is-invalid': errors().email, 'shaking': shaking().email }}>
+                                        <div class="icon">
+                                            <span innerHTML={PERSON_SVG} />
+                                        </div>
+                                        <input
+                                            id="email"
+                                            name="email"
+                                            placeholder="email"
+                                            autocomplete="username"
+                                            value={email()}
+                                            autofocus
+                                            onInput={(e) => {
+                                                clearError('email');
+                                                setEmail(e.currentTarget.value);
+                                            }}
+                                        />
+                                        <Show when={!email().includes('@')}>
+                                            <span class="email-suffix">@durham.ac.uk</span>
+                                        </Show>
+                                    </div>
+                                </div>
+
+                                <div class="modern-form-group">
+                                    <label for="password">Password</label>
+                                    <div class="glass-input-group" classList={{ 'is-invalid': errors().password, 'shaking': shaking().password }}>
+                                        <div class="icon">
+                                            <span innerHTML={LOCK_SVG} />
+                                        </div>
+                                        <input
+                                            type="password"
+                                            id="password"
+                                            name="password"
+                                            autocomplete="current-password"
+                                            placeholder="••••••••"
+                                            value={password()}
+                                            onInput={(e) => {
+                                                clearError('password');
+                                                setPassword(e.currentTarget.value);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 0.5rem;">
+                                    <button type="submit" class="primary full-width" style={{ "border-radius": "16px" }}>
+                                        Continue with Password
+                                    </button>
+                                </div>
+                            </form>
+                        </>
+                    }>
+                        <div class="center-text migration-message">
+                            <div class="icon-circle" style="background: rgba(var(--pico-primary-rgb), 0.1); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                                <span innerHTML={MAIL_SVG} style="color: var(--pico-primary); font-size: 24px;" />
+                            </div>
+                            <h2>Check your email</h2>
+                            <p class="auth-subtitle">We've updated our security system. To access your migrated account, we've sent a secure password reset link to <strong>{email().includes('@') ? email() : email() + '@durham.ac.uk'}</strong>.</p>
+                            
+                            <div class="migration-steps" style="text-align: left; margin: 2rem 0; padding: 1rem; background: rgba(var(--pico-card-background-color-rgb), 0.5); border-radius: 12px; font-size: 0.9rem;">
+                                <p style="margin-bottom: 0.5rem;"><strong>Next steps:</strong></p>
+                                <ol style="padding-left: 1.25rem; margin: 0;">
+                                    <li>Open the email from DUCC.</li>
+                                    <li>Click the secure link.</li>
+                                    <li>Set your new password and sign in.</li>
+                                </ol>
+                            </div>
+
+                            <button 
+                                class="primary outline full-width" 
+                                style="border-radius: 16px;"
+                                onClick={() => setMigrationRequired(false)}
+                            >
+                                Back to Login
+                            </button>
+                            <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--pico-muted-color);">
+                                Didn't get an email? <a onClick={() => navigate('/reset-password')} class="clickable">Try manual reset</a>
+                            </p>
                         </div>
-                    </form>
+                    </Show>
                 </Show>
 
                 <Show when={requires2FA()}>
