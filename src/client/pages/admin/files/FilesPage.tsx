@@ -8,9 +8,9 @@ import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import UploadWidget from "@/components/UploadWidget";
 import { 
-    SEARCH_SVG, UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, 
-    DELETE_SVG, EDIT_SVG, UPLOAD_SVG, FOLDER_SVG, ADD_SVG
-} from '@/utils/icons';
+    FaSolidMagnifyingGlass, FaSolidArrowsUpDown, FaSolidArrowDown, FaSolidArrowUp, 
+    FaSolidTrash, FaSolidPenToSquare, FaSolidCloudArrowUp, FaSolidFolder, FaSolidPlus
+} from 'solid-icons/fa';
 
 // --- Types ---
 interface FileRecord {
@@ -103,7 +103,7 @@ const CategoriesModal = (props: {
                                 <option value="public">Public</option>
                                 <option value="execs">Execs</option>
                             </select>
-                            <button class="icon-btn delete" onClick={() => handleDeleteCategory(cat.id)} title="Delete Category" innerHTML={DELETE_SVG} />
+                            <button class="icon-btn delete" onClick={() => handleDeleteCategory(cat.id)} title="Delete Category"><FaSolidTrash /></button>
                         </div>
                     )}
                 </For>
@@ -119,7 +119,7 @@ const CategoriesModal = (props: {
                     <option value="execs">Execs Only</option>
                 </select>
                 <button type="submit" class="small-btn">
-                    <span innerHTML={ADD_SVG} /> Create
+                    <FaSolidPlus /> Create
                 </button>
             </form>
         </Modal>
@@ -311,28 +311,38 @@ export default function FilesPage() {
             <thead>
                 <tr>
                     <th class="sortable" onClick={() => handleSort('title')}>
-                        Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Title <Show when={sort() === 'title'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('category_name')}>
-                        Category <Show when={sort() === 'category_name'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Category <Show when={sort() === 'category_name'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('author')}>
-                        Author <Show when={sort() === 'author'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Author <Show when={sort() === 'author'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('visibility')}>
-                        Visibility <Show when={sort() === 'visibility'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Visibility <Show when={sort() === 'visibility'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('date')}>
-                        Date <Show when={sort() === 'date'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Date <Show when={sort() === 'date'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th>Actions</th>
@@ -353,14 +363,13 @@ export default function FilesPage() {
                             </td>
                             <td data-label="Actions">
                                 <div class="row-actions">
-                                    <button class="icon-btn edit-file" onClick={() => setEditingFile(file)} title="Edit" innerHTML={EDIT_SVG} />
+                                    <button class="icon-btn edit-file" onClick={() => setEditingFile(file)} title="Edit"><FaSolidPenToSquare /></button>
                                     <button 
                                         class="icon-btn delete-file delete" 
                                         onClick={() => handleDeleteFile(file.id)} 
                                         title={file.author === 'System' ? 'Cannot delete system files' : 'Delete'} 
                                         disabled={file.author === 'System'}
-                                        innerHTML={DELETE_SVG} 
-                                    />
+                                    ><FaSolidTrash /></button>
                                 </div>
                             </td>
                         </tr>
@@ -382,10 +391,10 @@ export default function FilesPage() {
                                 value={search()} 
                                 onInput={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
                             />
-                            <button class="search-icon-btn" innerHTML={SEARCH_SVG} />
+                            <button class="search-icon-btn"><FaSolidMagnifyingGlass /></button>
                         </div>
                         <div class="glass-input-group liquid-container category-filter-pill">
-                            <span class="icon" innerHTML={FOLDER_SVG} />
+                            <span class="icon"><FaSolidFolder /></span>
                             <select 
                                 class="modern-select compact" 
                                 value={categoryId()} 
@@ -400,10 +409,10 @@ export default function FilesPage() {
                     </div>
                     <div class="toolbar-right">
                         <button class="small-btn secondary" onClick={() => setShowCats(true)}>
-                            <span innerHTML={FOLDER_SVG} /> Categories
+                            <FaSolidFolder /> Categories
                         </button>
                         <button class="small-btn" onClick={() => setShowUpload(true)}>
-                            <span innerHTML={UPLOAD_SVG} /> Upload
+                            <FaSolidCloudArrowUp /> Upload
                         </button>
                     </div>
                 </div>

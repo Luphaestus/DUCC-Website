@@ -3,7 +3,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import PageTitle from "@/components/PageTitle";
 import RichTextEditor from "@/components/RichTextEditor";
-import { MAIL_SVG, GROUP_SVG, PERSON_SVG, ALL_INCLUSIVE_SVG } from "@/utils/icons";
+import { FaSolidEnvelope, FaSolidUsers, FaSolidUser, FaSolidInfinity } from 'solid-icons/fa';
 import { showConfirmModal } from "@/utils/modal";
 
 export default function EmailsPage() {
@@ -76,7 +76,7 @@ export default function EmailsPage() {
                             class="primary full-width"
                             disabled={isSending() || stats.loading}
                         >
-                            <span innerHTML={MAIL_SVG} /> {isSending() ? 'Sending...' : 'Send Announcement'}
+                            <FaSolidEnvelope /> {isSending() ? 'Sending...' : 'Send Announcement'}
                         </button>
                     </form>
                 </div>
@@ -91,7 +91,7 @@ export default function EmailsPage() {
                                 class={`target-card ${target() === 'members' ? 'active' : ''}`}
                                 onClick={() => setTarget('members')}
                             >
-                                <div class="icon" innerHTML={GROUP_SVG} />
+                                <div class="icon"><FaSolidUsers /></div>
                                 <div class="info">
                                     <span class="label">Members Only</span>
                                     <span class="count">{stats()?.members || 0} recipients</span>
@@ -102,7 +102,7 @@ export default function EmailsPage() {
                                 class={`target-card ${target() === 'guests' ? 'active' : ''}`}
                                 onClick={() => setTarget('guests')}
                             >
-                                <div class="icon" innerHTML={PERSON_SVG} />
+                                <div class="icon"><FaSolidUser /></div>
                                 <div class="info">
                                     <span class="label">Guests Only</span>
                                     <span class="count">{stats()?.guests || 0} recipients</span>
@@ -113,7 +113,7 @@ export default function EmailsPage() {
                                 class={`target-card ${target() === 'all' ? 'active' : ''}`}
                                 onClick={() => setTarget('all')}
                             >
-                                <div class="icon" innerHTML={ALL_INCLUSIVE_SVG} />
+                                <div class="icon"><FaSolidInfinity /></div>
                                 <div class="info">
                                     <span class="label">Everyone</span>
                                     <span class="count">{stats()?.total || 0} recipients</span>

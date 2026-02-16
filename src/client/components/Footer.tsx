@@ -1,5 +1,5 @@
 import { onMount, createSignal, Show } from "solid-js";
-import { MAIL_SVG } from '@/utils/icons';
+import { FaBrandsFacebook, FaBrandsInstagram, FaSolidEnvelope } from 'solid-icons/fa'
 import { apiRequest } from "@/utils/api";
 
 export default function Footer() {
@@ -28,13 +28,13 @@ export default function Footer() {
         <div class="footer-content">
           <div class="social-links">
             <a href="https://www.facebook.com/DurhamUniversityCanoeClub" target="_blank" aria-label="Facebook">
-              <img src="/images/icons/outline/brand-facebook.svg" alt="Facebook" />
+              <FaBrandsFacebook />
             </a>
             <a href="https://www.instagram.com/durhamuniversitycanoe/" target="_blank" aria-label="Instagram">
-              <img src="/images/icons/outline/brand-instagram.svg" alt="Instagram" />
+              <FaBrandsInstagram />
             </a>
             <a href="mailto:canoe.club@durham.ac.uk" aria-label="Email">
-              <span innerHTML={MAIL_SVG} />
+              <FaSolidEnvelope />
             </a>
           </div>
         </div>

@@ -4,10 +4,11 @@ import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import {
-  ARROW_BACK_IOS_NEW_SVG, DELETE_HISTORY_SVG, CLOSE_SVG,
-  CONTENT_COPY_SVG, CLOUD_DOWNLOAD_SVG, CURRENCY_POUND_SVG,
-  KAYAKING_SVG, CALENDAR_MONTH_SVG, DESCRIPTION_SVG
-} from '@/utils/icons';
+  FaSolidChevronLeft, FaSolidTrashCan, FaSolidXmark,
+  FaSolidCopy, FaSolidCloudArrowDown, FaSolidPoundSign,
+  FaSolidCalendarDays, FaSolidFileLines
+} from 'solid-icons/fa';
+import { MdFillKayaking } from "solid-icons/md";
 import DetailsTab from "./tabs/DetailsTab";
 import FinanceTab from "./tabs/FinanceTab";
 import KitTab from "./tabs/KitTab";
@@ -154,36 +155,36 @@ export default function EventDetailPage() {
           <aside class="dashboard-sidebar">
             <TabNav class="vertical-sidebar">
               <button class="nav-item" onClick={() => navigate('/admin/events')}>
-                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Events
+                <FaSolidChevronLeft /> Back to Events
               </button>
               <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
               
               <button class="nav-item" classList={{ active: currentTab() === 'details' }} onClick={() => setSearchParams({ tab: 'details' })}>
-                <span innerHTML={ARROW_BACK_IOS_NEW_SVG} class="rotate-180" /> Details
+                <FaSolidChevronLeft class="rotate-180" /> Details
               </button>
               <Show when={!isNew()}>
                 <button class="nav-item" classList={{ active: currentTab() === 'finance' }} onClick={() => setSearchParams({ tab: 'finance' })}>
-                  <span innerHTML={CURRENCY_POUND_SVG} /> Finance
+                  <FaSolidPoundSign /> Finance
                 </button>
                 <Show when={liveEvent()?.allow_kit_requests}>
                   <button class="nav-item" classList={{ active: currentTab() === 'kit' }} onClick={() => setSearchParams({ tab: 'kit' })}>
-                    <span innerHTML={KAYAKING_SVG} /> Kit Requests
+                    <MdFillKayaking /> Kit Requests
                   </button>
                 </Show>
                 <button class="nav-item" classList={{ active: currentTab() === 'forms' }} onClick={() => setSearchParams({ tab: 'forms' })}>
-                  <span innerHTML={DESCRIPTION_SVG} /> Forms
+                  <FaSolidFileLines /> Forms
                 </button>
 
                 <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
 
                 <button class="nav-item" onClick={openDuplicateModal}>
-                  <span innerHTML={CONTENT_COPY_SVG} /> Duplicate
+                  <FaSolidCopy /> Duplicate
                 </button>
                 <button class="nav-item warning" onClick={handleCancel}>
-                  <span innerHTML={CLOSE_SVG} /> Cancel Event
+                  <FaSolidXmark /> Cancel Event
                 </button>
                 <button class="nav-item delete" onClick={handleDelete}>
-                  <span innerHTML={DELETE_HISTORY_SVG} /> Delete Permanently
+                  <FaSolidTrashCan /> Delete Permanently
                 </button>
               </Show>
             </TabNav>

@@ -7,7 +7,7 @@
 import { updateConnectionStatus } from '../connection.js';
 import { getCookie } from './utils.js';
 import { NoInternetEvent } from './events/events.js';
-import { notify, NotificationTypes } from '../components/notification';
+import { useNotifications, NotificationTypes } from '../stores/notifications';
 
 /**
  * Cache for GET requests to reduce redundant network traffic.
@@ -109,9 +109,9 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
                         if (window.solidNavigate) window.solidNavigate('/unauthorised');
                         else window.location.href = '/unauthorised';
                     }
-                    notify('Access Denied', errorMessage, NotificationTypes.WARNING);
+                    useNotifications().notify('Access Denied', errorMessage, NotificationTypes.WARNING);
                 } else if (response.status >= 500 && !silent) {
-                    notify('Server Error', errorMessage, NotificationTypes.ERROR);
+                    useNotifications().notify('Server Error', errorMessage, NotificationTypes.ERROR);
                 }
 
                 throw error;
@@ -129,7 +129,7 @@ async function apiRequest(method: string, url: string, data: any = null, silent:
 
             // If it's a generic network error (not a status-based one), notify
             if (!silent && !gotResponse) {
-                notify('Network Error', 'Check your connection.', NotificationTypes.ERROR, 5000, 'network-error');
+                useNotifications().notify('Network Error', 'Check your connection.', NotificationTypes.ERROR, 5000, 'network-error');
             }
 
             throw finalError;

@@ -2,7 +2,8 @@
 import { createSignal, createResource, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { CHECK_CIRCLE_SVG, KAYAKING_SVG } from '@/utils/icons';
+import { FaSolidCircleCheck } from 'solid-icons/fa';
+import { MdFillKayaking } from "solid-icons/md";
 import Panel from "@/components/Panel";
 
 interface KitVariant {
@@ -101,7 +102,7 @@ export default function KitTab(props: { eventId: number }) {
 
   return (
     <div class="kit-admin-tab flex-column gap-6">
-      <Panel title="Inventory Summary" icon={KAYAKING_SVG}>
+      <Panel title="Inventory Summary" icon={MdFillKayaking}>
         <div class="glass-table-container">
           <table class="glass-table">
             <thead>
@@ -142,7 +143,7 @@ export default function KitTab(props: { eventId: number }) {
         </div>
       </Panel>
 
-      <Panel title="Detailed Requests" icon={KAYAKING_SVG}>
+      <Panel title="Detailed Requests" icon={MdFillKayaking}>
         <div class="glass-table-container">
           <table class="glass-table">
             <thead>
@@ -171,8 +172,9 @@ export default function KitTab(props: { eventId: number }) {
                         class={`icon-btn ${req.is_fulfilled ? 'secondary' : 'success'}`}
                         onClick={() => toggleFulfillment(req.id)}
                         title={req.is_fulfilled ? 'Mark as Pending' : 'Mark as Fulfilled'}
-                        innerHTML={CHECK_CIRCLE_SVG}
-                      />
+                      >
+                        <FaSolidCircleCheck />
+                      </button>
                     </td>
                   </tr>
                 )}

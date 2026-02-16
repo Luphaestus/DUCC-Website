@@ -280,14 +280,14 @@ export default class RolesDB {
     /**
      * Create a new role definition.
      */
-    static async createRole(db: DatabaseWrapper, name: string, description: string, permissions: string[], execRanking: number = 4): Promise<statusObject> {
+    static async createRole(db: DatabaseWrapper, name: string, description: string, permissions: string[], exec_ranking: number = 4): Promise<statusObject> {
         try {
             const existingRole = await db.get('SELECT id FROM roles WHERE name = ?', [name]);
             if (existingRole) {
                 return new statusObject(409, 'A role with this name already exists.');
             }
 
-            const result = await db.run('INSERT INTO roles (name, description, exec_ranking) VALUES (?, ?, ?)', [name, description, execRanking]);
+            const result = await db.run('INSERT INTO roles (name, description, exec_ranking) VALUES (?, ?, ?)', [name, description, exec_ranking]);
             const roleId = result.lastID;
 
             if (permissions && Array.isArray(permissions)) {
@@ -309,14 +309,14 @@ export default class RolesDB {
     /**
      * Update an existing role definition and its permission mappings.
      */
-    static async updateRole(db: DatabaseWrapper, id: number | string, name: string, description: string, permissions: string[], execRanking: number = 4): Promise<statusObject> {
+    static async updateRole(db: DatabaseWrapper, id: number | string, name: string, description: string, permissions: string[], exec_ranking: number = 4): Promise<statusObject> {
         try {
             const role = await db.get('SELECT name FROM roles WHERE id = ?', [id]);
             if (role && role.name === 'President' && name !== 'President') {
                 return new statusObject(403, 'The President role name cannot be changed.');
             }
 
-            await db.run('UPDATE roles SET name = ?, description = ?, exec_ranking = ? WHERE id = ?', [name, description, execRanking, id]);
+            await db.run('UPDATE roles SET name = ?, description = ?, exec_ranking = ? WHERE id = ?', [name, description, exec_ranking, id]);
 
             if (permissions && Array.isArray(permissions)) {
                 await db.run('DELETE FROM role_permissions WHERE role_id = ?', [id]);

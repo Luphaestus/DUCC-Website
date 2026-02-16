@@ -4,8 +4,8 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    GROUP_SVG, ADD_SVG, EDIT_SVG, CLOSE_SVG
-} from '@/utils/icons';
+    FaSolidCar, FaSolidPlus, FaSolidPenToSquare, FaSolidXmark
+} from 'solid-icons/fa';
 import { showConfirmModal } from "@/utils/modal";
 import { Car } from "./types";
 import { useProfile } from "./ProfileLayout";
@@ -72,11 +72,11 @@ export default function ProfileCars() {
             <section class="dashboard-section active">
                 <Panel
                     title="My Vehicles"
-                    icon={GROUP_SVG}
+                    icon={FaSolidCar}
                     class="glass-panel"
                     action={
                         <button class="small-btn primary" onClick={() => handleOpenCarModal()}>
-                            <span innerHTML={ADD_SVG} /> Add Car
+                            <FaSolidPlus /> Add Car
                         </button>
                     }
                 >
@@ -84,7 +84,7 @@ export default function ProfileCars() {
                         <For each={cars()} fallback={<p>No cars found.</p>}>
                             {(car) => (
                                 <div class="list-item">
-                                    <div class="item-icon"><span innerHTML={GROUP_SVG} /></div>
+                                    <div class="item-icon"><FaSolidCar /></div>
                                     <div class="item-details">
                                         <span class="item-title">{car.name}</span>
                                         <span class="item-subtitle">{car.seats} Seats • {car.boats} Boats {car.is_global && <span class="badge primary">Global</span>}</span>
@@ -92,10 +92,10 @@ export default function ProfileCars() {
                                     <div class="item-value-group">
                                         <div class="button-group">
                                             <button class="small-btn icon-only secondary" onClick={() => handleOpenCarModal(car)} title="Edit Car">
-                                                <span innerHTML={EDIT_SVG} />
+                                                <FaSolidPenToSquare />
                                             </button>
                                             <button class="small-btn icon-only delete" onClick={() => handleDeleteCar(car.id)} title="Remove Car">
-                                                <span innerHTML={CLOSE_SVG} />
+                                                <FaSolidXmark />
                                             </button>
                                         </div>
                                     </div>

@@ -3,7 +3,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { useAuth } from "@/stores/auth";
 import Panel from "@/components/Panel";
-import { KEY_SVG, ADD_SVG, DELETE_SVG, HOME_SVG, HISTORY_SVG, SEARCH_SVG } from '@/utils/icons';
+import { FaSolidKey, FaSolidPlus, FaSolidTrash, FaSolidHouse, FaSolidClockRotateLeft, FaSolidMagnifyingGlass } from 'solid-icons/fa';
 import Avatar from "@/components/Avatar";
 import { showConfirmModal } from "@/utils/modal";
 
@@ -109,7 +109,7 @@ export default function KeysPage() {
                     <div class="toolbar-right">
                         <Show when={canManage()}>
                             <button class="primary small-btn" onClick={handleCreateKey}>
-                                <span innerHTML={ADD_SVG} /> Create Key
+                                <FaSolidPlus /> Create Key
                             </button>
                         </Show>
                     </div>
@@ -128,7 +128,7 @@ export default function KeysPage() {
                                                 <span class="label">Current Holder</span>
                                                 <Show when={key.holder_id} fallback={
                                                     <div class="holder-info club">
-                                                        <span class="icon" innerHTML={HOME_SVG} />
+                                                        <FaSolidHouse />
                                                         <span>Club Possession</span>
                                                     </div>
                                                 }>
@@ -149,13 +149,13 @@ export default function KeysPage() {
                                                             </Show>
                                                         </Show>
                                                         <Show when={canManage()}>
-                                                            <button class="small-btn icon-only delete" onClick={() => handleDeleteKey(key.id)} innerHTML={DELETE_SVG} />
+                                                            <button class="small-btn icon-only delete" onClick={() => handleDeleteKey(key.id)}><FaSolidTrash /></button>
                                                         </Show>
                                                     </div>
                                                 }>
                                                     <div class="transfer-input-group">
                                                         <div class="search-input-wrapper">
-                                                            <span class="search-icon" innerHTML={SEARCH_SVG} />
+                                                            <span class="search-icon"><FaSolidMagnifyingGlass /></span>
                                                             <input 
                                                                 type="text" 
                                                                 placeholder="Search member..." 
@@ -187,7 +187,7 @@ export default function KeysPage() {
                             </For>
                             <Show when={(keys() || []).length === 0}>
                                 <div class="empty-state">
-                                    <span class="icon" innerHTML={KEY_SVG} />
+                                    <FaSolidKey />
                                     <p>No keys in inventory.</p>
                                 </div>
                             </Show>
@@ -196,7 +196,7 @@ export default function KeysPage() {
                 </div>
 
                 <div class="keys-history-section">
-                    <Panel title="Transfer History" icon={HISTORY_SVG} class="glass-panel">
+                    <Panel title="Transfer History" icon={FaSolidClockRotateLeft} class="glass-panel">
                         <div class="logs-container">
                             <table class="glass-table">
                                 <thead>

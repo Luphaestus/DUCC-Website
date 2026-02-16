@@ -6,7 +6,8 @@ import { useNotifications } from "@/stores/notifications";
 import { useParams, useNavigate } from "@solidjs/router";
 import Panel from "@/components/Panel";
 import PageTitle from "@/components/PageTitle";
-import { ADD_SVG, MAIL_SVG, CROWN_SVG, CHECK_SVG, CLOSE_SVG } from "@/utils/icons";
+import { FiCheck } from 'solid-icons/fi'
+import { RiFinanceVipCrownFill } from 'solid-icons/ri'
 import Markdown from "@/components/Markdown";
 import Avatar from "@/components/Avatar";
 import { useAuth } from "@/stores/auth";
@@ -150,7 +151,7 @@ export default function ElectionPage() {
                                             </Show>
                                             <Show when={isNominated()}>
                                                 <div class="status-msg success flex align-center gap-2">
-                                                    <span innerHTML={CHECK_SVG} /> Nominated
+                                                    <FiCheck /> Nominated
                                                 </div>
                                             </Show>
                                         </Panel>
@@ -164,8 +165,8 @@ export default function ElectionPage() {
                         <div class="section-intro">
                             <h2 class="text-2xl font-bold">Voting is Now Open!</h2>
                             <p class="text-muted">
-                                {currentElection()!.voting_type === 'in_person' 
-                                    ? 'Online voting is disabled for this election. Please attend the AGM to cast your vote.' 
+                                {currentElection()!.voting_type === 'in_person'
+                                    ? 'Online voting is disabled for this election. Please attend the AGM to cast your vote.'
                                     : 'Cast your vote for the candidates of each role.'}
                             </p>
                         </div>
@@ -237,12 +238,12 @@ export default function ElectionPage() {
                         <div class="section-intro">
                             <h2 class="text-2xl font-bold">Election Results</h2>
                             <p class="text-muted">
-                                {currentElection()!.phase === 'closed' 
-                                    ? 'Voting has closed. Results are being verified.' 
+                                {currentElection()!.phase === 'closed'
+                                    ? 'Voting has closed. Results are being verified.'
                                     : 'The winners of the election are shown below.'}
                             </p>
                         </div>
-                        
+
                         <div class="election-roles-grid">
                             <For each={electionRoles()}>
                                 {role => (
@@ -251,27 +252,28 @@ export default function ElectionPage() {
                                             <div class="nominations-list flex-column gap-3">
                                                 <For each={nominationsByRole()[role.id].sort((a, b) => b.votes_received - a.votes_received)}>
                                                     {nominee => (
-                                                        <div class="nominee-card liquid-container flex align-center gap-4 p-3" 
-                                                             classList={{ 
-                                                                'primary-glass': !!nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase), 
-                                                                'secondary-bg': !nominee.is_winner || !['results_revealed', 'roles_transferred'].includes(currentElection()!.phase) 
-                                                             }}
-                                                             style={{ "border-radius": "12px" }}>
+                                                        <div class="nominee-card liquid-container flex align-center gap-4 p-3"
+                                                            classList={{
+                                                                'primary-glass': !!nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase),
+                                                                'secondary-bg': !nominee.is_winner || !['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)
+                                                            }}
+                                                            style={{ "border-radius": "12px" }}>
                                                             <Avatar user={nominee} classes="mini" />
                                                             <div class="nominee-info flex-grow">
                                                                 <div class="flex align-center gap-2">
                                                                     <span class="nominee-name font-bold">{nominee.first_name} {nominee.last_name}</span>
-                                                                                                                    <Show when={nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
-                                                                                                                        <span class="badge primary mini-badge" style={{ "background": "var(--pico-primary)", "color": "white" }}>Winner</span>
-                                                                                                                    </Show>
-                                                                                                                </div>
-                                                                                                                <Show when={['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
-                                                                                                                    <span class="small-text block opacity-70">{nominee.votes_received} votes</span>
-                                                                                                                </Show>
-                                                                                                            </div>
-                                                                                                            <Show when={nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
-                                                                                                                <span class="crown-icon" innerHTML={CROWN_SVG} style={{ "color": "gold", "width": "24px" }} />
-                                                                                                            </Show>                                                        </div>
+                                                                    <Show when={nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
+                                                                        <span class="badge primary mini-badge" style={{ "background": "var(--pico-primary)", "color": "white" }}>Winner</span>
+                                                                    </Show>
+                                                                </div>
+                                                                <Show when={['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
+                                                                    <span class="small-text block opacity-70">{nominee.votes_received} votes</span>
+                                                                </Show>
+                                                            </div>
+                                                            <Show when={nominee.is_winner && ['results_revealed', 'roles_transferred'].includes(currentElection()!.phase)}>
+                                                                <span class="crown-icon" style={{ "color": "gold", "width": "24px" }}><RiFinanceVipCrownFill /></span>
+                                                            </Show>
+                                                        </div>
                                                     )}
                                                 </For>
                                             </div>
@@ -285,23 +287,25 @@ export default function ElectionPage() {
             </main>
 
             <Show when={nominatingRole()}>
-                <Modal 
-                    isOpen={true} 
-                    title={`Nominate for ${nominatingRole()?.role_name}`} 
+                <Modal
+                    isOpen={true}
+                    title={`Nominate for ${nominatingRole()?.role_name}`}
                     onClose={() => setNominatingRole(null)}
                 >
                     <div class="nomination-modal-content">
                         <p class="mb-4">To nominate yourself for this role, you must upload a manifesto (PDF recommended).</p>
-                        
-                        <UploadWidget 
+
+                        <UploadWidget
                             selectMode="single"
                             autoUpload={true}
                             onImageSelect={(file) => {
-                                handleNominate(nominatingRole()!.id, file.id);
-                                setNominatingRole(null);
+                                if (file.id) {
+                                    handleNominate(nominatingRole()!.id, file.id);
+                                    setNominatingRole(null);
+                                }
                             }}
                         />
-                        
+
                         <div class="mt-4 flex justify-end">
                             <button class="secondary outline" onClick={() => setNominatingRole(null)}>Cancel</button>
                         </div>

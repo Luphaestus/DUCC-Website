@@ -4,8 +4,8 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    WALLET_SVG, HOURGLASS_TOP_SVG, ADD_SVG, REMOVE_SVG
-} from '@/utils/icons';
+    FaSolidWallet, FaSolidHourglass, FaSolidPlus, FaSolidMinus
+} from 'solid-icons/fa';
 import { Transaction } from "./types";
 import { useProfile } from "./ProfileLayout";
 
@@ -76,7 +76,7 @@ export default function ProfileBalance() {
                 </article>
 
                 <div class="grid">
-                    <Panel title="How to Top Up" icon={WALLET_SVG} class="glass-panel no-margin">
+                    <Panel title="How to Top Up" icon={FaSolidWallet} class="glass-panel no-margin">
                         <p>To add funds to your account, please make a bank transfer using the details below. Once sent, use the "Report Top-Up" button to let us know!</p>
                         <div class="bank-details liquid-container secondary-bg">
                             <div class="info-rows mini">
@@ -99,7 +99,9 @@ export default function ProfileBalance() {
                             {(tx) => (
                                 <div class="list-item" classList={{ 'pending-tx': tx.status === 'pending' }}>
                                     <div class="item-icon" classList={{ 'positive': tx.amount > 0, 'negative': tx.amount < 0, 'pending': tx.status === 'pending' }}>
-                                        <span innerHTML={tx.status === 'pending' ? HOURGLASS_TOP_SVG : (tx.amount > 0 ? ADD_SVG : REMOVE_SVG)} />
+                                        <Show when={tx.status === 'pending'} fallback={tx.amount > 0 ? <FaSolidPlus /> : <FaSolidMinus />}>
+                                            <FaSolidHourglass />
+                                        </Show>
                                     </div>
                                     <div class="item-details">
                                         <span class="item-title">

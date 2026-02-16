@@ -1,7 +1,7 @@
 import { createResource, For, Show, createMemo, Index } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import Panel from "@/components/Panel";
-import { FORMAT_LIST_BULLETED_SVG } from "@/utils/icons";
+import { FaSolidListUl } from 'solid-icons/fa';
 
 interface Submission {
     submission_id: number;
@@ -32,7 +32,7 @@ export default function SubmissionsTab(props: SubmissionsTabProps) {
 
     return (
         <div class="submissions-tab-content">
-            <Panel title="Form Submissions" icon={FORMAT_LIST_BULLETED_SVG} class="submissions-panel">
+            <Panel title="Form Submissions" icon={FaSolidListUl} class="submissions-panel">
                 <Show when={submissions()?.length > 0} fallback={<p>No submissions yet.</p>}>
                     <div class="glass-table-container">
                         <table class="glass-table">

@@ -1,14 +1,15 @@
 import { createSignal, createResource, For, Show, createMemo, Index, Switch, Match, onMount } from "solid-js";
-import { useParams, useNavigate, useLocation } from "@solidjs/router";
+import { useParams, useNavigate, useLocation, useBeforeLeave } from "@solidjs/router";
+import { Dynamic } from "solid-js/web";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
 import { 
-    SAVE_SVG, ADD_SVG, DELETE_SVG, ARROW_DROP_UP_SVG, 
-    SETTINGS_SVG, DESCRIPTION_SVG, CLOSE_SVG,
-    RADIO_BUTTON_UNCHECKED_SVG, CHECK_BOX_OUTLINE_BLANK_SVG, LIST_SVG,
-    FORMAT_LIST_BULLETED_SVG, SHIELD_SVG
-} from '@/utils/icons';
+    FaSolidFloppyDisk, FaSolidPlus, FaSolidTrash, FaSolidArrowUp, FaSolidArrowDown,
+    FaSolidGear, FaSolidFileLines, FaSolidXmark,
+    FaSolidCircle, FaSolidSquare, FaSolidList,
+    FaSolidListUl, FaSolidShieldHalved
+} from 'solid-icons/fa';
 import { TabNav } from "@/widgets/TabNav";
 import SubmissionsTab from "./tabs/SubmissionsTab";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -319,9 +320,9 @@ export default function FormEditor() {
     };
 
     const getOptionIcon = (type: string) => {
-        if (type === 'multiselect') return CHECK_BOX_OUTLINE_BLANK_SVG;
-        if (type === 'rank') return '<span style="font-weight: 800; opacity: 0.5;">#</span>';
-        return '<span style="font-weight: 800; opacity: 0.5;">•</span>';
+        if (type === 'multiselect') return FaSolidSquare;
+        if (type === 'rank') return () => <span style="font-weight: 800; opacity: 0.5;">#</span>;
+        return FaSolidCircle;
     };
 
     const handleDelete = async () => {
@@ -342,11 +343,11 @@ export default function FormEditor() {
                 <Show when={!loading.loading} fallback={<p aria-busy="true">Loading form...</p>}>
                     <TabNav class="admin-nav-group">
                         <button class="tab-btn" classList={{ active: activeTab() === 'editor' }} onClick={() => setActiveTab('editor')}>
-                            <span innerHTML={SETTINGS_SVG} /> Editor
+                            <FaSolidGear /> Editor
                         </button>
                         <Show when={!isNew()}>
                             <button class="tab-btn" classList={{ active: activeTab() === 'submissions' }} onClick={() => setActiveTab('submissions')}>
-                                <span innerHTML={FORMAT_LIST_BULLETED_SVG} /> Submissions
+                                <FaSolidListUl /> Submissions
                             </button>
                         </Show>
                     </TabNav>
@@ -357,12 +358,12 @@ export default function FormEditor() {
                                 <h2>{isNew() ? 'New Form' : 'Edit Form'}</h2>
                                 <Show when={!isNew()}>
                                     <button type="button" class="small-btn delete outline" onClick={handleDelete} title="Delete Form">
-                                        <span innerHTML={DELETE_SVG} /> Delete Form
+                                        <FaSolidTrash /> Delete Form
                                     </button>
                                 </Show>
                             </div>
 
-                            <Panel title="Form Settings" icon={SETTINGS_SVG}>
+                            <Panel title="Form Settings" icon={FaSolidGear}>
                                 <div class="modern-form-group">
                                     <label class="form-label-top">Form Title
                                         <input type="text" class="title-input" value={form().title} onInput={e => setForm({...form(), title: e.currentTarget.value})} required placeholder="e.g. Attendance Waiver" />
@@ -411,7 +412,7 @@ export default function FormEditor() {
                                 </div>
                             </Panel>
 
-                            <Panel title="Access Control" icon={SHIELD_SVG}>
+                            <Panel title="Access Control" icon={FaSolidShieldHalved}>
                                 <div style={{ "display": "flex", "justify-content": "center", "margin-bottom": "2rem" }}>
                                     <TabNav>
                                         <button type="button" class="tab-btn" classList={{ active: accessTab() === 'visibility' }} onClick={() => setAccessTab('visibility')}>User Visibility</button>
@@ -518,7 +519,7 @@ export default function FormEditor() {
                             <div class="form-structure-section">
                                 <div class="section-header flex justify-between align-center mb-6">
                                     <h3>Form Structure & Pages</h3>
-                                    <button type="button" class="small-btn secondary" onClick={addPage}><span innerHTML={ADD_SVG} /> Add Page</button>
+                                    <button type="button" class="small-btn secondary" onClick={addPage}><FaSolidPlus /> Add Page</button>
                                 </div>
 
                                 <For each={form().pages}>
@@ -537,7 +538,7 @@ export default function FormEditor() {
                                                         />
                                                     </div>
                                                     <Show when={form().pages.length > 1}>
-                                                        <button type="button" class="icon-btn delete small-btn" onClick={() => removePage(pIdx())} innerHTML={CLOSE_SVG} />
+                                                        <button type="button" class="icon-btn delete small-btn" onClick={() => removePage(pIdx())}><FaSolidXmark /></button>
                                                     </Show>
                                                 </div>
                                                 <textarea 
@@ -565,9 +566,9 @@ export default function FormEditor() {
                                                             }
                                                             action={
                                                                 <div class="question-actions">
-                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Up" onClick={() => moveQuestion(pIdx(), qIdx(), -1)} disabled={qIdx() === 0}>↑</button>
-                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Down" onClick={() => moveQuestion(pIdx(), qIdx(), 1)} disabled={qIdx() === page.questions.length - 1}>↓</button>
-                                                                    <button type="button" class="small-btn icon-only delete" title="Remove Question" onClick={() => removeQuestion(pIdx(), qIdx())} disabled={page.questions.length <= 1 && form().pages.length <= 1}><span innerHTML={DELETE_SVG} /></button>
+                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Up" onClick={() => moveQuestion(pIdx(), qIdx(), -1)} disabled={qIdx() === 0}><FaSolidArrowUp /></button>
+                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Down" onClick={() => moveQuestion(pIdx(), qIdx(), 1)} disabled={qIdx() === page.questions.length - 1}><FaSolidArrowDown /></button>
+                                                                    <button type="button" class="small-btn icon-only delete" title="Remove Question" onClick={() => removeQuestion(pIdx(), qIdx())} disabled={page.questions.length <= 1 && form().pages.length <= 1}><FaSolidTrash /></button>
                                                                 </div>
                                                             }
                                                         >
@@ -612,7 +613,9 @@ export default function FormEditor() {
                                                                         <Index each={q.options}>
                                                                             {(opt, optIdx) => (
                                                                                 <div class="option-row">
-                                                                                    <div class="option-type-icon" innerHTML={getOptionIcon(q.type)} />
+                                                                                    <div class="option-type-icon">
+                                                                                        <Dynamic component={getOptionIcon(q.type)} style={{ opacity: 0.5, "font-size": q.type === 'multiselect' ? '1rem' : '0.6rem' }} />
+                                                                                    </div>
                                                                                     <input 
                                                                                         type="text" 
                                                                                         class="compact-input"
@@ -621,7 +624,7 @@ export default function FormEditor() {
                                                                                         placeholder={`Option ${optIdx + 1}...`}
                                                                                     />
                                                                                     <Show when={q.options.length > 1}>
-                                                                                        <button type="button" class="icon-btn delete" onClick={() => removeOption(pIdx(), qIdx(), optIdx)} innerHTML={CLOSE_SVG} />
+                                                                                        <button type="button" class="icon-btn delete" onClick={() => removeOption(pIdx(), qIdx(), optIdx)}><FaSolidXmark /></button>
                                                                                     </Show>
                                                                                 </div>
                                                                             )}
@@ -759,7 +762,7 @@ export default function FormEditor() {
                                                     )}
                                                 </For>
                                                 <button type="button" class="small-btn secondary mt-4" onClick={() => addQuestion(pIdx())}>
-                                                    <span innerHTML={ADD_SVG} /> Add Question to Page {pIdx() + 1}
+                                                    <FaSolidPlus /> Add Question to Page {pIdx() + 1}
                                                 </button>
                                             </div>
                                         </div>
@@ -783,7 +786,7 @@ export default function FormEditor() {
                         class="floating-save-btn prominent-btn"
                         title={isNew() ? 'Create Form' : 'Save Changes'}
                     >
-                        <span innerHTML={SAVE_SVG} />
+                        <FaSolidFloppyDisk />
                         <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
                     </button>
                 </div>

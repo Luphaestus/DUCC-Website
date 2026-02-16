@@ -30,16 +30,32 @@ export default function FilesPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     
-    const page = () => parseInt(searchParams.page || '1');
-    const search = () => searchParams.search || '';
-    const categoryId = () => searchParams.categoryId || '';
-    const sort = () => searchParams.sort || 'date';
-    const order = () => searchParams.order || 'desc';
+    const page = () => {
+        const val = searchParams.page;
+        const p = Array.isArray(val) ? val[0] : val;
+        return parseInt(p || '1');
+    };
+    const search = () => {
+        const val = searchParams.search;
+        return (Array.isArray(val) ? val[0] : val) || '';
+    };
+    const categoryId = () => {
+        const val = searchParams.categoryId;
+        return (Array.isArray(val) ? val[0] : val) || '';
+    };
+    const sort = () => {
+        const val = searchParams.sort;
+        return (Array.isArray(val) ? val[0] : val) || 'date';
+    };
+    const order = () => {
+        const val = searchParams.order;
+        return (Array.isArray(val) ? val[0] : val) || 'desc';
+    };
 
     const [canManage, setCanManage] = createSignal(false);
     const [oldFilesData, setOldFilesData] = createSignal<FilesResponse | null>(null);
 
-    const [filesData] = createResource(
+    const [filesData] = createResource<FilesResponse, { page: number, search: string, categoryId: string, sort: string, order: string }>(
         () => ({ page: page(), search: search(), categoryId: categoryId(), sort: sort(), order: order() }),
         async (params, { value }) => {
             if (value) setOldFilesData(value as FilesResponse);
@@ -58,7 +74,7 @@ export default function FilesPage() {
     );
 
     const [categories] = createResource<FileCategory[]>(async () => {
-        const res = await apiRequest('GET', '/api/files/categories');
+        const res = await apiRequest('GET', '/api/file-categories');
         return res as FileCategory[];
     });
 
@@ -82,7 +98,7 @@ export default function FilesPage() {
         setSearchParams({ sort: newSort, order: newOrder, page: 1 });
     };
 
-    const FileTable = (props: { data: FilesResponse | null }) => (
+    const FileTable = (props: { data: FilesResponse | null | undefined }) => (
         <table class="files-table">
             <thead>
                 <tr>

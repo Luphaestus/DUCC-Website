@@ -2,9 +2,7 @@ import { createSignal, createResource, onMount, For, Show, createMemo, createEff
 import { apiRequest } from "../utils/api";
 import { useNotifications } from "../stores/notifications";
 import { useAuth } from "../stores/auth";
-import {
-    EDIT_SVG, ADD_SVG, CLOSE_SVG, SEARCH_SVG, MAIL_SVG, CROWN_SVG
-} from '../utils/icons';
+import { FaSolidPenToSquare, FaSolidPlus, FaSolidXmark, FaSolidMagnifyingGlass, FaSolidEnvelope, FaSolidCrown } from 'solid-icons/fa';
 import Avatar from "../components/Avatar";
 import Modal from "../components/Modal";
 import { showConfirmModal } from "../utils/modal";
@@ -31,6 +29,7 @@ interface ExecMember {
     instagram_link?: string;
     linkedin_link?: string;
     manifesto_path?: string;
+    manifesto_file_id?: number;
 }
 
 interface ExecData {
@@ -118,7 +117,7 @@ export default function ExecPage() {
                 <div class="files-controls">
                     <Show when={canManage()}>
                         <button class="primary" onClick={() => { setEditingMember(null); setIsModalOpen(true); }}>
-                            <span innerHTML={ADD_SVG} /> Add Member
+                            <FaSolidPlus /> Add Member
                         </button>
                     </Show>
                 </div>
@@ -171,7 +170,7 @@ export default function ExecPage() {
                                                 </div>
                                                 <Show when={canManage()}>
                                                     <button class="outline secondary mini-btn" onClick={(e) => { e.stopPropagation(); setEditingMember(m); setIsModalOpen(true); }}>
-                                                        <span innerHTML={EDIT_SVG} />
+                                                        <FaSolidPenToSquare />
                                                     </button>
                                                 </Show>
                                             </div>
@@ -216,7 +215,7 @@ function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean,
                 <div class="sparkle" />
             </Show>
             <Show when={props.rank === 1}>
-                <div class="leader-badge" innerHTML={CROWN_SVG} />
+                <div class="leader-badge"><FaSolidCrown /></div>
             </Show>
             <div class="exec-card-header">
                 <div class="avatar-container">
@@ -232,7 +231,7 @@ function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean,
                     <span class="role">{props.member.role_name}</span>
                     <h3 class="name">{props.member.first_name} {props.member.last_name}</h3>
                     <Show when={props.member.username}>
-                        <span class="username muted-text">@{props.member.username.split('@')[0]}</span>
+                        <span class="username muted-text">@{props.member.username?.split('@')[0]}</span>
                     </Show>
                 </div>
             </div>
@@ -254,12 +253,12 @@ function ExecCard(props: { member: ExecMember, rank: number, canManage: boolean,
                         <div class="actions" onClick={(e) => e.stopPropagation()}>
                             <Show when={props.canManage || props.isSelf}>
                                 <button class="outline secondary mini-btn" onClick={props.onEdit} title="Edit">
-                                    <span innerHTML={EDIT_SVG} />
+                                    <FaSolidPenToSquare />
                                 </button>
                             </Show>
                             <Show when={props.canManage}>
                                 <button class="outline error mini-btn" onClick={props.onDelete} title="Remove">
-                                    <span innerHTML={CLOSE_SVG} />
+                                    <FaSolidXmark />
                                 </button>
                             </Show>
                         </div>
@@ -291,7 +290,7 @@ function ExecDetailsModal(props: { member: ExecMember, onClose: () => void }) {
                             <span class="role-name">{props.member.role_name}</span>
                             <Show when={props.member.votes_received > 0}>
                                 <span class="votes-badge" title="Votes Received">
-                                    <span class="icon" innerHTML={CROWN_SVG} />
+                                    <span class="icon"><FaSolidCrown /></span>
                                     {props.member.votes_received}
                                 </span>
                             </Show>
@@ -300,7 +299,7 @@ function ExecDetailsModal(props: { member: ExecMember, onClose: () => void }) {
 
                     <div class="profile-contact-grid">
                         <a href={`mailto:${props.member.email}`} class="contact-card liquid-container">
-                            <span class="icon" innerHTML={MAIL_SVG} />
+                            <span class="icon"><FaSolidEnvelope /></span>
                             <div class="details">
                                 <span class="label">Email</span>
                                 <span class="value">{props.member.email}</span>
@@ -312,7 +311,7 @@ function ExecDetailsModal(props: { member: ExecMember, onClose: () => void }) {
                                 <img src="/images/icons/social_instagram.svg" alt="Instagram" />
                                 <div class="details">
                                     <span class="label">Instagram</span>
-                                    <span class="value">@{props.member.instagram_link.split('/').filter(Boolean).pop()}</span>
+                                    <span class="value">@{props.member.instagram_link?.split('/').filter(Boolean).pop()}</span>
                                 </div>
                             </a>
                         </Show>
@@ -331,7 +330,7 @@ function ExecDetailsModal(props: { member: ExecMember, onClose: () => void }) {
                     <Show when={props.member.manifesto_path}>
                         <div class="manifesto-section-modern liquid-container">
                             <div class="section-header">
-                                <span class="icon" innerHTML={CROWN_SVG} />
+                                <span class="icon"><FaSolidCrown /></span>
                                 <h3>Election Manifesto</h3>
                             </div>
                             <p>Read the vision and promises that {props.member.first_name} shared during the election for the <strong>{props.member.role_name}</strong> role.</p>
@@ -415,7 +414,7 @@ function ExecEditModal(props: { member: ExecMember | null, onClose: () => void, 
                     <h3 class="small-title">Member Link</h3>
                     <div class="search-field">
                         <div class="glass-input-group liquid-container">
-                            <span class="icon" innerHTML={SEARCH_SVG} />
+                            <span class="icon"><FaSolidMagnifyingGlass /></span>
                             <input
                                 type="text"
                                 placeholder="Search user..."

@@ -283,7 +283,7 @@ export default function ProfileSettings() {
                                             <button class="small-btn secondary mini-btn" onClick={() => handleSetPrimary(email.id)}>Make Primary</button>
                                         </Show>
                                         <Show when={!email.is_primary}>
-                                            <button class="small-btn icon-only delete" onClick={() => handleDeleteEmail(email.id)}><FaXmark /></button>
+                                            <button class="small-btn icon-only delete" onClick={() => handleDeleteEmail(email.id)}><FaSolidXmark /></button>
                                         </Show>
                                     </div>
                                 </div>
@@ -528,7 +528,7 @@ export default function ProfileSettings() {
                                             disabled={!deferredPrompt()}
                                             title={!deferredPrompt() ? "Browser is still checking if the app can be installed. This usually takes a few moments of browsing." : "Install DUCC"}
                                         >
-                                            <FaSolidDownload style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                            <FaSolidDownload style={{ "margin-right": "0.25rem", width: "1em", height: "1em" }} />
                                             {deferredPrompt() ? 'Install' : 'Preparing...'}
                                         </button>
                                     </Show>
@@ -550,7 +550,7 @@ export default function ProfileSettings() {
                                         onClick={handleSubscribe}
                                         disabled={isSubscribing()}
                                     >
-                                                                                    <FaSolidBolt style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                                                                    <FaSolidBolt style={{ "margin-right": "0.25rem", width: "1em", height: "1em" }} />
                                                                                     {isSubscribing() ? 'Subscribing...' : 'Enable'}                                    </button>
                                 </Show>
                                 <Show when={isSubscribed()}>

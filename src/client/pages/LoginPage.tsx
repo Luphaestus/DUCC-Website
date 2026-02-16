@@ -1,7 +1,7 @@
 import { createSignal, Show, onMount } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
-import { KEY_SVG, PERSON_SVG, LOCK_SVG, MAIL_SVG } from '@/utils/icons';
+import { FaSolidKey, FaSolidUser, FaSolidLock, FaSolidEnvelope } from 'solid-icons/fa';
 import { useNotifications } from "@/stores/notifications";
 import { useAuth } from "@/stores/auth";
 import { LoginEvent } from "@/utils/events/events";
@@ -178,17 +178,17 @@ export default function LoginPage() {
                                 }}
                                 style={{ "border-radius": "16px" }}
                             >
-                                <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Sign in with Passkey
+                                <FaSolidKey style={{ "margin-right": "8px" }} /> Sign in with Passkey
                             </button>
 
-                            <div class="divider" style="margin: 1.5rem 0;"><span>OR</span></div>
+                            <div class="divider" style={{ margin: "1.5rem 0" }}><span>OR</span></div>
 
                             <form onSubmit={handlePasswordLogin}>
                                 <div class="modern-form-group">
                                     <label for="email">Email address</label>
                                     <div class="glass-input-group durham-email-wrapper" classList={{ 'is-invalid': errors().email, 'shaking': shaking().email }}>
                                         <div class="icon">
-                                            <span innerHTML={PERSON_SVG} />
+                                            <FaSolidUser />
                                         </div>
                                         <input
                                             id="email"
@@ -212,7 +212,7 @@ export default function LoginPage() {
                                     <label for="password">Password</label>
                                     <div class="glass-input-group" classList={{ 'is-invalid': errors().password, 'shaking': shaking().password }}>
                                         <div class="icon">
-                                            <span innerHTML={LOCK_SVG} />
+                                            <FaSolidLock />
                                         </div>
                                         <input
                                             type="password"
@@ -238,8 +238,8 @@ export default function LoginPage() {
                         </>
                     }>
                         <div class="center-text migration-message">
-                            <div class="icon-circle" style="background: rgba(var(--pico-primary-rgb), 0.1); width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-                                <span innerHTML={MAIL_SVG} style="color: var(--pico-primary); font-size: 24px;" />
+                            <div class="icon-circle" style={{ background: "rgba(var(--pico-primary-rgb), 0.1)", width: "64px", height: "64px", "border-radius": "50%", display: "flex", "align-items": "center", "justify-content": "center", margin: "0 auto 1.5rem" }}>
+                                <FaSolidEnvelope style={{ color: "var(--pico-primary)", "font-size": "24px" }} />
                             </div>
                             <h2>Check your email</h2>
                             <p class="auth-subtitle">We've updated our security system. To access your migrated account, we've sent a secure password reset link to <strong>{email().includes('@') ? email() : email() + '@durham.ac.uk'}</strong>.</p>
@@ -345,7 +345,7 @@ export default function LoginPage() {
                                 }}
                                 style={{ "border-radius": "16px" }}
                             >
-                                <span innerHTML={KEY_SVG} style="margin-right: 8px;" /> Use Passkey
+                                <FaSolidKey style={{ "margin-right": "8px" }} /> Use Passkey
                             </button>
                         </div>
                     </Show>

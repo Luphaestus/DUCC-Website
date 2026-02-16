@@ -4,7 +4,7 @@ import { Portal } from "solid-js/web";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { CURRENCY_POUND_SVG, SAVE_SVG, CLOSE_SVG } from "@/utils/icons";
+import { FaSolidPoundSign, FaSolidFloppyDisk, FaSolidXmark } from "solid-icons/fa";
 import { incrementModals, decrementModals } from "@/utils/modal-state";
 
 export default function EventExpensePage() {
@@ -64,7 +64,7 @@ export default function EventExpensePage() {
         <Portal>
             <div id="event-expense-view" class="view c-modal-overlay visible" onClick={handleBackdropClick}>
                 <div class="c-modal-content">
-                    <button class="c-modal-close-btn" onClick={() => navigate(-1)} innerHTML={CLOSE_SVG} />
+                    <button class="c-modal-close-btn" onClick={() => navigate(-1)}><FaSolidXmark /></button>
                     <div class="c-modal-body">
                         <h1>{expenseId() === 'new' ? 'Report Expense' : 'Edit Expense'}</h1>
                         <Show when={expense()} fallback={<p>Loading...</p>}>
@@ -79,7 +79,7 @@ export default function EventExpensePage() {
                                         <input name="amount" type="number" step="0.01" value={e().amount} placeholder="0.00" required />
                                     </div>
                                     <button type="submit" class="primary full-width">
-                                        <span innerHTML={SAVE_SVG} /> Save Expense
+                                        <FaSolidFloppyDisk /> Save Expense
                                     </button>
                                 </form>
                             )}

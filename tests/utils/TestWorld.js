@@ -4,7 +4,7 @@
  * Test environment utility.
  */
 
-import { setupTestDb } from './db.js';
+import { initSchemaAndClean } from './db.js';
 import Globals from '../../server/misc/globals.js';
 import TransactionsDB from '../../server/db/transactionDB.js';
 import path from 'path';
@@ -31,7 +31,7 @@ export default class TestWorld {
 
     /** Initialize test environment. */
     async setUp() {
-        this.db = await setupTestDb();
+        this.db = await initSchemaAndClean();
         
         const Fastify = (await import('fastify')).default;
         const fastifyCookie = (await import('@fastify/cookie')).default;

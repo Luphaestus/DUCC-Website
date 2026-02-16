@@ -6,7 +6,7 @@ import { useNotifications } from "@/stores/notifications";
 import { useNavigate, useParams } from "@solidjs/router"; // Import useParams
 import Panel from "@/components/Panel";
 import PageTitle from "@/components/PageTitle";
-import { ADD_SVG, SETTINGS_SVG } from "@/utils/icons";
+import { FaSolidPlus } from "solid-icons/fa";
 import { TabNav } from "@/widgets/TabNav"; // Not used currently, keep for future if needed
 import ElectionForm from "./ElectionForm"; // Import the new ElectionForm component
 
@@ -55,7 +55,7 @@ export default function AdminElectionsPage() {
                             <div class="header-actions">
                                 <Show when={!hasActiveElection()}>
                                     <button class="primary" onClick={() => navigate('/admin/elections/new')}>
-                                        <span innerHTML={ADD_SVG} /> New Election
+                                        <FaSolidPlus /> New Election
                                     </button>
                                 </Show>
                             </div>

@@ -5,7 +5,10 @@ import { useNotifications } from "@/stores/notifications";
 import { useNavigate, useBeforeLeave } from "@solidjs/router";
 import UploadWidget from "@/components/UploadWidget";
 import Panel from "@/components/Panel";
-import { INFO_SVG, IMAGE_SVG, LOCAL_ACTIVITY_SVG, CALENDAR_TODAY_SVG, SETTINGS_SVG, SAVE_SVG } from '@/utils/icons';
+import { 
+    FaSolidCircleInfo, FaSolidImage, FaSolidTicket, 
+    FaSolidCalendarDay, FaSolidGear, FaSolidFloppyDisk 
+} from 'solid-icons/fa';
 import RichTextEditor from "@/components/RichTextEditor";
 import { smartDateAdjust } from "@/utils/utils";
 import { showConfirmModal } from "@/utils/modal";
@@ -163,7 +166,7 @@ export default function DetailsTab(props: {
     <form id="event-form" class="modern-form" onSubmit={handleSubmit}>
       <div class="details-grid-layout">
         <div class="details-main-col">
-          <Panel title="Event Overview" icon={INFO_SVG}>
+          <Panel title="Event Overview" icon={FaSolidCircleInfo}>
             <div class="modern-form-group">
               <label class="form-label-top">Event Title
                 <input type="text" value={formState().title} onInput={e => updateField('title', e.currentTarget.value)} required class="title-input" placeholder="e.g. Weekly Training" />
@@ -187,7 +190,7 @@ export default function DetailsTab(props: {
             </div>
           </Panel>
 
-          <Panel title="Schedule & Status" icon={CALENDAR_TODAY_SVG}>
+          <Panel title="Schedule & Status" icon={FaSolidCalendarDay}>
             <div class="grid-2-col">
               <label>Start Time <input type="datetime-local" value={formState().start?.slice(0, 16)} onChange={e => {
                 const { date, valid } = smartDateAdjust(e.currentTarget.value);
@@ -236,7 +239,7 @@ export default function DetailsTab(props: {
             </div>
           </Panel>
 
-          <Panel title="Settings & Policies" icon={SETTINGS_SVG}>
+          <Panel title="Settings & Policies" icon={FaSolidGear}>
             <div class="settings-revamp-grid">
               <div class="settings-column">
                 <label>Upfront Cost (£)
@@ -310,7 +313,7 @@ export default function DetailsTab(props: {
         </div>
 
         <div class="details-side-col">
-          <Panel title="Event Image" icon={IMAGE_SVG}>
+          <Panel title="Event Image" icon={FaSolidImage}>
             <UploadWidget
               selectMode="single"
               autoUpload={true}
@@ -343,7 +346,7 @@ export default function DetailsTab(props: {
             />
           </Panel>
 
-          <Panel title="Categories & Tags" icon={LOCAL_ACTIVITY_SVG}>
+          <Panel title="Categories & Tags" icon={FaSolidTicket}>
             <div class="tags-selection-grid">
               <For each={props.allTags}>
                 {tag => (
@@ -363,7 +366,7 @@ export default function DetailsTab(props: {
                                           class="floating-save-btn prominent-btn"
                                           title={isNew() ? 'Create Event' : 'Save Changes'}
                                       >
-                                          <span innerHTML={SAVE_SVG} />
+                                          <FaSolidFloppyDisk />
                                           <span class="btn-label">{isNew() ? 'Create' : 'Save Changes'}</span>
                                       </button>
                                   </div>

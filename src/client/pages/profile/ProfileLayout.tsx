@@ -79,7 +79,7 @@ export default function ProfileLayout(props: ParentProps) {
                                 <FaSolidAnchor /> Kit
                             </button>
                             <button class="nav-item" classList={{ active: isActive('/profile/balance') }} onClick={() => navigate('/profile/balance')}>
-                                <FaSolidWallet /> Balance
+                                <FaSolidWallet /> Balance@
                             </button>
                             <button class="nav-item" classList={{ active: isActive('/profile/settings') }} onClick={() => navigate('/profile/settings')}>
                                 <FaSolidGear /> Settings

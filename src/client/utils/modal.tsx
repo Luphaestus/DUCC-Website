@@ -24,7 +24,7 @@ export async function showAlertModal(title: string, message: string): Promise<vo
                 unmount();
                 mount.remove();
                 activeModalPromise = null;
-                resolve();
+                resolve(void 0);
             }, 400);
         };
 

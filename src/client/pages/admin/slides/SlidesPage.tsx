@@ -4,7 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import UploadWidget from "@/components/UploadWidget";
-import { IMAGE_SVG, DELETE_SVG, ADD_SVG, DRAG_HANDLE_SVG } from '@/utils/icons';
+import { FaSolidImage, FaSolidTrash, FaSolidPlus, FaSolidGripLines } from 'solid-icons/fa';
 import PageTitle from "@/components/PageTitle";
 
 interface Slide {
@@ -73,10 +73,10 @@ export default function SlidesPage() {
 
             <div class="panel">
                 <div class="panel-header">
-                    <h3 style="margin: 0;"><span innerHTML={IMAGE_SVG} /> Manage Slides</h3>
+                    <h3 style="margin: 0;"><FaSolidImage /> Manage Slides</h3>
                     <div class="panel-actions">
                         <button class="main-btn small-btn" onClick={() => setShowUpload(true)}>
-                            <span innerHTML={ADD_SVG} /> Add Slide
+                            <FaSolidPlus /> Add Slide
                         </button>
                     </div>
                 </div>
@@ -99,9 +99,9 @@ export default function SlidesPage() {
                                     onDrop={() => handleDrop(slide.id)}
                                     classList={{ 'is-dragging': draggedId() === slide.id }}
                                 >
-                                    <div class="drag-handle" innerHTML={DRAG_HANDLE_SVG} />
+                                    <div class="drag-handle"><FaSolidGripLines /></div>
                                     <div class="slide-actions">
-                                        <button class="delete-slide-btn delete-icon-btn" onClick={() => handleDelete(slide.id)} title="Delete Slide" innerHTML={DELETE_SVG} />
+                                        <button class="delete-slide-btn delete-icon-btn" onClick={() => handleDelete(slide.id)} title="Delete Slide"><FaSolidTrash /></button>
                                     </div>
                                 </div>
                             )}

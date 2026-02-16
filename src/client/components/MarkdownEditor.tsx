@@ -1,10 +1,9 @@
 import { createSignal, Show } from "solid-js";
 import Markdown from "./Markdown";
-import {
-    EDIT_SVG, IMAGE_SVG, ADD_SVG,
-    DESCRIPTION_SVG, CLOSE_SVG
-} from '@/utils/icons';
-import { UploadWidget } from "@/widgets/upload/UploadWidget";
+import { VsEdit } from 'solid-icons/vs'
+import { ImImage } from 'solid-icons/im'
+import { TbFillFileDescription } from 'solid-icons/tb'
+import UploadWidget from "@/components/UploadWidget";
 
 interface MarkdownEditorProps {
     value: string;
@@ -16,6 +15,7 @@ interface MarkdownEditorProps {
 export default function MarkdownEditor(props: MarkdownEditorProps) {
     const [preview, setPreview] = createSignal(false);
     let textareaRef: HTMLTextAreaElement | undefined;
+    let uploadWidgetRef: { click: () => void } | undefined;
 
     const insertText = (before: string, after: string = "") => {
         if (!textareaRef) return;
@@ -34,21 +34,22 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
     };
 
     const handleImageUpload = () => {
-        const widget = new UploadWidget(document.createElement('div'), {
-            mode: 'hidden',
-            onImageSelect: ({ id }) => {
-                const url = `/api/files/${id}/download?view=true`;
-                insertText(`![image](${url})`);
-            }
-        });
-        widget.inputEl.click();
+        uploadWidgetRef?.click();
     };
 
     return (
         <div class="markdown-editor-container liquid-container glass-panel no-padding overflow-hidden">
+            <UploadWidget 
+                mode="hidden"
+                ref={(el) => uploadWidgetRef = el}
+                onImageSelect={({ id }) => {
+                    const url = `/api/files/${id}/download?view=true`;
+                    insertText(`![image](${url})`);
+                }}
+            />
             <div class="editor-toolbar flex-row-gap-half p-2 border-bottom">
                 <button type="button" class="toolbar-btn" onClick={() => setPreview(!preview())} title={preview() ? "Edit" : "Preview"}>
-                    <span innerHTML={preview() ? EDIT_SVG : DESCRIPTION_SVG} />
+                    {preview() ? <VsEdit /> : <TbFillFileDescription />}
                 </button>
                 <div class="toolbar-divider" />
                 <Show when={!preview()}>
@@ -58,7 +59,7 @@ export default function MarkdownEditor(props: MarkdownEditorProps) {
                     <button type="button" class="toolbar-btn" onClick={() => insertText("- ", "")} title="List">•</button>
                     <button type="button" class="toolbar-btn" onClick={() => insertText("[", "](url)")} title="Link">L</button>
                     <button type="button" class="toolbar-btn" onClick={handleImageUpload} title="Upload Image">
-                        <span innerHTML={IMAGE_SVG} />
+                        <ImImage />
                     </button>
                 </Show>
             </div>

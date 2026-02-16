@@ -3,7 +3,6 @@ import SwimsTab from "@/pages/admin/users/tabs/SwimsTab";
 import { useNotifications } from "@/stores/notifications";
 import { createSignal, createResource, onMount, For, Show, createMemo, onCleanup, batch, createEffect } from "solid-js";
 import { apiRequest } from "@/utils/api";
-import { SOCIAL_LEADERBOARD_SVG, SEARCH_SVG, CLOSE_SVG } from '@/utils/icons';
 import { FaSolidTrophy, FaSolidSwimmingPool, FaSolidUsers, FaSolidCrown } from 'solid-icons/fa';
 import { useNavigate } from "@solidjs/router";
 import { onUpdate } from "@/utils/updates";

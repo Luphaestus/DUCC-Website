@@ -4,7 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { requireAuth } from "@/utils/auth";
 import { useBeforeLeave } from "@solidjs/router";
-import { ACCOUNT_BOX_SVG, CALL_SVG, MEDICAL_INFORMATION_SVG, CONTRACT_SVG } from "@/utils/icons";
+import { FaSolidIdCard, FaSolidPhone, FaSolidBriefcaseMedical, FaSolidFileContract } from 'solid-icons/fa';
 import { LegalEvent } from "@/utils/events/events";
 import { showConfirmModal } from "@/utils/modal";
 
@@ -100,7 +100,7 @@ export default function LegalPage() {
                         <div class="legal-grid">
                             <div class="liquid-container">
                                 <header>
-                                    <h3><span innerHTML={ACCOUNT_BOX_SVG} /> Personal Information</h3>
+                                    <h3><FaSolidIdCard /> Personal Information</h3>
                                 </header>
                                 <div class="grid">
                                     <label>Name* <input type="text" name="name" value={userData().name} disabled /></label>
@@ -122,7 +122,7 @@ export default function LegalPage() {
 
                             <div class="liquid-container">
                                 <header>
-                                    <h3><span innerHTML={CALL_SVG} /> Emergency Contact</h3>
+                                    <h3><FaSolidPhone /> Emergency Contact</h3>
                                 </header>
                                 <label>Name* <input type="text" name="emergency_contact_name" value={userData().emergency_contact_name || ''} /></label>
                                 <label>Phone Number* <input type="tel" name="emergency_contact_phone" value={userData().emergency_contact_phone || ''} /></label>
@@ -130,7 +130,7 @@ export default function LegalPage() {
 
                             <div class="liquid-container">
                                 <header>
-                                    <h3><span innerHTML={MEDICAL_INFORMATION_SVG} /> Medical Information</h3>
+                                    <h3><FaSolidBriefcaseMedical /> Medical Information</h3>
                                 </header>
                                 <fieldset>
                                     <legend>Medical Conditions & Allergies*</legend>
@@ -178,7 +178,7 @@ export default function LegalPage() {
 
                             <div class="liquid-container form-box full-width">
                                 <header>
-                                    <h3><span innerHTML={CONTRACT_SVG} /> Terms and Conditions</h3>
+                                    <h3><FaSolidFileContract /> Terms and Conditions</h3>
                                 </header>
 
                                 <div>

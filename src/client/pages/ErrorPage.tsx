@@ -2,15 +2,14 @@
 import { createSignal, onMount, onCleanup, Show } from "solid-js";
 import { A } from "@solidjs/router";
 import { apiRequest } from '@/utils/api';
-import { addRoute, ViewChangedEvent } from '@/utils/view';
-import { BRIGHTNESS_ALERT_SVG, SHIELD_SVG, SIGNAL_DISCONNECTED_SVG } from '@/utils/icons';
-
-// Register routes for the legacy router
-// addRoute calls removed
+import { TbFillHexagon } from 'solid-icons/tb';
+import { BsShieldFillExclamation } from 'solid-icons/bs'
+import { RiDeviceSignalWifiErrorLine } from 'solid-icons/ri'
+import { IconTypes } from "solid-icons";
 
 interface ErrorViewProps {
   id: string;
-  icon: string;
+  icon: IconTypes;
   title: string;
   message: string;
   viewId: string;
@@ -45,8 +44,10 @@ export function ErrorView(props: ErrorViewProps) {
     <div id={props.id} class="view" classList={{ 'hidden': props.hidden ?? false }}>
       <div class="container" style="text-align: center; padding: 4rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
         <div class={`error-icon ${props.iconClass || ''}`} style="margin-bottom: 2rem;">
-          <span style="display: block; width: 80px; height: 80px; margin: 0 auto;" innerHTML={props.icon} />
         </div>
+          <span style="display: block; width: 80px; height: 80px; margin: 0 auto;">
+            <props.icon />
+          </span>
         <h1 style="text-align: center; justify-content: center;">{props.title}</h1>
         <p style="font-size: 1.2rem; opacity: 0.8; margin-bottom: 2rem; text-align: center;">
           {props.message.split('<br>').map((line, i) => (
@@ -91,7 +92,7 @@ export default function ErrorPage() {
     <ErrorView
       id="error-view"
       viewId="error"
-      icon={BRIGHTNESS_ALERT_SVG}
+      icon={TbFillHexagon}
       title="404 - Page Not Found"
       message="Oops! The page you are looking for does not exist.<br>It might have been moved, deleted, or you may have typed the address incorrectly."
       hidden={false}
@@ -104,7 +105,7 @@ export function UnauthorisedPage() {
     <ErrorView
       id="unauthorised-view"
       viewId="unauthorised"
-      icon={SHIELD_SVG}
+      icon={BsShieldFillExclamation}
       title="Access Denied"
       message="You do not have permission to view this page."
       hidden={false}
@@ -117,7 +118,7 @@ export function NoInternetPage() {
     <ErrorView
       id="no-connection-view"
       viewId="no-connection"
-      icon={SIGNAL_DISCONNECTED_SVG}
+      icon={RiDeviceSignalWifiErrorLine}
       title="No Internet Connection"
       message="Please check your network settings.<br>We'll try to reconnect automatically..."
       hidden={false}

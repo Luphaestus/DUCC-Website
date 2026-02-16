@@ -4,7 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import UploadWidget from "@/components/UploadWidget";
-import { SAVE_SVG, IMAGE_SVG } from '@/utils/icons';
+import { FaSolidFloppyDisk, FaSolidImage } from 'solid-icons/fa';
 import PageTitle from "@/components/PageTitle";
 
 interface GlobalSetting {
@@ -89,7 +89,7 @@ export default function GlobalsPage() {
                                                         title="Click to change image"
                                                     >
                                                         <div class="image-overlay-hint">
-                                                            <span innerHTML={IMAGE_SVG} />
+                                                            <FaSolidImage />
                                                         </div>
                                                         <img src={setting.data || '/api/files/1/download?view=true'} class="uncropped-hover-preview" />
                                                     </div>

@@ -5,8 +5,8 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { showConfirmModal } from "@/utils/modal";
 import {
-    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, SAVE_SVG, SHIELD_SVG
-} from '@/utils/icons';
+    FaSolidChevronLeft, FaSolidTrash, FaSolidFloppyDisk, FaSolidShieldHalved
+} from 'solid-icons/fa';
 import { debounce } from "@/utils/utils";
 
 interface Role {
@@ -46,19 +46,13 @@ export default function RoleDetailPage() {
         const currentRole = role();
         if (!currentRole) return;
 
-        // Backend expects 'execRanking' (camelCase) based on legacy code
-        const payload = {
-            ...currentRole,
-            execRanking: currentRole.exec_ranking
-        };
-
         try {
             if (isNew()) {
-                await apiRequest('POST', '/api/admin/roles', payload);
+                await apiRequest('POST', '/api/admin/roles', currentRole);
                 notify('Success', 'Role created', 'success');
                 navigate('/admin/roles');
             } else {
-                await apiRequest('PUT', `/api/admin/roles/${id()}`, payload);
+                await apiRequest('PUT', `/api/admin/roles/${id()}`, currentRole);
                 notify('Success', 'Role updated', 'success');
             }
             setIsDirty(false);
@@ -100,18 +94,18 @@ export default function RoleDetailPage() {
             <aside class="dashboard-sidebar">
                 <TabNav class="vertical-sidebar">
                     <button class="nav-item" onClick={() => navigate('/admin/roles')}>
-                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Roles
+                        <FaSolidChevronLeft /> Back to Roles
                     </button>
                     <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
                     
                     <button class="nav-item active">
-                        <span innerHTML={SHIELD_SVG} /> Role Details
+                        <FaSolidShieldHalved /> Role Details
                     </button>
 
                     <Show when={!isNew()}>
                         <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
                         <button class="nav-item delete" onClick={handleDelete}>
-                            <span innerHTML={DELETE_SVG} /> Delete Role
+                            <FaSolidTrash /> Delete Role
                         </button>
                     </Show>
                 </TabNav>
@@ -161,7 +155,7 @@ export default function RoleDetailPage() {
                                                 class="floating-save-btn prominent-btn"
                                                 title={isNew() ? 'Create Role' : 'Save Changes'}
                                             >
-                                                <span innerHTML={SAVE_SVG} />
+                                                <FaSolidFloppyDisk />
                                                 <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
                                             </button>
                                         </div>

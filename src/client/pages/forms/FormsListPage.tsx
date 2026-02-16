@@ -2,7 +2,6 @@ import { createSignal, createResource, For, Show, createMemo } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import Panel from "@/components/Panel";
-import { LIST_SVG } from '@/utils/icons';
 
 interface FormSummary {
     id: number;

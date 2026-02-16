@@ -6,7 +6,7 @@
  * and handles automatic view switching to a "no internet" state when necessary.
  */
 
-import { notify, NotificationTypes } from '@/components/notification';
+import { useNotifications, NotificationTypes } from '@/stores/notifications';
 import { ViewChangedEvent, switchView, isCurrentPath } from '@/utils/view';
 import { getPreviousPath } from '@/utils/history';
 import { apiRequest } from '@/utils/api';
@@ -39,7 +39,9 @@ async function updateConnectionStatus(newStatus: boolean | null): Promise<void> 
             reconnectInterval = null;
         }
 
-        currentNotification = notify('Connection Restored', 'You are reconnected.', NotificationTypes.SUCCESS, 5000);
+        const { notify, removeNotification } = useNotifications();
+        const id = notify('Connection Restored', 'You are reconnected.', NotificationTypes.SUCCESS, 5000);
+        currentNotification = () => removeNotification(id);
         NoInternetEvent.notify();
     } else {
         if (!reconnectInterval) {
@@ -48,7 +50,9 @@ async function updateConnectionStatus(newStatus: boolean | null): Promise<void> 
             }, 500);
         }
 
-        currentNotification = notify('Connection Lost', 'Disconnected from server.', NotificationTypes.ERROR, 10000);
+        const { notify, removeNotification } = useNotifications();
+        const id = notify('Connection Lost', 'Disconnected from server.', NotificationTypes.ERROR, 10000);
+        currentNotification = () => removeNotification(id);
         NoInternetEvent.notify();
     }
 }

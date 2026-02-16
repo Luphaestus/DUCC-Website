@@ -1,8 +1,8 @@
 import {
     Scene, PerspectiveCamera, WebGLRenderer, Clock, Fog, Group, Mesh,
     AmbientLight, DirectionalLight, PointLight, Vector2, Vector3,
-    MathUtils, SRGBColorSpace, PCFSoftShadowMap, PlaneGeometry,
-    MeshStandardMaterial, DoubleSide, MeshPhysicalMaterial,
+    MathUtils, SRGBColorSpace, PCFSoftShadowMap, PlaneGeometry, BoxGeometry,
+    MeshStandardMaterial, MeshBasicMaterial, DoubleSide, MeshPhysicalMaterial,
     DodecahedronGeometry, ConeGeometry, LatheGeometry, TorusGeometry,
     CylinderGeometry, SphereGeometry, Shape, ShapeGeometry,
     Points, BufferGeometry, BufferAttribute, PointsMaterial,

@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { LOCK_SVG } from "@/utils/icons";
+import { FaSolidLock } from 'solid-icons/fa';
 import { useNavigate, useSearchParams } from "@solidjs/router";
 
 export default function SetPasswordPage() {
@@ -60,7 +60,7 @@ export default function SetPasswordPage() {
             <div class="auth-card">
                 <div class="center-text">
                     <h2>
-                        <span innerHTML={LOCK_SVG} />
+                        <FaSolidLock style={{ "margin-right": "8px" }} />
                         New Password
                     </h2>
                     <p class="auth-subtitle">Choose a strong password for your account.</p>
@@ -71,7 +71,7 @@ export default function SetPasswordPage() {
                         <label for="new-password">New Password</label>
                         <div class="glass-input-group" classList={{ 'is-invalid': errors().password, 'shaking': shaking().password }}>
                             <div class="icon">
-                                <span innerHTML={LOCK_SVG} />
+                                <FaSolidLock />
                             </div>
                             <input 
                                 type="password" 
@@ -92,7 +92,7 @@ export default function SetPasswordPage() {
                         <label for="confirm-password">Confirm Password</label>
                         <div class="glass-input-group" classList={{ 'is-invalid': errors().confirmPassword, 'shaking': shaking().confirmPassword }}>
                             <div class="icon">
-                                <span innerHTML={LOCK_SVG} />
+                                <FaSolidLock />
                             </div>
                             <input 
                                 type="password" 

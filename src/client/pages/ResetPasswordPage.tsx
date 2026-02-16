@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { PERSON_SVG } from "@/utils/icons";
+import { FaSolidUser } from 'solid-icons/fa';
 import { useNavigate } from "@solidjs/router";
 
 export default function ResetPasswordPage() {
@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
                         <label for="reset-email">Durham Email Address</label>
                         <div class="glass-input-group durham-email-wrapper" classList={{ 'is-invalid': errors().email, 'shaking': shaking().email }}>
                             <div class="icon">
-                                <span innerHTML={PERSON_SVG} />
+                                <FaSolidUser />
                             </div>
                             <input 
                                 id="reset-email" 

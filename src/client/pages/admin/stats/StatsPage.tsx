@@ -3,9 +3,9 @@ import { createResource, For, Show, createMemo, onMount, onCleanup } from "solid
 import { apiRequest } from "@/utils/api";
 import Panel from "@/components/Panel";
 import { 
-    CURRENCY_POUND_SVG, GROUP_SVG, EVENT_SVG, 
-    TRENDING_UP_SVG 
-} from '@/utils/icons';
+    FaSolidPoundSign, FaSolidUsers, FaSolidCalendarDay, 
+    FaSolidArrowTrendUp 
+} from 'solid-icons/fa';
 import { onUpdate } from "@/utils/updates";
 import MonitoringDashboard from "./MonitoringDashboard";
 
@@ -92,7 +92,7 @@ export default function StatsPage() {
         <div class="glass-layout">
             <div class="stats-grid-dashboard">
                 {/* Finance Section */}
-                <Panel title="Financial Overview" icon={CURRENCY_POUND_SVG} class="full-width">
+                <Panel title="Financial Overview" icon={FaSolidPoundSign} class="full-width">
                     <div class="charts-row">
                         <div class="chart-box">
                             <h4>Monthly Income vs Expenses</h4>
@@ -139,7 +139,7 @@ export default function StatsPage() {
                 </Panel>
 
                 {/* Attendance Section */}
-                <Panel title="Attendance Trends" icon={GROUP_SVG} class="full-width">
+                <Panel title="Attendance Trends" icon={FaSolidUsers} class="full-width">
                     <div class="charts-row">
                         <div class="chart-box">
                             <h4>Monthly Attendance</h4>
@@ -176,7 +176,7 @@ export default function StatsPage() {
 
                 {/* Leaderboards Section */}
                 <div class="dual-grid">
-                    <Panel title="Top Spenders (All Time)" icon={TRENDING_UP_SVG}>
+                    <Panel title="Top Spenders (All Time)" icon={FaSolidArrowTrendUp}>
                         <div class="item-list">
                             <Show when={leaderboardData() || !leaderboardData.loading} fallback={<p>Loading...</p>}>
                                 <For each={leaderboardData()?.top_spenders || []} fallback={<div class="no-data-msg">No spenders yet</div>}>
@@ -195,7 +195,7 @@ export default function StatsPage() {
                         </div>
                     </Panel>
 
-                    <Panel title="Most Active Members" icon={EVENT_SVG}>
+                    <Panel title="Most Active Members" icon={FaSolidCalendarDay}>
                         <div class="item-list">
                             <Show when={leaderboardData() || !leaderboardData.loading} fallback={<p>Loading...</p>}>
                                 <For each={leaderboardData()?.most_active || []} fallback={<div class="no-data-msg">No active members yet</div>}>

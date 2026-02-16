@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { Permissions } from './permissions.js';
-import { DatabaseWrapper } from '../db.js';
+import { DatabaseWrapper } from '../db/db.js';
 import Logger from './Logger.js';
 
 interface AuthenticatedRequest extends FastifyRequest {

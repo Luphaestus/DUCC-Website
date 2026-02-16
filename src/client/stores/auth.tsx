@@ -15,13 +15,14 @@ export interface User {
     booties: number;
     balance: number;
     permissions: string[];
+    goodbye_role?: string;
 }
 
 const [user, { mutate: setUser, refetch: refetchUser }] = createResource<User | null>(async () => {
     try {
         const status = await apiRequest('GET', '/api/auth/status', null, true);
         if (status.authenticated) {
-            return await apiRequest('GET', '/api/user/elements/permissions,is_member,id,swims,booties,balance,first_name,last_name,email', null, true);
+            return await apiRequest('GET', '/api/user/elements/permissions,is_member,id,swims,booties,balance,first_name,last_name,email,goodbye_role', null, true);
         }
     } catch (e) {
         return null;

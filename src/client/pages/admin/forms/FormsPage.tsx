@@ -4,9 +4,8 @@ import { useNotifications } from "@/stores/notifications";
 import { useNavigate } from "@solidjs/router";
 import Panel from "@/components/Panel";
 import {
-    ADD_SVG, DELETE_SVG, EDIT_SVG, DESCRIPTION_SVG,
-    CALENDAR_TODAY_SVG, PERSON_SVG
-} from '@/utils/icons';
+    FaSolidPlus, FaSolidFileLines
+} from 'solid-icons/fa';
 import PageTitle from "@/components/PageTitle";
 
 interface FormSummary {
@@ -34,7 +33,7 @@ export default function AdminFormsPage() {
                 <div class="flex-row-gap-1 align-center justify-between">
                     <div />
                     <button class="primary" onClick={() => navigate('/admin/forms/new')}>
-                        <span innerHTML={ADD_SVG} /> New Form
+                        <FaSolidPlus /> New Form
                     </button>
                 </div>
 
@@ -45,7 +44,7 @@ export default function AdminFormsPage() {
                                 <div class="clickable" onClick={() => navigate(`/admin/forms/${form.id}`)}>
                                     <Panel
                                         title={form.title}
-                                        icon={DESCRIPTION_SVG}
+                                        icon={FaSolidFileLines}
                                     >
                                         <div class="info-rows">                                        <div class="info-row">
                                             <span>Type</span>

@@ -1,11 +1,12 @@
 import { createSignal, createResource, For, Show, createMemo, onMount, onCleanup } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import { apiRequest } from "@/utils/api";
 import Panel from "@/components/Panel";
 import { onUpdate } from "@/utils/updates";
 import { 
-    BOLT_SVG, SPEEDOMETER_SVG, STORAGE_SVG, 
-    GROUP_SVG, SETTINGS_SVG 
-} from '@/utils/icons';
+    FaSolidBolt, FaSolidGaugeHigh, FaSolidDatabase, 
+    FaSolidUsers, FaSolidGear 
+} from 'solid-icons/fa';
 
 // Lightweight Line Chart Component (SVG)
 const LineChart = (props: { data: number[], labels: string[], color?: string, height?: number }) => {
@@ -91,8 +92,8 @@ export default function MonitoringDashboard() {
     const [widgets, setWidgets] = createSignal([
         { id: 'cpu', title: 'CPU Usage', type: 'gauge', value: () => liveMetrics()?.cpu_usage || 0, history: cpuHistory, color: '#ff4757' },
         { id: 'mem', title: 'Memory Usage', type: 'gauge', value: () => liveMetrics()?.memory_usage || 0, history: memHistory, color: '#2ed573' },
-        { id: 'db', title: 'DB Connections', type: 'stat', value: () => liveMetrics()?.db_connections || 0, icon: STORAGE_SVG },
-        { id: 'sess', title: 'Active Sessions', type: 'stat', value: () => liveMetrics()?.active_sessions || 0, icon: GROUP_SVG }
+        { id: 'db', title: 'DB Connections', type: 'stat', value: () => liveMetrics()?.db_connections || 0, icon: FaSolidDatabase },
+        { id: 'sess', title: 'Active Sessions', type: 'stat', value: () => liveMetrics()?.active_sessions || 0, icon: FaSolidUsers }
     ]);
 
     // Simple reordering logic
@@ -106,7 +107,7 @@ export default function MonitoringDashboard() {
     return (
         <div class="monitoring-dashboard">
             <header class="dashboard-header">
-                <h3><span innerHTML={SPEEDOMETER_SVG} /> System Monitoring</h3>
+                <h3><FaSolidGaugeHigh /> System Monitoring</h3>
                 <div class="header-actions">
                     <button class="outline contrast small-btn" onClick={() => refetch()}>Refresh History</button>
                 </div>
@@ -134,7 +135,7 @@ export default function MonitoringDashboard() {
 
                             <Show when={w.type === 'stat'}>
                                 <div class="stat-container">
-                                    <span class="stat-icon" innerHTML={w.icon} />
+                                    <span class="stat-icon"><Dynamic component={w.icon} /></span>
                                     <span class="stat-value">{w.value()}</span>
                                 </div>
                             </Show>

@@ -1,6 +1,6 @@
 import { createSignal, onMount, Show, createResource, createEffect } from "solid-js";
 import { deferredPrompt, installPWA, installPWA as installPWAAction, isPWAInstalled } from "../utils/pwa";
-import { CLOSE_SVG, DOWNLOAD_SVG } from "../utils/icons";
+import { FaSolidClose, FaSolidCloudDownload } from 'solid-icons/fa'
 import { apiRequest } from "@/utils/api";
 
 export default function InstallOverlay() {
@@ -46,30 +46,26 @@ export default function InstallOverlay() {
                     <div
                         class="liquid-container pwa-card"
                     >
-                    <button class="close-btn" onClick={() => handleDismiss(false)} innerHTML={CLOSE_SVG} />
-
-                    <div class="pwa-content">
-                        <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" class="pwa-logo" />
-                        <h2>Install the App</h2>
-                        <p>Get instant notifications for cancelled events, waitlist updates, and easier access to your profile.</p>
-
-                        <ul class="pwa-benefits">
-                            <li>✨ Instant Updates</li>
-                            <li>📅 Calendar Integration</li>
-                            <li>🚀 Faster Loading</li>
-                        </ul>
-
-                        <button class="install-btn primary" onClick={() => { installPWA(); setIsVisible(false); }}>
-                            <span innerHTML={DOWNLOAD_SVG} /> Install Now
+                        <button class="close-btn" onClick={() => handleDismiss(false)}>
+                            <FaSolidClose />
                         </button>
 
-                        <button class="text-btn muted" onClick={() => handleDismiss(true)}>
-                            Don't show again
-                        </button>
+                        <div class="pwa-content">
+                            <img src={logo() || "/api/files/1/download?view=true"} alt="DUCC Logo" class="pwa-logo" />
+                            <h2>Install the App</h2>
+                            <p>Get instant notifications for cancelled events, waitlist updates, and easier access to your profile.</p>
+
+                            <button class="install-btn primary" onClick={() => { installPWA(); setIsVisible(false); }}>
+                                <FaSolidCloudDownload /> Install Now
+                            </button>
+
+                            <button class="text-btn muted" onClick={() => handleDismiss(true)}>
+                                Don't show again
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         </Show >
     );
 }

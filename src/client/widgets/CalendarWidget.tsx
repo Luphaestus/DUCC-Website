@@ -2,10 +2,10 @@ import { createSignal, createResource, Show, For, onMount, onCleanup, createMemo
 import { useNavigate, useLocation } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import {
-    ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, ADD_SVG, CLOSE_SVG,
-    CONTENT_COPY_SVG, DELETE_SVG, EDIT_SVG,
-    BLOCK_SVG, CHECK_SVG, CURRENCY_POUND_SVG
-} from "@/utils/icons";
+    FaSolidChevronLeft, FaSolidChevronRight, FaSolidPlus, FaSolidXmark,
+    FaSolidCopy, FaSolidTrash, FaSolidPenToSquare,
+    FaSolidBan, FaSolidCheck, FaSolidPoundSign
+} from 'solid-icons/fa';
 import { useNotifications } from "@/stores/notifications";
 import { showConfirmModal } from "@/utils/modal";
 import ContextMenu from "../components/ContextMenu";
@@ -483,8 +483,8 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
             <Show when={!props.hideHeader}>
                 <div class="calendar-header-toolbar">
                     <div class="cal-controls">
-                        <button class="icon-btn" onClick={() => changeDate(-1)}><span innerHTML={ARROW_BACK_IOS_NEW_SVG} /></button>
-                        <button class="icon-btn" onClick={() => changeDate(1)}><span innerHTML={ARROW_FORWARD_IOS_SVG} /></button>
+                        <button class="icon-btn" onClick={() => changeDate(-1)}><FaSolidChevronLeft /></button>
+                        <button class="icon-btn" onClick={() => changeDate(1)}><FaSolidChevronRight /></button>
                         <h2 class="cal-title">
                             {currentDate().toLocaleString('default', { month: 'long', year: 'numeric' })}
                         </h2>
@@ -559,7 +559,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                                             <div class="ev-title">{event.title}</div>
                                                             <Show when={props.adminMode}>
                                                                 <div class="ev-actions-overlay">
-                                                                    <button class="mini-icon-btn" onClick={(e) => { e.stopPropagation(); copyEvent(event); }} title="Copy" innerHTML={CONTENT_COPY_SVG} />
+                                                                    <button class="mini-icon-btn" onClick={(e) => { e.stopPropagation(); copyEvent(event); }} title="Copy"><FaSolidCopy /></button>
                                                                 </div>
                                                             </Show>
                                                         </div>
@@ -641,20 +641,20 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                 header={contextMenu()?.event.title}
                 onClose={() => setContextMenu(null)}
             >
-                <button onClick={() => navigate(`/admin/event/${contextMenu()!.event.id}`)}><span innerHTML={EDIT_SVG} /> Edit Details</button>
-                <button onClick={() => copyEvent(contextMenu()!.event)}><span innerHTML={CONTENT_COPY_SVG} /> Copy Event</button>
+                <button onClick={() => navigate(`/admin/event/${contextMenu()!.event.id}`)}><FaSolidPenToSquare /> Edit Details</button>
+                <button onClick={() => copyEvent(contextMenu()!.event)}><FaSolidCopy /> Copy Event</button>
                 <div class="divider"></div>
                 <Show when={contextMenu()?.event.status !== 'confirmed'}>
-                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'confirmed')}><span innerHTML={CHECK_SVG} /> Confirm/Release</button>
+                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'confirmed')}><FaSolidCheck /> Confirm/Release</button>
                 </Show>
                 <Show when={contextMenu()?.event.status !== 'pending'}>
-                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'pending')}><span innerHTML={BLOCK_SVG} /> Move to Draft</button>
+                    <button onClick={() => handleUpdateStatus(contextMenu()!.event.id, 'pending')}><FaSolidBan /> Move to Draft</button>
                 </Show>
                 <Show when={!contextMenu()?.event.costs_released}>
-                    <button onClick={() => handleReleaseCosts(contextMenu()!.event.id)}><span innerHTML={CURRENCY_POUND_SVG} /> Release Costs</button>
+                    <button onClick={() => handleReleaseCosts(contextMenu()!.event.id)}><FaSolidPoundSign /> Release Costs</button>
                 </Show>
                 <div class="divider"></div>
-                <button class="delete" onClick={() => setContextMenu(null)}><span innerHTML={CLOSE_SVG} /> Close Menu</button>
+                <button class="delete" onClick={() => setContextMenu(null)}><FaSolidXmark /> Close Menu</button>
             </ContextMenu>
         </div >
     );

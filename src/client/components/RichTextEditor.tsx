@@ -9,14 +9,13 @@ import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
-import { UploadWidget } from "@/widgets/upload/UploadWidget";
-import {
-    FORMAT_BOLD_SVG, FORMAT_ITALIC_SVG, FORMAT_UNDERLINED_SVG, FORMAT_STRIKETHROUGH_SVG,
-    FORMAT_LIST_BULLETED_SVG, FORMAT_LIST_NUMBERED_SVG, FORMAT_ALIGN_LEFT_SVG,
-    FORMAT_ALIGN_CENTER_SVG, FORMAT_ALIGN_RIGHT_SVG, FORMAT_H1_SVG, FORMAT_H2_SVG,
-    HIGHLIGHT_SVG, PALETTE_SVG, IMAGE_SVG, DESCRIPTION_SVG, EDIT_SVG,
-    HISTORY_UNDO_SVG, HISTORY_REDO_SVG, LINK_SVG
-} from "@/utils/icons";
+import UploadWidget from "@/components/UploadWidget";
+import { FaSolidBold, FaSolidItalic, FaSolidUnderline, FaSolidStrikethrough, FaSolidAlignLeft, FaSolidAlignCenter, FaSolidAlignRight, FaSolidHighlighter, FaSolidPallet, FaSolidUndo, FaSolidRedo, FaSolidLink} from "solid-icons/fa"
+import { MdSharpFormat_list_bulleted, MdSharpFormat_list_numbered } from 'solid-icons/md'
+import { HiSolidH1, HiSolidH2 } from 'solid-icons/hi'
+import { ImImage } from 'solid-icons/im'
+import { TbFillFileDescription } from 'solid-icons/tb'
+import { VsEdit } from 'solid-icons/vs'
 
 interface RichTextEditorProps {
     value: string;
@@ -163,62 +162,65 @@ export default function RichTextEditor(props: RichTextEditorProps) {
         }
     };
 
+    let uploadWidgetRef: { click: () => void } | undefined;
+
     const handleImageUpload = () => {
-        const widget = new UploadWidget(document.createElement('div'), {
-            mode: 'hidden',
-            onImageSelect: ({ id }) => {
-                const url = `/api/files/${id}/download?view=true`;
-                editor?.chain().focus().setImage({ src: url }).run();
-            }
-        });
-        widget.inputEl.click();
+        uploadWidgetRef?.click();
     };
 
     return (
         <div class="rich-text-editor liquid-container glass-panel no-padding overflow-hidden" style={{ border: "1px solid rgba(var(--pico-color-rgb), 0.1)" }}>
+            <UploadWidget 
+                mode="hidden" 
+                ref={(el) => uploadWidgetRef = el}
+                onImageSelect={({ id }) => {
+                    const url = `/api/files/${id}/download?view=true`;
+                    editor?.chain().focus().setImage({ src: url }).run();
+                }}
+            />
             <div class="editor-toolbar p-2 border-bottom flex flex-wrap gap-1 bg-[rgba(var(--pico-color-rgb),0.03)]">
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bold }} onClick={toggleBold} title="Bold"><span innerHTML={FORMAT_BOLD_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().italic }} onClick={toggleItalic} title="Italic"><span innerHTML={FORMAT_ITALIC_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().underline }} onClick={toggleUnderline} title="Underline"><span innerHTML={FORMAT_UNDERLINED_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().strike }} onClick={toggleStrike} title="Strikethrough"><span innerHTML={FORMAT_STRIKETHROUGH_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bold }} onClick={toggleBold} title="Bold"><FaSolidBold /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().italic }} onClick={toggleItalic} title="Italic"><FaSolidItalic /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().underline }} onClick={toggleUnderline} title="Underline"><FaSolidUnderline /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().strike }} onClick={toggleStrike} title="Strikethrough"><FaSolidStrikethrough /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h1 }} onClick={toggleH1} title="Heading 1"><span innerHTML={FORMAT_H1_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h2 }} onClick={toggleH2} title="Heading 2"><span innerHTML={FORMAT_H2_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h1 }} onClick={toggleH1} title="Heading 1"><HiSolidH1 /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().h2 }} onClick={toggleH2} title="Heading 2"><HiSolidH2 /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bulletList }} onClick={toggleBulletList} title="Bullet List"><span innerHTML={FORMAT_LIST_BULLETED_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().orderedList }} onClick={toggleOrderedList} title="Ordered List"><span innerHTML={FORMAT_LIST_NUMBERED_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().bulletList }} onClick={toggleBulletList} title="Bullet List"><MdSharpFormat_list_bulleted /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().orderedList }} onClick={toggleOrderedList} title="Ordered List"><MdSharpFormat_list_numbered /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().left }} onClick={setAlignLeft} title="Align Left"><span innerHTML={FORMAT_ALIGN_LEFT_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().center }} onClick={setAlignCenter} title="Align Center"><span innerHTML={FORMAT_ALIGN_CENTER_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().right }} onClick={setAlignRight} title="Align Right"><span innerHTML={FORMAT_ALIGN_RIGHT_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().left }} onClick={setAlignLeft} title="Align Left"><FaSolidAlignLeft /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().center }} onClick={setAlignCenter} title="Align Center"><FaSolidAlignCenter /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().right }} onClick={setAlignRight} title="Align Right"><FaSolidAlignRight /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().undo }} onClick={undo} title="Undo"><span innerHTML={HISTORY_UNDO_SVG} /></button>
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().redo }} onClick={redo} title="Redo"><span innerHTML={HISTORY_REDO_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().undo }} onClick={undo} title="Undo"><FaSolidUndo /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().redo }} onClick={redo} title="Redo"><FaSolidRedo /></button>
                 </div>
 
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().highlight }} onClick={toggleHighlight} title="Highlight"><span innerHTML={HIGHLIGHT_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().highlight }} onClick={toggleHighlight} title="Highlight"><FaSolidHighlighter /></button>
                     <div class="color-picker-dropdown">
-                        <button type="button" class="toolbar-btn" title="Text Color"><span innerHTML={PALETTE_SVG} /></button>
+                        <button type="button" class="toolbar-btn" title="Text Color"><FaSolidPallet /></button>
                         <div class="color-palette">
                             {colors.map(c => (
                                 <div class="color-swatch" style={{ background: c }} onClick={() => setColor(c)} />
@@ -230,8 +232,8 @@ export default function RichTextEditor(props: RichTextEditorProps) {
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button type="button" class="toolbar-btn" classList={{ active: isActive().link }} onClick={toggleLink} title="Link"><span innerHTML={LINK_SVG} /></button>
-                    <button type="button" class="toolbar-btn" onClick={handleImageUpload} title="Upload Image"><span innerHTML={IMAGE_SVG} /></button>
+                    <button type="button" class="toolbar-btn" classList={{ active: isActive().link }} onClick={toggleLink} title="Link"><FaSolidLink /></button>
+                    <button type="button" class="toolbar-btn" onClick={handleImageUpload} title="Upload Image"><ImImage /></button>
                 </div>
             </div>
 

@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "@solidjs/router";
 import {
-    CHECK_SVG, LOCATION_ON_SVG, SCHEDULE_SVG, GROUP_SVG, CURRENCY_POUND_SVG
-} from '@/utils/icons';
+    FaSolidCheck, FaSolidLocationDot, FaSolidClock, FaSolidUsers, FaSolidPoundSign
+} from 'solid-icons/fa';
 import { Tag } from './Tag';
 import { Show, For } from "solid-js";
 
@@ -100,16 +100,16 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
             <div class="event-card-content">
                 <div class="event-info-block">
                     <div class="info-item time">
-                        <span innerHTML={SCHEDULE_SVG} />
+                        <FaSolidClock />
                         <span>{startTime()} - {endTime()}</span>
                     </div>
                     <div class="info-item location">
-                        <span innerHTML={LOCATION_ON_SVG} />
+                        <FaSolidLocationDot />
                         <span>{props.event.location || 'Location TBD'}</span>
                     </div>
                     <Show when={props.event.upfront_cost > 0}>
                         <div class="info-item cost" title="Upfront Cost">
-                            <span innerHTML={CURRENCY_POUND_SVG} />
+                            <FaSolidPoundSign />
                             <span>£{props.event.upfront_cost.toFixed(2)}</span>
                         </div>
                     </Show>
@@ -118,11 +118,11 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
                 <div class="card-footer">
                     <div class="footer-left">
                         <div class="attendance-count" classList={{ highlight: isWaitlistActive() }} title={attendanceTitle()}>
-                            <span innerHTML={GROUP_SVG} /> <span>{attendanceDisplay()}</span>
+                            <FaSolidUsers /> <span>{attendanceDisplay()}</span>
                         </div>
                         <Show when={props.event.is_attending}>
                             <div class="attendance-status">
-                                <span innerHTML={CHECK_SVG} /> Attending
+                                <FaSolidCheck /> Attending
                             </div>
                         </Show>
                     </div>

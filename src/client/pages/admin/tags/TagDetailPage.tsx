@@ -6,9 +6,9 @@ import { useNotifications } from "@/stores/notifications";
 import { showConfirmModal } from "@/utils/modal";
 import UploadWidget from "@/components/UploadWidget";
 import {
-    ARROW_BACK_IOS_NEW_SVG, DELETE_SVG, ADD_SVG,
-    SHIELD_SVG, LOCAL_ACTIVITY_SVG, IMAGE_SVG, SAVE_SVG
-} from '@/utils/icons';
+    FaSolidChevronLeft, FaSolidTrash, FaSolidPlus,
+    FaSolidShieldHalved, FaSolidTicket, FaSolidImage, FaSolidFloppyDisk
+} from 'solid-icons/fa';
 import { debounce } from "@/utils/utils";
 import PageTitle from "@/components/PageTitle";
 
@@ -149,18 +149,18 @@ export default function TagDetailPage() {
             <aside class="dashboard-sidebar">
                 <TabNav class="vertical-sidebar">
                     <button class="nav-item" onClick={() => navigate('/admin/tags')}>
-                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Tags
+                        <FaSolidChevronLeft /> Back to Tags
                     </button>
                     <div class="sidebar-spacer" style={{ "border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0" }} />
 
                     <button class="nav-item active">
-                        <span innerHTML={LOCAL_ACTIVITY_SVG} /> Tag Details
+                        <FaSolidTicket /> Tag Details
                     </button>
 
                     <Show when={!isNew()}>
                         <div class="sidebar-spacer" style={{ "border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0" }} />
                         <button class="nav-item delete" onClick={handleDelete}>
-                            <span innerHTML={DELETE_SVG} /> Delete Tag
+                            <FaSolidTrash /> Delete Tag
                         </button>
                     </Show>
                 </TabNav>
@@ -219,7 +219,7 @@ export default function TagDetailPage() {
 
                                         <div class="event-image-section">
                                             <h3 class="section-header-modern">
-                                                <span innerHTML={IMAGE_SVG} /> Default Event Image
+                                                <FaSolidImage /> Default Event Image
                                             </h3>
                                             <UploadWidget
                                                 selectMode="single"
@@ -254,7 +254,7 @@ export default function TagDetailPage() {
                                                 class="floating-save-btn prominent-btn"
                                                 title={isNew() ? 'Create Tag' : 'Save Changes'}
                                             >
-                                                <span innerHTML={SAVE_SVG} />
+                                                <FaSolidFloppyDisk />
                                                 <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
                                             </button>
                                         </div>
@@ -269,13 +269,13 @@ export default function TagDetailPage() {
                             {/* Managers */}
                             <div class="panel">
                                 <div class="panel-header">
-                                    <h3><span innerHTML={SHIELD_SVG} /> Designated Managers</h3>
+                                    <h3><FaSolidShieldHalved /> Designated Managers</h3>
                                 </div>
                                 <div class="panel-content">
                                     <p class="helper-text">Users allowed to manage events with this tag.</p>
                                     <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('managers', input.value); input.value = ''; }}>
                                         <input list="users-datalist" placeholder="Search users..." class="no-margin" />
-                                        <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
+                                        <button type="submit" class="small-btn"><FaSolidPlus /></button>
                                     </form>
                                     <div class="glass-table-container">
                                         <table class="glass-table">
@@ -285,7 +285,7 @@ export default function TagDetailPage() {
                                                     {u => (
                                                         <tr><td>{u.first_name} {u.last_name}</td>
                                                             <td>{u.email}</td>
-                                                            <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('managers', u.id)} innerHTML={DELETE_SVG} /></td>
+                                                            <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('managers', u.id)}><FaSolidTrash /></button></td>
                                                         </tr>
                                                     )}
                                                 </For>
@@ -298,13 +298,13 @@ export default function TagDetailPage() {
                             {/* Whitelist */}
                             <div class="panel">
                                 <div class="panel-header">
-                                    <h3><span innerHTML={LOCAL_ACTIVITY_SVG} /> Whitelist Access</h3>
+                                    <h3><FaSolidTicket /> Whitelist Access</h3>
                                 </div>
                                 <div class="panel-content">
                                     <p class="helper-text">Restricts event visibility/joining to specific users.</p>
                                     <form class="inline-add-form" onSubmit={(e) => { e.preventDefault(); const input = e.currentTarget.querySelector('input')!; handleAddUser('whitelist', input.value); input.value = ''; }}>
                                         <input list="users-datalist" placeholder="Search users..." class="no-margin" />
-                                        <button type="submit" class="small-btn" innerHTML={ADD_SVG} />
+                                        <button type="submit" class="small-btn"><FaSolidPlus /></button>
                                     </form>
                                     <div class="glass-table-container">
                                         <table class="glass-table">
@@ -314,7 +314,7 @@ export default function TagDetailPage() {
                                                     {u => (
                                                         <tr><td>{u.first_name} {u.last_name}</td>
                                                             <td>{u.email}</td>
-                                                            <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('whitelist', u.id)} innerHTML={DELETE_SVG} /></td>
+                                                            <td><button class="delete-icon-btn outline" onClick={() => handleRemoveUser('whitelist', u.id)}><FaSolidTrash /></button></td>
                                                         </tr>
                                                     )}
                                                 </For>

@@ -1,20 +1,20 @@
 // todo clean up
-import { createSignal, createResource, onMount, For, Show, createMemo, onCleanup, Switch, Match } from "solid-js";
+import { createSignal, createResource, For, Show, createMemo, from } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import {
-    BRIGHTNESS_ALERT_SVG, BOLT_SVG, GROUP_SVG, HOURGLASS_TOP_SVG, CURRENCY_POUND_SVG, INFO_SVG,
-    CLOSE_SVG, AVG_PACE_SVG, CALENDAR_MONTH_SVG, LOCATION_ON_SVG, WALLET_SVG, SCHEDULE_SVG,
-    DESCRIPTION_SVG, TRIP_SVG, SETTINGS_SVG, KAYAKING_SVG, LIST_SVG, ARROW_BACK_IOS_NEW_SVG
-} from '@/utils/icons';
+import { 
+    FaSolidUsers, FaSolidPoundSign, FaSolidCircleInfo, 
+    FaSolidXmark, FaSolidCalendarDays, FaSolidLocationDot,
+    FaSolidClock, FaSolidFileLines, 
+    FaSolidGear, FaSolidChevronLeft 
+} from 'solid-icons/fa';
+import { MdFillKayaking } from "solid-icons/md";
 import { Tag } from '../widgets/Tag';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Markdown from "@/components/Markdown";
-import { onUpdate } from "@/utils/updates";
-import { incrementModals, decrementModals } from "@/utils/modal-state";
 
 interface KitVariant {
     id: number;
@@ -327,7 +327,7 @@ export default function EventDetailPage() {
         <Portal>
             <div id="event-view" class="view c-modal-overlay visible" onClick={handleBackdropClick}>
                 <div class="c-modal-content modal-lg">
-                    <button class="c-modal-close-btn" onClick={() => navigate(-1)} innerHTML={CLOSE_SVG} />
+                    <button class="c-modal-close-btn" onClick={() => navigate(-1)}><FaSolidXmark /></button>
                     <Show when={eventData()} fallback={<div id="event-detail" class="c-modal-body"><p aria-busy="true">Loading event...</p></div>}>
                         {(event) => (
                             <div id="event-detail">
@@ -339,17 +339,17 @@ export default function EventDetailPage() {
                                             </For>
                                         </div>
                                         <h2 class="event-title">{event().title}</h2>
-                                        <p class="event-location"><span innerHTML={LOCATION_ON_SVG} /> {event().location || 'Location TBD'}</p>
+                                        <p class="event-location"><FaSolidLocationDot /> {event().location || 'Location TBD'}</p>
                                     </div>
                                 </div>
                                 <div class="event-modal-body">
                                     <div class="event-info-boxes">
                                         <div class="info-box">
-                                            <span class="box-title"><span innerHTML={CALENDAR_MONTH_SVG} /> DATE</span>
+                                            <span class="box-title"><FaSolidCalendarDays /> DATE</span>
                                             <span class="box-value">{new Date(event().start).toLocaleDateString()}</span>
                                         </div>
                                         <div class="info-box">
-                                            <span class="box-title"><span innerHTML={SCHEDULE_SVG} /> DURATION</span>
+                                            <span class="box-title"><FaSolidClock /> DURATION</span>
                                             <span class="box-value">
                                                 {(() => {
                                                     const diff = new Date(event().end).getTime() - new Date(event().start).getTime();
@@ -359,25 +359,25 @@ export default function EventDetailPage() {
                                             </span>
                                         </div>
                                         <div class="info-box">
-                                            <span class="box-title"><span innerHTML={CURRENCY_POUND_SVG} /> PRICE</span>
+                                            <span class="box-title"><FaSolidPoundSign /> PRICE</span>
                                             <span class="box-value">{event().upfront_cost > 0 ? `£${event().upfront_cost.toFixed(2)}` : 'Free'}</span>
                                         </div>
                                         <div class="info-box">
-                                            <span class="box-title"><span innerHTML={GROUP_SVG} /> CAPACITY</span>
+                                            <span class="box-title"><FaSolidUsers /> CAPACITY</span>
                                             <span class="box-value">{event().attendee_count || 0}/{event().max_attendees || '∞'}</span>
                                         </div>
                                     </div>
 
                                     <div class="liquid-container event-details-content">
                                         <div class="description-section">
-                                            <h3 class="section-title"><span innerHTML={DESCRIPTION_SVG} /> Description</h3>
+                                            <h3 class="section-title"><FaSolidFileLines /> Description</h3>
                                             <div class="description-text">
                                                 <Markdown content={event().description || 'No description provided.'} />
                                             </div>
                                         </div>
 
                                         <div class="attendees-section">
-                                            <h3 class="section-title"><span innerHTML={GROUP_SVG} /> Attendees ({attendees()?.length || 0})</h3>
+                                            <h3 class="section-title"><FaSolidUsers /> Attendees ({attendees()?.length || 0})</h3>
                                             <div class="attendee-list-modern" classList={{ expanded: isAttendeesExpanded() }}>
                                                 <For each={attendees()}>
                                                     {(a) => (
@@ -403,7 +403,7 @@ export default function EventDetailPage() {
                                     <div class="event-actions-container">
                                         <Show when={joinButtonInfo().message}>
                                             <div class="action-notice">
-                                                <span innerHTML={INFO_SVG} />
+                                                <FaSolidCircleInfo />
                                                 <p>{joinButtonInfo().message}</p>
                                             </div>
                                         </Show>
@@ -426,13 +426,13 @@ export default function EventDetailPage() {
 
                                             <Show when={isAttending() && event().is_offsite && eventStatus() === 'open'}>
                                                 <button class="secondary outline" onClick={() => setIsKitModalOpen(true)}>
-                                                    <span innerHTML={KAYAKING_SVG} /> Request Kit
+                                                    <MdFillKayaking /> Request Kit
                                                 </button>
                                             </Show>
 
                                             <Show when={canManage()}>
                                                 <button class="secondary" onClick={() => navigate(`/admin/event/${event().id}`)}>
-                                                    <span innerHTML={SETTINGS_SVG} /> Edit
+                                                    <FaSolidGear /> Edit
                                                 </button>
                                             </Show>
                                         </div>
@@ -446,7 +446,7 @@ export default function EventDetailPage() {
                         <Show when={!activeKitItem()} fallback={
                             <div class="variant-selection">
                                 <button class="small-btn secondary" onClick={() => setActiveKitItem(null)}>
-                                    <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Items
+                                    <FaSolidChevronLeft /> Back to Items
                                 </button>
                                 <p>Select a size or variant for {activeKitItem()?.name}:</p>
                                 <div class="item-list">

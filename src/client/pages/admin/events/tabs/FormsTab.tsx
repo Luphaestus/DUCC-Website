@@ -2,7 +2,7 @@ import { createResource, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNavigate } from "@solidjs/router";
 import Panel from "@/components/Panel";
-import { ADD_SVG, DESCRIPTION_SVG } from '@/utils/icons';
+import { FaSolidPlus, FaSolidFileLines } from 'solid-icons/fa';
 
 interface FormSummary {
     id: number;
@@ -30,10 +30,10 @@ export default function FormsTab(props: { eventId: number }) {
         <div class="forms-tab">
             <Panel 
                 title="Event Forms" 
-                icon={DESCRIPTION_SVG}
+                icon={FaSolidFileLines}
                 action={
                     <button class="small-btn primary mini-btn" onClick={handleCreateForm}>
-                        <span innerHTML={ADD_SVG} /> New Form
+                        <FaSolidPlus /> New Form
                     </button>
                 }
             >
@@ -43,7 +43,7 @@ export default function FormsTab(props: { eventId: number }) {
                             <For each={forms()} fallback={<p class="text-muted text-center py-4">No forms created for this event yet.</p>}>
                                 {form => (
                                     <div class="clickable" onClick={() => navigate(`/admin/forms/${form.id}`)}>
-                                        <Panel title={form.title} icon={DESCRIPTION_SVG} class="secondary-bg">
+                                        <Panel title={form.title} icon={FaSolidFileLines} class="secondary-bg">
                                             <div class="info-rows">
                                                 <div class="info-row">
                                                     <span>Created</span>

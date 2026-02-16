@@ -3,22 +3,21 @@ import { createSignal, createResource, Show, createEffect, onMount, onCleanup } 
 import { unwrap } from "solid-js/store";
 import { useParams, useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
+import { useNotifications } from "@/stores/notifications";
+import UploadWidget from "@/components/UploadWidget";
+import { ProfilePictureChangedEvent } from "@/utils/events/events";
+import { onUpdate } from "@/utils/updates";
 import Avatar from "@/components/Avatar";
 import {
-    PERSON_SVG, SHIELD_SVG, ID_CARD_SVG,
-    WALLET_SVG, POOL_SVG, DASHBOARD_SVG, UPLOAD_SVG
-} from '@/utils/icons';
-import ProfileTab from "./tabs/ProfileTab";
+    FaSolidUser, FaSolidShieldHalved, FaSolidIdCard,
+    FaSolidWallet, FaSolidSwimmingPool, FaSolidGauge, FaSolidCloudArrowUp,
+    FaSolidChevronLeft
+} from 'solid-icons/fa';
+import { TabNav } from "@/widgets/TabNav";
 import OverviewTab from "./tabs/OverviewTab";
+import ProfileTab from "./tabs/ProfileTab";
 import AccessTab from "./tabs/AccessTab";
 import TransactionsTab from "./tabs/TransactionsTab";
-import { TabNav } from "@/widgets/TabNav";
-import { onUpdate } from "@/utils/updates";
-import { UploadWidget } from "@/widgets/upload/UploadWidget";
-import { useNotifications } from "@/stores/notifications";
-import { ProfilePictureChangedEvent } from "@/utils/events/events";
-import PageTitle from "@/components/PageTitle";
-import { ARROW_BACK_IOS_NEW_SVG } from "@/utils/icons";
 
 export default function UserDetailPage() {
     const { notify } = useNotifications();
@@ -63,7 +62,7 @@ export default function UserDetailPage() {
         }
     });
 
-    let uploadWidget: UploadWidget | null = null;
+    let uploadWidgetRef: { click: () => void } | undefined;
 
     onMount(() => {
         const cleanup = onUpdate((event) => {
@@ -84,18 +83,16 @@ export default function UserDetailPage() {
         });
     });
 
-    createEffect(() => {
-        const currentId = userId();
-        if (currentId) {
-            uploadWidget = new UploadWidget(`admin-avatar-upload-container`, {
-                mode: 'inline',
-                enableLibrary: false,
-                enableUrl: false,
-                showActions: false,
-                showPreview: false,
-                enableCrop: true,
-                onImageSelect: async ({ id }) => {
-                    if (!id) return;
+    const currentTab = () => (searchParams.tab as string) || 'overview';
+
+    return (
+        <>
+            <UploadWidget 
+                mode="hidden"
+                ref={(el) => uploadWidgetRef = el}
+                onImageSelect={async ({ id }) => {
+                    const currentId = userId();
+                    if (!id || !currentId) return;
                     try {
                         await apiRequest('POST', `/api/admin/user/${currentId}/elements`, { profile_picture_id: id });
                         notify('Success', 'Profile picture overridden.', 'success');
@@ -104,16 +101,8 @@ export default function UserDetailPage() {
                     } catch (err: any) {
                         notify('Error', err.message, 'error');
                     }
-                }
-            });
-        }
-    });
-
-    const currentTab = () => (searchParams.tab as string) || 'overview';
-
-    return (
-        <>
-            <div id="admin-avatar-upload-container" style="display: none;"></div>
+                }}
+            />
             <Show when={user()} fallback=
                 {
                     <p aria-busy="true" class="loading-text">Loading user details...</p>
@@ -124,9 +113,9 @@ export default function UserDetailPage() {
                         <div class="dashboard-container">
                             <aside class="dashboard-sidebar">
                                 <div class="liquid-container user-identity-card" style={{ "display": "flex", "align-items": "center", "gap": "1rem" }}>
-                                    <div class="profile-picture-container clickable" style={{ "width": "64px", "height": "64px", "flex-shrink": "0" }} onClick={() => uploadWidget?.inputEl.click()}>
+                                    <div class="profile-picture-container clickable" style={{ "width": "64px", "height": "64px", "flex-shrink": "0" }} onClick={() => uploadWidgetRef?.click()}>
                                         <Avatar user={userData()} classes="medium" />
-                                        <div class="avatar-overlay" innerHTML={UPLOAD_SVG}></div>
+                                        <div class="avatar-overlay"><FaSolidCloudArrowUp /></div>
                                     </div>
                                     <div class="user-info" style={{ "flex": "1", "min-width": "0" }}>
                                         <h2 class="text-lg m-0" style={{ "white-space": "nowrap", "overflow": "hidden", "text-overflow": "ellipsis" }}>{userData().first_name} {userData().last_name}</h2>
@@ -136,23 +125,23 @@ export default function UserDetailPage() {
 
                                 <TabNav class="vertical-sidebar">
                                     <button class="nav-item" onClick={() => navigate('/admin/users')}>
-                                        <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Back to Users
+                                        <FaSolidChevronLeft /> Back to Users
                                     </button>
                                     <div class="sidebar-spacer" style={{"border-top": "1px solid rgba(var(--pico-color-rgb), 0.1)", "margin": "0.5rem 0"}} />
                                     
                                     <button class="nav-item" classList={{ active: currentTab() === 'overview' }} onClick={() => setSearchParams({ tab: 'overview' })}>
-                                        <span innerHTML={DASHBOARD_SVG} /> Overview
+                                        <FaSolidGauge /> Overview
                                     </button>
                                     <button class="nav-item" classList={{ active: currentTab() === 'profile' }} onClick={() => setSearchParams({ tab: 'profile' })}>
-                                        <span innerHTML={PERSON_SVG} /> Account Details
+                                        <FaSolidUser /> Account Details
                                     </button>                                <Show when={canManageUsers()}>
                                         <button class="nav-item" classList={{ active: currentTab() === 'access' }} onClick={() => setSearchParams({ tab: 'access' })}>
-                                            <span innerHTML={SHIELD_SVG} /> Access
+                                            <FaSolidShieldHalved /> Access
                                         </button>
                                     </Show>
                                     <Show when={canManageTransactions()}>
                                         <button class="nav-item" classList={{ active: currentTab() === 'transactions' }} onClick={() => setSearchParams({ tab: 'transactions' })}>
-                                            <span innerHTML={WALLET_SVG} /> Finance
+                                            <FaSolidWallet /> Finance
                                         </button>
                                     </Show>
                                 </TabNav>

@@ -4,7 +4,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { showConfirmModal } from "@/utils/modal";
 import Panel from "@/components/Panel";
-import { ADD_SVG, EDIT_SVG, DELETE_SVG, CLOSE_SVG, SAVE_SVG } from '@/utils/icons';
+import { FaSolidPlus, FaSolidPenToSquare, FaSolidTrash, FaSolidXmark, FaSolidFloppyDisk } from 'solid-icons/fa';
 import PageTitle from "@/components/PageTitle";
 
 interface KitVariant {
@@ -103,7 +103,7 @@ export default function KitPage() {
                 title="Club Kit Inventory" 
                 action={
                         <button class="small-btn primary" onClick={startCreating}>
-                            <span innerHTML={ADD_SVG} /> Add Item
+                            <FaSolidPlus /> Add Item
                         </button>
                     }
                 >
@@ -164,7 +164,7 @@ export default function KitPage() {
                                                                     required 
                                                                     style="width: 80px;"
                                                                 />
-                                                                <button type="button" class="icon-btn delete" onClick={() => removeVariantField(i())} innerHTML={CLOSE_SVG}></button>
+                                                                <button type="button" class="icon-btn delete" onClick={() => removeVariantField(i())}><FaSolidXmark /></button>
                                                             </div>
                                                         )}
                                                     </For>
@@ -172,8 +172,8 @@ export default function KitPage() {
                                             </div>
 
                                             <div class="form-actions">
-                                                <button type="submit" class="primary"><span innerHTML={SAVE_SVG} /> Save Item</button>
-                                                <button type="button" class="secondary" onClick={() => { setEditingItem(null); setIsCreating(false); }}><span innerHTML={CLOSE_SVG} /> Cancel</button>
+                                                <button type="submit" class="primary"><FaSolidFloppyDisk /> Save Item</button>
+                                                <button type="button" class="secondary" onClick={() => { setEditingItem(null); setIsCreating(false); }}><FaSolidXmark /> Cancel</button>
                                             </div>
                                         </form>
                                     </td>
@@ -194,8 +194,8 @@ export default function KitPage() {
                                             </td>
                                             <td>
                                                 <div class="action-group">
-                                                    <button class="icon-btn" onClick={() => startEditing(item)} innerHTML={EDIT_SVG}></button>
-                                                    <button class="icon-btn delete" onClick={() => handleDelete(item.id)} innerHTML={DELETE_SVG}></button>
+                                                    <button class="icon-btn" onClick={() => startEditing(item)}><FaSolidPenToSquare /></button>
+                                                    <button class="icon-btn delete" onClick={() => handleDelete(item.id)}><FaSolidTrash /></button>
                                                 </div>
                                             </td>
                                         </tr>

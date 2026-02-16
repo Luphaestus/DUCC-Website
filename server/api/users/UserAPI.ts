@@ -184,6 +184,9 @@ export default class User {
             switch (element) {
                 case "email":
                     error = ValidationRules.validate('email', value);
+                    if (!error && !value.endsWith('@durham.ac.uk')) {
+                        error = 'Only @durham.ac.uk email addresses are allowed.';
+                    }
                     break;
                 case "first_name":
                 case "last_name":

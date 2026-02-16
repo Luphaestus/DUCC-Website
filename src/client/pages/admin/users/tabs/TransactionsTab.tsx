@@ -1,7 +1,10 @@
 import { createSignal, createResource, For, Show, onMount, onCleanup } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { WALLET_SVG, ADD_SVG, REMOVE_SVG, EDIT_SVG, SAVE_SVG, CLOSE_SVG, DELETE_SVG, CHECK_SVG, SETTINGS_SVG } from '@/utils/icons';
+import { 
+    FaSolidWallet, FaSolidPlus, FaSolidMinus, FaSolidPenToSquare, 
+    FaSolidFloppyDisk, FaSolidXmark, FaSolidTrash, FaSolidCheck, FaSolidGear 
+} from 'solid-icons/fa';
 import Panel from "@/components/Panel";
 import Modal from "@/components/Modal";
 import { onUpdate } from "@/utils/updates";
@@ -161,7 +164,7 @@ export default function TransactionsTab(props: { userId: number }) {
                 <span class={`value-amount ${balanceClass()}`}>£{currentBalance().toFixed(2)}</span>
             </div>
 
-            <Panel title="Payment Plan (Temporary Debt Limit)" icon={EDIT_SVG} class="mb-4">
+            <Panel title="Payment Plan (Temporary Debt Limit)" icon={FaSolidPenToSquare} class="mb-4">
                 <div class="liquid-container">
                     <p style="font-size: 0.8rem; margin-bottom: 1.25rem; opacity: 0.6; line-height: 1.4;">
                         Setting a debt limit allows this user to continue joining events even with a negative balance, up to the specified amount.
@@ -175,17 +178,17 @@ export default function TransactionsTab(props: { userId: number }) {
                             <label style="font-size: 0.8rem; opacity: 0.8;">Expiry Date (Optional)</label>
                             <input name="debt_limit_expires_at" type="datetime-local" class="compact-input" />
                         </div>
-                        <button type="submit" class="small-btn icon-text-btn full-width"><span innerHTML={SAVE_SVG} /> Update Plan</button>
+                        <button type="submit" class="small-btn icon-text-btn full-width"><FaSolidFloppyDisk /> Update Plan</button>
                     </form>
                 </div>
             </Panel>
 
-            <Panel title="Transaction History" icon={WALLET_SVG}>
+            <Panel title="Transaction History" icon={FaSolidWallet}>
                 <div class="liquid-container transaction-item new-entry-row">
                     <form class="tx-edit-grid" onSubmit={handleAdd}>
                         <input name="description" type="text" placeholder="Description (e.g. Top Up)" class="compact-input" required />
                         <input name="amount" type="number" step="0.01" placeholder="Amount" class="compact-input" required />
-                        <button type="submit" class="small-btn icon-text-btn min-w-100"><span innerHTML={ADD_SVG} /> Add</button>
+                        <button type="submit" class="small-btn icon-text-btn min-w-100"><FaSolidPlus /> Add</button>
                     </form>
                 </div>
 
@@ -198,7 +201,11 @@ export default function TransactionsTab(props: { userId: number }) {
 
                             return (
                                 <div class="liquid-container transaction-item item-list-row" classList={{ editing: isEditing(), 'pending-row': tx.status === 'pending' }}>
-                                    <div class="item-icon" classList={{ negative: isNegative, positive: !isNegative, pending: tx.status === 'pending' }} innerHTML={tx.status === 'pending' ? '<span style="font-size: 1.2rem; font-weight: bold;">?</span>' : (isNegative ? REMOVE_SVG : ADD_SVG)} />
+                                    <div class="item-icon" classList={{ negative: isNegative, positive: !isNegative, pending: tx.status === 'pending' }}>
+                                        <Show when={tx.status === 'pending'} fallback={isNegative ? <FaSolidMinus /> : <FaSolidPlus />}>
+                                            <span style="font-size: 1.2rem; font-weight: bold;">?</span>
+                                        </Show>
+                                    </div>
 
                                     <Show when={!isEditing()} fallback={
                                         <div class="tx-edit-grid no-btn" ref={el => { }}>
@@ -232,17 +239,17 @@ export default function TransactionsTab(props: { userId: number }) {
                                     <div class="item-actions">
                                         <Show when={!isEditing()}>
                                             <Show when={tx.status === 'pending'}>
-                                                <button class="icon-btn success mr-2" onClick={() => handleConfirm(tx.id)} title="Quick Confirm" innerHTML={CHECK_SVG} />
-                                                <button class="small-btn secondary mini-btn mr-2" onClick={() => openManageModal(tx)}><span innerHTML={SETTINGS_SVG} /> Manage</button>
+                                                <button class="icon-btn success mr-2" onClick={() => handleConfirm(tx.id)} title="Quick Confirm"><FaSolidCheck /></button>
+                                                <button class="small-btn secondary mini-btn mr-2" onClick={() => openManageModal(tx)}><FaSolidGear /> Manage</button>
                                             </Show>
                                             <Show when={tx.status === 'completed'}>
-                                                <button class="icon-btn edit-tx-btn" onClick={() => setEditingId(tx.id)} title="Edit" innerHTML={EDIT_SVG} />
-                                                <button class="icon-btn delete-tx-btn delete" onClick={() => handleDelete(tx.id)} title="Delete" innerHTML={DELETE_SVG} />
+                                                <button class="icon-btn edit-tx-btn" onClick={() => setEditingId(tx.id)} title="Edit"><FaSolidPenToSquare /></button>
+                                                <button class="icon-btn delete-tx-btn delete" onClick={() => handleDelete(tx.id)} title="Delete"><FaSolidTrash /></button>
                                             </Show>
                                         </Show>
                                         <Show when={isEditing()}>
-                                            <button class="icon-btn save-tx-btn success" onClick={(e) => handleSaveEdit(tx.id, (e.currentTarget.parentElement?.parentElement as HTMLElement))} title="Save" innerHTML={SAVE_SVG} />
-                                            <button class="icon-btn cancel-tx-btn warning" onClick={() => setEditingId(null)} title="Cancel" innerHTML={CLOSE_SVG} />
+                                            <button class="icon-btn save-tx-btn success" onClick={(e) => handleSaveEdit(tx.id, (e.currentTarget.parentElement?.parentElement as HTMLElement))} title="Save"><FaSolidFloppyDisk /></button>
+                                            <button class="icon-btn cancel-tx-btn warning" onClick={() => setEditingId(null)} title="Cancel"><FaSolidXmark /></button>
                                         </Show>
                                     </div>
                                 </div>
@@ -285,7 +292,7 @@ export default function TransactionsTab(props: { userId: number }) {
 
                     <div class="form-actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
                         <button type="submit" class="primary full-width">
-                            <span innerHTML={CHECK_SVG} /> Confirm & Notify User
+                            <FaSolidCheck /> Confirm & Notify User
                         </button>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                             <button type="button" class="secondary outline" onClick={() => setIsManaging(false)}>Cancel</button>

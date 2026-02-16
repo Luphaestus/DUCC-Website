@@ -1,9 +1,9 @@
 import { Show, Accessor, JSX } from "solid-js";
 import { TabNav } from "./TabNav";
 import { 
-    LIST_SVG, CALENDAR_TODAY_SVG, DASHBOARD_SVG, 
-    ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, REFRESH_SVG 
-} from "@/utils/icons";
+    FaSolidList, FaSolidCalendarDay, FaSolidCalendarDays, 
+    FaSolidChevronLeft, FaSolidChevronRight, FaSolidArrowsRotate 
+} from 'solid-icons/fa';
 
 interface EventsHeaderControlsProps {
     viewMode: Accessor<'list' | 'week' | 'month'>;
@@ -24,9 +24,9 @@ export function EventsHeaderControls(props: EventsHeaderControlsProps) {
                 <div class="view-selector-container">
                     <Show when={props.isDesktop()}>
                         <TabNav class="toggle-group-mini">
-                            <button class="tab-btn" classList={{ active: props.viewMode() === 'list' }} onClick={() => props.setView('list')} title="List View"><span innerHTML={LIST_SVG} /></button>
-                            <button class="tab-btn" classList={{ active: props.viewMode() === 'week' }} onClick={() => props.setView('week')} title="Week View"><span innerHTML={CALENDAR_TODAY_SVG} /></button>
-                            <button class="tab-btn" classList={{ active: props.viewMode() === 'month' }} onClick={() => props.setView('month')} title="Month View"><span innerHTML={DASHBOARD_SVG} /></button>
+                            <button class="tab-btn" classList={{ active: props.viewMode() === 'list' }} onClick={() => props.setView('list')} title="List View"><FaSolidList /></button>
+                            <button class="tab-btn" classList={{ active: props.viewMode() === 'week' }} onClick={() => props.setView('week')} title="Week View"><FaSolidCalendarDay /></button>
+                            <button class="tab-btn" classList={{ active: props.viewMode() === 'month' }} onClick={() => props.setView('month')} title="Month View"><FaSolidCalendarDays /></button>
                         </TabNav>
                     </Show>
                 </div>
@@ -34,13 +34,13 @@ export function EventsHeaderControls(props: EventsHeaderControlsProps) {
                 <div class="page-selector-container">
                     <div class="week-navigator-mini flex align-center gap-3">
                         <button class="nav-btn" title="Previous" onClick={() => props.onNavigate(-1)}>
-                            <span innerHTML={ARROW_BACK_IOS_NEW_SVG} />
+                            <FaSolidChevronLeft />
                         </button>
                         <div class="current-week-display">
                             <span class="range-text">{props.rangeText()}</span>
                         </div>
                         <button class="nav-btn" title="Next" onClick={() => props.onNavigate(1)}>
-                            <span innerHTML={ARROW_FORWARD_IOS_SVG} />
+                            <FaSolidChevronRight />
                         </button>
                     </div>
                 </div>
@@ -55,7 +55,7 @@ export function EventsHeaderControls(props: EventsHeaderControlsProps) {
                         title="Back to Today" 
                         onClick={props.onToday}
                     >
-                        <span innerHTML={REFRESH_SVG} />
+                        <FaSolidArrowsRotate />
                         <span class="btn-text">Today</span>
                     </button>
                 </div>

@@ -10,7 +10,7 @@ import {
 } from 'solid-icons/fa'; // Importing all necessary icons
 import { showConfirmModal } from "@/utils/modal";
 import { Tag } from "@/widgets/Tag";
-import { UploadWidget } from "@/widgets/upload/UploadWidget";
+import UploadWidget from "@/components/UploadWidget";
 import { smartDateAdjust } from "@/utils/utils";
 import { BalanceChangedEvent, MembershipChangedEvent, ProfilePictureChangedEvent } from "@/utils/events/events";
 import { useProfile } from "./ProfileLayout";
@@ -119,38 +119,25 @@ export default function ProfileOverview() {
         { label: 'Mono', value: 'mono' }
     ];
 
-    let uploadWidget: UploadWidget | null = null;
-    createEffect(() => {
-        const p = profile();
-        if (p && !uploadWidget) {
-            const container = document.getElementById('avatar-upload-container');
-            if (container) {
-                uploadWidget = new UploadWidget(container, {
-                    mode: 'inline',
-                    enableLibrary: false,
-                    enableUrl: false,
-                    showActions: false,
-                    showPreview: false,
-                    enableCrop: true,
-                    onImageSelect: async ({ id }) => {
-                        if (!id) return;
-                        try {
-                            await apiRequest('POST', '/api/user/profile-picture', { fileId: id });
-                            notify('Success', 'Profile picture updated.', 'success');
-                            ProfilePictureChangedEvent.notify();
-                            refetch();
-                        } catch (err: any) {
-                            notify('Error', err.message, 'error');
-                        }
-                    }
-                });
-            }
-        }
-    });
+    let uploadWidgetRef: { click: () => void } | undefined;
 
     return (
         <Show when={profile()} fallback={<p aria-busy="true">Loading profile...</p>}>
-            <div id="avatar-upload-container" style="display: none;"></div>
+            <UploadWidget 
+                mode="hidden"
+                ref={(el) => uploadWidgetRef = el}
+                onImageSelect={async ({ id }) => {
+                    if (!id) return;
+                    try {
+                        await apiRequest('POST', '/api/user/profile-picture', { fileId: id });
+                        notify('Success', 'Profile picture updated.', 'success');
+                        ProfilePictureChangedEvent.notify();
+                        refetch();
+                    } catch (err: any) {
+                        notify('Error', err.message, 'error');
+                    }
+                }}
+            />
             <section class="dashboard-section active">
                 <Show when={!profile()!.filled_legal_info}>
                     <div class="accent-panel warning-panel liquid-container mb-4">
@@ -258,7 +245,7 @@ export default function ProfileOverview() {
                     <div class="overview-side">
                         <Panel title="Profile Appearance" class="glass-panel" icon={<FaSolidIdCard />}>
                             <div class="profile-avatar-row compact-customization">
-                                <div class="profile-picture-container" onClick={() => uploadWidget?.inputEl.click()}>
+                                <div class="profile-picture-container" onClick={() => uploadWidgetRef?.click()}>
                                     <Avatar user={profile()!} classes="large" />
                                     <div class="avatar-overlay"><FaSolidCloudArrowUp /></div>
                                 </div>

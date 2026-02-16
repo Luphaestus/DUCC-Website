@@ -3,16 +3,15 @@ import { createSignal, createResource, For, Show, createMemo, createEffect } fro
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import {
-    CURRENCY_POUND_SVG, ADD_SVG, TRIP_SVG, CHECK_SVG,
-    CLOSE_SVG, EDIT_SVG, GROUP_SVG, WALLET_SVG, DELETE_SVG, CLOUD_DOWNLOAD_SVG
-} from '@/utils/icons';
+    FaSolidPoundSign, FaSolidPlus, FaSolidSuitcase, FaSolidCheck,
+    FaSolidXmark, FaSolidPenToSquare, FaSolidUsers, FaSolidWallet, FaSolidTrash, FaSolidCloudArrowDown
+} from 'solid-icons/fa';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { showConfirmModal } from "@/utils/modal";
-import { notify } from '@/components/notification'
 
 // --- Types ---
 interface Attendee {
@@ -255,7 +254,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                         </div>
                         <div class="flex align-center gap-2">
                             <a href={`/api/admin/event/${props.eventId}/attendees/csv`} target="_blank" class="small-btn secondary outline">
-                                <span innerHTML={CLOUD_DOWNLOAD_SVG} /> Export CSV
+                                <FaSolidCloudArrowDown /> Export CSV
                             </a>
                             <Show when={!props.costsReleased}>
                                 <button class="small-btn primary" onClick={handleReleaseCosts}>
@@ -269,21 +268,21 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 
             <div class="finance-summary-grid">
                 <div class="liquid-container summary-card">
-                    <span class="card-icon" innerHTML={WALLET_SVG} />
+                    <span class="card-icon"><FaSolidWallet /></span>
                     <div class="card-info">
                         <span class="label">Total Contributed</span>
                         <span class="value">£{totals().contributed.toFixed(2)}</span>
                     </div>
                 </div>
                 <div class="liquid-container summary-card">
-                    <span class="card-icon" innerHTML={CURRENCY_POUND_SVG} />
+                    <span class="card-icon"><FaSolidPoundSign /></span>
                     <div class="card-info">
                         <span class="label">Shared Costs</span>
                         <span class="value">£{totals().shared.toFixed(2)}</span>
                     </div>
                 </div>
                 <div class="liquid-container summary-card">
-                    <span class="card-icon" innerHTML={GROUP_SVG} />
+                    <span class="card-icon"><FaSolidUsers /></span>
                     <div class="card-info">
                         <span class="label">Participants</span>
                         <span class="value">{totals().participants}</span>
@@ -293,7 +292,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 
             <div class="grid-2-col-resp gap-6">
                 {/* Participant Management */}
-                <Panel title="Participants" icon={GROUP_SVG} action={
+                <Panel title="Participants" icon={FaSolidUsers} action={
                     <div class="flex align-center gap-2">
                         <input
                             type="text"
@@ -304,7 +303,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                         />
                         <Show when={!props.costsReleased}>
                             <button class="small-btn primary mini-btn" onClick={() => setShowAddAttendee(true)}>
-                                <span innerHTML={ADD_SVG} /> Add
+                                <FaSolidPlus /> Add
                             </button>
                         </Show>
                     </div>
@@ -323,10 +322,10 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                 <div class="flex-column gap-6">
                     {/* Transport Panel */}
                     <Show when={props.isOffsite}>
-                        <Panel title="Trips & Transport" icon={TRIP_SVG} action={
+                        <Panel title="Trips & Transport" icon={FaSolidSuitcase} action={
                             <Show when={!props.costsReleased}>
                                 <button class="small-btn primary mini-btn" onClick={() => setShowAddTrip(true)}>
-                                    <span innerHTML={ADD_SVG} /> New Trip
+                                    <FaSolidPlus /> New Trip
                                 </button>
                             </Show>
                         }>
@@ -361,10 +360,10 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                     </Show>
 
                     {/* Expenses Panel */}
-                    <Panel title="Event Expenses" icon={WALLET_SVG} action={
+                    <Panel title="Event Expenses" icon={FaSolidWallet} action={
                         <Show when={!props.costsReleased}>
                             <button class="small-btn primary mini-btn" onClick={() => setShowAddExpense(true)}>
-                                <span innerHTML={ADD_SVG} /> New Expense
+                                <FaSolidPlus /> New Expense
                             </button>
                         </Show>
                     }>
@@ -392,7 +391,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 
             {/* Summary Matrix */}
             <Show when={(summary()?.breakdown.length || 0) > 0}>
-                <Panel title="Financial Settlement" icon={CURRENCY_POUND_SVG}>
+                <Panel title="Financial Settlement" icon={FaSolidPoundSign}>
                     <div class="glass-table-container">
                         <div class="table-responsive">
                             <table class="glass-table matrix-table">
@@ -447,6 +446,7 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
 }
 
 function AttendeeSearch(props: { eventId: number, onAdded: () => void }) {
+    const { notify } = useNotifications();
     const [query, setQuery] = createSignal('');
     const [results] = createResource(query, async (q) => {
         if (q.length < 2) return [];

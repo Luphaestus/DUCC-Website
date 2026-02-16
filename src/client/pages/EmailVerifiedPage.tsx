@@ -1,5 +1,4 @@
 import { useNavigate } from "@solidjs/router";
-import { CHECK_CIRCLE_SVG } from "@/utils/icons";
 
 export default function EmailVerifiedPage() {
     const navigate = useNavigate();

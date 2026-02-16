@@ -5,7 +5,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import { useNavigate } from "@solidjs/router";
 import PageTitle from "@/components/PageTitle";
-import { ARROW_BACK_IOS_NEW_SVG, SAVE_SVG, ADD_SVG, DELETE_SVG, LOCAL_ACTIVITY_SVG, SETTINGS_SVG, INFO_SVG } from "@/utils/icons";
+import { FaSolidChevronLeft, FaSolidFloppyDisk, FaSolidPlus, FaSolidTrash, FaSolidTicket, FaSolidGear, FaSolidCircleInfo } from 'solid-icons/fa';
 import RichTextEditor from "@/components/RichTextEditor";
 import { showConfirmModal } from "@/utils/modal";
 import { ElectionUpdatedEvent } from "@/utils/events/events";
@@ -345,11 +345,11 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
         <div class="glass-layout" classList={{ 'read-only': isReadOnly() }}>
             <div class="panel">
                 <div class="panel-header">
-                    <h3 style="margin: 0;"><span innerHTML={INFO_SVG} /> Election Overview {isReadOnly() && '(Finalized)'}</h3>
+                    <h3 style="margin: 0;"><FaSolidCircleInfo /> Election Overview {isReadOnly() && '(Finalized)'}</h3>
                     <div class="panel-actions">
                         <Show when={!isNew()}>
                             <button class="small-btn delete outline" onClick={handleDelete} title="Delete">
-                                <span innerHTML={DELETE_SVG} /> Delete
+                                <FaSolidTrash /> Delete
                             </button>
                         </Show>
                     </div>
@@ -381,7 +381,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
                                         class="floating-save-btn prominent-btn"
                                         title={isNew() ? 'Create Election' : 'Save Changes'}
                                     >
-                                        <span innerHTML={SAVE_SVG} />
+                                        <FaSolidFloppyDisk />
                                         <span class="btn-label">{isNew() ? 'Create' : 'Save'}</span>
                                     </button>
                                 </div>
@@ -394,7 +394,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             <Show when={!isNew() && fetchedElection()}>
                 <div class="panel">
                     <div class="panel-header">
-                        <h3 style="margin: 0;"><span innerHTML={SETTINGS_SVG} /> Phase Control</h3>
+                        <h3 style="margin: 0;"><FaSolidGear /> Phase Control</h3>
                     </div>
                     <div class="panel-content">
                         <p>Current: <span class={`badge ${phaseColors[electionData().phase || 'setup']}`}>{electionData().phase?.replace(/_/g, ' ') || 'Setup'}</span></p>
@@ -414,7 +414,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             <Show when={isNew() || fetchedElection()}>
                 <div class="panel">
                     <div class="panel-header">
-                        <h3 style="margin: 0;"><span innerHTML={LOCAL_ACTIVITY_SVG} /> Election Roles</h3>
+                        <h3 style="margin: 0;"><FaSolidTicket /> Election Roles</h3>
                     </div>
                     <div class="panel-content">
                         <Show when={!isClosed()} fallback={<p class="text-muted">Roles cannot be modified after election is closed.</p>}>
@@ -452,7 +452,7 @@ export default function ElectionForm(props: { electionId: string, onSave: () => 
             <Show when={(isNew() && newElectionRoles().length > 0) || fetchedElection()}>
                 <div class="panel">
                     <div class="panel-header">
-                        <h3 style="margin: 0;"><span innerHTML={INFO_SVG} /> {isNew() ? 'Selected Roles' : 'Election Roles & Nominations'}</h3>
+                        <h3 style="margin: 0;"><FaSolidCircleInfo /> {isNew() ? 'Selected Roles' : 'Election Roles & Nominations'}</h3>
                     </div>
                     <div class="panel-content">
                         <div class="flex-column gap-6">

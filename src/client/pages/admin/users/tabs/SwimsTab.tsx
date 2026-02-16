@@ -2,7 +2,7 @@
 import { createSignal, createResource, Show, onMount, onCleanup, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { ADD_SVG, POOL_SVG, CHECK_SVG, CLOSE_SVG } from '@/utils/icons';
+import { FaSolidPlus, FaSolidSwimmingPool, FaSolidCheck } from 'solid-icons/fa';
 import Panel from "@/components/Panel";
 import { onUpdate } from "@/utils/updates";
 
@@ -75,7 +75,7 @@ export default function SwimsTab(props: { user: any, typeFilter?: 'swim' | 'boot
         <div class="swims-management-layout">
             <div class="grid-2-col gap-6">
                 <Show when={!props.typeFilter}>
-                    <Panel title="Add Swims" icon={POOL_SVG}>
+                    <Panel title="Add Swims" icon={FaSolidSwimmingPool}>
                         <div class="current-count">
                             <span class="count-label">Total Swims: </span>
                             <strong class="count-value">
@@ -100,7 +100,7 @@ export default function SwimsTab(props: { user: any, typeFilter?: 'swim' | 'boot
                                     <input type="text" value={swimMessage()} onInput={e => setSwimMessage(e.currentTarget.value)} placeholder="e.g. Swam at Maiden Castle" />
                                 </label>
                             </div>
-                            <button class="primary full-width" onClick={handleAddSwims}><span innerHTML={ADD_SVG} /> Record Swims</button>
+                            <button class="primary full-width" onClick={handleAddSwims}><FaSolidPlus /> Record Swims</button>
                         </div>
                     </Panel>
                 </Show>
@@ -127,7 +127,9 @@ export default function SwimsTab(props: { user: any, typeFilter?: 'swim' | 'boot
                                                 onClick={() => toggleBootie(item.id)}
                                                 title={item.is_bootie ? 'Unmark as bootie' : 'Mark as bootie done'}
                                             >
-                                                <span innerHTML={item.is_bootie ? CHECK_SVG : 'Mark Done'} />
+                                                <Show when={item.is_bootie} fallback="Mark Done">
+                                                    <FaSolidCheck />
+                                                </Show>
                                             </button>
                                         </Show>
                                     </div>

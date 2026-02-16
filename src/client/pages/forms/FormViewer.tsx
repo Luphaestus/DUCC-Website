@@ -3,7 +3,7 @@ import { useParams, useNavigate, A } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
-import { DESCRIPTION_SVG, SAVE_SVG, ARROW_BACK_IOS_NEW_SVG } from '@/utils/icons';
+import { FaSolidFileLines, FaSolidFloppyDisk, FaSolidChevronLeft, FaSolidArrowUp, FaSolidArrowDown } from 'solid-icons/fa';
 import Markdown from "@/components/Markdown";
 import { FormSubmittedEvent } from "@/utils/events/events";
 import { smartDateAdjust } from "@/utils/utils";
@@ -312,8 +312,8 @@ export default function FormViewer() {
                                                                         <div class="rank-item bg-alt rounded flex justify-between align-center p-3">
                                                                             <span>{idx() + 1}. {item}</span>
                                                                             <div class="rank-actions flex gap-1">
-                                                                                <button type="button" class="small-btn icon-only secondary" onClick={() => moveRank(q.id, idx(), -1)} disabled={idx() === 0}>↑</button>
-                                                                                <button type="button" class="small-btn icon-only secondary" onClick={() => moveRank(q.id, idx(), 1)} disabled={idx() === (answers()[q.id] || q.options).length - 1}>↓</button>
+                                                                                <button type="button" class="small-btn icon-only secondary" onClick={() => moveRank(q.id, idx(), -1)} disabled={idx() === 0}><FaSolidArrowUp /></button>
+                                                                                <button type="button" class="small-btn icon-only secondary" onClick={() => moveRank(q.id, idx(), 1)} disabled={idx() === (answers()[q.id] || q.options).length - 1}><FaSolidArrowDown /></button>
                                                                             </div>
                                                                         </div>
                                                                     )}
@@ -350,7 +350,7 @@ export default function FormViewer() {
                                 <div class="form-navigation flex justify-between pt-4 border-top">
                                     <Show when={!isFirstPage()}>
                                         <button type="button" class="secondary" onClick={handlePrev}>
-                                            <span innerHTML={ARROW_BACK_IOS_NEW_SVG} /> Previous
+                                            <FaSolidChevronLeft /> Previous
                                         </button>
                                     </Show>
                                     <div class="flex-grow"></div>
@@ -361,7 +361,7 @@ export default function FormViewer() {
                                     </Show>
                                     <Show when={isLastPage()}>
                                         <button type="submit" class="primary form-submit-btn">
-                                            <span innerHTML={SAVE_SVG} /> Submit Response
+                                            <FaSolidFloppyDisk /> Submit Response
                                         </button>
                                     </Show>
                                 </div>

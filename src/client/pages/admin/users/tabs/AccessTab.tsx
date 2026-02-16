@@ -4,9 +4,9 @@ import { apiRequest } from "@/utils/api";
 import { getContrastColour } from "@/widgets/Tag";
 import { useNotifications } from "@/stores/notifications";
 import {
-    ID_CARD_SVG, SHIELD_SVG, CLOSE_SVG, LOCAL_ACTIVITY_SVG, LOCK_SVG,
-    WARNING_SVG, PERSON_OFF_SVG, GAVEL_SVG
-} from '@/utils/icons';
+    FaSolidIdCard, FaSolidShieldHalved, FaSolidXmark, FaSolidTicket, FaSolidLock,
+    FaSolidTriangleExclamation, FaSolidUserSlash, FaSolidGavel
+} from 'solid-icons/fa';
 import Panel from "@/components/Panel";
 import Modal from "@/components/Modal";
 import LiquidButton from "@/components/LiquidButton";
@@ -86,7 +86,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                 password: password()
             });
             notify('Success', 'Presidential role transferred.', 'success');
-            triggerExecGoodbye(status.user, 'President');
+            triggerExecGoodbye(props.user, 'President');
             closePresidentModal();
         } catch (e: any) {
             setError(e.message || "An unexpected error occurred");
@@ -166,7 +166,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
             >
                 <div class="presidential-warning-container">
                     <div class="warning-hero">
-                        <span class="warning-icon" innerHTML={WARNING_SVG}></span>
+                        <span class="warning-icon"><FaSolidTriangleExclamation /></span>
                         <h3>Critical Action Required</h3>
                     </div>
 
@@ -174,19 +174,19 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
 
                     <ul class="warning-list">
                         <li>
-                            <span class="list-icon" innerHTML={PERSON_OFF_SVG}></span>
+                            <span class="list-icon"><FaSolidUserSlash /></span>
                             <div>
                                 <strong>Global Role Reset:</strong> All existing roles and permissions for EVERY user in the club will be wiped.
                             </div>
                         </li>
                         <li>
-                            <span class="list-icon" innerHTML={GAVEL_SVG}></span>
+                            <span class="list-icon"><FaSolidGavel /></span>
                             <div>
                                 <strong>Committee Archival:</strong> The current Executive Committee will be moved to archives.
                             </div>
                         </li>
                         <li>
-                            <span class="list-icon" innerHTML={ID_CARD_SVG}></span>
+                            <span class="list-icon"><FaSolidIdCard /></span>
                             <div>
                                 <strong>Privacy Reset:</strong> Personal data (medical info, addresses) for users who did not opt for long-term storage will be cleared for the new academic cycle.
                             </div>
@@ -213,7 +213,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
             </Modal>
 
             <div class="dual-grid">
-                <Panel title="System Roles" icon={ID_CARD_SVG}>
+                <Panel title="System Roles" icon={FaSolidIdCard}>
                     <p class="helper-text">Assign broad functional roles to this user.</p>
                     <Show when={allRoles()} fallback={<p>Loading roles...</p>}>
                         {(roles) => (
@@ -239,7 +239,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                         )}
                     </Show>
                 </Panel>
-                <Panel title="Direct Permissions" icon={SHIELD_SVG}>
+                <Panel title="Direct Permissions" icon={FaSolidShieldHalved}>
                     <p class="helper-text">Granular permissions. Inherited permissions cannot be removed here.</p>
                     <div class="tags-selection-grid">
                         <For each={allPerms()}>
@@ -277,7 +277,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                         title={isInherited() ? "Inherited from a role" : perm.description}
                                     >
                                         <Show when={isInherited()}>
-                                            <span class="lock-icon" innerHTML={LOCK_SVG} style="width: 0.8em; height: 0.8em; margin-right: 0.2rem; display: flex; align-items: center;"></span>
+                                            <span class="lock-icon" style="width: 0.8em; height: 0.8em; margin-right: 0.2rem; display: flex; align-items: center;"><FaSolidLock /></span>
                                         </Show>
                                         &nbsp;{perm.slug}
                                     </div>
@@ -291,7 +291,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
             <Show when={tagsData()}>
                 {res => (
                     <div class="dual-grid">
-                        <Panel title="Whitelisted Tags" icon={LOCAL_ACTIVITY_SVG}>
+                        <Panel title="Whitelisted Tags" icon={FaSolidTicket}>
                             <p class="helper-text">Tags this user is explicitly whitelisted for.</p>
                             <div class="tags-selection-grid">
                                 <For each={res().allTags}>
@@ -311,7 +311,7 @@ export default function AccessTab(props: { user: any, refetchUser: () => void })
                                 </For>
                             </div>
                         </Panel>
-                        <Panel title="Managed Tags (Scoped)" icon={SHIELD_SVG}>
+                        <Panel title="Managed Tags (Scoped)" icon={FaSolidShieldHalved}>
                             <p class="helper-text">Tags this user can manage events for.</p>
                             <div class="tags-selection-grid">
                                 <For each={res().allTags}>

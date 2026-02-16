@@ -6,9 +6,9 @@ import { showConfirmModal } from "@/utils/modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { 
-    SEARCH_SVG, DELETE_SVG, CHECK_SVG, CLOSE_SVG,
-    UNFOLD_MORE_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG 
-} from '@/utils/icons';
+    FaSolidMagnifyingGlass, FaSolidTrash, FaSolidCheck, FaSolidXmark,
+    FaSolidArrowsUpDown, FaSolidArrowDown, FaSolidArrowUp 
+} from 'solid-icons/fa';
 import PageTitle from "@/components/PageTitle";
 
 interface Quote {
@@ -86,19 +86,25 @@ export default function QuotesPage() {
             <thead>
                 <tr>
                     <th class="sortable" onClick={() => handleSort('text')}>
-                        Quote <Show when={sort() === 'text'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Quote <Show when={sort() === 'text'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('quoted_user')}>
-                        Person <Show when={sort() === 'quoted_user'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Person <Show when={sort() === 'quoted_user'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th>Submitter</th>
                     <th class="sortable" onClick={() => handleSort('visibility')}>
-                        Status <Show when={sort() === 'visibility'} fallback={<span innerHTML={UNFOLD_MORE_SVG}/>}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Status <Show when={sort() === 'visibility'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="text-right">Actions</th>
@@ -156,7 +162,7 @@ export default function QuotesPage() {
                                 value={search()} 
                                 onInput={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
                             />
-                            <button class="search-icon-btn" innerHTML={SEARCH_SVG} />
+                            <button class="search-icon-btn"><FaSolidMagnifyingGlass /></button>
                         </div>
                     </div>
                 </div>

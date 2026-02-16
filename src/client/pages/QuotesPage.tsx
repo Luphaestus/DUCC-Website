@@ -2,7 +2,7 @@
 import { createSignal, createResource, onMount, For, Show, createMemo, batch } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { ADD_SVG, SEARCH_SVG, FORMAT_QUOTE_SVG, PERSON_SVG } from '@/utils/icons';
+import { FaSolidPlus, FaSolidMagnifyingGlass, FaSolidQuoteLeft, FaSolidUser } from 'solid-icons/fa';
 import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
@@ -86,7 +86,7 @@ export default function QuotesPage() {
             <For each={props.data?.quotes}>
                 {(quote) => (
                     <div class="quote-card liquid-container">
-                        <div class="quote-icon-bg" innerHTML={FORMAT_QUOTE_SVG} />
+                        <div class="quote-icon-bg"><FaSolidQuoteLeft /></div>
                         <div class="quote-card-header">
                             <Avatar user={quote.quoted_user} classes="mini" />
                             <p class="quote-author">{quote.quoted_user.first_name} {quote.quoted_user.last_name}</p>
@@ -114,7 +114,7 @@ export default function QuotesPage() {
                         <button class="secondary" onClick={() => navigate('/admin/quotes')}>Manage Quotes</button>
                     </Show>
                     <div class="search-box liquid-container">
-                        <span class="icon" innerHTML={SEARCH_SVG} />
+                        <span class="icon"><FaSolidMagnifyingGlass /></span>
                         <input
                             type="text"
                             placeholder="Search quotes or person:"
@@ -126,7 +126,7 @@ export default function QuotesPage() {
                         />
                     </div>
                     <button class="button primary" onClick={() => setIsCreateModalOpen(true)}>
-                        <span innerHTML={ADD_SVG} /> Create Quote
+                        <FaSolidPlus /> Create Quote
                     </button>
                 </div>
             </div>
@@ -169,7 +169,7 @@ export default function QuotesPage() {
                     <div class="form-group">
                         <label for="new-quote-user">Who said it?</label>
                         <div class="glass-input-group liquid-container">
-                            <span class="icon" innerHTML={PERSON_SVG} />
+                            <span class="icon"><FaSolidUser /></span>
                             <select name="quotedUserId" id="new-quote-user" required>
                                 <option value="" disabled selected>Select a person</option>
                                 <For each={users()}>

@@ -6,8 +6,8 @@ import Avatar from "@/components/Avatar";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import {
-    UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, GROUP_SVG
-} from '@/utils/icons';
+    FaSolidArrowsUpDown, FaSolidMagnifyingGlass, FaSolidArrowDown, FaSolidArrowUp, FaSolidUsers
+} from 'solid-icons/fa';
 import { useNotifications } from "@/stores/notifications";
 import { TabNav } from "@/widgets/TabNav";
 import Modal from "@/components/Modal";
@@ -117,41 +117,53 @@ export default function UsersPage() {
             <thead>
                 <tr>
                     <th class="sortable" onClick={() => handleSort('last_name')}>
-                        Name <Show when={sort() === 'last_name'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Name <Show when={sort() === 'last_name'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <Switch>
                         <Match when={tab() === 'swims'}>
                             <th class="sortable" onClick={() => handleSort('swims')}>
-                                Swims <Show when={sort() === 'swims'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                Swims <Show when={sort() === 'swims'} fallback={<FaSolidArrowsUpDown />}>
+                                    <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                        <FaSolidArrowUp />
+                                    </Show>
                                 </Show>
                             </th>
                             <th>Quick Add</th>
                         </Match>
                         <Match when={tab() === 'transactions'}>
                             <th class="sortable" onClick={() => handleSort('balance')}>
-                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                Balance <Show when={sort() === 'balance'} fallback={<FaSolidArrowsUpDown />}>
+                                    <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                        <FaSolidArrowUp />
+                                    </Show>
                                 </Show>
                             </th>
                             <th>Quick Actions</th>
                         </Match>
                         <Match when={true}>
                             <th class="sortable" onClick={() => handleSort('college_id')}>
-                                College <Show when={sort() === 'college_id'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                College <Show when={sort() === 'college_id'} fallback={<FaSolidArrowsUpDown />}>
+                                    <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                        <FaSolidArrowUp />
+                                    </Show>
                                 </Show>
                             </th>
                             <th class="sortable" onClick={() => handleSort('difficulty_level')}>
-                                Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                Difficulty <Show when={sort() === 'difficulty_level'} fallback={<FaSolidArrowsUpDown />}>
+                                    <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                        <FaSolidArrowUp />
+                                    </Show>
                                 </Show>
                             </th>
                             <th class="sortable" onClick={() => handleSort('balance')}>
-                                Balance <Show when={sort() === 'balance'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                                    <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                                Balance <Show when={sort() === 'balance'} fallback={<FaSolidArrowsUpDown />}>
+                                    <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                        <FaSolidArrowUp />
+                                    </Show>
                                 </Show>
                             </th>
                         </Match>
@@ -243,7 +255,7 @@ export default function UsersPage() {
                     <div class="toolbar-right">
                         <form class="search-bar" onSubmit={handleSearch}>
                             <input type="text" placeholder="Search users..." value={search()} />
-                            <button type="submit" class="search-icon-btn" innerHTML={SEARCH_SVG} />
+                            <button type="submit" class="search-icon-btn"><FaSolidMagnifyingGlass /></button>
                         </form>
                     </div>
                 </div>

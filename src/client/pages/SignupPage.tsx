@@ -2,7 +2,7 @@ import { createSignal, onMount, createMemo, Show } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import { PERSON_SVG, LOCK_SVG } from '@/utils/icons';
+import { FaSolidUser, FaSolidLock } from 'solid-icons/fa';
 import { calculateEntropy, getStrengthLabel } from "@/utils/password";
 import { useAuth } from "@/stores/auth";
 import { LoginEvent } from "@/utils/events/events";
@@ -191,7 +191,7 @@ export default function SignupPage() {
                             <label for="signup-first-name">First Name</label>
                             <div class="glass-input-group" classList={{ 'is-invalid': !!errors().firstName, 'shaking': shaking().firstName }}>
                                 <div class="icon">
-                                    <span innerHTML={PERSON_SVG} />
+                                    <FaSolidUser />
                                 </div>
                                 <input 
                                     type="text" 
@@ -212,7 +212,7 @@ export default function SignupPage() {
                             <label for="signup-last-name">Last Name</label>
                             <div class="glass-input-group" classList={{ 'is-invalid': !!errors().lastName, 'shaking': shaking().lastName }}>
                                 <div class="icon">
-                                    <span innerHTML={PERSON_SVG} />
+                                    <FaSolidUser />
                                 </div>
                                 <input 
                                     type="text" 
@@ -234,7 +234,7 @@ export default function SignupPage() {
                         <label for="signup-email">Email Address</label>
                         <div class="glass-input-group" classList={{ 'durham-email-wrapper': !invitationToken(), 'is-invalid': !!errors().email, 'shaking': shaking().email }}>
                             <div class="icon">
-                                <span innerHTML={PERSON_SVG} />
+                                <FaSolidUser />
                             </div>
                             <input 
                                 type="text" 
@@ -260,7 +260,7 @@ export default function SignupPage() {
                             <label for="signup-password">Password</label>
                             <div class="glass-input-group" classList={{ 'is-invalid': !!errors().password, 'shaking': shaking().password }}>
                                 <div class="icon">
-                                    <span innerHTML={LOCK_SVG} />
+                                    <FaSolidLock />
                                 </div>
                                 <input 
                                     type="password" 
@@ -307,7 +307,7 @@ export default function SignupPage() {
                             <label for="signup-confirm-password">Confirm Password</label>
                             <div class="glass-input-group" classList={{ 'is-invalid': !!errors().confirmPassword, 'shaking': shaking().confirmPassword }}>
                                 <div class="icon">
-                                    <span innerHTML={LOCK_SVG} />
+                                    <FaSolidLock />
                                 </div>
                                 <input 
                                     type="password" 

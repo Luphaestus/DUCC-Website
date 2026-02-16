@@ -3,7 +3,7 @@ import { createSignal, createResource, For, Show, onMount, onCleanup } from "sol
 import { Portal } from "solid-js/web";
 import { useParams, useNavigate } from "@solidjs/router";
 import { apiRequest } from "@/utils/api";
-import { CURRENCY_POUND_SVG, TRIP_SVG, WALLET_SVG, CLOSE_SVG } from '@/utils/icons';
+import { FaSolidPoundSign, FaSolidSuitcase, FaSolidWallet, FaSolidXmark } from 'solid-icons/fa';
 import { incrementModals, decrementModals } from "@/utils/modal-state";
 
 export default function SettlementPage() {
@@ -36,12 +36,12 @@ export default function SettlementPage() {
         <Portal>
             <div id="settlement-view" class="view c-modal-overlay visible" onClick={handleBackdropClick}>
                 <div class="c-modal-content modal-lg">
-                    <button class="c-modal-close-btn" onClick={() => navigate(-1)} innerHTML={CLOSE_SVG} />
+                    <button class="c-modal-close-btn" onClick={() => navigate(-1)}><FaSolidXmark /></button>
                     <div class="c-modal-body">
                         <Show when={data()} fallback={<p>Loading settlement...</p>}>
                             {(res) => (
                                 <>
-                                    <h1>{CURRENCY_POUND_SVG} Financial Settlement: {res().event.title}</h1>
+                                    <h1><FaSolidPoundSign /> Financial Settlement: {res().event.title}</h1>
 
                                     <div class="liquid-container p-4">
                                         <h3>Summary</h3>

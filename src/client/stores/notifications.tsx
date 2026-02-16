@@ -2,6 +2,13 @@ import { createSignal } from "solid-js";
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';
 
+export const NotificationTypes = {
+    INFO: 'info' as NotificationType,
+    SUCCESS: 'success' as NotificationType,
+    WARNING: 'warning' as NotificationType,
+    ERROR: 'error' as NotificationType
+};
+
 export interface Notification {
     id: string;
     title: string;

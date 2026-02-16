@@ -6,9 +6,11 @@ import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import CalendarWidget, { CalendarViewMode } from "@/widgets/CalendarWidget";
 import {
-    UNFOLD_MORE_SVG, SEARCH_SVG, ARROW_DROP_DOWN_SVG, ARROW_DROP_UP_SVG, FILTER_LIST_SVG, CALENDAR_TODAY_SVG, LIST_SVG, CHECK_SVG,
-    IOS_SHARE_SVG, DASHBOARD_SVG, ADD_SVG, ARROW_BACK_IOS_NEW_SVG, ARROW_FORWARD_IOS_SVG, REFRESH_SVG
-} from '@/utils/icons';
+    FaSolidArrowsUpDown, FaSolidMagnifyingGlass, FaSolidArrowDown, FaSolidArrowUp, 
+    FaSolidFilter, FaSolidCalendarDays, FaSolidList, FaSolidCheck,
+    FaSolidShareFromSquare, FaSolidGaugeHigh, FaSolidPlus, 
+    FaSolidChevronLeft, FaSolidChevronRight, FaSolidArrowsRotate
+} from 'solid-icons/fa';
 import { showConfirmModal } from "@/utils/modal";
 import { useNotifications } from "@/stores/notifications";
 import { TabNav } from "@/widgets/TabNav";
@@ -136,29 +138,39 @@ export default function EventsPage() {
             <thead>
                 <tr>
                     <th class="sortable" onClick={() => handleSort('title')}>
-                        Title <Show when={sort() === 'title'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Title <Show when={sort() === 'title'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('status')}>Status</th>
                     <th class="sortable" onClick={() => handleSort('start')}>
-                        Date <Show when={sort() === 'start'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Date <Show when={sort() === 'start'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('location')}>
-                        Location <Show when={sort() === 'location'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Location <Show when={sort() === 'location'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('difficulty_level')}>
-                        Difficulty <Show when={sort() === 'difficulty_level'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Difficulty <Show when={sort() === 'difficulty_level'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                     <th class="sortable" onClick={() => handleSort('upfront_cost')}>
-                        Cost <Show when={sort() === 'upfront_cost'} fallback={<span innerHTML={UNFOLD_MORE_SVG} />}>
-                            <span innerHTML={order() === 'asc' ? ARROW_DROP_UP_SVG : ARROW_DROP_DOWN_SVG} />
+                        Cost <Show when={sort() === 'upfront_cost'} fallback={<FaSolidArrowsUpDown />}>
+                            <Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}>
+                                <FaSolidArrowUp />
+                            </Show>
                         </Show>
                     </th>
                 </tr>
@@ -220,7 +232,7 @@ export default function EventsPage() {
                         <Show when={viewMode() === 'list'}>
                             <form class="search-bar-compact" onSubmit={(e) => { e.preventDefault(); setSearchParams({ search: (e.target as HTMLFormElement).search.value, page: 1 }); }}>
                                 <div class="glass-input-group" style={{ "max-width": "100%" }}>
-                                    <span class="icon" innerHTML={SEARCH_SVG} />
+                                    <span class="icon"><FaSolidMagnifyingGlass /></span>
                                     <input type="text" name="search" placeholder="Search..." value={search()} style={{ "padding-left": "2.75rem !important" }} />
                                 </div>
                             </form>
@@ -228,13 +240,13 @@ export default function EventsPage() {
 
                         <div class="actions-group">
                             <button class="small-btn secondary outline hide-mobile" onClick={handlePublishStaged} title="Publish All Staged">
-                                <span innerHTML={CHECK_SVG} /> <span class="btn-text">Publish</span>
+                                <FaSolidCheck /> <span class="btn-text">Publish</span>
                             </button>
                             <button class="small-btn secondary outline hide-mobile" onClick={() => navigate('/admin/events/share')} title="Share Week">
-                                <span innerHTML={IOS_SHARE_SVG} /> <span class="btn-text">Share</span>
+                                <FaSolidShareFromSquare /> <span class="btn-text">Share</span>
                             </button>
                             <button class="small-btn primary" onClick={() => navigate('/admin/event/new')}>
-                                <span innerHTML={ADD_SVG} /> <span class="btn-text">Create</span>
+                                <FaSolidPlus /> <span class="btn-text">Create</span>
                             </button>
                         </div>
                     </>

@@ -1,9 +1,10 @@
 import { JSX, ParentProps, Show } from "solid-js";
+import { Dynamic } from "solid-js/web";
 
 interface PanelProps extends ParentProps {
     id?: string;
     title?: string | JSX.Element;
-    icon?: string | JSX.Element;
+    icon?: any;
     action?: JSX.Element;
     leftAction?: JSX.Element;
     class?: string;
@@ -31,9 +32,7 @@ export default function Panel(props: PanelProps) {
                     <Show when={props.title}>
                         <h3 classList={{ centered: props.titleCentered }}>
                             <Show when={props.icon}>
-                                <Show when={typeof props.icon === 'string'} fallback={props.icon}>
-                                    <span class="icon" innerHTML={props.icon as string} />
-                                </Show>
+                                <span class="icon"><Dynamic component={props.icon} /></span>
                             </Show>
                             {props.title}
                         </h3>

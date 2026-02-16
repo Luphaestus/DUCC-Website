@@ -1,6 +1,7 @@
 import { createSignal, onMount, onCleanup, createResource } from "solid-js";
 import { apiRequest, clearApiCache } from "@/utils/api";
-import { KAYAKING_SVG, SOCIAL_LEADERBOARD_SVG, CAMPING_SVG } from "@/utils/icons";
+import { FaSolidCampground, FaSolidUsers } from 'solid-icons/fa';
+import { MdFillKayaking } from 'solid-icons/md';
 
 export default function HomePage() {
   const [_, setSlideImages] = createSignal<string[]>([]);
@@ -67,21 +68,21 @@ export default function HomePage() {
           <div class="hero-offer-boxes">
             <div class="hero-offer-box-wrapper">
               <div class="liquid-container hero-offer-box">
-                <span innerHTML={KAYAKING_SVG} />
+                <MdFillKayaking />
                 <h3>Weekly Sessions</h3>
                 <p>Beginner-friendly trips of the Wear & Tees plus pool sessions.</p>
               </div>
             </div>
             <div class="hero-offer-box-wrapper">
               <div class="liquid-container hero-offer-box">
-                <span innerHTML={CAMPING_SVG} />
+                <FaSolidCampground />
                 <h3>UK & Europe Trips</h3>
                 <p>Exciting whitewater adventures year-round.</p>
               </div>
             </div>
             <div class="hero-offer-box-wrapper">
               <div class="liquid-container hero-offer-box">
-                <span innerHTML={SOCIAL_LEADERBOARD_SVG} />
+                <FaSolidUsers />
                 <h3>Competitive Teams</h3>
                 <p>White Water Racing, Canoe Polo, Slalom & Freestyle.</p>
               </div>

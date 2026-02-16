@@ -1,8 +1,8 @@
 // todo clean up
 import { Show } from "solid-js";
 import {
-    POOL_SVG, ADD_SVG, WALLET_SVG, DASHBOARD_SVG
-} from '@/utils/icons';
+    FaSolidSwimmingPool, FaSolidPlus, FaSolidWallet, FaSolidGauge
+} from 'solid-icons/fa';
 import Panel from "@/components/Panel";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
@@ -74,7 +74,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                         {props.user.is_member ? 'Active' : `${props.user.free_sessions || 0} Trials`}
                     </div>
                 </div>
-                <div class="value-actions" innerHTML={DASHBOARD_SVG}></div>
+                <div class="value-actions"><FaSolidGauge /></div>
             </article>
 
             <div class="liquid-container no-margin">
@@ -104,7 +104,7 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
             <Panel
                 class="no-margin"
                 title="Swimming Stats"
-                icon={POOL_SVG}
+                icon={FaSolidSwimmingPool}
                 titleCentered={true}
             >
                 <div class="stats-grid">
@@ -115,8 +115,8 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                 </div>
                 <Show when={canManageSwims()}>
                     <div class="panel-actions-centered" style="display: flex; justify-content: center; gap: 1rem;">
-                        <button class="small-btn primary" onClick={() => handleLogAction('swims')}><span innerHTML={ADD_SVG} /> Log Swim</button>
-                        <button class="small-btn secondary" onClick={() => handleLogAction('booties')}><span innerHTML={ADD_SVG} /> Log Bootie</button>
+                        <button class="small-btn primary" onClick={() => handleLogAction('swims')}><FaSolidPlus /> Log Swim</button>
+                        <button class="small-btn secondary" onClick={() => handleLogAction('booties')}><FaSolidPlus /> Log Bootie</button>
                     </div>
                 </Show>
             </Panel>

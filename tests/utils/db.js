@@ -114,11 +114,3 @@ export async function initSchemaAndClean() {
 
     return db;
 }
-
-/** 
- * Legacy support / Alias
- * In the new transaction-based testing model, this ensures the DB is ready globally.
- */
-export async function setupTestDb() {
-    return initSchemaAndClean();
-}

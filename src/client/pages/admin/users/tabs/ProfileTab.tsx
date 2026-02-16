@@ -3,11 +3,12 @@ import { createSignal, Show, createResource, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import {
-    PERSON_SVG, EDIT_SVG,
-    ID_CARD_SVG, CLOSE_SVG,
-    CONTRACT_SVG, HOME_SVG, EMERGENCY_SVG, MEDICAL_INFORMATION_SVG,
-    KAYAKING_SVG, SAVE_SVG
-} from '@/utils/icons';
+    FaSolidUser, FaSolidPenToSquare,
+    FaSolidIdCard, FaSolidXmark,
+    FaSolidFileContract, FaSolidHouse, FaSolidTruckMedical, FaSolidBriefcaseMedical,
+    FaSolidFloppyDisk
+} from 'solid-icons/fa';
+import { MdFillKayaking } from "solid-icons/md";
 import Panel from "@/components/Panel";
 import LiquidButton from "@/components/LiquidButton";
 
@@ -74,11 +75,11 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                         {isSigned() ? 'Signed' : 'Missing'}
                     </div>
                 </div>
-                <div class="value-actions" innerHTML={CONTRACT_SVG}></div>
+                <div class="value-actions"><FaSolidFileContract /></div>
             </article>
 
             <div class="dual-grid">
-                <Panel title="Health Information" icon={MEDICAL_INFORMATION_SVG} class="no-margin">
+                <Panel title="Health Information" icon={FaSolidBriefcaseMedical} class="no-margin">
                     <div class="detail-info-group" style="gap: 0">
                         <div class="medical-section">
                             <div class="info-item-modern compact">
@@ -120,7 +121,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
 
                 <Panel
                     title="Identity & Contact"
-                    icon={PERSON_SVG}
+                    icon={FaSolidUser}
                     class="no-margin"
                     action={
                         <Show when={props.permissions.includes('user.manage.advanced')}>
@@ -130,7 +131,9 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                                 borderRadius={12}
                                 tintOpacity={0.2}
                             >
-                                <span innerHTML={isEditing() ? CLOSE_SVG : EDIT_SVG} /> {isEditing() ? 'Cancel' : 'Edit'}
+                                <Show when={isEditing()} fallback={<FaSolidPenToSquare />}>
+                                    <FaSolidXmark />
+                                </Show> {isEditing() ? 'Cancel' : 'Edit'}
                             </LiquidButton>
                         </Show>
                     }
@@ -138,7 +141,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                     <Show when={isEditing()} fallback={
                         <div class="detail-info-group">
                             <div class="detail-info-box">
-                                <span class="box-label"><span innerHTML={ID_CARD_SVG} /> Identity Details</span>
+                                <span class="box-label"><FaSolidIdCard /> Identity Details</span>
                                 <div class="box-value-grid">
                                     <div class="row">
                                         <span class="label-sub">Email</span>
@@ -160,12 +163,12 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                             </div>
 
                             <div class="detail-info-box">
-                                <span class="box-label"><span innerHTML={HOME_SVG} /> Home Address</span>
+                                <span class="box-label"><FaSolidHouse /> Home Address</span>
                                 <span class="box-value">{props.user.home_address || 'N/A'}</span>
                             </div>
 
                             <div class="detail-info-box warning">
-                                <span class="box-label"><span innerHTML={EMERGENCY_SVG} /> Emergency Contact</span>
+                                <span class="box-label"><FaSolidTruckMedical /> Emergency Contact</span>
                                 <div class="box-value">
                                     <strong class="contact-name">{props.user.emergency_contact_name || 'N/A'}</strong>
                                     <span class="contact-phone">{props.user.emergency_contact_phone || 'N/A'}</span>
@@ -193,7 +196,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
 
             <Panel
                 title="Default Kit Requirements"
-                icon={KAYAKING_SVG}
+                icon={MdFillKayaking}
                 class="mt-4"
             >
                 <p>Manage the equipment this user usually needs to borrow from the club for trips.</p>
@@ -233,7 +236,7 @@ export default function ProfileTab(props: { user: any, permissions: string[], ca
                             if (kitForm) kitForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
                         }}
                     >
-                        <span innerHTML={SAVE_SVG} />
+                        <FaSolidFloppyDisk />
                         <span class="btn-label">Save All</span>
                     </button>
                 </div>

@@ -3,9 +3,7 @@ import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
-import {
-    KAYAKING_SVG
-} from '@/utils/icons';
+import { MdFillKayaking } from "solid-icons/md";
 import { KitItem, KitPref, KitVariant } from "./types";
 import { useProfile } from "./ProfileLayout";
 
@@ -69,7 +67,7 @@ export default function ProfileKit() {
             <section class="dashboard-section active">
                 <Panel
                     title="Default Kit Requirements"
-                    icon={KAYAKING_SVG}
+                    icon={MdFillKayaking}
                     class="glass-panel"
                 >
                     <p>Select the equipment you usually need to borrow from the club for trips. These will be your default requests when you join an event.</p>
@@ -91,7 +89,7 @@ export default function ProfileKit() {
                                         classList={{ 'primary-glass': isSelected() }}
                                         onClick={() => openKitModal(item)}
                                     >
-                                        <div class="item-icon"><span innerHTML={KAYAKING_SVG} /></div>
+                                        <div class="item-icon"><MdFillKayaking /></div>
                                         <div class="item-details">
                                             <span class="item-title">{item.name}{variantLabel()}</span>
                                             <span class="item-subtitle">{item.type} • {item.variants?.map((v: KitVariant) => v.name).join(', ') || 'No variants'}</span>

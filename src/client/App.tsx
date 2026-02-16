@@ -6,7 +6,7 @@ import NotificationContainer from "./components/NotificationContainer";
 import Footer from "./components/Footer";
 import { initUpdates, onUpdate } from "./utils/updates";
 import { ErrorView, NoInternetPage } from "./pages/ErrorPage";
-import { BRIGHTNESS_ALERT_SVG } from "./utils/icons";
+import { TbFillAlertHexagon } from "solid-icons/tb";
 import PresidentGoodbyeOverlay from "./components/PresidentGoodbyeOverlay";
 import InstallOverlay from "./components/InstallOverlay";
 import { NoInternetEvent } from "./utils/events/events";
@@ -93,7 +93,7 @@ export default function App(props: ParentProps) {
               <ErrorView
                 id="global-error"
                 viewId="error"
-                icon={BRIGHTNESS_ALERT_SVG}
+                icon={TbFillAlertHexagon}
                 iconClass="critical-error-icon"
                 title="Something went wrong"
                 message={`We've encountered an unexpected error.<br><small>${err?.message || err}</small>`}

@@ -71,8 +71,8 @@ export default class AdminRoles {
          * Create a new role.
          */
         this.app.post('/api/admin/roles', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request, reply) => {
-            const { name, description, permissions, execRanking } = request.body as any;
-            const result = await RolesDB.createRole(this.db, name, description, permissions, execRanking);
+            const { name, description, permissions, exec_ranking } = request.body as any;
+            const result = await RolesDB.createRole(this.db, name, description, permissions, exec_ranking);
             return result.getResponse(reply);
         });
 
@@ -80,8 +80,8 @@ export default class AdminRoles {
          * Update an existing role definition.
          */
         this.app.put<{ Params: { id: string } }>('/api/admin/roles/:id', { preHandler: [check('perm:role.write | perm:role.manage')] }, async (request, reply) => {
-            const { name, description, permissions, execRanking } = request.body as any;
-            const result = await RolesDB.updateRole(this.db, request.params.id, name, description, permissions, execRanking);
+            const { name, description, permissions, exec_ranking } = request.body as any;
+            const result = await RolesDB.updateRole(this.db, request.params.id, name, description, permissions, exec_ranking);
             if (result.isError()) return result.getResponse(reply);
             return reply.send({ message: result.getMessage() });
         });

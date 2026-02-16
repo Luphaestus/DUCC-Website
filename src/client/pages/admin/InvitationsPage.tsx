@@ -52,9 +52,9 @@ export default function InvitationsPage() {
                 notify('Success', 'Invitation sent successfully.', 'success');
                 form.reset();
                 setIsMember(false);
-                setSelectedRoles(new Set());
-                setSelectedPerms(new Set());
-                setSelectedTags(new Set());
+                setSelectedRoles(new Set<number>());
+                setSelectedPerms(new Set<number>());
+                setSelectedTags(new Set<number>());
                 refetch();
             } catch (err: any) {
                 if (err.status === 409 && err.message.includes('pending')) {

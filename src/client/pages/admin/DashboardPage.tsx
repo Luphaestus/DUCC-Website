@@ -1,4 +1,5 @@
 import { createMemo, For, createResource } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import { A } from "@solidjs/router";
 import { useAuth } from "@/stores/auth";
 import { ADMIN_MODULES } from "@/utils/adminConfig";
@@ -22,9 +23,11 @@ export default function DashboardPage() {
         ADMIN_MODULES.filter(m => m.isVisible(perms(), isPresident()))
     );
 
-    const Card = (props: { title: string, desc: string, icon: string, href: string }) => (
+    const Card = (props: { title: string, desc: string, icon: any, href: string }) => (
         <A href={props.href} class="dashboard-card panel-transparent" style={{ "border-radius": "32px" }}>
-            <div class="card-icon" innerHTML={props.icon} />
+            <div class="card-icon">
+                <Dynamic component={props.icon} />
+            </div>
             <div class="card-content">
                 <h3>{props.title}</h3>
                 <p>{props.desc}</p>
