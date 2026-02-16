@@ -1,6 +1,6 @@
 import { createSignal, createResource, onMount, For, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
-import { FaCloudArrowDown, FaMagnifyingGlass, FaFilter, FaArrowUp, FaArrowDown, FaArrowsUpDown } from 'solid-icons/fa';
+import { FaSolidCloudArrowDown, FaSolidMagnifyingGlass, FaSolidFilter, FaSolidArrowUp, FaSolidArrowDown, FaSolidArrowsUpDown } from 'solid-icons/fa';
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
 import { useNavigate, useSearchParams } from "@solidjs/router";
@@ -10,74 +10,62 @@ interface FileCategory {
     name: string;
 }
 
-interface FileEntry {
-    id: string;
-    filename: string;
+interface FileData {
+    id: number;
     title: string;
-    category_name: string;
     author: string;
     date: string;
+    filename: string;
+    category_name: string;
     size: number;
 }
 
-interface FilesPageData {
-    files: FileEntry[];
+interface FilesResponse {
+    files: FileData[];
+    total: number;
     totalPages: number;
-    search: string;
-    categoryId: string;
 }
 
 export default function FilesPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-
-    const getParam = (key: string) => {
-        const val = searchParams[key];
-        return Array.isArray(val) ? val[0] : val;
-    };
-
-    const search = () => getParam('search') || "";
-    const categoryId = () => getParam('categoryId') || "";
-    const page = () => parseInt(getParam('page') || "1");
-    const sort = () => getParam('sort') || "date";
-    const order = () => (getParam('order') as any) || "desc";
+    
+    const page = () => parseInt(searchParams.page || '1');
+    const search = () => searchParams.search || '';
+    const categoryId = () => searchParams.categoryId || '';
+    const sort = () => searchParams.sort || 'date';
+    const order = () => searchParams.order || 'desc';
 
     const [canManage, setCanManage] = createSignal(false);
-    const [categories, setCategories] = createSignal<FileCategory[]>([]);
-    const [oldFilesData, setOldFilesData] = createSignal<any>(null);
+    const [oldFilesData, setOldFilesData] = createSignal<FilesResponse | null>(null);
 
-    const [filesData] = createResource<FilesPageData, any>(() => ({
-        page: page(),
-        search: search(),
-        categoryId: categoryId(),
-        sort: sort(),
-        order: order()
-    }), async (params, { value }) => {
-        if (value && params.search === (filesData as any).latest?.search && params.categoryId === (filesData as any).latest?.categoryId) {
-            setOldFilesData(value);
-        } else {
-            setOldFilesData(null);
+    const [filesData] = createResource(
+        () => ({ page: page(), search: search(), categoryId: categoryId(), sort: sort(), order: order() }),
+        async (params, { value }) => {
+            if (value) setOldFilesData(value as FilesResponse);
+            const query = new URLSearchParams({
+                page: params.page.toString(),
+                search: params.search,
+                categoryId: params.categoryId,
+                sort: params.sort,
+                order: params.order,
+                limit: '15'
+            }).toString();
+            
+            const res = await apiRequest('GET', `/api/files?${query}`);
+            return res as FilesResponse;
         }
-        const query = new URLSearchParams({
-            page: String(params.page),
-            limit: '15',
-            search: params.search,
-            sort: params.sort,
-            order: params.order,
-            categoryId: params.categoryId
-        });
-        const res = await apiRequest('GET', `/api/files?${query.toString()}`, true);
-        return { ...res.data, search: params.search, categoryId: params.categoryId } as { files: FileEntry[]; totalPages: number, search: string, categoryId: string };
+    );
+
+    const [categories] = createResource<FileCategory[]>(async () => {
+        const res = await apiRequest('GET', '/api/files/categories');
+        return res as FileCategory[];
     });
 
     onMount(async () => {
         try {
-            const userData = await apiRequest('GET', '/api/user/elements/permissions', null, true).catch(() => ({}));
-            const perms = userData.permissions || [];
-            setCanManage(perms.includes('file.write') || perms.includes('file.edit') || false);
-
-            const catsRes = await apiRequest('GET', '/api/file-categories', null, true);
-            setCategories(catsRes.data || []);
+            const userRes = await apiRequest('GET', '/api/user/elements/permissions', null, true);
+            setCanManage(userRes.permissions?.includes('files.manage') || false);
         } catch (e) { }
     });
 
@@ -89,29 +77,26 @@ export default function FilesPage() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     };
 
-    const toggleSort = (field: string) => {
-        if (sort() === field) {
-            setSearchParams({ order: order() === 'asc' ? 'desc' : 'asc', page: 1 });
-        } else {
-            setSearchParams({ sort: field, order: 'asc', page: 1 });
-        }
+    const toggleSort = (newSort: string) => {
+        const newOrder = (sort() === newSort && order() === 'asc') ? 'desc' : 'asc';
+        setSearchParams({ sort: newSort, order: newOrder, page: 1 });
     };
 
-    const FileTable = (props: { data: any }) => (
+    const FileTable = (props: { data: FilesResponse | null }) => (
         <table class="files-table">
             <thead>
                 <tr>
                     <th data-label="Title" class="sortable" onClick={() => toggleSort('title')}>
-                        Title <Show when={sort() === 'title'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                        Title <Show when={sort() === 'title'} fallback={<FaSolidArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}><FaSolidArrowUp /></Show></Show>
                     </th>
                     <th data-label="Author" class="sortable" onClick={() => toggleSort('author')}>
-                        Author <Show when={sort() === 'author'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                        Author <Show when={sort() === 'author'} fallback={<FaSolidArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}><FaSolidArrowUp /></Show></Show>
                     </th>
                     <th data-label="Date" class="sortable" onClick={() => toggleSort('date')}>
-                        Date <Show when={sort() === 'date'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                        Date <Show when={sort() === 'date'} fallback={<FaSolidArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}><FaSolidArrowUp /></Show></Show>
                     </th>
                     <th data-label="Size" class="sortable" onClick={() => toggleSort('size')}>
-                        Size <Show when={sort() === 'size'} fallback={<FaArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaArrowDown />}><FaArrowUp /></Show></Show>
+                        Size <Show when={sort() === 'size'} fallback={<FaSolidArrowsUpDown />}><Show when={order() === 'asc'} fallback={<FaSolidArrowDown />}><FaSolidArrowUp /></Show></Show>
                     </th>
                     <th data-label="Action">Action</th>
                 </tr>
@@ -138,7 +123,7 @@ export default function FilesPage() {
                                 <td data-label="Size">{formatSize(file.size)}</td>
                                 <td data-label="Action">
                                     <a href={`/api/files/${file.id}/download${viewable ? '?view=true' : ''}`} class="download-btn" title={viewable ? 'View' : 'Download'} target={viewable ? '_blank' : undefined}>
-                                        <FaCloudArrowDown />
+                                        <FaSolidCloudArrowDown />
                                     </a>
                                 </td>
                             </tr>
@@ -160,7 +145,7 @@ export default function FilesPage() {
                         <button class="secondary" onClick={() => navigate('/admin/files')}>Manage Files</button>
                     </Show>
                     <div class="search-box liquid-container">
-                        <FaMagnifyingGlass />
+                        <FaSolidMagnifyingGlass />
                         <input
                             type="text"
                             placeholder="Search title, content or filename:"
@@ -171,7 +156,7 @@ export default function FilesPage() {
                         />
                     </div>
                     <div class="glass-input-group liquid-container" style="width: auto; min-width: 200px;">
-                        <FaFilter />
+                        <FaSolidFilter />
                         <select value={categoryId()} onChange={(e) => {
                             setSearchParams({ categoryId: e.currentTarget.value, page: 1 });
                         }}>

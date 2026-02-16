@@ -6,7 +6,7 @@ import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    FaUsers, FaIdCard, FaSwimmingPool, FaGroupArrowsRotate, FaPenToSquare, FaShieldHalved, FaCloudArrowUp
+    FaSolidUsers, FaSolidIdCard, FaSolidPersonSwimming, FaSolidArrowsRotate, FaSolidPenToSquare, FaSolidShieldHalved, FaSolidCloudArrowUp
 } from 'solid-icons/fa'; // Importing all necessary icons
 import { showConfirmModal } from "@/utils/modal";
 import { Tag } from "@/widgets/Tag";
@@ -180,10 +180,10 @@ export default function ProfileOverview() {
                     <div class="overview-main">
                         <Panel
                             title="Swimming Statistics"
-                            icon={<FaSwimmingPool />}
+                            icon={<FaSolidPersonSwimming />}
                             action={
                                 <button class="small-btn secondary" onClick={() => navigate('/swims')}>
-                                    <FaUsers /> Leaderboard
+                                    <FaSolidUsers /> Leaderboard
                                 </button>
                             }
                         >
@@ -211,7 +211,7 @@ export default function ProfileOverview() {
                             </div>
                         </Panel>
 
-                        <Panel title="Club Status & Roles" icon={<FaGroupArrowsRotate />} class="glass-panel no-margin">
+                        <Panel title="Club Status & Roles" icon={<FaSolidArrowsRotate />} class="glass-panel no-margin">
                             <div class="info-rows">
                                 <div class="info-row">
                                     <span>Membership</span>
@@ -256,11 +256,11 @@ export default function ProfileOverview() {
                     </div>
 
                     <div class="overview-side">
-                        <Panel title="Profile Appearance" class="glass-panel" icon={<FaIdCard />}>
+                        <Panel title="Profile Appearance" class="glass-panel" icon={<FaSolidIdCard />}>
                             <div class="profile-avatar-row compact-customization">
                                 <div class="profile-picture-container" onClick={() => uploadWidget?.inputEl.click()}>
                                     <Avatar user={profile()!} classes="large" />
-                                    <div class="avatar-overlay"><FaCloudArrowUp /></div>
+                                    <div class="avatar-overlay"><FaSolidCloudArrowUp /></div>
                                 </div>
                                 <div class="profile-avatar-controls">
                                     <div class="avatar-presets">
@@ -316,7 +316,7 @@ export default function ProfileOverview() {
                             </div>
                         </Panel>
 
-                        <Panel title="Safety & Contact" icon={<FaShieldHalved />} class="glass-panel no-margin">
+                        <Panel title="Safety & Contact" icon={<FaSolidShieldHalved />} class="glass-panel no-margin">
                             <div class="info-rows">
                                 <div class="info-row">
                                     <span>Emergency Contact</span>
@@ -329,7 +329,7 @@ export default function ProfileOverview() {
                             </div>
                             <div class="form-actions">
                                 <button class="small-btn secondary full-width" onClick={() => setIsEditingSafety(true)}>
-                                    <FaPenToSquare /> Edit Safety Info
+                                    <FaSolidPenToSquare /> Edit Safety Info
                                 </button>
                             </div>
                         </Panel>

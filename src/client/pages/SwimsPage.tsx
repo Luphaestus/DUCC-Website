@@ -4,7 +4,11 @@ import { useNotifications } from "@/stores/notifications";
 import { createSignal, createResource, onMount, For, Show, createMemo, onCleanup, batch, createEffect } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { SOCIAL_LEADERBOARD_SVG, SEARCH_SVG, CLOSE_SVG } from '@/utils/icons';
-import { FaTrophy, FaSwimmingPool, FaUsers, FaCrown } from 'solid-icons/fa';
+import { FaSolidTrophy, FaSolidSwimmingPool, FaSolidUsers, FaSolidCrown } from 'solid-icons/fa';
+import { useNavigate } from "@solidjs/router";
+import { onUpdate } from "@/utils/updates";
+import Avatar from "@/components/Avatar";
+import { Dynamic } from "solid-js/web";
 
 interface LeaderboardUser {
     id: number;
@@ -53,13 +57,14 @@ export default function SwimsPage() {
 
             return res.data as LeaderboardUser[];
         }
+    );
     const getPodiumData = (data: LeaderboardUser[]) => {
         const top3 = data.slice(0, 3);
         // Order: Silver, Bronze, Gold to ensure Gold is rendered last and thus on top
         return [
-            { user: top3[1], rank: 2, style: 'silver', icon: FaUsers }, // Silver
-            { user: top3[2], rank: 3, style: 'bronze', icon: FaUsers }, // Bronze
-            { user: top3[0], rank: 1, style: 'gold', icon: FaTrophy } // Gold
+            { user: top3[1], rank: 2, style: 'silver', icon: FaSolidUsers }, // Silver
+            { user: top3[2], rank: 3, style: 'bronze', icon: FaSolidUsers }, // Bronze
+            { user: top3[0], rank: 1, style: 'gold', icon: FaSolidTrophy } // Gold
         ].filter(p => !!p.user);
     };
 
@@ -112,10 +117,10 @@ export default function SwimsPage() {
                 <Show when={canManage()}>
                     <div class="admin-leaderboard-actions" style="margin-top: 1.5rem;">
                         <button class="small-btn primary" onClick={() => setIsLogSwimModalOpen(true)}>
-                            <FaSwimmingPool /> Log Swim
+                            <FaSolidSwimmingPool /> Log Swim
                         </button>
                         <button class="small-btn secondary" onClick={() => setIsLogBootieModalOpen(true)}>
-                            <FaTrophy /> Log Bootie
+                            <FaSolidTrophy /> Log Bootie
                         </button>
                     </div>
                 </Show>
@@ -141,7 +146,7 @@ export default function SwimsPage() {
                                                 <div class="swimmer-name">{p.user!.first_name}</div>
                                                 <div class="swim-count">{p.user!.swims} Swims</div>
                                                 <div class="bootie-count" classList={{ [getBootieClass(p.user!.swims, p.user!.booties)]: true }}>{p.user!.booties} Booties</div>
-                                                <div class="podium-step"><div class="rank-circle">{p.rank}</div><div class="medal-icon" innerHTML={p.icon} /></div>
+                                                <div class="podium-step"><div class="rank-circle">{p.rank}</div><div class="medal-icon"><Dynamic component={p.icon} /></div></div>
                                             </div>
                                         )}
                                     </For>
@@ -154,7 +159,7 @@ export default function SwimsPage() {
                                     {(p) => (
                                         <div class={`podium-place ${p.style}`}>
                                             <Show when={p.rank === 1}>
-                                                <div class="crown-icon"><FaCrown /></div>
+                                                <div class="crown-icon"><FaSolidCrown /></div>
                                             </Show>
                                             <div class="swimmer-avatar">
                                                 <Avatar
@@ -170,7 +175,7 @@ export default function SwimsPage() {
                                             </div>
                                             <div class="podium-step">
                                                 <div class="rank-circle">{p.rank}</div>
-                                                <div class="medal-icon" innerHTML={p.icon} />
+                                                <div class="medal-icon"><Dynamic component={p.icon} /></div>
                                             </div>
                                         </div>
                                     )}

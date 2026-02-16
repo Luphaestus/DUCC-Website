@@ -1,6 +1,6 @@
 import { JSX, createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { FaXmark } from "solid-icons/fa"; // Import FaXmark
+import { FaSolidXmark } from "solid-icons/fa"; // Import FaSolidXmark
 import { incrementModals, decrementModals } from "@/utils/modal-state";
 
 interface ModalProps {
@@ -70,7 +70,7 @@ export default function Modal(props: ModalProps) {
                         <button 
                             class="c-modal-close-btn" 
                             onClick={() => handleClose()}
-                        ><FaXmark /></button>
+                        ><FaSolidXmark /></button>
                         
                         {props.title && (
                             <div class="c-modal-header">

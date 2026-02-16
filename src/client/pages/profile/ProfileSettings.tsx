@@ -5,7 +5,7 @@ import { useNotifications } from "@/stores/notifications";
 import Modal from "@/components/Modal";
 import Panel from "@/components/Panel";
 import {
-    FaXmark, FaKey, FaPlus, FaCopy, FaDownload, FaBolt, FaCalendarDays
+    FaSolidXmark, FaSolidKey, FaSolidPlus, FaSolidCopy, FaSolidDownload, FaSolidBolt, FaSolidCalendarDays
 } from 'solid-icons/fa';
 import { showConfirmModal, showPasswordModal, showChangePasswordModal } from "@/utils/modal";
 import * as SimpleWebAuthnBrowser from '@simplewebauthn/browser';
@@ -466,7 +466,7 @@ export default function ProfileSettings() {
                                         Subscribe
                                     </button>
                                     <button class="small-btn icon-only secondary ml-1" onClick={() => copyToClipboard(`${window.location.origin}/api/calendar/all.ics`, 'Public Feed URL')}>
-                                        <FaCopy />
+                                        <FaSolidCopy />
                                     </button>
                                 </div>
                             </div>
@@ -481,7 +481,7 @@ export default function ProfileSettings() {
                                         {isGeneratingToken() ? '...' : 'Subscribe'}
                                     </button>
                                     <button class="small-btn icon-only secondary ml-1" onClick={() => handleCopyCalendarLink('personal', 'Personal Feed URL')} disabled={isGeneratingToken()}>
-                                        <FaCopy />
+                                        <FaSolidCopy />
                                     </button>
                                 </div>
                             </div>
@@ -496,7 +496,7 @@ export default function ProfileSettings() {
                                         {isGeneratingToken() ? '...' : 'Subscribe'}
                                     </button>
                                     <button class="small-btn icon-only secondary ml-1" onClick={() => handleCopyCalendarLink('accessible', 'Accessible Feed URL')} disabled={isGeneratingToken()}>
-                                        <FaCopy />
+                                        <FaSolidCopy />
                                     </button>
                                 </div>
                             </div>
@@ -528,7 +528,7 @@ export default function ProfileSettings() {
                                             disabled={!deferredPrompt()}
                                             title={!deferredPrompt() ? "Browser is still checking if the app can be installed. This usually takes a few moments of browsing." : "Install DUCC"}
                                         >
-                                            <FaDownload style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                            <FaSolidDownload style="margin-right: 0.25rem; width: 1em; height: 1em;" />
                                             {deferredPrompt() ? 'Install' : 'Preparing...'}
                                         </button>
                                     </Show>
@@ -550,7 +550,7 @@ export default function ProfileSettings() {
                                         onClick={handleSubscribe}
                                         disabled={isSubscribing()}
                                     >
-                                                                                    <FaBolt style="margin-right: 0.25rem; width: 1em; height: 1em;" />
+                                                                                    <FaSolidBolt style="margin-right: 0.25rem; width: 1em; height: 1em;" />
                                                                                     {isSubscribing() ? 'Subscribing...' : 'Enable'}                                    </button>
                                 </Show>
                                 <Show when={isSubscribed()}>
@@ -582,7 +582,7 @@ export default function ProfileSettings() {
                         <span>Or enter manually:</span>
                         <div class="secret-row">
                             <code>{totpSetup()?.secret}</code>
-                            <button onClick={() => navigator.clipboard.writeText(totpSetup()?.secret || '')}><FaCopy /></button>
+                            <button onClick={() => navigator.clipboard.writeText(totpSetup()?.secret || '')}><FaSolidCopy /></button>
                         </div>
                     </div>
                     <form onSubmit={handleVerifyTOTP} class="modern-form">
@@ -602,19 +602,19 @@ export default function ProfileSettings() {
                         <For each={passkeys() || []} fallback={<p>No passkeys registered.</p>}>
                             {(k) => (
                                 <div class="list-item">
-                                    <div class="item-icon"><FaKey /></div>
+                                    <div class="item-icon"><FaSolidKey /></div>
                                     <div class="item-details">
                                         <span class="item-title">Passkey</span>
                                         <span class="item-subtitle">Added {new Date(k.created_at).toLocaleDateString()}</span>
                                     </div>
                                     <div class="item-value-group">
-                                        <button class="small-btn icon-only delete" onClick={() => handleDeletePasskey(k.id)}><FaXmark /></button>
+                                        <button class="small-btn icon-only delete" onClick={() => handleDeletePasskey(k.id)}><FaSolidXmark /></button>
                                     </div>
                                 </div>
                             )}
                         </For>
                     </div>
-                    <button class="primary full-width" onClick={handleAddPasskey}><FaPlus /> Add Passkey</button>
+                    <button class="primary full-width" onClick={handleAddPasskey}><FaSolidPlus /> Add Passkey</button>
                 </div>
             </Modal>
         </Show>

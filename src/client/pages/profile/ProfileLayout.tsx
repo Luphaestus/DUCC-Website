@@ -5,7 +5,7 @@ import { useAuth } from "@/stores/auth";
 import { LoginEvent, ProfilePictureChangedEvent } from "@/utils/events/events";
 import { onUpdate } from "@/utils/updates";
 import { TabNav } from "@/widgets/TabNav";
-import { FaGauge, FaCar, FaKayak, FaWallet, FaGear, FaArrowRightFromBracket } from 'solid-icons/fa';
+import { FaSolidGaugeHigh, FaSolidCar, FaSolidAnchor, FaSolidWallet, FaSolidGear, FaSolidArrowRightFromBracket } from 'solid-icons/fa';
 import { UserProfile } from "./types";
 
 interface ProfileContextType {
@@ -70,23 +70,23 @@ export default function ProfileLayout(props: ParentProps) {
                         <TabNav class="vertical-sidebar liquid-container">
                             
                             <button class="nav-item" classList={{ active: isActive('/profile') }} onClick={() => navigate('/profile')}>
-                                <FaGauge /> Overview
+                                <FaSolidGaugeHigh /> Overview
                             </button>
                             <button class="nav-item" classList={{ active: isActive('/profile/cars') }} onClick={() => navigate('/profile/cars')}>
-                                <FaCar /> Cars
+                                <FaSolidCar /> Cars
                             </button>
                             <button class="nav-item" classList={{ active: isActive('/profile/kit') }} onClick={() => navigate('/profile/kit')}>
-                                <FaKayak /> Kit
+                                <FaSolidAnchor /> Kit
                             </button>
                             <button class="nav-item" classList={{ active: isActive('/profile/balance') }} onClick={() => navigate('/profile/balance')}>
-                                <FaWallet /> Balance
+                                <FaSolidWallet /> Balance
                             </button>
                             <button class="nav-item" classList={{ active: isActive('/profile/settings') }} onClick={() => navigate('/profile/settings')}>
-                                <FaGear /> Settings
+                                <FaSolidGear /> Settings
                             </button>
                             <div class="sidebar-spacer"></div>
                             <button class="nav-item logout" onClick={handleLogout}>
-                                <FaArrowRightFromBracket /> Sign Out
+                                <FaSolidArrowRightFromBracket /> Sign Out
                             </button>
                         </TabNav>
                     </aside>

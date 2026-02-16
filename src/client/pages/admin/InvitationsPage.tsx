@@ -2,7 +2,7 @@ import { createSignal, createResource, Show, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
-import { FaXmark, FaPlus } from 'solid-icons/fa'; // Updated import
+import { FaSolidXmark, FaSolidPlus } from 'solid-icons/fa'; // Updated import
 import { showConfirmModal } from "@/utils/modal";
 
 export default function InvitationsPage() {
@@ -104,7 +104,7 @@ export default function InvitationsPage() {
                             />
                         </div>
                         <button type="submit" class="primary" disabled={isInviting()}>
-                            {isInviting() ? 'Sending...' : <><FaPlus /> Send Invitation</>}
+                            {isInviting() ? 'Sending...' : <><FaSolidPlus /> Send Invitation</>}
                         </button>
                     </div>
 
@@ -209,7 +209,7 @@ export default function InvitationsPage() {
                                                 <button 
                                                     class="small-btn icon-only delete" 
                                                     onClick={() => handleDelete(invite.id)}
-                                                ><FaXmark /></button>
+                                                ><FaSolidXmark /></button>
                                             </Show>
                                         </td>
                                     </tr>

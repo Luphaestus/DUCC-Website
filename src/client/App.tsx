@@ -12,15 +12,11 @@ import InstallOverlay from "./components/InstallOverlay";
 import { NoInternetEvent } from "./utils/events/events";
 import { isServerConnected } from "./connection";
 import { initPWA } from "./utils/pwa";
-import { isVisible } from "./components/InstallOverlay"; // Import isVisible from InstallOverlay
-import { showGoodbye } from "./stores/presidentGoodbye"; // Import showGoodbye from presidentGoodbye
-
-import { apiRequest } from "./utils/api";
-
-import { useNotifications } from "./stores/notifications";
+import { showGoodbye } from "./stores/presidentGoodbye"; 
 
 import { triggerExecGoodbye } from "./stores/presidentGoodbye";
 import { useAuth } from "./stores/auth";
+import { useNotifications } from "./stores/notifications";
 
 export default function App(props: ParentProps) {
   const navigate = useNavigate();
@@ -42,8 +38,9 @@ export default function App(props: ParentProps) {
     initUpdates();
 
     // Check for goodbye role
-    if (user() && user()?.goodbye_role) {
-        triggerExecGoodbye(user(), user()!.goodbye_role);
+    const u = user();
+    if (u && u.goodbye_role) {
+        triggerExecGoodbye(u, u.goodbye_role);
     }
     const cleanup = NoInternetEvent.subscribe(() => {
         setIsOffline(!isServerConnected);
@@ -107,15 +104,12 @@ export default function App(props: ParentProps) {
           </ErrorBoundary>
         </div>
       </main>
-            <NotificationContainer />
-            <Footer />
-            <Show when={showGoodbye()}>
-              <PresidentGoodbyeOverlay />
-            </Show>
-            <Show when={isVisible()}>
-              <InstallOverlay />
-            </Show>
-          </>
-        );
-      }
-      
+      <NotificationContainer />
+      <Footer />
+      <Show when={showGoodbye()}>
+        <PresidentGoodbyeOverlay />
+      </Show>
+      <InstallOverlay />
+    </>
+  );
+}
