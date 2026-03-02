@@ -2,7 +2,7 @@ import { createSignal, createResource, Show, For } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
-import { FaSolidXmark, FaSolidPlus } from 'solid-icons/fa'; // Updated import
+import { FaSolidXmark, FaSolidPlus, FaSolidChevronDown, FaSolidChevronUp } from 'solid-icons/fa'; // Updated import
 import { showConfirmModal } from "@/utils/modal";
 
 export default function InvitationsPage() {
@@ -12,6 +12,9 @@ export default function InvitationsPage() {
     const [selectedRoles, setSelectedRoles] = createSignal<Set<number>>(new Set());
     const [selectedPerms, setSelectedPerms] = createSignal<Set<number>>(new Set());
     const [selectedTags, setSelectedTags] = createSignal<Set<number>>(new Set());
+    const [showRoles, setShowRoles] = createSignal(false);
+    const [showPermissions, setShowPermissions] = createSignal(false);
+    const [showTags, setShowTags] = createSignal(false);
 
     const [invitations, { refetch }] = createResource(async () => {
         const res = await apiRequest('GET', '/api/admin/invitations');
@@ -59,7 +62,7 @@ export default function InvitationsPage() {
             } catch (err: any) {
                 if (err.status === 409 && err.message.includes('pending')) {
                     if (await showConfirmModal(
-                        'Invitation Already Pending', 
+                        'Invitation Already Pending',
                         'There is already a pending invitation for this email. Sending a new one will invalidate the previous link. Are you sure?'
                     )) {
                         await sendInvite(true);
@@ -92,88 +95,133 @@ export default function InvitationsPage() {
         <div class="glass-layout invitations-page">
             <Panel title="Send New Invitation" class="glass-panel" style={{ "margin-bottom": "2rem" }}>
                 <form onSubmit={handleInvite} class="modern-form">
-                    <div class="form-row" style={{ "display": "flex", "gap": "1rem", "align-items": "flex-end", "margin-bottom": "1.5rem" }}>
+                    <div class="form-row email-row">
                         <div style={{ "flex": "1" }}>
                             <label>Email Address</label>
-                            <input 
-                                name="email" 
-                                type="email" 
-                                placeholder="Email address to invite" 
-                                required 
+                            <input
+                                name="email"
+                                type="email"
+                                placeholder="Email address to invite"
+                                required
                                 disabled={isInviting()}
                             />
                         </div>
+                    </div>
+
+                    <div class="invitation-settings">
+                        <div class="setting-group invite-member-row preapprove-toggle-card">
+                            <div class="preapprove-copy">
+                                <span class="preapprove-title">Pre-approve as Member</span>
+                                <small class="preapprove-subtitle">Automatically grant membership status when the invite is used.</small>
+                            </div>
+                            <label class="preapprove-switch" aria-label="Toggle pre-approve as member">
+                                <input type="checkbox" checked={isMember()} onChange={e => setIsMember(e.currentTarget.checked)} />
+                                <span class="preapprove-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="invite-settings-stack">
+                            <div class="setting-col">
+                                <div class="collapsible-setting-header">
+                                    <label>Predefined Roles</label>
+                                    <button
+                                        type="button"
+                                        class="small-btn secondary outline"
+                                        onClick={() => setShowRoles((value) => !value)}
+                                    >
+                                        <Show when={showRoles()} fallback={<><FaSolidChevronDown /> Show</>}>
+                                            <><FaSolidChevronUp /> Hide</>
+                                        </Show>
+                                    </button>
+                                </div>
+                                <Show when={showRoles()}>
+                                    <div class="tags-selection-grid mini">
+                                        <For each={roles() || []}>
+                                            {role => (
+                                                <div
+                                                    class="tag-badge tag-badge-style"
+                                                    classList={{ selected: selectedRoles().has(role.id) }}
+                                                    onClick={() => toggleSelection(role.id, selectedRoles, setSelectedRoles)}
+                                                >
+                                                    {role.name}
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+                            </div>
+                            <div class="setting-col">
+                                <div class="collapsible-setting-header">
+                                    <label>Predefined Permissions</label>
+                                    <button
+                                        type="button"
+                                        class="small-btn secondary outline"
+                                        onClick={() => setShowPermissions((value) => !value)}
+                                    >
+                                        <Show when={showPermissions()} fallback={<><FaSolidChevronDown /> Show</>}>
+                                            <><FaSolidChevronUp /> Hide</>
+                                        </Show>
+                                    </button>
+                                </div>
+                                <Show when={showPermissions()}>
+                                    <div class="tags-selection-grid mini">
+                                        <For each={perms() || []}>
+                                            {perm => (
+                                                <div
+                                                    class="tag-badge tag-badge-style"
+                                                    classList={{ selected: selectedPerms().has(perm.id) }}
+                                                    onClick={() => toggleSelection(perm.id, selectedPerms, setSelectedPerms)}
+                                                >
+                                                    {perm.slug}
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+                            </div>
+                            <div class="setting-col tags-setting-group">
+                                <div class="collapsible-setting-header">
+                                    <label>Predefined Tags (Whitelist)</label>
+                                    <button
+                                        type="button"
+                                        class="small-btn secondary outline"
+                                        onClick={() => setShowTags((value) => !value)}
+                                    >
+                                        <Show when={showTags()} fallback={<><FaSolidChevronDown /> Show</>}>
+                                            <><FaSolidChevronUp /> Hide</>
+                                        </Show>
+                                    </button>
+                                </div>
+                                <Show when={showTags()}>
+                                    <div class="tags-selection-grid mini">
+                                        <For each={tags() || []}>
+                                            {tag => (
+                                                <div
+                                                    class="tag-badge tag-badge-style"
+                                                    classList={{ selected: selectedTags().has(tag.id) }}
+                                                    style={{ "--tag-colour": tag.color }}
+                                                    onClick={() => toggleSelection(tag.id, selectedTags, setSelectedTags)}
+                                                >
+                                                    {tag.name}
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="small-text invite-help-text">
+                        Invitations allow people without a @durham.ac.uk email to sign up.
+                        Predefined settings will be applied automatically when they create their account.
+                    </p>
+
+                    <div class="invite-submit-row">
                         <button type="submit" class="primary" disabled={isInviting()}>
                             {isInviting() ? 'Sending...' : <><FaSolidPlus /> Send Invitation</>}
                         </button>
                     </div>
-
-                    <div class="invitation-settings">
-                        <div class="setting-group" style={{ "margin-bottom": "1.5rem" }}>
-                            <label class="checkbox-label">
-                                <input type="checkbox" checked={isMember()} onChange={e => setIsMember(e.currentTarget.checked)} />
-                                <span>Pre-approve as Member</span>
-                            </label>
-                        </div>
-
-                        <div class="grid">
-                            <div class="setting-col">
-                                <label>Predefined Roles</label>
-                                <div class="tags-selection-grid mini">
-                                    <For each={roles() || []}>
-                                        {role => (
-                                            <div 
-                                                class="tag-badge tag-badge-style" 
-                                                classList={{ selected: selectedRoles().has(role.id) }}
-                                                onClick={() => toggleSelection(role.id, selectedRoles, setSelectedRoles)}
-                                            >
-                                                {role.name}
-                                            </div>
-                                        )}
-                                    </For>
-                                </div>
-                            </div>
-                            <div class="setting-col">
-                                <label>Predefined Permissions</label>
-                                <div class="tags-selection-grid mini">
-                                    <For each={perms() || []}>
-                                        {perm => (
-                                            <div 
-                                                class="tag-badge tag-badge-style" 
-                                                classList={{ selected: selectedPerms().has(perm.id) }}
-                                                onClick={() => toggleSelection(perm.id, selectedPerms, setSelectedPerms)}
-                                            >
-                                                {perm.slug}
-                                            </div>
-                                        )}
-                                    </For>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="setting-group" style={{ "margin-top": "1.5rem" }}>
-                            <label>Predefined Tags (Whitelist)</label>
-                            <div class="tags-selection-grid mini">
-                                <For each={tags() || []}>
-                                    {tag => (
-                                        <div 
-                                            class="tag-badge tag-badge-style" 
-                                            classList={{ selected: selectedTags().has(tag.id) }}
-                                            style={{ "--tag-colour": tag.color }}
-                                            onClick={() => toggleSelection(tag.id, selectedTags, setSelectedTags)}
-                                        >
-                                            {tag.name}
-                                        </div>
-                                    )}
-                                </For>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="small-text" style={{ "margin-top": "1rem", "opacity": "0.7" }}>
-                        Invitations allow people without a @durham.ac.uk email to sign up. 
-                        Predefined settings will be applied automatically when they create their account.
-                    </p>
                 </form>
             </Panel>
 
@@ -206,8 +254,8 @@ export default function InvitationsPage() {
                                         </td>
                                         <td>
                                             <Show when={!invite.used_at}>
-                                                <button 
-                                                    class="small-btn icon-only delete" 
+                                                <button
+                                                    class="small-btn icon-only delete"
                                                     onClick={() => handleDelete(invite.id)}
                                                 ><FaSolidXmark /></button>
                                             </Show>

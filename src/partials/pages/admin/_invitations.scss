@@ -8,7 +8,7 @@
         align-items: flex-end;
         margin-bottom: 1.5rem;
 
-        & > div {
+        &>div {
             flex: 1;
         }
 
@@ -29,7 +29,7 @@
             align-items: stretch;
             margin-bottom: 1rem; // Adjust margin when stacked
 
-            & > div {
+            &>div {
                 width: 100%;
             }
 
@@ -38,6 +38,145 @@
                 height: auto; // Auto height when stacked
                 margin-bottom: 0; // Ensure no bottom margin
                 padding: 0.75rem 1rem; // Adjust padding
+            }
+        }
+    }
+
+    .email-row {
+        margin-bottom: 1.25rem;
+
+        >div {
+            width: 100%;
+        }
+    }
+
+    .invite-member-row {
+        margin-bottom: 1.5rem;
+    }
+
+    .preapprove-toggle-card {
+        @include liquid-glass(0.85rem 1rem, var(--border-radius-md));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+
+        .preapprove-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .preapprove-title {
+            font-weight: 700;
+            color: var(--pico-contrast);
+            line-height: 1.2;
+        }
+
+        .preapprove-subtitle {
+            color: var(--pico-muted-color);
+            line-height: 1.3;
+        }
+
+        .preapprove-switch {
+            position: relative;
+            width: 2.8rem;
+            height: 1.6rem;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+
+            input {
+                position: absolute;
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .preapprove-slider {
+                width: 100%;
+                height: 100%;
+                border-radius: 999px;
+                background: rgba(var(--pico-color-rgb), 0.18);
+                border: 1px solid rgba(var(--pico-color-rgb), 0.16);
+                transition: all 0.2s ease;
+                position: relative;
+
+                &::before {
+                    content: "";
+                    position: absolute;
+                    width: 1.15rem;
+                    height: 1.15rem;
+                    left: 0.18rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    border-radius: 999px;
+                    background: #fff;
+                    transition: transform 0.2s ease;
+                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+                }
+            }
+
+            input:checked+.preapprove-slider {
+                background: rgba(var(--pico-primary-rgb), 0.3);
+                border-color: rgba(var(--pico-primary-rgb), 0.5);
+
+                &::before {
+                    transform: translate(1.2rem, -50%);
+                }
+            }
+
+            input:focus-visible+.preapprove-slider {
+                box-shadow: 0 0 0 3px rgba(var(--pico-primary-rgb), 0.2);
+            }
+        }
+    }
+
+    .collapsible-setting-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+
+        label {
+            margin-bottom: 0;
+        }
+
+        .small-btn {
+            flex-shrink: 0;
+            min-height: 2rem !important;
+            padding: 0 0.75rem !important;
+        }
+    }
+
+    .tags-setting-group {
+        margin-top: 0;
+    }
+
+    .invite-settings-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .invite-help-text {
+        margin-top: 1rem;
+        opacity: 0.7;
+    }
+
+    .invite-submit-row {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: flex-end;
+
+        .primary {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 600px) {
+            .primary {
+                width: 100%;
             }
         }
     }
