@@ -1,7 +1,6 @@
 import { createSignal, createResource, Show } from "solid-js";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
-import PageTitle from "@/components/PageTitle";
 import RichTextEditor from "@/components/RichTextEditor";
 import { FaSolidEnvelope, FaSolidUsers, FaSolidUser, FaSolidInfinity } from 'solid-icons/fa';
 import { showConfirmModal } from "@/utils/modal";
@@ -51,34 +50,34 @@ export default function EmailsPage() {
 
     return (
         <div class="glass-layout">
-            <PageTitle text="Email Announcements" centered={true} />
-
             <div class="grid-2-col" style={{ "grid-template-columns": "1fr 350px", "gap": "2rem" }}>
                 <div class="email-editor-section">
-                    <form onSubmit={handleSend} class="modern-form">
-                        <label>Subject
-                            <input
-                                type="text"
-                                value={subject()}
-                                onInput={(e) => setSubject(e.currentTarget.value)}
-                                placeholder="e.g. Important Club Update"
-                                required
-                            />
-                        </label>
+                    <div class="glass-panel email-compose-panel p-4">
+                        <form onSubmit={handleSend} class="modern-form email-compose-form">
+                            <label>Subject
+                                <input
+                                    type="text"
+                                    value={subject()}
+                                    onInput={(e) => setSubject(e.currentTarget.value)}
+                                    placeholder="e.g. Important Club Update"
+                                    required
+                                />
+                            </label>
 
-                        <label class="mt-4">Message Content</label>
-                        <RichTextEditor
-                            value={content()}
-                            onInput={setContent}
-                        />
-                        <button
-                            type="submit"
-                            class="primary full-width"
-                            disabled={isSending() || stats.loading}
-                        >
-                            <FaSolidEnvelope /> {isSending() ? 'Sending...' : 'Send Announcement'}
-                        </button>
-                    </form>
+                            <label class="mt-4">Message Content</label>
+                            <RichTextEditor
+                                value={content()}
+                                onInput={setContent}
+                            />
+                            <button
+                                type="submit"
+                                class="primary full-width send-announcement-btn"
+                                disabled={isSending() || stats.loading}
+                            >
+                                <FaSolidEnvelope /> {isSending() ? 'Sending...' : 'Send Announcement'}
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <aside class="email-sidebar">
