@@ -1,10 +1,3 @@
-/**
- * MetricsManager.ts
- * 
- * Background task to collect and store system metrics.
- */
-
-import os from 'os';
 import { DatabaseWrapper } from '../db/db.js';
 import Logger from './Logger.js';
 import EventHub from './EventHub.js';
@@ -16,76 +9,46 @@ export default class MetricsManager {
     static init(db: DatabaseWrapper) {
         this.db = db;
         if (this.interval) clearInterval(this.interval);
-        
+
         // Collect metrics every minute
         this.interval = setInterval(() => this.collect(), 60000);
         // Initial collection
         this.collect();
     }
 
-    private static async getCpuUsage(): Promise<number> {
-        const cpus = os.cpus();
-        let totalIdle = 0, totalTick = 0;
-        cpus.forEach(cpu => {
-            for (const type in cpu.times) {
-                totalTick += (cpu.times as any)[type];
-            }
-            totalIdle += cpu.times.idle;
-        });
-        
-        // Simple approximation by comparing two snapshots
-        const startIdle = totalIdle;
-        const startTick = totalTick;
-
-        return new Promise(resolve => {
-            setTimeout(() => {
-                const cpusEnd = os.cpus();
-                let endIdle = 0, endTick = 0;
-                cpusEnd.forEach(cpu => {
-                    for (const type in cpu.times) {
-                        endTick += (cpu.times as any)[type];
-                    }
-                    endIdle += cpu.times.idle;
-                });
-
-                const idle = endIdle - startIdle;
-                const total = endTick - startTick;
-                const usage = 1 - (idle / total);
-                resolve(usage * 100);
-            }, 1000);
-        });
-    }
-
     static async collect() {
         try {
-            const cpu = await this.getCpuUsage();
-            const memTotal = os.totalmem();
-            const memFree = os.freemem();
-            const memUsage = ((memTotal - memFree) / memTotal) * 100;
+            // DB Connections (Server-wide)
+            const dbStatus = await this.db.all('SHOW STATUS LIKE "Threads_connected"');
+            const connectedRow = dbStatus.find(r => r.Variable_name === 'Threads_connected');
+            const dbConnections = parseInt(connectedRow?.Value || '0');
 
-            const dbStatus = await this.db.get('SHOW STATUS LIKE "Threads_connected"');
-            const dbConnections = parseInt(dbStatus?.Value || '0');
-
+            // Active Sessions (Unexpired in DB)
             const sessionsRes = await this.db.get('SELECT COUNT(*) as count FROM sessions WHERE expires_at > NOW()');
-            const activeSessions = sessionsRes?.count || 0;
+            const dbActiveSessions = sessionsRes?.count || 0;
 
-            // In a real app, you might track recent API hits in memory
-            const userActivity = 0; // Placeholder for real-time tracking
+            // Real-time Online Users (Currently connected to SSE)
+            const onlineNow = EventHub.getClientCount();
+            const liveSessionCount = EventHub.getUniqueSessionCount();
+            const activeSessions = Math.max(dbActiveSessions, liveSessionCount);
 
             const metrics = {
-                cpu_usage: cpu,
-                memory_usage: memUsage,
                 db_connections: dbConnections,
                 active_sessions: activeSessions,
-                user_activity_count: userActivity,
+                online_now: onlineNow,
                 timestamp: new Date().toISOString()
             };
 
-            // Save to DB
+            // Debug log to verify collection (only in dev)
+            if (process.env.NODE_ENV !== 'production') {
+                Logger.debug(`[Metrics] Collected: DB ${metrics.db_connections}, Sess ${metrics.active_sessions}, Online ${metrics.online_now}`);
+            }
+
+            // Save to DB (keep schema compatible, set 0 for removed system metrics)
             await this.db.run(`
                 INSERT INTO system_metrics (cpu_usage, memory_usage, db_connections, active_sessions, user_activity_count)
-                VALUES (?, ?, ?, ?, ?)
-            `, [metrics.cpu_usage, metrics.memory_usage, metrics.db_connections, metrics.active_sessions, metrics.user_activity_count]);
+                VALUES (0, 0, ?, ?, ?)
+            `, [metrics.db_connections, metrics.active_sessions, metrics.online_now]);
 
             // Broadcast to real-time clients
             EventHub.broadcast('system_metrics', metrics);

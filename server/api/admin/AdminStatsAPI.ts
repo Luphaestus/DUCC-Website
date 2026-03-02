@@ -183,8 +183,31 @@ export default class AdminStats {
             try {
                 const hours = parseInt((request.query as any).hours || '24');
                 const MetricsManager = (await import('../../misc/MetricsManager.js')).default;
+                const EventHub = (await import('../../misc/EventHub.js')).default;
                 const metrics = await MetricsManager.getHistorical(this.db, hours);
-                return reply.send(metrics);
+                const liveOnline = EventHub.getClientCount();
+                const liveSessions = EventHub.getUniqueSessionCount();
+
+                // If we have history, the last item is the latest "live" state
+                let latest = metrics.length > 0 ? metrics[metrics.length - 1] : null;
+
+                if (latest) {
+                    // Inject real-time online count override so it's fresh even if collection hasn't run
+                    latest.online_now = liveOnline;
+                    latest.active_sessions = Math.max(latest.active_sessions || 0, liveSessions);
+                } else {
+                    latest = {
+                        db_connections: 0,
+                        active_sessions: liveSessions,
+                        online_now: liveOnline,
+                        timestamp: new Date().toISOString()
+                    };
+                }
+
+                return reply.send({
+                    history: metrics,
+                    latest: latest
+                });
             } catch (e: any) {
                 Logger.error('System Stats Error', e);
                 return reply.status(500).send({ message: 'Database error' });
@@ -195,7 +218,7 @@ export default class AdminStats {
             try {
                 const userId = parseInt(request.params.id);
                 const mileageCost = new Globals().getFloat('MileageCost') || 0.45;
-                
+
                 const [totalSpent, yearSpent, totalEvents, yearEvents, fuelCost, attendanceStats] = await Promise.all([
                     this.db.get('SELECT SUM(ABS(amount)) as val FROM transactions WHERE user_id = ? AND amount < 0', [userId]),
                     this.db.get('SELECT SUM(ABS(amount)) as val FROM transactions WHERE user_id = ? AND amount < 0 AND YEAR(created_at) = YEAR(NOW())', [userId]),

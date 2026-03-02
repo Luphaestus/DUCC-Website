@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { ServerResponse } from 'http';
 import Logger from './Logger.js';
 
 /**
@@ -9,8 +9,9 @@ import Logger from './Logger.js';
 
 type Client = {
     id: number;
-    res: Response;
+    res: ServerResponse;
     userId?: number;
+    sessionId?: string;
 };
 
 class EventHub {
@@ -20,10 +21,10 @@ class EventHub {
     /**
      * Subscribe a client to the event stream.
      */
-    addClient(res: Response, userId?: number) {
+    addClient(res: ServerResponse, userId?: number, sessionId?: string) {
         const id = this.nextId++;
-        const client: Client = { id, res, userId };
-        
+        const client: Client = { id, res, userId, sessionId };
+
         this.clients.push(client);
 
         res.on('close', () => {
@@ -34,12 +35,35 @@ class EventHub {
     }
 
     /**
+     * Returns the number of currently connected clients.
+     */
+    getClientCount() {
+        return this.clients.length;
+    }
+
+    /**
+     * Returns number of unique active sessions represented by connected clients.
+     */
+    getUniqueSessionCount() {
+        const sessions = new Set<string>();
+        this.clients.forEach((client) => {
+            if (client.sessionId) sessions.add(client.sessionId);
+            else sessions.add(`anon:${client.id}`);
+        });
+        return sessions.size;
+    }
+
+    /**
      * Broadcast an update to all connected clients.
      */
     broadcast(type: string, data: any) {
         const payload = JSON.stringify({ type, data, timestamp: Date.now() });
         this.clients.forEach(c => {
-            c.res.write(`data: ${payload}\n\n`);
+            try {
+                c.res.write(`data: ${payload}\n\n`);
+            } catch (e) {
+                // Ignore failed writes
+            }
         });
     }
 
@@ -50,10 +74,15 @@ class EventHub {
         const payload = JSON.stringify({ type, data, timestamp: Date.now() });
         this.clients.forEach(c => {
             if (c.userId === userId) {
-                c.res.write(`data: ${payload}\n\n`);
+                try {
+                    c.res.write(`data: ${payload}\n\n`);
+                } catch (e) {
+                    // Ignore failed writes
+                }
             }
         });
     }
 }
 
-export default new EventHub();
+const eventHub = new EventHub();
+export default eventHub;

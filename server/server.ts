@@ -81,10 +81,10 @@ const startServer = async () => {
       }
     });
     await fastify.register(fastifyCookie);
-    
+
     const sessionStore = new MySQLStore(db);
     // Periodically clean up expired sessions (every hour)
-    setInterval(() => sessionStore.clearExpiredSessions().catch(() => {}), 3600000);
+    setInterval(() => sessionStore.clearExpiredSessions().catch(() => { }), 3600000);
 
     await fastify.register(fastifySession, {
       secret: config.session.secret,
@@ -165,8 +165,15 @@ const startServer = async () => {
       reply.header("X-Frame-Options", "DENY");
       reply.header("X-Content-Type-Options", "nosniff");
       reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
-      reply.header("X-Powered-By", ""); 
-      
+      reply.header("X-Powered-By", "");
+
+      // Inject LiveReload script in development if it's an HTML response
+      if (isDev && typeof payload === 'string' && reply.getHeader('content-type')?.toString().includes('text/html')) {
+        if (payload.includes('</body>')) {
+          return payload.replace('</body>', '<script src="//localhost:35729/livereload.js?snipver=1" async="" defer=""></script></body>');
+        }
+      }
+
       return payload;
     });
 
@@ -174,7 +181,6 @@ const startServer = async () => {
     if (isDev && !process.env.DOCKER) {
       try {
         const livereload = (await import('livereload')).default;
-        const connectLiveReload = (await import('connect-livereload')).default;
 
         const liveReloadServer = livereload.createServer({
           host: 'localhost',
@@ -182,32 +188,14 @@ const startServer = async () => {
           debug: false,
           delay: 500
         });
-        
+
         const watchDirs = [
           path.join(__dirname, '..', 'public'),
           path.join(__dirname, '..', 'dist')
         ];
         liveReloadServer.watch(watchDirs);
-        
+
         Logger.info(`LiveReload server started, watching: ${watchDirs.join(', ')}`);
-        
-        (fastify as any).use(connectLiveReload({
-          ignore: [
-            /^\/api\/.*/,
-            /\.js$/,
-            /\.css$/,
-            /\.svg$/,
-            /\.ico$/,
-            /\.jpg$/,
-            /\.jpeg$/,
-            /\.png$/,
-            /\.pdf$/,
-            /\.docx?$/,
-            /\.xlsx?$/,
-            /\.zip$/,
-            /\.mp4$/
-          ]
-        }));
       } catch (e: any) {
         Logger.warn('LiveReload not available.');
       }
@@ -232,8 +220,8 @@ const startServer = async () => {
         // Only set the cookie if it's missing or different to avoid constant rotation
         const existingToken = request.cookies['XSRF-TOKEN'];
         if (existingToken !== token) {
-          reply.setCookie('XSRF-TOKEN', token, { 
-            httpOnly: false, 
+          reply.setCookie('XSRF-TOKEN', token, {
+            httpOnly: false,
             sameSite: 'lax',
             secure: 'auto',
             path: '/'
@@ -277,7 +265,7 @@ const startServer = async () => {
     fastify.get('/manifest.json', async (request, reply) => {
       const globals = new Globals();
       const clubLogo = globals.get('ClubLogo')?.data || '/images/misc/ducc.png';
-      
+
       // Better type detection: ignore query parameters
       const logoPath = clubLogo.split('?')[0].toLowerCase();
       const isSvg = logoPath.endsWith('.svg');
@@ -311,17 +299,22 @@ const startServer = async () => {
           }
         ]
       };
-      
+
       return reply.type('application/json').send(manifest);
     });
 
     fastify.get('/api/updates', async (request: any, reply: FastifyReply) => {
+      reply.hijack();
       reply.raw.setHeader('Content-Type', 'text/event-stream');
       reply.raw.setHeader('Cache-Control', 'no-cache');
       reply.raw.setHeader('Connection', 'keep-alive');
+      reply.raw.flushHeaders?.();
 
       const EventHub = (await import('./misc/EventHub.js')).default;
-      EventHub.addClient(reply.raw as any, request.user?.id);
+      const sessionId = request.session?.sessionId || request.cookies?.[config.session.cookieName];
+      EventHub.addClient(reply.raw as any, request.user?.id, sessionId);
+
+      reply.raw.write(': connected\n\n');
 
       const heartbeat = setInterval(() => {
         reply.raw.write(': heartbeat\n\n');
@@ -399,7 +392,7 @@ const startServer = async () => {
       }
 
       const distIndex = path.join(__dirname, '..', 'dist', 'index.html');
-      
+
       // In development, wait for the file to exist (Vite might be rebuilding)
       if (isDev && !fs.existsSync(distIndex)) {
         Logger.info(`Waiting for index.html to be built...`);
@@ -412,14 +405,14 @@ const startServer = async () => {
       if (fs.existsSync(distIndex)) {
         const globals = new Globals();
         const clubLogo = globals.get('ClubLogo')?.data || '/images/misc/ducc.png';
-        
+
         // Read index.html and inject the club logo
         let html = fs.readFileSync(distIndex, 'utf8');
         html = html.replace(
           '<link rel="apple-touch-icon" href="/images/misc/ducc.png">',
           `<link rel="apple-touch-icon" href="${clubLogo}">`
         );
-        
+
         return reply.status(200).type('text/html').send(html);
       } else {
         if (isDev) {

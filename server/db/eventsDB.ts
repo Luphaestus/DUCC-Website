@@ -368,7 +368,9 @@ export default class EventsDB {
 
             return new statusObject(201, null, { id: eventId });
         }).catch((error: any) => {
-            Logger.error(error);
+            if (process.env.NODE_ENV !== 'test') {
+                Logger.error(error);
+            }
             return new statusObject(500, 'Database error: ' + error.message);
         });
     }
@@ -413,7 +415,9 @@ export default class EventsDB {
 
             return new statusObject(200, 'Event updated');
         }).catch((error: any) => {
-            Logger.error(error);
+            if (process.env.NODE_ENV !== 'test') {
+                Logger.error(error);
+            }
             return new statusObject(500, 'Database error: ' + error.message);
         });
     }

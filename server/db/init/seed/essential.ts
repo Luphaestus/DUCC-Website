@@ -26,7 +26,7 @@ export async function seedColleges(db: DatabaseWrapper, newlyCreatedTables: stri
             'south', 'aidans', 'stchads', 'stcuthberts', 'hildbede',
             'stjohns', 'stmarys', 'stephenson', 'trevelyan', 'ustinov', 'van-mildert'
         ];
-        
+
         const placeholders = colleges.map(() => '(?)').join(', ');
         await db.run(`INSERT IGNORE INTO colleges (name) VALUES ${placeholders}`, colleges);
     }
@@ -106,7 +106,7 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
     const systemsCategory = await db.get("SELECT id FROM file_categories WHERE name = 'Systems'");
 
     const presidentExists = await db.get("SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = ? LIMIT 1", ['President']);
-    
+
     // Check if admin user exists first
     const existingAdmin = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
 
@@ -123,7 +123,7 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
 
             if (process.env.NODE_ENV !== 'test') Logger.info('Inserting default admin user...');
             const email = 'admin@durham.ac.uk'.toLowerCase();
-            
+
             // Insert user with no password initially
             const adminResult = await db.run(
                 `INSERT INTO users (email, first_name, last_name, difficulty_level, is_member, filled_legal_info, legal_filled_at, is_verified) VALUES (?, ?, ?, ?, 1, 1, ?, 1)`,
@@ -151,12 +151,22 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
             adminId = existingAdmin.id;
             // Ensure existing admin is also a member and has legal info and is verified
             await db.run('UPDATE users SET is_member = 1, filled_legal_info = 1, is_verified = 1, legal_filled_at = ? WHERE id = ?', [new Date().toISOString().slice(0, 19).replace('T', ' '), adminId]);
+            // Ensure there's a corresponding user_emails row for the primary email
+            try {
+                const existingEmailRow = await db.get('SELECT id FROM user_emails WHERE user_id = ? AND email = ?', [adminId, 'admin@durham.ac.uk']);
+                if (!existingEmailRow) {
+                    await db.run('UPDATE user_emails SET is_primary = 0 WHERE user_id = ?', [adminId]);
+                    await db.run('INSERT INTO user_emails (user_id, email, is_verified, is_primary) VALUES (?, ?, ?, ?)', [adminId, 'admin@durham.ac.uk', 1, 1]);
+                }
+            } catch (e) {
+                // ignore if user_emails table doesn't exist yet or other issues during early initialization
+            }
         }
-        
+
         if (presidentRole) {
             // Re-assign role if needed
             await db.run("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminId, presidentRole.id]);
-            
+
             // Sync exec status so they appear on the page
             const ExecDB = (await import('../../execDB.js')).default;
             await ExecDB.syncExecMember(db, adminId!);
@@ -187,13 +197,13 @@ export async function seedEssential(db: DatabaseWrapper, newlyCreatedTables: str
         // Check if already in DB
         let fileId: number | null = null;
         const existing = await db.get('SELECT id FROM files WHERE hash = ? LIMIT 1', [hash]);
-        
+
         if (existing) {
             fileId = existing.id;
         } else {
             const finalFilename = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(img.filename)}`;
             fs.copyFileSync(sourcePath, path.join(uploadDir, finalFilename));
-            
+
             const stats = fs.statSync(path.join(uploadDir, finalFilename));
             const result = await db.run(
                 'INSERT INTO files (title, author, date, size, filename, hash, visibility, category_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',

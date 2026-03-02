@@ -13,16 +13,18 @@ export default class AuthDB {
      * Find a user by email.
      */
     static async getUserByEmail(db: DatabaseWrapper, email: string): Promise<any> {
+        const normalizedEmail = (email || '').trim().toLowerCase();
+
         // First check the primary email in users table
-        const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
+        const user = await db.get('SELECT * FROM users WHERE LOWER(email) = ?', [normalizedEmail]);
         if (user) return user;
 
         // Then check user_emails table for any verified email
         return await db.get(`
             SELECT u.* FROM users u
             JOIN user_emails ue ON u.id = ue.user_id
-            WHERE ue.email = ? AND ue.is_verified = 1
-        `, [email]);
+            WHERE LOWER(ue.email) = ? AND ue.is_verified = 1
+        `, [normalizedEmail]);
     }
 
     /**
@@ -97,7 +99,7 @@ export default class AuthDB {
                         first_name = ?, 
                         last_name = ?,
                         created_at = CURRENT_TIMESTAMP 
-                    WHERE id = ?`, 
+                    WHERE id = ?`,
                     [email, hashedPassword, first_name, last_name, id]
                 );
 
@@ -199,7 +201,7 @@ export default class AuthDB {
         const credential = authenticator.credential || {};
         let credentialID = credential.id || authenticator.credentialID || authenticator.credentialId;
         let credentialPublicKey = credential.publicKey || authenticator.credentialPublicKey;
-        
+
         // Ensure credentialID is a string (Base64URL)
         if (credentialID instanceof Uint8Array || credentialID instanceof Buffer) {
             credentialID = Buffer.from(credentialID).toString('base64url');
@@ -207,12 +209,12 @@ export default class AuthDB {
 
         // Ensure publicKey is a Buffer (it might be a Uint8Array or object from JSON)
         if (credentialPublicKey && !(credentialPublicKey instanceof Buffer)) {
-             // Handle the case where it's an object-like map {0: x, 1: y} which happens with some JSON parsers on Uint8Arrays
-             if (typeof credentialPublicKey === 'object' && !Array.isArray(credentialPublicKey) && !credentialPublicKey.buffer) {
-                 credentialPublicKey = Buffer.from(Object.values(credentialPublicKey) as any[]);
-             } else {
-                 credentialPublicKey = Buffer.from(credentialPublicKey);
-             }
+            // Handle the case where it's an object-like map {0: x, 1: y} which happens with some JSON parsers on Uint8Arrays
+            if (typeof credentialPublicKey === 'object' && !Array.isArray(credentialPublicKey) && !credentialPublicKey.buffer) {
+                credentialPublicKey = Buffer.from(Object.values(credentialPublicKey) as any[]);
+            } else {
+                credentialPublicKey = Buffer.from(credentialPublicKey);
+            }
         }
 
         const counter = credential.counter ?? authenticator.counter ?? 0;

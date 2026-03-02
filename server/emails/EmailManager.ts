@@ -7,7 +7,7 @@ export class EmailManager {
     private static instance: EmailManager;
     private provider: EmailProvider | null = null;
 
-    private constructor() {}
+    private constructor() { }
 
     static getInstance(): EmailManager {
         if (!EmailManager.instance) {
@@ -22,7 +22,9 @@ export class EmailManager {
 
     async sendTemplatedEmail(to: string, subject: string, templateName: string, placeholders: Record<string, string>): Promise<void> {
         if (!this.provider) {
-            Logger.warn('[EmailManager] No email provider configured. Email not sent.');
+            if (process.env.NODE_ENV !== 'test') {
+                Logger.warn('[EmailManager] No email provider configured. Email not sent.');
+            }
             return;
         }
 
@@ -42,7 +44,7 @@ export class EmailManager {
             const header_title = subject.replace(/\s*-\s*DUCC$/, '');
             const domain = config.domain;
             const allPlaceholders = { ...placeholders, year, header_title, domain };
-            
+
             const bodyContent = await TemplateManager.getTemplate(templateName, allPlaceholders);
             Logger.info(`[EmailManager] Body content rendered for '${templateName}'.`);
             const finalHtml = await TemplateManager.getBaseTemplate(bodyContent, allPlaceholders);
@@ -56,7 +58,8 @@ export class EmailManager {
             Logger.info(`[EmailManager] Email sent to ${recipient} with subject: ${finalSubject}`);
         } catch (error) {
             Logger.error(`[EmailManager] Failed to send email to ${recipient}:`, error);
-            throw error;
+            // Do not rethrow - emailing is best-effort and should not break caller flows
+            return;
         }
     }
 }

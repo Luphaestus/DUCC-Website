@@ -13,7 +13,7 @@ export class DatabaseWrapper {
         const paramArray = Array.isArray(params) ? params : [params];
         return paramArray.map(p => {
             if (p === undefined || (typeof p === 'number' && isNaN(p))) {
-                if (typeof p === 'number' && isNaN(p)) {
+                if (typeof p === 'number' && isNaN(p) && process.env.NODE_ENV !== 'test') {
                     Logger.error('NaN detected in database parameters');
                 }
                 return null;
@@ -37,7 +37,9 @@ export class DatabaseWrapper {
                 changes: result.affectedRows
             };
         } catch (error: any) {
-            Logger.error(`DB Run Error: ${error.message}\nSQL: ${sql}\nParams: ${JSON.stringify(preparedParams)}`);
+            if (process.env.NODE_ENV !== 'test') {
+                Logger.error(`DB Run Error: ${error.message}\nSQL: ${sql}\nParams: ${JSON.stringify(preparedParams)}`);
+            }
             throw error;
         }
     }
@@ -48,7 +50,9 @@ export class DatabaseWrapper {
             const [rows] = await (this.connection as any).query(sql, preparedParams);
             return (rows as any[])[0];
         } catch (error: any) {
-            Logger.error(`DB Get Error: ${error.message}\nSQL: ${sql}\nParams: ${JSON.stringify(preparedParams)}`);
+            if (process.env.NODE_ENV !== 'test') {
+                Logger.error(`DB Get Error: ${error.message}\nSQL: ${sql}\nParams: ${JSON.stringify(preparedParams)}`);
+            }
             throw error;
         }
     }
@@ -59,7 +63,9 @@ export class DatabaseWrapper {
             const [rows] = await (this.connection as any).query(sql, preparedParams);
             return rows as any[];
         } catch (error: any) {
-            Logger.error(`DB All Error: ${error.message}\nSQL: ${sql}\nParams: ${JSON.stringify(preparedParams)}`);
+            if (process.env.NODE_ENV !== 'test') {
+                Logger.error(`DB All Error: ${error.message}\nSQL: ${sql}\nParams: ${JSON.stringify(preparedParams)}`);
+            }
             throw error;
         }
     }
@@ -68,7 +74,9 @@ export class DatabaseWrapper {
         try {
             await (this.connection as any).query(sql);
         } catch (error: any) {
-            Logger.error(`DB Exec Error: ${error.message}\nSQL: ${sql}`);
+            if (process.env.NODE_ENV !== 'test') {
+                Logger.error(`DB Exec Error: ${error.message}\nSQL: ${sql}`);
+            }
             throw error;
         }
     }

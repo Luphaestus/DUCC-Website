@@ -9,12 +9,35 @@ import Logger from '../misc/Logger.js';
 import { DatabaseWrapper } from './db.js';
 
 export default class EmailsDB {
+    private static readonly SECONDARY_EMAIL_VERIFICATION_EXPIRY_MINUTES = 60;
     /**
      * Get all emails for a user.
      */
     static async getUserEmails(db: DatabaseWrapper, userId: number): Promise<statusObject> {
         try {
             const emails = await db.all('SELECT * FROM user_emails WHERE user_id = ? ORDER BY is_primary DESC, created_at ASC', [userId]);
+
+            // Ensure the primary email from the `users` table is present in the list.
+            // Some seed paths insert into `users` but don't always insert into `user_emails` (e.g. admin creation),
+            // so include the main `users.email` as a fallback to keep the client UI consistent.
+            const user = await db.get('SELECT email, is_verified, created_at FROM users WHERE id = ?', [userId]);
+            if (user && user.email) {
+                const mainEmail = (user.email as string).toLowerCase();
+                const exists = emails.some(e => (e.email || '').toLowerCase() === mainEmail);
+                if (!exists) {
+                    // Add a synthetic entry for the primary email. It has no user_emails.id
+                    emails.unshift({
+                        id: null,
+                        user_id: userId,
+                        email: user.email,
+                        is_verified: user.is_verified ? 1 : 0,
+                        is_primary: 1,
+                        verification_token: null,
+                        created_at: user.created_at || null
+                    });
+                }
+            }
+
             return new statusObject(200, null, emails);
         } catch (error) {
             Logger.error('Database error in getUserEmails:', error);
@@ -49,8 +72,14 @@ export default class EmailsDB {
             const emailRecord = await db.get('SELECT * FROM user_emails WHERE verification_token = ?', [token]);
             if (!emailRecord) return new statusObject(404, 'Invalid or expired verification token.');
 
+            const createdAtMs = emailRecord.created_at ? new Date(emailRecord.created_at).getTime() : NaN;
+            const expiryMs = EmailsDB.SECONDARY_EMAIL_VERIFICATION_EXPIRY_MINUTES * 60 * 1000;
+            if (!Number.isNaN(createdAtMs) && Date.now() > createdAtMs + expiryMs) {
+                return new statusObject(410, 'This verification link has expired. Please request a new one.');
+            }
+
             await db.run('UPDATE user_emails SET is_verified = 1, verification_token = NULL WHERE id = ?', [emailRecord.id]);
-            
+
             // If the user's main email in 'users' table is not verified but this matches it, update it too
             const user = await db.get('SELECT email, is_verified FROM users WHERE id = ?', [emailRecord.user_id]);
             if (user && user.email === emailRecord.email && !user.is_verified) {
@@ -65,6 +94,23 @@ export default class EmailsDB {
     }
 
     /**
+     * Resend verification token for a user's email record.
+     */
+    static async resendVerification(db: DatabaseWrapper, userId: number, emailId: number, newToken: string): Promise<statusObject> {
+        try {
+            const emailRecord = await db.get('SELECT * FROM user_emails WHERE id = ? AND user_id = ?', [emailId, userId]);
+            if (!emailRecord) return new statusObject(404, 'Email not found.');
+            if (emailRecord.is_verified) return new statusObject(400, 'Email is already verified.');
+
+            await db.run('UPDATE user_emails SET verification_token = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', [newToken, emailId]);
+            return new statusObject(200, 'Verification resent.', { email: emailRecord.email, token: newToken });
+        } catch (error) {
+            Logger.error('Database error in resendVerification:', error);
+            return new statusObject(500, 'Database error');
+        }
+    }
+
+    /**
      * Set an email as primary.
      */
     static async setPrimaryEmail(db: DatabaseWrapper, userId: number, emailId: number): Promise<statusObject> {
@@ -72,6 +118,21 @@ export default class EmailsDB {
             const emailRecord = await db.get('SELECT * FROM user_emails WHERE id = ? AND user_id = ?', [emailId, userId]);
             if (!emailRecord) return new statusObject(404, 'Email not found.');
             if (!emailRecord.is_verified) return new statusObject(400, 'Only verified emails can be set as primary.');
+
+            // Ensure the user's current primary (in users.email) is recorded in user_emails
+            // so it isn't lost when we update `users.email` below. This handles cases where
+            // legacy code or seeding created the primary only in `users` and not in `user_emails`.
+            try {
+                const userRow = await db.get('SELECT email, is_verified FROM users WHERE id = ?', [userId]);
+                if (userRow && userRow.email && userRow.email.toLowerCase() !== emailRecord.email.toLowerCase()) {
+                    const existing = await db.get('SELECT id FROM user_emails WHERE user_id = ? AND LOWER(email) = LOWER(?)', [userId, userRow.email]);
+                    if (!existing) {
+                        await db.run('INSERT INTO user_emails (user_id, email, is_verified, is_primary) VALUES (?, ?, ?, ?)', [userId, userRow.email, userRow.is_verified ? 1 : 0, 0]);
+                    }
+                }
+            } catch (e) {
+                // Non-fatal - continue with primary update even if preservation step fails
+            }
 
             await db.transaction(async (tx) => {
                 await tx.run('UPDATE user_emails SET is_primary = 0 WHERE user_id = ?', [userId]);

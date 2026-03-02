@@ -1,5 +1,4 @@
 import { DatabaseWrapper } from '../db/db.js';
-import Logger from './Logger.js';
 
 /**
  * SessionStore.ts
@@ -34,13 +33,11 @@ export default class MySQLStore {
      * Create or update a session.
      */
     set(sessionId: string, session: any, callback: (err: any) => void) {
-        const expires = session.cookie && session.cookie.expires 
-            ? new Date(session.cookie.expires) 
+        const expires = session.cookie && session.cookie.expires
+            ? new Date(session.cookie.expires)
             : new Date(Date.now() + 86400000); // Default 24h
-            
+
         const data = JSON.stringify(session);
-        
-        Logger.info(`[SessionStore] Setting session ${sessionId}, expires ${expires.toISOString()}`);
 
         this.db.run(
             'INSERT INTO sessions (id, data, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data), expires_at = VALUES(expires_at)',
