@@ -21,6 +21,21 @@ const __dirname = path.dirname(__filename);
  * Main development seeding function.
  */
 export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: string[] = []) {
+    const swimMessages = [
+        'Strong river session today.',
+        'Worked on edging and control.',
+        'Good progress on confidence lines.',
+        'Session completed with solid technique.',
+        'Focused on stamina and consistency.'
+    ];
+    const bootieMessages = [
+        'Clean capsize practice and recovery.',
+        'Great rescue drill execution.',
+        'Bootie added after roll progression.',
+        'Controlled swim and fast recovery.',
+        'Strong effort under pressure conditions.'
+    ];
+
     let adminId = 1;
     try {
         const adminUser = await db.get("SELECT id FROM users WHERE email = ?", ['admin@durham.ac.uk']);
@@ -57,10 +72,10 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
     const seedFile = async (filename: string, dir: string = 'slides') => {
         const title = filename.split('.')[0];
         const currentDir = path.dirname(new URL(import.meta.url).pathname);
-        const sourcePath = dir === 'misc' 
+        const sourcePath = dir === 'misc'
             ? path.join(currentDir, 'assets', filename)
             : path.join(currentDir, '..', '..', '..', 'public', 'images', 'slides', filename);
-        
+
         if (!fs.existsSync(sourcePath)) {
             Logger.warn(`Seed file not found: ${sourcePath}`);
             return null;
@@ -162,14 +177,19 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
                 totalSwims += count;
                 const swimDate = new Date();
                 swimDate.setSeconds(swimDate.getSeconds() - Math.floor(Math.random() * 4 * 365 * 24 * 60 * 60));
+                const bootieCount = Math.floor(Math.random() * (count + 1));
+                const message = bootieCount > 0
+                    ? bootieMessages[Math.floor(Math.random() * bootieMessages.length)]
+                    : swimMessages[Math.floor(Math.random() * swimMessages.length)];
                 await db.run(
-                    `INSERT INTO swim_history (user_id, added_by, count, created_at) VALUES (?, ?, ?, ?)`,
-                    [userId, adminId, count, swimDate.toISOString().slice(0, 19).replace('T', ' ')]
+                    `INSERT INTO swim_history (user_id, added_by, count, bootie_count, is_bootie, message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [userId, adminId, count, bootieCount, bootieCount >= count ? 1 : 0, message, swimDate.toISOString().slice(0, 19).replace('T', ' ')]
                 );
             }
             await db.run(`UPDATE users SET swims = ? WHERE id = ?`, [totalSwims, userId]);
 
-            const numBooties = Math.floor(Math.random() * (totalSwims + 1));
+            const bootiesRow = await db.get(`SELECT COALESCE(SUM(bootie_count), 0) AS booties FROM swim_history WHERE user_id = ?`, [userId]);
+            const numBooties = Number(bootiesRow?.booties || 0);
             await db.run(`UPDATE users SET booties = ? WHERE id = ?`, [numBooties, userId]);
 
             if (userProgressBar) userProgressBar.update(i + 1);
@@ -209,12 +229,17 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
                 totalSwims += count;
                 const swimDate = new Date();
                 swimDate.setSeconds(swimDate.getSeconds() - Math.floor(Math.random() * 4 * 365 * 24 * 60 * 60));
+                const bootieCount = Math.floor(Math.random() * (count + 1));
+                const message = bootieCount > 0
+                    ? bootieMessages[Math.floor(Math.random() * bootieMessages.length)]
+                    : swimMessages[Math.floor(Math.random() * swimMessages.length)];
                 await db.run(
-                    `INSERT INTO swim_history (user_id, added_by, count, created_at) VALUES (?, ?, ?, ?)`,
-                    [user.id, adminId, count, swimDate.toISOString().slice(0, 19).replace('T', ' ')]
+                    `INSERT INTO swim_history (user_id, added_by, count, bootie_count, is_bootie, message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [user.id, adminId, count, bootieCount, bootieCount >= count ? 1 : 0, message, swimDate.toISOString().slice(0, 19).replace('T', ' ')]
                 );
             }
-            const numBooties = Math.floor(Math.random() * (totalSwims + 1));
+            const bootiesRow = await db.get(`SELECT COALESCE(SUM(bootie_count), 0) AS booties FROM swim_history WHERE user_id = ?`, [user.id]);
+            const numBooties = Number(bootiesRow?.booties || 0);
             await db.run(`UPDATE users SET swims = ?, booties = ? WHERE id = ?`, [totalSwims, numBooties, user.id]);
             if (swimProgressBar) swimProgressBar.update(i + 1);
         }
@@ -268,11 +293,11 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
     ];
 
     const ExecDB = (await import('../../execDB.js')).default;
-    
+
     // Create a pool of users to ensure we don't double-assign roles if possible
     // CRITICAL: Only use users that were newly generated by this script (seededUserIds)
     let availableUsers = seededUserIds.map(id => ({ id })).sort(() => 0.5 - Math.random());
-    
+
     // Seed Current Committee
     for (const r of roles) {
         try {
@@ -298,7 +323,7 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
             const targetUser = availableUsers.shift();
             if (targetUser) {
                 await db.run('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)', [targetUser.id, roleRow.id]);
-                
+
                 // If it's an exec role (has exec.publish), sync them
                 if (r.perms.includes('exec.publish')) {
                     await ExecDB.syncExecMember(db, targetUser.id);
@@ -376,7 +401,7 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
 
         const users = await db.all('SELECT id FROM users');
         for (let i = 0; i < 40; i++) {
-            const text = quoteTexts[i % quoteTexts.length] + (i > 20 ? ` (Part ${Math.floor(i/20) + 1})` : '');
+            const text = quoteTexts[i % quoteTexts.length] + (i > 20 ? ` (Part ${Math.floor(i / 20) + 1})` : '');
             const quotedUser = users[Math.floor(Math.random() * users.length)];
             const submitter = users[Math.floor(Math.random() * users.length)];
             if (quotedUser && submitter) {
@@ -482,6 +507,7 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
 
         const allUsers = await db.all('SELECT id FROM users');
         const instructors = await db.all('SELECT id FROM users WHERE is_instructor = 1');
+        const ergTypes = ['polo', 'white water', 'slalom'];
 
         if (process.env.NODE_ENV !== 'test') Logger.info('Generating development events...');
 
@@ -793,45 +819,17 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
                 continue;
             }
 
-            let currentTitle = '';
-            let currentCost = 0;
-
-            if (day === 3) {
-                currentTitle = `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`;
-                currentCost = 0;
-                maxAttendees = 0;
-                eventId = await createEvent({ title: currentTitle, description: "A fun social event.", location: "The Pub", start: setTime(currentDate, 19, 0), end: setTime(currentDate, 23, 0), upfront_cost: currentCost, max_attendees: 0, tags: [tagIds['socials']], image_id: imageId });
-            } else if (day === 4) {
-                currentTitle = "Slalom/White Water";
-                currentCost = 12;
-                const startT = new Date(currentDate); startT.setHours(14, 0, 0, 0);
-                const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 48);
-                eventId = await createEvent({ title: currentTitle, description: "Practice.", location: "Tees Barrage", start: formatDate(startT), end: setTime(currentDate, 16, 0), upfront_cost: currentCost, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['slalom'], tagIds['white water']], image_id: imageId });
-            } else if (day === 5) {
-                currentTitle = "Polo Pool Session";
-                currentCost = 6;
-                const startT = new Date(currentDate); startT.setHours(19, 0, 0, 0);
-                const cutoff = new Date(startT); cutoff.setHours(cutoff.getHours() - 24);
-                eventId = await createEvent({ title: currentTitle, description: "Training.", location: "Freeman's Quay", start: formatDate(startT), end: setTime(currentDate, 20, 0), upfront_cost: currentCost, upfront_refund_cutoff: formatDate(cutoff), tags: [tagIds['polo']], image_id: imageId });
-            } else if ([1, 2].includes(day) && Math.random() < 0.7) {
-                const type = ['polo', 'white water', 'slalom'][Math.floor(Math.random() * 3)];
-                currentTitle = `${type.toUpperCase()} Ergs`;
-                currentCost = 0;
-                maxAttendees = 5;
-                eventId = await createEvent({ title: currentTitle, description: "Training.", location: "Boathouse Gym", start: setTime(currentDate, 7, 0), end: setTime(currentDate, 8, 0), upfront_cost: currentCost, max_attendees: 5, tags: [tagIds['ergs'], tagIds[type]], image_id: imageId });
-            }
-
-            if (eventId) {
+            const seedEventAttendanceAndTrips = async (seededEventId: number, title: string, cost: number, eventMaxAttendees: number) => {
                 const isOffsite = [4, 6].includes(day) || Math.random() > 0.8;
-                if (isOffsite) await db.run('UPDATE events SET is_offsite = 1 WHERE id = ?', [eventId]);
+                if (isOffsite) await db.run('UPDATE events SET is_offsite = 1 WHERE id = ?', [seededEventId]);
 
                 let numAttendees = 0;
                 const isPopular = Math.random() > 0.8;
 
-                if (maxAttendees === 0) {
+                if (eventMaxAttendees === 0) {
                     numAttendees = Math.floor(Math.random() * 15);
                     if (isPopular) numAttendees += 20;
-                } else if (maxAttendees === 5) {
+                } else if (eventMaxAttendees === 5) {
                     numAttendees = Math.floor(Math.random() * 4);
                     if (isPopular) numAttendees = 5 + Math.floor(Math.random() * 3);
                 } else {
@@ -842,7 +840,7 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
                 const shuffledUsers = [...allUsers].sort(() => 0.5 - Math.random());
 
                 if (instructors.length > 0 && Math.random() > 0.2) {
-                    await joinEvent(eventId, instructors[0].id, currentCost, currentTitle);
+                    await joinEvent(seededEventId, instructors[0].id, cost, title);
                 }
 
                 let currentCount = 1;
@@ -850,28 +848,26 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
                 for (const user of shuffledUsers) {
                     if (user.id === (instructors[0] ? instructors[0].id : -1)) continue;
 
-                    if (maxAttendees === 0 || currentCount < maxAttendees) {
+                    if (eventMaxAttendees === 0 || currentCount < eventMaxAttendees) {
                         if (currentCount < numAttendees) {
-                            await joinEvent(eventId, user.id, currentCost, currentTitle);
+                            await joinEvent(seededEventId, user.id, cost, title);
                             attendeeIds.push(user.id);
                             currentCount++;
                         }
                     } else if (currentCount < numAttendees) {
-                        await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [eventId, user.id]);
+                        await db.run('INSERT INTO event_waiting_list (event_id, user_id) VALUES (?, ?)', [seededEventId, user.id]);
                         currentCount++;
                     }
                 }
 
-                // If offsite, add trips, drivers and expenses
                 if (isOffsite && attendeeIds.length > 0) {
-                    const tripRes = await db.run('INSERT INTO trips (event_id, name) VALUES (?, ?)', [eventId, 'Trip to Venue']);
+                    const tripRes = await db.run('INSERT INTO trips (event_id, name) VALUES (?, ?)', [seededEventId, 'Trip to Venue']);
                     const tripId = tripRes.lastID;
 
-                    // Add a random driver from attendees
                     const driverId = attendeeIds[Math.floor(Math.random() * attendeeIds.length)];
-                    const carRes = await db.run('INSERT IGNORE INTO cars (user_id, name, seats, boats) VALUES (?, ?, ?, ?)', [driverId, 'Personal Car', 4, 2]);
+                    await db.run('INSERT IGNORE INTO cars (user_id, name, seats, boats) VALUES (?, ?, ?, ?)', [driverId, 'Personal Car', 4, 2]);
                     const carRow = await db.get('SELECT id FROM cars WHERE user_id = ?', [driverId]);
-                    
+
                     if (carRow) {
                         await db.run(
                             `INSERT INTO event_drivers (trip_id, user_id, car_id, status, start_mileage, end_mileage) VALUES (?, ?, ?, 'accepted', ?, ?)`,
@@ -879,13 +875,146 @@ export async function seedDevelopment(db: DatabaseWrapper, newlyCreatedTables: s
                         );
                     }
 
-                    // Add a random expense
                     const expensePayerId = attendeeIds[Math.floor(Math.random() * attendeeIds.length)];
                     await db.run(
                         'INSERT INTO event_expenses (event_id, user_id, amount, description) VALUES (?, ?, ?, ?)',
-                        [eventId, expensePayerId, (Math.random() * 20 + 5).toFixed(2), 'Misc Group Expense']
+                        [seededEventId, expensePayerId, (Math.random() * 20 + 5).toFixed(2), 'Misc Group Expense']
                     );
                 }
+            };
+
+            const plannedEvents: { title: string; cost: number; maxAttendees: number; eventId: number }[] = [];
+
+            if (day === 2) {
+                const tuesdayErgType = ergTypes[Math.floor(Math.random() * ergTypes.length)];
+                const tuesdayErgsTitle = `${tuesdayErgType.toUpperCase()} Ergs`;
+                const tuesdayErgsId = await createEvent({
+                    title: tuesdayErgsTitle,
+                    description: 'Morning ergs session.',
+                    location: 'Boathouse Gym',
+                    start: setTime(currentDate, 7, 0),
+                    end: setTime(currentDate, 8, 0),
+                    upfront_cost: 0,
+                    max_attendees: 5,
+                    tags: [tagIds['ergs'], tagIds[tuesdayErgType]],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: tuesdayErgsTitle, cost: 0, maxAttendees: 5, eventId: tuesdayErgsId });
+
+                const poloTheoryId = await createEvent({
+                    title: 'Polo Theory',
+                    description: 'Tactics, positioning, and game review.',
+                    location: 'Club Room',
+                    start: setTime(currentDate, 19, 45),
+                    end: setTime(currentDate, 20, 45),
+                    upfront_cost: 0,
+                    max_attendees: 20,
+                    tags: [tagIds['polo']],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: 'Polo Theory', cost: 0, maxAttendees: 20, eventId: poloTheoryId });
+            } else if (day === 3) {
+                const chillSessionId = await createEvent({
+                    title: 'Chill Paddle Session',
+                    description: 'Low-pressure paddling and technique refresh.',
+                    location: 'Boathouse',
+                    start: setTime(currentDate, 13, 30),
+                    end: setTime(currentDate, 15, 30),
+                    upfront_cost: 0,
+                    max_attendees: 20,
+                    tags: [tagIds['chill']],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: 'Chill Paddle Session', cost: 0, maxAttendees: 20, eventId: chillSessionId });
+
+                const socialTitle = `Social: ${topicalNames[Math.floor(Math.random() * topicalNames.length)]}`;
+                const socialId = await createEvent({
+                    title: socialTitle,
+                    description: 'A fun social event.',
+                    location: 'The Pub',
+                    start: setTime(currentDate, 20, 0),
+                    end: setTime(currentDate, 23, 0),
+                    upfront_cost: 0,
+                    max_attendees: 0,
+                    tags: [tagIds['socials']],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: socialTitle, cost: 0, maxAttendees: 0, eventId: socialId });
+            } else if (day === 4) {
+                const thursdayErgType = ergTypes[Math.floor(Math.random() * ergTypes.length)];
+                const thursdayErgsTitle = `${thursdayErgType.toUpperCase()} Ergs`;
+                const thursdayErgsId = await createEvent({
+                    title: thursdayErgsTitle,
+                    description: 'Evening ergs session.',
+                    location: 'Boathouse Gym',
+                    start: setTime(currentDate, 20, 0),
+                    end: setTime(currentDate, 21, 0),
+                    upfront_cost: 0,
+                    max_attendees: 5,
+                    tags: [tagIds['ergs'], tagIds[thursdayErgType]],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: thursdayErgsTitle, cost: 0, maxAttendees: 5, eventId: thursdayErgsId });
+            } else if (day === 5) {
+                const fiveKmId = await createEvent({
+                    title: '5km Session',
+                    description: 'Morning 5km effort and pacing work.',
+                    location: 'River Wear',
+                    start: setTime(currentDate, 7, 0),
+                    end: setTime(currentDate, 8, 30),
+                    upfront_cost: 0,
+                    max_attendees: 20,
+                    tags: [tagIds['chill']],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: '5km Session', cost: 0, maxAttendees: 20, eventId: fiveKmId });
+
+                const poolSessionId = await createEvent({
+                    title: 'Polo Pool Session',
+                    description: 'Pool-based polo training.',
+                    location: "Freeman's Quay",
+                    start: setTime(currentDate, 17, 0),
+                    end: setTime(currentDate, 18, 30),
+                    upfront_cost: 6,
+                    max_attendees: 20,
+                    tags: [tagIds['polo']],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: 'Polo Pool Session', cost: 6, maxAttendees: 20, eventId: poolSessionId });
+            } else if (day === 0) {
+                const sundayPoloId = await createEvent({
+                    title: 'Polo Session',
+                    description: 'Sunday polo session.',
+                    location: "Freeman's Quay",
+                    start: setTime(currentDate, 10, 0),
+                    end: setTime(currentDate, 12, 0),
+                    upfront_cost: 0,
+                    max_attendees: 20,
+                    tags: [tagIds['polo']],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: 'Polo Session', cost: 0, maxAttendees: 20, eventId: sundayPoloId });
+            }
+
+            if ([1, 6].includes(day) && Math.random() < 0.5) {
+                const extraErgType = ergTypes[Math.floor(Math.random() * ergTypes.length)];
+                const extraErgTitle = `${extraErgType.toUpperCase()} Ergs (Extra)`;
+                const extraErgId = await createEvent({
+                    title: extraErgTitle,
+                    description: 'Additional ergs session.',
+                    location: 'Boathouse Gym',
+                    start: setTime(currentDate, 7, 0),
+                    end: setTime(currentDate, 8, 0),
+                    upfront_cost: 0,
+                    max_attendees: 5,
+                    tags: [tagIds['ergs'], tagIds[extraErgType]],
+                    image_id: imageId
+                });
+                plannedEvents.push({ title: extraErgTitle, cost: 0, maxAttendees: 5, eventId: extraErgId });
+            }
+
+            for (const planned of plannedEvents) {
+                await seedEventAttendanceAndTrips(planned.eventId, planned.title, planned.cost, planned.maxAttendees);
             }
 
             currentDate.setDate(currentDate.getDate() + 1);

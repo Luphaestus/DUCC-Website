@@ -29,16 +29,16 @@ export async function showAlertModal(title: string, message: string): Promise<vo
         };
 
         const unmount = render(() => (
-            <Modal 
-                title={title} 
-                isOpen={isOpen()} 
+            <Modal
+                title={title}
+                isOpen={isOpen()}
                 onClose={close}
                 footer={
                     <div class="btn-group full-width">
-                        <GlassButtonSmall 
-                            class="btn-confirm primary full-width" 
-                            borderRadius={16} 
-                            tintOpacity={0.2} 
+                        <GlassButtonSmall
+                            class="btn-confirm primary full-width"
+                            borderRadius={16}
+                            tintOpacity={0.2}
                             onClick={close}
                         >
                             OK
@@ -77,31 +77,27 @@ export async function showConfirmModal(title: string, message: string): Promise<
         };
 
         const unmount = render(() => (
-            <Modal 
-                title={title} 
-                isOpen={isOpen()} 
+            <Modal
+                title={title}
+                isOpen={isOpen()}
                 onClose={() => close(false)}
                 footer={
-                    <div class="btn-group full-width" style={{ gap: '1rem', display: 'flex' }}>
-                        <GlassButtonSmall 
-                            class="btn-cancel secondary" 
-                            style={{ flex: 1 }}
-                            borderRadius={16} 
-                            tintOpacity={0.1} 
+                    <>
+                        <button
+                            type="button"
+                            class="btn-cancel secondary"
                             onClick={() => close(false)}
                         >
                             Cancel
-                        </GlassButtonSmall>
-                        <GlassButtonSmall 
-                            class="btn-confirm primary" 
-                            style={{ flex: 1 }}
-                            borderRadius={16} 
-                            tintOpacity={0.2} 
+                        </button>
+                        <button
+                            type="button"
+                            class="btn-confirm primary"
                             onClick={() => close(true)}
                         >
                             Confirm
-                        </GlassButtonSmall>
-                    </div>
+                        </button>
+                    </>
                 }
             >
                 <p innerHTML={message}></p>
@@ -136,26 +132,26 @@ export async function showPasswordModal(title: string, message: string): Promise
         };
 
         const unmount = render(() => (
-            <Modal 
-                title={title} 
-                isOpen={isOpen()} 
+            <Modal
+                title={title}
+                isOpen={isOpen()}
                 onClose={() => close(null)}
                 footer={
                     <div class="btn-group full-width" style={{ gap: '1rem', display: 'flex' }}>
-                        <GlassButtonSmall 
-                            class="btn-cancel secondary" 
+                        <GlassButtonSmall
+                            class="btn-cancel secondary"
                             style={{ flex: 1 }}
-                            borderRadius={16} 
-                            tintOpacity={0.1} 
+                            borderRadius={16}
+                            tintOpacity={0.1}
                             onClick={() => close(null)}
                         >
                             Cancel
                         </GlassButtonSmall>
-                        <GlassButtonSmall 
-                            class="btn-confirm primary" 
+                        <GlassButtonSmall
+                            class="btn-confirm primary"
                             style={{ flex: 1 }}
-                            borderRadius={16} 
-                            tintOpacity={0.2} 
+                            borderRadius={16}
+                            tintOpacity={0.2}
                             onClick={() => close(password())}
                         >
                             Confirm
@@ -164,10 +160,10 @@ export async function showPasswordModal(title: string, message: string): Promise
                 }
             >
                 <p innerHTML={message}></p>
-                <input 
-                    type="password" 
-                    class="modern-input" 
-                    placeholder="Enter your password" 
+                <input
+                    type="password"
+                    class="modern-input"
+                    placeholder="Enter your password"
                     value={password()}
                     onInput={e => setPassword(e.currentTarget.value)}
                     onKeyDown={e => e.key === 'Enter' && close(password())}
@@ -220,26 +216,26 @@ export async function showChangePasswordModal(userEmail?: string): Promise<{ cur
         };
 
         const unmount = render(() => (
-            <Modal 
-                title="Change Password" 
-                isOpen={isOpen()} 
+            <Modal
+                title="Change Password"
+                isOpen={isOpen()}
                 onClose={() => close(null)}
                 footer={
                     <div class="btn-group full-width" style={{ gap: '1rem', display: 'flex' }}>
-                        <GlassButtonSmall 
-                            class="btn-cancel secondary" 
+                        <GlassButtonSmall
+                            class="btn-cancel secondary"
                             style={{ flex: 1 }}
-                            borderRadius={16} 
-                            tintOpacity={0.1} 
+                            borderRadius={16}
+                            tintOpacity={0.1}
                             onClick={() => close(null)}
                         >
                             Cancel
                         </GlassButtonSmall>
-                        <GlassButtonSmall 
-                            class="btn-confirm primary" 
+                        <GlassButtonSmall
+                            class="btn-confirm primary"
                             style={{ flex: 1 }}
-                            borderRadius={16} 
-                            tintOpacity={0.2} 
+                            borderRadius={16}
+                            tintOpacity={0.2}
                             onClick={() => close({ currentPassword: currentPassword(), newPassword: newPassword() })}
                         >
                             Change Password

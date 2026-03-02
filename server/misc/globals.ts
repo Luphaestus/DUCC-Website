@@ -147,6 +147,15 @@ export default class Globals {
                     error: "Value must be 0 (false) or 1 (true).",
                     permission: "Authenticated",
                 },
+                ShareWeekThemeConfig: {
+                    data: "",
+                    name: "Share Week Theme Config",
+                    description: "Serialized JSON theme preset for Share Week export customizer.",
+                    type: "text",
+                    regexp: "^[\\s\\S]*$",
+                    error: "Value must be a valid serialized JSON string.",
+                    permission: "Authenticated",
+                },
             };
             fs.writeFileSync(this.path, JSON.stringify(defaults, null, 4));
             Globals.cache = defaults;
@@ -155,7 +164,7 @@ export default class Globals {
                 Globals.cache = JSON.parse(fs.readFileSync(this.path, 'utf-8'));
             } catch (error) {
                 Logger.error('Failed to load globals.json:', error);
-                Globals.cache = {}; 
+                Globals.cache = {};
             }
         }
     }
@@ -165,7 +174,7 @@ export default class Globals {
      */
     get(key: string): GlobalItem | null {
         if (!Globals.cache) {
-             try {
+            try {
                 Globals.cache = JSON.parse(fs.readFileSync(this.path, 'utf-8'));
             } catch (error) {
                 Logger.error('Failed to load globals.json:', error);
@@ -195,7 +204,7 @@ export default class Globals {
      * Retrieves the entire raw configuration object.
      */
     getAll(): GlobalCache | null {
-        if (!Globals.cache) this.get('dummy'); 
+        if (!Globals.cache) this.get('dummy');
         return Globals.cache;
     }
 
@@ -225,7 +234,7 @@ export default class Globals {
     set(key: string, value: any) {
         const data = this.getAll();
         if (!data) throw new Error("Could not load globals.");
-        
+
         const valueContainer = data[key];
 
         if (key === undefined || value === undefined) {
@@ -243,7 +252,7 @@ export default class Globals {
 
         valueContainer.data = value;
         data[key] = valueContainer;
-        Globals.cache = data; 
+        Globals.cache = data;
 
         try {
             fs.writeFileSync(this.path, JSON.stringify(data, null, 4));

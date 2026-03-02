@@ -19,6 +19,7 @@ interface Key {
 interface KeyLog {
     id: number;
     key_id: number;
+    event_type: 'create' | 'transfer' | 'delete';
     from_user_id: number | null;
     to_user_id: number | null;
     transferred_by_id: number;
@@ -29,15 +30,12 @@ interface KeyLog {
     to_last_name: string | null;
     by_first_name: string;
     by_last_name: string;
-    is_deleted: boolean;
-    deleted_by_first: string | null;
-    deleted_by_last: string | null;
 }
 
 export default function KeysPage() {
     const { notify } = useNotifications();
     const { user: authUser } = useAuth();
-    
+
     const canManage = createMemo(() => authUser()?.permissions.includes('keys.manage') || authUser()?.permissions.includes('site.admin'));
 
     const [keys, { refetch: refetchKeys }] = createResource<Key[]>(async () => await apiRequest('GET', '/api/keys'));
@@ -53,14 +51,40 @@ export default function KeysPage() {
         if (!query) return [];
         const usersList = users();
         if (!usersList) return [];
-        return usersList.filter((u: any) => 
-            u.first_name.toLowerCase().includes(query) || 
-            u.last_name.toLowerCase().includes(query) || 
+        return usersList.filter((u: any) =>
+            u.first_name.toLowerCase().includes(query) ||
+            u.last_name.toLowerCase().includes(query) ||
             u.email.toLowerCase().includes(query)
         ).slice(0, 5);
     });
 
     const [activeTransferKey, setActiveTransferKey] = createSignal<number | null>(null);
+    const [selectedLogKeyId, setSelectedLogKeyId] = createSignal<number | null>(null);
+    const [selectedLogUserId, setSelectedLogUserId] = createSignal<number | null>(null);
+    const [selectedLogUserName, setSelectedLogUserName] = createSignal<string>('');
+
+    const toggleKeyFilter = (keyId: number) => {
+        setSelectedLogKeyId((prev) => (prev === keyId ? null : keyId));
+    };
+
+    const toggleUserFilter = (userId: number | null, userName: string) => {
+        if (!userId) return;
+        const currentlySelected = selectedLogUserId();
+        const nextUserId = currentlySelected === userId ? null : userId;
+        setSelectedLogUserId(nextUserId);
+        setSelectedLogUserName(nextUserId ? userName : '');
+    };
+
+    const filteredLogs = createMemo(() => {
+        const keyId = selectedLogKeyId();
+        const userId = selectedLogUserId();
+        const allLogs = logs() || [];
+        return allLogs.filter((log) => {
+            const keyMatch = !keyId || Number(log.key_id) === Number(keyId);
+            const userMatch = !userId || [log.from_user_id, log.to_user_id, log.transferred_by_id].some((id) => Number(id) === Number(userId));
+            return keyMatch && userMatch;
+        });
+    });
 
     const handleCreateKey = async () => {
         try {
@@ -122,7 +146,20 @@ export default function KeysPage() {
                         <div class="keys-grid">
                             <For each={keys() || []}>
                                 {(key) => (
-                                    <Panel class="key-card glass-panel" title={`Key #${key.id}`}>
+                                    <Panel
+                                        class="key-card glass-panel"
+                                        title={
+                                            <button
+                                                type="button"
+                                                class="key-title-btn"
+                                                classList={{ active: selectedLogKeyId() === key.id }}
+                                                onClick={() => toggleKeyFilter(key.id)}
+                                                title={selectedLogKeyId() === key.id ? 'Clear key log filter' : 'Show logs for this key'}
+                                            >
+                                                Key #{key.id}
+                                            </button>
+                                        }
+                                    >
                                         <div class="key-card-body">
                                             <div class="current-holder">
                                                 <span class="label">Current Holder</span>
@@ -134,7 +171,14 @@ export default function KeysPage() {
                                                 }>
                                                     <div class="holder-info">
                                                         <Avatar user={key} classes="mini" />
-                                                        <span>{key.first_name} {key.last_name}</span>
+                                                        <button
+                                                            type="button"
+                                                            class="person-filter-btn"
+                                                            classList={{ active: selectedLogUserId() === key.holder_id }}
+                                                            onClick={() => toggleUserFilter(key.holder_id, `${key.first_name} ${key.last_name}`)}
+                                                        >
+                                                            {key.first_name} {key.last_name}
+                                                        </button>
                                                     </div>
                                                 </Show>
                                             </div>
@@ -156,15 +200,15 @@ export default function KeysPage() {
                                                     <div class="transfer-input-group">
                                                         <div class="search-input-wrapper">
                                                             <span class="search-icon"><FaSolidMagnifyingGlass /></span>
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Search member..." 
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Search member..."
                                                                 onInput={(e) => setSearchQuery(e.currentTarget.value)}
-                                                                autofocus 
+                                                                autofocus
                                                             />
                                                             <button class="cancel-link" onClick={() => setActiveTransferKey(null)}>Cancel</button>
                                                         </div>
-                                                        
+
                                                         <div class="autocomplete-results">
                                                             <For each={filteredUsers()}>
                                                                 {(user) => (
@@ -197,6 +241,29 @@ export default function KeysPage() {
 
                 <div class="keys-history-section">
                     <Panel title="Transfer History" icon={FaSolidClockRotateLeft} class="glass-panel">
+                        <Show when={selectedLogKeyId() || selectedLogUserId()}>
+                            <div class="logs-filter-bar">
+                                <div class="active-filter-list">
+                                    <Show when={selectedLogKeyId()}>
+                                        <button type="button" class="small-btn secondary outline" onClick={() => setSelectedLogKeyId(null)}>
+                                            Key #{selectedLogKeyId()} ✕
+                                        </button>
+                                    </Show>
+                                    <Show when={selectedLogUserId()}>
+                                        <button type="button" class="small-btn secondary outline" onClick={() => { setSelectedLogUserId(null); setSelectedLogUserName(''); }}>
+                                            {selectedLogUserName() || `User #${selectedLogUserId()}`} ✕
+                                        </button>
+                                    </Show>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="small-btn secondary outline"
+                                    onClick={() => { setSelectedLogKeyId(null); setSelectedLogUserId(null); setSelectedLogUserName(''); }}
+                                >
+                                    Clear All
+                                </button>
+                            </div>
+                        </Show>
                         <div class="logs-container">
                             <table class="glass-table">
                                 <thead>
@@ -210,31 +277,69 @@ export default function KeysPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <For each={logs() || []}>
+                                    <For each={filteredLogs()}>
                                         {(log) => (
                                             <tr>
                                                 <td class="small-text">{new Date(log.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
-                                                <td><strong>#{log.key_id}</strong></td>
+                                                <td>
+                                                    <button
+                                                        type="button"
+                                                        class="key-num-filter-btn"
+                                                        classList={{ active: selectedLogKeyId() === log.key_id }}
+                                                        onClick={() => toggleKeyFilter(log.key_id)}
+                                                    >
+                                                        #{log.key_id}
+                                                    </button>
+                                                </td>
                                                 <td>
                                                     <Show when={log.from_user_id} fallback={<span class="muted-text">Club</span>}>
-                                                        {log.from_first_name} {log.from_last_name}
+                                                        <button
+                                                            type="button"
+                                                            class="person-filter-btn"
+                                                            classList={{ active: selectedLogUserId() === log.from_user_id }}
+                                                            onClick={() => toggleUserFilter(log.from_user_id, `${log.from_first_name} ${log.from_last_name}`)}
+                                                        >
+                                                            {log.from_first_name} {log.from_last_name}
+                                                        </button>
                                                     </Show>
                                                 </td>
                                                 <td>
                                                     <Show when={log.to_user_id} fallback={<span class="muted-text">Club</span>}>
-                                                        {log.to_first_name} {log.to_last_name}
+                                                        <button
+                                                            type="button"
+                                                            class="person-filter-btn"
+                                                            classList={{ active: selectedLogUserId() === log.to_user_id }}
+                                                            onClick={() => toggleUserFilter(log.to_user_id, `${log.to_first_name} ${log.to_last_name}`)}
+                                                        >
+                                                            {log.to_first_name} {log.to_last_name}
+                                                        </button>
                                                     </Show>
                                                 </td>
-                                                <td class="small-text">{log.by_first_name} {log.by_last_name}</td>
+                                                <td class="small-text">
+                                                    <button
+                                                        type="button"
+                                                        class="person-filter-btn"
+                                                        classList={{ active: selectedLogUserId() === log.transferred_by_id }}
+                                                        onClick={() => toggleUserFilter(log.transferred_by_id, `${log.by_first_name} ${log.by_last_name}`)}
+                                                    >
+                                                        {log.by_first_name} {log.by_last_name}
+                                                    </button>
+                                                </td>
                                                 <td>
-                                                    <Show when={log.is_deleted}>
-                                                        <span class="status-tag danger" title={`Retired by ${log.deleted_by_first} ${log.deleted_by_last}`}>Retired</span>
+                                                    <Show when={log.event_type === 'create'}>
+                                                        <span class="status-tag success">Created</span>
+                                                    </Show>
+                                                    <Show when={log.event_type === 'transfer'}>
+                                                        <span class="status-tag primary">Transferred</span>
+                                                    </Show>
+                                                    <Show when={log.event_type === 'delete'}>
+                                                        <span class="status-tag danger">Retired</span>
                                                     </Show>
                                                 </td>
                                             </tr>
                                         )}
                                     </For>
-                                    <Show when={(logs() || []).length === 0}>
+                                    <Show when={filteredLogs().length === 0}>
                                         <tr><td colspan="6" class="empty-cell">No transfer history.</td></tr>
                                     </Show>
                                 </tbody>

@@ -785,6 +785,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         from_user_id INT,
         to_user_id INT,
         transferred_by_id INT NOT NULL,
+        event_type ENUM('create','transfer','delete') NOT NULL DEFAULT 'transfer',
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (key_id) REFERENCES \`keys\`(id) ON DELETE CASCADE,
         FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE SET NULL,

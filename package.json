@@ -75,6 +75,7 @@
     "fastify": "^5.2.1",
     "file-type": "^21.3.0",
     "googleapis": "^171.4.0",
+    "html2canvas": "^1.4.1",
     "mammoth": "^1.11.0",
     "marked": "^17.0.2",
     "multer": "^2.0.2",
