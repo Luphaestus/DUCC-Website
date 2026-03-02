@@ -35,6 +35,13 @@ export default class SwimsAPI {
             return status.getResponse(reply);
         });
 
+        this.app.get('/api/user/swims/users', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
+            const search = String(request.query.search || '');
+            const limit = parseInt(String(request.query.limit || '60'), 10);
+            const status = await SwimsDB.searchSwimmers(this.db, search, limit);
+            return status.getResponse(reply);
+        });
+
         /**
          * Fetch swim history for a user.
          */
@@ -42,6 +49,33 @@ export default class SwimsAPI {
             const userId = parseInt(request.params.id, 10);
             if (isNaN(userId)) return reply.status(400).send({ message: 'Invalid user ID' });
             const status = await SwimsDB.getSwimHistory(this.db, userId);
+            return status.getResponse(reply);
+        });
+
+        this.app.get<{ Params: { id: string } }>('/api/user/:id/swims/stats', { preHandler: [check()] }, async (request: any, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id, 10);
+            if (isNaN(userId)) return reply.status(400).send({ message: 'Invalid user ID' });
+
+            const [allTimeRes, yearlyRes] = await Promise.all([
+                SwimsDB.getUserSwimmerRank(this.db, userId, false),
+                SwimsDB.getUserSwimmerRank(this.db, userId, true)
+            ]);
+
+            if (allTimeRes.isError()) return allTimeRes.getResponse(reply);
+            if (yearlyRes.isError()) return yearlyRes.getResponse(reply);
+
+            return reply.send({
+                data: {
+                    yearly: yearlyRes.getData() || { rank: -1, swims: 0, booties: 0 },
+                    allTime: allTimeRes.getData() || { rank: -1, swims: 0, booties: 0 }
+                }
+            });
+        });
+
+        this.app.get<{ Params: { id: string } }>('/api/user/:id/swims/pending-booties', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
+            const userId = parseInt(request.params.id, 10);
+            if (isNaN(userId)) return reply.status(400).send({ message: 'Invalid user ID' });
+            const status = await SwimsDB.getPendingBootieSwims(this.db, userId);
             return status.getResponse(reply);
         });
 
@@ -53,10 +87,10 @@ export default class SwimsAPI {
             const count = parseInt(request.body.count, 10);
             const message = request.body.message;
 
-            if (isNaN(userId) || isNaN(count) || !message) {
+            if (isNaN(userId) || isNaN(count) || count < 1 || !message) {
                 return reply.status(400).send({ message: 'Invalid data. Message is required.' });
             }
-            
+
             const status = await SwimsDB.addSwims(this.db, userId, count, request.user.id, message);
             if (!status.isError()) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
@@ -70,13 +104,13 @@ export default class SwimsAPI {
          */
         this.app.post('/api/user/:id/booties', { preHandler: [check('perm:swims.manage')] }, async (request: any, reply: FastifyReply) => {
             const userId = parseInt(request.params.id, 10);
-            const count = parseInt(request.body.count, 10);
+            const swimIds = Array.isArray(request.body?.swimIds) ? request.body.swimIds : [];
 
-            if (isNaN(userId) || isNaN(count)) {
-                return reply.status(400).send({ message: 'Invalid data.' });
+            if (isNaN(userId) || swimIds.length === 0) {
+                return reply.status(400).send({ message: 'Invalid data. Select at least one swim record.' });
             }
 
-            const status = await SwimsDB.addBooties(this.db, userId, count);
+            const status = await SwimsDB.markSwimsAsBooties(this.db, userId, swimIds);
             if (!status.isError()) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
                 EventHub.broadcast('swims_update', { userId });
@@ -91,7 +125,12 @@ export default class SwimsAPI {
             const swimId = parseInt(request.params.swimId, 10);
             if (isNaN(swimId)) return reply.status(400).send({ message: 'Invalid swim ID' });
 
-            const status = await SwimsDB.toggleBootie(this.db, swimId);
+            const mode = ['toggle', 'add', 'remove', 'set-all'].includes(String(request.body?.mode))
+                ? request.body.mode
+                : 'toggle';
+            const amount = Math.max(1, parseInt(String(request.body?.amount || '1'), 10) || 1);
+
+            const status = await SwimsDB.toggleBootie(this.db, swimId, { mode, amount });
             if (!status.isError()) {
                 const EventHub = (await import('../../misc/EventHub.js')).default;
                 EventHub.broadcast('swims_update', {}); // Broadcast to all since totals change

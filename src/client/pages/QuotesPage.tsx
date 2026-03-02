@@ -7,6 +7,7 @@ import Avatar from "@/components/Avatar";
 import Modal from "@/components/Modal";
 import Pagination from "@/components/Pagination";
 import PaginationSlider from "@/components/PaginationSlider";
+import FuzzyPicker from "@/widgets/FuzzyPicker";
 import { useNavigate } from "@solidjs/router";
 
 import PageTitle from "@/components/PageTitle";
@@ -38,6 +39,7 @@ export default function QuotesPage() {
     const [canManage, setCanManage] = createSignal(false);
     const [users, setUsers] = createSignal<QuoteUser[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = createSignal(false);
+    const [selectedQuotedUserId, setSelectedQuotedUserId] = createSignal<number | null>(null);
     const [oldQuotesData, setOldQuotesData] = createSignal<any>(null);
 
     const [quotesData, { refetch }] = createResource<QuotesPageData, any>(
@@ -69,16 +71,27 @@ export default function QuotesPage() {
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
         const text = formData.get('text') as string;
-        const quotedUserId = formData.get('quotedUserId') as string;
+        const quotedUserId = selectedQuotedUserId();
+
+        if (!quotedUserId) {
+            notify('Error', 'Please select a person.', 'error');
+            return;
+        }
 
         try {
             await apiRequest('POST', '/api/quotes', { text, quotedUserId });
             notify('Success', 'Quote submitted for moderation.', 'success');
             setIsCreateModalOpen(false);
+            setSelectedQuotedUserId(null);
             refetch();
         } catch (err: any) {
             notify('Error', err.message || 'Failed to submit quote.', 'error');
         }
+    };
+
+    const openCreateModal = () => {
+        setSelectedQuotedUserId(null);
+        setIsCreateModalOpen(true);
     };
 
     const QuoteGrid = (props: { data: any }) => (
@@ -125,7 +138,7 @@ export default function QuotesPage() {
                             }}
                         />
                     </div>
-                    <button class="button primary" onClick={() => setIsCreateModalOpen(true)}>
+                    <button class="button primary" onClick={openCreateModal}>
                         <FaSolidPlus /> Create Quote
                     </button>
                 </div>
@@ -168,14 +181,17 @@ export default function QuotesPage() {
                     </div>
                     <div class="form-group">
                         <label for="new-quote-user">Who said it?</label>
-                        <div class="glass-input-group liquid-container">
-                            <span class="icon"><FaSolidUser /></span>
-                            <select name="quotedUserId" id="new-quote-user" required>
-                                <option value="" disabled selected>Select a person</option>
-                                <For each={users()}>
-                                    {(u) => <option value={u.id}>{u.first_name} {u.last_name}</option>}
-                                </For>
-                            </select>
+                        <div class="glass-input-group liquid-container quote-user-picker-wrapper">
+                            <span class="icon quote-user-picker-icon"><FaSolidUser /></span>
+                            <FuzzyPicker
+                                items={users()}
+                                selectedId={selectedQuotedUserId()}
+                                onSelect={(user) => setSelectedQuotedUserId(Number(user.id))}
+                                getLabel={(u) => `${u.first_name} ${u.last_name}`}
+                                placeholder="Search by name"
+                                emptyText="No matching users found."
+                                class="quote-user-picker"
+                            />
                         </div>
                     </div>
                     <button type="submit" class="button primary full-width">Submit Quote</button>

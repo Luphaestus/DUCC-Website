@@ -36,13 +36,14 @@
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
-        
+
         @media (max-width: 480px) {
             flex-direction: column;
             gap: 0.75rem;
             width: 100%;
-            
-            & > * { // Target direct children of quotes-controls
+
+            &>* {
+                // Target direct children of quotes-controls
                 width: 100%; // Make buttons/inputs full width
                 max-width: 100%; // Ensure search box can shrink
                 flex: none; // Reset flex-grow/shrink
@@ -73,6 +74,28 @@
     }
 }
 
+.quote-user-picker-wrapper {
+    align-items: flex-start;
+
+    .quote-user-picker-icon {
+        margin-top: 0.6rem;
+    }
+
+    .quote-user-picker {
+        flex: 1;
+        min-width: 0;
+
+        input {
+            margin-bottom: 0;
+        }
+
+        .fuzzy-picker-results {
+            width: 100%;
+            max-height: 180px;
+        }
+    }
+}
+
 .quotes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -91,7 +114,7 @@
     flex-direction: column;
     gap: 1.25rem;
     position: relative;
-    
+
     @media (max-width: 380px) {
         --liquid-padding: 1.5rem; // Smaller padding for very small screens
         gap: 1rem;
@@ -113,7 +136,7 @@
         svg {
             width: 4rem;
             height: 4rem;
-            
+
             @media (max-width: 380px) {
                 width: 3rem; // Smaller icon for very small screens
                 height: 3rem;
@@ -133,7 +156,7 @@
         margin: 0;
         color: var(--pico-contrast);
         font-size: 1rem;
-        
+
         @media (max-width: 380px) {
             font-size: 0.9rem; // Smaller font for very small screens
         }

@@ -45,17 +45,22 @@
         }
 
         .item-details {
-            flex-grow: 1;
+            flex: 1 1 auto;
+            min-width: 0;
 
             .item-title {
                 font-weight: 600;
                 font-size: 1rem;
                 display: block;
+                white-space: normal;
+                overflow-wrap: anywhere;
             }
 
             .item-subtitle {
                 font-size: 0.8rem;
                 color: var(--pico-muted-color);
+                white-space: normal;
+                overflow-wrap: anywhere;
             }
         }
 

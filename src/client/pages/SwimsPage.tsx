@@ -8,6 +8,7 @@ import { useNavigate } from "@solidjs/router";
 import { onUpdate } from "@/utils/updates";
 import Avatar from "@/components/Avatar";
 import { Dynamic } from "solid-js/web";
+import SwimActionModal from "@/components/SwimActionModal";
 
 interface LeaderboardUser {
     id: number;
@@ -114,7 +115,7 @@ export default function SwimsPage() {
                 </div>
 
                 <Show when={canManage()}>
-                    <div class="admin-leaderboard-actions" style="margin-top: 1.5rem;">
+                    <div class="admin-leaderboard-actions">
                         <button class="small-btn primary" onClick={() => setIsLogSwimModalOpen(true)}>
                             <FaSolidSwimmingPool /> Log Swim
                         </button>
@@ -247,10 +248,24 @@ export default function SwimsPage() {
                 >
                     <Show when={selectedUser()}>
                         <div classList={{ 'read-only-history': !canManage() }}>
-                            <SwimsTab user={selectedUser()!} />
+                            <SwimsTab user={selectedUser()!} compactManage={canManage()} />
                         </div>
                     </Show>
                 </Modal>
+
+                <SwimActionModal
+                    isOpen={isLogSwimModalOpen()}
+                    mode="swim"
+                    onClose={() => setIsLogSwimModalOpen(false)}
+                    onSuccess={() => refetch()}
+                />
+
+                <SwimActionModal
+                    isOpen={isLogBootieModalOpen()}
+                    mode="bootie"
+                    onClose={() => setIsLogBootieModalOpen(false)}
+                    onSuccess={() => refetch()}
+                />
             </div>
         </div>
     );

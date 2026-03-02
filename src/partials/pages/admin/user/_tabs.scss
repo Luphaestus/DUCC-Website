@@ -184,10 +184,18 @@
                 font-size: 3rem;
                 font-weight: 800;
                 font-family: var(--pico-font-family-display);
-                
-                &.positive { color: var(--pico-ins-color); }
-                &.negative { color: var(--pico-del-color); }
-                &.warning { color: var(--pico-orange-color, #e67e22); }
+
+                &.positive {
+                    color: var(--pico-ins-color);
+                }
+
+                &.negative {
+                    color: var(--pico-del-color);
+                }
+
+                &.warning {
+                    color: var(--pico-orange-color, #e67e22);
+                }
             }
         }
     }
@@ -242,6 +250,7 @@
                 background: rgba(var(--pico-ins-color-rgb), 0.1);
                 color: var(--pico-ins-color);
             }
+
             &.negative {
                 background: rgba(var(--pico-del-color-rgb), 0.1);
                 color: var(--pico-del-color);
@@ -276,15 +285,20 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            
+
             .amount-line {
                 .item-value {
                     font-size: 1.25rem;
                     font-weight: 700;
                     font-family: var(--pico-font-family-display);
 
-                    &.positive { color: var(--pico-ins-color); }
-                    &.negative { color: var(--pico-del-color); }
+                    &.positive {
+                        color: var(--pico-ins-color);
+                    }
+
+                    &.negative {
+                        color: var(--pico-del-color);
+                    }
                 }
             }
 
@@ -321,9 +335,20 @@
                     border-color: rgba(var(--pico-color-rgb), 0.1);
                 }
 
-                &.success:hover { background: rgba(var(--pico-ins-color-rgb), 0.1); color: var(--pico-ins-color); }
-                &.warning:hover { background: rgba(var(--pico-del-color-rgb), 0.1); color: var(--pico-del-color); }
-                &.delete:hover { background: rgba(var(--pico-del-color-rgb), 0.1); color: var(--pico-del-color); }
+                &.success:hover {
+                    background: rgba(var(--pico-ins-color-rgb), 0.1);
+                    color: var(--pico-ins-color);
+                }
+
+                &.warning:hover {
+                    background: rgba(var(--pico-del-color-rgb), 0.1);
+                    color: var(--pico-del-color);
+                }
+
+                &.delete:hover {
+                    background: rgba(var(--pico-del-color-rgb), 0.1);
+                    color: var(--pico-del-color);
+                }
 
                 svg {
                     width: 1rem;
@@ -340,8 +365,10 @@
         &.editing {
             background-color: rgba(var(--pico-primary-rgb), 0.05);
             border: 1px solid var(--pico-primary);
-            
-            .item-actions { opacity: 1; }
+
+            .item-actions {
+                opacity: 1;
+            }
         }
     }
 
@@ -509,11 +536,31 @@
         }
     }
 
+    .admin-swim-actions {
+        margin: 1.5rem auto 0;
+        width: min(100%, 34rem);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+
+        .small-btn {
+            width: 100%;
+            justify-content: center;
+            border-radius: var(--border-radius-sm);
+            margin: 0;
+        }
+
+        @media (max-width: 720px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
     /* Legal Tab */
     .info-item-modern {
         &.compact {
             margin-bottom: 0.5rem;
         }
+
         .label {
             min-width: 140px;
             margin-right: .5rem;
@@ -568,6 +615,7 @@
 
             .warning-icon {
                 color: var(--pico-primary);
+
                 svg {
                     width: 32px;
                     height: 32px;
@@ -600,6 +648,7 @@
                 .list-icon {
                     flex-shrink: 0;
                     color: var(--pico-primary);
+
                     svg {
                         width: 24px;
                         height: 24px;
@@ -674,7 +723,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            
+
             .item-title {
                 font-weight: 600;
                 font-size: 0.95rem;
@@ -682,7 +731,7 @@
                 text-overflow: ellipsis;
                 overflow: hidden;
             }
-            
+
             .item-subtitle {
                 font-size: 0.75rem;
                 color: var(--pico-muted-color);

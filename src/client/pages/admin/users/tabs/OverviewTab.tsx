@@ -1,23 +1,15 @@
 // todo clean up
-import { Show } from "solid-js";
+import { Show, createSignal } from "solid-js";
 import {
     FaSolidSwimmingPool, FaSolidPlus, FaSolidWallet, FaSolidGauge
 } from 'solid-icons/fa';
 import Panel from "@/components/Panel";
-import { apiRequest } from "@/utils/api";
-import { useNotifications } from "@/stores/notifications";
+import SwimActionModal from "@/components/SwimActionModal";
 
 export default function OverviewTab(props: { user: any, stats: any, minMoney: number, permissions: string[], refetchUser: () => void }) {
-    const { notify } = useNotifications();
+    const [isLogSwimModalOpen, setIsLogSwimModalOpen] = createSignal(false);
+    const [isLogBootieModalOpen, setIsLogBootieModalOpen] = createSignal(false);
     const canManageSwims = () => props.permissions.includes('swims.manage');
-
-    const handleLogAction = async (type: 'swims' | 'booties') => {
-        try {
-            await apiRequest('POST', `/api/user/${props.user.id}/${type}`, { count: 1 });
-            notify('Success', 'Logged successfully', 'success');
-            props.refetchUser();
-        } catch (e: any) { notify('Error', e.message, 'error'); }
-    };
 
     return (
         <div class="dashboard-section active">
@@ -114,12 +106,36 @@ export default function OverviewTab(props: { user: any, stats: any, minMoney: nu
                     <div class="stat-item"><span class="stat-value">{props.user.swimmer_stats?.allTime?.booties || 0}</span><span class="stat-label">Total Booties</span></div>
                 </div>
                 <Show when={canManageSwims()}>
-                    <div class="panel-actions-centered" style="display: flex; justify-content: center; gap: 1rem;">
-                        <button class="small-btn primary" onClick={() => handleLogAction('swims')}><FaSolidPlus /> Log Swim</button>
-                        <button class="small-btn secondary" onClick={() => handleLogAction('booties')}><FaSolidPlus /> Log Bootie</button>
+                    <div class="panel-actions-centered admin-swim-actions">
+                        <button class="small-btn primary" onClick={() => setIsLogSwimModalOpen(true)}><FaSolidPlus /> Log Swim</button>
+                        <button class="small-btn secondary" onClick={() => setIsLogBootieModalOpen(true)}><FaSolidPlus /> Log Bootie</button>
                     </div>
                 </Show>
             </Panel>
+
+            <SwimActionModal
+                isOpen={isLogSwimModalOpen()}
+                mode="swim"
+                onClose={() => setIsLogSwimModalOpen(false)}
+                onSuccess={() => props.refetchUser()}
+                initialUser={{
+                    id: props.user.id,
+                    first_name: props.user.first_name,
+                    last_name: props.user.last_name
+                }}
+            />
+
+            <SwimActionModal
+                isOpen={isLogBootieModalOpen()}
+                mode="bootie"
+                onClose={() => setIsLogBootieModalOpen(false)}
+                onSuccess={() => props.refetchUser()}
+                initialUser={{
+                    id: props.user.id,
+                    first_name: props.user.first_name,
+                    last_name: props.user.last_name
+                }}
+            />
         </div>
     );
 }

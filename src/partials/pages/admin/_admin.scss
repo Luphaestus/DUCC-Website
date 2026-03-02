@@ -555,7 +555,7 @@ textarea[name="description"] {
 
     @media (max-width: 1024px) {
         flex-direction: column;
-        align-items: stretch;
+        align-items: center;
         border-radius: var(--border-radius-lg);
         padding: 1rem;
 
@@ -566,7 +566,8 @@ textarea[name="description"] {
         }
 
         .toolbar-content {
-            padding-top: 1rem;
+            align-items: center;
+            padding-top: 0;
         }
     }
 }

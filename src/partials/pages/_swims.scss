@@ -77,14 +77,22 @@
     }
 
     .admin-leaderboard-actions {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        width: min(100%, 640px);
+        margin: 2.25rem auto 1.75rem;
+
+        @media (max-width: 640px) {
+            grid-template-columns: 1fr;
+        }
 
         .small-btn {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            width: 100%;
+            border-radius: var(--border-radius-sm) !important;
 
             svg,
             span:has(svg) {
@@ -98,7 +106,8 @@
         width: 100%;
         position: relative;
 
-        .podium-overlay, .leaderboard-list {
+        .podium-overlay,
+        .leaderboard-list {
             width: 100%;
         }
 
@@ -117,7 +126,7 @@
             .old-layer {
                 opacity: 1;
                 animation: fadeOutBlur 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-                
+
                 &.leaderboard-list {
                     position: absolute;
                     top: 0;
@@ -134,6 +143,7 @@
             .old-layer {
                 visibility: hidden;
             }
+
             .new-layer {
                 opacity: 1;
             }
@@ -146,7 +156,8 @@
         justify-content: center;
         align-items: flex-end;
         height: 480px;
-        margin: 5rem auto -2rem; /* Reduce bottom margin to overlap with list */
+        margin: 5rem auto -2rem;
+        /* Reduce bottom margin to overlap with list */
         width: 100%;
         max-width: 600px;
         z-index: 1;
@@ -176,11 +187,30 @@
             position: relative;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             min-width: 0;
-            transform: translateX(var(--overlap-x, 0)); /* For overlapping */
-            
-            &:nth-child(1) { order: 1; --overlap-x: 20px; z-index: 2; } /* Silver */
-            &:nth-child(2) { order: 2; --overlap-x: -20px; z-index: 3; } /* Gold */
-            &:nth-child(3) { order: 3; --overlap-x: 20px; z-index: 1; } /* Bronze */
+            transform: translateX(var(--overlap-x, 0));
+            /* For overlapping */
+
+            &:nth-child(1) {
+                order: 1;
+                --overlap-x: 20px;
+                z-index: 2;
+            }
+
+            /* Silver */
+            &:nth-child(2) {
+                order: 2;
+                --overlap-x: -20px;
+                z-index: 3;
+            }
+
+            /* Gold */
+            &:nth-child(3) {
+                order: 3;
+                --overlap-x: 20px;
+                z-index: 1;
+            }
+
+            /* Bronze */
 
             &:hover {
                 .podium-step {
@@ -357,8 +387,15 @@
                     box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), var(--shadow-glass);
                 }
 
-                .rank-circle { background: linear-gradient(135deg, #f1c40f, #d4af37); }
-                .medal-icon { color: #f1c40f; width: 5.5rem; height: 5.5rem; }
+                .rank-circle {
+                    background: linear-gradient(135deg, #f1c40f, #d4af37);
+                }
+
+                .medal-icon {
+                    color: #f1c40f;
+                    width: 5.5rem;
+                    height: 5.5rem;
+                }
             }
 
             &.silver {
@@ -372,8 +409,15 @@
                     border-color: rgba(192, 192, 192, 0.4);
                 }
 
-                .rank-circle { background: linear-gradient(135deg, #bdc3c7, #95a5a6); }
-                .medal-icon { color: #bdc3c7; width: 4rem; height: 4rem; }
+                .rank-circle {
+                    background: linear-gradient(135deg, #bdc3c7, #95a5a6);
+                }
+
+                .medal-icon {
+                    color: #bdc3c7;
+                    width: 4rem;
+                    height: 4rem;
+                }
             }
 
             &.bronze {
@@ -387,8 +431,15 @@
                     border-color: rgba(205, 127, 50, 0.4);
                 }
 
-                .rank-circle { background: linear-gradient(135deg, #cd7f32, #a0522d); }
-                .medal-icon { color: #cd7f32; width: 3.5rem; height: 3.5rem; }
+                .rank-circle {
+                    background: linear-gradient(135deg, #cd7f32, #a0522d);
+                }
+
+                .medal-icon {
+                    color: #cd7f32;
+                    width: 3.5rem;
+                    height: 3.5rem;
+                }
             }
         }
     }
@@ -439,18 +490,23 @@
 
                 @media (max-width: 440px) {
                     grid-template-columns: 2.5rem 1fr auto; // Shrink rank-box, remove avatar gap
+
                     .swimmer-info {
                         grid-column: span 1; // Ensure name takes its space
+
                         .avatar-bubble {
                             display: none; // Hide profile picture
                         }
                     }
                 }
+
                 @media (max-width: 380px) {
                     grid-template-columns: 1fr auto; // Remove rank-box column
+
                     .rank-box {
                         display: none; // Hide ranking number
                     }
+
                     .swimmer-info {
                         grid-column: span 1; // Ensure name takes its space
                     }
@@ -577,6 +633,7 @@
         opacity: 1;
         filter: blur(0);
     }
+
     to {
         opacity: 0;
         filter: blur(8px);

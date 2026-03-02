@@ -390,6 +390,7 @@ export async function createTables(db: DatabaseWrapper): Promise<string[]> {
         user_id INT NOT NULL,
         added_by INT,
         count INT NOT NULL DEFAULT 1,
+        bootie_count INT NOT NULL DEFAULT 0,
         message TEXT,
         is_bootie TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
