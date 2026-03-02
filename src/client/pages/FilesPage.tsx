@@ -26,10 +26,23 @@ interface FilesResponse {
     totalPages: number;
 }
 
+const normalizeFilesResponse = (res: any): FilesResponse => {
+    const payload = res?.data ?? res ?? {};
+    const files = Array.isArray(payload.files) ? payload.files : [];
+    const total = Number(payload.total ?? payload.totalFiles ?? files.length);
+    const totalPages = Number(payload.totalPages ?? 0);
+
+    return {
+        files,
+        total: Number.isFinite(total) ? total : files.length,
+        totalPages: Number.isFinite(totalPages) ? totalPages : 0
+    };
+};
+
 export default function FilesPage() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    
+
     const page = () => {
         const val = searchParams.page;
         const p = Array.isArray(val) ? val[0] : val;
@@ -67,15 +80,16 @@ export default function FilesPage() {
                 order: params.order,
                 limit: '15'
             }).toString();
-            
+
             const res = await apiRequest('GET', `/api/files?${query}`);
-            return res as FilesResponse;
+            return normalizeFilesResponse(res);
         }
     );
 
     const [categories] = createResource<FileCategory[]>(async () => {
         const res = await apiRequest('GET', '/api/file-categories');
-        return res as FileCategory[];
+        const payload = res?.data ?? res;
+        return Array.isArray(payload) ? payload as FileCategory[] : [];
     });
 
     onMount(async () => {
@@ -118,20 +132,20 @@ export default function FilesPage() {
                 </tr>
             </thead>
             <tbody>
-                <Show when={props.data && props.data.files.length === 0}>
+                <Show when={props.data && (props.data.files?.length ?? 0) === 0}>
                     <tr><td colspan="5" class="text-centre">No files found.</td></tr>
                 </Show>
-                <For each={props.data?.files}>
+                <For each={props.data?.files || []}>
                     {(file) => {
                         const ext = file.filename.split('.').pop()?.toLowerCase() || '';
                         const viewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'mp4', 'webm', 'mp3'].includes(ext);
                         return (
                             <tr><td data-label="Title">
-                                    <div class="file-title">
-                                        <strong>{file.title}</strong>
-                                        <span class="file-category">{file.category_name || 'Uncategorised'}</span>
-                                    </div>
-                                </td>
+                                <div class="file-title">
+                                    <strong>{file.title}</strong>
+                                    <span class="file-category">{file.category_name || 'Uncategorised'}</span>
+                                </div>
+                            </td>
                                 <td data-label="Author">{file.author}</td>
                                 <td data-label="Date">
                                     <span class="full-date">{new Date(file.date).toLocaleDateString('en-GB')}</span>
@@ -161,7 +175,7 @@ export default function FilesPage() {
                         <button class="secondary" onClick={() => navigate('/admin/files')}>Manage Files</button>
                     </Show>
                     <div class="search-box liquid-container">
-                        <FaSolidMagnifyingGlass />
+                        <span class="icon"><FaSolidMagnifyingGlass /></span>
                         <input
                             type="text"
                             placeholder="Search title, content or filename:"
@@ -171,8 +185,8 @@ export default function FilesPage() {
                             }}
                         />
                     </div>
-                    <div class="glass-input-group liquid-container" style="width: auto; min-width: 200px;">
-                        <FaSolidFilter />
+                    <div class="glass-input-group liquid-container category-filter">
+                        <span class="icon"><FaSolidFilter /></span>
                         <select value={categoryId()} onChange={(e) => {
                             setSearchParams({ categoryId: e.currentTarget.value, page: 1 });
                         }}>

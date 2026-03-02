@@ -52,28 +52,72 @@ export default class EmailsAPI {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${title} - DUCC</title>
+    <link rel="stylesheet" href="/styles.css" />
     <style>
-        body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f6f7fb; color: #1f2937; }
-        .wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .card { max-width: 560px; width: 100%; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.08); padding: 28px; }
-        h1 { margin: 0 0 10px; font-size: 1.4rem; }
-        p { margin: 0 0 14px; line-height: 1.5; }
-        a { color: #7E317B; text-decoration: none; font-weight: 600; }
+        body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, rgba(212,125,228,0.08), transparent 35%), var(--pico-background-color, #101219); color: var(--pico-color, #eef1f7); font-family: var(--font-family, Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif); }
+        .auth-page-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.25rem; box-sizing: border-box; }
+        .auth-card { width: min(560px, 100%); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.15); background: rgba(20,22,31,0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 35px rgba(0,0,0,0.28); padding: 1.75rem; }
+        h2 { margin: 0 0 0.65rem; font-size: 1.45rem; }
+        p { margin: 0 0 0.9rem; line-height: 1.5; opacity: 0.95; }
+        .actions { display: grid; gap: 0.75rem; margin-top: 1rem; }
+        .primary-btn { appearance: none; border: 0; border-radius: 0.75rem; padding: 0.75rem 1rem; font-weight: 700; cursor: pointer; color: white; background: var(--pico-primary, #aa40bf); }
+        .secondary-link { text-align: center; color: var(--pico-primary, #d47de4); text-decoration: none; font-weight: 600; }
     </style>
 </head>
 <body>
-    <main class="wrap">
-        <section class="card">
-            <h1>${title}</h1>
+    <main class="auth-page-wrapper">
+        <section class="auth-card">
+            <h2>${title}</h2>
             <p>${message}</p>
-            <p>Please return to your account page and request a new verification email.</p>
-            <p><a href="/profile?tab=settings">Go to Profile Settings</a></p>
+            <p>Please return to your profile settings and request a new verification email.</p>
+            <div class="actions">
+                <button class="primary-btn" onclick="window.location.href='/profile/settings'">Go to Profile Settings</button>
+                <a class="secondary-link" href="/profile/settings">Open settings in this tab</a>
+            </div>
         </section>
     </main>
 </body>
 </html>`;
 
         return reply.status(statusCode).type('text/html; charset=utf-8').send(html);
+    }
+
+    private renderVerificationSuccessPage(reply: FastifyReply) {
+        const html = `<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Email Verified - DUCC</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+        body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, rgba(212,125,228,0.08), transparent 35%), var(--pico-background-color, #101219); color: var(--pico-color, #eef1f7); font-family: var(--font-family, Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif); }
+        .auth-page-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.25rem; box-sizing: border-box; }
+        .auth-card { width: min(560px, 100%); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.15); background: rgba(20,22,31,0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 35px rgba(0,0,0,0.28); padding: 1.75rem; }
+        h2 { margin: 0 0 0.65rem; font-size: 1.45rem; }
+        p { margin: 0 0 0.9rem; line-height: 1.5; opacity: 0.95; }
+        .actions { display: grid; gap: 0.75rem; margin-top: 1rem; }
+        .primary-btn, .secondary-btn { appearance: none; border: 0; border-radius: 0.75rem; padding: 0.75rem 1rem; font-weight: 700; cursor: pointer; }
+        .primary-btn { color: white; background: var(--pico-primary, #aa40bf); }
+        .secondary-btn { color: var(--pico-color, #eef1f7); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); }
+    </style>
+</head>
+<body>
+    <main class="auth-page-wrapper">
+        <section class="auth-card">
+            <h2>Email Verified</h2>
+            <p>Your new email address has been verified successfully.</p>
+            <p>You can now return to your DUCC profile settings.</p>
+            <div class="actions">
+                <button class="primary-btn" onclick="window.close()">Close Tab</button>
+                <button class="secondary-btn" onclick="window.location.href='/profile/settings'">Open Profile Settings</button>
+            </div>
+        </section>
+    </main>
+</body>
+</html>`;
+
+        return reply.status(200).type('text/html; charset=utf-8').send(html);
     }
 
     registerRoutes() {
@@ -130,7 +174,7 @@ export default class EmailsAPI {
                 return this.renderVerificationErrorPage(reply, status.getStatus(), status.getMessage() || 'Unable to verify this email address.');
             }
 
-            return reply.redirect('/email-verified');
+            return this.renderVerificationSuccessPage(reply);
         });
 
         /**

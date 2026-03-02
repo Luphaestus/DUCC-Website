@@ -13,12 +13,7 @@ const HomePage = lazy(() => import("./pages/HomePage"));
 const EventsPage = lazy(() => import("./pages/EventsPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
-const ProfileLayout = lazy(() => import("./pages/profile/ProfileLayout"));
-const ProfileOverview = lazy(() => import("./pages/profile/ProfileOverview"));
-const ProfileCars = lazy(() => import("./pages/profile/ProfileCars"));
-const ProfileKit = lazy(() => import("./pages/profile/ProfileKit"));
-const ProfileBalance = lazy(() => import("./pages/profile/ProfileBalance"));
-const ProfileSettings = lazy(() => import("./pages/profile/ProfileSettings"));
+const Profile = lazy(() => import("./pages/profile/Profile"));
 const ExecPage = lazy(() => import("./pages/ExecPage"));
 const FilesPage = lazy(() => import("./pages/FilesPage"));
 const SwimsPage = lazy(() => import("./pages/SwimsPage"));
@@ -75,13 +70,7 @@ if (root) {
           <Route path="/home" component={HomePage} />
           <Route path="/login" component={LoginPage} />
           <Route path="/signup" component={SignupPage} />
-          <Route path="/profile" component={ProfileLayout}>
-            <Route path="/" component={ProfileOverview} />
-            <Route path="/cars" component={ProfileCars} />
-            <Route path="/kit" component={ProfileKit} />
-            <Route path="/balance" component={ProfileBalance} />
-            <Route path="/settings" component={ProfileSettings} />
-          </Route>
+          <Route path="/profile/*" component={Profile} />
           <Route path="/exec" component={ExecPage} />
           <Route path="/files" component={FilesPage} />
           <Route path="/swims" component={SwimsPage} />
@@ -93,44 +82,44 @@ if (root) {
           <Route path="/email-sent" component={EmailSentPage} />
           <Route path="/email-verified" component={EmailVerifiedPage} />
           <Route path="/settlement" component={SettlementPage} />
-          
+
           <Route path="/events" component={EventsPage}>
             <Route path="/" component={() => null} />
             <Route path="/:id" component={EventDetailPage} />
           </Route>
           <Route path="/event/:id" component={EventDetailPage} />
           <Route path="/events/:id/expense/:expenseId" component={EventExpensePage} />
-          
+
           <Route path="/forms" component={FormsListPage} />
           <Route path="/forms/:id" component={FormViewer} />
-          
+
           <Route path="/elections" component={ElectionPage} />
           <Route path="/elections/:id" component={ElectionPage} />
-          
+
           <Route path="/admin" component={AdminLayout}>
-             <Route path="/" component={AdminDashboardPage} />
-             <Route path="/users" component={AdminUsersPage} />
-             <Route path="/user/:id" component={AdminUserDetailPage} />
-             <Route path="/invitations" component={AdminInvitationsPage} />
-             <Route path="/keys" component={AdminKeysPage} />
-             <Route path="/events" component={AdminEventsPage} />
-             <Route path="/events/share" component={AdminShareWeekPage} />
-             <Route path="/event/:id" component={AdminEventDetailPage} />
-             <Route path="/emails" component={AdminEmailsPage} />
-             <Route path="/files" component={AdminFilesPage} />
-             <Route path="/quotes" component={AdminQuotesPage} />
-             <Route path="/tags" component={AdminTagsPage} />
-             <Route path="/tag/:id" component={AdminTagDetailPage} />
-             <Route path="/roles" component={AdminRolesPage} />
-             <Route path="/role/:id" component={AdminRoleDetailPage} />
-             <Route path="/slides" component={AdminSlidesPage} />
-             <Route path="/globals" component={AdminGlobalsPage} />
-             <Route path="/kit" component={AdminKitPage} />
-             <Route path="/stats" component={AdminStatsPage} />
-             <Route path="/forms" component={AdminFormsPage} />
-             <Route path="/forms/:id" component={AdminFormEditor} />
-             <Route path="/elections" component={AdminElectionsPage} />
-             <Route path="/elections/:id" component={AdminElectionsPage} />
+            <Route path="/" component={AdminDashboardPage} />
+            <Route path="/users" component={AdminUsersPage} />
+            <Route path="/user/:id" component={AdminUserDetailPage} />
+            <Route path="/invitations" component={AdminInvitationsPage} />
+            <Route path="/keys" component={AdminKeysPage} />
+            <Route path="/events" component={AdminEventsPage} />
+            <Route path="/events/share" component={AdminShareWeekPage} />
+            <Route path="/event/:id" component={AdminEventDetailPage} />
+            <Route path="/emails" component={AdminEmailsPage} />
+            <Route path="/files" component={AdminFilesPage} />
+            <Route path="/quotes" component={AdminQuotesPage} />
+            <Route path="/tags" component={AdminTagsPage} />
+            <Route path="/tag/:id" component={AdminTagDetailPage} />
+            <Route path="/roles" component={AdminRolesPage} />
+            <Route path="/role/:id" component={AdminRoleDetailPage} />
+            <Route path="/slides" component={AdminSlidesPage} />
+            <Route path="/globals" component={AdminGlobalsPage} />
+            <Route path="/kit" component={AdminKitPage} />
+            <Route path="/stats" component={AdminStatsPage} />
+            <Route path="/forms" component={AdminFormsPage} />
+            <Route path="/forms/:id" component={AdminFormEditor} />
+            <Route path="/elections" component={AdminElectionsPage} />
+            <Route path="/elections/:id" component={AdminElectionsPage} />
           </Route>
 
           <Route path="/unauthorised" component={UnauthorisedPage} />

@@ -156,6 +156,11 @@ export default class EmailsDB {
             if (!emailRecord) return new statusObject(404, 'Email not found.');
             if (emailRecord.is_primary) return new statusObject(400, 'You cannot delete your primary email.');
 
+            const normalizedEmail = String(emailRecord.email || '').trim().toLowerCase();
+            if (normalizedEmail.endsWith('@durham.ac.uk')) {
+                return new statusObject(400, 'You cannot delete your Durham email address.');
+            }
+
             const emailCount = await db.get('SELECT COUNT(*) as count FROM user_emails WHERE user_id = ?', [userId]);
             if (emailCount.count <= 1) return new statusObject(400, 'You must have at least one email address.');
 
