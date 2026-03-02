@@ -126,8 +126,15 @@ export default function ShareWeekPage() {
         const panel = document.getElementById('capture-area') as HTMLDivElement | null;
         if (!panel) return;
 
+        const centerWatermarkImage = panel.querySelector('.share-center-watermark') as HTMLImageElement | null;
+        const previousWatermarkDisplay = centerWatermarkImage?.style.display;
+        const previousPanelBoxShadow = panel.style.boxShadow;
+
         try {
-            panel.classList.add('export-capture-mode');
+            panel.style.boxShadow = 'none';
+            if (centerWatermarkImage) {
+                centerWatermarkImage.style.display = 'none';
+            }
 
             const docFonts = (document as any).fonts;
             if (docFonts?.ready) {
@@ -140,13 +147,15 @@ export default function ShareWeekPage() {
             }
 
             const rect = panel.getBoundingClientRect();
+            const captureWidth = Math.ceil(rect.width);
+            const captureHeight = Math.ceil(rect.height);
             const { default: html2canvas } = await import('html2canvas');
             const panelCanvas = await html2canvas(panel, {
                 scale: exportScale(),
                 useCORS: true,
                 backgroundColor: theme() === 'dark' ? darkPanelBg() : lightPanelBg(),
-                width: Math.ceil(rect.width),
-                height: Math.ceil(rect.height)
+                width: captureWidth,
+                height: captureHeight
             });
 
             const shadowBlur = 42 * exportScale();
@@ -154,8 +163,8 @@ export default function ShareWeekPage() {
             const shadowOffsetY = 14 * exportScale();
             const shadowReachX = shadowBlur + Math.abs(shadowOffsetX);
             const shadowReachY = shadowBlur + Math.abs(shadowOffsetY);
-            const framePadX = Math.ceil((exportPaddingX * exportScale()) + shadowReachX);
-            const framePadY = Math.ceil((10 * exportScale()) + shadowReachY);
+            const framePadX = Math.ceil(shadowReachX);
+            const framePadY = Math.ceil(shadowReachY);
             const outputCanvas = document.createElement('canvas');
             outputCanvas.width = panelCanvas.width + (framePadX * 2);
             outputCanvas.height = panelCanvas.height + (framePadY * 2);
@@ -198,7 +207,10 @@ export default function ShareWeekPage() {
         } catch (error) {
             console.error('Failed to export share panel as JPG', error);
         } finally {
-            panel.classList.remove('export-capture-mode');
+            panel.style.boxShadow = previousPanelBoxShadow;
+            if (centerWatermarkImage) {
+                centerWatermarkImage.style.display = previousWatermarkDisplay ?? '';
+            }
         }
     };
 
@@ -923,24 +935,6 @@ export default function ShareWeekPage() {
                     margin-bottom: 0;
                     left: 0;
                     width: 100%;
-                }
-                .share-container.export-capture-mode .share-footer {
-                    margin-top: calc(0.18rem * var(--share-density));
-                    left: 0;
-                    width: 100%;
-                    margin-bottom: calc(-2rem * var(--share-density));
-                    background: transparent;
-                }
-                .share-container.export-capture-mode {
-                    height: auto !important;
-                    min-height: 0;
-                    box-shadow: none !important;
-                }
-                .share-container.export-capture-mode .share-center-watermark {
-                    display: none;
-                }
-                .share-container.export-capture-mode.auto-height-active .share-footer {
-                    margin-top: 0;
                 }
                 .share-footer .signup-title {
                     margin: 0;
