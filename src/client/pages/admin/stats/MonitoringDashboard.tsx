@@ -3,16 +3,16 @@ import { Dynamic } from "solid-js/web";
 import { apiRequest } from "@/utils/api";
 import Panel from "@/components/Panel";
 import { onUpdate } from "@/utils/updates";
-import { 
-    FaSolidBolt, FaSolidGaugeHigh, FaSolidDatabase, 
-    FaSolidUsers, FaSolidGear 
+import {
+    FaSolidBolt, FaSolidGaugeHigh, FaSolidDatabase,
+    FaSolidUsers, FaSolidGear
 } from 'solid-icons/fa';
 
 // Lightweight Line Chart Component (SVG)
 const LineChart = (props: { data: number[], labels: string[], color?: string, height?: number }) => {
     const height = () => props.height || 100;
     const max = createMemo(() => Math.max(...props.data, 1));
-    
+
     const points = createMemo(() => {
         const len = props.data.length;
         if (len < 2) return "";
@@ -75,7 +75,7 @@ const Gauge = (props: { value: number, label: string, color?: string }) => {
 
 export default function MonitoringDashboard() {
     const [liveMetrics, setLiveMetrics] = createSignal<any>(null);
-    const [history, { refetch }] = createResource(async () => await apiRequest('GET', '/api/admin/stats/system?hours=6'));
+    const [systemStats, { refetch }] = createResource(async () => await apiRequest('GET', '/api/admin/stats/system?hours=6'));
 
     onMount(() => {
         const cleanup = onUpdate((event) => {
@@ -86,8 +86,15 @@ export default function MonitoringDashboard() {
         onCleanup(cleanup);
     });
 
-    const cpuHistory = createMemo(() => history()?.map((h: any) => h.cpu_usage) || []);
-    const memHistory = createMemo(() => history()?.map((h: any) => h.memory_usage) || []);
+    const metricHistory = createMemo(() => {
+        const data = systemStats();
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.history)) return data.history;
+        return [];
+    });
+
+    const cpuHistory = createMemo(() => metricHistory().map((h: any) => h.cpu_usage || 0));
+    const memHistory = createMemo(() => metricHistory().map((h: any) => h.memory_usage || 0));
 
     const [widgets, setWidgets] = createSignal([
         { id: 'cpu', title: 'CPU Usage', type: 'gauge', value: () => liveMetrics()?.cpu_usage || 0, history: cpuHistory, color: '#ff4757' },
@@ -121,7 +128,7 @@ export default function MonitoringDashboard() {
                                 <button class="icon-only mini-btn" onClick={() => moveWidget(i(), Math.max(0, i() - 1))}>←</button>
                                 <button class="icon-only mini-btn" onClick={() => moveWidget(i(), Math.min(widgets().length - 1, i() + 1))}>→</button>
                             </div>
-                            
+
                             <Show when={w.type === 'gauge'}>
                                 <div class="gauge-container">
                                     <Gauge value={w.value()} label={w.title} color={w.color} />

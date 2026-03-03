@@ -515,7 +515,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                             <For each={getDaysInView()}>
                                 {(day) => (
                                     <div class="day-column" classList={{ 'today': isToday(day) }}>
-                                        <div class="day-header" 
+                                        <div class="day-header"
                                             classList={{ 'clickable': !!props.onDayClick }}
                                             onClick={() => props.onDayClick?.(day)}
                                         >
@@ -548,7 +548,7 @@ export default function CalendarWidget(props: CalendarWidgetProps) {
                                                             classList={{ 'is-dragging': isDragging, 'canceled': event.is_canceled, 'past': new Date(event.end) < now() }}
                                                             style={style}
                                                             onMouseDown={(e) => handleEventMouseDown(e, event)}
-                                                            onClick={() => props.onEventClick ? props.onEventClick(event) : navigate(`/events/${event.id}`)}
+                                                            onClick={() => props.onEventClick ? props.onEventClick(event) : navigate(`/event/${event.id}`)}
                                                             onContextMenu={(e) => {
                                                                 if (!props.adminMode) return;
                                                                 e.preventDefault();

@@ -45,8 +45,10 @@
                 justify-content: center;
             }
 
-            .icon { // New style for icon class inside h3
+            .icon {
+                // New style for icon class inside h3
                 flex-shrink: 0; // Prevent icon from shrinking
+
                 svg {
                     width: 1.25rem;
                     height: 1.25rem;
@@ -55,16 +57,17 @@
             }
         }
 
-        .panel-left-actions, .panel-actions {
+        .panel-left-actions,
+        .panel-actions {
             display: flex;
             gap: 0.75rem;
             align-items: center;
             flex-shrink: 0; // Prevent buttons from shrinking
             z-index: 10;
-            
+
             // Remove absolute positioning, let flexbox handle it
-            position: static; 
-            transform: none; 
+            position: static;
+            transform: none;
 
             button {
                 margin: 0;
@@ -125,7 +128,8 @@
         }
     }
 
-    svg, span:has(svg) {
+    svg,
+    span:has(svg) {
         flex-shrink: 0;
         width: 20px;
         height: 20px;
@@ -143,7 +147,7 @@
     gap: 1rem;
     pointer-events: none;
 
-    & > * {
+    &>* {
         pointer-events: auto;
     }
 }
@@ -156,9 +160,12 @@
     min-height: 0 !important;
     border-radius: 28px !important;
     padding: 0 !important;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0;
+    font-size: 0;
+    line-height: 1;
     box-shadow: 0 8px 25px rgba(var(--pico-primary-rgb), 0.4);
     background: var(--pico-primary);
     color: white;
@@ -180,6 +187,8 @@
         width: 24px;
         height: 24px;
         flex-shrink: 0;
+        margin: 0 !important;
+        display: block;
     }
 
     &:hover {
@@ -199,7 +208,7 @@
     }
 
     animation: float-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-               pulse-attention 2s infinite 1s;
+    pulse-attention 2s infinite 1s;
 }
 
 @keyframes float-in {
@@ -207,6 +216,7 @@
         transform: translateY(100px) scale(0);
         opacity: 0;
     }
+
     to {
         transform: translateY(0) scale(1);
         opacity: 1;
@@ -214,9 +224,18 @@
 }
 
 @keyframes pulse-attention {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.08); box-shadow: 0 12px 35px rgba(var(--pico-primary-rgb), 0.6); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 12px 35px rgba(var(--pico-primary-rgb), 0.6);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 // Support for older/manual panel classes

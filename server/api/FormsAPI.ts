@@ -52,7 +52,7 @@ export default class FormsAPI {
                 if (!hasGlobalManage && !hasAnyManagementRole && !hasAnyManagementPerm && !(await Permissions.hasPermission(this.db, userId, 'exec.publish'))) {
                     return reply.status(403).send({ error: 'Forbidden' });
                 }
-                
+
                 let query = 'SELECT f.*, e.title as event_title, u.first_name as author_name FROM forms f LEFT JOIN events e ON f.event_id = e.id LEFT JOIN users u ON f.created_by = u.id';
                 let params: any[] = [];
 
@@ -101,7 +101,7 @@ export default class FormsAPI {
                     this.db.all('SELECT role_id FROM form_management_roles WHERE form_id = ?', [formId]),
                     this.db.all('SELECT permission_id FROM form_management_permissions WHERE form_id = ?', [formId])
                 ]);
-                
+
                 // Parse options JSON safely
                 const parsedQuestions = questions.map(q => {
                     let options = [];
@@ -115,17 +115,17 @@ export default class FormsAPI {
                     return { ...q, options };
                 });
 
-                return { 
-                    form: { 
-                        ...form, 
+                return {
+                    form: {
+                        ...form,
                         visibility_tags: vTags.map(t => t.tag_id),
                         visibility_roles: vRoles.map(r => r.role_id),
                         visibility_permissions: vPerms.map(p => p.permission_id),
                         management_roles: mRoles.map(r => r.role_id),
                         management_permissions: mPerms.map(p => p.permission_id)
-                    }, 
+                    },
                     pages,
-                    questions: parsedQuestions 
+                    questions: parsedQuestions
                 };
             } catch (e: any) {
                 Logger.error('Failed to fetch form', e);
@@ -135,7 +135,7 @@ export default class FormsAPI {
 
         // Create Form (Admin)
         this.app.post('/api/admin/forms', { preHandler: [checkAuthentication('exec.publish')] }, async (req: any, reply) => {
-            const { 
+            const {
                 title, description, is_global, event_id, expires_at, allow_multiple_responses, pages,
                 visibility_tags, visibility_roles, visibility_permissions, management_roles, management_permissions
             } = req.body;
@@ -183,7 +183,20 @@ export default class FormsAPI {
                         if (page.questions && Array.isArray(page.questions)) {
                             for (let j = 0; j < page.questions.length; j++) {
                                 const q = page.questions[j];
-                                const qRes = await this.db.run('INSERT INTO form_questions (page_id, question, type, required, options, display_order) VALUES (?, ?, ?, ?, ?, ?)', [pageId, q.question, q.type, q.required ? 1 : 0, q.options ? JSON.stringify(q.options) : null, j]);
+                                const qRes = await this.db.run(
+                                    'INSERT INTO form_questions (form_id, page_id, type, prompt, description, options, is_required, max_selections, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                    [
+                                        formId,
+                                        pageId,
+                                        q.type,
+                                        q.prompt || '',
+                                        q.description || null,
+                                        q.options ? JSON.stringify(q.options) : null,
+                                        q.is_required ? 1 : 0,
+                                        q.max_selections || 1,
+                                        j
+                                    ]
+                                );
                                 if (q.clientId) {
                                     questionIdMap.set(q.clientId, qRes.lastID);
                                 }
@@ -217,8 +230,8 @@ export default class FormsAPI {
 
         // Update Form (Admin)
         this.app.put('/api/admin/forms/:id', { preHandler: [checkAuthentication()] }, async (req: any, reply) => {
-            const { 
-                title, description, is_global, event_id, expires_at, allow_multiple_responses, questions,
+            const {
+                title, description, is_global, event_id, expires_at, allow_multiple_responses, pages,
                 visibility_tags, visibility_roles, visibility_permissions, management_roles, management_permissions
             } = req.body;
             const id = req.params.id;
@@ -265,53 +278,66 @@ export default class FormsAPI {
                     }
                 }
 
-                // Handle Questions (Simple replace logic: Update existing, insert new, delete removed)
-                const existingQuestions = await this.db.all('SELECT id FROM form_questions WHERE form_id = ?', [id]);
-                const existingIds = existingQuestions.map(q => q.id);
-                const incomingIds = questions.map((q: any) => q.id).filter((id: any) => id);
+                await this.db.run('DELETE FROM form_questions WHERE form_id = ?', [id]);
+                await this.db.run('DELETE FROM form_pages WHERE form_id = ?', [id]);
 
-                const toDelete = existingIds.filter(id => !incomingIds.includes(id));
-                for (const delId of toDelete) {
-                    await this.db.run('DELETE FROM form_questions WHERE id = ?', [delId]);
-                }
+                const questionIdMap = new Map<string, number>();
 
-                const questionIdMap = new Map<number, number>();
-
-                for (let i = 0; i < questions.length; i++) {
-                    const q = questions[i];
-                    const options = q.options ? JSON.stringify(q.options) : null;
-                    let dbId = q.id;
-                    if (q.id) {
-                        await this.db.run(
-                            'UPDATE form_questions SET type = ?, prompt = ?, description = ?, options = ?, is_required = ?, max_selections = ?, display_order = ?, dependency_question_id = NULL WHERE id = ?',
-                            [q.type, q.prompt, q.description || null, options, q.is_required ? 1 : 0, q.max_selections || 1, i, q.id]
+                if (pages && Array.isArray(pages)) {
+                    for (let i = 0; i < pages.length; i++) {
+                        const page = pages[i];
+                        const pageRes = await this.db.run(
+                            'INSERT INTO form_pages (form_id, title, description, display_order) VALUES (?, ?, ?, ?)',
+                            [id, page.title || null, page.description || null, i]
                         );
-                    } else {
-                        const qRes = await this.db.run(
-                            'INSERT INTO form_questions (form_id, type, prompt, description, options, is_required, max_selections, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                            [id, q.type, q.prompt, q.description || null, options, q.is_required ? 1 : 0, q.max_selections || 1, i]
-                        );
-                        dbId = qRes.lastID;
-                    }
-                    questionIdMap.set(i, dbId);
-                }
+                        const pageId = pageRes.lastID;
 
-                // Update dependencies
-                for (let i = 0; i < questions.length; i++) {
-                    const q = questions[i];
-                    if (q.dependency_question_id !== null && q.dependency_question_id !== undefined) {
-                        let targetId = q.dependency_question_id;
-                        // Check if it's an index (small number not present in database IDs)
-                        // This is a bit heuristic but since IDs start high and auto-increment, it works.
-                        // Better check: is it within the range of question array indices?
-                        if (q.dependency_question_id < questions.length && questionIdMap.has(q.dependency_question_id)) {
-                            targetId = questionIdMap.get(q.dependency_question_id);
+                        if (page.questions && Array.isArray(page.questions)) {
+                            for (let j = 0; j < page.questions.length; j++) {
+                                const q = page.questions[j];
+                                const qRes = await this.db.run(
+                                    'INSERT INTO form_questions (form_id, page_id, type, prompt, description, options, is_required, max_selections, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                    [
+                                        id,
+                                        pageId,
+                                        q.type,
+                                        q.prompt || '',
+                                        q.description || null,
+                                        q.options ? JSON.stringify(q.options) : null,
+                                        q.is_required ? 1 : 0,
+                                        q.max_selections || 1,
+                                        j
+                                    ]
+                                );
+
+                                if (q.clientId) {
+                                    questionIdMap.set(q.clientId, qRes.lastID);
+                                }
+                                if (q.id) {
+                                    questionIdMap.set(String(q.id), qRes.lastID);
+                                }
+                            }
                         }
+                    }
 
-                        await this.db.run(
-                            'UPDATE form_questions SET dependency_question_id = ?, dependency_operator = ?, dependency_value = ? WHERE id = ?',
-                            [targetId, q.dependency_operator || 'equals', q.dependency_value || null, questionIdMap.get(i)]
-                        );
+                    for (const page of pages) {
+                        if (!page.questions) continue;
+                        for (const q of page.questions) {
+                            if (!q.dependency_question_id) continue;
+
+                            const currentKey = q.clientId || (q.id ? String(q.id) : undefined);
+                            if (!currentKey) continue;
+
+                            const targetId = questionIdMap.get(String(q.dependency_question_id));
+                            const currentId = questionIdMap.get(currentKey);
+
+                            if (targetId && currentId) {
+                                await this.db.run(
+                                    'UPDATE form_questions SET dependency_question_id = ?, dependency_operator = ?, dependency_value = ? WHERE id = ?',
+                                    [targetId, q.dependency_operator || 'equals', q.dependency_value || null, currentId]
+                                );
+                            }
+                        }
                     }
                 }
 
@@ -369,7 +395,7 @@ export default class FormsAPI {
                         WHERE fa.submission_id = ?
                         ORDER BY fq.display_order ASC
                     `, [sub.submission_id]);
-                    
+
                     // Parse JSON values for multiselect/options
                     sub.answers.forEach((answer: any) => {
                         if (['select', 'multiselect'].includes(answer.type) && answer.value) {
@@ -404,7 +430,7 @@ export default class FormsAPI {
                     this.db.all('SELECT * FROM form_pages WHERE form_id = ? ORDER BY display_order ASC', [form.id]),
                     this.db.all('SELECT * FROM form_questions WHERE form_id = ? ORDER BY display_order ASC', [form.id])
                 ]);
-                
+
                 // Parse options JSON safely
                 const parsedQuestions = questions.map(q => {
                     let options = [];
@@ -422,11 +448,11 @@ export default class FormsAPI {
                 const submission = await this.db.get('SELECT id FROM form_submissions WHERE form_id = ? AND user_id = ?', [form.id, req.user.id]);
                 const previousAnswers = submission ? await this.db.all('SELECT question_id, value FROM form_answers WHERE submission_id = ?', [submission.id]) : [];
 
-                return { 
-                    form: { ...form, is_closed: !!isClosed, user_has_submitted: !!userHasSubmitted }, 
+                return {
+                    form: { ...form, is_closed: !!isClosed, user_has_submitted: !!userHasSubmitted },
                     pages,
-                    questions: parsedQuestions, 
-                    submission, 
+                    questions: parsedQuestions,
+                    submission,
                     answers: previousAnswers
                 };
             } catch (e: any) {
@@ -439,7 +465,7 @@ export default class FormsAPI {
         this.app.get('/api/forms', { preHandler: [checkAuthentication()] }, async (req: any, reply) => {
             try {
                 const userId = req.user.id;
-                
+
                 // Get all potentially relevant forms
                 const allForms = await this.db.all(`
                     SELECT 
@@ -517,7 +543,7 @@ export default class FormsAPI {
                 if (existingSubmissionCount > 0 && form.allow_multiple_responses === 0) {
                     return reply.status(403).send({ error: 'This form does not allow multiple submissions, and you have already submitted.' });
                 }
-                
+
                 let submissionId;
                 if (existingSubmissionCount > 0 && form.allow_multiple_responses === 1) {
                     // Update existing for multiple allowed submissions (delete old answers and re-insert)

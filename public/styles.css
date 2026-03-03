@@ -12436,10 +12436,6 @@ footer .footer-bottom p {
 .form-structure-section .description-input-minimal::placeholder {
   opacity: 0.5;
 }
-.form-structure-section .page-questions {
-  border-left: 2px solid rgba(var(--pico-color-rgb), 0.1);
-  margin-left: 1rem;
-}
 
 .logic-gate-panel {
   margin-top: 1.5rem;

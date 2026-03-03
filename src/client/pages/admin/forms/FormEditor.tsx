@@ -4,7 +4,7 @@ import { Dynamic } from "solid-js/web";
 import { apiRequest } from "@/utils/api";
 import { useNotifications } from "@/stores/notifications";
 import Panel from "@/components/Panel";
-import { 
+import {
     FaSolidFloppyDisk, FaSolidPlus, FaSolidTrash, FaSolidArrowUp, FaSolidArrowDown,
     FaSolidGear, FaSolidFileLines, FaSolidXmark,
     FaSolidCircle, FaSolidSquare, FaSolidList,
@@ -85,12 +85,12 @@ export default function FormEditor() {
 
     const createNewQuestion = (order: number): Question => ({
         clientId: generateClientId(),
-        type: 'text', 
-        prompt: '', 
+        type: 'text',
+        prompt: '',
         description: '',
-        options: [''], 
-        is_required: false, 
-        max_selections: 1, 
+        options: [''],
+        is_required: false,
+        max_selections: 1,
         display_order: order,
         dependency_question_id: null,
         dependency_operator: 'equals',
@@ -223,26 +223,37 @@ export default function FormEditor() {
 
     const updatePage = (pIdx: number, field: keyof FormPage, value: any) => {
         const newPages = [...form().pages];
-        newPages[pIdx] = { ...newPages[pIdx], [field]: value };
+        (newPages[pIdx] as any)[field] = value;
         setForm({ ...form(), pages: newPages });
     };
 
     const addQuestion = (pIdx: number) => {
         const newPages = [...form().pages];
-        newPages[pIdx].questions.push(createNewQuestion(newPages[pIdx].questions.length));
+        const page = newPages[pIdx];
+        const questions = [...page.questions, createNewQuestion(page.questions.length)];
+        newPages[pIdx] = { ...page, questions };
         setForm({ ...form(), pages: newPages });
     };
 
     const updateQuestion = (pIdx: number, qIdx: number, field: keyof Question, value: any) => {
         const newPages = [...form().pages];
-        newPages[pIdx].questions[qIdx] = { ...newPages[pIdx].questions[qIdx], [field]: value };
-        
+        const page = newPages[pIdx];
+        const questions = [...page.questions];
+        const question = questions[qIdx];
+
+        if (field === 'prompt' || field === 'description' || field === 'max_selections' || field === 'dependency_value') {
+            (question as any)[field] = value;
+        } else {
+            questions[qIdx] = { ...question, [field]: value };
+        }
+
         if (field === 'type' && ['select', 'multiselect', 'rank'].includes(value)) {
-            if (newPages[pIdx].questions[qIdx].options.length === 0) {
-                newPages[pIdx].questions[qIdx].options = [''];
+            if (questions[qIdx].options.length === 0) {
+                questions[qIdx] = { ...questions[qIdx], options: [''] };
             }
         }
 
+        newPages[pIdx] = { ...page, questions };
         setForm({ ...form(), pages: newPages });
     };
 
@@ -252,23 +263,27 @@ export default function FormEditor() {
             notify('Action Blocked', 'A form must have at least one question.', 'warning');
             return;
         }
-        newPages[pIdx].questions = newPages[pIdx].questions.filter((_, i) => i !== qIdx);
-        
+        const page = newPages[pIdx];
+        const questions = page.questions.filter((_, i) => i !== qIdx);
+        newPages[pIdx] = { ...page, questions };
+
         // If page becomes empty, we could either remove it or keep it.
         // Let's keep it for now unless user deletes the page.
-        
+
         setForm({ ...form(), pages: newPages });
     };
 
     const moveQuestion = (pIdx: number, qIdx: number, direction: -1 | 1) => {
         const newPages = [...form().pages];
-        const questions = newPages[pIdx].questions;
+        const page = newPages[pIdx];
+        const questions = [...page.questions];
         if (qIdx + direction < 0 || qIdx + direction >= questions.length) return;
-        
+
         const temp = questions[qIdx];
         questions[qIdx] = questions[qIdx + direction];
         questions[qIdx + direction] = temp;
-        
+
+        newPages[pIdx] = { ...page, questions };
         setForm({ ...form(), pages: newPages });
     };
 
@@ -286,23 +301,31 @@ export default function FormEditor() {
 
     const updateOption = (pIdx: number, qIdx: number, optIdx: number, value: string) => {
         const newPages = [...form().pages];
-        const newOptions = [...newPages[pIdx].questions[qIdx].options];
+        const page = newPages[pIdx];
+        const questions = [...page.questions];
+        const question = questions[qIdx];
+        const newOptions = [...question.options];
         newOptions[optIdx] = value;
 
         if (optIdx === newOptions.length - 1 && value.trim() !== '') {
             newOptions.push('');
         }
 
-        newPages[pIdx].questions[qIdx] = { ...newPages[pIdx].questions[qIdx], options: newOptions };
+        question.options = newOptions;
+        newPages[pIdx] = { ...page, questions };
         setForm({ ...form(), pages: newPages });
     };
 
     const removeOption = (pIdx: number, qIdx: number, optIdx: number) => {
         const newPages = [...form().pages];
-        const newOptions = newPages[pIdx].questions[qIdx].options.filter((_, i) => i !== optIdx);
+        const page = newPages[pIdx];
+        const questions = [...page.questions];
+        const question = questions[qIdx];
+        const newOptions = question.options.filter((_, i) => i !== optIdx);
         if (newOptions.length === 0) newOptions.push('');
-        
-        newPages[pIdx].questions[qIdx] = { ...newPages[pIdx].questions[qIdx], options: newOptions };
+
+        question.options = newOptions;
+        newPages[pIdx] = { ...page, questions };
         setForm({ ...form(), pages: newPages });
     };
 
@@ -341,19 +364,19 @@ export default function FormEditor() {
         <div class="dashboard-container">
             <main class="dashboard-content full-width">
                 <Show when={!loading.loading} fallback={<p aria-busy="true">Loading form...</p>}>
-                    <TabNav class="admin-nav-group">
-                        <button class="tab-btn" classList={{ active: activeTab() === 'editor' }} onClick={() => setActiveTab('editor')}>
-                            <FaSolidGear /> Editor
-                        </button>
-                        <Show when={!isNew()}>
+                    <Show when={!isNew()}>
+                        <TabNav class="admin-nav-group">
+                            <button class="tab-btn" classList={{ active: activeTab() === 'editor' }} onClick={() => setActiveTab('editor')}>
+                                <FaSolidGear /> Editor
+                            </button>
                             <button class="tab-btn" classList={{ active: activeTab() === 'submissions' }} onClick={() => setActiveTab('submissions')}>
                                 <FaSolidListUl /> Submissions
                             </button>
-                        </Show>
-                    </TabNav>
+                        </TabNav>
+                    </Show>
 
                     <Show when={activeTab() === 'editor'}>
-                        <form id="form-editor-actual" onSubmit={handleSubmit} class="modern-form">
+                        <form id="form-editor-actual" onSubmit={handleSubmit} class="modern-form form-editor-form">
                             <div class="form-editor-header flex justify-between align-center mb-6">
                                 <h2>{isNew() ? 'New Form' : 'Edit Form'}</h2>
                                 <Show when={!isNew()}>
@@ -366,23 +389,23 @@ export default function FormEditor() {
                             <Panel title="Form Settings" icon={FaSolidGear}>
                                 <div class="modern-form-group">
                                     <label class="form-label-top">Form Title
-                                        <input type="text" class="title-input" value={form().title} onInput={e => setForm({...form(), title: e.currentTarget.value})} required placeholder="e.g. Attendance Waiver" />
+                                        <input type="text" class="title-input" value={form().title} onInput={e => setForm({ ...form(), title: e.currentTarget.value })} required placeholder="e.g. Attendance Waiver" />
                                     </label>
                                 </div>
                                 <label>Description
-                                    <textarea rows="2" value={form().description} onInput={e => setForm({...form(), description: e.currentTarget.value})} placeholder="What is this form for?"></textarea>
+                                    <textarea rows="2" value={form().description} onInput={e => setForm({ ...form(), description: e.currentTarget.value })} placeholder="What is this form for?"></textarea>
                                 </label>
                                 <div class="grid-2-col">
                                     <Show when={!isNew() || !location.query.event_id}>
                                         <label>Form Context / Attachment
-                                            <select 
-                                                value={form().is_global ? 'global' : (form().event_id || '')} 
+                                            <select
+                                                value={form().is_global ? 'global' : (form().event_id || '')}
                                                 onChange={e => {
                                                     const val = e.currentTarget.value;
                                                     if (val === 'global') {
-                                                        setForm({...form(), is_global: true, event_id: null});
+                                                        setForm({ ...form(), is_global: true, event_id: null });
                                                     } else {
-                                                        setForm({...form(), is_global: false, event_id: parseInt(val) || null});
+                                                        setForm({ ...form(), is_global: false, event_id: parseInt(val) || null });
                                                     }
                                                 }}
                                             >
@@ -396,16 +419,13 @@ export default function FormEditor() {
                                         </label>
                                     </Show>
                                     <label>Closing Date (Optional)
-                                        <input type="datetime-local" value={form().expires_at || ''} onInput={e => setForm({...form(), expires_at: e.currentTarget.value || null})} />
+                                        <input type="datetime-local" value={form().expires_at || ''} onInput={e => setForm({ ...form(), expires_at: e.currentTarget.value || null })} />
                                     </label>
                                     <div class="flex align-center pt-4">
                                         <div class="liquid-container secondary-bg toggle-panel" style={{ "padding": "1rem 1.25rem", "border-radius": "16px", "width": "100%" }}>
-                                            <div class="flex justify-between align-center">
-                                                <div>
-                                                    <strong class="block">Allow Multiple Responses</strong>
-                                                    <span class="small-text">Can users submit more than one response?</span>
-                                                </div>
-                                                <input type="checkbox" role="switch" checked={form().allow_multiple_responses} onChange={e => setForm({...form(), allow_multiple_responses: e.currentTarget.checked})} />
+                                            <div class="flex justify-between align-center toggle-row">
+                                                <strong class="block">Allow Multiple Responses</strong>
+                                                <input type="checkbox" role="switch" checked={form().allow_multiple_responses} onChange={e => setForm({ ...form(), allow_multiple_responses: e.currentTarget.checked })} />
                                             </div>
                                         </div>
                                     </div>
@@ -422,7 +442,7 @@ export default function FormEditor() {
 
                                 <Show when={accessTab() === 'visibility'}>
                                     <p class="small-text mb-4">Restrict who can see and answer this form. User must satisfy <strong>all</strong> active categories (e.g. have a required tag AND a required role).</p>
-                                    
+
                                     <div class="sub-tab-nav mb-4">
                                         <button type="button" classList={{ active: visibilityType() === 'tags' }} onClick={() => setVisibilityType('tags')}>Tags ({form().visibility_tags.length})</button>
                                         <button type="button" classList={{ active: visibilityType() === 'roles' }} onClick={() => setVisibilityType('roles')}>Roles ({form().visibility_roles.length})</button>
@@ -476,7 +496,7 @@ export default function FormEditor() {
 
                                 <Show when={accessTab() === 'management'}>
                                     <p class="small-text mb-4">Users with these roles or permissions can view all submissions for this form, even without full 'form.manage' permission.</p>
-                                    
+
                                     <div class="sub-tab-nav mb-4">
                                         <button type="button" classList={{ active: managementType() === 'roles' }} onClick={() => setManagementType('roles')}>Roles ({form().management_roles.length})</button>
                                         <button type="button" classList={{ active: managementType() === 'permissions' }} onClick={() => setManagementType('permissions')}>Permissions ({form().management_permissions.length})</button>
@@ -518,66 +538,66 @@ export default function FormEditor() {
 
                             <div class="form-structure-section">
                                 <div class="section-header flex justify-between align-center mb-6">
-                                    <h3>Form Structure & Pages</h3>
+                                    <h3 class="no-margin">Form Structure & Pages</h3>
                                     <button type="button" class="small-btn secondary" onClick={addPage}><FaSolidPlus /> Add Page</button>
                                 </div>
 
-                                <For each={form().pages}>
+                                <Index each={form().pages}>
                                     {(page, pIdx) => (
                                         <div class="form-page-group mb-8">
                                             <div class="page-header-panel liquid-container secondary-bg mb-4" style={{ "padding": "1rem 1.5rem", "border-radius": "16px" }}>
                                                 <div class="flex justify-between align-center">
                                                     <div class="flex align-center gap-4 flex-grow">
-                                                        <span class="page-number-badge">Page {pIdx() + 1}</span>
-                                                        <input 
-                                                            type="text" 
-                                                            class="title-input-minimal" 
-                                                            value={page.title} 
-                                                            onInput={e => updatePage(pIdx(), 'title', e.currentTarget.value)}
+                                                        <span class="page-number-badge">Page {pIdx + 1}</span>
+                                                        <input
+                                                            type="text"
+                                                            class="title-input-minimal"
+                                                            value={page().title}
+                                                            onInput={e => updatePage(pIdx, 'title', e.currentTarget.value)}
                                                             placeholder="Page Title (Optional)"
                                                         />
                                                     </div>
                                                     <Show when={form().pages.length > 1}>
-                                                        <button type="button" class="icon-btn delete small-btn" onClick={() => removePage(pIdx())}><FaSolidXmark /></button>
+                                                        <button type="button" class="icon-btn delete small-btn page-remove-btn" onClick={() => removePage(pIdx)}><FaSolidXmark /></button>
                                                     </Show>
                                                 </div>
-                                                <textarea 
-                                                    rows="1" 
-                                                    class="mt-2 description-input-minimal" 
-                                                    value={page.description} 
-                                                    onInput={e => updatePage(pIdx(), 'description', e.currentTarget.value)}
+                                                <textarea
+                                                    rows="1"
+                                                    class="mt-2 description-input-minimal"
+                                                    value={page().description}
+                                                    onInput={e => updatePage(pIdx, 'description', e.currentTarget.value)}
                                                     placeholder="Optional page description..."
                                                 ></textarea>
                                             </div>
 
-                                            <div class="page-questions pl-4 border-left">
-                                                <For each={page.questions}>
+                                            <div class="page-questions">
+                                                <For each={page().questions}>
                                                     {(q, qIdx) => (
-                                                        <Panel 
-                                                            class="question-panel" 
+                                                        <Panel
+                                                            class="question-panel"
                                                             title={
                                                                 <div class="question-title-row">
                                                                     <span>Question {qIdx() + 1}</span>
                                                                     <label class="checkbox-label required-toggle">
-                                                                        <input type="checkbox" checked={q.is_required} onChange={e => updateQuestion(pIdx(), qIdx(), 'is_required', e.currentTarget.checked)} />
+                                                                        <input type="checkbox" checked={q.is_required} onChange={e => updateQuestion(pIdx, qIdx(), 'is_required', e.currentTarget.checked)} />
                                                                         Required
                                                                     </label>
                                                                 </div>
                                                             }
                                                             action={
                                                                 <div class="question-actions">
-                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Up" onClick={() => moveQuestion(pIdx(), qIdx(), -1)} disabled={qIdx() === 0}><FaSolidArrowUp /></button>
-                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Down" onClick={() => moveQuestion(pIdx(), qIdx(), 1)} disabled={qIdx() === page.questions.length - 1}><FaSolidArrowDown /></button>
-                                                                    <button type="button" class="small-btn icon-only delete" title="Remove Question" onClick={() => removeQuestion(pIdx(), qIdx())} disabled={page.questions.length <= 1 && form().pages.length <= 1}><FaSolidTrash /></button>
+                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Up" onClick={() => moveQuestion(pIdx, qIdx(), -1)} disabled={qIdx() === 0}><FaSolidArrowUp /></button>
+                                                                    <button type="button" class="small-btn icon-only secondary" title="Move Down" onClick={() => moveQuestion(pIdx, qIdx(), 1)} disabled={qIdx() === page().questions.length - 1}><FaSolidArrowDown /></button>
+                                                                    <button type="button" class="small-btn icon-only delete" title="Remove Question" onClick={() => removeQuestion(pIdx, qIdx())} disabled={page().questions.length <= 1 && form().pages.length <= 1}><FaSolidTrash /></button>
                                                                 </div>
                                                             }
                                                         >
                                                             <div class="grid-2-col">
                                                                 <label>Question Title
-                                                                    <input type="text" value={q.prompt} onInput={e => updateQuestion(pIdx(), qIdx(), 'prompt', e.currentTarget.value)} required placeholder="e.g. Dietary Requirements" />
+                                                                    <input type="text" value={q.prompt} onInput={e => updateQuestion(pIdx, qIdx(), 'prompt', e.currentTarget.value)} required placeholder="e.g. Dietary Requirements" />
                                                                 </label>
                                                                 <label>Response Type
-                                                                    <select value={q.type} onChange={e => updateQuestion(pIdx(), qIdx(), 'type', e.currentTarget.value as any)}>
+                                                                    <select value={q.type} onChange={e => updateQuestion(pIdx, qIdx(), 'type', e.currentTarget.value as any)}>
                                                                         <option value="text">Short Text</option>
                                                                         <option value="textarea">Long Text</option>
                                                                         <option value="number">Number</option>
@@ -591,9 +611,9 @@ export default function FormEditor() {
 
                                                             <div class="form-group mt-2">
                                                                 <label class="small-text mb-1 block">Optional Description / Instructions</label>
-                                                                <RichTextEditor 
-                                                                    value={q.description} 
-                                                                    onInput={(v: string) => updateQuestion(pIdx(), qIdx(), 'description', v)} 
+                                                                <RichTextEditor
+                                                                    value={q.description}
+                                                                    onInput={(v: string) => updateQuestion(pIdx, qIdx(), 'description', v)}
                                                                     placeholder="Add more details or context for this question..."
                                                                 />
                                                             </div>
@@ -601,7 +621,7 @@ export default function FormEditor() {
                                                             <Show when={q.type === 'multiselect'}>
                                                                 <div class="selection-config">
                                                                     <label>Max Selections (0 = unlimited)
-                                                                        <input type="number" min="0" value={q.max_selections} onInput={e => updateQuestion(pIdx(), qIdx(), 'max_selections', parseInt(e.currentTarget.value) || 0)} />
+                                                                        <input type="number" min="0" value={q.max_selections} onInput={e => updateQuestion(pIdx, qIdx(), 'max_selections', parseInt(e.currentTarget.value) || 0)} />
                                                                     </label>
                                                                 </div>
                                                             </Show>
@@ -616,15 +636,15 @@ export default function FormEditor() {
                                                                                     <div class="option-type-icon">
                                                                                         <Dynamic component={getOptionIcon(q.type)} style={{ opacity: 0.5, "font-size": q.type === 'multiselect' ? '1rem' : '0.6rem' }} />
                                                                                     </div>
-                                                                                    <input 
-                                                                                        type="text" 
+                                                                                    <input
+                                                                                        type="text"
                                                                                         class="compact-input"
-                                                                                        value={opt()} 
-                                                                                        onInput={e => updateOption(pIdx(), qIdx(), optIdx, e.currentTarget.value)} 
+                                                                                        value={opt()}
+                                                                                        onInput={e => updateOption(pIdx, qIdx(), optIdx, e.currentTarget.value)}
                                                                                         placeholder={`Option ${optIdx + 1}...`}
                                                                                     />
                                                                                     <Show when={q.options.length > 1}>
-                                                                                        <button type="button" class="icon-btn delete" onClick={() => removeOption(pIdx(), qIdx(), optIdx)}><FaSolidXmark /></button>
+                                                                                        <button type="button" class="icon-btn delete" onClick={() => removeOption(pIdx, qIdx(), optIdx)}><FaSolidXmark /></button>
                                                                                     </Show>
                                                                                 </div>
                                                                             )}
@@ -632,23 +652,23 @@ export default function FormEditor() {
                                                                     </div>
                                                                 </div>
                                                             </Show>
-                                                            
-                                                            <Show when={pIdx() > 0 || qIdx() > 0}>
+
+                                                            <Show when={pIdx > 0 || qIdx() > 0}>
                                                                 <div class="logic-gate-panel liquid-container secondary-bg">
                                                                     <p class="logic-description"><strong>Conditional Logic:</strong> Display this question only if...</p>
                                                                     <div class="grid-3-col">
                                                                         <div class="flex-column">
                                                                             <label class="mb-1">Previous Question</label>
-                                                                            <select 
-                                                                                value={q.dependency_question_id || ''} 
+                                                                            <select
+                                                                                value={q.dependency_question_id || ''}
                                                                                 onChange={e => {
                                                                                     const val = e.currentTarget.value;
-                                                                                    updateQuestion(pIdx(), qIdx(), 'dependency_question_id', val === '' ? null : val);
+                                                                                    updateQuestion(pIdx, qIdx(), 'dependency_question_id', val === '' ? null : val);
                                                                                 }}
                                                                                 class="compact-input"
                                                                             >
                                                                                 <option value="">(Always Visible)</option>
-                                                                                <For each={allPreviousQuestions(pIdx(), qIdx())}>
+                                                                                <For each={allPreviousQuestions(pIdx, qIdx())}>
                                                                                     {(prevQ) => (
                                                                                         <option value={prevQ.clientId}>
                                                                                             {prevQ.prompt.substring(0, 40) || '(No Title)'}
@@ -657,11 +677,11 @@ export default function FormEditor() {
                                                                                 </For>
                                                                             </select>
                                                                         </div>
-                                                                        
+
                                                                         <Show when={q.dependency_question_id !== null}>
                                                                             <div class="flex-column">
                                                                                 <label class="mb-1">Operator</label>
-                                                                                <select value={q.dependency_operator} onChange={e => updateQuestion(pIdx(), qIdx(), 'dependency_operator', e.currentTarget.value)} class="compact-input">
+                                                                                <select value={q.dependency_operator} onChange={e => updateQuestion(pIdx, qIdx(), 'dependency_operator', e.currentTarget.value)} class="compact-input">
                                                                                     <option value="equals">is exactly</option>
                                                                                     <option value="not_equals">is not</option>
                                                                                     <option value="contains">contains</option>
@@ -669,7 +689,7 @@ export default function FormEditor() {
                                                                                     <option value="regex">matches regex</option>
                                                                                     <option value="was_visible">was visible</option>
                                                                                     {(() => {
-                                                                                        const targetQ = allPreviousQuestions(pIdx(), qIdx()).find(qq => qq.clientId === q.dependency_question_id);
+                                                                                        const targetQ = allPreviousQuestions(pIdx, qIdx()).find(qq => qq.clientId === q.dependency_question_id);
                                                                                         if (targetQ?.type === 'number') {
                                                                                             return (
                                                                                                 <>
@@ -689,29 +709,29 @@ export default function FormEditor() {
                                                                                         <input type="text" disabled value="N/A" class="compact-input" />
                                                                                     </Match>
                                                                                     <Match when={(() => {
-                                                                                        const targetQ = allPreviousQuestions(pIdx(), qIdx()).find(qq => qq.clientId === q.dependency_question_id);
+                                                                                        const targetQ = allPreviousQuestions(pIdx, qIdx()).find(qq => qq.clientId === q.dependency_question_id);
                                                                                         return targetQ && ['select', 'multiselect', 'rank'].includes(targetQ.type);
                                                                                     })()}>
                                                                                         <div class="conditional-options-container">
                                                                                             {(() => {
-                                                                                                const targetQ = allPreviousQuestions(pIdx(), qIdx()).find(qq => qq.clientId === q.dependency_question_id)!;
+                                                                                                const targetQ = allPreviousQuestions(pIdx, qIdx()).find(qq => qq.clientId === q.dependency_question_id)!;
                                                                                                 const isMulti = q.dependency_operator === 'is_one_of';
-                                                                                                
+
                                                                                                 if (isMulti) {
                                                                                                     const currentValues = (q.dependency_value || '').split(',').filter(Boolean);
                                                                                                     return (
                                                                                                         <div class="flex flex-wrap gap-1">
                                                                                                             <For each={targetQ.options.filter(o => o.trim())}>
                                                                                                                 {opt => (
-                                                                                                                    <button 
-                                                                                                                        type="button" 
-                                                                                                                        class="tag-badge tag-badge-simple neutral pointer" 
+                                                                                                                    <button
+                                                                                                                        type="button"
+                                                                                                                        class="tag-badge tag-badge-simple neutral pointer"
                                                                                                                         classList={{ selected: currentValues.includes(opt) }}
                                                                                                                         onClick={() => {
-                                                                                                                            const next = currentValues.includes(opt) 
-                                                                                                                                ? currentValues.filter(v => v !== opt) 
+                                                                                                                            const next = currentValues.includes(opt)
+                                                                                                                                ? currentValues.filter(v => v !== opt)
                                                                                                                                 : [...currentValues, opt];
-                                                                                                                            updateQuestion(pIdx(), qIdx(), 'dependency_value', next.join(','));
+                                                                                                                            updateQuestion(pIdx, qIdx(), 'dependency_value', next.join(','));
                                                                                                                         }}
                                                                                                                     >
                                                                                                                         {opt}
@@ -723,9 +743,9 @@ export default function FormEditor() {
                                                                                                 }
 
                                                                                                 return (
-                                                                                                    <select 
-                                                                                                        value={q.dependency_value || ''} 
-                                                                                                        onChange={e => updateQuestion(pIdx(), qIdx(), 'dependency_value', e.currentTarget.value)}
+                                                                                                    <select
+                                                                                                        value={q.dependency_value || ''}
+                                                                                                        onChange={e => updateQuestion(pIdx, qIdx(), 'dependency_value', e.currentTarget.value)}
                                                                                                         class="compact-input"
                                                                                                     >
                                                                                                         <option value="">Select option...</option>
@@ -738,16 +758,16 @@ export default function FormEditor() {
                                                                                         </div>
                                                                                     </Match>
                                                                                     <Match when={true}>
-                                                                                        <input 
+                                                                                        <input
                                                                                             type={(() => {
-                                                                                                const targetQ = allPreviousQuestions(pIdx(), qIdx()).find(qq => qq.clientId === q.dependency_question_id);
+                                                                                                const targetQ = allPreviousQuestions(pIdx, qIdx()).find(qq => qq.clientId === q.dependency_question_id);
                                                                                                 return targetQ?.type === 'number' && !['contains', 'regex', 'is_one_of'].includes(q.dependency_operator) ? 'number' : 'text';
-                                                                                            })()} 
-                                                                                            value={q.dependency_value || ''} 
-                                                                                            onInput={e => updateQuestion(pIdx(), qIdx(), 'dependency_value', e.currentTarget.value)} 
+                                                                                            })()}
+                                                                                            value={q.dependency_value || ''}
+                                                                                            onInput={e => updateQuestion(pIdx, qIdx(), 'dependency_value', e.currentTarget.value)}
                                                                                             placeholder={
-                                                                                                q.dependency_operator === 'regex' ? "Regex pattern" : 
-                                                                                                q.dependency_operator === 'is_one_of' ? "Val1, Val2, Val3" : "Target value"
+                                                                                                q.dependency_operator === 'regex' ? "Regex pattern" :
+                                                                                                    q.dependency_operator === 'is_one_of' ? "Val1, Val2, Val3" : "Target value"
                                                                                             }
                                                                                             class="compact-input"
                                                                                         />
@@ -761,13 +781,13 @@ export default function FormEditor() {
                                                         </Panel>
                                                     )}
                                                 </For>
-                                                <button type="button" class="small-btn secondary mt-4" onClick={() => addQuestion(pIdx())}>
-                                                    <FaSolidPlus /> Add Question to Page {pIdx() + 1}
+                                                <button type="button" class="small-btn secondary mt-4" onClick={() => addQuestion(pIdx)}>
+                                                    <FaSolidPlus /> Add Question to Page {pIdx + 1}
                                                 </button>
                                             </div>
                                         </div>
                                     )}
-                                </For>
+                                </Index>
                             </div>
                         </form>
                     </Show>
@@ -780,8 +800,8 @@ export default function FormEditor() {
 
             <Show when={activeTab() === 'editor' && !loading.loading && (isDirty() || isNew())}>
                 <div class="floating-action-container">
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         form="form-editor-actual"
                         class="floating-save-btn prominent-btn"
                         title={isNew() ? 'Create Form' : 'Save Changes'}

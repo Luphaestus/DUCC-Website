@@ -25,7 +25,7 @@ export interface EventData {
 
 export function StandardCard(props: { event: EventData, paused?: boolean }) {
     const navigate = useNavigate();
-    
+
     const startDate = () => new Date(props.event.start);
     const endDate = () => new Date(props.event.end);
     const isPast = () => endDate() < new Date();
@@ -48,7 +48,7 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
     const endTime = () => endDate().toLocaleTimeString('en-UK', timeOptions);
 
     const imageUrl = () => props.event.image_url || '/api/files/1/download?view=true';
-    
+
     const count = () => props.event.attendee_count !== undefined ? Number(props.event.attendee_count) : 0;
     const max = () => props.event.max_attendees;
     const attendanceDisplay = () => max() > 0 ? `${count()}/${max()}` : `${count()}/∞`;
@@ -58,7 +58,7 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
     const isWaitlistActive = () => isFull() && props.event.enable_waitlist;
 
     return (
-        <div 
+        <div
             class="liquid-container"
             classList={{
                 'event-card': true,
@@ -67,10 +67,10 @@ export function StandardCard(props: { event: EventData, paused?: boolean }) {
                 'in-progress': isCurrent(),
                 'waitlist-active': isWaitlistActive(),
                 'unavailable-event': props.event.can_attend === false && !props.event.is_attending
-            }} 
+            }}
             style={{ "--progress": `${progress()}%` }}
-            onClick={() => navigate(`/events/${props.event.id}${location.search}`)} 
-            role="button" 
+            onClick={() => navigate(`/event/${props.event.id}${location.search}`)}
+            role="button"
             tabindex="0"
             {...{ paused: props.paused } as any}
         >

@@ -48,7 +48,7 @@ export default function EventExpensePage() {
                 await apiRequest('PUT', `/api/events/${eventId()}/expenses/${expenseId()}`, data);
                 notify('Success', 'Expense updated.', 'success');
             }
-            navigate(`/events/${eventId()}`);
+            navigate(`/event/${eventId()}`);
         } catch (err: any) {
             notify('Error', err.message, 'error');
         }

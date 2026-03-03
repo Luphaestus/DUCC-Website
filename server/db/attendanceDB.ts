@@ -66,6 +66,7 @@ export default class AttendanceDB {
                 WITH LatestAttendance AS (
                     SELECT 
                         u.id, u.first_name, u.last_name, u.email, 
+                        u.has_dietary_info, u.dietary_info_details,
                         u.profile_picture_color, u.profile_picture_font, u.profile_picture_initials,
                         (SELECT CONCAT("/api/files/", f.id, "/download", CHAR(63 USING utf8mb4), "view=true") FROM files f WHERE f.id = u.profile_picture_id) as profile_picture_path,
                         ea.is_attending, ea.joined_at, ea.left_at, 
@@ -79,7 +80,7 @@ export default class AttendanceDB {
                 WHERE rn = 1
                 ORDER BY is_attending DESC, last_name ASC, first_name ASC
             `;
-            
+
             const rows = await db.all(sql, [eventId]);
             return new statusObject(200, null, rows);
         } catch (error) {

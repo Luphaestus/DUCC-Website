@@ -19,6 +19,8 @@ interface Attendee {
     first_name: string;
     last_name: string;
     email?: string;
+    has_dietary_info?: boolean;
+    dietary_info_details?: string;
     is_attending: boolean;
     upfront_refunded: boolean;
     payment_transaction_id?: number;
@@ -136,6 +138,11 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
     });
 
     const totalAttendeePages = createMemo(() => Math.ceil(filteredAttendees().length / 5));
+
+    const dietaryAttendees = createMemo(() => {
+        const list = attendees() || [];
+        return list.filter(a => a.is_attending && (a.has_dietary_info || !!a.dietary_info_details));
+    });
 
     // Handle capturing old data for slider
     let lastPageNum = attendeePage();
@@ -320,6 +327,24 @@ export default function FinanceTab(props: { eventId: number, isOffsite: boolean,
                 </Panel>
 
                 <div class="flex-column gap-6">
+                    <Panel title="Dietary Requirements" icon={FaSolidUsers}>
+                        <div class="flex-column gap-2">
+                            <For each={dietaryAttendees()}>
+                                {a => (
+                                    <div class="liquid-container p-3 secondary-bg dietary-item">
+                                        <div class="font-bold mb-1">{a.first_name} {a.last_name}</div>
+                                        <div class="small-text text-muted">
+                                            {(a.dietary_info_details || '').trim() || 'Dietary requirement noted (no details provided).'}
+                                        </div>
+                                    </div>
+                                )}
+                            </For>
+                            <Show when={dietaryAttendees().length === 0}>
+                                <p class="muted-text text-center py-4">No attendees have listed dietary requirements.</p>
+                            </Show>
+                        </div>
+                    </Panel>
+
                     {/* Transport Panel */}
                     <Show when={props.isOffsite}>
                         <Panel title="Trips & Transport" icon={FaSolidSuitcase} action={
