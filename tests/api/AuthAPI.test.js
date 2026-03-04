@@ -11,6 +11,7 @@ import fastifyPassport from '@fastify/passport';
 import TestWorld from '../utils/TestWorld.js';
 import AuthAPI from '../../server/api/AuthAPI.js';
 import UserAPI from '../../server/api/users/UserAPI.js';
+import { EmailManager } from '../../server/emails/EmailManager.js';
 import bcrypt from 'bcrypt';
 import config from '../../server/config.js';
 
@@ -22,11 +23,11 @@ describe('api/AuthAPI', () => {
         world = new TestWorld();
         await world.setUp();
         db = world.db;
-        
+
         app = Fastify();
         await app.register(fastifyCookie);
-        await app.register(fastifySession, { 
-            secret: 'test-secret-must-be-long-enough-for-session-plugin', 
+        await app.register(fastifySession, {
+            secret: 'test-secret-must-be-long-enough-for-session-plugin',
             cookieName: config.session.cookieName,
             saveUninitialized: true,
             cookie: { secure: false }
@@ -40,7 +41,7 @@ describe('api/AuthAPI', () => {
 
         auth = new AuthAPI(app, db, fastifyPassport);
         auth.registerRoutes();
-        
+
         new UserAPI(app, db).registerRoutes();
         await app.ready();
     });
@@ -68,7 +69,7 @@ describe('api/AuthAPI', () => {
         test('Account Restoration: Actually calling deleteAccount then re-signing up', async () => {
             const email = 'rejoiner.real@durham.ac.uk';
             const password = 'securePassword123';
-            
+
             // Create user
             await app.inject({
                 method: 'POST',
@@ -133,7 +134,7 @@ describe('api/AuthAPI', () => {
             expect(res.statusCode).toBe(200);
             expect(JSON.parse(res.body).user.email).toBe(email);
         });
-        
+
         test('POST /api/auth/login fail (wrong password)', async () => {
             const res = await app.inject({
                 method: 'POST',
@@ -172,10 +173,31 @@ describe('api/AuthAPI', () => {
                 payload: { email }
             });
             expect(res.statusCode).toBe(200);
-            
+
             const reset = await db.get('SELECT * FROM password_resets');
             expect(reset).toBeDefined();
             expect(reset.token).toBeDefined();
+        });
+
+        test('POST /api/auth/reset-password-request ignores untrusted Host header in emailed reset URL', async () => {
+            const sendSpy = vi.spyOn(EmailManager.getInstance(), 'sendTemplatedEmail').mockResolvedValue();
+
+            const res = await app.inject({
+                method: 'POST',
+                url: '/api/auth/reset-password-request',
+                headers: { host: 'evil.example.com' },
+                payload: { email }
+            });
+
+            expect(res.statusCode).toBe(200);
+            expect(sendSpy).toHaveBeenCalled();
+
+            const placeholders = sendSpy.mock.calls[0][3];
+            expect(placeholders.reset_url).toContain('/set-password?token=');
+            expect(placeholders.reset_url).not.toContain('evil.example.com');
+            expect(placeholders.reset_url).toMatch(/^https?:\/\/localhost/);
+
+            sendSpy.mockRestore();
         });
 
         test('POST /api/auth/set-password updates password', async () => {
@@ -222,7 +244,7 @@ describe('api/AuthAPI', () => {
                 url: '/api/auth/login',
                 payload: { email, password }
             });
-            
+
             const res = await app.inject({
                 method: 'GET',
                 url: '/api/auth/totp/setup',

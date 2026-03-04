@@ -6,21 +6,34 @@ import checkAuthentication from '../misc/authentication.js';
 import { EmailManager } from '../emails/EmailManager.js';
 import { NotificationType } from '../types/notifications.js';
 
-// VAPID Keys setup
-const vapidKeys = {
-    publicKey: process.env.VAPID_PUBLIC_KEY || 'BC71D4MNbXqiQxXzSOxAn7w4mWDrhGCFGBGpsG6pmdSuZgXmJ2WZfU38WK7I8bYQi_O1D_mSIY_WX5Lf1_9EVQ4',
-    privateKey: process.env.VAPID_PRIVATE_KEY || 'pyzA_8SOxDDJx0dQYdaOES9H4OqeHhfSRnvrK0ix5_I'
-};
-
-// If placeholders are detected, generate fresh ones and log them for the user to save
-if (vapidKeys.publicKey.startsWith('YOUR_')) {
-    const keys = webpush.generateVAPIDKeys();
-    vapidKeys.publicKey = keys.publicKey;
-    vapidKeys.privateKey = keys.privateKey;
-    Logger.info(`[PWA] Generated fresh VAPID Keys. Add these to your .env to persist subscriptions:`);
-    Logger.info(`VAPID_PUBLIC_KEY=${vapidKeys.publicKey}`);
-    Logger.info(`VAPID_PRIVATE_KEY=${vapidKeys.privateKey}`);
+function hasUsableKey(value?: string): boolean {
+    return !!value && !value.startsWith('YOUR_');
 }
+
+function getVapidKeys() {
+    const configuredPublic = process.env.VAPID_PUBLIC_KEY;
+    const configuredPrivate = process.env.VAPID_PRIVATE_KEY;
+    const hasConfiguredPair = hasUsableKey(configuredPublic) && hasUsableKey(configuredPrivate);
+
+    if (hasConfiguredPair) {
+        return {
+            publicKey: configuredPublic as string,
+            privateKey: configuredPrivate as string,
+        };
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('Missing VAPID keys in production. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.');
+    }
+
+    const generated = webpush.generateVAPIDKeys();
+    if (process.env.NODE_ENV !== 'test') {
+        Logger.warn('[PWA] Using ephemeral VAPID keys because env vars are missing. Configure persistent keys in environment variables.');
+    }
+    return generated;
+}
+
+const vapidKeys = getVapidKeys();
 
 webpush.setVapidDetails(
     'mailto:canoe.club@durham.ac.uk',

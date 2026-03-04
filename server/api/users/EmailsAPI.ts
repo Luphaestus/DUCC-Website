@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { EmailManager } from '../../emails/EmailManager.js';
 import Logger from '../../misc/Logger.js';
 import ValidationRules from '../../rules/ValidationRules.js';
+import { buildTrustedPublicUrl } from '../../misc/publicOrigin.js';
 
 export default class EmailsAPI {
     app: FastifyInstance;
@@ -152,10 +153,7 @@ export default class EmailsAPI {
             const status = await EmailsDB.addEmail(this.db, request.user.id, email, verificationToken);
 
             if (!status.isError()) {
-                const protocol = request.protocol;
-                const host = request.headers.host;
-                const baseUrl = `${protocol}://${host}`;
-                const verifyUrl = `${baseUrl}/api/auth/emails/verify/${verificationToken}`;
+                const verifyUrl = buildTrustedPublicUrl(`/api/auth/emails/verify/${encodeURIComponent(verificationToken)}`);
 
                 this.sendSecondaryVerificationEmail(email, verifyUrl)
                     .catch(err => Logger.error('[EmailsAPI] Failed to send verification email:', err));
@@ -200,10 +198,7 @@ export default class EmailsAPI {
                 const status = await EmailsDB.resendVerification(this.db, request.user.id, emailId, verificationToken);
                 if (status.isError()) return status.getResponse(reply);
 
-                const protocol = request.protocol;
-                const host = request.headers.host;
-                const baseUrl = `${protocol}://${host}`;
-                const verifyUrl = `${baseUrl}/api/auth/emails/verify/${verificationToken}`;
+                const verifyUrl = buildTrustedPublicUrl(`/api/auth/emails/verify/${encodeURIComponent(verificationToken)}`);
 
                 const { email } = status.getData() as any;
                 this.sendSecondaryVerificationEmail(email, verifyUrl)

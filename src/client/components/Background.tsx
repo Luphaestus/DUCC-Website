@@ -8,8 +8,8 @@ function RiverBackground(props: { onInit: (ref: HTMLDivElement) => void }) {
   });
   return (
     <div id="animated-background">
-      <div 
-        ref={ref} 
+      <div
+        ref={ref}
         style={{
           position: 'absolute',
           inset: '0',
@@ -63,7 +63,7 @@ export default function Background() {
       riverSceneInstance = new RiverScene(container, 'dark');
       (window as any).riverScene = riverSceneInstance;
       (window as any).setBiome = (name: any) => riverSceneInstance?.updateBiome(name);
-      
+
       const matcher = window.matchMedia('(prefers-color-scheme: dark)');
       const updateTheme = (e: MediaQueryListEvent | MediaQueryList) => {
         riverSceneInstance?.updateTheme(e.matches ? 'dark' : 'light');

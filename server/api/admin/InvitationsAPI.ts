@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { EmailManager } from '../../emails/EmailManager.js';
 import Logger from '../../misc/Logger.js';
 import config from '../../config.js';
+import { buildTrustedPublicUrl } from '../../misc/publicOrigin.js';
 
 export default class InvitationsAPI {
     app: FastifyInstance;
@@ -56,7 +57,7 @@ export default class InvitationsAPI {
                     // this means the user was likely deleted but the invitation record remained)
                     await InvitationsDB.deleteInvitation(this.db, existingInvitation.id);
                 } else if (!force) {
-                    return reply.status(409).send({ 
+                    return reply.status(409).send({
                         message: 'An invitation for this email is already pending.',
                         pending: true
                     });
@@ -73,10 +74,7 @@ export default class InvitationsAPI {
             if (status.isError()) return status.getResponse(reply);
 
             // Send invitation email
-            const protocol = request.protocol;
-            const host = request.headers.host;
-            const baseUrl = `${protocol}://${host}`;
-            const signupUrl = `${baseUrl}/signup?token=${token}&email=${encodeURIComponent(normalizedEmail)}`;
+            const signupUrl = buildTrustedPublicUrl(`/signup?token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`);
 
             EmailManager.getInstance().sendTemplatedEmail(
                 normalizedEmail,
@@ -102,7 +100,7 @@ export default class InvitationsAPI {
             const status = await InvitationsDB.deleteInvitation(this.db, id);
             return status.getResponse(reply);
         });
-        
+
         /**
          * Verify an invitation token.
          */
@@ -113,7 +111,7 @@ export default class InvitationsAPI {
             const invitation = await InvitationsDB.getInvitationByToken(this.db, token);
             if (!invitation) return reply.status(404).send({ message: 'Invalid or expired invitation.' });
 
-            return reply.send({ 
+            return reply.send({
                 email: invitation.email,
                 inviter_name: `${invitation.inviter_first_name} ${invitation.inviter_last_name}`
             });

@@ -14,6 +14,7 @@ import AuthDB from '../db/authDB.js';
 import Logger from '../misc/Logger.js';
 import config from '../config.js';
 import { EmailManager } from '../emails/EmailManager.js';
+import { buildTrustedPublicUrl } from '../misc/publicOrigin.js';
 import { generateSecret, verify, generateURI } from 'otplib';
 import qrcode from 'qrcode';
 import {
@@ -103,16 +104,14 @@ export default class Auth {
         if (this.rpID === 'localhost') {
             this.origin = `http://localhost:${process.env.PORT || 3000}`;
         }
-        
+
         if (process.env.ORIGIN) {
             this.origin = process.env.ORIGIN;
         }
     }
 
-    private sendVerificationEmail(email: string, name: string, token: string, request: FastifyRequest) {
-                const protocol = request.protocol;
-                const host = request.headers.host;
-                const baseUrl = `${protocol}://${host}`;        const verifyUrl = `${baseUrl}/api/auth/verify/${token}`;
+    private sendVerificationEmail(email: string, name: string, token: string) {
+        const verifyUrl = buildTrustedPublicUrl(`/api/auth/verify/${encodeURIComponent(token)}`);
 
         EmailManager.getInstance().sendTemplatedEmail(
             email,
@@ -188,8 +187,8 @@ export default class Auth {
                     return reply.status(400).send({ message: 'Email does not match the invitation.' });
                 }
             } else if (!isDurhamEmail) {
-                return reply.status(400).send({ 
-                    message: 'Only @durham.ac.uk email addresses can sign up without an invitation.' 
+                return reply.status(400).send({
+                    message: 'Only @durham.ac.uk email addresses can sign up without an invitation.'
                 });
             }
 
@@ -210,7 +209,7 @@ export default class Auth {
                             await this.db.run('UPDATE user_emails SET is_verified = 1, verification_token = NULL WHERE user_id = ? AND email = ?', [existingUser.id, email]);
                         } else {
                             await AuthDB.updateVerificationToken(this.db, existingUser.id, verificationToken!);
-                            this.sendVerificationEmail(email, first_name, verificationToken!, request);
+                            this.sendVerificationEmail(email, first_name, verificationToken!);
                         }
                     }
                 } else {
@@ -221,20 +220,20 @@ export default class Auth {
                             await this.db.run('UPDATE users SET is_verified = 1, verification_token = NULL WHERE id = ?', [newUserId]);
                             await this.db.run('UPDATE user_emails SET is_verified = 1, verification_token = NULL WHERE user_id = ? AND email = ?', [newUserId, email]);
                         } else {
-                            this.sendVerificationEmail(email, first_name, verificationToken!, request);
+                            this.sendVerificationEmail(email, first_name, verificationToken!);
                         }
                     }
                 }
 
                 if (!status.isError() && invitation_token) {
                     await InvitationsDB.markInvitationAsUsed(this.db, invitation_token);
-                    
+
                     if (invitation && invitation.predefined_settings) {
                         try {
-                            const settings = typeof invitation.predefined_settings === 'string' 
-                                ? JSON.parse(invitation.predefined_settings) 
+                            const settings = typeof invitation.predefined_settings === 'string'
+                                ? JSON.parse(invitation.predefined_settings)
                                 : invitation.predefined_settings;
-                            
+
                             const userId = existingUser ? existingUser.id : status.data.id;
 
                             // Apply member status
@@ -276,9 +275,9 @@ export default class Auth {
                     const user = await AuthDB.getUserById(this.db, userId);
                     await request.logIn(user);
                     request.session.set('user_id', user.id);
-                    return reply.status(200).send({ 
+                    return reply.status(200).send({
                         message: 'Sign up successful! You have been logged in.',
-                        verified: true 
+                        verified: true
                     });
                 }
 
@@ -317,7 +316,7 @@ export default class Auth {
 
                 const token = crypto.randomBytes(32).toString('hex');
                 await AuthDB.updateVerificationToken(this.db, user.id, token);
-                this.sendVerificationEmail(user.email, user.first_name, token, request);
+                this.sendVerificationEmail(user.email, user.first_name, token);
 
                 return reply.send({ message: 'If an account exists, a new verification link has been sent.' });
             } catch (err) {
@@ -334,21 +333,18 @@ export default class Auth {
                 // @ts-ignore - passport.authenticate returns a function in some versions, but in fastify-passport it can be used as a hook or directly
                 const result = await this.passport.authenticate('local', async (request: any, reply: any, err: any, user: any, info: any) => {
                     if (err) return reply.status(500).send({ message: 'Authentication error.' });
-                    
+
                     if (!user) {
                         if (info?.message === 'Migration required') {
                             const email = request.body.email.toLowerCase();
                             const dbUser = await AuthDB.getUserByEmail(this.db, email);
-                            
+
                             if (dbUser) {
                                 const token = crypto.randomBytes(32).toString('hex');
                                 const expiresAt = new Date(Date.now() + 3600000).toISOString();
                                 await AuthDB.createPasswordReset(this.db, dbUser.id, token, expiresAt);
 
-                                const protocol = request.protocol;
-                                const host = request.headers.host;
-                                const baseUrl = `${protocol}://${host}`;
-                                const resetUrl = `${baseUrl}/set-password?token=${token}`;
+                                const resetUrl = buildTrustedPublicUrl(`/set-password?token=${encodeURIComponent(token)}`);
 
                                 EmailManager.getInstance().sendTemplatedEmail(
                                     dbUser.email,
@@ -360,9 +356,9 @@ export default class Auth {
                                     }
                                 ).catch(e => Logger.error('[AuthAPI] Failed to send migration reset email:', e));
 
-                                return reply.status(200).send({ 
+                                return reply.status(200).send({
                                     migrationRequired: true,
-                                    message: 'Migration required. A password reset link has been sent to your email.' 
+                                    message: 'Migration required. A password reset link has been sent to your email.'
                                 });
                             }
                         }
@@ -370,10 +366,10 @@ export default class Auth {
                     }
 
                     if (!user.is_verified) {
-                        return reply.status(403).send({ 
-                            message: 'Email not verified.', 
+                        return reply.status(403).send({
+                            message: 'Email not verified.',
                             unverified: true,
-                            email: user.email 
+                            email: user.email
                         });
                     }
 
@@ -394,7 +390,7 @@ export default class Auth {
                             await this.sendEmailOTP(user, request);
                         }
 
-                        return reply.status(200).send({ 
+                        return reply.status(200).send({
                             requires2FA: true,
                             methods: {
                                 totp: hasTOTP,
@@ -406,10 +402,10 @@ export default class Auth {
 
                     await request.logIn(user);
                     request.session.set('user_id', user.id); // Force session save
-                    
+
                     const { hashed_password, ...safeUser } = user;
-                    return reply.status(200).send({ 
-                        message: 'Login successful.', 
+                    return reply.status(200).send({
+                        message: 'Login successful.',
                         user: {
                             id: safeUser.id,
                             email: safeUser.email,
@@ -594,7 +590,7 @@ export default class Auth {
                 if (verification.verified) {
                     const { authenticationInfo } = verification;
                     await AuthDB.updateAuthenticatorCounter(this.db, authenticator.id, authenticationInfo.newCounter);
-                    
+
                     const user = await AuthDB.getUserById(this.db, targetUserId as number);
                     await request.logIn(user);
                     request.session.set('user_id', user.id); // Force session save
@@ -814,7 +810,7 @@ export default class Auth {
                 const searchStr = email.toLowerCase();
                 // Try exact match first
                 let user = await AuthDB.getUserByEmail(this.db, searchStr);
-                
+
                 // If not found and doesn't look like an email, try matching the prefix
                 if (!user && !searchStr.includes('@')) {
                     user = await this.db.get('SELECT * FROM users WHERE email LIKE ?', [`${searchStr}@%`]);
@@ -829,12 +825,7 @@ export default class Auth {
 
                 await AuthDB.createPasswordReset(this.db, user.id, token, expiresAt);
 
-                // Need a way to get base URL in fastify
-                        const protocol = request.protocol;
-                        const host = request.headers.host;
-                        const baseUrl = `${protocol}://${host}`;                const resetUrl = `${baseUrl}/set-password?token=${token}`;
-
-                Logger.info(`[RESET] Password reset url for ${user.email}: ${resetUrl}`);
+                const resetUrl = buildTrustedPublicUrl(`/set-password?token=${encodeURIComponent(token)}`);
 
                 // Send email asynchronously
                 EmailManager.getInstance().sendTemplatedEmail(
