@@ -54,6 +54,17 @@ const fastify = Fastify({
   trustProxy: true,
 });
 
+fastify.setErrorHandler((error, request, reply) => {
+  const statusCode = Number(error?.statusCode) || 500;
+  Logger.error(`[HTTP ${statusCode}] ${request.method} ${request.url}`, error);
+
+  if (statusCode >= 500) {
+    return reply.status(500).send({ message: 'Internal server error.' });
+  }
+
+  return reply.status(statusCode).send({ message: error.message || 'Request failed.' });
+});
+
 /** Decorate request with DB */
 let db: DatabaseWrapper;
 
@@ -204,13 +215,6 @@ const startServer = async () => {
     /** CSRF Protection (Modern Double Submit Cookie Implementation) */
     if (isProd) {
       fastify.addHook('preHandler', async (request, reply) => {
-        // Debug session persistence
-        if (request.url.startsWith('/api')) {
-          const cookieHeader = request.headers.cookie || 'none';
-          const hasSessionCookie = cookieHeader.includes(config.session.cookieName);
-          Logger.info(`[Session] URL: ${request.url}, SID: ${request.session.sessionId}, HasSessionCookie: ${hasSessionCookie}`);
-        }
-
         let token = (request.session as any).get('csrfToken');
         if (!token) {
           token = crypto.randomBytes(32).toString('hex');
@@ -232,7 +236,7 @@ const startServer = async () => {
         if (!safeMethods.includes(request.method)) {
           const headerToken = request.headers['x-csrf-token'];
           if (!token || !headerToken || headerToken !== token) {
-            Logger.warn(`[CSRF] Failure on ${request.method} ${request.url}. SID: ${request.session.sessionId}, Header: ${headerToken ? 'present' : 'missing'}, Session Token: ${token ? 'present' : 'missing'}, Match: ${headerToken === token}`);
+            Logger.warn(`[CSRF] Failure on ${request.method} ${request.url}. Header: ${headerToken ? 'present' : 'missing'}, Session Token: ${token ? 'present' : 'missing'}`);
             return reply.status(403).send({ message: 'Invalid or missing CSRF token' });
           }
         }

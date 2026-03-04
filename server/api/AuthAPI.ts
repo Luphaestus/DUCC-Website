@@ -68,14 +68,14 @@ export default class Auth {
                 const formatedEmail = email.replace(/\s/g, '').toLowerCase();
                 try {
                     const user = await AuthDB.getUserByEmail(this.db, formatedEmail);
-                    if (!user) return done(null, false, { message: 'Incorrect email.' });
+                    if (!user) return done(null, false, { message: 'Invalid credentials.' });
 
                     if (!user.hashed_password) {
                         return done(null, false, { message: 'Migration required' });
                     }
 
                     const isMatch = await bcrypt.compare(password, user.hashed_password);
-                    if (!isMatch) return done(null, false, { message: 'Incorrect password.' });
+                    if (!isMatch) return done(null, false, { message: 'Invalid credentials.' });
 
                     return done(null, user);
                 } catch (err) {
@@ -311,12 +311,11 @@ export default class Auth {
 
             try {
                 const user = await AuthDB.getUserByEmail(this.db, email.toLowerCase());
-                if (!user) return reply.status(200).send({ message: 'If an account exists, a new verification link has been sent.' });
-                if (user.is_verified) return reply.status(400).send({ message: 'Email is already verified.' });
-
-                const token = crypto.randomBytes(32).toString('hex');
-                await AuthDB.updateVerificationToken(this.db, user.id, token);
-                this.sendVerificationEmail(user.email, user.first_name, token);
+                if (user && !user.is_verified) {
+                    const token = crypto.randomBytes(32).toString('hex');
+                    await AuthDB.updateVerificationToken(this.db, user.id, token);
+                    this.sendVerificationEmail(user.email, user.first_name, token);
+                }
 
                 return reply.send({ message: 'If an account exists, a new verification link has been sent.' });
             } catch (err) {
@@ -808,13 +807,7 @@ export default class Auth {
 
             try {
                 const searchStr = email.toLowerCase();
-                // Try exact match first
                 let user = await AuthDB.getUserByEmail(this.db, searchStr);
-
-                // If not found and doesn't look like an email, try matching the prefix
-                if (!user && !searchStr.includes('@')) {
-                    user = await this.db.get('SELECT * FROM users WHERE email LIKE ?', [`${searchStr}@%`]);
-                }
 
                 if (!user) {
                     return reply.send({ message: 'If an account exists, a reset link has been sent.' });

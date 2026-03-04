@@ -10,12 +10,34 @@ import { DatabaseWrapper } from './db.js';
 
 export default class EmailsDB {
     private static readonly SECONDARY_EMAIL_VERIFICATION_EXPIRY_MINUTES = 60;
+
+    private static readonly PUBLIC_EMAIL_COLUMNS = [
+        'id',
+        'user_id',
+        'email',
+        'is_verified',
+        'is_primary',
+        'created_at'
+    ] as const;
+
+    private static toPublicEmailRecord(emailRow: any) {
+        return {
+            id: emailRow.id,
+            email: emailRow.email,
+            is_verified: !!emailRow.is_verified,
+            is_primary: !!emailRow.is_primary,
+            created_at: emailRow.created_at || null
+        };
+    }
     /**
      * Get all emails for a user.
      */
     static async getUserEmails(db: DatabaseWrapper, userId: number): Promise<statusObject> {
         try {
-            const emails = await db.all('SELECT * FROM user_emails WHERE user_id = ? ORDER BY is_primary DESC, created_at ASC', [userId]);
+            const emails = await db.all(
+                `SELECT ${EmailsDB.PUBLIC_EMAIL_COLUMNS.join(', ')} FROM user_emails WHERE user_id = ? ORDER BY is_primary DESC, created_at ASC`,
+                [userId]
+            );
 
             // Ensure the primary email from the `users` table is present in the list.
             // Some seed paths insert into `users` but don't always insert into `user_emails` (e.g. admin creation),
@@ -38,7 +60,7 @@ export default class EmailsDB {
                 }
             }
 
-            return new statusObject(200, null, emails);
+            return new statusObject(200, null, emails.map(EmailsDB.toPublicEmailRecord));
         } catch (error) {
             Logger.error('Database error in getUserEmails:', error);
             return new statusObject(500, 'Database error');
@@ -103,7 +125,7 @@ export default class EmailsDB {
             if (emailRecord.is_verified) return new statusObject(400, 'Email is already verified.');
 
             await db.run('UPDATE user_emails SET verification_token = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?', [newToken, emailId]);
-            return new statusObject(200, 'Verification resent.', { email: emailRecord.email, token: newToken });
+            return new statusObject(200, 'Verification resent.', { email: emailRecord.email });
         } catch (error) {
             Logger.error('Database error in resendVerification:', error);
             return new statusObject(500, 'Database error');

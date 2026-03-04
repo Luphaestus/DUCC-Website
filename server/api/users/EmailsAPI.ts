@@ -24,6 +24,19 @@ export default class EmailsAPI {
         this.db = db;
     }
 
+    private getAuthenticatedUserId(request: any): number | null {
+        return request?.user?.id ? Number(request.user.id) : null;
+    }
+
+    private parseEmailId(id: string): number | null {
+        const parsed = Number.parseInt(id, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    private isValidVerificationToken(token: string): boolean {
+        return /^[a-f0-9]{64}$/i.test(token);
+    }
+
     private formatExpiryGmt(expiresAt: Date): string {
         return expiresAt.toUTCString();
     }
@@ -127,8 +140,10 @@ export default class EmailsAPI {
          */
         this.app.get('/api/users/me/emails', { preHandler: [check()] }, async (request: any, reply) => {
             try {
-                if (!request.user || !request.user.id) return reply.status(401).send({ message: 'Unauthorized' });
-                const status = await EmailsDB.getUserEmails(this.db, request.user.id);
+                const userId = this.getAuthenticatedUserId(request);
+                if (!userId) return reply.status(401).send({ message: 'Unauthorized' });
+
+                const status = await EmailsDB.getUserEmails(this.db, userId);
                 if (status.isError()) return status.getResponse(reply);
                 // Return the raw array for client convenience (legacy behaviour)
                 return reply.send(status.getData() || []);
@@ -145,12 +160,15 @@ export default class EmailsAPI {
             let { email } = request.body as any;
             if (!email) return reply.status(400).send({ message: 'Email is required.' });
 
+            const userId = this.getAuthenticatedUserId(request);
+            if (!userId) return reply.status(401).send({ message: 'Unauthorized' });
+
             email = email.replace(/\s/g, '').toLowerCase();
             const emailError = ValidationRules.validate('email', email);
             if (emailError) return reply.status(400).send({ message: emailError });
 
             const verificationToken = crypto.randomBytes(32).toString('hex');
-            const status = await EmailsDB.addEmail(this.db, request.user.id, email, verificationToken);
+            const status = await EmailsDB.addEmail(this.db, userId, email, verificationToken);
 
             if (!status.isError()) {
                 const verifyUrl = buildTrustedPublicUrl(`/api/auth/emails/verify/${encodeURIComponent(verificationToken)}`);
@@ -167,6 +185,10 @@ export default class EmailsAPI {
          */
         this.app.get<{ Params: { token: string } }>('/api/auth/emails/verify/:token', async (request, reply) => {
             const { token } = request.params;
+            if (!this.isValidVerificationToken(token)) {
+                return this.renderVerificationErrorPage(reply, 400, 'Unable to verify this email address.');
+            }
+
             const status = await EmailsDB.verifyEmail(this.db, token);
             if (status.isError()) {
                 return this.renderVerificationErrorPage(reply, status.getStatus(), status.getMessage() || 'Unable to verify this email address.');
@@ -179,10 +201,13 @@ export default class EmailsAPI {
          * Set an email as primary.
          */
         this.app.post<{ Params: { id: string } }>('/api/users/me/emails/:id/set-primary', { preHandler: [check()] }, async (request: any, reply) => {
-            const emailId = parseInt(request.params.id);
-            if (isNaN(emailId)) return reply.status(400).send({ message: 'Invalid ID.' });
+            const userId = this.getAuthenticatedUserId(request);
+            if (!userId) return reply.status(401).send({ message: 'Unauthorized' });
 
-            const status = await EmailsDB.setPrimaryEmail(this.db, request.user.id, emailId);
+            const emailId = this.parseEmailId(request.params.id);
+            if (!emailId) return reply.status(400).send({ message: 'Invalid ID.' });
+
+            const status = await EmailsDB.setPrimaryEmail(this.db, userId, emailId);
             return status.getResponse(reply);
         });
 
@@ -191,11 +216,14 @@ export default class EmailsAPI {
          */
         this.app.post<{ Params: { id: string } }>('/api/users/me/emails/:id/resend', { preHandler: [check()] }, async (request: any, reply) => {
             try {
-                const emailId = parseInt(request.params.id);
-                if (isNaN(emailId)) return reply.status(400).send({ message: 'Invalid ID.' });
+                const userId = this.getAuthenticatedUserId(request);
+                if (!userId) return reply.status(401).send({ message: 'Unauthorized' });
+
+                const emailId = this.parseEmailId(request.params.id);
+                if (!emailId) return reply.status(400).send({ message: 'Invalid ID.' });
 
                 const verificationToken = crypto.randomBytes(32).toString('hex');
-                const status = await EmailsDB.resendVerification(this.db, request.user.id, emailId, verificationToken);
+                const status = await EmailsDB.resendVerification(this.db, userId, emailId, verificationToken);
                 if (status.isError()) return status.getResponse(reply);
 
                 const verifyUrl = buildTrustedPublicUrl(`/api/auth/emails/verify/${encodeURIComponent(verificationToken)}`);
@@ -215,10 +243,13 @@ export default class EmailsAPI {
          * Delete an email.
          */
         this.app.delete<{ Params: { id: string } }>('/api/users/me/emails/:id', { preHandler: [check()] }, async (request: any, reply) => {
-            const emailId = parseInt(request.params.id);
-            if (isNaN(emailId)) return reply.status(400).send({ message: 'Invalid ID.' });
+            const userId = this.getAuthenticatedUserId(request);
+            if (!userId) return reply.status(401).send({ message: 'Unauthorized' });
 
-            const status = await EmailsDB.deleteEmail(this.db, request.user.id, emailId);
+            const emailId = this.parseEmailId(request.params.id);
+            if (!emailId) return reply.status(400).send({ message: 'Invalid ID.' });
+
+            const status = await EmailsDB.deleteEmail(this.db, userId, emailId);
             return status.getResponse(reply);
         });
     }

@@ -200,6 +200,17 @@ describe('api/AuthAPI', () => {
             sendSpy.mockRestore();
         });
 
+        test('POST /api/auth/reset-password-request returns same response for unknown account', async () => {
+            const res = await app.inject({
+                method: 'POST',
+                url: '/api/auth/reset-password-request',
+                payload: { email: 'does-not-exist@durham.ac.uk' }
+            });
+
+            expect(res.statusCode).toBe(200);
+            expect(JSON.parse(res.body).message).toBe('If an account exists, a reset link has been sent.');
+        });
+
         test('POST /api/auth/set-password updates password', async () => {
             await app.inject({
                 method: 'POST',
@@ -254,6 +265,35 @@ describe('api/AuthAPI', () => {
             const body = JSON.parse(res.body);
             expect(body.secret).toBeDefined();
             expect(body.qrCodeData).toBeDefined();
+        });
+    });
+
+    describe('Information leak protections', () => {
+        test('POST /api/auth/login uses generic invalid credentials message', async () => {
+            const res = await app.inject({
+                method: 'POST',
+                url: '/api/auth/login',
+                payload: { email: 'missing@durham.ac.uk', password: 'wrong-password' }
+            });
+
+            expect(res.statusCode).toBe(401);
+            expect(JSON.parse(res.body).message).toBe('Invalid credentials.');
+        });
+
+        test('POST /api/auth/resend-verification returns generic success for verified email', async () => {
+            await db.run(
+                'INSERT INTO users (email, first_name, last_name, is_verified) VALUES (?, ?, ?, ?)',
+                ['verified@durham.ac.uk', 'Verified', 'User', 1]
+            );
+
+            const res = await app.inject({
+                method: 'POST',
+                url: '/api/auth/resend-verification',
+                payload: { email: 'verified@durham.ac.uk' }
+            });
+
+            expect(res.statusCode).toBe(200);
+            expect(JSON.parse(res.body).message).toBe('If an account exists, a new verification link has been sent.');
         });
     });
 });
