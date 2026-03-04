@@ -208,7 +208,10 @@ REMOTE_SCRIPT="$REMOTE_SCRIPT && docker compose up -d --force-recreate --remove-
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Container Status ---' && docker compose ps"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Waiting for Startup ---' && sleep 10"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Recent Logs ---' && docker compose logs app --tail=20"
-REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Local Health Check ---' && curl -s -I http://localhost:3000/api/health || echo 'Health check failed'"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Local Health Check (with retries) ---'"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && HEALTH_OK=0"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && for i in \\$(seq 1 12); do CODE=\\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || true); if [ \"\\$CODE\" = \"200\" ]; then echo \"Health check passed (attempt \\$i).\"; HEALTH_OK=1; break; fi; echo \"Health check not ready (attempt \\$i, code=\\$CODE).\"; sleep 5; done"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && if [ \\$HEALTH_OK -ne 1 ]; then echo 'Health check failed after retries.'; fi"
 
 sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "$REMOTE_SCRIPT" | tee .deploy.log
 
