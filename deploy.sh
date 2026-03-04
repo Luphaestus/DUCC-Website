@@ -8,7 +8,7 @@ SHOW_LOGS=false
 PUSH_DATA=false
 PULL_DATA=false
 OPEN_SSH=false
-FAST_DEPLOY=false
+FAST_DEPLOY=true
 
 show_help() {
     echo "Usage: ./deploy.sh [OPTIONS]"
@@ -16,7 +16,8 @@ show_help() {
     echo "Options:"
     echo "  --dev, -d        Deploy in development mode (NODE_ENV=dev). Seeds the database with test data."
     echo "  --clear, -c      Remove the existing database (data/database.db) before deploying."
-    echo "  --fast, -f       Pre-compile assets locally and upload them to speed up remote build."
+    echo "  --fast, -f       Pre-compile assets locally and upload them (default behavior)."
+    echo "  --remote-build, -r  Disable local pre-build and build assets on the server instead."
     echo "  --logs, -l       Skip deployment and show real-time logs from the remote server."
     echo "  --ssh, -s        Skip deployment and open an interactive SSH session to the remote server."
     echo "  --push-data      Copy local 'data/' folder to the remote server before deploying."
@@ -42,6 +43,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --fast)
             FAST_DEPLOY=true
+            shift
+            ;;
+        --remote-build)
+            FAST_DEPLOY=false
             shift
             ;;
         --logs)
@@ -70,6 +75,7 @@ while [[ $# -gt 0 ]]; do
                     d) MODE="dev" ;;
                     c) CLEAR_DB=true ;;
                     f) FAST_DEPLOY=true ;;
+                    r) FAST_DEPLOY=false ;;
                     l) SHOW_LOGS=true ;;
                     s) OPEN_SSH=true ;;
                     h) show_help ;;
@@ -126,7 +132,7 @@ fi
 echo "--- Starting Deployment to $SERVER_IP ($MODE mode) ---"
 
 if [ "$FAST_DEPLOY" = true ]; then
-    echo "[0/3] Pre-compiling assets locally..."
+    echo "[0/3] Pre-compiling frontend assets locally..."
     npm run sass:build
     npm run build:client
 fi
@@ -159,8 +165,9 @@ echo "       [INFO] Connecting to remote and syncing repository..."
 sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "$REMOTE_PRE_CMD"
 
 if [ "$FAST_DEPLOY" = true ]; then
-    echo "       [INFO] Uploading pre-compiled assets..."
+    echo "       [INFO] Uploading pre-compiled assets (dist + public/styles.css)..."
     sshpass -e rsync -avz --delete -e "ssh $SSH_OPTS" dist/ root@"$SERVER_IP":DUCC-Website/dist/
+    sshpass -e rsync -avz -e "ssh $SSH_OPTS" public/styles.css root@"$SERVER_IP":DUCC-Website/public/styles.css
 fi
 
 export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
