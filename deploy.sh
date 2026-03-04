@@ -1,4 +1,5 @@
 #!/bin/bash
+set -o pipefail
 
 # --- DUCC Deployment Script ---
 
@@ -210,10 +211,14 @@ REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Waiting for Startup ---' && sleep 10"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Recent Logs ---' && docker compose logs app --tail=20"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Local Health Check (with retries) ---'"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && HEALTH_OK=0"
-REMOTE_SCRIPT="$REMOTE_SCRIPT && for i in \\$(seq 1 12); do CODE=\\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || true); if [ \"\\$CODE\" = \"200\" ]; then echo \"Health check passed (attempt \\$i).\"; HEALTH_OK=1; break; fi; echo \"Health check not ready (attempt \\$i, code=\\$CODE).\"; sleep 5; done"
-REMOTE_SCRIPT="$REMOTE_SCRIPT && if [ \\$HEALTH_OK -ne 1 ]; then echo 'Health check failed after retries.'; fi"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && for i in \$(seq 1 12); do CODE=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || true); if [ \"\$CODE\" = \"200\" ]; then echo \"Health check passed (attempt \$i).\"; HEALTH_OK=1; break; fi; echo \"Health check not ready (attempt \$i, code=\$CODE).\"; sleep 5; done"
+REMOTE_SCRIPT="$REMOTE_SCRIPT && if [ \$HEALTH_OK -ne 1 ]; then echo 'Health check failed after retries.'; fi"
 
-sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "$REMOTE_SCRIPT" | tee .deploy.log
+if ! sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "$REMOTE_SCRIPT" | tee .deploy.log; then
+    echo "Deployment failed during remote execution."
+    rm -f .deploy.log
+    exit 1
+fi
 
 echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL}"
 echo "      (Note: If you get a DNS error, try http://$SERVER_IP directly)"
