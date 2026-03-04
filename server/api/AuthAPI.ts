@@ -354,14 +354,11 @@ export default class Auth {
                                         reset_url: resetUrl
                                     }
                                 ).catch(e => Logger.error('[AuthAPI] Failed to send migration reset email:', e));
-
-                                return reply.status(200).send({
-                                    migrationRequired: true,
-                                    message: 'Migration required. A password reset link has been sent to your email.'
-                                });
                             }
+
+                            return reply.status(401).send({ message: 'Invalid credentials.' });
                         }
-                        return reply.status(401).send({ message: info?.message || 'Authentication failed.' });
+                        return reply.status(401).send({ message: 'Invalid credentials.' });
                     }
 
                     if (!user.is_verified) {

@@ -32,11 +32,11 @@ export async function getTestDbPool() {
                 });
                 await adminConnection.query(`CREATE DATABASE IF NOT EXISTS \`${config.mysql.database}\``);
                 await adminConnection.end();
-                
+
                 // Re-connect (pool might be in bad state or just retry)
                 // Since poolWrapper is just a wrapper, the underlying pool might retry or we can just keep it.
                 // But safer to recreate.
-                await poolWrapper.close(); 
+                await poolWrapper.close();
                 poolWrapper = await connect(config.mysql);
             } else {
                 throw e;
@@ -54,17 +54,18 @@ export async function initSchemaAndClean() {
 
     if (!initialized) {
         // console.log(`[Worker ${workerId}] Initializing schema for ${dbName}`);
-        
+
         const conn = await db.connection.getConnection();
         try {
             await conn.query('SET FOREIGN_KEY_CHECKS = 0');
             const tablesToDrop = [
                 'kit_items', 'kit_variants', 'user_kit_preferences', 'event_kit_requests',
-                'authenticators', 'exec_committee', 'event_attendees', 'event_waiting_list', 
-                'transactions', 'swim_history', 'quotes', 'cars', 'event_drivers', 'trips', 
-                'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags', 
-                'user_permissions', 'user_roles', 'tag_whitelists', 'role_managed_tags', 
-                'role_permissions', 'roles', 'tags', 'event_tags', 'password_resets', 
+                'authenticators', 'exec_committee', 'event_attendees', 'event_waiting_list',
+                'transactions', 'swim_history', 'quotes', 'cars', 'event_drivers', 'trips',
+                'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags',
+                'user_permissions', 'user_roles', 'tag_whitelists', 'role_managed_tags',
+                'role_permissions', 'roles', 'tags', 'event_tags', 'password_resets', 'user_emails',
+                'user_invitations', 'key_logs', '`keys`', 'system_metrics',
                 'slides', 'events', 'users', 'files', 'file_categories', 'colleges', 'permissions',
                 'votes', 'nominations', 'election_roles', 'elections',
                 'form_answers', 'form_submissions', 'form_questions', 'form_pages', 'forms'
@@ -87,14 +88,15 @@ export async function initSchemaAndClean() {
     const conn = await db.connection.getConnection();
     try {
         await conn.query('SET FOREIGN_KEY_CHECKS = 0');
-        
+
         const tablesToClean = [
             'kit_items', 'kit_variants', 'user_kit_preferences', 'event_kit_requests',
-            'authenticators', 'exec_committee', 'event_attendees', 'event_waiting_list', 
-            'transactions', 'swim_history', 'quotes', 'cars', 'event_drivers', 'trips', 
-            'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags', 
-            'user_permissions', 'user_roles', 'tag_whitelists', 'role_managed_tags', 
-            'role_permissions', 'roles', 'tags', 'event_tags', 'password_resets', 
+            'authenticators', 'exec_committee', 'event_attendees', 'event_waiting_list',
+            'transactions', 'swim_history', 'quotes', 'cars', 'event_drivers', 'trips',
+            'event_expenses', 'trip_exclusions', 'expense_exclusions', 'user_managed_tags',
+            'user_permissions', 'user_roles', 'tag_whitelists', 'role_managed_tags',
+            'role_permissions', 'roles', 'tags', 'event_tags', 'password_resets', 'user_emails',
+            'user_invitations', 'key_logs', '`keys`', 'system_metrics',
             'slides', 'events', 'users', 'files', 'file_categories', 'colleges', 'permissions',
             'votes', 'nominations', 'election_roles', 'elections',
             'form_answers', 'form_submissions', 'form_questions', 'form_pages', 'forms'
@@ -109,7 +111,7 @@ export async function initSchemaAndClean() {
     } finally {
         conn.release();
     }
-    
+
     await seedColleges(db);
 
     return db;

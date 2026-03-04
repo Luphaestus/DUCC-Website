@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import fs from 'fs';
 import crypto from 'crypto';
-import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import Fastify, { FastifyInstance, FastifyRequest, FastifyReply, FastifyError } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyFormbody from '@fastify/formbody';
 import fastifyMultipart from '@fastify/multipart';
@@ -54,7 +54,7 @@ const fastify = Fastify({
   trustProxy: true,
 });
 
-fastify.setErrorHandler((error, request, reply) => {
+fastify.setErrorHandler((error: FastifyError, request, reply) => {
   const statusCode = Number(error?.statusCode) || 500;
   Logger.error(`[HTTP ${statusCode}] ${request.method} ${request.url}`, error);
 

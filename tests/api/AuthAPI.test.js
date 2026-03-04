@@ -295,5 +295,26 @@ describe('api/AuthAPI', () => {
             expect(res.statusCode).toBe(200);
             expect(JSON.parse(res.body).message).toBe('If an account exists, a new verification link has been sent.');
         });
+
+        test('POST /api/auth/login hides migration-required account existence', async () => {
+            const sendSpy = vi.spyOn(EmailManager.getInstance(), 'sendTemplatedEmail').mockResolvedValue();
+
+            await db.run(
+                'INSERT INTO users (email, first_name, last_name, hashed_password, is_verified) VALUES (?, ?, ?, ?, ?)',
+                ['migration@durham.ac.uk', 'Migration', 'User', null, 1]
+            );
+
+            const res = await app.inject({
+                method: 'POST',
+                url: '/api/auth/login',
+                payload: { email: 'migration@durham.ac.uk', password: 'any-password' }
+            });
+
+            expect(res.statusCode).toBe(401);
+            expect(JSON.parse(res.body).message).toBe('Invalid credentials.');
+            expect(sendSpy).toHaveBeenCalled();
+
+            sendSpy.mockRestore();
+        });
     });
 });

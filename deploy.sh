@@ -109,16 +109,17 @@ if ! command -v sshpass &> /dev/null; then
 fi
 
 export SSHPASS="$SERVER_PASSWORD"
+SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
 if [ "$SHOW_LOGS" = true ]; then
     echo "--- Showing logs from $SERVER_IP ---"
-    sshpass -e ssh -T -o StrictHostKeyChecking=no root@"$SERVER_IP" "cd DUCC-Website && docker compose logs -f"
+    sshpass -e ssh -T $SSH_OPTS root@"$SERVER_IP" "cd DUCC-Website && docker compose logs -f"
     exit 0
 fi
 
 if [ "$OPEN_SSH" = true ]; then
     echo "--- Opening SSH session to $SERVER_IP ---"
-    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP"
+    sshpass -e ssh $SSH_OPTS root@"$SERVER_IP"
     exit 0
 fi
 
@@ -133,28 +134,33 @@ fi
 if [ "$PULL_DATA" = true ]; then
     echo "[DATA] Pulling remote data to local 'data/' folder..."
     mkdir -p data
-    sshpass -e rsync -avz -e "ssh -o StrictHostKeyChecking=no" root@"$SERVER_IP":DUCC-Website/data/ data/
+    sshpass -e rsync -avz -e "ssh $SSH_OPTS" root@"$SERVER_IP":DUCC-Website/data/ data/
 fi
 
 echo "[1/3] Pushing changes to GitHub..."
 git add .
-git commit -m "Deployment update: $(date)"
+if ! git diff --cached --quiet; then
+    git commit -m "Deployment update: $(date)"
+else
+    echo "       [INFO] No local changes to commit."
+fi
 git push origin main
 
 echo "[2/3] Updating remote server..."
 
-REMOTE_PRE_CMD="mkdir -p DUCC-Website && cd DUCC-Website && git config --global --add safe.directory /root/DUCC-Website && (git init && git remote add origin https://github.com/Luphaestus/DUCC-Website.git || true) && (git fetch --all || echo 'Git fetch failed, continuing...') && (git reset --hard origin/main || echo 'Git reset failed, continuing...') && find . -name '._*' -delete && find . -name '.__*' -delete"
+REMOTE_PRE_CMD="mkdir -p DUCC-Website && cd DUCC-Website && git config --global --add safe.directory /root/DUCC-Website && git init && (git remote get-url origin >/dev/null 2>&1 || git remote add origin https://github.com/Luphaestus/DUCC-Website.git) && (git fetch --all || echo 'Git fetch failed, continuing...') && (git reset --hard origin/main || echo 'Git reset failed, continuing...') && find . -name '._*' -delete && find . -name '.__*' -delete"
 
 if [ "$CLEAR_DB" = true ]; then
     echo "       [INFO] Remote database will be cleared."
     REMOTE_PRE_CMD="$REMOTE_PRE_CMD && rm -rf data/"
 fi
 
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_PRE_CMD"
+echo "       [INFO] Connecting to remote and syncing repository..."
+sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "$REMOTE_PRE_CMD"
 
 if [ "$FAST_DEPLOY" = true ]; then
     echo "       [INFO] Uploading pre-compiled assets..."
-    sshpass -e rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" dist/ root@"$SERVER_IP":DUCC-Website/dist/
+    sshpass -e rsync -avz --delete -e "ssh $SSH_OPTS" dist/ root@"$SERVER_IP":DUCC-Website/dist/
 fi
 
 export DOMAIN_NAME="${DOMAIN_NAME:-$SERVER_IP.sslip.io}"
@@ -163,20 +169,20 @@ DOMAIN_VAL="$DOMAIN_NAME"
 # Upload .env file if it exists
 if [ -f .env ]; then
     echo "       [INFO] Pushing .env file to remote server..."
-    sshpass -e scp -o StrictHostKeyChecking=no .env root@"$SERVER_IP":DUCC-Website/.env
+    sshpass -e scp $SSH_OPTS .env root@"$SERVER_IP":DUCC-Website/.env
     # Append dynamic deployment variables to the remote .env
-    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "printf '\nDOMAIN_NAME=%s\nNODE_ENV=%s\nSERVER_IP=%s\n' '$DOMAIN_VAL' '$MODE' '$SERVER_IP' >> DUCC-Website/.env"
-    sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "chmod 600 DUCC-Website/.env"
+    sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "printf '\nDOMAIN_NAME=%s\nNODE_ENV=%s\nSERVER_IP=%s\n' '$DOMAIN_VAL' '$MODE' '$SERVER_IP' >> DUCC-Website/.env"
+    sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "chmod 600 DUCC-Website/.env"
 fi
 
 if [ "$PUSH_DATA" = true ]; then
     echo "[DATA] Pushing local data to remote 'data/' folder..."
-    sshpass -e rsync -avz -e "ssh -o StrictHostKeyChecking=no" data/ root@"$SERVER_IP":DUCC-Website/data/
+    sshpass -e rsync -avz -e "ssh $SSH_OPTS" data/ root@"$SERVER_IP":DUCC-Website/data/
 fi
 
 BUILD_ID=$(date +%s)
 
-REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && export NODE_ENV='$MODE' && export SERVER_IP='$SERVER_IP' && cd DUCC-Website && docker compose build --build-arg BUILD_ID=$BUILD_ID --progress=plain"
+REMOTE_SCRIPT="export DOMAIN_NAME='$DOMAIN_VAL' && export NODE_ENV='$MODE' && export SERVER_IP='$SERVER_IP' && cd DUCC-Website && echo '--- Building containers (this can take several minutes during vite chunk rendering) ---' && docker compose --progress=plain build --build-arg BUILD_ID=$BUILD_ID"
 
 if [ "$CLEAR_DB" = true ]; then
     echo "       [INFO] Running database reset."
@@ -197,7 +203,7 @@ REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Waiting for Startup ---' && sleep 10"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Recent Logs ---' && docker compose logs app --tail=20"
 REMOTE_SCRIPT="$REMOTE_SCRIPT && echo '--- Local Health Check ---' && curl -s -I http://localhost:3000/api/health || echo 'Health check failed'"
 
-sshpass -e ssh -o StrictHostKeyChecking=no root@"$SERVER_IP" "$REMOTE_SCRIPT" | tee .deploy.log
+sshpass -e ssh $SSH_OPTS root@"$SERVER_IP" "$REMOTE_SCRIPT" | tee .deploy.log
 
 echo "[3/3] Deployment complete! Site live at https://${DOMAIN_VAL}"
 echo "      (Note: If you get a DNS error, try http://$SERVER_IP directly)"
